@@ -104,8 +104,9 @@ public class DictionaryTest {
 
         assertThat( values ).hasSize( 3 );
         assertThat( values.get( 0 ).getId() ).isEqualTo( "id111" );
-        assertThat( values.get( 1 ).getId() ).isEqualTo( "id112" );
-        assertThat( values.get( 2 ).getId() ).isEqualTo( "id22" );
+        assertThat( values.get( 1 ).getId() ).isEqualTo( "id22" );
+        assertThat( values.get( 2 ).getId() ).isEqualTo( "id112" );
+        assertThat( values.get( 2 ).getProperty( "type" ) ).contains( "test_new" );
     }
 
     @Test

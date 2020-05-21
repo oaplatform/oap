@@ -179,9 +179,15 @@
             <version>${oap.deps.lz4.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.oneandone.reflections8</groupId>
-            <artifactId>reflections8</artifactId>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
             <version>${oap.deps.reflections.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.github.jbellis</groupId>
