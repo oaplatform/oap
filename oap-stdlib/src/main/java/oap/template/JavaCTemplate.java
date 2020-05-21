@@ -422,7 +422,8 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
     private void printDefaultValue( StringBuilder c, Object pfield, L line ) {
         if( !map.ignoreDefaultValue() ) {
             c.append( "acc.accept( " );
-            if( ClassUtils.isPrimitiveOrWrapper( pfield.getClass() ) ) c.append( pfield );
+            if( pfield == null ) c.append( "( Object ) null" );
+            else if( ClassUtils.isPrimitiveOrWrapper( pfield.getClass() ) ) c.append( pfield );
             else map.function( c, line.function, () -> c.append( "\"" ).append( pfield ).append( "\"" ) );
             c.append( " );\n" );
         } else c.append( "{}\n" );
