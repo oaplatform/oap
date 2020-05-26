@@ -257,9 +257,21 @@ public class Binder {
         return marshal( unmarshal( clazz, json ) );
     }
 
+    public String canonicalizeWithDefaultPrettyPrinter( Class<?> clazz, String json ) {
+        return marshalWithDefaultPrettyPrinter( unmarshal( clazz, json ) );
+    }
+
     public String marshal( Object value ) {
         try {
             return mapper.writeValueAsString( value );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
+    }
+
+    public String marshalWithDefaultPrettyPrinter( Object value ) {
+        try {
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );
         } catch( IOException e ) {
             throw new JsonException( e );
         }

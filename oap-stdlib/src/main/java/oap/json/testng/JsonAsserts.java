@@ -128,8 +128,8 @@ public class JsonAsserts {
         }
 
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
-            assertString( Binder.json.canonicalize( clazz, actual ) )
-                .isEqualTo( Binder.json.canonicalize( clazz, expected ) );
+            assertString( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
+                .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );
             return this;
         }
 
