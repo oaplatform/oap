@@ -43,13 +43,16 @@ public class ResourcesTest extends Fixtures {
 
     @Test
     public void urls() {
-        List<URL> urls = Resources.urls( getClass().getName(), "txt" );
-        assertThat( urls ).containsOnly( urlOfTestResource( getClass(), "resource.txt" ) );
+        var urls = Resources.urls( getClass().getName(), "txt" );
+        assertThat( urls ).containsOnly(
+            urlOfTestResource( getClass(), "resource.txt" ),
+            urlOfTestResource( getClass(), "test.txt" )
+        );
     }
 
     @Test
     public void readProperties() {
-        Optional<Properties> properties = Resources.readProperties( ResourcesTest.class,
+        var properties = Resources.readProperties( ResourcesTest.class,
             ResourcesTest.class.getSimpleName() + "/resource.properties" );
         assertThat( properties ).isPresent();
         assertThat( properties.get() ).hasSize( 2 );
