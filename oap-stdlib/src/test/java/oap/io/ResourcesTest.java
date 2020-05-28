@@ -61,4 +61,12 @@ public class ResourcesTest extends Fixtures {
         assertThat( paths ).hasSize( 1 );
         assertThat( paths.get( 0 ) ).isDirectory();
     }
+
+    @Test
+    public void testReadResourcesAsString() {
+        assertThat( Resources.readResourcesAsString( getClass(), ResourcesTest.class.getSimpleName() + "/test.txt" ) )
+            .containsOnly( "test\n" );
+        assertThat( Resources.readResourcesAsString( getClass(), "/oap/io/" + ResourcesTest.class.getSimpleName() + "/test.txt" ) )
+            .containsOnly( "test\n" );
+    }
 }

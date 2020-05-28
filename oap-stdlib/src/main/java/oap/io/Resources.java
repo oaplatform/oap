@@ -32,6 +32,7 @@ import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
+import org.apache.commons.collections4.EnumerationUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -99,6 +100,22 @@ public final class Resources {
         }
         var baseName = c.getPackageName();
         return baseName.replace( '.', '/' );
+    }
+
+    public static List<String> readResourcesAsString( Class<?> contextClass, String name ) {
+        var ret = new ArrayList<String>();
+        try {
+            var resourceName = name.startsWith( "/" ) ? name.substring( 1 ) : contextClass.getPackageName().replace( '.', '/' ) + '/' + name;
+            var resources = EnumerationUtils.toList( contextClass.getClassLoader().getResources( resourceName ) );
+            for( var resource : resources ) {
+                try( var is = resource.openStream() ) {
+                    ret.add( Strings.readString( is ) );
+                }
+            }
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+        return ret;
     }
 
     public static Optional<String> readString( Class<?> contextClass, String name ) {

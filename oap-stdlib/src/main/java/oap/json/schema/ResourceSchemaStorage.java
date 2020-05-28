@@ -39,7 +39,6 @@ public final class ResourceSchemaStorage implements SchemaStorage {
 
     @Override
     public String get( String name ) {
-
         var ext = FilenameUtils.getExtension( name );
         var prefix = FilenameUtils.removeExtension( name );
         var fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
