@@ -26,6 +26,7 @@ package oap.json.schema;
 
 import oap.io.Resources;
 import oap.json.Binder;
+import oap.util.Lists;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.ArrayList;
@@ -46,16 +47,16 @@ public final class ResourceSchemaStorage implements SchemaStorage {
         var conf = Resources.readStringOrThrow( getClass(), name );
         if( "yaml".equalsIgnoreCase( ext ) ) conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
 
-        var extConf = Resources.readString( getClass(), prefix + "/" + fileName + ".conf" );
-        var extJson = Resources.readString( getClass(), prefix + "/" + fileName + ".json" );
-        var extYaml = Resources.readString( getClass(), prefix + "/" + fileName + ".yaml" );
+        var extConf = Resources.readResourcesAsString( getClass(), prefix + "/" + fileName + ".conf" );
+        var extJson = Resources.readResourcesAsString( getClass(), prefix + "/" + fileName + ".json" );
+        var extYaml = Resources.readResourcesAsString( getClass(), prefix + "/" + fileName + ".yaml" );
 
         if( extConf.isEmpty() && extJson.isEmpty() && extYaml.isEmpty() ) return conf;
 
         var list = new ArrayList<String>();
-        extConf.ifPresent( list::add );
-        extJson.ifPresent( list::add );
-        extYaml.ifPresent( y -> list.add( Binder.json.marshal( Binder.yaml.unmarshal( Map.class, y ) ) ) );
+        list.addAll( extConf );
+        list.addAll( extJson );
+        list.addAll( Lists.map( extYaml, y -> Binder.json.marshal( Binder.yaml.unmarshal( Map.class, y ) ) ) );
 
 
         return Binder.json.marshal( Binder.hoconWithConfig( false, list )
