@@ -26,11 +26,13 @@ package oap.template;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.StringBuilderPool;
+import oap.concurrent.scheduler.Scheduled;
+import oap.util.Dates;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -65,7 +67,7 @@ public class Engine implements Runnable {
 
 
     public Engine( Path tmpPath ) {
-        this( tmpPath, 1000L * 60 * 60 * 24 * 30 );
+        this( tmpPath, Dates.d( 30 ) );
     }
 
     public Engine( Path tmpPath, long ttl ) {
@@ -141,45 +143,47 @@ public class Engine implements Runnable {
             StringBuilder function = null;
 
             var lines = new ArrayList<Template.Line>();
-            var text = new StringBuilder();
+            try( var sbp = StringBuilderPool.borrowObject() ) {
+                var text = sbp.getObject();
 
-            for( var i = 0; i < template.length(); i++ ) {
-                var ch = template.charAt( i );
-                switch( ch ) {
-                    case '$':
-                        if( variable ) {
-                            variable = false;
+                for( var i = 0; i < template.length(); i++ ) {
+                    var ch = template.charAt( i );
+                    switch( ch ) {
+                        case '$':
+                            if( variable ) {
+                                variable = false;
+                                add( text, ch, function );
+                            } else {
+                                variable = true;
+                            }
+                            break;
+                        case '{':
+                            if( variable )
+                                startVariable( lines, text );
+                            else
+                                add( text, ch, function );
+                            break;
+                        case '}':
+                            if( variable ) {
+                                endVariable( lines, text, function, true );
+                                variable = false;
+                                function = null;
+                            } else add( text, ch, function );
+                            break;
+                        case ';':
+                            if( variable ) {
+                                function = new StringBuilder();
+                            } else {
+                                add( text, ch, function );
+                            }
+                            break;
+                        default:
                             add( text, ch, function );
-                        } else {
-                            variable = true;
-                        }
-                        break;
-                    case '{':
-                        if( variable )
-                            startVariable( lines, text );
-                        else
-                            add( text, ch, function );
-                        break;
-                    case '}':
-                        if( variable ) {
-                            endVariable( lines, text, function, true );
-                            variable = false;
-                            function = null;
-                        } else add( text, ch, function );
-                        break;
-                    case ';':
-                        if( variable ) {
-                            function = new StringBuilder();
-                        } else {
-                            add( text, ch, function );
-                        }
-                        break;
-                    default:
-                        add( text, ch, function );
+                    }
                 }
-            }
 
-            endVariable( lines, text, function, false );
+                endVariable( lines, text, function, false );
+            }
 
             if( lines.size() == 1 && lines.get( 0 ).path == null ) {
                 return new ConstTemplate<>( lines.get( 0 ).defaultValue );
@@ -215,7 +219,7 @@ public class Engine implements Runnable {
             switch( ch ) {
                 case '(' -> args = true;
                 case ')' -> {
-                    String funcName = StringUtils.trim( name.toString() );
+                    var funcName = StringUtils.trim( name.toString() );
                     funcName = builtInFunction.getOrDefault( funcName, funcName );
                     return new Template.Line.Function( funcName,
                         StringUtils.isBlank( arguments ) ? null : arguments.toString() );
