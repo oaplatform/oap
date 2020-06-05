@@ -28,6 +28,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.StringBuilderPool;
 import oap.tools.MemoryClassLoaderJava13;
+import oap.util.Functions;
 import oap.util.Pair;
 import oap.util.Try;
 import org.apache.commons.lang3.ClassUtils;
@@ -82,13 +83,14 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                 + "import oap.concurrent.StringBuilderPool;\n"
                 + "\n"
                 + "import java.util.*;\n"
-                + "import java.util.function.BiFunction;\n"
+                + "import oap.util.Functions.TriFunction;\n"
+                + "import java.util.function.Supplier;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
-                + "public  class " ).append( nameEscaped ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "public  class " ).append( nameEscaped ).append( " implements TriFunction<" ).append( className ).append( ", Map<String, Supplier<String>>, Accumulator, Object> {\n"
                 + "\n"
                 + "   @Override\n"
-                + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
+                + "   public Object apply( " ).append( className ).append( " s, Map<String, Supplier<String>> m, Accumulator acc ) {\n"
                 + "     try(var jbPool = StringBuilderPool.borrowObject()) {\n"
                 + "     var jb = jbPool.getObject();\n"
                 + "\n" );
@@ -114,7 +116,8 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
 
             var fullTemplateName = getClass().getPackage().getName() + "." + nameEscaped;
             var mcl = new MemoryClassLoaderJava13( fullTemplateName, c.toString(), cacheFile );
-            func = ( BiFunction<T, Accumulator<?>, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
+            var triFunc = ( Functions.TriFunction<T, Map<String, Supplier<String>>, Accumulator<?>, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
+            this.func = ( obj, acc ) -> triFunc.apply( obj, mapper, acc );
 
         } catch( Exception e ) {
             log.error( c.toString() );
@@ -190,7 +193,17 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
 
         var m = mapper.get( currentPath );
         if( m != null ) {
-            printDefaultValue( tab( c, tab ), m.get(), line );
+            var mNum = num.incrementAndGet();
+            tab( c, tab ).append( "// mapper\n" );
+            tab( c, tab ).append( "Supplier<String> mapperSupplier" ).append( mNum ).append( " = m.get( \"" ).append( currentPath ).append( "\" );\n" );
+            tab( c, tab ).append( "String mapper" ).append( mNum ).append( " = mapperSupplier" ).append( mNum ).append( ".get();\n" );
+            if( line.function != null ) {
+                tab( c, tab ).append( "String mapperFunction" ).append( mNum ).append( " = " );
+                map.function( c, line.function, () -> c.append( "mapper" ).append( mNum ) ).append( ";\n" );
+            }
+            tab( c, tab ).append( "acc.accept( mapper" );
+            if( line.function != null ) c.append( "Function" );
+            c.append( mNum ).append( " );\n" );
         } else {
 
             int sp = 0;

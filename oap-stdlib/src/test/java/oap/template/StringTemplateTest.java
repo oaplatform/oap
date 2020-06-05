@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static java.util.Collections.emptyMap;
 import static oap.io.Files.ensureDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -181,13 +180,14 @@ public class StringTemplateTest extends Fixtures {
         override.put( "tst.test2.id", "tst.test1.id" );
         override.put( "PRICE", "1.2.3" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}-${PRICE}", override, emptyMap() )
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}-${PRICE}", override, Map.of() )
             .renderString( new Container( test ) ) ).isEqualTo( "id=id1-" );
     }
 
     @Test
     public void mapper() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var templatePath = TestDirectoryFixture.testPath( "test" );
+        Engine engine = new Engine( ensureDirectory( templatePath ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
@@ -196,8 +196,12 @@ public class StringTemplateTest extends Fixtures {
         var mapper = new HashMap<String, Supplier<String>>();
         mapper.put( "tst.test2.id", () -> "new value" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", emptyMap(), mapper )
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", Map.of(), mapper )
             .renderString( new Container( test ) ) ).isEqualTo( "id=new value" );
+
+        mapper.put( "tst.test2.id", () -> "new value 2" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", Map.of(), mapper )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=new value 2" );
     }
 
     @Test
@@ -211,7 +215,7 @@ public class StringTemplateTest extends Fixtures {
         var mapper = new HashMap<String, Supplier<String>>();
         mapper.put( "tst.test2.id", () -> "new value" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id ; urlencode(1)}", emptyMap(), mapper )
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id ; urlencode(1)}", Map.of(), mapper )
             .renderString( new Container( test ) ) ).isEqualTo( "id=new+value" );
     }
 
