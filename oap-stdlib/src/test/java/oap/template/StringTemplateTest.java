@@ -36,7 +36,6 @@ import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,9 +51,9 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void ttl() {
-        Path test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
-        Engine engine = new Engine( test );
-        String clazz = Engine.getName( "test" );
+        var test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
+        var engine = new Engine( test );
+        var clazz = Engine.getHashName( "test" );
         var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
         template.renderString( new EngineTest.Test1() );
@@ -74,14 +73,14 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void loadFromDisk() {
-        Path test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
-        Engine engine = new Engine( test );
-        String clazz = Engine.getName( "test" );
+        var test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
+        var engine = new Engine( test );
+        var clazz = Engine.getHashName( "test" );
         var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
         template.renderString( new EngineTest.Test1() );
 
-        Engine engine2 = new Engine( test );
+        var engine2 = new Engine( test );
 
         var template2 = engine2.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
         template2.renderString( new EngineTest.Test1() );
@@ -89,8 +88,8 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void processWithoutVariables() {
-        Path test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
-        Engine engine = new Engine( test );
+        var test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
+        var engine = new Engine( test );
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
             .isExactlyInstanceOf( ConstTemplate.class );
         assertThat( engine.getTemplate( "test- s%;\\/:", Container.class, "d" )
@@ -99,10 +98,10 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void depth() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "a i/d" );
+        var test = new Tst();
+        var test1 = new Test1( "a i/d" );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp- s%;\\/:", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(0)}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=a i/d" );
@@ -119,16 +118,16 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void otherJoinStrategy() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test4 test4 = new Test4( 320, 50 );
+        var test = new Tst();
+        var test4 = new Test4( 320, 50 );
         test.test4 = test4;
 
         var template = engine.getTemplate( "tmp", Container.class,
             Lists.of( new JavaCTemplate.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ", new JoinAsSingleTemplateStrategy() );
 
-        InvocationAccumulator invAccumulator = new InvocationAccumulator();
+        var invAccumulator = new InvocationAccumulator();
 
         template.render( new Container( test ), invAccumulator );
         assertThat( invAccumulator.count ).isEqualTo( 1 );
@@ -138,15 +137,15 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void alternatives() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "aid" );
+        var test = new Tst();
+        var test1 = new Test1( "aid" );
         test.test1n = new Test1( null, test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2n.test2.id | tst.test1n.test1.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=aid" );
 
-        Test2 test2 = new Test2( "sid" );
+        var test2 = new Test2( "sid" );
         test.test2n = new Test2( null, test2 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2n.test2.id | tst.test1n.test1.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=sid" );
@@ -159,10 +158,10 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void alternatives2() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( null );
+        var test = new Tst();
+        var test1 = new Test1( null );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1.id | tst.test2.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=" );
@@ -170,10 +169,10 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void override() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "id1" );
+        var test = new Tst();
+        var test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
 
         var override = new HashMap<String, String>();
@@ -187,10 +186,10 @@ public class StringTemplateTest extends Fixtures {
     @Test
     public void mapper() {
         var templatePath = TestDirectoryFixture.testPath( "test" );
-        Engine engine = new Engine( ensureDirectory( templatePath ) );
+        var engine = new Engine( ensureDirectory( templatePath ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "id1" );
+        var test = new Tst();
+        var test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
 
         var mapper = new HashMap<String, Supplier<String>>();
@@ -206,10 +205,10 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void mapperWithUrlEncode() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "id1" );
+        var test = new Tst();
+        var test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
 
         var mapper = new HashMap<String, Supplier<String>>();
@@ -221,9 +220,9 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void doubleValue() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
+        var test = new Tst();
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test3.dval}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=" );
 
@@ -235,10 +234,10 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void escape() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "aid" );
+        var test = new Tst();
+        var test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=$${tst.test2.id | tst.test1.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=${tst.test2.id | tst.test1.id}" );
@@ -249,10 +248,10 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void invalidPath() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
-        Tst test = new Tst();
-        Test1 test1 = new Test1( "aid" );
+        var test = new Tst();
+        var test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tstNotFound}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=" );
@@ -267,7 +266,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void map() {
-        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         var map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
 

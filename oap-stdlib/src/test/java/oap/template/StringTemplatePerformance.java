@@ -37,7 +37,7 @@ public class StringTemplatePerformance {
     @Test
     public void cache() {
         Path test = Files.ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
-        String clazz = Engine.getName( "test" );
+        String clazz = Engine.getHashName( "test" );
 
 //        benchmark( "template-compile", 10, () -> {
 //            var engine = new Engine( null );

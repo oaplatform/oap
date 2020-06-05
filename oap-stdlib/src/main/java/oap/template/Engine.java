@@ -31,7 +31,6 @@ import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.StringBuilderPool;
-import oap.concurrent.scheduler.Scheduled;
 import oap.util.Dates;
 import org.apache.commons.lang3.StringUtils;
 
@@ -63,7 +62,7 @@ public class Engine implements Runnable {
 
     public final Path tmpPath;
     public final long ttl;
-    private final Cache<String, Template<?, ?>> templates;
+    private final Cache<String, Template<?, ? extends Template.Line>> templates;
 
 
     public Engine( Path tmpPath ) {
@@ -81,7 +80,7 @@ public class Engine implements Runnable {
         Metrics.gauge( "oap_templates_cache_size", templates, Cache::size );
     }
 
-    public static String getName( String template ) {
+    public static String getHashName( String template ) {
         var hashFunction = Hashing.murmur3_128();
 
         var hash = hashFunction.hashUnencodedChars( template ).asLong();
@@ -92,11 +91,10 @@ public class Engine implements Runnable {
         return "template_" + ( hash >= 0 ? String.valueOf( hash ) : "_" + String.valueOf( hash ).substring( 1 ) );
     }
 
-    public static <TLine extends Template.Line> String getName( List<TLine> pathAndDefault, String delimiter ) {
-        var hashFunction = Hashing.murmur3_32();
+    public static <TLine extends Template.Line> String getHashName( List<TLine> pathAndDefault, String delimiter ) {
+        var hashFunction = Hashing.murmur3_128();
 
-        var hash = hashFunction
-            .newHasher();
+        var hash = hashFunction.newHasher();
 
 
         for( var line : pathAndDefault ) {
@@ -108,6 +106,12 @@ public class Engine implements Runnable {
         return hashToName( hash.hash().asLong() );
     }
 
+    public long getCacheSize() {
+        return templates.size();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @SneakyThrows
     public <T, TLine extends Template.Line> Template<T, TLine> getTemplate( String name, Class<T> clazz,
                                                                             List<TLine> pathAndDefault, String delimiter,
                                                                             TemplateStrategy<TLine> map ) {
@@ -115,7 +119,10 @@ public class Engine implements Runnable {
             return new ConstTemplate<>( pathAndDefault.get( 0 ).defaultValue );
         }
 
-        return new JavaCTemplate<>( name, clazz, pathAndDefault, delimiter, map, emptyMap(), emptyMap(), tmpPath );
+        var id = name + "_" + getHashName( pathAndDefault, delimiter );
+
+        return ( Template<T, TLine> ) templates.get( id, () -> 
+            new JavaCTemplate<>( name, clazz, pathAndDefault, delimiter, map, emptyMap(), emptyMap(), tmpPath ) );
     }
 
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz,
@@ -137,7 +144,7 @@ public class Engine implements Runnable {
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template,
                                                        Map<String, String> overrides, Map<String, Supplier<String>> mapper, TemplateStrategy<Template.Line> map ) {
 
-        var id = name + template;
+        var id = name + "_" + getHashName( template );
         return ( Template<T, Template.Line> ) templates.get( id, () -> {
             var variable = false;
             StringBuilder function = null;
@@ -189,7 +196,7 @@ public class Engine implements Runnable {
                 return new ConstTemplate<>( lines.get( 0 ).defaultValue );
             }
 
-            return new JavaCTemplate<>( name, clazz, lines, null, map, overrides, mapper, tmpPath );
+            return new JavaCTemplate<>( id, clazz, lines, null, map, overrides, mapper, tmpPath );
         } );
     }
 
@@ -244,6 +251,8 @@ public class Engine implements Runnable {
     @Override
     public void run() {
         try {
+            templates.cleanUp();
+
             var now = System.currentTimeMillis();
             Files.walk( tmpPath ).forEach( path -> {
                 try {
