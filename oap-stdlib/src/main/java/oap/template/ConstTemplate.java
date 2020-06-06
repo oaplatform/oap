@@ -24,6 +24,9 @@
 
 package oap.template;
 
+import java.util.Map;
+import java.util.function.Supplier;
+
 public class ConstTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
     private final Object value;
 
@@ -32,14 +35,14 @@ public class ConstTemplate<T, TLine extends Template.Line> implements Template<T
     }
 
     @Override
-    public <R> R render( T source, Accumulator<R> accumulator ) {
+    public <R> R render( T source, Map<String, Supplier<String>> mapper, Accumulator<R> accumulator ) {
         accumulator.accept( value );
 
         return accumulator.get();
     }
 
     @Override
-    public String renderString( T source ) {
+    public String renderString( T source, Map<String, Supplier<String>> mapper ) {
         return String.valueOf( value );
     }
 }

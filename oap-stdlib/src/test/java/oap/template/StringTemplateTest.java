@@ -53,11 +53,12 @@ public class StringTemplateTest extends Fixtures {
     public void ttl() {
         var test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
         var engine = new Engine( test );
-        var clazz = Engine.getHashName( "test" );
-        var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+        var template = engine.getTemplate( "name", EngineTest.Test1.class, "test${tst.test2.i}" );
 
-        template.renderString( new EngineTest.Test1() );
+        template.renderString( new EngineTest.Test1(), Map.of() );
         engine.run();
+
+        var clazz = "name_" + Engine.getHashName( "test${tst.test2.i}" );
 
         assertThat( test.resolve( "oap.template." + clazz + ".java" ) ).exists();
         assertThat( test.resolve( "oap.template." + clazz + ".class" ) ).exists();
@@ -78,12 +79,12 @@ public class StringTemplateTest extends Fixtures {
         var clazz = Engine.getHashName( "test" );
         var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
-        template.renderString( new EngineTest.Test1() );
+        template.renderString( new EngineTest.Test1(), Map.of() );
 
         var engine2 = new Engine( test );
 
         var template2 = engine2.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
-        template2.renderString( new EngineTest.Test1() );
+        template2.renderString( new EngineTest.Test1(), Map.of() );
     }
 
     @Test
@@ -93,7 +94,7 @@ public class StringTemplateTest extends Fixtures {
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
             .isExactlyInstanceOf( ConstTemplate.class );
         assertThat( engine.getTemplate( "test- s%;\\/:", Container.class, "d" )
-            .renderString( new Container( new Tst() ) ) ).isEqualTo( "d" );
+            .renderString( new Container( new Tst() ), Map.of() ) ).isEqualTo( "d" );
     }
 
     @Test
@@ -104,16 +105,16 @@ public class StringTemplateTest extends Fixtures {
         var test1 = new Test1( "a i/d" );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp- s%;\\/:", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(0)}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=a i/d" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a i/d" );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=a i/d" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a i/d" );
 
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(1)}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=a+i%2Fd" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a+i%2Fd" );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode( 1) }" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=a+i%2Fd" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a+i%2Fd" );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(2)}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=a%2Bi%252Fd" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a%2Bi%252Fd" );
     }
 
     @Test
@@ -129,7 +130,7 @@ public class StringTemplateTest extends Fixtures {
 
         var invAccumulator = new InvocationAccumulator();
 
-        template.render( new Container( test ), invAccumulator );
+        template.render( new Container( test ), Map.of(), invAccumulator );
         assertThat( invAccumulator.count ).isEqualTo( 1 );
         assertThat( invAccumulator.get() ).isEqualTo( "320xx50" );
 
@@ -143,12 +144,12 @@ public class StringTemplateTest extends Fixtures {
         var test1 = new Test1( "aid" );
         test.test1n = new Test1( null, test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2n.test2.id | tst.test1n.test1.id}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=aid" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=aid" );
 
         var test2 = new Test2( "sid" );
         test.test2n = new Test2( null, test2 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2n.test2.id | tst.test1n.test1.id}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=sid" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=sid" );
     }
 
     @Test
@@ -164,7 +165,7 @@ public class StringTemplateTest extends Fixtures {
         var test1 = new Test1( null );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1.id | tst.test2.id}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=" );
     }
 
     @Test
@@ -179,8 +180,8 @@ public class StringTemplateTest extends Fixtures {
         override.put( "tst.test2.id", "tst.test1.id" );
         override.put( "PRICE", "1.2.3" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}-${PRICE}", override, Map.of() )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=id1-" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}-${PRICE}", override )
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=id1-" );
     }
 
     @Test
@@ -193,14 +194,14 @@ public class StringTemplateTest extends Fixtures {
         test.test1 = Optional.of( test1 );
 
         var mapper = new HashMap<String, Supplier<String>>();
-        mapper.put( "tst.test2.id", () -> "new value" );
+        mapper.put( "my.var", () -> "new value" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", Map.of(), mapper )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=new value" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${my.var}" )
+            .renderString( new Container( test ), mapper ) ).isEqualTo( "id=new value" );
 
-        mapper.put( "tst.test2.id", () -> "new value 2" );
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", Map.of(), mapper )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=new value 2" );
+        mapper.put( "my.var", () -> "new value 2" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${my.var}" )
+            .renderString( new Container( test ), mapper ) ).isEqualTo( "id=new value 2" );
     }
 
     @Test
@@ -212,10 +213,10 @@ public class StringTemplateTest extends Fixtures {
         test.test1 = Optional.of( test1 );
 
         var mapper = new HashMap<String, Supplier<String>>();
-        mapper.put( "tst.test2.id", () -> "new value" );
+        mapper.put( "my.var", () -> "new value" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id ; urlencode(1)}", Map.of(), mapper )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=new+value" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${my.var; urlencode(1)}" )
+            .renderString( new Container( test ), mapper ) ).isEqualTo( "id=new+value" );
     }
 
     @Test
@@ -224,12 +225,12 @@ public class StringTemplateTest extends Fixtures {
 
         var test = new Tst();
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test3.dval}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=" );
 
         Test3 test3 = new Test3( 10.0 );
         test.test3 = Optional.of( test3 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test3.dval}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=10.0" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=10.0" );
     }
 
     @Test
@@ -240,10 +241,10 @@ public class StringTemplateTest extends Fixtures {
         var test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=$${tst.test2.id | tst.test1.id}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=${tst.test2.id | tst.test1.id}" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=${tst.test2.id | tst.test1.id}" );
 
         assertThat( engine.getTemplate( "tmp1", Container.class, "\"';\\n\\t\\r" )
-            .renderString( new Container( test ) ) ).isEqualTo( "\"';\\n\\t\\r" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "\"';\\n\\t\\r" );
     }
 
     @Test
@@ -254,13 +255,13 @@ public class StringTemplateTest extends Fixtures {
         var test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tstNotFound}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=" );
 
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2NotFound.id}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=" );
 
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1.idNotFound}" )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=" );
 
     }
 
@@ -271,7 +272,7 @@ public class StringTemplateTest extends Fixtures {
         var map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
 
         assertThat( engine.getTemplate( "tmp", Map.class, "id=${a},id2=${b},id3=${c ((1)}" )
-            .renderString( map ) ).isEqualTo( "id=1,id2=test,id3=0.0" );
+            .renderString( map, Map.of() ) ).isEqualTo( "id=1,id2=test,id3=0.0" );
     }
 
     private static class InvocationAccumulator extends StringAccumulator {

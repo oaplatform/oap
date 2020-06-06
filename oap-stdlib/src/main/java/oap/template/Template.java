@@ -29,17 +29,18 @@ import lombok.ToString;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Map;
+import java.util.function.Supplier;
 
 public interface Template<T, L extends Template.Line> {
     Template<Object, Line> EMPTY = new Template<>() {
-        @Override
-        public Object render( Object source, Accumulator accumulator ) {
+        public <R> R render( Object source, Map<String, Supplier<String>> mapper, Accumulator<R> accumulator ) {
             accumulator.accept( source );
             return accumulator.get();
         }
 
         @Override
-        public String renderString( Object source ) {
+        public String renderString( Object source, Map<String, Supplier<String>> mapper ) {
             return String.valueOf( source );
         }
     };
@@ -49,9 +50,13 @@ public interface Template<T, L extends Template.Line> {
         return ( Template<T, Line> ) EMPTY;
     }
 
-    <R> R render( T source, Accumulator<R> accumulator );
+    <R> R render( T source, Map<String, Supplier<String>> mapper, Accumulator<R> accumulator );
 
-    String renderString( T source );
+    String renderString( T source, Map<String, Supplier<String>> mapper );
+    
+    @Retention( RetentionPolicy.RUNTIME )
+    @interface Nullable {
+    }
 
     @ToString
     @EqualsAndHashCode
@@ -91,9 +96,5 @@ public interface Template<T, L extends Template.Line> {
                 this.parameters = parameters;
             }
         }
-    }
-
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
     }
 }

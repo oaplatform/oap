@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -56,19 +55,17 @@ import static oap.util.Pair.__;
 public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L> {
     private static final String math = "/*+-%";
     private final Map<String, String> overrides;
-    private final Map<String, Supplier<String>> mapper;
-    private BiFunction<T, Accumulator<?>, ?> func;
-    private TemplateStrategy<L> map;
+    private final Functions.TriFunction<T, Map<String, Supplier<String>>, Accumulator<?>, ?> func;
+    private final TemplateStrategy<L> map;
 
     @SneakyThrows
     @SuppressWarnings( "unchecked" )
     JavaCTemplate( String name, Class<T> clazz, List<L> pathAndDefault, String delimiter, TemplateStrategy<L> map,
-                   Map<String, String> overrides, Map<String, Supplier<String>> mapper,
+                   Map<String, String> overrides,
                    Path cacheFile ) {
         String nameEscaped = name.replaceAll( "[\\s%\\-;\\\\/:*?\"<>|]", "_" );
         this.map = map;
         this.overrides = overrides;
-        this.mapper = mapper;
         var c = new StringBuilder();
 
         try {
@@ -89,10 +86,10 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                 + "\n"
                 + "public  class " ).append( nameEscaped ).append( " implements TriFunction<" ).append( className ).append( ", Map<String, Supplier<String>>, Accumulator, Object> {\n"
                 + "\n"
-                + "   @Override\n"
-                + "   public Object apply( " ).append( className ).append( " s, Map<String, Supplier<String>> m, Accumulator acc ) {\n"
-                + "     try(var jbPool = StringBuilderPool.borrowObject()) {\n"
-                + "     var jb = jbPool.getObject();\n"
+                + "  @Override\n"
+                + "  public Object apply( " ).append( className ).append( " s, Map<String, Supplier<String>> m, Accumulator acc ) {\n"
+                + "    try(var jbPool = StringBuilderPool.borrowObject()) {\n"
+                + "      var jb = jbPool.getObject();\n"
                 + "\n" );
 
             int size = pathAndDefault.size();
@@ -101,11 +98,12 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
             }
 
 
-            c.append( "\n"
-                + "     return acc.get();\n"
-                + "     }\n"
-                + "   }\n"
-                + "}" );
+            c.append( """
+
+                      return acc.get();
+                    }
+                  }
+                }""".stripIndent() );
 
             var line = new AtomicInteger( 0 );
             log.trace( "\n{}", new BufferedReader( new StringReader( c.toString() ) )
@@ -116,8 +114,7 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
 
             var fullTemplateName = getClass().getPackage().getName() + "." + nameEscaped;
             var mcl = new MemoryClassLoaderJava13( fullTemplateName, c.toString(), cacheFile );
-            var triFunc = ( Functions.TriFunction<T, Map<String, Supplier<String>>, Accumulator<?>, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
-            this.func = ( obj, acc ) -> triFunc.apply( obj, mapper, acc );
+            func = ( Functions.TriFunction<T, Map<String, Supplier<String>>, Accumulator<?>, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
 
         } catch( Exception e ) {
             log.error( c.toString() );
@@ -128,7 +125,7 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
     private void addPath( Class<T> clazz, L line, String delimiter, StringBuilder c,
                           AtomicInteger num, FieldStack fields,
                           boolean last ) throws NoSuchMethodException, NoSuchFieldException {
-        var tab = new AtomicInteger( 5 );
+        var tab = new AtomicInteger( 6 );
 
         c.append( "\n" );
         tab( c, tab ).append( "// " ).append(
@@ -141,8 +138,32 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
             if( pathExists( clazz, line ) ) {
                 buildPath( clazz, line, delimiter, c, num, fields, last, tab, false );
             } else {
-                log.warn( "path {} not found", line );
-                map.pathNotFound( line.path );
+                if( map.ifPathNotFoundGetFromMapper() ) {
+                    var mNum = num.incrementAndGet();
+                    tab( c, tab ).append( "// mapper\n" );
+                    tab( c, tab ).append( "Supplier<String> mapperSupplier" ).append( mNum ).append( " = m.get( \"" ).append( line.path ).append( "\" );\n" );
+                    tab( c, tab ).append( "if( mapperSupplier" ).append( mNum ).append( " == null ) {\n" );
+                    tabInc( tab );
+                    tab( c, tab );
+                    map.pathNotFound( c, line.path ).append( "\n" );
+                    tabDec( tab );
+                    tab( c, tab ).append( "} else {\n" );
+                    tabInc( tab );
+                    __tab( c, tab ).append( "String mapper" ).append( mNum ).append( " = mapperSupplier" ).append( mNum ).append( ".get();\n" );
+                    if( line.function != null ) {
+                        __tab( c, tab ).append( "String mapperFunction" ).append( mNum ).append( " = " );
+                        map.function( c, line.function, () -> c.append( "mapper" ).append( mNum ) ).append( ";\n" );
+                    }
+                    __tab( c, tab ).append( "acc.accept( mapper" );
+                    if( line.function != null ) c.append( "Function" );
+                    c.append( mNum ).append( " );\n" );
+                    tabDec( tab );
+                    tab( c, tab ).append( "}\n" );
+                } else {
+                    log.warn( "path {} not found", line );
+                    tab( c, tab );
+                    map.pathNotFound( c, line.path ).append( "\n" );
+                }
             }
         }
     }
@@ -191,147 +212,147 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                             String[] orPath, int orIndex, L line ) throws NoSuchFieldException, NoSuchMethodException {
         var currentPath = orPath[orIndex].trim();
 
-        var m = mapper.get( currentPath );
-        if( m != null ) {
-            var mNum = num.incrementAndGet();
-            tab( c, tab ).append( "// mapper\n" );
-            tab( c, tab ).append( "Supplier<String> mapperSupplier" ).append( mNum ).append( " = m.get( \"" ).append( currentPath ).append( "\" );\n" );
-            tab( c, tab ).append( "String mapper" ).append( mNum ).append( " = mapperSupplier" ).append( mNum ).append( ".get();\n" );
-            if( line.function != null ) {
-                tab( c, tab ).append( "String mapperFunction" ).append( mNum ).append( " = " );
-                map.function( c, line.function, () -> c.append( "mapper" ).append( mNum ) ).append( ";\n" );
-            }
-            tab( c, tab ).append( "acc.accept( mapper" );
-            if( line.function != null ) c.append( "Function" );
-            c.append( mNum ).append( " );\n" );
-        } else {
+//        var m = mapper.get( currentPath );
+//        if( m != null ) {
+//            var mNum = num.incrementAndGet();
+//            tab( c, tab ).append( "// mapper\n" );
+//            tab( c, tab ).append( "Supplier<String> mapperSupplier" ).append( mNum ).append( " = m.get( \"" ).append( currentPath ).append( "\" );\n" );
+//            tab( c, tab ).append( "String mapper" ).append( mNum ).append( " = mapperSupplier" ).append( mNum ).append( ".get();\n" );
+//            if( line.function != null ) {
+//                tab( c, tab ).append( "String mapperFunction" ).append( mNum ).append( " = " );
+//                map.function( c, line.function, () -> c.append( "mapper" ).append( mNum ) ).append( ";\n" );
+//            }
+//            tab( c, tab ).append( "acc.accept( mapper" );
+//            if( line.function != null ) c.append( "Function" );
+//            c.append( mNum ).append( " );\n" );
+//        } else {
 
-            int sp = 0;
-            StringBuilder newPath = new StringBuilder( "s." );
-            MutableObject<FieldInfo> lc = new MutableObject<>( clazz );
-            var psp = new AtomicInteger( 0 );
-            var opts = new AtomicInteger( 0 );
-            while( sp >= 0 ) {
-                sp = currentPath.indexOf( '.', sp + 1 );
+        int sp = 0;
+        StringBuilder newPath = new StringBuilder( "s." );
+        MutableObject<FieldInfo> lc = new MutableObject<>( clazz );
+        var psp = new AtomicInteger( 0 );
+        var opts = new AtomicInteger( 0 );
+        while( sp >= 0 ) {
+            sp = currentPath.indexOf( '.', sp + 1 );
 
-                if( sp > 0 ) {
-                    Pair<FieldInfo, String> pnp = fields.computeIfAbsent( currentPath.substring( 0, sp ), Try.map( ( key ) -> {
-                        String prefix = StringUtils.trim( psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "" );
-                        String suffix = StringUtils.trim( key.substring( psp.get() ) );
+            if( sp > 0 ) {
+                Pair<FieldInfo, String> pnp = fields.computeIfAbsent( currentPath.substring( 0, sp ), Try.map( ( key ) -> {
+                    String prefix = StringUtils.trim( psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "" );
+                    String suffix = StringUtils.trim( key.substring( psp.get() ) );
 
-                        boolean optional = lc.getValue().isOptional();
-                        boolean nullable = lc.getValue().isNullable();
-                        var declaredField = getDeclaredFieldOrFunctionType(
-                            optional ? lc.getValue().getOptionalArgumentType() : lc.getValue(), suffix );
+                    boolean optional = lc.getValue().isOptional();
+                    boolean nullable = lc.getValue().isNullable();
+                    var declaredField = getDeclaredFieldOrFunctionType(
+                        optional ? lc.getValue().getOptionalArgumentType() : lc.getValue(), suffix );
 
-                        var classType = declaredField.toJavaType();
+                    var classType = declaredField.toJavaType();
 
-                        String field = "field" + num.incrementAndGet();
+                    String field = "field" + num.incrementAndGet();
 
-                        Optional<Pair<FieldInfo, String>> rfP = Optional.ofNullable( fields.get( prefix ) );
-                        String rf = rfP.map( p -> p._2 + ( optional ? ".get()"
-                            : "" ) + "." + suffix ).orElse( "s." + key );
+                    Optional<Pair<FieldInfo, String>> rfP = Optional.ofNullable( fields.get( prefix ) );
+                    String rf = rfP.map( p -> p._2 + ( optional ? ".get()"
+                        : "" ) + "." + suffix ).orElse( "s." + key );
 
-                        if( optional ) {
-                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( ".isPresent() ) {\n" );
-                            opts.incrementAndGet();
-                            tabInc( tab );
-                            fields.up();
-                        } else if( nullable ) {
-                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( " != null ) {\n" );
-                            opts.incrementAndGet();
-                            tabInc( tab );
-                            fields.up();
-                        }
-
-                        tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " ).append( rf ).append( ";\n" );
-
-                        lc.setValue( declaredField );
-                        return __( declaredField, field );
-                    } ) );
-                    newPath = new StringBuilder( pnp._2 + "." );
-                    lc.setValue( pnp._1 );
-                    psp.set( sp + 1 );
-                } else {
-                    newPath.append( currentPath.substring( psp.get() ) );
-                }
-            }
-
-            var in = newPath.toString().lastIndexOf( '.' );
-            String pField = in > 0 ? newPath.substring( 0, in ) : newPath.toString();
-            String cField = newPath.substring( in + 1 );
-
-            var isJoin = cField.startsWith( "{" );
-            String[] cFields = isJoin
-                ? StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[] { cField };
-
-            FieldInfo parentClass = lc.getValue();
-            var isOptionalParent = parentClass.isOptional() && !cField.startsWith( "isPresent" );
-            var isNullableParent = parentClass.isNullable();
-            String optField = null;
-            if( isOptionalParent || isNullableParent ) {
-                opts.incrementAndGet();
-                tab( c, tab ).append( "if( " ).append( pField );
-                if( isOptionalParent ) c.append( ".isPresent() ) {\n" );
-                else c.append( " != null ) {\n" );
-                fields.up();
-                tabInc( tab );
-
-                if( isOptionalParent )
-                    parentClass = parentClass.getOptionalArgumentType();
-                optField = "opt" + num.incrementAndGet();
-                tab( c, tab ).append( " " ).append( parentClass.toJavaType() ).append( " " ).append( optField ).append( " = " ).append( pField );
-                if( isOptionalParent ) c.append( ".get();\n" );
-                else c.append( ";\n" );
-            }
-
-
-            for( int i = 0; i < cFields.length; i++ ) {
-                cField = StringUtils.trim( cFields[i] );
-
-                Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
-                if( cField.startsWith( "\"" ) ) {
-                    tab( c.append( "\n" ), tab );
-                    map.map( c, new FieldInfo( String.class ), line, cField, delimiter, join );
-                } else {
-                    var isParentMap = parentClass.isMap();
-
-                    var ff = ( isParentMap ? "get( \"" + StringUtils.replace( cField, "((", "(" ) + "\" )" : cField );
-
-                    if( isOptionalParent || isNullableParent ) {
-                        newPath = new StringBuilder( in > 0 ? optField + "." + ff : cField );
-                    } else {
-                        newPath = new StringBuilder( in > 0 ? pField + "." + ff : "s." + ff );
+                    if( optional ) {
+                        tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( ".isPresent() ) {\n" );
+                        opts.incrementAndGet();
+                        tabInc( tab );
+                        fields.up();
+                    } else if( nullable ) {
+                        tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( " != null ) {\n" );
+                        opts.incrementAndGet();
+                        tabInc( tab );
+                        fields.up();
                     }
 
-                    var cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
+                    tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " ).append( rf ).append( ";\n" );
 
-                    add( c, num, newPath.toString(), cc, parentClass, true, tab, orPath, orIndex,
-                        clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
-                }
-            }
-
-
-            c.append( "\n" );
-
-            for( int i = 0; i < opts.get(); i++ ) {
-                fields.down();
-                tabDec( tab );
-                tab( c, tab ).append( "} else {\n" );
-                fields.up();
-                tabInc( tab );
-
-                if( orIndex + 1 < orPath.length ) {
-                    addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
-                } else {
-                    printDefaultValue( c, line.defaultValue, line );
-                    if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
-                }
-                tabDec( tab );
-                fields.down();
-                tab( c, tab ).append( "}\n" );
+                    lc.setValue( declaredField );
+                    return __( declaredField, field );
+                } ) );
+                newPath = new StringBuilder( pnp._2 + "." );
+                lc.setValue( pnp._1 );
+                psp.set( sp + 1 );
+            } else {
+                newPath.append( currentPath.substring( psp.get() ) );
             }
         }
+
+        var in = newPath.toString().lastIndexOf( '.' );
+        String pField = in > 0 ? newPath.substring( 0, in ) : newPath.toString();
+        String cField = newPath.substring( in + 1 );
+
+        var isJoin = cField.startsWith( "{" );
+        String[] cFields = isJoin
+            ? StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[] { cField };
+
+        FieldInfo parentClass = lc.getValue();
+        var isOptionalParent = parentClass.isOptional() && !cField.startsWith( "isPresent" );
+        var isNullableParent = parentClass.isNullable();
+        String optField = null;
+        if( isOptionalParent || isNullableParent ) {
+            opts.incrementAndGet();
+            tab( c, tab ).append( "if( " ).append( pField );
+            if( isOptionalParent ) c.append( ".isPresent() ) {\n" );
+            else c.append( " != null ) {\n" );
+            fields.up();
+            tabInc( tab );
+
+            if( isOptionalParent )
+                parentClass = parentClass.getOptionalArgumentType();
+            optField = "opt" + num.incrementAndGet();
+            tab( c, tab ).append( " " ).append( parentClass.toJavaType() ).append( " " ).append( optField ).append( " = " ).append( pField );
+            if( isOptionalParent ) c.append( ".get();\n" );
+            else c.append( ";\n" );
+        }
+
+
+        for( int i = 0; i < cFields.length; i++ ) {
+            cField = StringUtils.trim( cFields[i] );
+
+            Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
+            if( cField.startsWith( "\"" ) ) {
+                tab( c.append( "\n" ), tab );
+                map.map( c, new FieldInfo( String.class ), line, cField, delimiter, join );
+            } else {
+                var isParentMap = parentClass.isMap();
+
+                var ff = ( isParentMap ? "get( \"" + StringUtils.replace( cField, "((", "(" ) + "\" )" : cField );
+
+                if( isOptionalParent || isNullableParent ) {
+                    newPath = new StringBuilder( in > 0 ? optField + "." + ff : cField );
+                } else {
+                    newPath = new StringBuilder( in > 0 ? pField + "." + ff : "s." + ff );
+                }
+
+                var cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
+
+                add( c, num, newPath.toString(), cc, true, tab, orPath, orIndex,
+                    clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
+            }
+        }
+
+
+        c.append( "\n" );
+
+        for( int i = 0; i < opts.get(); i++ ) {
+            fields.down();
+            tabDec( tab );
+            tab( c, tab ).append( "} else {\n" );
+            fields.up();
+            tabInc( tab );
+
+            if( orIndex + 1 < orPath.length ) {
+                addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
+            } else {
+                printDefaultValue( c, line.defaultValue, line );
+                if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
+            }
+            tabDec( tab );
+            fields.down();
+            tab( c, tab ).append( "}\n" );
+        }
+//        }
     }
 
     private void tabInc( AtomicInteger tab ) {
@@ -340,6 +361,10 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
 
     private void tabDec( AtomicInteger tab ) {
         tab.getAndUpdate( v -> v - 2 );
+    }
+
+    private StringBuilder __tab( StringBuilder sb, AtomicInteger tab ) {
+        return tab( sb, tab );
     }
 
     private StringBuilder tab( StringBuilder sb, AtomicInteger tab ) {
@@ -377,7 +402,7 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
         }
     }
 
-    private void add( StringBuilder c, AtomicInteger num, String newPath, FieldInfo cc, FieldInfo parentType,
+    private void add( StringBuilder c, AtomicInteger num, String newPath, FieldInfo cc,
                       boolean nullable, AtomicInteger tab,
                       String[] orPath, int orIndex, FieldInfo clazz, String delimiter,
                       FieldStack fields, boolean last, L line, Optional<Join> join ) throws NoSuchFieldException, NoSuchMethodException {
@@ -396,7 +421,7 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                     tab( c, tab ).append( "if( " ).append( pfield ).append( " != null ) {\n" );
                 }
                 fields.up();
-                add( c, num, pfield + ".get()", cc1, parentType, false, new AtomicInteger( tab.get() + 2 ),
+                add( c, num, pfield + ".get()", cc1, false, new AtomicInteger( tab.get() + 2 ),
                     orPath, orIndex, clazz, delimiter, fields, last, line, join );
                 fields.down();
                 tab( c, tab ).append( "} else {\n" );
@@ -444,14 +469,14 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <R> R render( T source, Accumulator<R> accumulator ) {
-        return ( R ) func.apply( source, accumulator );
+    public <R> R render( T source, Map<String, Supplier<String>> mapper, Accumulator<R> accumulator ) {
+        return ( R ) func.apply( source, mapper, accumulator );
     }
 
     @Override
-    public String renderString( T source ) {
+    public String renderString( T source, Map<String, Supplier<String>> mapper ) {
         try( var sbPool = StringBuilderPool.borrowObject() ) {
-            return render( source, new StringAccumulator( sbPool.getObject() ) );
+            return render( source, mapper, new StringAccumulator( sbPool.getObject() ) );
         }
     }
 
@@ -462,16 +487,14 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
             stack.push( new HashMap<>() );
         }
 
-        public FieldStack up() {
+        public void up() {
             stack.push( new HashMap<>( stack.peek() ) );
 
-            return this;
         }
 
-        public FieldStack down() {
+        public void down() {
             stack.pop();
 
-            return this;
         }
 
         public Pair<FieldInfo, String> computeIfAbsent( String key, Function<String, Pair<FieldInfo, String>> func ) {

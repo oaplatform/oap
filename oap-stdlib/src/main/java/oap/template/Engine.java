@@ -42,9 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-import static java.util.Collections.emptyMap;
 import static oap.template.Template.Line.line;
 import static oap.template.TemplateStrategy.DEFAULT;
 
@@ -121,8 +119,15 @@ public class Engine implements Runnable {
 
         var id = name + "_" + getHashName( pathAndDefault, delimiter );
 
-        return ( Template<T, TLine> ) templates.get( id, () -> 
-            new JavaCTemplate<>( name, clazz, pathAndDefault, delimiter, map, emptyMap(), emptyMap(), tmpPath ) );
+        var func = ( Template<T, TLine> ) templates.getIfPresent( id );
+        if( func == null ) {
+            synchronized( id.intern() ) {
+                func = ( Template<T, TLine> ) templates.get( id, () ->
+                    new JavaCTemplate<>( id, clazz, pathAndDefault, delimiter, map, Map.of(), tmpPath ) );
+            }
+        }
+
+        return func;
     }
 
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz,
@@ -131,73 +136,80 @@ public class Engine implements Runnable {
     }
 
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template ) {
-        return getTemplate( name, clazz, template, emptyMap(), emptyMap() );
+        return getTemplate( name, clazz, template, Map.of(), DEFAULT );
     }
 
-    public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template,
-                                                       Map<String, String> overrides, Map<String, Supplier<String>> mapper ) {
-        return getTemplate( name, clazz, template, overrides, mapper, DEFAULT );
+    public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template, Map<String, String> overrides ) {
+        return getTemplate( name, clazz, template, overrides, DEFAULT );
     }
 
     @SuppressWarnings( "unchecked" )
     @SneakyThrows
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template,
-                                                       Map<String, String> overrides, Map<String, Supplier<String>> mapper, TemplateStrategy<Template.Line> map ) {
+                                                       Map<String, String> overrides, TemplateStrategy<Template.Line> map ) {
 
         var id = name + "_" + getHashName( template );
-        return ( Template<T, Template.Line> ) templates.get( id, () -> {
-            var variable = false;
-            StringBuilder function = null;
 
-            var lines = new ArrayList<Template.Line>();
-            try( var sbp = StringBuilderPool.borrowObject() ) {
-                var text = sbp.getObject();
+        var func = ( Template<T, Template.Line> ) templates.getIfPresent( id );
+        if( func == null ) {
+            synchronized( id.intern() ) {
+                func = ( Template<T, Template.Line> ) templates.get( id, () -> {
+                    var variable = false;
+                    StringBuilder function = null;
 
-                for( var i = 0; i < template.length(); i++ ) {
-                    var ch = template.charAt( i );
-                    switch( ch ) {
-                        case '$':
-                            if( variable ) {
-                                variable = false;
-                                add( text, ch, function );
-                            } else {
-                                variable = true;
+                    var lines = new ArrayList<Template.Line>();
+                    try( var sbp = StringBuilderPool.borrowObject() ) {
+                        var text = sbp.getObject();
+
+                        for( var i = 0; i < template.length(); i++ ) {
+                            var ch = template.charAt( i );
+                            switch( ch ) {
+                                case '$':
+                                    if( variable ) {
+                                        variable = false;
+                                        add( text, ch, function );
+                                    } else {
+                                        variable = true;
+                                    }
+                                    break;
+                                case '{':
+                                    if( variable )
+                                        startVariable( lines, text );
+                                    else
+                                        add( text, ch, function );
+                                    break;
+                                case '}':
+                                    if( variable ) {
+                                        endVariable( lines, text, function, true );
+                                        variable = false;
+                                        function = null;
+                                    } else add( text, ch, function );
+                                    break;
+                                case ';':
+                                    if( variable ) {
+                                        function = new StringBuilder();
+                                    } else {
+                                        add( text, ch, function );
+                                    }
+                                    break;
+                                default:
+                                    add( text, ch, function );
                             }
-                            break;
-                        case '{':
-                            if( variable )
-                                startVariable( lines, text );
-                            else
-                                add( text, ch, function );
-                            break;
-                        case '}':
-                            if( variable ) {
-                                endVariable( lines, text, function, true );
-                                variable = false;
-                                function = null;
-                            } else add( text, ch, function );
-                            break;
-                        case ';':
-                            if( variable ) {
-                                function = new StringBuilder();
-                            } else {
-                                add( text, ch, function );
-                            }
-                            break;
-                        default:
-                            add( text, ch, function );
+                        }
+
+                        endVariable( lines, text, function, false );
                     }
-                }
 
-                endVariable( lines, text, function, false );
+                    if( lines.size() == 1 && lines.get( 0 ).path == null ) {
+                        return new ConstTemplate<>( lines.get( 0 ).defaultValue );
+                    }
+
+                    return new JavaCTemplate<>( id, clazz, lines, null, map, overrides, tmpPath );
+                } );
             }
+        }
 
-            if( lines.size() == 1 && lines.get( 0 ).path == null ) {
-                return new ConstTemplate<>( lines.get( 0 ).defaultValue );
-            }
-
-            return new JavaCTemplate<>( id, clazz, lines, null, map, overrides, mapper, tmpPath );
-        } );
+        return func;
     }
 
     private void add( StringBuilder text, char ch, StringBuilder function ) {

@@ -52,7 +52,7 @@ public class EngineTest extends Fixtures {
     @Test
     public void processString() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testStr", "testStr", "d" ) ), " " )
-            .renderString( new Test1( "val" ) ) ).isEqualTo( "val" );
+            .renderString( new Test1( "val" ), Map.of() ) ).isEqualTo( "val" );
     }
 
     @Test
@@ -60,19 +60,19 @@ public class EngineTest extends Fixtures {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testStr", null, "d" ) ), " " ) )
             .isExactlyInstanceOf( ConstTemplate.class );
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testStr", null, "d" ) ), " " )
-            .renderString( new Test1( "val" ) ) ).isEqualTo( "d" );
+            .renderString( new Test1( "val" ), Map.of() ) ).isEqualTo( "d" );
     }
 
     @Test
     public void processEmptyPath() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testStr", null, "d" ) ), " " )
-            .renderString( new Test1( "val" ) ) ).isEqualTo( "d" );
+            .renderString( new Test1( "val" ), Map.of() ) ).isEqualTo( "d" );
     }
 
     @Test
     public void processStringReload() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testStr", "testStr", "d" ) ), " " )
-            .renderString( new Test1( "val" ) ) ).isEqualTo( "val" );
+            .renderString( new Test1( "val" ), Map.of() ) ).isEqualTo( "val" );
     }
 
     @Test
@@ -80,25 +80,25 @@ public class EngineTest extends Fixtures {
         engine.getTemplate( "test1", Test1.class, List.of(
             line( "testStr", "testStr", "d1" ),
             line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) );
+            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ), Map.of() );
 
 
         assertThat( engine.getTemplate( "test2", Test1.class, List.of( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "d1 d2" );
+            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ), Map.of() ) ).isEqualTo( "d1 d2" );
         assertThat( engine.getTemplate( "test3", Test1.class, List.of( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "d1 d2" );
+            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ), Map.of() ) ).isEqualTo( "d1 d2" );
     }
 
     @Test
     public void processNullDefault() {
         assertThat( engine.getTemplate( "test2", Test1.class, List.of( line( "testStr", "testStr", null ) ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "null" );
+            .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ), Map.of() ) ).isEqualTo( "null" );
     }
 
     @Test
     public void processArray() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "array", "array", emptyList() ) ), " " )
-            .renderString( new Test1( List.of( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
+            .renderString( new Test1( List.of( "1", "2" ) ), Map.of() ) ).isEqualTo( "[1,2]" );
     }
 
     @Test
@@ -106,39 +106,39 @@ public class EngineTest extends Fixtures {
         Test1 source = new Test1( List.of( "1", "2" ) );
         source.set = Sets.of( "4", "5" );
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "array", "set", emptyList() ) ), " " )
-            .renderString( source ) ).isEqualTo( "[4,5]" );
+            .renderString( source, Map.of() ) ).isEqualTo( "[4,5]" );
     }
 
     @Test
     public void processOptString() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "optStr", "optStr", "d" ) ), " " )
-            .renderString( new Test1( Optional.of( "test" ) ) ) ).isEqualTo( "test" );
+            .renderString( new Test1( Optional.of( "test" ) ), Map.of() ) ).isEqualTo( "test" );
     }
 
     @Test
     public void or() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "optStr", "optStr|testStr", "d" ) ), " " )
-            .renderString( new Test1( Optional.of( "test1" ) ) ) ).isEqualTo( "test1" );
+            .renderString( new Test1( Optional.of( "test1" ) ), Map.of() ) ).isEqualTo( "test1" );
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "optStr", "optStr|testStr", "d" ) ), " " )
-            .renderString( new Test1( "test" ) ) ).isEqualTo( "test" );
+            .renderString( new Test1( "test" ), Map.of() ) ).isEqualTo( "test" );
     }
 
     @Test
     public void processStringNull() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testStr", "testStr", "d" ) ), " " )
-            .renderString( new Test1( ( String ) null ) ) ).isEqualTo( "d" );
+            .renderString( new Test1( ( String ) null ), Map.of() ) ).isEqualTo( "d" );
     }
 
     @Test
     public void processInt() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testInt", "testInt", 1 ) ), " " )
-            .renderString( new Test1( 235 ) ) ).isEqualTo( "235" );
+            .renderString( new Test1( 235 ), Map.of() ) ).isEqualTo( "235" );
     }
 
     @Test
     public void processIntDiv2() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "testInt", "testInt/2", 1 ) ), " " )
-            .renderString( new Test1( 235 ) ) ).isEqualTo( "117" );
+            .renderString( new Test1( 235 ), Map.of() ) ).isEqualTo( "117" );
     }
 
     @Test
@@ -147,15 +147,15 @@ public class EngineTest extends Fixtures {
             line( "t", "{testInt,\"x\",testInt2}", 2 ),
             line( "t", "{testInt,\"x\",testInt2}", 2 )
         ), " " )
-            .renderString( new Test1( 235, 12 ) ) ).isEqualTo( "235x12 235x12" );
+            .renderString( new Test1( 235, 12 ), Map.of() ) ).isEqualTo( "235x12 235x12" );
     }
 
     @Test
     public void processFunction() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "f", "getTestInt()", 10 ) ), " " )
-            .renderString( new Test1( 235 ) ) ).isEqualTo( "235" );
+            .renderString( new Test1( 235 ), Map.of() ) ).isEqualTo( "235" );
         assertThat( engine.getTemplate( "test", Map.class, List.of( line( "f", "getTest()", 10 ) ), " " )
-            .renderString( Map.of( "getTest()", 235 ) ) ).isEqualTo( "" );
+            .renderString( Map.of( "getTest()", 235 ), Map.of() ) ).isEqualTo( "" );
     }
 
     @Test
@@ -163,25 +163,25 @@ public class EngineTest extends Fixtures {
         assertThat( engine.getTemplate( "test", Test1.class, List.of(
             line( "testStr", "testStr", "d" ),
             line( "testInt", "testInt", 2 ) ), " " )
-            .renderString( new Test1( "str", 235 ) ) ).isEqualTo( "str 235" );
+            .renderString( new Test1( "str", 235 ), Map.of() ) ).isEqualTo( "str 235" );
     }
 
     @Test
     public void nested() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "test2", "test2.testStr", "d" ), line( "test3", "test2.testInt", 2 ) ), " " )
-            .renderString( new Test1( new Test2( "str", 235 ) ) ) ).isEqualTo( "str 235" );
+            .renderString( new Test1( new Test2( "str", 235 ) ), Map.of() ) ).isEqualTo( "str 235" );
     }
 
     @Test
     public void nestedOptional() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "opt", "optTest2.testStr", "d" ) ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.of( new Test2( "str" ) ) ) ) ).isEqualTo( "str" );
+            .renderString( new Test1( Optional.empty(), Optional.of( new Test2( "str" ) ) ), Map.of() ) ).isEqualTo( "str" );
     }
 
     @Test
     public void nestedNullable() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "opt", "nullableTest2.testStr", "d" ) ), " " )
-            .renderString( new Test1() ) ).isEqualTo( "d" );
+            .renderString( new Test1(), Map.of() ) ).isEqualTo( "d" );
     }
 
     @Test
@@ -190,20 +190,20 @@ public class EngineTest extends Fixtures {
             line( "opt", "optTest2.testStr", "d" ),
             line( "testInt", "optTest2.testInt", 1 )
         ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.of( new Test2( "str", 10 ) ) ) ) ).isEqualTo( "str 10" );
+            .renderString( new Test1( Optional.empty(), Optional.of( new Test2( "str", 10 ) ) ), Map.of() ) ).isEqualTo( "str 10" );
     }
 
     @Test
     public void nestedOptionalEmpty() {
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "opt", "optTest2.test1.testStr", "def" ) ), " " )
-            .renderString( new Test1( Optional.empty(), Optional.empty() ) ) ).isEqualTo( "def" );
+            .renderString( new Test1( Optional.empty(), Optional.empty() ), Map.of() ) ).isEqualTo( "def" );
     }
 
     @Test
     public void nested2() {
         Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
         assertThat( engine.getTemplate( "test", Test1.class, List.of( line( "f1", "test2.testStr", "d" ), line( "f2", "test2.test1.testInt", 2 ) ), " " )
-            .renderString( new Test1( new Test2( "n2", 2, new Test1( "str", 235 ) ) ) ) ).isEqualTo( "n2 235" );
+            .renderString( new Test1( new Test2( "n2", 2, new Test1( "str", 235 ) ) ), Map.of() ) ).isEqualTo( "n2 235" );
     }
 
     @Test
@@ -211,7 +211,7 @@ public class EngineTest extends Fixtures {
         var sample = new Test4( new Test3( Map.of( "mapKey", "mapValue" ) ) );
         assertThat( engine.getTemplate( "test", Test4.class,
             singletonList( line( "f1", "test3.map.mapKey", "unknown" ) ), " " )
-            .renderString( sample ) ).isEqualTo( "mapValue" );
+            .renderString( sample, Map.of() ) ).isEqualTo( "mapValue" );
     }
 
     @Test
@@ -222,7 +222,7 @@ public class EngineTest extends Fixtures {
             List.of(
                 line( "f1", "test3.map.mapKey", "unknown" ),
                 line( "f1", "test3.map.mapKey", "unknown" ) ), " ", strategy );
-        assertThat( template.renderString( sample ) ).isEqualTo( "a0mapValue b0a1mapValueb1" );
+        assertThat( template.renderString( sample, Map.of() ) ).isEqualTo( "a0mapValue b0a1mapValueb1" );
     }
 
     public static class Test1 {

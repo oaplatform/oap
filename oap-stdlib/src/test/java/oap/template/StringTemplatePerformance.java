@@ -29,6 +29,7 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 import static oap.benchmark.Benchmark.benchmark;
 
@@ -50,7 +51,7 @@ public class StringTemplatePerformance {
             var engine = new Engine( test );
             var template = engine.getTemplate( clazz, Test1.class, "test${id}" );
 
-            template.renderString( new Test1( "1" ) );
+            template.renderString( new Test1( "1" ), Map.of() );
         } ).inThreads( 5, 1000 ).experiments( 5 ).run();
     }
 

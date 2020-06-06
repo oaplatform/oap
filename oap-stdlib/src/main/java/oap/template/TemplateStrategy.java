@@ -27,6 +27,7 @@ package oap.template;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
     TemplateStrategy<JavaCTemplate.Line> DEFAULT = new TemplateStrategy<JavaCTemplate.Line>() {};
@@ -129,8 +130,13 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
         return c;
     }
 
-    default String pathNotFound( String path ) {
-        return "";
+    default boolean ifPathNotFoundGetFromMapper() {
+        return true;
+    }
+
+    default StringBuilder pathNotFound( StringBuilder c, String path ) {
+        c.append( "/* Path '" ).append( path ).append( "' not found */" );
+        return c;
     }
 
     default boolean printDelimiter() {
