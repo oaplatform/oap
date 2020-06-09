@@ -56,6 +56,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -70,9 +71,10 @@ import java.util.concurrent.TimeUnit;
 public class Server implements HttpServer {
     private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
 
-    private static final Counter requests = Metrics.counter( "oap_http_requests" );
-    private static final Counter handled = Metrics.counter( "oap_http_handled" );
-    private static final Counter keepaliveTimeout = Metrics.counter( "oap_http_keepalive_timeout" );
+    private static final Counter requests = Metrics.counter( "oap_http", "type", "requests" );
+    private static final Counter handled = Metrics.counter( "oap_http", "type", "handled" );
+    private static final Counter rejected = Metrics.counter( "oap_http", "type", "rejected" );
+    private static final Counter keepaliveTimeout = Metrics.counter( "oap_http", "type", "keepalive_timeout" );
 
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
@@ -144,46 +146,52 @@ public class Server implements HttpServer {
             var connection = connectionFactory.createConnection( socket );
             var connectionId = connection.toString();
 
-            executor.submit( () -> {
-                try {
-                    handled.increment();
-
-                    log.debug( "connection accepted: {}", connection );
-
-                    var httpContext = createHttpContext( socket, connection );
-                    connections.put( connectionId, httpContext );
-
-                    Thread.currentThread().setName( connection.toString() );
-
-                    if( log.isTraceEnabled() )
-                        log.trace( "start handling {}", connection );
-                    while( !Thread.interrupted() && connection.isOpen() ) {
-                        requests.increment();
-                        httpService.handleRequest( connection, httpContext );
-                    }
-                } catch( SocketTimeoutException e ) {
-                    keepaliveTimeout.increment();
-                    if( log.isTraceEnabled() )
-                        log.trace( "{}: timeout", connection );
-                } catch( SocketException | SSLException e ) {
-                    log.debug( "{}: {}", connection, e.getMessage() );
-                } catch( ConnectionClosedException e ) {
-                    log.debug( "connection closed: {}", connection );
-                } catch( Throwable e ) {
-                    log.error( e.getMessage(), e );
-                } finally {
-                    var info = connections.remove( connectionId );
-
-                    if( log.isTraceEnabled() )
-                        log.trace( "connection: {}, requests: {}, duration: {}",
-                            info.connection, ( long ) requests.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
+            try {
+                executor.submit( () -> {
                     try {
-                        connection.close();
-                    } catch( IOException e ) {
-                        log.trace( e.getMessage(), e );
+                        handled.increment();
+
+                        log.debug( "connection accepted: {}", connection );
+
+                        var httpContext = createHttpContext( socket, connection );
+                        connections.put( connectionId, httpContext );
+
+                        Thread.currentThread().setName( connection.toString() );
+
+                        if( log.isTraceEnabled() )
+                            log.trace( "start handling {}", connection );
+                        while( !Thread.interrupted() && connection.isOpen() ) {
+                            requests.increment();
+                            httpService.handleRequest( connection, httpContext );
+                        }
+                    } catch( SocketTimeoutException e ) {
+                        keepaliveTimeout.increment();
+                        if( log.isTraceEnabled() )
+                            log.trace( "{}: timeout", connection );
+                    } catch( SocketException | SSLException e ) {
+                        log.debug( "{}: {}", connection, e.getMessage() );
+                    } catch( ConnectionClosedException e ) {
+                        log.debug( "connection closed: {}", connection );
+                    } catch( Throwable e ) {
+                        log.error( e.getMessage(), e );
+                    } finally {
+                        var info = connections.remove( connectionId );
+
+                        if( log.isTraceEnabled() )
+                            log.trace( "connection: {}, requests: {}, duration: {}",
+                                info.connection, ( long ) requests.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
+                        try {
+                            connection.close();
+                        } catch( IOException e ) {
+                            log.trace( e.getMessage(), e );
+                        }
                     }
-                }
-            } );
+                } );
+            } catch( RejectedExecutionException e ) {
+                rejected.increment();
+                log.warn( e.getMessage() );
+                connection.close();
+            }
         } catch( final IOException e ) {
             log.warn( e.getMessage() );
 
