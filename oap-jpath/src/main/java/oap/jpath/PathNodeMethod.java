@@ -25,22 +25,42 @@
 package oap.jpath;
 
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import oap.reflect.Reflection;
 
-import java.util.Map;
+import java.util.List;
 
 /**
- * Created by igor.petrenko on 2020-06-09.
+ * Created by igor.petrenko on 2020-06-11.
  */
-@ToString
-public class Expression {
-    public final IdentifierType type;
-    public final PathExpression path = new PathExpression();
+@ToString( callSuper = true )
+@Slf4j
+public class PathNodeMethod extends PathNode {
+    private final List<Object> arguments;
 
-    public Expression( IdentifierType type ) {
-        this.type = type;
+    protected PathNodeMethod( PathType type, String name, List<Object> arguments ) {
+        super( type, name );
+        this.arguments = arguments;
     }
 
-    public void evaluate( Map<String, Object> variables, JPathOutput output ) {
-        path.evaluate( variables, output );
+    @Override
+    public Object evaluate( Object v, Reflection reflect ) {
+        log.trace( "method -> {}", name );
+        var method = reflect.method( m -> m.name().equals( name ) && equals( m.parameters, arguments ) ).orElse( null );
+        if( method == null ) throw new PathNotFound();
+        return method.invoke( v, arguments.toArray( new Object[0] ) );
+    }
+
+    private boolean equals( List<Reflection.Parameter> parameters, List<Object> arguments ) {
+        if( parameters.size() != arguments.size() ) return false;
+
+        for( var i = 0; i < parameters.size(); i++ ) {
+            var arg = arguments.get( i );
+            var parameter = parameters.get( i );
+
+            if( arg != null && !parameter.underlying.getType().equals( arg.getClass() ) ) return false;
+        }
+
+        return true;
     }
 }

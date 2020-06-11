@@ -4,6 +4,8 @@ package oap.jpath;
 
 import java.util.List;
 import java.util.ArrayList;
+import oap.util.Pair;
+import static oap.util.Pair.__;
 
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -22,26 +24,29 @@ public class JPathParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, Identifier=6, StringLiteral=7;
+		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, Identifier=7, StringLiteral=8, 
+		SPACE=9;
 	public static final int
-		RULE_expr = 0, RULE_path = 1, RULE_variableDeclaratorId = 2, RULE_methodName = 3, 
-		RULE_identifier = 4;
+		RULE_expr = 0, RULE_path = 1, RULE_variableDeclaratorId = 2, RULE_method = 3, 
+		RULE_methodParameters = 4, RULE_identifier = 5;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"expr", "path", "variableDeclaratorId", "methodName", "identifier"
+			"expr", "path", "variableDeclaratorId", "method", "methodParameters", 
+			"identifier"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'var'", "':'", "'.'", "'('", "')'"
+			null, "'var'", "':'", "'.'", "'('", "')'", "','"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, null, null, null, null, null, "Identifier", "StringLiteral"
+			null, null, null, null, null, null, null, "Identifier", "StringLiteral", 
+			"SPACE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -129,28 +134,28 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(10);
+			setState(12);
 			match(T__0);
 			((ExprContext)_localctx).expression =  new Expression(IdentifierType.VARIABLE);
-			setState(12);
+			setState(14);
 			match(T__1);
-			setState(13);
+			setState(15);
 			((ExprContext)_localctx).f = variableDeclaratorId();
-			_localctx.expression.path.add(new PathNode(PathType.FIELD, (((ExprContext)_localctx).f!=null?_input.getText(((ExprContext)_localctx).f.start,((ExprContext)_localctx).f.stop):null)));
-			setState(21);
+			_localctx.expression.path.add(new PathNodeField(PathType.FIELD, (((ExprContext)_localctx).f!=null?_input.getText(((ExprContext)_localctx).f.start,((ExprContext)_localctx).f.stop):null)));
+			setState(23);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__2) {
 				{
 				{
-				setState(15);
+				setState(17);
 				match(T__2);
-				setState(16);
+				setState(18);
 				((ExprContext)_localctx).n = path();
 				_localctx.expression.path.add(((ExprContext)_localctx).n.pathNode);
 				}
 				}
-				setState(23);
+				setState(25);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -170,12 +175,12 @@ public class JPathParser extends Parser {
 	public static class PathContext extends ParserRuleContext {
 		public PathNode pathNode;
 		public VariableDeclaratorIdContext v;
-		public MethodNameContext m;
+		public MethodContext m;
 		public VariableDeclaratorIdContext variableDeclaratorId() {
 			return getRuleContext(VariableDeclaratorIdContext.class,0);
 		}
-		public MethodNameContext methodName() {
-			return getRuleContext(MethodNameContext.class,0);
+		public MethodContext method() {
+			return getRuleContext(MethodContext.class,0);
 		}
 		public PathContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -195,23 +200,23 @@ public class JPathParser extends Parser {
 		PathContext _localctx = new PathContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_path);
 		try {
-			setState(30);
+			setState(32);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(24);
+				setState(26);
 				((PathContext)_localctx).v = variableDeclaratorId();
-				((PathContext)_localctx).pathNode =  new PathNode(PathType.FIELD, (((PathContext)_localctx).v!=null?_input.getText(((PathContext)_localctx).v.start,((PathContext)_localctx).v.stop):null)); 
+				((PathContext)_localctx).pathNode =  new PathNodeField(PathType.FIELD, (((PathContext)_localctx).v!=null?_input.getText(((PathContext)_localctx).v.start,((PathContext)_localctx).v.stop):null)); 
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(27);
-				((PathContext)_localctx).m = methodName();
-				((PathContext)_localctx).pathNode =  new PathNode(PathType.METHOD, ((PathContext)_localctx).m.name); 
+				setState(29);
+				((PathContext)_localctx).m = method();
+				((PathContext)_localctx).pathNode =  new PathNodeMethod(PathType.METHOD, ((PathContext)_localctx).m.nameWithParams._1, ((PathContext)_localctx).m.nameWithParams._2); 
 				}
 				break;
 			}
@@ -251,7 +256,7 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(32);
+			setState(34);
 			identifier();
 			}
 		}
@@ -266,39 +271,120 @@ public class JPathParser extends Parser {
 		return _localctx;
 	}
 
-	public static class MethodNameContext extends ParserRuleContext {
-		public String name;
+	public static class MethodContext extends ParserRuleContext {
+		public Pair<String,List<Object>> nameWithParams;
 		public IdentifierContext i;
+		public MethodParametersContext p;
 		public IdentifierContext identifier() {
 			return getRuleContext(IdentifierContext.class,0);
 		}
-		public MethodNameContext(ParserRuleContext parent, int invokingState) {
+		public MethodParametersContext methodParameters() {
+			return getRuleContext(MethodParametersContext.class,0);
+		}
+		public MethodContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_methodName; }
+		@Override public int getRuleIndex() { return RULE_method; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof JPathListener ) ((JPathListener)listener).enterMethodName(this);
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).enterMethod(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof JPathListener ) ((JPathListener)listener).exitMethodName(this);
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).exitMethod(this);
 		}
 	}
 
-	public final MethodNameContext methodName() throws RecognitionException {
-		MethodNameContext _localctx = new MethodNameContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_methodName);
+	public final MethodContext method() throws RecognitionException {
+		MethodContext _localctx = new MethodContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_method);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(34);
-			((MethodNameContext)_localctx).i = identifier();
-			setState(35);
-			match(T__3);
 			setState(36);
+			((MethodContext)_localctx).i = identifier();
+			setState(37);
+			match(T__3);
+			setState(38);
+			((MethodContext)_localctx).p = methodParameters();
+			setState(39);
 			match(T__4);
-			((MethodNameContext)_localctx).name =  (((MethodNameContext)_localctx).i!=null?_input.getText(((MethodNameContext)_localctx).i.start,((MethodNameContext)_localctx).i.stop):null);
+			((MethodContext)_localctx).nameWithParams =  __((((MethodContext)_localctx).i!=null?_input.getText(((MethodContext)_localctx).i.start,((MethodContext)_localctx).i.stop):null), ((MethodContext)_localctx).p.arguments);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class MethodParametersContext extends ParserRuleContext {
+		public List<Object> arguments = new ArrayList<Object>();
+		public Token s;
+		public Token n;
+		public List<TerminalNode> StringLiteral() { return getTokens(JPathParser.StringLiteral); }
+		public TerminalNode StringLiteral(int i) {
+			return getToken(JPathParser.StringLiteral, i);
+		}
+		public MethodParametersContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_methodParameters; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).enterMethodParameters(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).exitMethodParameters(this);
+		}
+	}
+
+	public final MethodParametersContext methodParameters() throws RecognitionException {
+		MethodParametersContext _localctx = new MethodParametersContext(_ctx, getState());
+		enterRule(_localctx, 8, RULE_methodParameters);
+		int _la;
+		try {
+			setState(53);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case T__4:
+				enterOuterAlt(_localctx, 1);
+				{
+				}
+				break;
+			case StringLiteral:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(43);
+				((MethodParametersContext)_localctx).s = match(StringLiteral);
+				_localctx.arguments.add((((MethodParametersContext)_localctx).s!=null?((MethodParametersContext)_localctx).s.getText():null));
+				setState(50);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				while (_la==T__5) {
+					{
+					{
+					setState(45);
+					match(T__5);
+					setState(46);
+					((MethodParametersContext)_localctx).n = match(StringLiteral);
+					_localctx.arguments.add((((MethodParametersContext)_localctx).n!=null?((MethodParametersContext)_localctx).n.getText():null));
+					}
+					}
+					setState(52);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -330,11 +416,11 @@ public class JPathParser extends Parser {
 
 	public final IdentifierContext identifier() throws RecognitionException {
 		IdentifierContext _localctx = new IdentifierContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_identifier);
+		enterRule(_localctx, 10, RULE_identifier);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(39);
+			setState(55);
 			match(Identifier);
 			}
 		}
@@ -350,17 +436,21 @@ public class JPathParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\t,\4\2\t\2\4\3\t"+
-		"\3\4\4\t\4\4\5\t\5\4\6\t\6\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\7\2\26"+
-		"\n\2\f\2\16\2\31\13\2\3\3\3\3\3\3\3\3\3\3\3\3\5\3!\n\3\3\4\3\4\3\5\3\5"+
-		"\3\5\3\5\3\5\3\6\3\6\3\6\2\2\7\2\4\6\b\n\2\2\2(\2\f\3\2\2\2\4 \3\2\2\2"+
-		"\6\"\3\2\2\2\b$\3\2\2\2\n)\3\2\2\2\f\r\7\3\2\2\r\16\b\2\1\2\16\17\7\4"+
-		"\2\2\17\20\5\6\4\2\20\27\b\2\1\2\21\22\7\5\2\2\22\23\5\4\3\2\23\24\b\2"+
-		"\1\2\24\26\3\2\2\2\25\21\3\2\2\2\26\31\3\2\2\2\27\25\3\2\2\2\27\30\3\2"+
-		"\2\2\30\3\3\2\2\2\31\27\3\2\2\2\32\33\5\6\4\2\33\34\b\3\1\2\34!\3\2\2"+
-		"\2\35\36\5\b\5\2\36\37\b\3\1\2\37!\3\2\2\2 \32\3\2\2\2 \35\3\2\2\2!\5"+
-		"\3\2\2\2\"#\5\n\6\2#\7\3\2\2\2$%\5\n\6\2%&\7\6\2\2&\'\7\7\2\2\'(\b\5\1"+
-		"\2(\t\3\2\2\2)*\7\b\2\2*\13\3\2\2\2\4\27 ";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\13<\4\2\t\2\4\3\t"+
+		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2"+
+		"\7\2\30\n\2\f\2\16\2\33\13\2\3\3\3\3\3\3\3\3\3\3\3\3\5\3#\n\3\3\4\3\4"+
+		"\3\5\3\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\3\6\3\6\3\6\7\6\63\n\6\f\6\16\6\66"+
+		"\13\6\5\68\n\6\3\7\3\7\3\7\2\2\b\2\4\6\b\n\f\2\2\29\2\16\3\2\2\2\4\"\3"+
+		"\2\2\2\6$\3\2\2\2\b&\3\2\2\2\n\67\3\2\2\2\f9\3\2\2\2\16\17\7\3\2\2\17"+
+		"\20\b\2\1\2\20\21\7\4\2\2\21\22\5\6\4\2\22\31\b\2\1\2\23\24\7\5\2\2\24"+
+		"\25\5\4\3\2\25\26\b\2\1\2\26\30\3\2\2\2\27\23\3\2\2\2\30\33\3\2\2\2\31"+
+		"\27\3\2\2\2\31\32\3\2\2\2\32\3\3\2\2\2\33\31\3\2\2\2\34\35\5\6\4\2\35"+
+		"\36\b\3\1\2\36#\3\2\2\2\37 \5\b\5\2 !\b\3\1\2!#\3\2\2\2\"\34\3\2\2\2\""+
+		"\37\3\2\2\2#\5\3\2\2\2$%\5\f\7\2%\7\3\2\2\2&\'\5\f\7\2\'(\7\6\2\2()\5"+
+		"\n\6\2)*\7\7\2\2*+\b\5\1\2+\t\3\2\2\2,8\3\2\2\2-.\7\n\2\2.\64\b\6\1\2"+
+		"/\60\7\b\2\2\60\61\7\n\2\2\61\63\b\6\1\2\62/\3\2\2\2\63\66\3\2\2\2\64"+
+		"\62\3\2\2\2\64\65\3\2\2\2\658\3\2\2\2\66\64\3\2\2\2\67,\3\2\2\2\67-\3"+
+		"\2\2\28\13\3\2\2\29:\7\t\2\2:\r\3\2\2\2\6\31\"\64\67";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

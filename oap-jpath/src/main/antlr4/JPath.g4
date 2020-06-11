@@ -5,15 +5,17 @@ package oap.jpath;
 
 import java.util.List;
 import java.util.ArrayList;
+import oap.util.Pair;
+import static oap.util.Pair.__;
 }
 
 expr returns [Expression expression]
-    : 'var' {$expression = new Expression(IdentifierType.VARIABLE);} ':' f=variableDeclaratorId {$expression.path.add(new PathNode(PathType.FIELD, $f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )*
+    : 'var' {$expression = new Expression(IdentifierType.VARIABLE);} ':' f=variableDeclaratorId {$expression.path.add(new PathNodeField(PathType.FIELD, $f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )*
     ; 
 
 path returns [PathNode pathNode]
-    : v=variableDeclaratorId {$pathNode = new PathNode(PathType.FIELD, $v.text); }
-    | m=methodName {$pathNode = new PathNode(PathType.METHOD, $m.name); }
+    : v=variableDeclaratorId {$pathNode = new PathNodeField(PathType.FIELD, $v.text); }
+    | m=method {$pathNode = new PathNodeMethod(PathType.METHOD, $m.nameWithParams._1, $m.nameWithParams._2); }
     ;
     
 
@@ -22,10 +24,14 @@ variableDeclaratorId
 	;
 
 
-methodName returns [String name]
-	:	i=identifier '(' ')' {$name = $i.text;}
+method returns [Pair<String,List<Object>> nameWithParams]
+	:	i=identifier '(' p=methodParameters ')' {$nameWithParams = __($i.text, $p.arguments);}
 	;
 
+methodParameters returns [List<Object> arguments = new ArrayList<Object>()]
+    :
+    | s=StringLiteral {$arguments.add($s.text);} (',' n=StringLiteral {$arguments.add($n.text);})*
+    ;
 
 identifier
     :
@@ -69,7 +75,7 @@ EscapeSequence
 	;
 
 StringLiteral
-	:	'"' StringCharacters? '"'
+	:	'"' StringCharacters? '"' {setText(getText().substring(1, getText().length() - 1));}
 	;
 fragment
 StringCharacters
@@ -81,3 +87,5 @@ StringCharacter
 	:	~["\\\r\n]
 	|	EscapeSequence
 	;
+
+SPACE : (' '|'\n') -> skip;

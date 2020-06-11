@@ -4,6 +4,8 @@ package oap.jpath;
 
 import java.util.List;
 import java.util.ArrayList;
+import oap.util.Pair;
+import static oap.util.Pair.__;
 
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -22,7 +24,8 @@ public class JPathLexer extends Lexer {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, Identifier=6, StringLiteral=7;
+		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, Identifier=7, StringLiteral=8, 
+		SPACE=9;
 	public static String[] channelNames = {
 		"DEFAULT_TOKEN_CHANNEL", "HIDDEN"
 	};
@@ -33,22 +36,23 @@ public class JPathLexer extends Lexer {
 
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"T__0", "T__1", "T__2", "T__3", "T__4", "Identifier", "Digit", "JavaLetter", 
-			"JavaLetterOrDigit", "EscapeSequence", "StringLiteral", "StringCharacters", 
-			"StringCharacter"
+			"T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "Identifier", "Digit", 
+			"JavaLetter", "JavaLetterOrDigit", "EscapeSequence", "StringLiteral", 
+			"StringCharacters", "StringCharacter", "SPACE"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'var'", "':'", "'.'", "'('", "')'"
+			null, "'var'", "':'", "'.'", "'('", "')'", "','"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, null, null, null, null, null, "Identifier", "StringLiteral"
+			null, null, null, null, null, null, null, "Identifier", "StringLiteral", 
+			"SPACE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -110,11 +114,26 @@ public class JPathLexer extends Lexer {
 	public ATN getATN() { return _ATN; }
 
 	@Override
+	public void action(RuleContext _localctx, int ruleIndex, int actionIndex) {
+		switch (ruleIndex) {
+		case 11:
+			StringLiteral_action((RuleContext)_localctx, actionIndex);
+			break;
+		}
+	}
+	private void StringLiteral_action(RuleContext _localctx, int actionIndex) {
+		switch (actionIndex) {
+		case 0:
+			setText(getText().substring(1, getText().length() - 1));
+			break;
+		}
+	}
+	@Override
 	public boolean sempred(RuleContext _localctx, int ruleIndex, int predIndex) {
 		switch (ruleIndex) {
-		case 7:
-			return JavaLetter_sempred((RuleContext)_localctx, predIndex);
 		case 8:
+			return JavaLetter_sempred((RuleContext)_localctx, predIndex);
+		case 9:
 			return JavaLetterOrDigit_sempred((RuleContext)_localctx, predIndex);
 		}
 		return true;
@@ -139,29 +158,32 @@ public class JPathLexer extends Lexer {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\2\tT\b\1\4\2\t\2\4"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\2\13_\b\1\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
-		"\13\4\f\t\f\4\r\t\r\4\16\t\16\3\2\3\2\3\2\3\2\3\3\3\3\3\4\3\4\3\5\3\5"+
-		"\3\6\3\6\3\7\3\7\7\7,\n\7\f\7\16\7/\13\7\3\b\3\b\3\t\3\t\3\t\3\t\3\t\3"+
-		"\t\5\t9\n\t\3\n\3\n\3\n\3\n\3\n\3\n\5\nA\n\n\3\13\3\13\3\13\3\f\3\f\5"+
-		"\fH\n\f\3\f\3\f\3\r\6\rM\n\r\r\r\16\rN\3\16\3\16\5\16S\n\16\2\2\17\3\3"+
-		"\5\4\7\5\t\6\13\7\r\b\17\2\21\2\23\2\25\2\27\t\31\2\33\2\3\2\n\3\2\62"+
-		";\7\2&&//C\\aac|\4\2\2\u0081\ud802\udc01\3\2\ud802\udc01\3\2\udc02\ue001"+
-		"\b\2&&//\62;C\\aac|\n\2$$))^^ddhhppttvv\6\2\f\f\17\17$$^^\2U\2\3\3\2\2"+
-		"\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2\2\2\13\3\2\2\2\2\r\3\2\2\2\2\27\3"+
-		"\2\2\2\3\35\3\2\2\2\5!\3\2\2\2\7#\3\2\2\2\t%\3\2\2\2\13\'\3\2\2\2\r)\3"+
-		"\2\2\2\17\60\3\2\2\2\218\3\2\2\2\23@\3\2\2\2\25B\3\2\2\2\27E\3\2\2\2\31"+
-		"L\3\2\2\2\33R\3\2\2\2\35\36\7x\2\2\36\37\7c\2\2\37 \7t\2\2 \4\3\2\2\2"+
-		"!\"\7<\2\2\"\6\3\2\2\2#$\7\60\2\2$\b\3\2\2\2%&\7*\2\2&\n\3\2\2\2\'(\7"+
-		"+\2\2(\f\3\2\2\2)-\5\21\t\2*,\5\23\n\2+*\3\2\2\2,/\3\2\2\2-+\3\2\2\2-"+
-		".\3\2\2\2.\16\3\2\2\2/-\3\2\2\2\60\61\t\2\2\2\61\20\3\2\2\2\629\t\3\2"+
-		"\2\63\64\n\4\2\2\649\6\t\2\2\65\66\t\5\2\2\66\67\t\6\2\2\679\6\t\3\28"+
-		"\62\3\2\2\28\63\3\2\2\28\65\3\2\2\29\22\3\2\2\2:A\t\7\2\2;<\n\4\2\2<A"+
-		"\6\n\4\2=>\t\5\2\2>?\t\6\2\2?A\6\n\5\2@:\3\2\2\2@;\3\2\2\2@=\3\2\2\2A"+
-		"\24\3\2\2\2BC\7^\2\2CD\t\b\2\2D\26\3\2\2\2EG\7$\2\2FH\5\31\r\2GF\3\2\2"+
-		"\2GH\3\2\2\2HI\3\2\2\2IJ\7$\2\2J\30\3\2\2\2KM\5\33\16\2LK\3\2\2\2MN\3"+
-		"\2\2\2NL\3\2\2\2NO\3\2\2\2O\32\3\2\2\2PS\n\t\2\2QS\5\25\13\2RP\3\2\2\2"+
-		"RQ\3\2\2\2S\34\3\2\2\2\t\2-8@GNR\2";
+		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\3\2\3\2\3\2\3\2\3\3"+
+		"\3\3\3\4\3\4\3\5\3\5\3\6\3\6\3\7\3\7\3\b\3\b\7\b\62\n\b\f\b\16\b\65\13"+
+		"\b\3\t\3\t\3\n\3\n\3\n\3\n\3\n\3\n\5\n?\n\n\3\13\3\13\3\13\3\13\3\13\3"+
+		"\13\5\13G\n\13\3\f\3\f\3\f\3\r\3\r\5\rN\n\r\3\r\3\r\3\r\3\16\6\16T\n\16"+
+		"\r\16\16\16U\3\17\3\17\5\17Z\n\17\3\20\3\20\3\20\3\20\2\2\21\3\3\5\4\7"+
+		"\5\t\6\13\7\r\b\17\t\21\2\23\2\25\2\27\2\31\n\33\2\35\2\37\13\3\2\13\3"+
+		"\2\62;\7\2&&//C\\aac|\4\2\2\u0081\ud802\udc01\3\2\ud802\udc01\3\2\udc02"+
+		"\ue001\b\2&&//\62;C\\aac|\n\2$$))^^ddhhppttvv\6\2\f\f\17\17$$^^\4\2\f"+
+		"\f\"\"\2`\2\3\3\2\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2\2\2\13\3\2\2\2"+
+		"\2\r\3\2\2\2\2\17\3\2\2\2\2\31\3\2\2\2\2\37\3\2\2\2\3!\3\2\2\2\5%\3\2"+
+		"\2\2\7\'\3\2\2\2\t)\3\2\2\2\13+\3\2\2\2\r-\3\2\2\2\17/\3\2\2\2\21\66\3"+
+		"\2\2\2\23>\3\2\2\2\25F\3\2\2\2\27H\3\2\2\2\31K\3\2\2\2\33S\3\2\2\2\35"+
+		"Y\3\2\2\2\37[\3\2\2\2!\"\7x\2\2\"#\7c\2\2#$\7t\2\2$\4\3\2\2\2%&\7<\2\2"+
+		"&\6\3\2\2\2\'(\7\60\2\2(\b\3\2\2\2)*\7*\2\2*\n\3\2\2\2+,\7+\2\2,\f\3\2"+
+		"\2\2-.\7.\2\2.\16\3\2\2\2/\63\5\23\n\2\60\62\5\25\13\2\61\60\3\2\2\2\62"+
+		"\65\3\2\2\2\63\61\3\2\2\2\63\64\3\2\2\2\64\20\3\2\2\2\65\63\3\2\2\2\66"+
+		"\67\t\2\2\2\67\22\3\2\2\28?\t\3\2\29:\n\4\2\2:?\6\n\2\2;<\t\5\2\2<=\t"+
+		"\6\2\2=?\6\n\3\2>8\3\2\2\2>9\3\2\2\2>;\3\2\2\2?\24\3\2\2\2@G\t\7\2\2A"+
+		"B\n\4\2\2BG\6\13\4\2CD\t\5\2\2DE\t\6\2\2EG\6\13\5\2F@\3\2\2\2FA\3\2\2"+
+		"\2FC\3\2\2\2G\26\3\2\2\2HI\7^\2\2IJ\t\b\2\2J\30\3\2\2\2KM\7$\2\2LN\5\33"+
+		"\16\2ML\3\2\2\2MN\3\2\2\2NO\3\2\2\2OP\7$\2\2PQ\b\r\2\2Q\32\3\2\2\2RT\5"+
+		"\35\17\2SR\3\2\2\2TU\3\2\2\2US\3\2\2\2UV\3\2\2\2V\34\3\2\2\2WZ\n\t\2\2"+
+		"XZ\5\27\f\2YW\3\2\2\2YX\3\2\2\2Z\36\3\2\2\2[\\\t\n\2\2\\]\3\2\2\2]^\b"+
+		"\20\3\2^ \3\2\2\2\t\2\63>FMUY\4\3\r\2\b\2\2";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

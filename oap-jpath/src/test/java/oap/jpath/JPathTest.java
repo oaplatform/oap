@@ -67,6 +67,17 @@ public class JPathTest {
         assertThat( output.toString() ).isEqualTo( "pv" );
     }
 
+    @Test
+    public void testMethodString() {
+        var output = new StringBuilderJPathOutput();
+        JPath.evaluate( "var:test.getString(\"str\")", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        assertThat( output.toString() ).isEqualTo( "str" );
+
+        output.reset();
+        JPath.evaluate( "var:test.getString(\"str\", \"str2\")", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        assertThat( output.toString() ).isEqualTo( "strstr2" );
+    }
+
 
     @ToString
     public static class TestBean {
@@ -90,6 +101,10 @@ public class JPathTest {
 
         public String getString( String str ) {
             return str;
+        }
+
+        public String getString( String str, String str2 ) {
+            return str + str2;
         }
     }
 }

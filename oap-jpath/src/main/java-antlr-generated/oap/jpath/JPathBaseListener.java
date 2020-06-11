@@ -4,6 +4,8 @@ package oap.jpath;
 
 import java.util.List;
 import java.util.ArrayList;
+import oap.util.Pair;
+import static oap.util.Pair.__;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -57,13 +59,25 @@ public class JPathBaseListener implements JPathListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMethodName(JPathParser.MethodNameContext ctx) { }
+	@Override public void enterMethod(JPathParser.MethodContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMethodName(JPathParser.MethodNameContext ctx) { }
+	@Override public void exitMethod(JPathParser.MethodContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMethodParameters(JPathParser.MethodParametersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMethodParameters(JPathParser.MethodParametersContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -25,17 +25,20 @@
 package oap.jpath;
 
 import lombok.ToString;
+import oap.reflect.Reflection;
 
 /**
  * Created by igor.petrenko on 2020-06-09.
  */
 @ToString
-public class PathNode {
+public abstract class PathNode {
     public final PathType type;
     public final String name;
 
-    public PathNode( PathType type, String name ) {
+    protected PathNode( PathType type, String name ) {
         this.type = type;
         this.name = name;
     }
+
+    public abstract Object evaluate( Object v, Reflection reflect );
 }

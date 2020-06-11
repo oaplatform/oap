@@ -4,6 +4,8 @@ package oap.jpath;
 
 import java.util.List;
 import java.util.ArrayList;
+import oap.util.Pair;
+import static oap.util.Pair.__;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -43,15 +45,25 @@ public interface JPathListener extends ParseTreeListener {
 	 */
 	void exitVariableDeclaratorId(JPathParser.VariableDeclaratorIdContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link JPathParser#methodName}.
+	 * Enter a parse tree produced by {@link JPathParser#method}.
 	 * @param ctx the parse tree
 	 */
-	void enterMethodName(JPathParser.MethodNameContext ctx);
+	void enterMethod(JPathParser.MethodContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link JPathParser#methodName}.
+	 * Exit a parse tree produced by {@link JPathParser#method}.
 	 * @param ctx the parse tree
 	 */
-	void exitMethodName(JPathParser.MethodNameContext ctx);
+	void exitMethod(JPathParser.MethodContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link JPathParser#methodParameters}.
+	 * @param ctx the parse tree
+	 */
+	void enterMethodParameters(JPathParser.MethodParametersContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link JPathParser#methodParameters}.
+	 * @param ctx the parse tree
+	 */
+	void exitMethodParameters(JPathParser.MethodParametersContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link JPathParser#identifier}.
 	 * @param ctx the parse tree

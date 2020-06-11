@@ -43,20 +43,7 @@ public class ObjectPointer implements Pointer {
     @Override
     public Pointer resolve( PathNode n ) {
         var reflect = Reflect.reflect( v.getClass() );
-        return Pointer.get( switch( n.type ) {
-            case FIELD -> {
-                log.trace( "field -> {}", n );
-                var field = reflect.field( n.name ).orElse( null );
-                if( field == null ) throw new PathNotFound();
-                yield field.get( v );
-            }
-            case METHOD -> {
-                log.trace( "method -> {}", n );
-                var method = reflect.method( n.name ).orElse( null );
-                if( method == null ) throw new PathNotFound();
-                yield method.invoke( v );
-            }
-        } );
+        return Pointer.get( n.evaluate( v, reflect ) );
     }
 
     @Override

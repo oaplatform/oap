@@ -25,22 +25,24 @@
 package oap.jpath;
 
 import lombok.ToString;
-
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import oap.reflect.Reflection;
 
 /**
- * Created by igor.petrenko on 2020-06-09.
+ * Created by igor.petrenko on 2020-06-11.
  */
-@ToString
-public class Expression {
-    public final IdentifierType type;
-    public final PathExpression path = new PathExpression();
-
-    public Expression( IdentifierType type ) {
-        this.type = type;
+@ToString( callSuper = true )
+@Slf4j
+public class PathNodeField extends PathNode {
+    protected PathNodeField( PathType type, String name ) {
+        super( type, name );
     }
 
-    public void evaluate( Map<String, Object> variables, JPathOutput output ) {
-        path.evaluate( variables, output );
+    @Override
+    public Object evaluate( Object v, Reflection reflect ) throws PathNotFound {
+        log.trace( "field -> {}", name );
+        var field = reflect.field( name ).orElse( null );
+        if( field == null ) throw new PathNotFound();
+        return field.get( v );
     }
 }

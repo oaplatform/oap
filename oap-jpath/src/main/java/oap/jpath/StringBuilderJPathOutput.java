@@ -42,4 +42,8 @@ public class StringBuilderJPathOutput implements JPathOutput {
     public void write( Pointer pointer ) {
         sb.append( pointer.get() );
     }
+
+    public void reset() {
+        sb.delete( 0, sb.length() );
+    }
 }
