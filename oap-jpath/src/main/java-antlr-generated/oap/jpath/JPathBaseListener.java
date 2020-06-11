@@ -3,6 +3,7 @@
 package oap.jpath;
 
 import java.util.List;
+import java.lang.Number;
 import java.util.ArrayList;
 import oap.util.Pair;
 import static oap.util.Pair.__;
@@ -59,6 +60,18 @@ public class JPathBaseListener implements JPathListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterArray(JPathParser.ArrayContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitArray(JPathParser.ArrayContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterMethod(JPathParser.MethodContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -78,6 +91,18 @@ public class JPathBaseListener implements JPathListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitMethodParameters(JPathParser.MethodParametersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMethodParameter(JPathParser.MethodParameterContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMethodParameter(JPathParser.MethodParameterContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

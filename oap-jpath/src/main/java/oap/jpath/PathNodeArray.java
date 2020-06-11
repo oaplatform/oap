@@ -24,9 +24,38 @@
 
 package oap.jpath;
 
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import oap.reflect.Reflection;
+
+import java.lang.reflect.Array;
+import java.util.List;
+
 /**
- * Created by igor.petrenko on 2020-06-09.
+ * Created by igor.petrenko on 2020-06-11.
  */
-public enum PathType {
-    FIELD, METHOD, ARRAY
+@ToString( callSuper = true )
+@Slf4j
+public class PathNodeArray extends PathNode {
+    private final int index;
+
+    protected PathNodeArray( String name, int index ) {
+        super( PathType.ARRAY, name );
+        this.index = index;
+    }
+
+    @Override
+    public Object evaluate( Object v, Reflection reflect ) throws PathNotFound {
+        log.trace( "array -> {}[{}]", name, index );
+        var field = reflect.field( name ).orElse( null );
+        if( field == null ) throw new PathNotFound();
+
+        if( field.isArray() ) {
+            return Array.get( field.get( v ), index );
+        } else if( field.underlying.getType().isAssignableFrom( List.class ) ) {
+            return ( ( List<?> ) field.get( v ) ).get( index );
+        }
+
+        throw new PathNotFound();
+    }
 }

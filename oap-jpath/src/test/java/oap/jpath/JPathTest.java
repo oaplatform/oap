@@ -27,6 +27,7 @@ package oap.jpath;
 import lombok.ToString;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,11 +79,45 @@ public class JPathTest {
         assertThat( output.toString() ).isEqualTo( "strstr2" );
     }
 
+    @Test
+    public void testArray() {
+        var output = new StringBuilderJPathOutput();
+        var testBean = new TestBean( "val1", null, null );
+        testBean.intList = new int[] { 1, 2, 3 };
+        JPath.evaluate( "var:test.intList[1]", Map.of( "test", testBean ), output );
+        assertThat( output.toString() ).isEqualTo( "2" );
+    }
+
+    @Test
+    public void testIndexedList() {
+        var output = new StringBuilderJPathOutput();
+        var testBean = new TestBean( "val1", null, null );
+        testBean.list = List.of( new TestBean( "b1", null, null ), new TestBean( "b2", null, null ) );
+        JPath.evaluate( "var:test.list[1].val", Map.of( "test", testBean ), output );
+        assertThat( output.toString() ).isEqualTo( "b2" );
+    }
+
+    @Test
+    public void testDecimalInteger() {
+        var output = new StringBuilderJPathOutput();
+        JPath.evaluate( "var:test.getStringInt(\"str\", 2)", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        assertThat( output.toString() ).isEqualTo( "str2" );
+
+        output.reset();
+        JPath.evaluate( "var:test.getStringLong(\"str\", 3)", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        assertThat( output.toString() ).isEqualTo( "str3" );
+
+        output.reset();
+        JPath.evaluate( "var:test.getStringLong2(\"str\", 4)", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        assertThat( output.toString() ).isEqualTo( "str4" );
+    }
 
     @ToString
     public static class TestBean {
         public String val;
         public TestBean test1;
+        public List<TestBean> list;
+        public int[] intList;
         private TestBean testPrivate;
 
         public TestBean( String val, TestBean test1, TestBean testPrivate ) {
@@ -105,6 +140,18 @@ public class JPathTest {
 
         public String getString( String str, String str2 ) {
             return str + str2;
+        }
+
+        public String getStringInt( String str, int i ) {
+            return str + i;
+        }
+
+        public String getStringLong( String str, long l ) {
+            return str + l;
+        }
+
+        public String getStringLong2( String str, Long l ) {
+            return str + l;
         }
     }
 }

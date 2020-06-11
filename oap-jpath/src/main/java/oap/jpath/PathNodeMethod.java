@@ -38,8 +38,8 @@ import java.util.List;
 public class PathNodeMethod extends PathNode {
     private final List<Object> arguments;
 
-    protected PathNodeMethod( PathType type, String name, List<Object> arguments ) {
-        super( type, name );
+    protected PathNodeMethod( String name, List<Object> arguments ) {
+        super( PathType.METHOD, name );
         this.arguments = arguments;
     }
 
@@ -58,7 +58,32 @@ public class PathNodeMethod extends PathNode {
             var arg = arguments.get( i );
             var parameter = parameters.get( i );
 
-            if( arg != null && !parameter.underlying.getType().equals( arg.getClass() ) ) return false;
+            if( arg == null ) continue;
+
+            var parameterType = parameter.underlying.getType();
+            Class<?> argType = arg.getClass();
+
+            if( Number.class.isAssignableFrom( argType ) ) {
+                if( int.class.equals( parameterType ) || Integer.class.equals( parameterType ) ) {
+                    arguments.set( i, ( ( Number ) arg ).intValue() );
+                } else if( long.class.equals( parameterType ) || Long.class.equals( parameterType ) ) {
+                    arguments.set( i, ( ( Number ) arg ).longValue() );
+                } else if( float.class.equals( parameterType ) || Float.class.equals( parameterType ) ) {
+                    arguments.set( i, ( ( Number ) arg ).floatValue() );
+                } else if( short.class.equals( parameterType ) || Short.class.equals( parameterType ) ) {
+                    arguments.set( i, ( ( Number ) arg ).shortValue() );
+                } else if( byte.class.equals( parameterType ) || Byte.class.equals( parameterType ) ) {
+                    arguments.set( i, ( ( Number ) arg ).byteValue() );
+                } else if( double.class.equals( parameterType ) || Double.class.equals( parameterType ) ) {
+                    arguments.set( i, ( ( Number ) arg ).doubleValue() );
+                } else {
+                    return false;
+                }
+                
+                continue;
+            }
+
+            if( !parameterType.equals( argType ) ) return false;
         }
 
         return true;

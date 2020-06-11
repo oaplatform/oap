@@ -3,6 +3,7 @@
 package oap.jpath;
 
 import java.util.List;
+import java.lang.Number;
 import java.util.ArrayList;
 import oap.util.Pair;
 import static oap.util.Pair.__;
@@ -24,29 +25,30 @@ public class JPathParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, Identifier=7, StringLiteral=8, 
-		SPACE=9;
+		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, Identifier=9, 
+		DecimalIntegerLiteral=10, StringLiteral=11, SPACE=12;
 	public static final int
-		RULE_expr = 0, RULE_path = 1, RULE_variableDeclaratorId = 2, RULE_method = 3, 
-		RULE_methodParameters = 4, RULE_identifier = 5;
+		RULE_expr = 0, RULE_path = 1, RULE_variableDeclaratorId = 2, RULE_array = 3, 
+		RULE_method = 4, RULE_methodParameters = 5, RULE_methodParameter = 6, 
+		RULE_identifier = 7;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"expr", "path", "variableDeclaratorId", "method", "methodParameters", 
-			"identifier"
+			"expr", "path", "variableDeclaratorId", "array", "method", "methodParameters", 
+			"methodParameter", "identifier"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'var'", "':'", "'.'", "'('", "')'", "','"
+			null, "'var'", "':'", "'.'", "'['", "']'", "'('", "')'", "','"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, null, null, null, null, null, null, "Identifier", "StringLiteral", 
-			"SPACE"
+			null, null, null, null, null, null, null, null, null, "Identifier", "DecimalIntegerLiteral", 
+			"StringLiteral", "SPACE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -134,28 +136,28 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(12);
+			setState(16);
 			match(T__0);
 			((ExprContext)_localctx).expression =  new Expression(IdentifierType.VARIABLE);
-			setState(14);
+			setState(18);
 			match(T__1);
-			setState(15);
+			setState(19);
 			((ExprContext)_localctx).f = variableDeclaratorId();
-			_localctx.expression.path.add(new PathNodeField(PathType.FIELD, (((ExprContext)_localctx).f!=null?_input.getText(((ExprContext)_localctx).f.start,((ExprContext)_localctx).f.stop):null)));
-			setState(23);
+			_localctx.expression.path.add(new PathNodeField((((ExprContext)_localctx).f!=null?_input.getText(((ExprContext)_localctx).f.start,((ExprContext)_localctx).f.stop):null)));
+			setState(27);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__2) {
 				{
 				{
-				setState(17);
+				setState(21);
 				match(T__2);
-				setState(18);
+				setState(22);
 				((ExprContext)_localctx).n = path();
 				_localctx.expression.path.add(((ExprContext)_localctx).n.pathNode);
 				}
 				}
-				setState(25);
+				setState(29);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -176,11 +178,15 @@ public class JPathParser extends Parser {
 		public PathNode pathNode;
 		public VariableDeclaratorIdContext v;
 		public MethodContext m;
+		public ArrayContext a;
 		public VariableDeclaratorIdContext variableDeclaratorId() {
 			return getRuleContext(VariableDeclaratorIdContext.class,0);
 		}
 		public MethodContext method() {
 			return getRuleContext(MethodContext.class,0);
+		}
+		public ArrayContext array() {
+			return getRuleContext(ArrayContext.class,0);
 		}
 		public PathContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -200,23 +206,31 @@ public class JPathParser extends Parser {
 		PathContext _localctx = new PathContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_path);
 		try {
-			setState(32);
+			setState(39);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(26);
+				setState(30);
 				((PathContext)_localctx).v = variableDeclaratorId();
-				((PathContext)_localctx).pathNode =  new PathNodeField(PathType.FIELD, (((PathContext)_localctx).v!=null?_input.getText(((PathContext)_localctx).v.start,((PathContext)_localctx).v.stop):null)); 
+				((PathContext)_localctx).pathNode =  new PathNodeField((((PathContext)_localctx).v!=null?_input.getText(((PathContext)_localctx).v.start,((PathContext)_localctx).v.stop):null)); 
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(29);
+				setState(33);
 				((PathContext)_localctx).m = method();
-				((PathContext)_localctx).pathNode =  new PathNodeMethod(PathType.METHOD, ((PathContext)_localctx).m.nameWithParams._1, ((PathContext)_localctx).m.nameWithParams._2); 
+				((PathContext)_localctx).pathNode =  new PathNodeMethod(((PathContext)_localctx).m.nameWithParams._1, ((PathContext)_localctx).m.nameWithParams._2); 
+				}
+				break;
+			case 3:
+				enterOuterAlt(_localctx, 3);
+				{
+				setState(36);
+				((PathContext)_localctx).a = array();
+				((PathContext)_localctx).pathNode =  new PathNodeArray(((PathContext)_localctx).a.arrayValue._1, ((PathContext)_localctx).a.arrayValue._2); 
 				}
 				break;
 			}
@@ -256,8 +270,58 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(34);
+			setState(41);
 			identifier();
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class ArrayContext extends ParserRuleContext {
+		public Pair<String,Integer> arrayValue;
+		public IdentifierContext i;
+		public Token n;
+		public IdentifierContext identifier() {
+			return getRuleContext(IdentifierContext.class,0);
+		}
+		public TerminalNode DecimalIntegerLiteral() { return getToken(JPathParser.DecimalIntegerLiteral, 0); }
+		public ArrayContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_array; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).enterArray(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).exitArray(this);
+		}
+	}
+
+	public final ArrayContext array() throws RecognitionException {
+		ArrayContext _localctx = new ArrayContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_array);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(43);
+			((ArrayContext)_localctx).i = identifier();
+			setState(44);
+			match(T__3);
+			setState(45);
+			((ArrayContext)_localctx).n = match(DecimalIntegerLiteral);
+			setState(46);
+			match(T__4);
+			((ArrayContext)_localctx).arrayValue =  __((((ArrayContext)_localctx).i!=null?_input.getText(((ArrayContext)_localctx).i.start,((ArrayContext)_localctx).i.stop):null), Integer.parseInt((((ArrayContext)_localctx).n!=null?((ArrayContext)_localctx).n.getText():null)));
 			}
 		}
 		catch (RecognitionException re) {
@@ -297,18 +361,18 @@ public class JPathParser extends Parser {
 
 	public final MethodContext method() throws RecognitionException {
 		MethodContext _localctx = new MethodContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_method);
+		enterRule(_localctx, 8, RULE_method);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(36);
+			setState(49);
 			((MethodContext)_localctx).i = identifier();
-			setState(37);
-			match(T__3);
-			setState(38);
+			setState(50);
+			match(T__5);
+			setState(51);
 			((MethodContext)_localctx).p = methodParameters();
-			setState(39);
-			match(T__4);
+			setState(52);
+			match(T__6);
 			((MethodContext)_localctx).nameWithParams =  __((((MethodContext)_localctx).i!=null?_input.getText(((MethodContext)_localctx).i.start,((MethodContext)_localctx).i.stop):null), ((MethodContext)_localctx).p.arguments);
 			}
 		}
@@ -325,11 +389,13 @@ public class JPathParser extends Parser {
 
 	public static class MethodParametersContext extends ParserRuleContext {
 		public List<Object> arguments = new ArrayList<Object>();
-		public Token s;
-		public Token n;
-		public List<TerminalNode> StringLiteral() { return getTokens(JPathParser.StringLiteral); }
-		public TerminalNode StringLiteral(int i) {
-			return getToken(JPathParser.StringLiteral, i);
+		public MethodParameterContext mp;
+		public MethodParameterContext mp2;
+		public List<MethodParameterContext> methodParameter() {
+			return getRuleContexts(MethodParameterContext.class);
+		}
+		public MethodParameterContext methodParameter(int i) {
+			return getRuleContext(MethodParameterContext.class,i);
 		}
 		public MethodParametersContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -347,40 +413,99 @@ public class JPathParser extends Parser {
 
 	public final MethodParametersContext methodParameters() throws RecognitionException {
 		MethodParametersContext _localctx = new MethodParametersContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_methodParameters);
+		enterRule(_localctx, 10, RULE_methodParameters);
 		int _la;
 		try {
-			setState(53);
+			setState(67);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
-			case T__4:
+			case T__6:
 				enterOuterAlt(_localctx, 1);
 				{
 				}
 				break;
+			case DecimalIntegerLiteral:
 			case StringLiteral:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(43);
-				((MethodParametersContext)_localctx).s = match(StringLiteral);
-				_localctx.arguments.add((((MethodParametersContext)_localctx).s!=null?((MethodParametersContext)_localctx).s.getText():null));
-				setState(50);
+				setState(56);
+				((MethodParametersContext)_localctx).mp = methodParameter();
+				_localctx.arguments.add(((MethodParametersContext)_localctx).mp.argument);
+				setState(64);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==T__5) {
+				while (_la==T__7) {
 					{
 					{
-					setState(45);
-					match(T__5);
-					setState(46);
-					((MethodParametersContext)_localctx).n = match(StringLiteral);
-					_localctx.arguments.add((((MethodParametersContext)_localctx).n!=null?((MethodParametersContext)_localctx).n.getText():null));
+					setState(58);
+					match(T__7);
+					setState(59);
+					((MethodParametersContext)_localctx).mp2 = methodParameter();
+					_localctx.arguments.add(((MethodParametersContext)_localctx).mp2.argument);
 					}
 					}
-					setState(52);
+					setState(66);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class MethodParameterContext extends ParserRuleContext {
+		public Object argument;
+		public Token s;
+		public Token di;
+		public TerminalNode StringLiteral() { return getToken(JPathParser.StringLiteral, 0); }
+		public TerminalNode DecimalIntegerLiteral() { return getToken(JPathParser.DecimalIntegerLiteral, 0); }
+		public MethodParameterContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_methodParameter; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).enterMethodParameter(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof JPathListener ) ((JPathListener)listener).exitMethodParameter(this);
+		}
+	}
+
+	public final MethodParameterContext methodParameter() throws RecognitionException {
+		MethodParameterContext _localctx = new MethodParameterContext(_ctx, getState());
+		enterRule(_localctx, 12, RULE_methodParameter);
+		try {
+			setState(73);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case StringLiteral:
+				enterOuterAlt(_localctx, 1);
+				{
+				setState(69);
+				((MethodParameterContext)_localctx).s = match(StringLiteral);
+				((MethodParameterContext)_localctx).argument =  (((MethodParameterContext)_localctx).s!=null?((MethodParameterContext)_localctx).s.getText():null);
+				}
+				break;
+			case DecimalIntegerLiteral:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(71);
+				((MethodParameterContext)_localctx).di = match(DecimalIntegerLiteral);
+				((MethodParameterContext)_localctx).argument =  Long.parseLong((((MethodParameterContext)_localctx).di!=null?((MethodParameterContext)_localctx).di.getText():null));
 				}
 				break;
 			default:
@@ -416,11 +541,11 @@ public class JPathParser extends Parser {
 
 	public final IdentifierContext identifier() throws RecognitionException {
 		IdentifierContext _localctx = new IdentifierContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_identifier);
+		enterRule(_localctx, 14, RULE_identifier);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(55);
+			setState(75);
 			match(Identifier);
 			}
 		}
@@ -436,21 +561,25 @@ public class JPathParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\13<\4\2\t\2\4\3\t"+
-		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2\3\2"+
-		"\7\2\30\n\2\f\2\16\2\33\13\2\3\3\3\3\3\3\3\3\3\3\3\3\5\3#\n\3\3\4\3\4"+
-		"\3\5\3\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\3\6\3\6\3\6\7\6\63\n\6\f\6\16\6\66"+
-		"\13\6\5\68\n\6\3\7\3\7\3\7\2\2\b\2\4\6\b\n\f\2\2\29\2\16\3\2\2\2\4\"\3"+
-		"\2\2\2\6$\3\2\2\2\b&\3\2\2\2\n\67\3\2\2\2\f9\3\2\2\2\16\17\7\3\2\2\17"+
-		"\20\b\2\1\2\20\21\7\4\2\2\21\22\5\6\4\2\22\31\b\2\1\2\23\24\7\5\2\2\24"+
-		"\25\5\4\3\2\25\26\b\2\1\2\26\30\3\2\2\2\27\23\3\2\2\2\30\33\3\2\2\2\31"+
-		"\27\3\2\2\2\31\32\3\2\2\2\32\3\3\2\2\2\33\31\3\2\2\2\34\35\5\6\4\2\35"+
-		"\36\b\3\1\2\36#\3\2\2\2\37 \5\b\5\2 !\b\3\1\2!#\3\2\2\2\"\34\3\2\2\2\""+
-		"\37\3\2\2\2#\5\3\2\2\2$%\5\f\7\2%\7\3\2\2\2&\'\5\f\7\2\'(\7\6\2\2()\5"+
-		"\n\6\2)*\7\7\2\2*+\b\5\1\2+\t\3\2\2\2,8\3\2\2\2-.\7\n\2\2.\64\b\6\1\2"+
-		"/\60\7\b\2\2\60\61\7\n\2\2\61\63\b\6\1\2\62/\3\2\2\2\63\66\3\2\2\2\64"+
-		"\62\3\2\2\2\64\65\3\2\2\2\658\3\2\2\2\66\64\3\2\2\2\67,\3\2\2\2\67-\3"+
-		"\2\2\28\13\3\2\2\29:\7\t\2\2:\r\3\2\2\2\6\31\"\64\67";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\16P\4\2\t\2\4\3\t"+
+		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\3\2\3\2\3\2\3\2\3\2"+
+		"\3\2\3\2\3\2\3\2\7\2\34\n\2\f\2\16\2\37\13\2\3\3\3\3\3\3\3\3\3\3\3\3\3"+
+		"\3\3\3\3\3\5\3*\n\3\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\3\6\3"+
+		"\6\3\6\3\7\3\7\3\7\3\7\3\7\3\7\3\7\7\7A\n\7\f\7\16\7D\13\7\5\7F\n\7\3"+
+		"\b\3\b\3\b\3\b\5\bL\n\b\3\t\3\t\3\t\2\2\n\2\4\6\b\n\f\16\20\2\2\2M\2\22"+
+		"\3\2\2\2\4)\3\2\2\2\6+\3\2\2\2\b-\3\2\2\2\n\63\3\2\2\2\fE\3\2\2\2\16K"+
+		"\3\2\2\2\20M\3\2\2\2\22\23\7\3\2\2\23\24\b\2\1\2\24\25\7\4\2\2\25\26\5"+
+		"\6\4\2\26\35\b\2\1\2\27\30\7\5\2\2\30\31\5\4\3\2\31\32\b\2\1\2\32\34\3"+
+		"\2\2\2\33\27\3\2\2\2\34\37\3\2\2\2\35\33\3\2\2\2\35\36\3\2\2\2\36\3\3"+
+		"\2\2\2\37\35\3\2\2\2 !\5\6\4\2!\"\b\3\1\2\"*\3\2\2\2#$\5\n\6\2$%\b\3\1"+
+		"\2%*\3\2\2\2&\'\5\b\5\2\'(\b\3\1\2(*\3\2\2\2) \3\2\2\2)#\3\2\2\2)&\3\2"+
+		"\2\2*\5\3\2\2\2+,\5\20\t\2,\7\3\2\2\2-.\5\20\t\2./\7\6\2\2/\60\7\f\2\2"+
+		"\60\61\7\7\2\2\61\62\b\5\1\2\62\t\3\2\2\2\63\64\5\20\t\2\64\65\7\b\2\2"+
+		"\65\66\5\f\7\2\66\67\7\t\2\2\678\b\6\1\28\13\3\2\2\29F\3\2\2\2:;\5\16"+
+		"\b\2;B\b\7\1\2<=\7\n\2\2=>\5\16\b\2>?\b\7\1\2?A\3\2\2\2@<\3\2\2\2AD\3"+
+		"\2\2\2B@\3\2\2\2BC\3\2\2\2CF\3\2\2\2DB\3\2\2\2E9\3\2\2\2E:\3\2\2\2F\r"+
+		"\3\2\2\2GH\7\r\2\2HL\b\b\1\2IJ\7\f\2\2JL\b\b\1\2KG\3\2\2\2KI\3\2\2\2L"+
+		"\17\3\2\2\2MN\7\13\2\2N\21\3\2\2\2\7\35)BEK";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

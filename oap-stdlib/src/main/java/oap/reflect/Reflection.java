@@ -89,6 +89,14 @@ public class Reflection extends Annotated<Class<?>> {
         }
     }
 
+    private static Stream<Class<?>> baseOf( Class<?> clazz ) {
+        return Stream.flatTraverse( clazz,
+            c -> {
+                Stream<Class<?>> result = Stream.of( clazz.getInterfaces() );
+                return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
+            } );
+    }
+
     Reflection init() {
         if( this.methods == null ) {
             synchronized( this ) {
@@ -169,7 +177,6 @@ public class Reflection extends Annotated<Class<?>> {
         return Reflect.reflect( typeToken.resolveType( type ) );
     }
 
-
     public Optional<Field> field( String name ) {
         return Optional.ofNullable( fields.get( name ) );
     }
@@ -186,7 +193,6 @@ public class Reflection extends Annotated<Class<?>> {
             .filter( matcher )
             .findFirst();
     }
-
 
     /**
      * @param name       Method name
@@ -235,14 +241,6 @@ public class Reflection extends Annotated<Class<?>> {
             .map( i -> __( resolve( i.getTypeParameters()[0] ), resolve( i.getTypeParameters()[1] ) ) )
             .findAny()
             .orElse( null );
-    }
-
-    private static Stream<Class<?>> baseOf( Class<?> clazz ) {
-        return Stream.flatTraverse( clazz,
-            c -> {
-                Stream<Class<?>> result = Stream.of( clazz.getInterfaces() );
-                return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
-            } );
     }
 
     @Override
@@ -338,6 +336,10 @@ public class Reflection extends Annotated<Class<?>> {
 
         public boolean isSynthetic() {
             return underlying.isSynthetic();
+        }
+
+        public boolean isArray() {
+            return underlying.getType().isArray();
         }
     }
 

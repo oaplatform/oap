@@ -3,6 +3,7 @@
 package oap.jpath;
 
 import java.util.List;
+import java.lang.Number;
 import java.util.ArrayList;
 import oap.util.Pair;
 import static oap.util.Pair.__;
@@ -45,6 +46,16 @@ public interface JPathListener extends ParseTreeListener {
 	 */
 	void exitVariableDeclaratorId(JPathParser.VariableDeclaratorIdContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link JPathParser#array}.
+	 * @param ctx the parse tree
+	 */
+	void enterArray(JPathParser.ArrayContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link JPathParser#array}.
+	 * @param ctx the parse tree
+	 */
+	void exitArray(JPathParser.ArrayContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link JPathParser#method}.
 	 * @param ctx the parse tree
 	 */
@@ -64,6 +75,16 @@ public interface JPathListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitMethodParameters(JPathParser.MethodParametersContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link JPathParser#methodParameter}.
+	 * @param ctx the parse tree
+	 */
+	void enterMethodParameter(JPathParser.MethodParameterContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link JPathParser#methodParameter}.
+	 * @param ctx the parse tree
+	 */
+	void exitMethodParameter(JPathParser.MethodParameterContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link JPathParser#identifier}.
 	 * @param ctx the parse tree

@@ -4,18 +4,20 @@ grammar JPath;
 package oap.jpath;
 
 import java.util.List;
+import java.lang.Number;
 import java.util.ArrayList;
 import oap.util.Pair;
 import static oap.util.Pair.__;
 }
 
 expr returns [Expression expression]
-    : 'var' {$expression = new Expression(IdentifierType.VARIABLE);} ':' f=variableDeclaratorId {$expression.path.add(new PathNodeField(PathType.FIELD, $f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )*
+    : 'var' {$expression = new Expression(IdentifierType.VARIABLE);} ':' f=variableDeclaratorId {$expression.path.add(new PathNodeField($f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )*
     ; 
 
 path returns [PathNode pathNode]
-    : v=variableDeclaratorId {$pathNode = new PathNodeField(PathType.FIELD, $v.text); }
-    | m=method {$pathNode = new PathNodeMethod(PathType.METHOD, $m.nameWithParams._1, $m.nameWithParams._2); }
+    : v=variableDeclaratorId {$pathNode = new PathNodeField($v.text); }
+    | m=method {$pathNode = new PathNodeMethod($m.nameWithParams._1, $m.nameWithParams._2); }
+    | a=array {$pathNode = new PathNodeArray($a.arrayValue._1, $a.arrayValue._2); }
     ;
     
 
@@ -24,29 +26,74 @@ variableDeclaratorId
 	;
 
 
+array returns [Pair<String,Integer> arrayValue]
+    :   i=identifier '[' n=DecimalIntegerLiteral ']' {$arrayValue = __($i.text, Integer.parseInt($n.text));}
+    ;
+
 method returns [Pair<String,List<Object>> nameWithParams]
 	:	i=identifier '(' p=methodParameters ')' {$nameWithParams = __($i.text, $p.arguments);}
 	;
 
 methodParameters returns [List<Object> arguments = new ArrayList<Object>()]
     :
-    | s=StringLiteral {$arguments.add($s.text);} (',' n=StringLiteral {$arguments.add($n.text);})*
+    | mp=methodParameter {$arguments.add($mp.argument);} ( ',' mp2=methodParameter {$arguments.add($mp2.argument);})*
+    ;
+
+methodParameter returns [Object argument]
+    : s=StringLiteral {$argument = $s.text;}
+    | di=DecimalIntegerLiteral {$argument = Long.parseLong($di.text);}
     ;
 
 identifier
-    :
-        Identifier
+    : Identifier
     ;
 
 Identifier
 	:	JavaLetter JavaLetterOrDigit*
 	;
 
-fragment
-Digit
-	:	[0-9]
+DecimalIntegerLiteral
+	:	DecimalNumeral
 	;
 
+fragment
+DecimalNumeral
+	:	'0'
+	|	NonZeroDigit (Digits? | Underscores Digits)
+	;
+
+fragment
+Digits
+	:	Digit (DigitsAndUnderscores? Digit)?
+	;
+	
+fragment
+Digit
+	:	'0'
+	|	NonZeroDigit
+	;
+	
+fragment
+NonZeroDigit
+	:	[1-9]
+	;
+
+fragment
+DigitsAndUnderscores
+	:	DigitOrUnderscore+
+	;
+
+fragment
+DigitOrUnderscore
+	:	Digit
+	|	'_'
+	;
+		
+fragment
+Underscores
+	:	'_'+
+	;
+	
 fragment
 JavaLetter	
 	:	[a-zA-Z$_-] // these are the "java letters" below 0x7F
