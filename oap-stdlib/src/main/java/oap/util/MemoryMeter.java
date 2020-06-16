@@ -49,7 +49,7 @@ public abstract class MemoryMeter {
     public static MemoryMeter get() {
         if( javaagent == JavaAgentStatus.OFF ) return NULL_MEMORY_METER;
 
-        final org.github.jamm.MemoryMeter memoryMeter = new org.github.jamm.MemoryMeter();
+        var memoryMeter = new org.github.jamm.MemoryMeter().enableDebug();
 
         try {
             if( javaagent == JavaAgentStatus.UNKNOWN ) {
@@ -87,7 +87,7 @@ public abstract class MemoryMeter {
 
     public abstract long measure( Object object );
 
-    private static enum JavaAgentStatus {
+    private enum JavaAgentStatus {
         UNKNOWN, ON, OFF
     }
 }
