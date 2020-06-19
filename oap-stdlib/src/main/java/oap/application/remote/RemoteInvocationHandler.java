@@ -50,6 +50,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
@@ -133,7 +135,8 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             try {
                 var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( invocationB );
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
-                var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
+                var responseFuture = client.sendAsync( request, HttpResponse.BodyHandlers.ofInputStream() );
+                var response = responseFuture.get( timeout, TimeUnit.MILLISECONDS );
                 if( response.statusCode() == HTTP_OK && response.body() != null ) {
                     var inputStream = response.body();
                     var bis = new BufferedInputStream( inputStream );
@@ -209,7 +212,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                         throw e;
                     }
                 } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
-            } catch( HttpTimeoutException e ) {
+            } catch( HttpTimeoutException | TimeoutException e ) {
                 log.error( "timeout invoking {}#{}", method.getName(), this );
                 timeoutMetrics.increment();
                 lastException = e;
