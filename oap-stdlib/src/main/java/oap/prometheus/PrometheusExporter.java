@@ -24,15 +24,23 @@
 
 package oap.prometheus;
 
-import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Dates;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
+
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static org.xnio.Options.READ_TIMEOUT;
+import static org.xnio.Options.WRITE_TIMEOUT;
 
 @Slf4j
 public class PrometheusExporter implements Closeable {
@@ -42,7 +50,7 @@ public class PrometheusExporter implements Closeable {
         Metrics.addRegistry( prometheusRegistry );
     }
 
-    private final HttpServer server;
+    private final Undertow server;
 
     public PrometheusExporter( int port ) throws IOException {
         this( port, "/metrics" );
@@ -51,22 +59,33 @@ public class PrometheusExporter implements Closeable {
     public PrometheusExporter( int port, String path ) throws IOException {
         log.info( "Prometheus metrics port/path {}/{}", port, path );
 
-        server = HttpServer.create( new InetSocketAddress( port ), 0 );
-        server.createContext( path, httpExchange -> {
-            var response = prometheusRegistry.scrape();
-            httpExchange.sendResponseHeaders( 200, response.getBytes().length );
-            try( var os = httpExchange.getResponseBody() ) {
-                os.write( response.getBytes() );
-            }
-        } );
+        server = Undertow
+            .builder()
+            .addHttpListener( port, "0.0.0.0" )
+            .setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, true )
+            .setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) Dates.s( 30 ) )
+            .setHandler( Handlers.pathTemplate().add( path, new BlockingHandler( exchange -> {
+                var response = prometheusRegistry.scrape();
+                exchange.setStatusCode( HTTP_NOT_FOUND );
+                exchange.getResponseHeaders().add( Headers.CONTENT_LENGTH, response.getBytes().length );
+                try( var os = exchange.getOutputStream() ) {
+                    os.write( response.getBytes() );
+                }
+
+            } ) ) )
+            .build();
     }
 
     public void start() {
         server.start();
     }
 
+    public void preStop() {
+        server.stop();
+    }
+
     @Override
-    public void close() throws IOException {
-        server.stop( 1 );
+    public void close() {
+        server.stop();
     }
 }
