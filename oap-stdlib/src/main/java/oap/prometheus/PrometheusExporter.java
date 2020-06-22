@@ -39,8 +39,6 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static org.xnio.Options.READ_TIMEOUT;
-import static org.xnio.Options.WRITE_TIMEOUT;
 
 @Slf4j
 public class PrometheusExporter implements Closeable {
@@ -62,9 +60,9 @@ public class PrometheusExporter implements Closeable {
         server = Undertow
             .builder()
             .addHttpListener( port, "0.0.0.0" )
-            .setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, true )
+            .setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, false )
             .setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) Dates.s( 30 ) )
-            .setHandler( Handlers.pathTemplate().add( path, new BlockingHandler( exchange -> {
+            .setHandler( Handlers.path().addPrefixPath( path, new BlockingHandler( exchange -> {
                 var response = prometheusRegistry.scrape();
                 exchange.setStatusCode( HTTP_NOT_FOUND );
                 exchange.getResponseHeaders().add( Headers.CONTENT_LENGTH, response.getBytes().length );
