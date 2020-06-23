@@ -24,7 +24,33 @@
 
 package oap.json.ext;
 
-import java.io.Serializable;
+import oap.util.Try;
 
-public interface Ext extends Serializable {
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+public abstract class Ext implements Serializable {
+    private static final ConcurrentHashMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
+
+    @SuppressWarnings( "unchecked" )
+    protected static Optional<Constructor<? extends Ext>> init( Class<?> parent, String field, Class<?>... params ) {
+        return cons.computeIfAbsent( parent + field, id -> {
+            try {
+                var clazz = ExtDeserializer.extensionOf( parent, field );
+                if( clazz == null ) return Optional.empty();
+
+                return Optional.of( ( Constructor<? extends Ext> ) clazz.getConstructor( params ) );
+            } catch( NoSuchMethodException e ) {
+                e.printStackTrace();
+                throw new RuntimeException( e.getMessage(), e );
+            }
+        } );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    protected static <T extends Ext> T newExt( Class<?> parent, String field, Class<?>[] cparams, Object[] params ) {
+        return init( parent, field, cparams ).map( Try.map( c -> ( T ) c.newInstance( params ) ) ).orElse( null );
+    }
 }
