@@ -67,6 +67,6 @@ class Npe {
 }
 
 
-class NpeExt implements Ext {
+class NpeExt extends Ext {
     public String country;
 }

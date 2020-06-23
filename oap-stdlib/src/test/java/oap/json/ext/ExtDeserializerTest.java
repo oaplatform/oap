@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ExtDeserializerTest {
     @Test
     public void ext() {
-        Bean aaa = new Bean( new TestExt( "aaa" ) );
+        Bean aaa = new Bean( TestExt.newExt( "aaa" ) );
         String json = "{\"ext\":{\"value\":\"aaa\"}}";
         assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
         assertThat( Binder.json.<Bean>unmarshal( Bean.class, json ) )
@@ -59,7 +59,7 @@ public class ExtDeserializerTest {
 
     @EqualsAndHashCode
     @ToString
-    public static class TestExt implements Ext {
+    public static class TestExt extends Ext {
         String value;
 
         public TestExt() {
@@ -67,6 +67,14 @@ public class ExtDeserializerTest {
 
         public TestExt( String value ) {
             this.value = value;
+        }
+
+        public static TestExt newExt() {
+            return newExt( Bean.class, "ext", new Class[0], new Object[0] );
+        }
+
+        public static TestExt newExt( String value ) {
+            return newExt( Bean.class, "ext", new Class[] { String.class }, new Object[] { value } );
         }
     }
 }
