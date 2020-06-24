@@ -24,8 +24,11 @@
 
 package oap.concurrent;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -55,5 +58,17 @@ public final class Executors {
             60L, TimeUnit.SECONDS,
             new SynchronousQueue<>(),
             threadFactory );
+    }
+
+    @Slf4j
+    public static class BlockPolicy implements RejectedExecutionHandler {
+        @Override
+        public void rejectedExecution( Runnable r, java.util.concurrent.ThreadPoolExecutor executor ) {
+            try {
+                executor.getQueue().put( r );
+            } catch( InterruptedException e1 ) {
+                log.error( "Work discarded, thread was interrupted while waiting for space to schedule: {}", r );
+            }
+        }
     }
 }
