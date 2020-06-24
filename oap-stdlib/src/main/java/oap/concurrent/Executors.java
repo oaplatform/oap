@@ -24,11 +24,10 @@
 
 package oap.concurrent;
 
-import lombok.extern.slf4j.Slf4j;
-
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -60,15 +59,43 @@ public final class Executors {
             threadFactory );
     }
 
-    @Slf4j
-    public static class BlockPolicy implements RejectedExecutionHandler {
+    public static BlockingExecutor newFixedBlockingThreadPool( int nThreads ) {
+        return new BlockingExecutor( nThreads );
+    }
+
+    public static class BlockingExecutor implements Executor {
+        private final Semaphore semaphore;
+        private final ThreadPoolExecutor threadPoolExecutor;
+
+        private BlockingExecutor( int concurrentTasksLimit ) {
+            semaphore = new Semaphore( concurrentTasksLimit );
+            this.threadPoolExecutor = new ThreadPoolExecutor( concurrentTasksLimit, concurrentTasksLimit,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>() );
+        }
+
         @Override
-        public void rejectedExecution( Runnable r, java.util.concurrent.ThreadPoolExecutor executor ) {
+        public void execute( Runnable command ) {
             try {
-                executor.getQueue().put( r );
-            } catch( InterruptedException e1 ) {
-                log.error( "Work discarded, thread was interrupted while waiting for space to schedule: {}", r );
+                semaphore.acquire();
+            } catch( InterruptedException e ) {
+                e.printStackTrace();
+                return;
             }
+
+            final Runnable wrapped = () -> {
+                try {
+                    command.run();
+                } finally {
+                    semaphore.release();
+                }
+            };
+
+            threadPoolExecutor.execute( wrapped );
+        }
+
+        public void shutdown() {
+            threadPoolExecutor.shutdown();
         }
     }
 }
