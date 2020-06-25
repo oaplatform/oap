@@ -67,9 +67,19 @@ public final class Executors {
         private final Semaphore semaphore;
         private final ThreadPoolExecutor threadPoolExecutor;
 
+        private BlockingExecutor( int concurrentTasksLimit, ThreadFactory threadFactory ) {
+            semaphore = new Semaphore( concurrentTasksLimit );
+            this.threadPoolExecutor = new ThreadPoolExecutor(
+                concurrentTasksLimit, concurrentTasksLimit,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                threadFactory );
+        }
+
         private BlockingExecutor( int concurrentTasksLimit ) {
             semaphore = new Semaphore( concurrentTasksLimit );
-            this.threadPoolExecutor = new ThreadPoolExecutor( concurrentTasksLimit, concurrentTasksLimit,
+            this.threadPoolExecutor = new ThreadPoolExecutor(
+                concurrentTasksLimit, concurrentTasksLimit,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>() );
         }
