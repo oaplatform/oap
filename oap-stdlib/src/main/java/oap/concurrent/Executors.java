@@ -63,6 +63,10 @@ public final class Executors {
         return new BlockingExecutor( nThreads );
     }
 
+    public static BlockingExecutor newFixedBlockingThreadPool( int nThreads, ThreadFactory threadFactory ) {
+        return new BlockingExecutor( nThreads, threadFactory );
+    }
+
     public static class BlockingExecutor implements Executor {
         private final Semaphore semaphore;
         private final ThreadPoolExecutor threadPoolExecutor;
