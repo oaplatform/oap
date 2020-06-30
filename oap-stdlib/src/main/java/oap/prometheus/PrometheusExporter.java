@@ -39,6 +39,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public class PrometheusExporter implements Closeable {
@@ -64,7 +65,7 @@ public class PrometheusExporter implements Closeable {
             .setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) Dates.s( 30 ) )
             .setHandler( Handlers.path().addPrefixPath( path, new BlockingHandler( exchange -> {
                 var response = prometheusRegistry.scrape();
-                exchange.setStatusCode( HTTP_NOT_FOUND );
+                exchange.setStatusCode( HTTP_OK );
                 exchange.getResponseHeaders().add( Headers.CONTENT_LENGTH, response.getBytes().length );
                 try( var os = exchange.getOutputStream() ) {
                     os.write( response.getBytes() );
