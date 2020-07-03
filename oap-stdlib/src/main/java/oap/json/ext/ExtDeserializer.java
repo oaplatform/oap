@@ -45,7 +45,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-public class ExtDeserializer<T extends Ext> extends StdDeserializer<T> {
+public class ExtDeserializer extends StdDeserializer<Ext> {
     private static final HashMap<String, ClassConfiguration> extmap = new HashMap<>();
 
     static {
@@ -75,7 +75,7 @@ public class ExtDeserializer<T extends Ext> extends StdDeserializer<T> {
         this( Ext.class );
     }
 
-    public ExtDeserializer( Class<? extends Ext> clazz ) {
+    public ExtDeserializer( Class clazz ) {
         super( clazz );
     }
 
@@ -89,22 +89,22 @@ public class ExtDeserializer<T extends Ext> extends StdDeserializer<T> {
         return null;
     }
 
-    public static Map<Class<?>, ExtDeserializer> getDeserializers() {
-        var ret = new HashMap<Class<?>, ExtDeserializer>();
+    public static Map<Class, ExtDeserializer> getDeserializers() {
+        var ret = new HashMap<Class, ExtDeserializer>();
 
         ret.put( Ext.class, new ExtDeserializer() );
         for( var c : extmap.values() ) {
             if( c._abstract == null ) continue;
             var clazz = c._abstract;
 
-            ret.put( clazz, new ExtDeserializer( clazz ) );
+            ret.put( clazz, new ExtDeserializer( c.implementation ) );
         }
 
         return ret;
     }
 
     @Override
-    public T deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
+    public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
         var parsingContext = jsonParser.getParsingContext();
         var contextParent = parsingContext.getParent();
         var field = contextParent.getCurrentName();
@@ -115,7 +115,7 @@ public class ExtDeserializer<T extends Ext> extends StdDeserializer<T> {
             return null;
         }
 
-        return ( T ) jsonParser.readValueAs( implementation );
+        return ( Ext ) jsonParser.readValueAs( implementation );
     }
 
     @ToString

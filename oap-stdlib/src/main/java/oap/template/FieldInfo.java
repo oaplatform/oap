@@ -43,22 +43,28 @@ public class FieldInfo {
     public final String field;
     public final Type type;
     public final Annotation[] annotations;
+    public final boolean typeCast;
 
     public FieldInfo( Type type ) {
-        this( null, type, new Annotation[0] );
+        this( null, type, new Annotation[0], false );
     }
 
     public FieldInfo( String field, Type type, Annotation[] annotations ) {
+        this( field, type, annotations, false );
+    }
+
+    public FieldInfo( String field, Type type, Annotation[] annotations, boolean typeCast ) {
         if( log.isTraceEnabled() )
-            log.trace( "field = {}, type = {}, annotations = {}", field, type, List.of( annotations ) );
+            log.trace( "field = {}, type = {}, annotations = {}, typeCast = {}", field, type, List.of( annotations ), typeCast );
 
         this.field = field;
         this.type = type;
         this.annotations = annotations;
+        this.typeCast = typeCast;
     }
 
     public FieldInfo( String field, Field declaredField ) {
-        this( field, declaredField.getGenericType(), declaredField.getDeclaredAnnotations() );
+        this( field, declaredField.getGenericType(), declaredField.getDeclaredAnnotations(), false );
     }
 
     public static boolean isPrimitive( Type type ) {

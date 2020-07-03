@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static oap.io.Files.ensureDirectory;
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StringTemplateTest extends Fixtures {
@@ -263,6 +264,17 @@ public class StringTemplateTest extends Fixtures {
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1.idNotFound}" )
             .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=" );
 
+    }
+
+    @Test
+    public void testExt() {
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+
+        var obj = new TestTemplateBean();
+        obj.ext = new TestTemplateBeanExt( "v1" );
+
+        assertString( engine.getTemplate( "txt", TestTemplateBean.class, "-${ext.value}-" ).renderString( obj, Map.of() ) )
+            .isEqualTo( "-v1-" );
     }
 
     @Test

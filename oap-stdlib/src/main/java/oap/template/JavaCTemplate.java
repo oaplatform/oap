@@ -27,6 +27,7 @@ package oap.template;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.StringBuilderPool;
+import oap.json.ext.ExtDeserializer;
 import oap.tools.MemoryClassLoaderJava13;
 import oap.util.Functions;
 import oap.util.Pair;
@@ -38,6 +39,7 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -212,21 +214,6 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                             String[] orPath, int orIndex, L line ) throws NoSuchFieldException, NoSuchMethodException {
         var currentPath = orPath[orIndex].trim();
 
-//        var m = mapper.get( currentPath );
-//        if( m != null ) {
-//            var mNum = num.incrementAndGet();
-//            tab( c, tab ).append( "// mapper\n" );
-//            tab( c, tab ).append( "Supplier<String> mapperSupplier" ).append( mNum ).append( " = m.get( \"" ).append( currentPath ).append( "\" );\n" );
-//            tab( c, tab ).append( "String mapper" ).append( mNum ).append( " = mapperSupplier" ).append( mNum ).append( ".get();\n" );
-//            if( line.function != null ) {
-//                tab( c, tab ).append( "String mapperFunction" ).append( mNum ).append( " = " );
-//                map.function( c, line.function, () -> c.append( "mapper" ).append( mNum ) ).append( ";\n" );
-//            }
-//            tab( c, tab ).append( "acc.accept( mapper" );
-//            if( line.function != null ) c.append( "Function" );
-//            c.append( mNum ).append( " );\n" );
-//        } else {
-
         int sp = 0;
         StringBuilder newPath = new StringBuilder( "s." );
         MutableObject<FieldInfo> lc = new MutableObject<>( clazz );
@@ -250,8 +237,7 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                     String field = "field" + num.incrementAndGet();
 
                     Optional<Pair<FieldInfo, String>> rfP = Optional.ofNullable( fields.get( prefix ) );
-                    String rf = rfP.map( p -> p._2 + ( optional ? ".get()"
-                        : "" ) + "." + suffix ).orElse( "s." + key );
+                    var rf = rfP.map( p -> p._2 + ( optional ? ".get()" : "" ) + "." + suffix ).orElse( "s." + key );
 
                     if( optional ) {
                         tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( ".isPresent() ) {\n" );
@@ -265,7 +251,9 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                         fields.up();
                     }
 
-                    tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " ).append( rf ).append( ";\n" );
+                    tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " );
+                    if(declaredField.typeCast) c.append( '(' ).append( classType ).append( ") " );
+                    c.append( rf ).append( ";\n" );
 
                     lc.setValue( declaredField );
                     return __( declaredField, field );
@@ -389,6 +377,10 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
                     return new FieldInfo( field, Object.class, type.annotations );
                 }
                 var declaredField = type1.getDeclaredField( field );
+
+                var extFieldInfo = getExt( type1, declaredField );
+                if( extFieldInfo != null ) return extFieldInfo;
+
                 return new FieldInfo( field, declaredField );
             } else {
                 var f = field.substring( 0, i );
@@ -398,8 +390,16 @@ public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L>
         } catch( NoSuchMethodException | NoSuchFieldException e ) {
             if( type1.getSuperclass() != null && !type1.getSuperclass().equals( Object.class ) )
                 return getDeclaredFieldOrFunctionType( new FieldInfo( field, type1.getGenericSuperclass(), type.annotations ), field );
-            else throw e;
+            else
+                throw e;
         }
+    }
+
+    private FieldInfo getExt( Class parent, Field declaredField ) {
+        var extClass = ExtDeserializer.extensionOf( parent, declaredField.getName() );
+        if( extClass == null ) return null;
+
+        return new FieldInfo( declaredField.getName(), extClass, declaredField.getDeclaredAnnotations(), true );
     }
 
     private void add( StringBuilder c, AtomicInteger num, String newPath, FieldInfo cc,

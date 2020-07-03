@@ -11,4 +11,8 @@ ext:
     implementation: oap.json.ext.NpeExt
 
 
+  - class: oap.template.TestTemplateBean
+    field: ext
+    implementation: oap.template.TestTemplateBeanExt
+
 
