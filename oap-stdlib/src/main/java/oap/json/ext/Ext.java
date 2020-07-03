@@ -24,6 +24,7 @@
 
 package oap.json.ext;
 
+import lombok.EqualsAndHashCode;
 import oap.util.Try;
 
 import java.io.Serializable;
@@ -31,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+@EqualsAndHashCode
 public abstract class Ext implements Serializable {
     private static final ConcurrentHashMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
 

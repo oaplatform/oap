@@ -35,8 +35,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ExtDeserializerTest {
     @Test
     public void ext() {
-        Bean aaa = new Bean( TestExt.newExt( "aaa" ) );
-        String json = "{\"ext\":{\"value\":\"aaa\"}}";
+        var aaa = new Bean( TestExt.newExt( "aaa" ) );
+        var json = "{\"ext\":{\"value\":\"aaa\"}}";
+        assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
+        assertThat( Binder.json.<Bean>unmarshal( Bean.class, json ) )
+            .isEqualTo( aaa );
+    }
+
+    @Test
+    public void ext2() {
+        var aaa = new Bean();
+        aaa.ext2 = Ext2.newExt( Bean.class, "ext2", new Class[] {String.class}, new Object[] {"aaa"} );
+        var json = "{\"ext2\":{\"value\":\"aaa\"}}";
         assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
         assertThat( Binder.json.<Bean>unmarshal( Bean.class, json ) )
             .isEqualTo( aaa );
@@ -46,6 +56,7 @@ public class ExtDeserializerTest {
     @ToString
     public static class Bean {
         Ext ext;
+        Ext2 ext2;
 
         Ext noext;
 
@@ -57,9 +68,15 @@ public class ExtDeserializerTest {
         }
     }
 
-    @EqualsAndHashCode
+    @EqualsAndHashCode( callSuper = true )
     @ToString
-    public static class TestExt extends Ext {
+    public abstract static class Ext2 extends Ext {
+
+    }
+
+    @EqualsAndHashCode( callSuper = true )
+    @ToString
+    public static class TestExt extends Ext2 {
         String value;
 
         public TestExt() {

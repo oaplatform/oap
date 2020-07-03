@@ -36,15 +36,17 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
+import oap.json.ext.ExtDeserializer.Configuration.ClassConfiguration;
 import oap.util.Throwables;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
-public class ExtDeserializer extends StdDeserializer<Ext> {
-    private static final HashMap<String, Class<?>> extmap = new HashMap<>();
+public class ExtDeserializer<T extends Ext> extends StdDeserializer<T> {
+    private static final HashMap<String, ClassConfiguration> extmap = new HashMap<>();
 
     static {
         try {
@@ -57,7 +59,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
                 var conf = mapper.readValue( p, Configuration.class );
                 for( var cc : conf.ext ) {
                     String key = extensionKey( cc.clazz, cc.field );
-                    extmap.put( key, cc.implementation );
+                    extmap.put( key, cc );
 
                     log.debug( "add ext rule: {} = {}", key, cc.implementation );
                 }
@@ -69,16 +71,40 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
         }
     }
 
+    protected ExtDeserializer() {
+        this( Ext.class );
+    }
+
+    public ExtDeserializer( Class<? extends Ext> clazz ) {
+        super( clazz );
+    }
+
     private static String extensionKey( Class<?> clazz, String field ) {
         return clazz.getName() + "#" + field;
     }
 
-    protected ExtDeserializer() {
-        super( Ext.class );
+    public static Class<?> extensionOf( Class<?> clazz, String field ) {
+        var classConfiguration = extmap.get( extensionKey( clazz, field ) );
+        if( classConfiguration != null ) return classConfiguration.implementation;
+        return null;
+    }
+
+    public static Map<Class<?>, ExtDeserializer> getDeserializers() {
+        var ret = new HashMap<Class<?>, ExtDeserializer>();
+
+        ret.put( Ext.class, new ExtDeserializer() );
+        for( var c : extmap.values() ) {
+            if( c._abstract == null ) continue;
+            var clazz = c._abstract;
+
+            ret.put( clazz, new ExtDeserializer( clazz ) );
+        }
+
+        return ret;
     }
 
     @Override
-    public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
+    public T deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
         var parsingContext = jsonParser.getParsingContext();
         var contextParent = parsingContext.getParent();
         var field = contextParent.getCurrentName();
@@ -89,11 +115,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
             return null;
         }
 
-        return ( Ext ) jsonParser.readValueAs( implementation );
-    }
-
-    public static Class<?> extensionOf( Class<?> clazz, String field ) {
-        return extmap.get( extensionKey( clazz, field ) );
+        return ( T ) jsonParser.readValueAs( implementation );
     }
 
     @ToString
@@ -104,16 +126,11 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
         @ToString
         public static class ClassConfiguration {
             @JsonProperty( "class" )
-            public final Class<?> clazz;
-            public final String field;
-            public final Class<?> implementation;
-
-            @JsonCreator
-            public ClassConfiguration( Class<?> clazz, String field, Class<?> implementation ) {
-                this.clazz = clazz;
-                this.field = field;
-                this.implementation = implementation;
-            }
+            public Class<?> clazz;
+            public String field;
+            public Class<?> implementation;
+            @JsonProperty( "abstract" )
+            public Class<?> _abstract = null;
         }
     }
 }

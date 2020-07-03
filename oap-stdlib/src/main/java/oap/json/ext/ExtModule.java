@@ -28,6 +28,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 public class ExtModule extends SimpleModule {
     public ExtModule() {
-        this.addDeserializer( Ext.class, new ExtDeserializer() );
+        ExtDeserializer.getDeserializers().forEach( this::addDeserializer );
     }
 }
