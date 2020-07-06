@@ -42,4 +42,12 @@ public class Macros {
     private static String encode( String src ) {
         return URLEncoder.encode( src, StandardCharsets.UTF_8.name() );
     }
+
+    public static String toUpperCase( String src, long depth ) {
+        return src != null ? src.toUpperCase() : null;
+    }
+
+    public static String toLowerCase( String src, long depth ) {
+        return src != null ? src.toLowerCase() : null;
+    }
 }

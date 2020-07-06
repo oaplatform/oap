@@ -119,6 +119,17 @@ public class StringTemplateTest extends Fixtures {
     }
 
     @Test
+    public void testToUpperCase() {
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
+
+        var test = new Tst();
+        var test1 = new Test1( "a i/d" );
+        test.test1 = Optional.of( test1 );
+        assertThat( engine.getTemplate( "name1", Container.class, "${tst.test1.id ; toUpperCase(0)}" )
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "A I/D" );
+    }
+    
+    @Test
     public void otherJoinStrategy() {
         var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
