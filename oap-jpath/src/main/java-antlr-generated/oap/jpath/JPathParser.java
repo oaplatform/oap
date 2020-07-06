@@ -41,7 +41,7 @@ public class JPathParser extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'var'", "':'", "'.'", "'['", "']'", "'('", "')'", "','"
+			null, "'${'", "'.'", "'}'", "'['", "']'", "'('", "')'", "','"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -140,27 +140,27 @@ public class JPathParser extends Parser {
 			match(T__0);
 			((ExprContext)_localctx).expression =  new Expression(IdentifierType.VARIABLE);
 			setState(18);
-			match(T__1);
-			setState(19);
 			((ExprContext)_localctx).f = variableDeclaratorId();
 			_localctx.expression.path.add(new PathNodeField((((ExprContext)_localctx).f!=null?_input.getText(((ExprContext)_localctx).f.start,((ExprContext)_localctx).f.stop):null)));
-			setState(27);
+			setState(26);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==T__2) {
+			while (_la==T__1) {
 				{
 				{
+				setState(20);
+				match(T__1);
 				setState(21);
-				match(T__2);
-				setState(22);
 				((ExprContext)_localctx).n = path();
 				_localctx.expression.path.add(((ExprContext)_localctx).n.pathNode);
 				}
 				}
-				setState(29);
+				setState(28);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
+			setState(29);
+			match(T__2);
 			}
 		}
 		catch (RecognitionException re) {
@@ -206,13 +206,13 @@ public class JPathParser extends Parser {
 		PathContext _localctx = new PathContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_path);
 		try {
-			setState(39);
+			setState(40);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(30);
+				setState(31);
 				((PathContext)_localctx).v = variableDeclaratorId();
 				((PathContext)_localctx).pathNode =  new PathNodeField((((PathContext)_localctx).v!=null?_input.getText(((PathContext)_localctx).v.start,((PathContext)_localctx).v.stop):null)); 
 				}
@@ -220,7 +220,7 @@ public class JPathParser extends Parser {
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(33);
+				setState(34);
 				((PathContext)_localctx).m = method();
 				((PathContext)_localctx).pathNode =  new PathNodeMethod(((PathContext)_localctx).m.nameWithParams._1, ((PathContext)_localctx).m.nameWithParams._2); 
 				}
@@ -228,7 +228,7 @@ public class JPathParser extends Parser {
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(36);
+				setState(37);
 				((PathContext)_localctx).a = array();
 				((PathContext)_localctx).pathNode =  new PathNodeArray(((PathContext)_localctx).a.arrayValue._1, ((PathContext)_localctx).a.arrayValue._2); 
 				}
@@ -270,7 +270,7 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(41);
+			setState(42);
 			identifier();
 			}
 		}
@@ -313,13 +313,13 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(43);
-			((ArrayContext)_localctx).i = identifier();
 			setState(44);
-			match(T__3);
+			((ArrayContext)_localctx).i = identifier();
 			setState(45);
-			((ArrayContext)_localctx).n = match(DecimalIntegerLiteral);
+			match(T__3);
 			setState(46);
+			((ArrayContext)_localctx).n = match(DecimalIntegerLiteral);
+			setState(47);
 			match(T__4);
 			((ArrayContext)_localctx).arrayValue =  __((((ArrayContext)_localctx).i!=null?_input.getText(((ArrayContext)_localctx).i.start,((ArrayContext)_localctx).i.stop):null), Integer.parseInt((((ArrayContext)_localctx).n!=null?((ArrayContext)_localctx).n.getText():null)));
 			}
@@ -365,13 +365,13 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(49);
-			((MethodContext)_localctx).i = identifier();
 			setState(50);
-			match(T__5);
+			((MethodContext)_localctx).i = identifier();
 			setState(51);
-			((MethodContext)_localctx).p = methodParameters();
+			match(T__5);
 			setState(52);
+			((MethodContext)_localctx).p = methodParameters();
+			setState(53);
 			match(T__6);
 			((MethodContext)_localctx).nameWithParams =  __((((MethodContext)_localctx).i!=null?_input.getText(((MethodContext)_localctx).i.start,((MethodContext)_localctx).i.stop):null), ((MethodContext)_localctx).p.arguments);
 			}
@@ -416,7 +416,7 @@ public class JPathParser extends Parser {
 		enterRule(_localctx, 10, RULE_methodParameters);
 		int _la;
 		try {
-			setState(67);
+			setState(68);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case T__6:
@@ -428,23 +428,23 @@ public class JPathParser extends Parser {
 			case StringLiteral:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(56);
+				setState(57);
 				((MethodParametersContext)_localctx).mp = methodParameter();
 				_localctx.arguments.add(((MethodParametersContext)_localctx).mp.argument);
-				setState(64);
+				setState(65);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==T__7) {
 					{
 					{
-					setState(58);
-					match(T__7);
 					setState(59);
+					match(T__7);
+					setState(60);
 					((MethodParametersContext)_localctx).mp2 = methodParameter();
 					_localctx.arguments.add(((MethodParametersContext)_localctx).mp2.argument);
 					}
 					}
-					setState(66);
+					setState(67);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
@@ -489,13 +489,13 @@ public class JPathParser extends Parser {
 		MethodParameterContext _localctx = new MethodParameterContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_methodParameter);
 		try {
-			setState(73);
+			setState(74);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case StringLiteral:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(69);
+				setState(70);
 				((MethodParameterContext)_localctx).s = match(StringLiteral);
 				((MethodParameterContext)_localctx).argument =  (((MethodParameterContext)_localctx).s!=null?((MethodParameterContext)_localctx).s.getText():null);
 				}
@@ -503,7 +503,7 @@ public class JPathParser extends Parser {
 			case DecimalIntegerLiteral:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(71);
+				setState(72);
 				((MethodParameterContext)_localctx).di = match(DecimalIntegerLiteral);
 				((MethodParameterContext)_localctx).argument =  Long.parseLong((((MethodParameterContext)_localctx).di!=null?((MethodParameterContext)_localctx).di.getText():null));
 				}
@@ -545,7 +545,7 @@ public class JPathParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(75);
+			setState(76);
 			match(Identifier);
 			}
 		}
@@ -561,25 +561,25 @@ public class JPathParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\16P\4\2\t\2\4\3\t"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\16Q\4\2\t\2\4\3\t"+
 		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\3\2\3\2\3\2\3\2\3\2"+
-		"\3\2\3\2\3\2\3\2\7\2\34\n\2\f\2\16\2\37\13\2\3\3\3\3\3\3\3\3\3\3\3\3\3"+
-		"\3\3\3\3\3\5\3*\n\3\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\3\6\3"+
-		"\6\3\6\3\7\3\7\3\7\3\7\3\7\3\7\3\7\7\7A\n\7\f\7\16\7D\13\7\5\7F\n\7\3"+
-		"\b\3\b\3\b\3\b\5\bL\n\b\3\t\3\t\3\t\2\2\n\2\4\6\b\n\f\16\20\2\2\2M\2\22"+
-		"\3\2\2\2\4)\3\2\2\2\6+\3\2\2\2\b-\3\2\2\2\n\63\3\2\2\2\fE\3\2\2\2\16K"+
-		"\3\2\2\2\20M\3\2\2\2\22\23\7\3\2\2\23\24\b\2\1\2\24\25\7\4\2\2\25\26\5"+
-		"\6\4\2\26\35\b\2\1\2\27\30\7\5\2\2\30\31\5\4\3\2\31\32\b\2\1\2\32\34\3"+
-		"\2\2\2\33\27\3\2\2\2\34\37\3\2\2\2\35\33\3\2\2\2\35\36\3\2\2\2\36\3\3"+
-		"\2\2\2\37\35\3\2\2\2 !\5\6\4\2!\"\b\3\1\2\"*\3\2\2\2#$\5\n\6\2$%\b\3\1"+
-		"\2%*\3\2\2\2&\'\5\b\5\2\'(\b\3\1\2(*\3\2\2\2) \3\2\2\2)#\3\2\2\2)&\3\2"+
-		"\2\2*\5\3\2\2\2+,\5\20\t\2,\7\3\2\2\2-.\5\20\t\2./\7\6\2\2/\60\7\f\2\2"+
-		"\60\61\7\7\2\2\61\62\b\5\1\2\62\t\3\2\2\2\63\64\5\20\t\2\64\65\7\b\2\2"+
-		"\65\66\5\f\7\2\66\67\7\t\2\2\678\b\6\1\28\13\3\2\2\29F\3\2\2\2:;\5\16"+
-		"\b\2;B\b\7\1\2<=\7\n\2\2=>\5\16\b\2>?\b\7\1\2?A\3\2\2\2@<\3\2\2\2AD\3"+
-		"\2\2\2B@\3\2\2\2BC\3\2\2\2CF\3\2\2\2DB\3\2\2\2E9\3\2\2\2E:\3\2\2\2F\r"+
-		"\3\2\2\2GH\7\r\2\2HL\b\b\1\2IJ\7\f\2\2JL\b\b\1\2KG\3\2\2\2KI\3\2\2\2L"+
-		"\17\3\2\2\2MN\7\13\2\2N\21\3\2\2\2\7\35)BEK";
+		"\3\2\3\2\3\2\7\2\33\n\2\f\2\16\2\36\13\2\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3"+
+		"\3\3\3\3\3\3\3\5\3+\n\3\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\3"+
+		"\6\3\6\3\6\3\7\3\7\3\7\3\7\3\7\3\7\3\7\7\7B\n\7\f\7\16\7E\13\7\5\7G\n"+
+		"\7\3\b\3\b\3\b\3\b\5\bM\n\b\3\t\3\t\3\t\2\2\n\2\4\6\b\n\f\16\20\2\2\2"+
+		"N\2\22\3\2\2\2\4*\3\2\2\2\6,\3\2\2\2\b.\3\2\2\2\n\64\3\2\2\2\fF\3\2\2"+
+		"\2\16L\3\2\2\2\20N\3\2\2\2\22\23\7\3\2\2\23\24\b\2\1\2\24\25\5\6\4\2\25"+
+		"\34\b\2\1\2\26\27\7\4\2\2\27\30\5\4\3\2\30\31\b\2\1\2\31\33\3\2\2\2\32"+
+		"\26\3\2\2\2\33\36\3\2\2\2\34\32\3\2\2\2\34\35\3\2\2\2\35\37\3\2\2\2\36"+
+		"\34\3\2\2\2\37 \7\5\2\2 \3\3\2\2\2!\"\5\6\4\2\"#\b\3\1\2#+\3\2\2\2$%\5"+
+		"\n\6\2%&\b\3\1\2&+\3\2\2\2\'(\5\b\5\2()\b\3\1\2)+\3\2\2\2*!\3\2\2\2*$"+
+		"\3\2\2\2*\'\3\2\2\2+\5\3\2\2\2,-\5\20\t\2-\7\3\2\2\2./\5\20\t\2/\60\7"+
+		"\6\2\2\60\61\7\f\2\2\61\62\7\7\2\2\62\63\b\5\1\2\63\t\3\2\2\2\64\65\5"+
+		"\20\t\2\65\66\7\b\2\2\66\67\5\f\7\2\678\7\t\2\289\b\6\1\29\13\3\2\2\2"+
+		":G\3\2\2\2;<\5\16\b\2<C\b\7\1\2=>\7\n\2\2>?\5\16\b\2?@\b\7\1\2@B\3\2\2"+
+		"\2A=\3\2\2\2BE\3\2\2\2CA\3\2\2\2CD\3\2\2\2DG\3\2\2\2EC\3\2\2\2F:\3\2\2"+
+		"\2F;\3\2\2\2G\r\3\2\2\2HI\7\r\2\2IM\b\b\1\2JK\7\f\2\2KM\b\b\1\2LH\3\2"+
+		"\2\2LJ\3\2\2\2M\17\3\2\2\2NO\7\13\2\2O\21\3\2\2\2\7\34*CFL";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

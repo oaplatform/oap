@@ -11,7 +11,7 @@ import static oap.util.Pair.__;
 }
 
 expr returns [Expression expression]
-    : 'var' {$expression = new Expression(IdentifierType.VARIABLE);} ':' f=variableDeclaratorId {$expression.path.add(new PathNodeField($f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )*
+    : '${' {$expression = new Expression(IdentifierType.VARIABLE);} f=variableDeclaratorId {$expression.path.add(new PathNodeField($f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )* '}'
     ; 
 
 path returns [PathNode pathNode]

@@ -39,7 +39,7 @@ public class JPathTest {
     @Test
     public void testVariable() {
         var output = new StringBuilderJPathOutput();
-        JPath.evaluate( "var:test", Map.of( "test", 1 ), output );
+        JPath.evaluate( "${test}", Map.of( "test", 1 ), output );
 
         assertThat( output.toString() ).isEqualTo( "1" );
     }
@@ -47,7 +47,7 @@ public class JPathTest {
     @Test
     public void testNested() {
         var output = new StringBuilderJPathOutput();
-        JPath.evaluate( "var:test.val", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        JPath.evaluate( "${test.val}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
 
         assertThat( output.toString() ).isEqualTo( "val1" );
     }
@@ -55,7 +55,7 @@ public class JPathTest {
     @Test
     public void testPrivateField() {
         var output = new StringBuilderJPathOutput();
-        JPath.evaluate( "var:test.testPrivate.val", Map.of( "test", new TestBean( "val1", null, new TestBean( "pv", null, null ) ) ), output );
+        JPath.evaluate( "${test.testPrivate.val}", Map.of( "test", new TestBean( "val1", null, new TestBean( "pv", null, null ) ) ), output );
 
         assertThat( output.toString() ).isEqualTo( "pv" );
     }
@@ -63,7 +63,7 @@ public class JPathTest {
     @Test
     public void testPrivateGetter() {
         var output = new StringBuilderJPathOutput();
-        JPath.evaluate( "var:test.getPrivate().val", Map.of( "test", new TestBean( "val1", null, new TestBean( "pv", null, null ) ) ), output );
+        JPath.evaluate( "${test.getPrivate().val}", Map.of( "test", new TestBean( "val1", null, new TestBean( "pv", null, null ) ) ), output );
 
         assertThat( output.toString() ).isEqualTo( "pv" );
     }
@@ -71,11 +71,11 @@ public class JPathTest {
     @Test
     public void testMethodString() {
         var output = new StringBuilderJPathOutput();
-        JPath.evaluate( "var:test.getString(\"str\")", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        JPath.evaluate( "${test.getString(\"str\")}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
         assertThat( output.toString() ).isEqualTo( "str" );
 
         output.reset();
-        JPath.evaluate( "var:test.getString(\"str\", \"str2\")", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        JPath.evaluate( "${test.getString(\"str\", \"str2\")}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
         assertThat( output.toString() ).isEqualTo( "strstr2" );
     }
 
@@ -84,7 +84,7 @@ public class JPathTest {
         var output = new StringBuilderJPathOutput();
         var testBean = new TestBean( "val1", null, null );
         testBean.intList = new int[] { 1, 2, 3 };
-        JPath.evaluate( "var:test.intList[1]", Map.of( "test", testBean ), output );
+        JPath.evaluate( "${test.intList[1]}", Map.of( "test", testBean ), output );
         assertThat( output.toString() ).isEqualTo( "2" );
     }
 
@@ -93,22 +93,22 @@ public class JPathTest {
         var output = new StringBuilderJPathOutput();
         var testBean = new TestBean( "val1", null, null );
         testBean.list = List.of( new TestBean( "b1", null, null ), new TestBean( "b2", null, null ) );
-        JPath.evaluate( "var:test.list[1].val", Map.of( "test", testBean ), output );
+        JPath.evaluate( "${test.list[1].val}", Map.of( "test", testBean ), output );
         assertThat( output.toString() ).isEqualTo( "b2" );
     }
 
     @Test
     public void testDecimalInteger() {
         var output = new StringBuilderJPathOutput();
-        JPath.evaluate( "var:test.getStringInt(\"str\", 2)", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        JPath.evaluate( "${test.getStringInt(\"str\", 2)}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
         assertThat( output.toString() ).isEqualTo( "str2" );
 
         output.reset();
-        JPath.evaluate( "var:test.getStringLong(\"str\", 3)", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        JPath.evaluate( "${test.getStringLong(\"str\", 3)}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
         assertThat( output.toString() ).isEqualTo( "str3" );
 
         output.reset();
-        JPath.evaluate( "var:test.getStringLong2(\"str\", 4)", Map.of( "test", new TestBean( "val1", null, null ) ), output );
+        JPath.evaluate( "${test.getStringLong2(\"str\", 4)}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
         assertThat( output.toString() ).isEqualTo( "str4" );
     }
 
