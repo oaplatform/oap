@@ -125,7 +125,7 @@ public class StringTemplateTest extends Fixtures {
         var test = new Tst();
         var test1 = new Test1( "a i/d" );
         test.test1 = Optional.of( test1 );
-        assertThat( engine.getTemplate( "name1", Container.class, "${tst.test1.id ; toUpperCase(0)}" )
+        assertThat( engine.getTemplate( "name1", Container.class, "${tst.test1.id ; toUpperCase()}" )
             .renderString( new Container( test ), Map.of() ) ).isEqualTo( "A I/D" );
     }
     
@@ -166,7 +166,13 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void testNullableAlternatives() {
+        var engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
+        var test = new Tst();
+        test.test1n = new Test1( null );
+        test.test2n = new Test2( "v" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1n.id | tst.test2n.id}" )
+            .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=v" );
     }
 
     @Test
@@ -336,6 +342,7 @@ public class StringTemplateTest extends Fixtures {
         public Test4 test4 = null;
 
         public static class Test1 {
+            @Template.Nullable
             public String id;
             public Test1 test1;
 

@@ -43,11 +43,11 @@ public class Macros {
         return URLEncoder.encode( src, StandardCharsets.UTF_8.name() );
     }
 
-    public static String toUpperCase( String src, long depth ) {
+    public static String toUpperCase( String src ) {
         return src != null ? src.toUpperCase() : null;
     }
 
-    public static String toLowerCase( String src, long depth ) {
+    public static String toLowerCase( String src ) {
         return src != null ? src.toLowerCase() : null;
     }
 }
