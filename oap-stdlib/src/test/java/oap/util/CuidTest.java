@@ -27,6 +27,7 @@ package oap.util;
 import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,9 +36,16 @@ public class CuidTest {
 
     @Test
     public void next() {
+        var arr = new ArrayList<String>();
         for( int i = 0; i < 20; i++ ) {
             if( i % 3 == 0 ) Threads.sleepSafely( 1 );
-            System.out.println( Cuid.UNIQUE.next() );
+            var cuid = Cuid.UNIQUE.next();
+            arr.add( cuid );
+            System.out.println( cuid );
+        }
+
+        for( var cuid : arr ) {
+            System.out.println( cuid );
         }
     }
 
@@ -65,5 +73,10 @@ public class CuidTest {
             .isEqualTo( Cuid.UNIQUE.last() );
     }
 
+
+    @Test
+    public void testToStringUniqueCuid() {
+        System.out.println( Cuid.UniqueCuid.toString( "171859AD799000C0AF45F03" ) );
+    }
 }
 

@@ -23,9 +23,16 @@
  */
 package oap.util;
 
+import lombok.SneakyThrows;
+import lombok.ToString;
 import oap.net.Inet;
+import org.apache.commons.codec.binary.Hex;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
+import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
 
 import static oap.util.Strings.toHexString;
 
@@ -35,15 +42,15 @@ import static oap.util.Strings.toHexString;
 public interface Cuid {
     Cuid UNIQUE = new UniqueCuid();
 
+    static IncrementalCuid incremental( long seed ) {
+        return new IncrementalCuid( seed );
+    }
+
     String next();
 
     long nextLong();
 
     String last();
-
-    static IncrementalCuid incremental( long seed ) {
-        return new IncrementalCuid( seed );
-    }
 
     class UniqueCuid implements Cuid {
         private static final String UNKNOWN_IP = "UUUUUUUU";
@@ -51,6 +58,35 @@ public interface Cuid {
             .map( a -> toHexString( a.getAddress() ) )
             .orElse( UNKNOWN_IP );
         private static final IncrementalUniqueValueGenerator generator = new IncrementalUniqueValueGenerator();
+
+        private static String format( long value ) {
+            return toHexString( value ) + suffix;
+        }
+
+        @SneakyThrows
+        public static Info toString( String cuid ) {
+            var ip = cuid.substring( cuid.length() - 8 );
+            int[] ipInts;
+
+            if( UNKNOWN_IP.equals( ip ) ) {
+                ipInts = new int[] { -1, -1, -1, -1 };
+            } else {
+                var ipBytes = Hex.decodeHex( ip );
+                ipInts = IntStream.range( 0, ipBytes.length ).map( i -> ipBytes[i] & 0xFF ).toArray();
+            }
+
+            var timeStr = cuid.substring( 0, cuid.length() - 8 );
+            var timeBI = new BigInteger( timeStr, 16 );
+            var timeL = timeBI.longValue();
+            var time = new DateTime(timeL >> 16, DateTimeZone.UTC );
+            var count = timeL & 0xFF;
+
+            System.out.println( "timeStr = " + time );
+            System.out.println( "timeBI = " + timeBI );
+            System.out.println( "ip = " + ip );
+
+            return new Info( ipInts, time, count );
+        }
 
         @Override
         public String next() {
@@ -66,10 +102,18 @@ public interface Cuid {
             return format( generator.last() );
         }
 
-        private static String format( long value ) {
-            return toHexString( value ) + suffix;
-        }
+        @ToString
+        public static class Info {
+            public final int[] ip;
+            public final DateTime time;
+            public final long count;
 
+            public Info( int[] ip, DateTime time, long count ) {
+                this.ip = ip;
+                this.time = time;
+                this.count = count;
+            }
+        }
 
     }
 
