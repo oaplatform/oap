@@ -30,7 +30,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
-import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
@@ -76,13 +75,11 @@ public interface Cuid {
             }
 
             var timeStr = cuid.substring( 0, cuid.length() - 8 );
-            var timeBI = new BigInteger( timeStr, 16 );
-            var timeL = timeBI.longValue();
-            var time = new DateTime(timeL >> 16, DateTimeZone.UTC );
+            var timeL = Long.parseLong( timeStr, 16 );
+            var time = new DateTime( timeL >> 16, DateTimeZone.UTC );
             var count = timeL & 0xFF;
 
             System.out.println( "timeStr = " + time );
-            System.out.println( "timeBI = " + timeBI );
             System.out.println( "ip = " + ip );
 
             return new Info( ipInts, time, count );
