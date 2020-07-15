@@ -198,4 +198,12 @@ public class TemplateEngineTest extends Fixtures {
         assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", ErrorStrategy.ERROR ) )
             .isInstanceOf( TemplateException.class );
     }
+
+    @Test
+    public void testExt() {
+        var c = new TestTemplateClass();
+        c.ext = new TestTemplateClassExt( "ev" );
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a}" ).renderString( c ) )
+            .isEqualTo( "ev" );
+    }
 }

@@ -32,18 +32,22 @@ import lombok.ToString;
 @ToString( callSuper = true )
 public class AstField extends Ast {
     final String variableName;
-    private final String fieldName;
+    final String fieldName;
+    final boolean forceCast;
 
-    public AstField( String fieldName, TemplateType fieldType ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast ) {
         super( fieldType );
 
         this.fieldName = fieldName;
+        this.forceCast = forceCast;
         variableName = newVariable();
     }
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "var " ).append( variableName ).append( " = " ).append( render.field ).append( "." ).append( fieldName ).append( ';' );
+        render.ntab().append( "var " ).append( variableName ).append( " = " );
+        if( forceCast ) render.append( "( " ).append( type.getTypeName() ).append( ") " );
+        render.append( render.field ).append( "." ).append( fieldName ).append( ';' );
 
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );

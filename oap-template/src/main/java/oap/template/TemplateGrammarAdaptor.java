@@ -25,9 +25,10 @@
 package oap.template;
 
 import lombok.ToString;
+import oap.json.ext.Ext;
+import oap.json.ext.ExtDeserializer;
 import oap.util.Lists;
 import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.TokenStream;
 
 import java.lang.reflect.Method;
@@ -79,7 +80,14 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 var parentClass = parentType.getTypeClass();
                 var field = parentClass.getField( text );
 
-                return new MinMax( new AstField( text, new TemplateType( field.getGenericType(), field.isAnnotationPresent( Template2.Nullable.class ) ) ) );
+                var fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Template2.Nullable.class ) );
+                boolean forceCast = false;
+                if( fieldType.isInstanceOf( Ext.class ) ) {
+                    var extClass = ExtDeserializer.extensionOf( parentClass, text );
+                    fieldType = new TemplateType( extClass, fieldType.nullable );
+                    forceCast = true;
+                }
+                return new MinMax( new AstField( text, fieldType, forceCast ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = parentClass.getMethod( text );

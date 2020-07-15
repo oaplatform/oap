@@ -26,29 +26,16 @@ package oap.template;
 
 import oap.json.ext.Ext;
 
-import java.util.Optional;
-
 /**
- * Created by igor.petrenko on 2020-07-14.
+ * Created by igor.petrenko on 2020-07-15.
  */
-public class TestTemplateClass {
-    public String field;
-    public Optional<String> fieldOpt;
-    @Template2.Nullable
-    public String fieldNullable;
-    public String field2;
-    public TestTemplateClass child;
-    public Optional<TestTemplateClass> childOpt;
-    @Template2.Nullable
-    public TestTemplateClass childNullable;
+public class TestTemplateClassExt extends Ext {
+    public String a;
 
-    public String fieldM() {
-        return field;
+    public TestTemplateClassExt() {
     }
 
-    public TestTemplateClass childM() {
-        return child;
+    public TestTemplateClassExt( String a ) {
+        this.a = a;
     }
-
-    public Ext ext;
 }
