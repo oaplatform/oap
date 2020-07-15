@@ -202,8 +202,8 @@ public class TemplateEngineTest extends Fixtures {
     @Test
     public void testExt() {
         var c = new TestTemplateClass();
-        c.ext = new TestTemplateClassExt( "ev" );
-        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a}" ).renderString( c ) )
+        c.ext2 = new TestTemplateClassExt( "ev" );
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a|ext2.a}" ).renderString( c ) )
             .isEqualTo( "ev" );
     }
 }

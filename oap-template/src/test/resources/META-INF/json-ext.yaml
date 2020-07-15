@@ -2,3 +2,7 @@ ext:
   - class: oap.template.TestTemplateClass
     field: ext
     implementation: oap.template.TestTemplateClassExt
+  - class: oap.template.TestTemplateClass
+    field: ext2
+    abstract: oap.template.TestTemplateClass$ITestTemplateClassExt
+    implementation: oap.template.TestTemplateClassExt

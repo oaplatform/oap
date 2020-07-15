@@ -41,6 +41,9 @@ public class TestTemplateClass {
     public Optional<TestTemplateClass> childOpt;
     @Template2.Nullable
     public TestTemplateClass childNullable;
+    @Template2.Nullable
+    public Ext ext;
+    public ITestTemplateClassExt ext2;
 
     public String fieldM() {
         return field;
@@ -50,5 +53,7 @@ public class TestTemplateClass {
         return child;
     }
 
-    public Ext ext;
+    public static class ITestTemplateClassExt extends Ext {
+        
+    }
 }

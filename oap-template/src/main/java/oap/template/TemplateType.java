@@ -57,7 +57,7 @@ class TemplateType {
     }
 
     public boolean isInstanceOf( Class<?> clazz ) {
-        return getTypeClass( type ).isAssignableFrom( clazz );
+        return clazz.isAssignableFrom( getTypeClass( type ) );
     }
 
     Class<?> getTypeClass() {
