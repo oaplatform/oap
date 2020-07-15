@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Created by igor.petrenko on 2020-07-13.
@@ -191,9 +192,10 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()}" ).renderString( Map.of( "v", "a i/d" ) ) )
             .isEqualTo( "id=A I/D" );
     }
-    
+
     @Test
     public void testErrorSyntax() {
-        engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", ErrorStrategy.ERROR );
+        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", ErrorStrategy.ERROR ) )
+            .isInstanceOf( TemplateException.class );
     }
 }
