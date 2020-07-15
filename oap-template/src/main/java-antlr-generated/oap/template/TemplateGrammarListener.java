@@ -75,6 +75,16 @@ public interface TemplateGrammarListener extends ParseTreeListener {
 	 */
 	void exitDefaultValue(TemplateGrammar.DefaultValueContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#defaultValueType}.
+	 * @param ctx the parse tree
+	 */
+	void enterDefaultValueType(TemplateGrammar.DefaultValueTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#defaultValueType}.
+	 * @param ctx the parse tree
+	 */
+	void exitDefaultValueType(TemplateGrammar.DefaultValueTypeContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TemplateGrammar#function}.
 	 * @param ctx the parse tree
 	 */

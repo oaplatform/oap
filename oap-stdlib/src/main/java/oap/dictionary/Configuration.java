@@ -38,25 +38,20 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
 @Slf4j
 public abstract class Configuration {
-    public static Integer force_version = null;
-    protected final Map<Integer, DictionaryRoot> mappings;
-    private int latestVersion = -1;
+    protected final DictionaryRoot mappings;
 
     public Configuration(
         Path mappingLocation,
         String resourceLocation,
-        int maxVersionsToLoad,
         DictionaryParser.IdStrategy idStrategy ) {
 
         var logConfigs = new ArrayList<URL>();
@@ -83,23 +78,20 @@ public abstract class Configuration {
             .map( path -> __( versionOf( path.getPath() ), path ) )
             .collect( Collectors.toList() );
 
-        long minimumVersion = versionedDics.stream().mapToLong( p -> p._1 ).max().orElse( maxVersionsToLoad ) - maxVersionsToLoad;
+        var maxVersion = versionedDics.stream().mapToInt( p -> p._1 ).max().orElse( 1 );
 
-        mappings = versionedDics.stream().filter( lc -> lc._1 > minimumVersion )
+        mappings = versionedDics.stream().filter( lc -> lc._1 == maxVersion )
+            .findAny()
             .map( p -> parseDictionary( p, idStrategy ) )
-            .collect( toMap() );
+            .get()._2;
 
         //mappings.values().stream().forEach(this::validateSupportedTypes);
 
-        log.debug( "loaded versions: {}", mappings.keySet() );
+        log.debug( "loaded version: {}", maxVersion );
     }
 
     public static int versionOf( String path ) {
         return Integer.parseInt( FilenameUtils.getBaseName( path ).split( "\\." )[1].substring( 1 ) );
-    }
-
-    public void resetLatestVersion() {
-        latestVersion = -1;
     }
 
     private Pair<Integer, DictionaryRoot> parseDictionary( Pair<Integer, URL> versionAndPath,
@@ -129,50 +121,19 @@ public abstract class Configuration {
      */
 
     public Dictionary getLatestDictionary() {
-        return getDictionary( getLatestVersion() );
-    }
-
-    public Dictionary getDictionary( int version ) {
-        final DictionaryRoot d = mappings.get( version );
-        if( d == null ) throw new RuntimeException( "[version:" + version + "] No log-config found!!!" );
-        return d;
-    }
-
-    public int getLatestVersion() {
-        if( force_version != null ) return force_version;
-
-        if( latestVersion != -1 ) return latestVersion;
-
-        synchronized( this ) {
-            if( latestVersion != -1 ) return latestVersion;
-
-            latestVersion = mappings
-                .entrySet()
-                .stream()
-                .mapToInt( Map.Entry::getKey )
-                .max()
-                .orElseThrow( () -> new RuntimeException( "No log-config found!!!" ) );
-        }
-
-        return latestVersion;
+        return mappings;
     }
 
     public Optional<Object> getDefaultValue( int version, String table, int externalId ) {
-        return Optional.ofNullable( mappings.get( version ) )
-            .map( m -> m.getValue( table ).getValue( externalId ) )
-            .flatMap( p -> p.getProperty( "default" ) );
+        return mappings.getValue( table ).getValue( externalId ).getProperty( "default" );
     }
 
     public Optional<Object> getDefaultValue( int version, String table, String id ) {
-        return Optional.ofNullable( mappings.get( version ) )
-            .map( m -> m.getValue( table ).getValue( id ) )
-            .flatMap( p -> p.getProperty( "default" ) );
+        return mappings.getValue( table ).getValue( id ).getProperty( "default" );
     }
 
-    public Optional<Integer> transformEid( String model, String id, int toVersion ) {
-        return Optional.ofNullable( mappings.get( toVersion ) )
-            .map( m -> m.getValue( model ).getValue( id ) )
-            .map( Dictionary::getExternalId );
+    public int transformEid( String model, String id, int toVersion ) {
+        return mappings.getValue( model ).getValue( id ).getExternalId();
     }
 
 }

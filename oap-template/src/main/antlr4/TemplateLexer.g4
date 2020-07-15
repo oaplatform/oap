@@ -63,6 +63,7 @@ fragment HexDigit		: [0-9a-fA-F]	;
 fragment DecDigit		: [0-9]			;
 
 fragment DecDigits		: DecDigit+		;
+fragment Float          :   DecDigits Dot DecDigits?;
 
 STARTEXPR   : StartExpr -> mode(Expression);   
 
@@ -79,25 +80,14 @@ RPAREN		: RParen		    ;
 LBRACK		: LBrack			;
 RBRACK		: RBrack			;
 DQUESTION   : DQuestion         ;
-SEMI        : Semi -> mode(FunctionArgs);
+SEMI        : Semi              ;
+COMMA		: Comma             ;
 
-ID			: (NameChar|DecDigit)+			;
+ID			: NameChar (NameChar|DecDigit)*			;
 DSTRING     : DQuoteLiteral     ;
 SSTRING     : SQuoteLiteral     ;
+DECDIGITS   : DecDigits         ;
+FLOAT       : Float             ;
 
 
 ERR_CHAR	: .	-> skip		    ;
-
-mode FunctionArgs;
-
-FUNCTIONNAME: NameChar (NameChar|DecDigit)*;
-
-FADECDIGITS   : DecDigits         ;
-FADSTRING     : DQuoteLiteral     ;
-FASSTRING     : SQuoteLiteral     ;
-
-FACOMMA		  : Comma             ;
-FALPAREN      : LParen		      ;
-FARPAREN	  : RParen -> mode(Expression);
-
-FAERR_CHAR	: .	-> skip		      ;

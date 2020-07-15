@@ -38,6 +38,46 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     }
 
     @Override
+    public void accept( boolean b ) {
+        sb.append( b );
+    }
+
+    @Override
+    public void accept( char ch ) {
+        sb.append( ch );
+    }
+
+    @Override
+    public void accept( byte b ) {
+        sb.append( b );
+    }
+
+    @Override
+    public void accept( short s ) {
+        sb.append( s );
+    }
+
+    @Override
+    public void accept( int i ) {
+        sb.append( i );
+    }
+
+    @Override
+    public void accept( long l ) {
+        sb.append( l );
+    }
+
+    @Override
+    public void accept( float f ) {
+        sb.append( f );
+    }
+
+    @Override
+    public void accept( double d ) {
+        sb.append( d );
+    }
+
+    @Override
     public void accept( TemplateAccumulatorString acc ) {
         sb.append( acc.sb );
     }

@@ -43,35 +43,39 @@ text
     ;
 
 expression[TemplateType parentType] returns [MinMax ast]
-    : STARTEXPR es=exps[parentType] { $ast = $es.ast; } ores=orExps[parentType, $ast] { $ast = $ores.ast; } dv=defaultValue f=function {
-        if( $f.func != null ) {
-          $ast.addToBottomChildrenAndSet( $f.func );
+    : STARTEXPR exps[parentType] { $ast = $exps.ast; } orExps[parentType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
+        if( $function.ctx != null ) {
+          $ast.addToBottomChildrenAndSet( $function.func );
         }
 
-        var ap = getAst($ast.bottom.type, null, false, $dv.v);
+        var ap = getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null);
         $ast.addToBottomChildrenAndSet( ap );
       } RBRACE
     ;
 
-defaultValue returns [String v = null]
-    : DQUESTION (s=SSTRING { $v = sStringToDString( $s.text ); } | d=DSTRING { $v = $d.text; })
-    |
+defaultValue returns [String v]
+    : DQUESTION defaultValueType { $v = $defaultValueType.v; }
     ;
 
+defaultValueType returns [String v]
+    : SSTRING { $v = sStringToDString( $SSTRING.text ); }
+    | DSTRING { $v = $DSTRING.text; }
+    | DECDIGITS { $v = $DECDIGITS.text; }
+    | FLOAT { $v = $FLOAT.text; }
+    ; 
+
 function returns [Ast func]
-    : SEMI id=FUNCTIONNAME FALPAREN fa=functionArgs FARPAREN { $func = getFunction( $id.text, $fa.ret ); }
-    |
+    : SEMI ID LPAREN functionArgs? RPAREN { $func = getFunction( $ID.text, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }
     ;
 
 functionArgs returns [ArrayList<String> ret = new ArrayList<>()]
-    : fa=functionArg { $ret.add( $fa.ret ); } ( FACOMMA nfa=functionArg { $ret.add( $nfa.ret ); } )*
-    |
+    : fa=functionArg { $ret.add( $fa.ret ); } ( COMMA nfa=functionArg { $ret.add( $nfa.ret ); } )*
     ;
 
 functionArg returns [String ret]
-    : d=FADECDIGITS { $ret = $d.text; }
-    | ss=FASSTRING { $ret = sStringToDString( $ss.text ); }
-    | ds=FADSTRING { $ret = $ds.text; }
+    : DECDIGITS { $ret = $DECDIGITS.text; }
+    | SSTRING { $ret = sStringToDString( $SSTRING.text ); }
+    | DSTRING { $ret = $DSTRING.text; }
     ;
 
 orExps [TemplateType parentType, MinMax firstAst] returns [MinMax ast]

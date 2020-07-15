@@ -170,6 +170,18 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testDefaultInt() {
+        assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "${bbb??0}" ).renderString( Map.of( "prop", 1 ) ) )
+            .isEqualTo( "0" );
+    }
+
+    @Test
+    public void testDefaultDouble() {
+        assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}" ).renderString( Map.of( "prop", 1.1 ) ) )
+            .isEqualTo( "0.0" );
+    }
+
+    @Test
     public void testMix() {
         assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-${prop}-${b}-" ).renderString( Map.of( "prop", "val", "b", "b1" ) ) )
             .isEqualTo( "-val-b1-" );

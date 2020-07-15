@@ -24,33 +24,19 @@
 
 package oap.template;
 
-import java.util.function.Supplier;
+import java.util.StringJoiner;
 
 /**
- * Created by igor.petrenko on 2020-07-13.
+ * Created by igor.petrenko on 2020-07-15.
  */
-public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAccumulator<T, TTemplateAccumulator>> extends Supplier<T> {
-    void accept( String text );
+public class DictionaryTemplate<F> {
+    public final Template2<F> templateFunction;
+    public final String template;
+    public final StringJoiner headers;
 
-    void accept( boolean b );
-
-    void accept( char ch );
-
-    void accept( byte b );
-
-    void accept( short s );
-
-    void accept( int i );
-
-    void accept( long l );
-
-    void accept( float f );
-
-    void accept( double d );
-
-    void accept( TTemplateAccumulator acc );
-
-    boolean isEmpty();
-
-    TTemplateAccumulator newInstance();
+    public DictionaryTemplate( Template2<F> templateFunction, String template, StringJoiner headers ) {
+        this.templateFunction = templateFunction;
+        this.template = template;
+        this.headers = headers;
+    }
 }

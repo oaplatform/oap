@@ -95,6 +95,18 @@ public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterDefaultValueType(TemplateGrammar.DefaultValueTypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDefaultValueType(TemplateGrammar.DefaultValueTypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterFunction(TemplateGrammar.FunctionContext ctx) { }
 	/**
 	 * {@inheritDoc}

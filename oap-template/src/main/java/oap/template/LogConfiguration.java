@@ -22,82 +22,80 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.template;
 
-import oap.template.Engine;
-import oap.template.Template;
-import oap.template.TemplateStrategy;
+import oap.dictionary.Configuration;
+import oap.dictionary.Dictionary;
+import oap.reflect.TypeRef;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.StringJoiner;
 import java.util.function.Predicate;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
+import static oap.template.ErrorStrategy.ERROR;
 
+/**
+ * Created by igor.petrenko on 2020-07-15.
+ */
 public class LogConfiguration extends Configuration {
     public static final Predicate<Dictionary> FILTER_TAG_NE_SYSTEM = ( dictionary ) -> !dictionary.getTags().contains( "system" );
 
-    public static final int MAX_VERSIONS_TO_LOAD = 5;
     private static final String STANDARD_DELIMITER = "\t";
-    private final Engine engine;
+    private final TemplateEngine engine;
 
-    public LogConfiguration( Engine engine ) {
+    public LogConfiguration( TemplateEngine engine ) {
         this( engine, null );
     }
 
-    public LogConfiguration( Engine engine, Path mappingLocation ) {
-        this( engine, mappingLocation, MAX_VERSIONS_TO_LOAD );
+    public LogConfiguration( TemplateEngine engine, Path mappingLocation ) {
+        this( engine, mappingLocation, "logconfig" );
     }
 
-    public LogConfiguration( Engine engine, Path mappingLocation, int maxVersionsToLoad ) {
-        this( engine, mappingLocation, "logconfig", maxVersionsToLoad );
-    }
-
-    public LogConfiguration( Engine engine, Path mappingLocation, String resourceLocation, int maxVersionsToLoad ) {
+    public LogConfiguration( TemplateEngine engine, Path mappingLocation, String resourceLocation ) {
         super( mappingLocation, resourceLocation, INCREMENTAL_ID_STRATEGY );
         this.engine = engine;
     }
 
-    public LogConfiguration( Engine engine, Path mappingLocation, String resourceLocation ) {
-        this( engine, mappingLocation, resourceLocation, MAX_VERSIONS_TO_LOAD );
-    }
-
     public String getStandardDelimiter() {
-        return LogConfiguration.STANDARD_DELIMITER;
+        return STANDARD_DELIMITER;
     }
 
-    public <F> DictionaryTemplate<F, Template.Line> forType( Class<F> clazz, String type ) {
+    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type ) {
         return forType( clazz, type, dictionary -> true );
     }
 
-    public <F> DictionaryTemplate<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate ) {
+    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate ) {
         return forType( clazz, type, predicate, TemplateStrategy.DEFAULT );
     }
 
-    public <F> DictionaryTemplate<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate, TemplateStrategy<Template.Line> strategy ) {
-        final Dictionary value = getLatestDictionary().getValue( type );
+    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate, TemplateStrategy<Template.Line> strategy ) {
+        var value = getLatestDictionary().getValue( type );
 
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
 
-        var lines = new ArrayList<Template.Line>();
+        var sj = new StringJoiner( "\t" );
+        var headers = new StringJoiner( "\t" );
 
-        for( Dictionary field : value.getValues( predicate ) ) {
+
+        for( var field : value.getValues( predicate ) ) {
             if( !field.containsProperty( "path" ) ) continue;
 
-            final String id = field.getId();
-            final String path = ( String ) field.getProperty( "path" ).get();
-            final Object defaultValue = field.getProperty( "default" )
+            var id = field.getId();
+            var path = ( String ) field.getProperty( "path" ).get();
+            var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
 
-            lines.add( new Template.Line( id, path, defaultValue ) );
+            var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
+            sj.add( "${" + path + " ?? " + pDefaultValue + "}" );
+            headers.add( id );
         }
 
-        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, lines,
-            getStandardDelimiter(), strategy ), lines );
+        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), ERROR ), sj.toString(), headers );
     }
 
-    public Engine getEngine() {
+    public TemplateEngine getEngine() {
         return engine;
     }
 }
