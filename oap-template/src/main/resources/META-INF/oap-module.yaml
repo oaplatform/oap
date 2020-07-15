@@ -1,0 +1,10 @@
+name: oap-template
+services:
+  oap-template-engine:
+    implementation: oap.template.TemplateEngine
+    parameters:
+      ttl: 30d
+      tmpPath: /tmp/template
+    supervision:
+      schedule: true
+      cron: "10 20 */2 * * ? *"

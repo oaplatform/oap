@@ -36,6 +36,22 @@ import java.util.function.Supplier;
 
 public class Functions {
 
+    public static <T> Supplier<T> memoize( Supplier<T> delegate ) {
+        return () -> Suppliers.memoize( delegate::get ).get();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <V, T extends V, R> Optional<R> applyIfInstanceOf( V value, Class<T> clazz, Function<T, R> f ) {
+        return clazz.isInstance( value )
+            ? Optional.ofNullable( f.apply( ( T ) value ) )
+            : Optional.empty();
+
+    }
+
+    public static Runnable once( Runnable runnable ) {
+        return Once.once( runnable );
+    }
+
     @FunctionalInterface
     public interface TriFunction<T, U, S, R> {
 
@@ -54,6 +70,11 @@ public class Functions {
             Objects.requireNonNull( after );
             return ( T t, U u, S s ) -> after.apply( apply( t, u, s ) );
         }
+    }
+
+    @FunctionalInterface
+    public interface TriConsumer<T, U, S> {
+        void accept( T t, U u, S s );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -88,22 +109,6 @@ public class Functions {
         public static <T> Predicate<T> reject() {
             return ( Predicate<T> ) rejectAll;
         }
-    }
-
-    public static <T> Supplier<T> memoize( Supplier<T> delegate ) {
-        return () -> Suppliers.memoize( delegate::get ).get();
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <V, T extends V, R> Optional<R> applyIfInstanceOf( V value, Class<T> clazz, Function<T, R> f ) {
-        return clazz.isInstance( value )
-            ? Optional.ofNullable( f.apply( ( T ) value ) )
-            : Optional.empty();
-
-    }
-
-    public static Runnable once( Runnable runnable ) {
-        return Once.once( runnable );
     }
 
 }
