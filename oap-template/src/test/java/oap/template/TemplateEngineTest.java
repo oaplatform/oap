@@ -241,4 +241,16 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child{field,\"x\",field2}}", STRING ).render( c ) )
             .isEqualTo( "f1xf2" );
     }
+
+    @Test
+    public void testNestedConcatenationWithDot() {
+        var c = new TestTemplateClass();
+        var c1 = new TestTemplateClass();
+        c.child = c1;
+        c1.field = "f1";
+        c1.field2 = "f2";
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.{field,\"x\",field2}}", STRING ).render( c ) )
+            .isEqualTo( "f1xf2" );
+    }
 }

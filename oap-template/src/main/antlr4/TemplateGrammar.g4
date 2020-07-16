@@ -96,7 +96,7 @@ orExps [TemplateType parentType, MaxMin firstAst] returns [MaxMin ast]
 exps [TemplateType parentType] returns [MaxMin ast]
     : (exp[parentType] { $ast = $exp.ast; }  
         (DOT exp[$ast.bottom.type] {$ast.addToBottomChildrenAndSet($exp.ast);})*)
-        concatenation[parentType]? { if( $concatenation.ctx != null ) $ast.addToBottomChildrenAndSet( $concatenation.ast ); }
+        DOT? concatenation[parentType]? { if( $concatenation.ctx != null ) $ast.addToBottomChildrenAndSet( $concatenation.ast ); }
     | concatenation[parentType] { $ast = new MaxMin( $concatenation.ast ); }
     ;
 
