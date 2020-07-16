@@ -26,8 +26,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	public static final int
 		STARTEXPR=1, TEXT=2, LBRACE=3, RBRACE=4, PIPE=5, DOT=6, LPAREN=7, RPAREN=8, 
 		LBRACK=9, RBRACK=10, DQUESTION=11, SEMI=12, COMMA=13, ID=14, DSTRING=15, 
-		SSTRING=16, DECDIGITS=17, FLOAT=18, ERR_CHAR=19, CRBRACE=20, CCOMMA=21, 
-		CID=22, CDSTRING=23, CSSTRING=24, CDECDIGITS=25, CFLOAT=26, CERR_CHAR=27;
+		SSTRING=16, DECDIGITS=17, FLOAT=18, ERR_CHAR=19, CERR_CHAR=20;
 	public static final int
 		RULE_template = 0, RULE_elements = 1, RULE_element = 2, RULE_text = 3, 
 		RULE_expression = 4, RULE_defaultValue = 5, RULE_defaultValueType = 6, 
@@ -52,8 +51,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return new String[] {
 			null, "STARTEXPR", "TEXT", "LBRACE", "RBRACE", "PIPE", "DOT", "LPAREN", 
 			"RPAREN", "LBRACK", "RBRACK", "DQUESTION", "SEMI", "COMMA", "ID", "DSTRING", 
-			"SSTRING", "DECDIGITS", "FLOAT", "ERR_CHAR", "CRBRACE", "CCOMMA", "CID", 
-			"CDSTRING", "CSSTRING", "CDECDIGITS", "CFLOAT", "CERR_CHAR"
+			"SSTRING", "DECDIGITS", "FLOAT", "ERR_CHAR", "CERR_CHAR"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -1058,7 +1056,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		public CitemsContext citems() {
 			return getRuleContext(CitemsContext.class,0);
 		}
-		public TerminalNode CRBRACE() { return getToken(TemplateGrammar.CRBRACE, 0); }
+		public TerminalNode RBRACE() { return getToken(TemplateGrammar.RBRACE, 0); }
 		public ConcatenationContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public ConcatenationContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
 			super(parent, invokingState);
@@ -1087,7 +1085,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			((ConcatenationContext)_localctx).citems = citems(parentType);
 			 ((ConcatenationContext)_localctx).ast =  new AstConcatenation(parentType, ((ConcatenationContext)_localctx).citems.list); 
 			setState(166);
-			match(CRBRACE);
+			match(RBRACE);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1111,9 +1109,9 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		public CitemContext citem(int i) {
 			return getRuleContext(CitemContext.class,i);
 		}
-		public List<TerminalNode> CCOMMA() { return getTokens(TemplateGrammar.CCOMMA); }
-		public TerminalNode CCOMMA(int i) {
-			return getToken(TemplateGrammar.CCOMMA, i);
+		public List<TerminalNode> COMMA() { return getTokens(TemplateGrammar.COMMA); }
+		public TerminalNode COMMA(int i) {
+			return getToken(TemplateGrammar.COMMA, i);
 		}
 		public CitemsContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public CitemsContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
@@ -1144,11 +1142,11 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			setState(176);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==CCOMMA) {
+			while (_la==COMMA) {
 				{
 				{
 				setState(170);
-				match(CCOMMA);
+				match(COMMA);
 				setState(171);
 				((CitemsContext)_localctx).citem = citem(parentType);
 				 _localctx.list.add(((CitemsContext)_localctx).citem.ast.top); ((CitemsContext)_localctx).citem.ast.addToBottomChildrenAndSet(getAst(((CitemsContext)_localctx).citem.ast.bottom.type, null, false)); 
@@ -1174,16 +1172,16 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	public static class CitemContext extends ParserRuleContext {
 		public TemplateType parentType;
 		public MaxMin ast;
-		public Token CID;
-		public Token CDSTRING;
-		public Token CSSTRING;
-		public Token CDECDIGITS;
-		public Token CFLOAT;
-		public TerminalNode CID() { return getToken(TemplateGrammar.CID, 0); }
-		public TerminalNode CDSTRING() { return getToken(TemplateGrammar.CDSTRING, 0); }
-		public TerminalNode CSSTRING() { return getToken(TemplateGrammar.CSSTRING, 0); }
-		public TerminalNode CDECDIGITS() { return getToken(TemplateGrammar.CDECDIGITS, 0); }
-		public TerminalNode CFLOAT() { return getToken(TemplateGrammar.CFLOAT, 0); }
+		public Token ID;
+		public Token DSTRING;
+		public Token SSTRING;
+		public Token DECDIGITS;
+		public Token FLOAT;
+		public TerminalNode ID() { return getToken(TemplateGrammar.ID, 0); }
+		public TerminalNode DSTRING() { return getToken(TemplateGrammar.DSTRING, 0); }
+		public TerminalNode SSTRING() { return getToken(TemplateGrammar.SSTRING, 0); }
+		public TerminalNode DECDIGITS() { return getToken(TemplateGrammar.DECDIGITS, 0); }
+		public TerminalNode FLOAT() { return getToken(TemplateGrammar.FLOAT, 0); }
 		public CitemContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public CitemContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
 			super(parent, invokingState);
@@ -1207,44 +1205,44 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			setState(189);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
-			case CID:
+			case ID:
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(179);
-				((CitemContext)_localctx).CID = match(CID);
-				 ((CitemContext)_localctx).ast =  getAst(_localctx.parentType, (((CitemContext)_localctx).CID!=null?((CitemContext)_localctx).CID.getText():null), false); 
+				((CitemContext)_localctx).ID = match(ID);
+				 ((CitemContext)_localctx).ast =  getAst(_localctx.parentType, (((CitemContext)_localctx).ID!=null?((CitemContext)_localctx).ID.getText():null), false); 
 				}
 				break;
-			case CDSTRING:
+			case DSTRING:
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(181);
-				((CitemContext)_localctx).CDSTRING = match(CDSTRING);
-				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(sdStringToString((((CitemContext)_localctx).CDSTRING!=null?((CitemContext)_localctx).CDSTRING.getText():null)))); 
+				((CitemContext)_localctx).DSTRING = match(DSTRING);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(sdStringToString((((CitemContext)_localctx).DSTRING!=null?((CitemContext)_localctx).DSTRING.getText():null)))); 
 				}
 				break;
-			case CSSTRING:
+			case SSTRING:
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(183);
-				((CitemContext)_localctx).CSSTRING = match(CSSTRING);
-				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(sdStringToString((((CitemContext)_localctx).CSSTRING!=null?((CitemContext)_localctx).CSSTRING.getText():null)))); 
+				((CitemContext)_localctx).SSTRING = match(SSTRING);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(sdStringToString((((CitemContext)_localctx).SSTRING!=null?((CitemContext)_localctx).SSTRING.getText():null)))); 
 				}
 				break;
-			case CDECDIGITS:
+			case DECDIGITS:
 				enterOuterAlt(_localctx, 4);
 				{
 				setState(185);
-				((CitemContext)_localctx).CDECDIGITS = match(CDECDIGITS);
-				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(String.valueOf((((CitemContext)_localctx).CDECDIGITS!=null?((CitemContext)_localctx).CDECDIGITS.getText():null)))); 
+				((CitemContext)_localctx).DECDIGITS = match(DECDIGITS);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(String.valueOf((((CitemContext)_localctx).DECDIGITS!=null?((CitemContext)_localctx).DECDIGITS.getText():null)))); 
 				}
 				break;
-			case CFLOAT:
+			case FLOAT:
 				enterOuterAlt(_localctx, 5);
 				{
 				setState(187);
-				((CitemContext)_localctx).CFLOAT = match(CFLOAT);
-				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(String.valueOf((((CitemContext)_localctx).CFLOAT!=null?((CitemContext)_localctx).CFLOAT.getText():null)))); 
+				((CitemContext)_localctx).FLOAT = match(FLOAT);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(String.valueOf((((CitemContext)_localctx).FLOAT!=null?((CitemContext)_localctx).FLOAT.getText():null)))); 
 				}
 				break;
 			default:
@@ -1263,7 +1261,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\35\u00c2\4\2\t\2"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\26\u00c2\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
 		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\3\2\3\2"+
 		"\3\2\3\2\3\3\3\3\3\3\7\3*\n\3\f\3\16\3-\13\3\3\4\3\4\3\4\3\4\3\4\3\4\5"+
@@ -1310,14 +1308,14 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		"\u009d\7\20\2\2\u009d\u009e\7\t\2\2\u009e\u009f\7\n\2\2\u009f\u00a0\3"+
 		"\2\2\2\u00a0\u00a4\b\16\1\2\u00a1\u00a2\7\20\2\2\u00a2\u00a4\b\16\1\2"+
 		"\u00a3\u009c\3\2\2\2\u00a3\u00a1\3\2\2\2\u00a4\33\3\2\2\2\u00a5\u00a6"+
-		"\7\5\2\2\u00a6\u00a7\5\36\20\2\u00a7\u00a8\b\17\1\2\u00a8\u00a9\7\26\2"+
+		"\7\5\2\2\u00a6\u00a7\5\36\20\2\u00a7\u00a8\b\17\1\2\u00a8\u00a9\7\6\2"+
 		"\2\u00a9\35\3\2\2\2\u00aa\u00ab\5 \21\2\u00ab\u00b2\b\20\1\2\u00ac\u00ad"+
-		"\7\27\2\2\u00ad\u00ae\5 \21\2\u00ae\u00af\b\20\1\2\u00af\u00b1\3\2\2\2"+
+		"\7\17\2\2\u00ad\u00ae\5 \21\2\u00ae\u00af\b\20\1\2\u00af\u00b1\3\2\2\2"+
 		"\u00b0\u00ac\3\2\2\2\u00b1\u00b4\3\2\2\2\u00b2\u00b0\3\2\2\2\u00b2\u00b3"+
-		"\3\2\2\2\u00b3\37\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b5\u00b6\7\30\2\2\u00b6"+
-		"\u00c0\b\21\1\2\u00b7\u00b8\7\31\2\2\u00b8\u00c0\b\21\1\2\u00b9\u00ba"+
-		"\7\32\2\2\u00ba\u00c0\b\21\1\2\u00bb\u00bc\7\33\2\2\u00bc\u00c0\b\21\1"+
-		"\2\u00bd\u00be\7\34\2\2\u00be\u00c0\b\21\1\2\u00bf\u00b5\3\2\2\2\u00bf"+
+		"\3\2\2\2\u00b3\37\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b5\u00b6\7\20\2\2\u00b6"+
+		"\u00c0\b\21\1\2\u00b7\u00b8\7\21\2\2\u00b8\u00c0\b\21\1\2\u00b9\u00ba"+
+		"\7\22\2\2\u00ba\u00c0\b\21\1\2\u00bb\u00bc\7\23\2\2\u00bc\u00c0\b\21\1"+
+		"\2\u00bd\u00be\7\24\2\2\u00be\u00c0\b\21\1\2\u00bf\u00b5\3\2\2\2\u00bf"+
 		"\u00b7\3\2\2\2\u00bf\u00b9\3\2\2\2\u00bf\u00bb\3\2\2\2\u00bf\u00bd\3\2"+
 		"\2\2\u00c0!\3\2\2\2\24+\649ADU[hq|\u0082\u008c\u0090\u0093\u009a\u00a3"+
 		"\u00b2\u00bf";

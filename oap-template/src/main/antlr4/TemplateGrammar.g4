@@ -106,18 +106,18 @@ exp[TemplateType parentType] returns [MaxMin ast]
     ;
 
 concatenation[TemplateType parentType] returns [AstConcatenation ast]
-    : LBRACE citems[parentType] { $ast = new AstConcatenation(parentType, $citems.list); } CRBRACE
+    : LBRACE citems[parentType] { $ast = new AstConcatenation(parentType, $citems.list); } RBRACE
     ;
 
 citems[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<Ast>()]
     : citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } 
-        ( CCOMMA citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } )*
+        ( COMMA citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } )*
     ;
     
 citem[TemplateType parentType] returns [MaxMin ast]
-    : CID { $ast = getAst($parentType, $CID.text, false); }
-    | CDSTRING  { $ast = new MaxMin(new AstText(sdStringToString($CDSTRING.text))); }
-    | CSSTRING { $ast = new MaxMin(new AstText(sdStringToString($CSSTRING.text))); }
-    | CDECDIGITS { $ast = new MaxMin(new AstText(String.valueOf($CDECDIGITS.text))); }
-    | CFLOAT { $ast = new MaxMin(new AstText(String.valueOf($CFLOAT.text))); }
+    : ID { $ast = getAst($parentType, $ID.text, false); }
+    | DSTRING  { $ast = new MaxMin(new AstText(sdStringToString($DSTRING.text))); }
+    | SSTRING { $ast = new MaxMin(new AstText(sdStringToString($SSTRING.text))); }
+    | DECDIGITS { $ast = new MaxMin(new AstText(String.valueOf($DECDIGITS.text))); }
+    | FLOAT { $ast = new MaxMin(new AstText(String.valueOf($FLOAT.text))); }
     ;

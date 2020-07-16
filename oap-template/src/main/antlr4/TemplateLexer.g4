@@ -96,13 +96,13 @@ ERR_CHAR	: (' '|'\t')	-> skip		            ;
 
 mode Concatenation                                  ;
 
-CRBRACE		: RBrace -> popMode                     ;
-CCOMMA		: Comma                                 ;
+CRBRACE		: RBrace -> popMode, type(RBRACE)       ;
+CCOMMA		: Comma -> type(COMMA)                  ;
 
-CID			: NameChar (NameChar|DecDigit)*			;
-CDSTRING     : DQuoteLiteral                        ;
-CSSTRING     : SQuoteLiteral                        ;
-CDECDIGITS   : DecDigits                            ;
-CFLOAT       : Float                                ;
+CID			: NameChar (NameChar|DecDigit)* -> type(ID);
+CDSTRING     : DQuoteLiteral -> type(DSTRING)       ;
+CSSTRING     : SQuoteLiteral -> type(SSTRING)       ;
+CDECDIGITS   : DecDigits -> type(DECDIGITS)         ;
+CFLOAT       : Float -> type(FLOAT)                 ;
 
 CERR_CHAR	: (' '|'\t')	-> skip		            ;
