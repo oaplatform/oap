@@ -144,4 +144,34 @@ public interface TemplateGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExp(TemplateGrammar.ExpContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#concatenation}.
+	 * @param ctx the parse tree
+	 */
+	void enterConcatenation(TemplateGrammar.ConcatenationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#concatenation}.
+	 * @param ctx the parse tree
+	 */
+	void exitConcatenation(TemplateGrammar.ConcatenationContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#citems}.
+	 * @param ctx the parse tree
+	 */
+	void enterCitems(TemplateGrammar.CitemsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#citems}.
+	 * @param ctx the parse tree
+	 */
+	void exitCitems(TemplateGrammar.CitemsContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#citem}.
+	 * @param ctx the parse tree
+	 */
+	void enterCitem(TemplateGrammar.CitemContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#citem}.
+	 * @param ctx the parse tree
+	 */
+	void exitCitem(TemplateGrammar.CitemContext ctx);
 }

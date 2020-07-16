@@ -49,10 +49,11 @@ public class AstRoot extends Ast {
             + "import java.util.function.Supplier;\n"
             + "import com.google.common.base.CharMatcher;\n"
             + "\n"
-            + "public class " ).append( render.nameEscaped() ).append( " implements TriConsumer<" ).append( className ).append( ", Map<String, Supplier<String>>, TemplateAccumulator> {\n"
+            + "public class " ).append( render.nameEscaped() ).append( " implements TriConsumer<" ).append( className ).append( ", Map<String, Supplier<String>>, " )
+            .append( render.templateAccumulatorType.getTypeName() ).append( "> {\n"
             + "\n"
             + "  @Override\n"
-            + "  public void accept( " ).append( className ).append( " s, Map<String, Supplier<String>> m, TemplateAccumulator acc ) {\n" );
+            + "  public void accept( " ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( render.templateAccumulatorType.getTypeName() ).append( " acc ) {\n" );
 
         var childRender = render.tabInc().tabInc().tabInc().withField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
         children.forEach( child -> child.render( childRender ) );

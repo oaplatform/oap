@@ -174,6 +174,42 @@ public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExp(TemplateGrammar.ExpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConcatenation(TemplateGrammar.ConcatenationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConcatenation(TemplateGrammar.ConcatenationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterCitems(TemplateGrammar.CitemsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCitems(TemplateGrammar.CitemsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterCitem(TemplateGrammar.CitemContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCitem(TemplateGrammar.CitemContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

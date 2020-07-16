@@ -46,11 +46,13 @@ import static java.util.stream.Collectors.joining;
  * Created by igor.petrenko on 2020-07-13.
  */
 @Slf4j
-public class JavaTemplate<TIn> implements Template2<TIn> {
+public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> implements Template2<TIn, TOut, TA> {
     private final Functions.TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> cons;
+    private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, TypeRef<TIn> type, String template, Map<String, List<Method>> builtInFunction, Path cacheFile, ErrorStrategy errorStrategy ) {
+    public JavaTemplate( String name, TypeRef<TIn> type, String template, Map<String, List<Method>> builtInFunction, Path cacheFile, TA acc, ErrorStrategy errorStrategy ) {
+        this.acc = acc;
         try {
             var lexer = new TemplateLexer( CharStreams.fromString( template ) );
             var grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
@@ -61,7 +63,7 @@ public class JavaTemplate<TIn> implements Template2<TIn> {
 
             log.trace( "\n" + ast.print() );
 
-            var render = new Render( name, new TemplateType( type.type() ), null, null, 0 );
+            var render = new Render( name, new TemplateType( type.type() ), acc.getClass(), null, null, 0 );
             ast.render( render );
 
             var line = new AtomicInteger( 0 );
@@ -79,10 +81,10 @@ public class JavaTemplate<TIn> implements Template2<TIn> {
         }
     }
 
-    public String renderString( TIn obj ) {
-        var acc = new TemplateAccumulatorString();
-        cons.accept( obj, Map.of(), acc );
+    public TOut render( TIn obj ) {
+        var newAcc = acc.newInstance();
+        cons.accept( obj, Map.of(), newAcc );
 
-        return acc.get();
+        return newAcc.get();
     }
 }

@@ -26,30 +26,29 @@ import java.util.Map;
 }
 
 template[TemplateType parentType] returns [AstRoot rootAst]
-	: es=elements[parentType] { $rootAst = new AstRoot($parentType); $rootAst.addChildren($es.list); } EOF
+	: elements[parentType] { $rootAst = new AstRoot($parentType); $rootAst.addChildren($elements.list); } EOF
 	;
 
 elements[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<>()]
-	: (e=element[parentType] { $list.add($e.ast); })*
+	: (element[parentType] { $list.add($element.ast); })*
 	;
 
 element[TemplateType parentType] returns [Ast ast]
 	: t=text { $ast = new AstText($t.text); $ast.addChild(new AstPrint($ast.type, null)); }
-	| e=expression[parentType] { $ast = $e.ast.top; }
+	| expression[parentType] { $ast = $expression.ast.top; }
 	;
 
 text
     : TEXT+
     ;
 
-expression[TemplateType parentType] returns [MinMax ast]
+expression[TemplateType parentType] returns [MaxMin ast]
     : STARTEXPR exps[parentType] { $ast = $exps.ast; } orExps[parentType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
         if( $function.ctx != null ) {
           $ast.addToBottomChildrenAndSet( $function.func );
         }
 
-        var ap = getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null);
-        $ast.addToBottomChildrenAndSet( ap );
+        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null) );
       } RBRACE
     ;
 
@@ -69,7 +68,7 @@ function returns [Ast func]
     ;
 
 functionArgs returns [ArrayList<String> ret = new ArrayList<>()]
-    : fa=functionArg { $ret.add( $fa.ret ); } ( COMMA nfa=functionArg { $ret.add( $nfa.ret ); } )*
+    : functionArg { $ret.add( $functionArg.ret ); } ( COMMA functionArg { $ret.add( $functionArg.ret ); } )*
     ;
 
 functionArg returns [String ret]
@@ -78,9 +77,9 @@ functionArg returns [String ret]
     | DSTRING { $ret = $DSTRING.text; }
     ;
 
-orExps [TemplateType parentType, MinMax firstAst] returns [MinMax ast]
-    locals [ArrayList<MinMax> list = new ArrayList<>();]
-    : (PIPE e1=exps[parentType] { $list.add(firstAst); $list.add($e1.ast); } ( PIPE e2=exps[parentType] {$list.add($e2.ast);})*) {
+orExps [TemplateType parentType, MaxMin firstAst] returns [MaxMin ast]
+    locals [ArrayList<MaxMin> list = new ArrayList<>();]
+    : (PIPE exps[parentType] { $list.add(firstAst); $list.add($exps.ast); } ( PIPE exps[parentType] {$list.add($exps.ast);})*) {
         if( $list.isEmpty() ) $ast = firstAst;
         else {
             var or = new AstOr(parentType);
@@ -88,17 +87,37 @@ orExps [TemplateType parentType, MinMax firstAst] returns [MinMax ast]
               item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false));
             }
             or.addTry($list);
-            $ast = new MinMax(or);
+            $ast = new MaxMin(or);
         }    
     }
     | { $ast = firstAst; }
     ;
 
-exps [TemplateType parentType] returns [MinMax ast]
-    : (id=exp[parentType] { $ast = $id.ast; }  (DOT nid=exp[$ast.bottom.type] {$ast.addToBottomChildrenAndSet($nid.ast);})*)
+exps [TemplateType parentType] returns [MaxMin ast]
+    : (exp[parentType] { $ast = $exp.ast; }  
+        (DOT exp[$ast.bottom.type] {$ast.addToBottomChildrenAndSet($exp.ast);})*)
+        concatenation[parentType]? { if( $concatenation.ctx != null ) $ast.addToBottomChildrenAndSet( $concatenation.ast ); }
+    | concatenation[parentType] { $ast = new MaxMin( $concatenation.ast ); }
     ;
 
-exp[TemplateType parentType] returns [MinMax ast]
-    : (id=ID LPAREN RPAREN) { $ast = getAst($parentType, $id.text, true); }
-    | id=ID { $ast = getAst($parentType, $id.text, false); }
+exp[TemplateType parentType] returns [MaxMin ast]
+    : (ID LPAREN RPAREN) { $ast = getAst($parentType, $ID.text, true); }
+    | ID { $ast = getAst($parentType, $ID.text, false); }
+    ;
+
+concatenation[TemplateType parentType] returns [AstConcatenation ast]
+    : LBRACE citems[parentType] { $ast = new AstConcatenation(parentType, $citems.list); } CRBRACE
+    ;
+
+citems[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<Ast>()]
+    : citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } 
+        ( CCOMMA citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } )*
+    ;
+    
+citem[TemplateType parentType] returns [MaxMin ast]
+    : CID { $ast = getAst($parentType, $CID.text, false); }
+    | CDSTRING  { $ast = new MaxMin(new AstText(sdStringToString($CDSTRING.text))); }
+    | CSSTRING { $ast = new MaxMin(new AstText(sdStringToString($CSSTRING.text))); }
+    | CDECDIGITS { $ast = new MaxMin(new AstText(String.valueOf($CDECDIGITS.text))); }
+    | CFLOAT { $ast = new MaxMin(new AstText(String.valueOf($CFLOAT.text))); }
     ;

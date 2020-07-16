@@ -30,11 +30,11 @@ import java.util.StringJoiner;
  * Created by igor.petrenko on 2020-07-15.
  */
 public class DictionaryTemplate<F> {
-    public final Template2<F> templateFunction;
+    public final Template2<F, String, TemplateAccumulatorString> templateFunction;
     public final String template;
     public final StringJoiner headers;
 
-    public DictionaryTemplate( Template2<F> templateFunction, String template, StringJoiner headers ) {
+    public DictionaryTemplate( Template2<F, String, TemplateAccumulatorString> templateFunction, String template, StringJoiner headers ) {
         this.templateFunction = templateFunction;
         this.template = template;
         this.headers = headers;

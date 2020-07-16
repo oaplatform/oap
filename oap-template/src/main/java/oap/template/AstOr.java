@@ -25,7 +25,7 @@
 package oap.template;
 
 import lombok.ToString;
-import oap.template.TemplateGrammarAdaptor.MinMax;
+import oap.template.TemplateGrammarAdaptor.MaxMin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,7 @@ import java.util.List;
 @ToString( callSuper = true )
 public class AstOr extends Ast {
     final String orVariable;
-    private final ArrayList<MinMax> or = new ArrayList<>();
+    private final ArrayList<MaxMin> or = new ArrayList<>();
 
     AstOr( TemplateType type ) {
         super( type );
@@ -44,11 +44,11 @@ public class AstOr extends Ast {
         orVariable = newVariable();
     }
 
-    public void addTry( List<MinMax> asts ) {
+    public void addTry( List<MaxMin> asts ) {
         for( var ast : asts ) {
             var astRunnable = new AstRunnable( type );
             astRunnable.addChild( ast.top );
-            or.add( new MinMax( astRunnable, ast.bottom ) );
+            or.add( new MaxMin( astRunnable, ast.bottom ) );
         }
     }
 

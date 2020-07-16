@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 import static oap.template.ErrorStrategy.ERROR;
+import static oap.template.TemplateAccumulators.STRING;
 
 /**
  * Created by igor.petrenko on 2020-07-15.
@@ -92,7 +93,7 @@ public class LogConfiguration extends Configuration {
             headers.add( id );
         }
 
-        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), ERROR ), sj.toString(), headers );
+        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), STRING, ERROR ), sj.toString(), headers );
     }
 
     public TemplateEngine getEngine() {

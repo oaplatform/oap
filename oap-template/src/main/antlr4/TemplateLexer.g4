@@ -59,35 +59,50 @@ fragment SQuoteLiteral	: SQuote ( EscSeq | ~['\r\n\\] )* SQuote	;
 fragment DQuoteLiteral	: DQuote ( EscSeq | ~["\r\n\\] )* DQuote	;
 
 
-fragment HexDigit		: [0-9a-fA-F]	;
-fragment DecDigit		: [0-9]			;
+fragment HexDigit		: [0-9a-fA-F]	            ;
+fragment DecDigit		: [0-9]			            ;
 
-fragment DecDigits		: DecDigit+		;
+fragment DecDigits		: DecDigit+		            ;
 fragment Float          :   DecDigits Dot DecDigits?;
 
-STARTEXPR   : StartExpr -> mode(Expression);   
+STARTEXPR   : StartExpr -> pushMode(Expression)     ;   
 
-TEXT		: .                 ;
+TEXT		: .                                     ;
 
-mode Expression;
+mode Expression                                     ;
 
-RBRACE		: RBrace -> mode(DEFAULT_MODE);
+LBRACE      : LBrace -> pushMode(Concatenation)     ;
 
-PIPE		: Pipe              ;
-DOT			: Dot			    ;
-LPAREN		: LParen		    ;
-RPAREN		: RParen		    ;
-LBRACK		: LBrack			;
-RBRACK		: RBrack			;
-DQUESTION   : DQuestion         ;
-SEMI        : Semi              ;
-COMMA		: Comma             ;
+RBRACE		: RBrace -> popMode                     ;
+
+PIPE		: Pipe                                  ;
+DOT			: Dot			                        ;
+LPAREN		: LParen		                        ;
+RPAREN		: RParen		                        ;
+LBRACK		: LBrack			                    ;
+RBRACK		: RBrack			                    ;
+DQUESTION   : DQuestion                             ;
+SEMI        : Semi                                  ;
+COMMA		: Comma                                 ;
 
 ID			: NameChar (NameChar|DecDigit)*			;
-DSTRING     : DQuoteLiteral     ;
-SSTRING     : SQuoteLiteral     ;
-DECDIGITS   : DecDigits         ;
-FLOAT       : Float             ;
+DSTRING     : DQuoteLiteral                         ;
+SSTRING     : SQuoteLiteral                         ;
+DECDIGITS   : DecDigits                             ;
+FLOAT       : Float                                 ;
 
 
-ERR_CHAR	: .	-> skip		    ;
+ERR_CHAR	: (' '|'\t')	-> skip		            ;
+
+mode Concatenation                                  ;
+
+CRBRACE		: RBrace -> popMode                     ;
+CCOMMA		: Comma                                 ;
+
+CID			: NameChar (NameChar|DecDigit)*			;
+CDSTRING     : DQuoteLiteral                        ;
+CSSTRING     : SQuoteLiteral                        ;
+CDECDIGITS   : DecDigits                            ;
+CFLOAT       : Float                                ;
+
+CERR_CHAR	: (' '|'\t')	-> skip		            ;

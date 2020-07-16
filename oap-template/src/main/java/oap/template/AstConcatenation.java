@@ -24,16 +24,37 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
+
+import java.util.List;
 
 /**
- * Created by igor.petrenko on 2020-07-14.
+ * Created by igor.petrenko on 2020-07-16.
  */
-public interface Template2<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> {
-    TOut render( TIn obj );
+@ToString( callSuper = true )
+public class AstConcatenation extends Ast {
+    final List<Ast> items;
+    final String newAndId;
+    final String templateAccumulatorName;
 
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+    AstConcatenation( TemplateType type, List<Ast> items ) {
+        super( type );
+        this.items = items;
+
+        newAndId = newVariable();
+        templateAccumulatorName = "acc_" + newAndId;
+    }
+
+    @Override
+    void render( Render render ) {
+        render
+            .ntab().append( "var " ).append( templateAccumulatorName ).append( " = acc.newInstance();" );
+
+        for( var item : items ) {
+            item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );
+        }
+
+        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 2020-07-14.
@@ -47,15 +48,19 @@ abstract class TemplateGrammarAdaptor extends Parser {
         super( input );
     }
 
-    MinMax getAst( TemplateType parentType, String text, boolean isMethod ) {
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod ) {
         return getAst( parentType, text, isMethod, null );
     }
 
     String sStringToDString( String sstr ) {
-        return '"' + sstr.substring( 1, sstr.length() - 1 ) + '"';
+        return '"' + sdStringToString( sstr ) + '"';
     }
 
-    MinMax getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue ) {
+    String sdStringToString( String sstr ) {
+        return sstr.substring( 1, sstr.length() - 1 );
+    }
+
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue ) {
         try {
             if( parentType.isInstanceOf( Optional.class ) ) {
                 var valueType = parentType.getActualTypeArguments0();
@@ -63,19 +68,19 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 var top = new AstOptional( valueType );
                 top.addChild( child.top );
 
-                return new MinMax( top, child.bottom );
+                return new MaxMin( top, child.bottom );
             } else if( parentType.nullable ) {
                 var newType = new TemplateType( parentType.type, false );
                 var child = getAst( newType, text, isMethod );
                 var top = new AstNullable( newType );
                 top.addChild( child.top );
 
-                return new MinMax( top, child.bottom );
+                return new MaxMin( top, child.bottom );
             } else if( text == null ) {
-                return new MinMax( new AstPrint( parentType, defaultValue ) );
+                return new MaxMin( new AstPrint( parentType, defaultValue ) );
             } else if( parentType.isInstanceOf( Map.class ) ) {
                 var valueType = parentType.getActualTypeArguments1();
-                return new MinMax( new AstMap( text, valueType ) );
+                return new MaxMin( new AstMap( text, valueType ) );
             } else if( !isMethod ) {
                 var parentClass = parentType.getTypeClass();
                 var field = parentClass.getField( text );
@@ -87,16 +92,16 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     fieldType = new TemplateType( extClass, fieldType.nullable );
                     forceCast = true;
                 }
-                return new MinMax( new AstField( text, fieldType, forceCast ) );
+                return new MaxMin( new AstField( text, fieldType, forceCast ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = parentClass.getMethod( text );
 
-                return new MinMax( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template2.Nullable.class ) ) ) );
+                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template2.Nullable.class ) ) ) );
             }
         } catch( NoSuchFieldException | NoSuchMethodException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage() );
-            return new MinMax( new AstPathNotFound( e.getMessage() ) );
+            return new MaxMin( new AstPathNotFound( e.getMessage() ) );
         }
     }
 
@@ -116,16 +121,16 @@ abstract class TemplateGrammarAdaptor extends Parser {
         return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template2.Nullable.class ) ), method, args );
     }
 
-    static class MinMax {
+    static class MaxMin {
         public final Ast top;
         public Ast bottom;
 
-        public MinMax( Ast top, Ast bottom ) {
+        public MaxMin( Ast top, Ast bottom ) {
             this.top = top;
             this.bottom = bottom;
         }
 
-        public MinMax( Ast top ) {
+        public MaxMin( Ast top ) {
             this( top, top );
         }
 
@@ -134,9 +139,22 @@ abstract class TemplateGrammarAdaptor extends Parser {
             this.bottom = ast;
         }
 
-        public void addToBottomChildrenAndSet( MinMax mm ) {
+        public void addToBottomChildrenAndSet( MaxMin mm ) {
             this.bottom.addChild( mm.top );
             this.bottom = mm.bottom;
+        }
+
+        public void addLeafs( Supplier<MaxMin> sup ) {
+            addLeafs( bottom, sup );
+        }
+
+        private void addLeafs( Ast ast, Supplier<MaxMin> sup ) {
+            if( ast.children.isEmpty() )
+                ast.addChild( sup.get().top );
+            else
+                for( var child : ast.children ) {
+                    addLeafs( child, sup );
+                }
         }
     }
 

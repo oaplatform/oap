@@ -53,7 +53,7 @@ public class TemplateEngine implements Runnable {
     public final Path tmpPath;
     public final long ttl;
     private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
-    private final Cache<String, Template2<?>> templates;
+    private final Cache<String, Template2<?, ?, ?>> templates;
 
     public TemplateEngine( Path tmpPath ) {
         this( tmpPath, Dates.d( 30 ) );
@@ -101,20 +101,25 @@ public class TemplateEngine implements Runnable {
         }
     }
 
-    public <TIn> Template2<TIn> getTemplate( String name, TypeRef<TIn> type, String template ) {
-        return getTemplate( name, type, template, ErrorStrategy.ERROR );
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc ) {
+        return getTemplate( name, type, template, acc, ErrorStrategy.ERROR );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn> Template2<TIn> getTemplate( String name, TypeRef<TIn> type, String template, ErrorStrategy errorStrategy ) {
-        var id = name + "_" + getHashName( template );
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy ) {
+        assert template != null;
+        assert acc != null;
+        
+        var id = name + "_" + getHashName( template ) + "_" + getHashName( acc.getClass().getName() );
 
-        var tFunc = ( Template2<TIn> ) templates.getIfPresent( id );
+        log.trace( "id = {}, acc = {}, template = {}", id, acc.getClass(), template );
+
+        var tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
         if( tFunc == null ) {
             synchronized( id.intern() ) {
-                tFunc = ( Template2<TIn> ) templates.getIfPresent( id );
+                tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
                 if( tFunc == null ) {
-                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, errorStrategy );
+                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, errorStrategy );
                     templates.put( id, tFunc );
                 }
             }

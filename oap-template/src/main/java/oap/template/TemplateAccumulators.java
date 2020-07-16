@@ -24,16 +24,9 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 /**
- * Created by igor.petrenko on 2020-07-14.
+ * Created by igor.petrenko on 2020-07-16.
  */
-public interface Template2<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> {
-    TOut render( TIn obj );
-
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
-    }
+public interface TemplateAccumulators {
+    TemplateAccumulatorString STRING = new TemplateAccumulatorString();
 }

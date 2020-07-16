@@ -24,19 +24,21 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		STARTEXPR=1, TEXT=2, RBRACE=3, PIPE=4, DOT=5, LPAREN=6, RPAREN=7, LBRACK=8, 
-		RBRACK=9, DQUESTION=10, SEMI=11, COMMA=12, ID=13, DSTRING=14, SSTRING=15, 
-		DECDIGITS=16, FLOAT=17, ERR_CHAR=18;
+		STARTEXPR=1, TEXT=2, LBRACE=3, RBRACE=4, PIPE=5, DOT=6, LPAREN=7, RPAREN=8, 
+		LBRACK=9, RBRACK=10, DQUESTION=11, SEMI=12, COMMA=13, ID=14, DSTRING=15, 
+		SSTRING=16, DECDIGITS=17, FLOAT=18, ERR_CHAR=19, CRBRACE=20, CCOMMA=21, 
+		CID=22, CDSTRING=23, CSSTRING=24, CDECDIGITS=25, CFLOAT=26, CERR_CHAR=27;
 	public static final int
 		RULE_template = 0, RULE_elements = 1, RULE_element = 2, RULE_text = 3, 
 		RULE_expression = 4, RULE_defaultValue = 5, RULE_defaultValueType = 6, 
 		RULE_function = 7, RULE_functionArgs = 8, RULE_functionArg = 9, RULE_orExps = 10, 
-		RULE_exps = 11, RULE_exp = 12;
+		RULE_exps = 11, RULE_exp = 12, RULE_concatenation = 13, RULE_citems = 14, 
+		RULE_citem = 15;
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"template", "elements", "element", "text", "expression", "defaultValue", 
 			"defaultValueType", "function", "functionArgs", "functionArg", "orExps", 
-			"exps", "exp"
+			"exps", "exp", "concatenation", "citems", "citem"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
@@ -48,9 +50,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "STARTEXPR", "TEXT", "RBRACE", "PIPE", "DOT", "LPAREN", "RPAREN", 
-			"LBRACK", "RBRACK", "DQUESTION", "SEMI", "COMMA", "ID", "DSTRING", "SSTRING", 
-			"DECDIGITS", "FLOAT", "ERR_CHAR"
+			null, "STARTEXPR", "TEXT", "LBRACE", "RBRACE", "PIPE", "DOT", "LPAREN", 
+			"RPAREN", "LBRACK", "RBRACK", "DQUESTION", "SEMI", "COMMA", "ID", "DSTRING", 
+			"SSTRING", "DECDIGITS", "FLOAT", "ERR_CHAR", "CRBRACE", "CCOMMA", "CID", 
+			"CDSTRING", "CSSTRING", "CDECDIGITS", "CFLOAT", "CERR_CHAR"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -116,11 +119,11 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	public static class TemplateContext extends ParserRuleContext {
 		public TemplateType parentType;
 		public AstRoot rootAst;
-		public ElementsContext es;
-		public TerminalNode EOF() { return getToken(TemplateGrammar.EOF, 0); }
+		public ElementsContext elements;
 		public ElementsContext elements() {
 			return getRuleContext(ElementsContext.class,0);
 		}
+		public TerminalNode EOF() { return getToken(TemplateGrammar.EOF, 0); }
 		public TemplateContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public TemplateContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
 			super(parent, invokingState);
@@ -143,10 +146,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(26);
-			((TemplateContext)_localctx).es = elements(parentType);
-			 ((TemplateContext)_localctx).rootAst =  new AstRoot(_localctx.parentType); _localctx.rootAst.addChildren(((TemplateContext)_localctx).es.list); 
-			setState(28);
+			setState(32);
+			((TemplateContext)_localctx).elements = elements(parentType);
+			 ((TemplateContext)_localctx).rootAst =  new AstRoot(_localctx.parentType); _localctx.rootAst.addChildren(((TemplateContext)_localctx).elements.list); 
+			setState(34);
 			match(EOF);
 			}
 		}
@@ -164,7 +167,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	public static class ElementsContext extends ParserRuleContext {
 		public TemplateType parentType;
 		public ArrayList<Ast> list = new ArrayList<>();
-		public ElementContext e;
+		public ElementContext element;
 		public List<ElementContext> element() {
 			return getRuleContexts(ElementContext.class);
 		}
@@ -194,18 +197,18 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(35);
+			setState(41);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==STARTEXPR || _la==TEXT) {
 				{
 				{
-				setState(30);
-				((ElementsContext)_localctx).e = element(parentType);
-				 _localctx.list.add(((ElementsContext)_localctx).e.ast); 
+				setState(36);
+				((ElementsContext)_localctx).element = element(parentType);
+				 _localctx.list.add(((ElementsContext)_localctx).element.ast); 
 				}
 				}
-				setState(37);
+				setState(43);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -226,7 +229,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		public TemplateType parentType;
 		public Ast ast;
 		public TextContext t;
-		public ExpressionContext e;
+		public ExpressionContext expression;
 		public TextContext text() {
 			return getRuleContext(TextContext.class,0);
 		}
@@ -253,13 +256,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		ElementContext _localctx = new ElementContext(_ctx, getState(), parentType);
 		enterRule(_localctx, 4, RULE_element);
 		try {
-			setState(44);
+			setState(50);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case TEXT:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(38);
+				setState(44);
 				((ElementContext)_localctx).t = text();
 				 ((ElementContext)_localctx).ast =  new AstText((((ElementContext)_localctx).t!=null?_input.getText(((ElementContext)_localctx).t.start,((ElementContext)_localctx).t.stop):null)); _localctx.ast.addChild(new AstPrint(_localctx.ast.type, null)); 
 				}
@@ -267,9 +270,9 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			case STARTEXPR:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(41);
-				((ElementContext)_localctx).e = expression(parentType);
-				 ((ElementContext)_localctx).ast =  ((ElementContext)_localctx).e.ast.top; 
+				setState(47);
+				((ElementContext)_localctx).expression = expression(parentType);
+				 ((ElementContext)_localctx).ast =  ((ElementContext)_localctx).expression.ast.top; 
 				}
 				break;
 			default:
@@ -313,7 +316,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(47); 
+			setState(53); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -321,7 +324,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				case 1:
 					{
 					{
-					setState(46);
+					setState(52);
 					match(TEXT);
 					}
 					}
@@ -329,7 +332,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(49); 
+				setState(55); 
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
@@ -348,7 +351,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class ExpressionContext extends ParserRuleContext {
 		public TemplateType parentType;
-		public MinMax ast;
+		public MaxMin ast;
 		public ExpsContext exps;
 		public OrExpsContext orExps;
 		public DefaultValueContext defaultValue;
@@ -390,30 +393,30 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(51);
+			setState(57);
 			match(STARTEXPR);
-			setState(52);
+			setState(58);
 			((ExpressionContext)_localctx).exps = exps(parentType);
 			 ((ExpressionContext)_localctx).ast =  ((ExpressionContext)_localctx).exps.ast; 
-			setState(54);
+			setState(60);
 			((ExpressionContext)_localctx).orExps = orExps(parentType, _localctx.ast);
 			 ((ExpressionContext)_localctx).ast =  ((ExpressionContext)_localctx).orExps.ast; 
-			setState(57);
+			setState(63);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==DQUESTION) {
 				{
-				setState(56);
+				setState(62);
 				((ExpressionContext)_localctx).defaultValue = defaultValue();
 				}
 			}
 
-			setState(60);
+			setState(66);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==SEMI) {
 				{
-				setState(59);
+				setState(65);
 				((ExpressionContext)_localctx).function = function();
 				}
 			}
@@ -423,10 +426,9 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			          _localctx.ast.addToBottomChildrenAndSet( ((ExpressionContext)_localctx).function.func );
 			        }
 
-			        var ap = getAst(_localctx.ast.bottom.type, null, false, ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null);
-			        _localctx.ast.addToBottomChildrenAndSet( ap );
+			        _localctx.ast.addLeafs( () -> getAst(_localctx.ast.bottom.type, null, false, ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null) );
 			      
-			setState(63);
+			setState(69);
 			match(RBRACE);
 			}
 		}
@@ -468,9 +470,9 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(65);
+			setState(71);
 			match(DQUESTION);
-			setState(66);
+			setState(72);
 			((DefaultValueContext)_localctx).defaultValueType = defaultValueType();
 			 ((DefaultValueContext)_localctx).v =  ((DefaultValueContext)_localctx).defaultValueType.v; 
 			}
@@ -514,13 +516,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		DefaultValueTypeContext _localctx = new DefaultValueTypeContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_defaultValueType);
 		try {
-			setState(77);
+			setState(83);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case SSTRING:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(69);
+				setState(75);
 				((DefaultValueTypeContext)_localctx).SSTRING = match(SSTRING);
 				 ((DefaultValueTypeContext)_localctx).v =  sStringToDString( (((DefaultValueTypeContext)_localctx).SSTRING!=null?((DefaultValueTypeContext)_localctx).SSTRING.getText():null) ); 
 				}
@@ -528,7 +530,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			case DSTRING:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(71);
+				setState(77);
 				((DefaultValueTypeContext)_localctx).DSTRING = match(DSTRING);
 				 ((DefaultValueTypeContext)_localctx).v =  (((DefaultValueTypeContext)_localctx).DSTRING!=null?((DefaultValueTypeContext)_localctx).DSTRING.getText():null); 
 				}
@@ -536,7 +538,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			case DECDIGITS:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(73);
+				setState(79);
 				((DefaultValueTypeContext)_localctx).DECDIGITS = match(DECDIGITS);
 				 ((DefaultValueTypeContext)_localctx).v =  (((DefaultValueTypeContext)_localctx).DECDIGITS!=null?((DefaultValueTypeContext)_localctx).DECDIGITS.getText():null); 
 				}
@@ -544,7 +546,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			case FLOAT:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(75);
+				setState(81);
 				((DefaultValueTypeContext)_localctx).FLOAT = match(FLOAT);
 				 ((DefaultValueTypeContext)_localctx).v =  (((DefaultValueTypeContext)_localctx).FLOAT!=null?((DefaultValueTypeContext)_localctx).FLOAT.getText():null); 
 				}
@@ -596,23 +598,23 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(79);
+			setState(85);
 			match(SEMI);
-			setState(80);
+			setState(86);
 			((FunctionContext)_localctx).ID = match(ID);
-			setState(81);
+			setState(87);
 			match(LPAREN);
-			setState(83);
+			setState(89);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << DSTRING) | (1L << SSTRING) | (1L << DECDIGITS))) != 0)) {
 				{
-				setState(82);
+				setState(88);
 				((FunctionContext)_localctx).functionArgs = functionArgs();
 				}
 			}
 
-			setState(85);
+			setState(91);
 			match(RPAREN);
 			 ((FunctionContext)_localctx).func =  getFunction( (((FunctionContext)_localctx).ID!=null?((FunctionContext)_localctx).ID.getText():null), ((FunctionContext)_localctx).functionArgs != null ? ((FunctionContext)_localctx).functionArgs.ret : List.of() ); 
 			}
@@ -630,8 +632,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class FunctionArgsContext extends ParserRuleContext {
 		public ArrayList<String> ret = new ArrayList<>();
-		public FunctionArgContext fa;
-		public FunctionArgContext nfa;
+		public FunctionArgContext functionArg;
 		public List<FunctionArgContext> functionArg() {
 			return getRuleContexts(FunctionArgContext.class);
 		}
@@ -663,23 +664,23 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(88);
-			((FunctionArgsContext)_localctx).fa = functionArg();
-			 _localctx.ret.add( ((FunctionArgsContext)_localctx).fa.ret ); 
-			setState(96);
+			setState(94);
+			((FunctionArgsContext)_localctx).functionArg = functionArg();
+			 _localctx.ret.add( ((FunctionArgsContext)_localctx).functionArg.ret ); 
+			setState(102);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==COMMA) {
 				{
 				{
-				setState(90);
+				setState(96);
 				match(COMMA);
-				setState(91);
-				((FunctionArgsContext)_localctx).nfa = functionArg();
-				 _localctx.ret.add( ((FunctionArgsContext)_localctx).nfa.ret ); 
+				setState(97);
+				((FunctionArgsContext)_localctx).functionArg = functionArg();
+				 _localctx.ret.add( ((FunctionArgsContext)_localctx).functionArg.ret ); 
 				}
 				}
-				setState(98);
+				setState(104);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -722,13 +723,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		FunctionArgContext _localctx = new FunctionArgContext(_ctx, getState());
 		enterRule(_localctx, 18, RULE_functionArg);
 		try {
-			setState(105);
+			setState(111);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case DECDIGITS:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(99);
+				setState(105);
 				((FunctionArgContext)_localctx).DECDIGITS = match(DECDIGITS);
 				 ((FunctionArgContext)_localctx).ret =  (((FunctionArgContext)_localctx).DECDIGITS!=null?((FunctionArgContext)_localctx).DECDIGITS.getText():null); 
 				}
@@ -736,7 +737,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			case SSTRING:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(101);
+				setState(107);
 				((FunctionArgContext)_localctx).SSTRING = match(SSTRING);
 				 ((FunctionArgContext)_localctx).ret =  sStringToDString( (((FunctionArgContext)_localctx).SSTRING!=null?((FunctionArgContext)_localctx).SSTRING.getText():null) ); 
 				}
@@ -744,7 +745,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			case DSTRING:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(103);
+				setState(109);
 				((FunctionArgContext)_localctx).DSTRING = match(DSTRING);
 				 ((FunctionArgContext)_localctx).ret =  (((FunctionArgContext)_localctx).DSTRING!=null?((FunctionArgContext)_localctx).DSTRING.getText():null); 
 				}
@@ -766,11 +767,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class OrExpsContext extends ParserRuleContext {
 		public TemplateType parentType;
-		public MinMax firstAst;
-		public MinMax ast;
-		public ArrayList<MinMax> list = new ArrayList<>();;
-		public ExpsContext e1;
-		public ExpsContext e2;
+		public MaxMin firstAst;
+		public MaxMin ast;
+		public ArrayList<MaxMin> list = new ArrayList<>();;
+		public ExpsContext exps;
 		public List<TerminalNode> PIPE() { return getTokens(TemplateGrammar.PIPE); }
 		public TerminalNode PIPE(int i) {
 			return getToken(TemplateGrammar.PIPE, i);
@@ -782,7 +782,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			return getRuleContext(ExpsContext.class,i);
 		}
 		public OrExpsContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public OrExpsContext(ParserRuleContext parent, int invokingState, TemplateType parentType, MinMax firstAst) {
+		public OrExpsContext(ParserRuleContext parent, int invokingState, TemplateType parentType, MaxMin firstAst) {
 			super(parent, invokingState);
 			this.parentType = parentType;
 			this.firstAst = firstAst;
@@ -798,37 +798,37 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		}
 	}
 
-	public final OrExpsContext orExps(TemplateType parentType,MinMax firstAst) throws RecognitionException {
+	public final OrExpsContext orExps(TemplateType parentType,MaxMin firstAst) throws RecognitionException {
 		OrExpsContext _localctx = new OrExpsContext(_ctx, getState(), parentType, firstAst);
 		enterRule(_localctx, 20, RULE_orExps);
 		int _la;
 		try {
-			setState(122);
+			setState(128);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case PIPE:
 				enterOuterAlt(_localctx, 1);
 				{
 				{
-				setState(107);
+				setState(113);
 				match(PIPE);
-				setState(108);
-				((OrExpsContext)_localctx).e1 = exps(parentType);
-				 _localctx.list.add(firstAst); _localctx.list.add(((OrExpsContext)_localctx).e1.ast); 
-				setState(116);
+				setState(114);
+				((OrExpsContext)_localctx).exps = exps(parentType);
+				 _localctx.list.add(firstAst); _localctx.list.add(((OrExpsContext)_localctx).exps.ast); 
+				setState(122);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==PIPE) {
 					{
 					{
-					setState(110);
+					setState(116);
 					match(PIPE);
-					setState(111);
-					((OrExpsContext)_localctx).e2 = exps(parentType);
-					_localctx.list.add(((OrExpsContext)_localctx).e2.ast);
+					setState(117);
+					((OrExpsContext)_localctx).exps = exps(parentType);
+					_localctx.list.add(((OrExpsContext)_localctx).exps.ast);
 					}
 					}
-					setState(118);
+					setState(124);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
@@ -841,7 +841,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				              item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false));
 				            }
 				            or.addTry(_localctx.list);
-				            ((OrExpsContext)_localctx).ast =  new MinMax(or);
+				            ((OrExpsContext)_localctx).ast =  new MaxMin(or);
 				        }    
 				    
 				}
@@ -871,14 +871,17 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class ExpsContext extends ParserRuleContext {
 		public TemplateType parentType;
-		public MinMax ast;
-		public ExpContext id;
-		public ExpContext nid;
+		public MaxMin ast;
+		public ExpContext exp;
+		public ConcatenationContext concatenation;
 		public List<ExpContext> exp() {
 			return getRuleContexts(ExpContext.class);
 		}
 		public ExpContext exp(int i) {
 			return getRuleContext(ExpContext.class,i);
+		}
+		public ConcatenationContext concatenation() {
+			return getRuleContext(ConcatenationContext.class,0);
 		}
 		public List<TerminalNode> DOT() { return getTokens(TemplateGrammar.DOT); }
 		public TerminalNode DOT(int i) {
@@ -905,30 +908,57 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		enterRule(_localctx, 22, RULE_exps);
 		int _la;
 		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			{
-			setState(124);
-			((ExpsContext)_localctx).id = exp(parentType);
-			 ((ExpsContext)_localctx).ast =  ((ExpsContext)_localctx).id.ast; 
-			setState(132);
+			setState(149);
 			_errHandler.sync(this);
-			_la = _input.LA(1);
-			while (_la==DOT) {
+			switch (_input.LA(1)) {
+			case ID:
+				enterOuterAlt(_localctx, 1);
 				{
 				{
-				setState(126);
-				match(DOT);
-				setState(127);
-				((ExpsContext)_localctx).nid = exp(_localctx.ast.bottom.type);
-				_localctx.ast.addToBottomChildrenAndSet(((ExpsContext)_localctx).nid.ast);
-				}
-				}
-				setState(134);
+				setState(130);
+				((ExpsContext)_localctx).exp = exp(parentType);
+				 ((ExpsContext)_localctx).ast =  ((ExpsContext)_localctx).exp.ast; 
+				setState(138);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			}
-			}
+				while (_la==DOT) {
+					{
+					{
+					setState(132);
+					match(DOT);
+					setState(133);
+					((ExpsContext)_localctx).exp = exp(_localctx.ast.bottom.type);
+					_localctx.ast.addToBottomChildrenAndSet(((ExpsContext)_localctx).exp.ast);
+					}
+					}
+					setState(140);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				}
+				}
+				setState(142);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==LBRACE) {
+					{
+					setState(141);
+					((ExpsContext)_localctx).concatenation = concatenation(parentType);
+					}
+				}
+
+				 if( ((ExpsContext)_localctx).concatenation != null ) _localctx.ast.addToBottomChildrenAndSet( ((ExpsContext)_localctx).concatenation.ast ); 
+				}
+				break;
+			case LBRACE:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(146);
+				((ExpsContext)_localctx).concatenation = concatenation(parentType);
+				 ((ExpsContext)_localctx).ast =  new MaxMin( ((ExpsContext)_localctx).concatenation.ast ); 
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -944,11 +974,11 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class ExpContext extends ParserRuleContext {
 		public TemplateType parentType;
-		public MinMax ast;
-		public Token id;
+		public MaxMin ast;
+		public Token ID;
+		public TerminalNode ID() { return getToken(TemplateGrammar.ID, 0); }
 		public TerminalNode LPAREN() { return getToken(TemplateGrammar.LPAREN, 0); }
 		public TerminalNode RPAREN() { return getToken(TemplateGrammar.RPAREN, 0); }
-		public TerminalNode ID() { return getToken(TemplateGrammar.ID, 0); }
 		public ExpContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public ExpContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
 			super(parent, invokingState);
@@ -969,29 +999,29 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		ExpContext _localctx = new ExpContext(_ctx, getState(), parentType);
 		enterRule(_localctx, 24, RULE_exp);
 		try {
-			setState(142);
+			setState(158);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,12,_ctx) ) {
+			switch ( getInterpreter().adaptivePredict(_input,14,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
 				{
-				setState(135);
-				((ExpContext)_localctx).id = match(ID);
-				setState(136);
+				setState(151);
+				((ExpContext)_localctx).ID = match(ID);
+				setState(152);
 				match(LPAREN);
-				setState(137);
+				setState(153);
 				match(RPAREN);
 				}
-				 ((ExpContext)_localctx).ast =  getAst(_localctx.parentType, (((ExpContext)_localctx).id!=null?((ExpContext)_localctx).id.getText():null), true); 
+				 ((ExpContext)_localctx).ast =  getAst(_localctx.parentType, (((ExpContext)_localctx).ID!=null?((ExpContext)_localctx).ID.getText():null), true); 
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(140);
-				((ExpContext)_localctx).id = match(ID);
-				 ((ExpContext)_localctx).ast =  getAst(_localctx.parentType, (((ExpContext)_localctx).id!=null?((ExpContext)_localctx).id.getText():null), false); 
+				setState(156);
+				((ExpContext)_localctx).ID = match(ID);
+				 ((ExpContext)_localctx).ast =  getAst(_localctx.parentType, (((ExpContext)_localctx).ID!=null?((ExpContext)_localctx).ID.getText():null), false); 
 				}
 				break;
 			}
@@ -1007,45 +1037,275 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	public static class ConcatenationContext extends ParserRuleContext {
+		public TemplateType parentType;
+		public AstConcatenation ast;
+		public CitemsContext citems;
+		public TerminalNode LBRACE() { return getToken(TemplateGrammar.LBRACE, 0); }
+		public CitemsContext citems() {
+			return getRuleContext(CitemsContext.class,0);
+		}
+		public TerminalNode CRBRACE() { return getToken(TemplateGrammar.CRBRACE, 0); }
+		public ConcatenationContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public ConcatenationContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
+			super(parent, invokingState);
+			this.parentType = parentType;
+		}
+		@Override public int getRuleIndex() { return RULE_concatenation; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).enterConcatenation(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).exitConcatenation(this);
+		}
+	}
+
+	public final ConcatenationContext concatenation(TemplateType parentType) throws RecognitionException {
+		ConcatenationContext _localctx = new ConcatenationContext(_ctx, getState(), parentType);
+		enterRule(_localctx, 26, RULE_concatenation);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(160);
+			match(LBRACE);
+			setState(161);
+			((ConcatenationContext)_localctx).citems = citems(parentType);
+			 ((ConcatenationContext)_localctx).ast =  new AstConcatenation(parentType, ((ConcatenationContext)_localctx).citems.list); 
+			setState(163);
+			match(CRBRACE);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class CitemsContext extends ParserRuleContext {
+		public TemplateType parentType;
+		public ArrayList<Ast> list = new ArrayList<Ast>();
+		public CitemContext citem;
+		public List<CitemContext> citem() {
+			return getRuleContexts(CitemContext.class);
+		}
+		public CitemContext citem(int i) {
+			return getRuleContext(CitemContext.class,i);
+		}
+		public List<TerminalNode> CCOMMA() { return getTokens(TemplateGrammar.CCOMMA); }
+		public TerminalNode CCOMMA(int i) {
+			return getToken(TemplateGrammar.CCOMMA, i);
+		}
+		public CitemsContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public CitemsContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
+			super(parent, invokingState);
+			this.parentType = parentType;
+		}
+		@Override public int getRuleIndex() { return RULE_citems; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).enterCitems(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).exitCitems(this);
+		}
+	}
+
+	public final CitemsContext citems(TemplateType parentType) throws RecognitionException {
+		CitemsContext _localctx = new CitemsContext(_ctx, getState(), parentType);
+		enterRule(_localctx, 28, RULE_citems);
+		int _la;
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(165);
+			((CitemsContext)_localctx).citem = citem(parentType);
+			 _localctx.list.add(((CitemsContext)_localctx).citem.ast.top); ((CitemsContext)_localctx).citem.ast.addToBottomChildrenAndSet(getAst(((CitemsContext)_localctx).citem.ast.bottom.type, null, false)); 
+			setState(173);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==CCOMMA) {
+				{
+				{
+				setState(167);
+				match(CCOMMA);
+				setState(168);
+				((CitemsContext)_localctx).citem = citem(parentType);
+				 _localctx.list.add(((CitemsContext)_localctx).citem.ast.top); ((CitemsContext)_localctx).citem.ast.addToBottomChildrenAndSet(getAst(((CitemsContext)_localctx).citem.ast.bottom.type, null, false)); 
+				}
+				}
+				setState(175);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class CitemContext extends ParserRuleContext {
+		public TemplateType parentType;
+		public MaxMin ast;
+		public Token CID;
+		public Token CDSTRING;
+		public Token CSSTRING;
+		public Token CDECDIGITS;
+		public Token CFLOAT;
+		public TerminalNode CID() { return getToken(TemplateGrammar.CID, 0); }
+		public TerminalNode CDSTRING() { return getToken(TemplateGrammar.CDSTRING, 0); }
+		public TerminalNode CSSTRING() { return getToken(TemplateGrammar.CSSTRING, 0); }
+		public TerminalNode CDECDIGITS() { return getToken(TemplateGrammar.CDECDIGITS, 0); }
+		public TerminalNode CFLOAT() { return getToken(TemplateGrammar.CFLOAT, 0); }
+		public CitemContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public CitemContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
+			super(parent, invokingState);
+			this.parentType = parentType;
+		}
+		@Override public int getRuleIndex() { return RULE_citem; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).enterCitem(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).exitCitem(this);
+		}
+	}
+
+	public final CitemContext citem(TemplateType parentType) throws RecognitionException {
+		CitemContext _localctx = new CitemContext(_ctx, getState(), parentType);
+		enterRule(_localctx, 30, RULE_citem);
+		try {
+			setState(186);
+			_errHandler.sync(this);
+			switch (_input.LA(1)) {
+			case CID:
+				enterOuterAlt(_localctx, 1);
+				{
+				setState(176);
+				((CitemContext)_localctx).CID = match(CID);
+				 ((CitemContext)_localctx).ast =  getAst(_localctx.parentType, (((CitemContext)_localctx).CID!=null?((CitemContext)_localctx).CID.getText():null), false); 
+				}
+				break;
+			case CDSTRING:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(178);
+				((CitemContext)_localctx).CDSTRING = match(CDSTRING);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(sdStringToString((((CitemContext)_localctx).CDSTRING!=null?((CitemContext)_localctx).CDSTRING.getText():null)))); 
+				}
+				break;
+			case CSSTRING:
+				enterOuterAlt(_localctx, 3);
+				{
+				setState(180);
+				((CitemContext)_localctx).CSSTRING = match(CSSTRING);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(sdStringToString((((CitemContext)_localctx).CSSTRING!=null?((CitemContext)_localctx).CSSTRING.getText():null)))); 
+				}
+				break;
+			case CDECDIGITS:
+				enterOuterAlt(_localctx, 4);
+				{
+				setState(182);
+				((CitemContext)_localctx).CDECDIGITS = match(CDECDIGITS);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(String.valueOf((((CitemContext)_localctx).CDECDIGITS!=null?((CitemContext)_localctx).CDECDIGITS.getText():null)))); 
+				}
+				break;
+			case CFLOAT:
+				enterOuterAlt(_localctx, 5);
+				{
+				setState(184);
+				((CitemContext)_localctx).CFLOAT = match(CFLOAT);
+				 ((CitemContext)_localctx).ast =  new MaxMin(new AstText(String.valueOf((((CitemContext)_localctx).CFLOAT!=null?((CitemContext)_localctx).CFLOAT.getText():null)))); 
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\24\u0093\4\2\t\2"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\35\u00bf\4\2\t\2"+
 		"\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13"+
-		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\3\2\3\2\3\2\3\2\3\3\3\3\3\3\7\3$\n\3\f"+
-		"\3\16\3\'\13\3\3\4\3\4\3\4\3\4\3\4\3\4\5\4/\n\4\3\5\6\5\62\n\5\r\5\16"+
-		"\5\63\3\6\3\6\3\6\3\6\3\6\3\6\5\6<\n\6\3\6\5\6?\n\6\3\6\3\6\3\6\3\7\3"+
-		"\7\3\7\3\7\3\b\3\b\3\b\3\b\3\b\3\b\3\b\3\b\5\bP\n\b\3\t\3\t\3\t\3\t\5"+
-		"\tV\n\t\3\t\3\t\3\t\3\n\3\n\3\n\3\n\3\n\3\n\7\na\n\n\f\n\16\nd\13\n\3"+
-		"\13\3\13\3\13\3\13\3\13\3\13\5\13l\n\13\3\f\3\f\3\f\3\f\3\f\3\f\3\f\7"+
-		"\fu\n\f\f\f\16\fx\13\f\3\f\3\f\3\f\5\f}\n\f\3\r\3\r\3\r\3\r\3\r\3\r\7"+
-		"\r\u0085\n\r\f\r\16\r\u0088\13\r\3\16\3\16\3\16\3\16\3\16\3\16\3\16\5"+
-		"\16\u0091\n\16\3\16\2\2\17\2\4\6\b\n\f\16\20\22\24\26\30\32\2\2\2\u0095"+
-		"\2\34\3\2\2\2\4%\3\2\2\2\6.\3\2\2\2\b\61\3\2\2\2\n\65\3\2\2\2\fC\3\2\2"+
-		"\2\16O\3\2\2\2\20Q\3\2\2\2\22Z\3\2\2\2\24k\3\2\2\2\26|\3\2\2\2\30~\3\2"+
-		"\2\2\32\u0090\3\2\2\2\34\35\5\4\3\2\35\36\b\2\1\2\36\37\7\2\2\3\37\3\3"+
-		"\2\2\2 !\5\6\4\2!\"\b\3\1\2\"$\3\2\2\2# \3\2\2\2$\'\3\2\2\2%#\3\2\2\2"+
-		"%&\3\2\2\2&\5\3\2\2\2\'%\3\2\2\2()\5\b\5\2)*\b\4\1\2*/\3\2\2\2+,\5\n\6"+
-		"\2,-\b\4\1\2-/\3\2\2\2.(\3\2\2\2.+\3\2\2\2/\7\3\2\2\2\60\62\7\4\2\2\61"+
-		"\60\3\2\2\2\62\63\3\2\2\2\63\61\3\2\2\2\63\64\3\2\2\2\64\t\3\2\2\2\65"+
-		"\66\7\3\2\2\66\67\5\30\r\2\678\b\6\1\289\5\26\f\29;\b\6\1\2:<\5\f\7\2"+
-		";:\3\2\2\2;<\3\2\2\2<>\3\2\2\2=?\5\20\t\2>=\3\2\2\2>?\3\2\2\2?@\3\2\2"+
-		"\2@A\b\6\1\2AB\7\5\2\2B\13\3\2\2\2CD\7\f\2\2DE\5\16\b\2EF\b\7\1\2F\r\3"+
-		"\2\2\2GH\7\21\2\2HP\b\b\1\2IJ\7\20\2\2JP\b\b\1\2KL\7\22\2\2LP\b\b\1\2"+
-		"MN\7\23\2\2NP\b\b\1\2OG\3\2\2\2OI\3\2\2\2OK\3\2\2\2OM\3\2\2\2P\17\3\2"+
-		"\2\2QR\7\r\2\2RS\7\17\2\2SU\7\b\2\2TV\5\22\n\2UT\3\2\2\2UV\3\2\2\2VW\3"+
-		"\2\2\2WX\7\t\2\2XY\b\t\1\2Y\21\3\2\2\2Z[\5\24\13\2[b\b\n\1\2\\]\7\16\2"+
-		"\2]^\5\24\13\2^_\b\n\1\2_a\3\2\2\2`\\\3\2\2\2ad\3\2\2\2b`\3\2\2\2bc\3"+
-		"\2\2\2c\23\3\2\2\2db\3\2\2\2ef\7\22\2\2fl\b\13\1\2gh\7\21\2\2hl\b\13\1"+
-		"\2ij\7\20\2\2jl\b\13\1\2ke\3\2\2\2kg\3\2\2\2ki\3\2\2\2l\25\3\2\2\2mn\7"+
-		"\6\2\2no\5\30\r\2ov\b\f\1\2pq\7\6\2\2qr\5\30\r\2rs\b\f\1\2su\3\2\2\2t"+
-		"p\3\2\2\2ux\3\2\2\2vt\3\2\2\2vw\3\2\2\2wy\3\2\2\2xv\3\2\2\2yz\b\f\1\2"+
-		"z}\3\2\2\2{}\b\f\1\2|m\3\2\2\2|{\3\2\2\2}\27\3\2\2\2~\177\5\32\16\2\177"+
-		"\u0086\b\r\1\2\u0080\u0081\7\7\2\2\u0081\u0082\5\32\16\2\u0082\u0083\b"+
-		"\r\1\2\u0083\u0085\3\2\2\2\u0084\u0080\3\2\2\2\u0085\u0088\3\2\2\2\u0086"+
-		"\u0084\3\2\2\2\u0086\u0087\3\2\2\2\u0087\31\3\2\2\2\u0088\u0086\3\2\2"+
-		"\2\u0089\u008a\7\17\2\2\u008a\u008b\7\b\2\2\u008b\u008c\7\t\2\2\u008c"+
-		"\u008d\3\2\2\2\u008d\u0091\b\16\1\2\u008e\u008f\7\17\2\2\u008f\u0091\b"+
-		"\16\1\2\u0090\u0089\3\2\2\2\u0090\u008e\3\2\2\2\u0091\33\3\2\2\2\17%."+
-		"\63;>OUbkv|\u0086\u0090";
+		"\t\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\3\2\3\2"+
+		"\3\2\3\2\3\3\3\3\3\3\7\3*\n\3\f\3\16\3-\13\3\3\4\3\4\3\4\3\4\3\4\3\4\5"+
+		"\4\65\n\4\3\5\6\58\n\5\r\5\16\59\3\6\3\6\3\6\3\6\3\6\3\6\5\6B\n\6\3\6"+
+		"\5\6E\n\6\3\6\3\6\3\6\3\7\3\7\3\7\3\7\3\b\3\b\3\b\3\b\3\b\3\b\3\b\3\b"+
+		"\5\bV\n\b\3\t\3\t\3\t\3\t\5\t\\\n\t\3\t\3\t\3\t\3\n\3\n\3\n\3\n\3\n\3"+
+		"\n\7\ng\n\n\f\n\16\nj\13\n\3\13\3\13\3\13\3\13\3\13\3\13\5\13r\n\13\3"+
+		"\f\3\f\3\f\3\f\3\f\3\f\3\f\7\f{\n\f\f\f\16\f~\13\f\3\f\3\f\3\f\5\f\u0083"+
+		"\n\f\3\r\3\r\3\r\3\r\3\r\3\r\7\r\u008b\n\r\f\r\16\r\u008e\13\r\3\r\5\r"+
+		"\u0091\n\r\3\r\3\r\3\r\3\r\3\r\5\r\u0098\n\r\3\16\3\16\3\16\3\16\3\16"+
+		"\3\16\3\16\5\16\u00a1\n\16\3\17\3\17\3\17\3\17\3\17\3\20\3\20\3\20\3\20"+
+		"\3\20\3\20\7\20\u00ae\n\20\f\20\16\20\u00b1\13\20\3\21\3\21\3\21\3\21"+
+		"\3\21\3\21\3\21\3\21\3\21\3\21\5\21\u00bd\n\21\3\21\2\2\22\2\4\6\b\n\f"+
+		"\16\20\22\24\26\30\32\34\36 \2\2\2\u00c5\2\"\3\2\2\2\4+\3\2\2\2\6\64\3"+
+		"\2\2\2\b\67\3\2\2\2\n;\3\2\2\2\fI\3\2\2\2\16U\3\2\2\2\20W\3\2\2\2\22`"+
+		"\3\2\2\2\24q\3\2\2\2\26\u0082\3\2\2\2\30\u0097\3\2\2\2\32\u00a0\3\2\2"+
+		"\2\34\u00a2\3\2\2\2\36\u00a7\3\2\2\2 \u00bc\3\2\2\2\"#\5\4\3\2#$\b\2\1"+
+		"\2$%\7\2\2\3%\3\3\2\2\2&\'\5\6\4\2\'(\b\3\1\2(*\3\2\2\2)&\3\2\2\2*-\3"+
+		"\2\2\2+)\3\2\2\2+,\3\2\2\2,\5\3\2\2\2-+\3\2\2\2./\5\b\5\2/\60\b\4\1\2"+
+		"\60\65\3\2\2\2\61\62\5\n\6\2\62\63\b\4\1\2\63\65\3\2\2\2\64.\3\2\2\2\64"+
+		"\61\3\2\2\2\65\7\3\2\2\2\668\7\4\2\2\67\66\3\2\2\289\3\2\2\29\67\3\2\2"+
+		"\29:\3\2\2\2:\t\3\2\2\2;<\7\3\2\2<=\5\30\r\2=>\b\6\1\2>?\5\26\f\2?A\b"+
+		"\6\1\2@B\5\f\7\2A@\3\2\2\2AB\3\2\2\2BD\3\2\2\2CE\5\20\t\2DC\3\2\2\2DE"+
+		"\3\2\2\2EF\3\2\2\2FG\b\6\1\2GH\7\6\2\2H\13\3\2\2\2IJ\7\r\2\2JK\5\16\b"+
+		"\2KL\b\7\1\2L\r\3\2\2\2MN\7\22\2\2NV\b\b\1\2OP\7\21\2\2PV\b\b\1\2QR\7"+
+		"\23\2\2RV\b\b\1\2ST\7\24\2\2TV\b\b\1\2UM\3\2\2\2UO\3\2\2\2UQ\3\2\2\2U"+
+		"S\3\2\2\2V\17\3\2\2\2WX\7\16\2\2XY\7\20\2\2Y[\7\t\2\2Z\\\5\22\n\2[Z\3"+
+		"\2\2\2[\\\3\2\2\2\\]\3\2\2\2]^\7\n\2\2^_\b\t\1\2_\21\3\2\2\2`a\5\24\13"+
+		"\2ah\b\n\1\2bc\7\17\2\2cd\5\24\13\2de\b\n\1\2eg\3\2\2\2fb\3\2\2\2gj\3"+
+		"\2\2\2hf\3\2\2\2hi\3\2\2\2i\23\3\2\2\2jh\3\2\2\2kl\7\23\2\2lr\b\13\1\2"+
+		"mn\7\22\2\2nr\b\13\1\2op\7\21\2\2pr\b\13\1\2qk\3\2\2\2qm\3\2\2\2qo\3\2"+
+		"\2\2r\25\3\2\2\2st\7\7\2\2tu\5\30\r\2u|\b\f\1\2vw\7\7\2\2wx\5\30\r\2x"+
+		"y\b\f\1\2y{\3\2\2\2zv\3\2\2\2{~\3\2\2\2|z\3\2\2\2|}\3\2\2\2}\177\3\2\2"+
+		"\2~|\3\2\2\2\177\u0080\b\f\1\2\u0080\u0083\3\2\2\2\u0081\u0083\b\f\1\2"+
+		"\u0082s\3\2\2\2\u0082\u0081\3\2\2\2\u0083\27\3\2\2\2\u0084\u0085\5\32"+
+		"\16\2\u0085\u008c\b\r\1\2\u0086\u0087\7\b\2\2\u0087\u0088\5\32\16\2\u0088"+
+		"\u0089\b\r\1\2\u0089\u008b\3\2\2\2\u008a\u0086\3\2\2\2\u008b\u008e\3\2"+
+		"\2\2\u008c\u008a\3\2\2\2\u008c\u008d\3\2\2\2\u008d\u0090\3\2\2\2\u008e"+
+		"\u008c\3\2\2\2\u008f\u0091\5\34\17\2\u0090\u008f\3\2\2\2\u0090\u0091\3"+
+		"\2\2\2\u0091\u0092\3\2\2\2\u0092\u0093\b\r\1\2\u0093\u0098\3\2\2\2\u0094"+
+		"\u0095\5\34\17\2\u0095\u0096\b\r\1\2\u0096\u0098\3\2\2\2\u0097\u0084\3"+
+		"\2\2\2\u0097\u0094\3\2\2\2\u0098\31\3\2\2\2\u0099\u009a\7\20\2\2\u009a"+
+		"\u009b\7\t\2\2\u009b\u009c\7\n\2\2\u009c\u009d\3\2\2\2\u009d\u00a1\b\16"+
+		"\1\2\u009e\u009f\7\20\2\2\u009f\u00a1\b\16\1\2\u00a0\u0099\3\2\2\2\u00a0"+
+		"\u009e\3\2\2\2\u00a1\33\3\2\2\2\u00a2\u00a3\7\5\2\2\u00a3\u00a4\5\36\20"+
+		"\2\u00a4\u00a5\b\17\1\2\u00a5\u00a6\7\26\2\2\u00a6\35\3\2\2\2\u00a7\u00a8"+
+		"\5 \21\2\u00a8\u00af\b\20\1\2\u00a9\u00aa\7\27\2\2\u00aa\u00ab\5 \21\2"+
+		"\u00ab\u00ac\b\20\1\2\u00ac\u00ae\3\2\2\2\u00ad\u00a9\3\2\2\2\u00ae\u00b1"+
+		"\3\2\2\2\u00af\u00ad\3\2\2\2\u00af\u00b0\3\2\2\2\u00b0\37\3\2\2\2\u00b1"+
+		"\u00af\3\2\2\2\u00b2\u00b3\7\30\2\2\u00b3\u00bd\b\21\1\2\u00b4\u00b5\7"+
+		"\31\2\2\u00b5\u00bd\b\21\1\2\u00b6\u00b7\7\32\2\2\u00b7\u00bd\b\21\1\2"+
+		"\u00b8\u00b9\7\33\2\2\u00b9\u00bd\b\21\1\2\u00ba\u00bb\7\34\2\2\u00bb"+
+		"\u00bd\b\21\1\2\u00bc\u00b2\3\2\2\2\u00bc\u00b4\3\2\2\2\u00bc\u00b6\3"+
+		"\2\2\2\u00bc\u00b8\3\2\2\2\u00bc\u00ba\3\2\2\2\u00bd!\3\2\2\2\23+\649"+
+		"ADU[hq|\u0082\u008c\u0090\u0097\u00a0\u00af\u00bc";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
