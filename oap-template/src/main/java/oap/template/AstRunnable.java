@@ -44,9 +44,8 @@ public class AstRunnable extends Ast {
     @Override
     void render( Render render ) {
         render
-            .ntab().append( "var " ).append( templateAccumulatorName ).append( " = acc.newInstance();" )
-            .ntab().append( "Runnable " ).append( newFunctionId )
-            .append( " = " ).append( "() -> {" );
+            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
+            .ntab().append( "Runnable %s = () -> {", newFunctionId );
 
         var newRender = render.withParentType( type ).withTemplateAccumulatorName( templateAccumulatorName ).tabInc();
         children.forEach( ast -> ast.render( newRender ) );

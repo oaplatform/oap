@@ -210,6 +210,42 @@ public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCitem(TemplateGrammar.CitemContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMath(TemplateGrammar.MathContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMath(TemplateGrammar.MathContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterNumber(TemplateGrammar.NumberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNumber(TemplateGrammar.NumberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMathOperation(TemplateGrammar.MathOperationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMathOperation(TemplateGrammar.MathOperationContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

@@ -38,7 +38,7 @@ public class AstNullable extends Ast {
     @Override
     void render( Render render ) {
         render
-            .ntab().append( "if ( " ).append( render.field ).append( " != null ) {" );
+            .ntab().append( "if ( %s != null ) {", render.field );
 
         var newRender = render.tabInc();
         children.forEach( a -> a.render( newRender ) );

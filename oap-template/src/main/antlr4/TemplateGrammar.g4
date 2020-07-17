@@ -97,6 +97,7 @@ exps [TemplateType parentType] returns [MaxMin ast]
     : (exp[parentType] { $ast = $exp.ast; }  
         (DOT exp[$ast.bottom.type] {$ast.addToBottomChildrenAndSet($exp.ast);})*)
         DOT? concatenation[parentType]? { if( $concatenation.ctx != null ) $ast.addToBottomChildrenAndSet( $concatenation.ast ); }
+        math[parentType]? { if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast ); }
     | concatenation[parentType] { $ast = new MaxMin( $concatenation.ast ); }
     ;
 
@@ -121,3 +122,21 @@ citem[TemplateType parentType] returns [MaxMin ast]
     | DECDIGITS { $ast = new MaxMin(new AstText(String.valueOf($DECDIGITS.text))); }
     | FLOAT { $ast = new MaxMin(new AstText(String.valueOf($FLOAT.text))); }
     ;
+
+math[TemplateType parentType] returns [MaxMin ast]
+    : mathOperation number { $ast = new MaxMin(new AstMath($parentType, $mathOperation.text, $number.text)); }
+    ;
+
+number:
+    | DECDIGITS
+    | FLOAT
+    ;
+
+mathOperation
+    : STAR
+    | SLASH
+    | PERCENT
+    | PLUS
+    | MINUS
+    ;
+    

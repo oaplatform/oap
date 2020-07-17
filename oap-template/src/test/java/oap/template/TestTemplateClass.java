@@ -44,6 +44,7 @@ public class TestTemplateClass {
     @Template2.Nullable
     public Ext ext;
     public ITestTemplateClassExt ext2;
+    public int intField;
 
     public String fieldM() {
         return field;

@@ -42,7 +42,7 @@ public class AstMap extends Ast {
     @Override
     void render( Render render ) {
         var newVariable = newVariable();
-        render.ntab().append( "var " ).append( newVariable ).append( " = " ).append( render.field ).append( ".get( \"" ).append( render.escapeJava( key ) ).append( "\" );" );
+        render.ntab().append( "var %s = %s.get( \"%s\" );", newVariable, render.field, render.escapeJava( key ) );
 
         var newRender = render.withField( newVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );

@@ -42,8 +42,8 @@ class AstPathNotFound extends Ast {
     void render( Render render ) {
         var newVariable = newVariable();
         render
-            .ntab().append( "// " ).append( description )
-            .ntab().append( "var " ).append( newVariable ).append( " = \"\";" );
+            .ntab().append( "// %s", description )
+            .ntab().append( "var %s = \"\";", newVariable );
 
         var newRender = render.withField( newVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );

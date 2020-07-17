@@ -42,12 +42,12 @@ public class AstPrint extends Ast {
     void render( Render render ) {
         render.ntab();
         if( defaultValue != null ) {
-            render = render.append( "if (" ).append( render.field ).append( " == null) {" )
-                .tabInc().ntab().append( render.templateAccumulatorName ).append( ".accept( " ).append( defaultValue ).append( " );" )
+            render = render.append( "if( %s == null ) {", render.field )
+                .tabInc().ntab().append( "%s.accept( %s );", render.templateAccumulatorName, defaultValue )
                 .tabDec().ntab().append( "} else {" ).tabInc();
         }
 
-        render.ntab().append( render.templateAccumulatorName ).append( ".accept( " ).append( render.field ).append( " );" );
+        render.ntab().append( "%s.accept( %s );", render.templateAccumulatorName, render.field );
 
         if( defaultValue != null ) {
             render.tabDec().ntab().append( "}" );

@@ -100,6 +100,12 @@ class Render {
         return this;
     }
 
+    public Render append( String format, Object... args ) {
+        sb.append( String.format( format, args ) );
+
+        return this;
+    }
+
     public Render append( char ch ) {
         sb.append( ch );
 

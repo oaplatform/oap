@@ -26,32 +26,27 @@ package oap.template;
 
 import lombok.ToString;
 
-import java.lang.reflect.Method;
-import java.util.List;
-
 /**
- * Created by igor.petrenko on 2020-07-15.
+ * Created by igor.petrenko on 2020-07-17.
  */
 @ToString( callSuper = true )
-class AstFunction extends Ast {
-    final String funcVariable;
-    final Method method;
-    final List<String> parameters;
+class AstMath extends Ast {
+    final String operation;
+    final String number;
 
-    AstFunction( TemplateType type, Method method, List<String> parameters ) {
+    AstMath( TemplateType type, String operation, String number ) {
         super( type );
-        this.method = method;
-        this.parameters = parameters;
-        funcVariable = newVariable();
+        this.operation = operation;
+        this.number = number;
     }
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "var %s = %s.%s( %s", funcVariable, method.getDeclaringClass().getName(), method.getName(), render.field );
-        if( !parameters.isEmpty() ) render.append( ", " );
-        render.append( String.join( ", ", parameters ) ).append( " );" );
+        var newResultVariable = newVariable();
 
-        var newRender = render.withField( funcVariable ).withParentType( type );
+        render.ntab().append( "var %s = %s %s %s;", newResultVariable, render.field, operation, number );
+
+        var newRender = render.withField( newResultVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }

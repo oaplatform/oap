@@ -48,7 +48,7 @@ public class AstConcatenation extends Ast {
     @Override
     void render( Render render ) {
         render
-            .ntab().append( "var " ).append( templateAccumulatorName ).append( " = acc.newInstance();" );
+            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName );
 
         for( var item : items ) {
             item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );

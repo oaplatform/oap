@@ -43,7 +43,7 @@ public class AstMethod extends Ast {
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "var " ).append( variableName ).append( " = " ).append( render.field ).append( "." ).append( methodName ).append( "();" );
+        render.ntab().append( "var %s = %s.%s();", variableName, render.field, methodName );
 
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );

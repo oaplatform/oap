@@ -18,6 +18,11 @@ fragment LBrace			: '{'	;
 fragment RBrace			: '}'	;
 fragment LBrack			: '['	;
 fragment RBrack			: ']'	;
+fragment Star			: '*'	;
+fragment Slash			: '/'	;
+fragment Percent		: '%'	;
+fragment Plus			: '+'	;
+fragment Minus			: '-'	;
 fragment StartExpr      : '${'  ;
 fragment DQuestion		: '??'	;
 
@@ -84,6 +89,12 @@ RBRACK		: RBrack			                    ;
 DQUESTION   : DQuestion                             ;
 SEMI        : Semi                                  ;
 COMMA		: Comma                                 ;
+
+STAR        : Star                                  ;
+SLASH       : Slash                                 ;
+PERCENT     : Percent                               ;
+PLUS        : Plus                                  ;
+MINUS       : Minus                                 ;
 
 ID			: NameChar (NameChar|DecDigit)*			;
 DSTRING     : DQuoteLiteral                         ;

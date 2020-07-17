@@ -41,9 +41,9 @@ public class AstOptional extends Ast {
     @Override
     void render( Render render ) {
         render
-            .ntab().append( "var " ).append( variableName ).append( "Opt = " ).append( render.field ).append( ';' )
-            .ntab().append( "if ( " ).append( variableName ).append( "Opt.isPresent() ) {" )
-            .tabInc().ntab().append( "var " ).append( variableName ).append( " = " ).append( variableName ).append( "Opt.get();" );
+            .ntab().append( "var %sOpt = %s;", variableName, render.field )
+            .ntab().append( "if ( %sOpt.isPresent() ) {", variableName )
+            .tabInc().ntab().append( "var %s = %sOpt.get();", variableName, variableName );
 
         var newRender = render.withField( variableName ).withParentType( type ).tabInc();
         children.forEach( a -> a.render( newRender ) );

@@ -65,9 +65,9 @@ public class AstOr extends Ast {
 
             astRunnable.render( render );
             render = render
-                .ntab().append( astRunnable.newFunctionId ).append( ".run();" )
-                .ntab().append( "if (!" ).append( astRunnable.templateAccumulatorName ).append( ".isEmpty()) {" )
-                .tabInc().ntab().append( orVariable ).append( " = ( " ).append( typeName ).append( " )" ).append( astRunnable.templateAccumulatorName ).append( ".get();" )
+                .ntab().append( "%s.run();", astRunnable.newFunctionId )
+                .ntab().append( "if( !%s.isEmpty() ) { ", astRunnable.templateAccumulatorName )
+                .tabInc().ntab().append( "%s = ( %s )%s.get();", orVariable, typeName, astRunnable.templateAccumulatorName )
                 .tabDec();
 
             if( i < or.size() - 1 ) {

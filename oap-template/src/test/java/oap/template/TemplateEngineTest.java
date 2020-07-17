@@ -253,4 +253,13 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.{field,\"x\",field2}}", STRING ).render( c ) )
             .isEqualTo( "f1xf2" );
     }
+    
+    @Test
+    public void testSum() {
+        var c = new TestTemplateClass();
+        c.intField = 123;
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45}", STRING ).render( c ) )
+            .isEqualTo( "135.45" );
+    }
 }

@@ -174,4 +174,34 @@ public interface TemplateGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCitem(TemplateGrammar.CitemContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#math}.
+	 * @param ctx the parse tree
+	 */
+	void enterMath(TemplateGrammar.MathContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#math}.
+	 * @param ctx the parse tree
+	 */
+	void exitMath(TemplateGrammar.MathContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#number}.
+	 * @param ctx the parse tree
+	 */
+	void enterNumber(TemplateGrammar.NumberContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#number}.
+	 * @param ctx the parse tree
+	 */
+	void exitNumber(TemplateGrammar.NumberContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#mathOperation}.
+	 * @param ctx the parse tree
+	 */
+	void enterMathOperation(TemplateGrammar.MathOperationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#mathOperation}.
+	 * @param ctx the parse tree
+	 */
+	void exitMathOperation(TemplateGrammar.MathOperationContext ctx);
 }
