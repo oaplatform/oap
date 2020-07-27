@@ -6,3 +6,10 @@ ext:
     field: ext2
     abstract: oap.template.TestTemplateClass$ITestTemplateClassExt
     implementation: oap.template.TestTemplateClassExt
+  - class: oap.template.TestTemplateClass2
+    field: ext
+    implementation: oap.template.TestTemplateClassExt2
+  - class: oap.template.TestTemplateClass2
+    field: ext22
+    abstract: oap.template.TestTemplateClass2$ITestTemplateClassExt2
+    implementation: oap.template.TestTemplateClassExt2

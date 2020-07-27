@@ -246,12 +246,12 @@ public class TemplateEngineTest extends Fixtures {
     @Test
     public void testNestedConcatenationWithDot() {
         var c = new TestTemplateClass();
-        var c1 = new TestTemplateClass();
-        c.child = c1;
-        c1.field = "f1";
-        c1.field2 = "f2";
+        var c1 = new TestTemplateClass2();
+        c.child_2 = c1;
+        c1.field2 = "f1";
+        c1.field22 = "f2";
 
-        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.{field,\"x\",field2}}", STRING ).render( c ) )
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child_2.{field2,\"x\",field22}}", STRING ).render( c ) )
             .isEqualTo( "f1xf2" );
     }
 
@@ -274,8 +274,8 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testErrorSyntaxCommentMsg() {
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${/* unknownField.unknownField */unknownField.unknownField}", STRING, ERROR ) )
+    public void testErrorSyntaxMsg() {
+        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${unknownField.unknownField}", STRING, ERROR ) )
             .isInstanceOf( TemplateException.class )
             .hasMessageContaining( "unknownField.unknownField" );
     }

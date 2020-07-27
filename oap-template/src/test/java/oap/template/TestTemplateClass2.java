@@ -31,31 +31,30 @@ import java.util.Optional;
 /**
  * Created by igor.petrenko on 2020-07-14.
  */
-public class TestTemplateClass {
-    public String field;
-    public Optional<String> fieldOpt;
-    @Template2.Nullable
-    public String fieldNullable;
+public class TestTemplateClass2 {
     public String field2;
-    public TestTemplateClass child;
-    public TestTemplateClass2 child_2;
-    public Optional<TestTemplateClass> childOpt;
+    public Optional<String> fieldOpt2;
     @Template2.Nullable
-    public TestTemplateClass childNullable;
+    public String fieldNullable2;
+    public String field22;
+    public TestTemplateClass2 child2;
+    public Optional<TestTemplateClass2> childOpt2;
     @Template2.Nullable
-    public Ext ext;
-    public ITestTemplateClassExt ext2;
-    public int intField;
+    public TestTemplateClass2 childNullable2;
+    @Template2.Nullable
+    public Ext ext2;
+    public ITestTemplateClassExt2 ext22;
+    public int intField2;
 
-    public String fieldM() {
-        return field;
+    public String fieldM2() {
+        return field2;
     }
 
-    public TestTemplateClass childM() {
-        return child;
+    public TestTemplateClass2 childM2() {
+        return child2;
     }
 
-    public static class ITestTemplateClassExt extends Ext {
+    public static class ITestTemplateClassExt2 extends Ext {
         
     }
 }
