@@ -50,6 +50,7 @@ defaultValueType returns [String v]
     | DSTRING { $v = $DSTRING.text; }
     | longRule { $v = $longRule.text; }
     | FLOAT { $v = $FLOAT.text; }
+    | BOOLEAN { $v = $BOOLEAN.text; }
     ; 
 
 longRule

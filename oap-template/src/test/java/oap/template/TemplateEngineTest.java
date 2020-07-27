@@ -178,6 +178,14 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testDefaultBoolean() {
+        assertString( engine.getTemplate( testMethodName + "True", new TypeRef<Map<String, Boolean>>() {}, "${bbb??true}", STRING ).render( Map.of() ) )
+            .isEqualTo( "true" );
+        assertString( engine.getTemplate( testMethodName + "False", new TypeRef<Map<String, Boolean>>() {}, "${bbb??false}", STRING ).render( Map.of() ) )
+            .isEqualTo( "false" );
+    }
+
+    @Test
     public void testDefaultDouble() {
         assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}", STRING ).render( Map.of( "prop", 1.1 ) ) )
             .isEqualTo( "0.0" );

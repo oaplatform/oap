@@ -63,13 +63,17 @@ fragment UnicodeEsc
 
 fragment SQuoteLiteral	: SQuote ( EscSeq | ~['\r\n\\] )* SQuote	;
 fragment DQuoteLiteral	: DQuote ( EscSeq | ~["\r\n\\] )* DQuote	;
+fragment BoolLiteral	: True | False								;
 
 
 fragment HexDigit		: [0-9a-fA-F]	            ;
 fragment DecDigit		: [0-9]			            ;
 
 fragment DecDigits		: DecDigit+		            ;
-fragment Float          :   DecDigits Dot DecDigits?;
+fragment Float          : DecDigits Dot DecDigits?  ;
+
+fragment True		 	: 'true'	                ;
+fragment False			: 'false'	                ;
 
 
 BLOCK_COMMENT	: BlockComment;
@@ -97,11 +101,12 @@ PERCENT     : Percent                               ;
 PLUS        : Plus                                  ;
 MINUS       : Minus                                 ;
 
-ID			: NameChar (NameChar|DecDigit)*			;
 DSTRING     : DQuoteLiteral                         ;
 SSTRING     : SQuoteLiteral                         ;
 DECDIGITS   : DecDigits                             ;
 FLOAT       : Float                                 ;
+BOOLEAN     : BoolLiteral                           ;
+ID			: NameChar (NameChar|DecDigit)*			;
 
 
 ERR_CHAR	: (' '|'\t')	-> skip		            ;
