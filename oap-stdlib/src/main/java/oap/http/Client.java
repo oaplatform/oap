@@ -324,6 +324,20 @@ public final class Client implements Closeable {
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
+    public Response put( String uri, byte[] content, ContentType contentType ) {
+        var request = new HttpPut( uri );
+        request.setEntity( new ByteArrayEntity( content, contentType ) );
+        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response put( String uri, InputStream is, ContentType contentType ) {
+        var request = new HttpPut( uri );
+        request.setEntity( new InputStreamEntity( is, contentType ) );
+        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
     public Response delete( String uri ) {
         return delete( uri, builder.timeout );
     }

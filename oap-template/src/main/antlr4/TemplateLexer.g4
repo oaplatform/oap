@@ -4,6 +4,13 @@ lexer grammar TemplateLexer;
 package oap.template;
 }
 
+fragment Ws				: Hws | Vws	;
+fragment Hws			: [ \t]		;
+fragment Vws			: [\r\n\f]	;
+
+fragment BlockComment	: '/*'  .*? ('*/' | EOF)	;
+
+
 fragment Esc			: '\\'	;
 fragment SQuote			: '\''	;
 fragment DQuote			: '"'	;
@@ -70,11 +77,18 @@ fragment DecDigit		: [0-9]			            ;
 fragment DecDigits		: DecDigit+		            ;
 fragment Float          :   DecDigits Dot DecDigits?;
 
+
+
 STARTEXPR   : StartExpr -> pushMode(Expression)     ;   
 
 TEXT		: .                                     ;
 
 mode Expression                                     ;
+
+BLOCK_COMMENT	: BlockComment;
+
+HORZ_WS	    : Hws+		-> skip	;
+VERT_WS	    : Vws+		-> skip	;
 
 LBRACE      : LBrace -> pushMode(Concatenation)     ;
 
@@ -107,13 +121,16 @@ ERR_CHAR	: (' '|'\t')	-> skip		            ;
 
 mode Concatenation                                  ;
 
+C_HORZ_WS	: Hws+		-> skip	;
+C_VERT_WS	: Vws+		-> skip	;
+
 CRBRACE		: RBrace -> popMode, type(RBRACE)       ;
 CCOMMA		: Comma -> type(COMMA)                  ;
 
 CID			: NameChar (NameChar|DecDigit)* -> type(ID);
-CDSTRING     : DQuoteLiteral -> type(DSTRING)       ;
-CSSTRING     : SQuoteLiteral -> type(SSTRING)       ;
-CDECDIGITS   : DecDigits -> type(DECDIGITS)         ;
-CFLOAT       : Float -> type(FLOAT)                 ;
+CDSTRING    : DQuoteLiteral -> type(DSTRING)       ;
+CSSTRING    : SQuoteLiteral -> type(SSTRING)       ;
+CDECDIGITS  : DecDigits -> type(DECDIGITS)         ;
+CFLOAT      : Float -> type(FLOAT)                 ;
 
 CERR_CHAR	: (' '|'\t')	-> skip		            ;

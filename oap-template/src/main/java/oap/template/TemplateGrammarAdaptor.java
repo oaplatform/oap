@@ -122,7 +122,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
     }
 
     static class MaxMin {
-        public final Ast top;
+        public Ast top;
         public Ast bottom;
 
         public MaxMin( Ast top, Ast bottom ) {
@@ -132,6 +132,13 @@ abstract class TemplateGrammarAdaptor extends Parser {
 
         public MaxMin( Ast top ) {
             this( top, top );
+        }
+
+        public void setTop( Ast ast ) {
+            this.bottom = this.top;
+            this.top = ast;
+            
+            this.top.addChild( this.bottom );
         }
 
         public void addToBottomChildrenAndSet( Ast ast ) {

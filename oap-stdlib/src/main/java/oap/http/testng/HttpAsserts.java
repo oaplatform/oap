@@ -120,6 +120,10 @@ public class HttpAsserts {
         return assertHttpResponse( client.put( uri, content, contentType ) );
     }
 
+    public static HttpAssertion assertPut( String uri, InputStream is, ContentType contentType ) {
+        return assertHttpResponse( client.put( uri, is, contentType ) );
+    }
+
     public static HttpAssertion assertDelete( String uri ) {
         return assertHttpResponse( client.delete( uri ) );
     }

@@ -43,14 +43,26 @@ text
     ;
 
 expression[TemplateType parentType] returns [MaxMin ast]
-    : STARTEXPR exps[parentType] { $ast = $exps.ast; } orExps[parentType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
+    locals [String comment = null; ]
+    : STARTEXPR (BLOCK_COMMENT { $comment = $BLOCK_COMMENT.text; })? exps[parentType] { $ast = $exps.ast; } orExps[parentType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
         if( $function.ctx != null ) {
           $ast.addToBottomChildrenAndSet( $function.func );
         }
 
         $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null) );
-      } RBRACE
+      } RBRACE {
+        if( $comment != null ) {
+            $ast.setTop( new AstComment( parentType, $comment ) );
+        }
+      }
     ;
+    catch [TemplateException e] {
+        if( $comment != null ) {
+            e.comment = $comment; 
+        }
+        throw e;
+    }
+    
 
 defaultValue returns [String v]
     : DQUESTION defaultValueType { $v = $defaultValueType.v; }

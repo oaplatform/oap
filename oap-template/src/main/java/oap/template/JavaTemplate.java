@@ -56,8 +56,10 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
         try {
             var lexer = new TemplateLexer( CharStreams.fromString( template ) );
             var grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
-            if( errorStrategy == ErrorStrategy.ERROR )
-                grammar.addErrorListener( new ThrowingErrorListener() );
+            if( errorStrategy == ErrorStrategy.ERROR ) {
+                lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+                grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
+            }
 
             var ast = grammar.template( new TemplateType( type.type() ) ).rootAst;
 

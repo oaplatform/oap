@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -208,7 +209,7 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testErrorSyntax() {
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", STRING, ErrorStrategy.ERROR ) )
+        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", STRING, ERROR ) )
             .isInstanceOf( TemplateException.class );
     }
 
@@ -253,7 +254,7 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.{field,\"x\",field2}}", STRING ).render( c ) )
             .isEqualTo( "f1xf2" );
     }
-    
+
     @Test
     public void testSum() {
         var c = new TestTemplateClass();
@@ -261,5 +262,21 @@ public class TemplateEngineTest extends Fixtures {
 
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45}", STRING ).render( c ) )
             .isEqualTo( "135.45" );
+    }
+
+    @Test
+    public void testComment() {
+        var c = new TestTemplateClass();
+        c.intField = 123;
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${/* intField */intField}", STRING ).render( c ) )
+            .isEqualTo( "123" );
+    }
+
+    @Test
+    public void testErrorSyntaxCommentMsg() {
+        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${/* unknownField.unknownField */unknownField.unknownField}", STRING, ERROR ) )
+            .isInstanceOf( TemplateException.class )
+            .hasMessageContaining( "unknownField.unknownField" );
     }
 }

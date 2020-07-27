@@ -24,30 +24,24 @@
 
 package oap.template;
 
+import lombok.ToString;
+
 /**
- * Created by igor.petrenko on 2020-07-14.
+ * Created by igor.petrenko on 2020-07-24.
  */
-public class TemplateException extends RuntimeException {
-    public String comment;
+@ToString( callSuper = true )
+class AstComment extends Ast {
+    final String comment;
 
-    public TemplateException( String message ) {
-        super( message );
-    }
-
-    public TemplateException( String message, Throwable cause ) {
-        super( message, cause );
-    }
-
-    public TemplateException( Throwable cause ) {
-        super( cause );
-    }
-
-    public TemplateException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
-        super( message, cause, enableSuppression, writableStackTrace );
+    AstComment( TemplateType type, String comment ) {
+        super( type );
+        this.comment = comment;
     }
 
     @Override
-    public String getMessage() {
-        return super.getMessage() + ( comment != null ? "; " + comment : "" );
+    void render( Render render ) {
+        render.ntab().append( comment );
+
+        children.forEach( a -> a.render( render ) );
     }
 }
