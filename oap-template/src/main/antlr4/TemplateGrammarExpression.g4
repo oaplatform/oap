@@ -48,9 +48,13 @@ defaultValue returns [String v]
 defaultValueType returns [String v]
     : SSTRING { $v = sStringToDString( $SSTRING.text ); }
     | DSTRING { $v = $DSTRING.text; }
-    | DECDIGITS { $v = $DECDIGITS.text; }
+    | longRule { $v = $longRule.text; }
     | FLOAT { $v = $FLOAT.text; }
     ; 
+
+longRule
+    : MINUS? DECDIGITS
+    ;
 
 function returns [Ast func]
     : SEMI ID LPAREN functionArgs? RPAREN { $func = getFunction( $ID.text, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }

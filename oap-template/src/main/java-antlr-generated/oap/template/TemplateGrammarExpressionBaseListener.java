@@ -59,6 +59,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterLongRule(TemplateGrammarExpression.LongRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLongRule(TemplateGrammarExpression.LongRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterFunction(TemplateGrammarExpression.FunctionContext ctx) { }
 	/**
 	 * {@inheritDoc}

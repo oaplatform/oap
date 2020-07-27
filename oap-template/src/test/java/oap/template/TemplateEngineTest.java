@@ -173,8 +173,8 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testDefaultInt() {
-        assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "${bbb??0}", STRING ).render( Map.of( "prop", 1 ) ) )
-            .isEqualTo( "0" );
+        assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "${bbb??-1}", STRING ).render( Map.of( "prop", 1 ) ) )
+            .isEqualTo( "-1" );
     }
 
     @Test

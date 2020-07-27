@@ -45,6 +45,16 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 */
 	void exitDefaultValueType(TemplateGrammarExpression.DefaultValueTypeContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#longRule}.
+	 * @param ctx the parse tree
+	 */
+	void enterLongRule(TemplateGrammarExpression.LongRuleContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#longRule}.
+	 * @param ctx the parse tree
+	 */
+	void exitLongRule(TemplateGrammarExpression.LongRuleContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#function}.
 	 * @param ctx the parse tree
 	 */
