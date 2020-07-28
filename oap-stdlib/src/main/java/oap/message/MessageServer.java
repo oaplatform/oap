@@ -57,16 +57,14 @@ public class MessageServer implements Runnable, Closeable {
     private final int port;
     private final Path controlStatePath;
     private final SynchronizedThread thread = new SynchronizedThread( this );
-    private final ThreadPoolExecutor executor =
-        new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
-            new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build(),
-            new java.util.concurrent.ThreadPoolExecutor.AbortPolicy() );
+    private ThreadPoolExecutor executor;
     private final Counter rejectedCounter;
     private final Counter handledCounter;
     private final AtomicInteger activeCounter = new AtomicInteger();
     public long soTimeout = 60000;
     private ServerSocket serverSocket;
     private MessageHashStorage hashes;
+    public int maximumPoolSize = 1024;
 
     public MessageServer( Path controlStatePath, int port, List<MessageListener> listeners, long hashTtl ) {
         this.controlStatePath = controlStatePath;
@@ -84,8 +82,14 @@ public class MessageServer implements Runnable, Closeable {
     }
 
     public void start() {
-        log.info( "port = {}, clientHashCacheSize = {}, listeners = {}", port, clientHashCacheSize, Lists.map( listeners, MessageListener::getInfo ) );
+        log.info( "maximumPoolSize = {}, port = {}, clientHashCacheSize = {}, listeners = {}",
+            maximumPoolSize, port, clientHashCacheSize, Lists.map( listeners, MessageListener::getInfo ) );
 
+        executor =
+            new ThreadPoolExecutor( 0, maximumPoolSize, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
+                new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build(),
+                new java.util.concurrent.ThreadPoolExecutor.AbortPolicy() );
+        
         hashes = new MessageHashStorage( clientHashCacheSize );
 
         try {
@@ -154,6 +158,7 @@ public class MessageServer implements Runnable, Closeable {
         try {
             preStop();
             hashes.store( controlStatePath );
+            executor.shutdownNow();
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
         }

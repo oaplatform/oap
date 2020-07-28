@@ -113,7 +113,6 @@ public class MessageHandler implements Runnable, Closeable {
             var in = new DataInputStream( socket.getInputStream() );
             socket.setSoTimeout( ( int ) soTimeout );
             socket.setKeepAlive( true );
-            socket.setTcpNoDelay( true );
 
             while( !closed && !isInterrupted() ) {
                 log.trace( "new message from {}", hostName );

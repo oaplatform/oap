@@ -68,6 +68,39 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
+    public void testRejectedException() throws Exception {
+        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+            server.maximumPoolSize = 1;
+            server.start();
+
+            try( var client1 = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) );
+                 var client2 = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client1.poolSize = 4;
+                client2.poolSize = 4;
+                
+                client1.start();
+                client2.start();
+
+                client1.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
+                client2.sendJson( MESSAGE_TYPE, "123" );
+
+                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            }
+
+            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client.poolSize = 4;
+                
+                client.start();
+
+                client.sendJson( MESSAGE_TYPE, "1234" ).get( 5, SECONDS );
+
+                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) ) );
+            }
+        }
+    }
+
+    @Test
     public void testSendAndReceive() throws Exception {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
