@@ -25,6 +25,9 @@
 package oap.message;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.ThreadPoolExecutor;
@@ -35,12 +38,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class MessageServer implements Runnable, Closeable {
@@ -53,7 +59,11 @@ public class MessageServer implements Runnable, Closeable {
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private final ThreadPoolExecutor executor =
         new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
-            new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build() );
+            new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build(),
+            new java.util.concurrent.ThreadPoolExecutor.AbortPolicy() );
+    private final Counter rejectedCounter;
+    private final Counter handledCounter;
+    private final AtomicInteger activeCounter = new AtomicInteger();
     public long soTimeout = 60000;
     private ServerSocket serverSocket;
     private MessageHashStorage hashes;
@@ -63,6 +73,10 @@ public class MessageServer implements Runnable, Closeable {
         this.port = port;
         this.listeners = listeners;
         this.hashTtl = hashTtl;
+
+        rejectedCounter = Metrics.counter( "oap.message.server", "port", String.valueOf( port ), "type", "rejected" );
+        handledCounter = Metrics.counter( "oap.message.server", "port", String.valueOf( port ), "type", "handled" );
+        Metrics.gauge( "oap.message.server", Tags.of( "port", String.valueOf( port ), "type", "active" ), this, ms -> ms.activeCounter.doubleValue() );
     }
 
     public int getPort() {
@@ -102,10 +116,22 @@ public class MessageServer implements Runnable, Closeable {
     @Override
     public void run() {
         try {
+            Socket socket = null;
             while( thread.isRunning() && !serverSocket.isClosed() ) try {
-                var socket = serverSocket.accept();
+                socket = serverSocket.accept();
+                handledCounter.increment();
                 log.debug( "accepted connection {}", socket );
-                executor.execute( new MessageHandler( socket, soTimeout, map, hashes, hashTtl ) );
+                executor.execute( new MessageHandler( socket, soTimeout, map, hashes, hashTtl, activeCounter ) );
+            } catch( RejectedExecutionException e ) {
+                rejectedCounter.increment();
+                try {
+                    if( socket != null ) {
+                        socket.close();
+                        socket = null;
+                    }
+                } catch( IOException ioException ) {
+                    log.error( ioException.getMessage() );
+                }
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
                 if( !"Socket closed".equals( e.getMessage() ) )

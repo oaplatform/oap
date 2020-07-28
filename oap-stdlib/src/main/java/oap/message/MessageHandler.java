@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.concurrent.Threads.isInterrupted;
 import static oap.message.MessageProtocol.MD5_LENGTH;
@@ -84,21 +85,25 @@ public class MessageHandler implements Runnable, Closeable {
     private final HashMap<Byte, MessageListener> listeners;
     private final MessageHashStorage control;
     private final long hashTtl;
+    private final AtomicInteger activeCounter;
     private boolean closed;
 
     public MessageHandler( Socket socket, long soTimeout, HashMap<Byte, MessageListener> listeners,
-                           MessageHashStorage control, long hashTtl ) {
+                           MessageHashStorage control, long hashTtl, AtomicInteger activeCounter ) {
         this.socket = socket;
         this.soTimeout = soTimeout;
         this.listeners = listeners;
         this.control = control;
         this.hashTtl = hashTtl;
+        this.activeCounter = activeCounter;
 
         Metrics.gauge( "messages_hash", Tags.empty(), control, MessageHashStorage::size );
     }
 
     @Override
     public void run() {
+        activeCounter.incrementAndGet();
+
         String hostName = null;
 
         try {
@@ -166,6 +171,7 @@ public class MessageHandler implements Runnable, Closeable {
         } catch( Exception e ) {
             log.error( "[" + hostName + "] " + e.getMessage(), e );
         } finally {
+            activeCounter.decrementAndGet();
             Sockets.close( socket );
             log.debug( "socket closed: {}", socket );
         }
