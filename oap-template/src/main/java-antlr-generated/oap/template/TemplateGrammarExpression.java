@@ -811,7 +811,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STAR) | (1L << SLASH) | (1L << PERCENT) | (1L << PLUS) | (1L << MINUS))) != 0)) {
 					{
 					setState(133);
-					((ExpsContext)_localctx).math = math(parentType);
+					((ExpsContext)_localctx).math = math(_localctx.ast.bottom.type);
 					}
 				}
 

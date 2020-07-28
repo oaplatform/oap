@@ -32,6 +32,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -88,6 +89,14 @@ public class TemplateEngineTest extends Fixtures {
         c.enumField = TestTemplateEnum.VAL1;
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING ).render( c ) )
             .isEqualTo( "VAL1" );
+    }
+
+    @Test
+    public void testListField() {
+        var c = new TestTemplateClass();
+        c.list = List.of( 1, 2, 3 );
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list}", STRING ).render( c ) )
+            .isEqualTo( "[1,2,3]" );
     }
 
     @Test
@@ -277,6 +286,15 @@ public class TemplateEngineTest extends Fixtures {
         c.intField = 123;
 
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45}", STRING ).render( c ) )
+            .isEqualTo( "135.45" );
+    }
+
+    @Test
+    public void testSumDefault() {
+        var c = new TestTemplateClass();
+        c.intField = 123;
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45 ?? 5}", STRING ).render( c ) )
             .isEqualTo( "135.45" );
     }
 

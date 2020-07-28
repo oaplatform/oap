@@ -26,6 +26,7 @@ package oap.template;
 
 import oap.json.ext.Ext;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -48,6 +49,7 @@ public class TestTemplateClass {
     public Ext ext;
     public ITestTemplateClassExt ext2;
     public int intField;
+    public List<Integer> list;
 
     public String fieldM() {
         return field;
@@ -58,6 +60,6 @@ public class TestTemplateClass {
     }
 
     public static class ITestTemplateClassExt extends Ext {
-        
+
     }
 }

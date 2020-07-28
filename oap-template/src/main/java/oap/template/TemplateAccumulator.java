@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
@@ -49,6 +50,8 @@ public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAcc
     void accept( double d );
 
     void accept( Enum<?> e );
+
+    void accept( Collection<?> list );
 
     void accept( TTemplateAccumulator acc );
 

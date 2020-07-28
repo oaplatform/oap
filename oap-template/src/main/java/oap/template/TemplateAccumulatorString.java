@@ -24,6 +24,11 @@
 
 package oap.template;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
+
 /**
  * Created by igor.petrenko on 2020-07-13.
  */
@@ -80,6 +85,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     @Override
     public void accept( Enum<?> e ) {
         sb.append( e.name() );
+    }
+
+    @Override
+    public void accept( Collection<?> list ) {
+        sb.append( list.stream().map( String::valueOf ).collect( joining( ",", "[", "]" ) ) );
     }
 
     @Override
