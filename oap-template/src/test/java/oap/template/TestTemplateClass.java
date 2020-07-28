@@ -39,6 +39,8 @@ public class TestTemplateClass {
     public String field2;
     public TestTemplateClass child;
     public TestTemplateClass2 child_2;
+    public TestTemplateEnum enumField;
+    public boolean booleanField;
     public Optional<TestTemplateClass> childOpt;
     @Template2.Nullable
     public TestTemplateClass childNullable;

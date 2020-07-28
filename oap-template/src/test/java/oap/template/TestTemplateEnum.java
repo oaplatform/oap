@@ -24,35 +24,9 @@
 
 package oap.template;
 
-import lombok.ToString;
-
 /**
- * Created by igor.petrenko on 2020-07-14.
+ * Created by igor.petrenko on 2020-07-28.
  */
-@ToString( callSuper = true )
-public class AstPrint extends Ast {
-    final String defaultValue;
-
-    AstPrint( TemplateType type, String defaultValue ) {
-        super( type );
-        this.defaultValue = defaultValue;
-    }
-
-    @Override
-    void render( Render render ) {
-        render.ntab();
-        var checkNull = defaultValue != null && !render.parentType.isPrimitiveType();
-        if( checkNull ) {
-            render = render
-                .append( "if( %s == null ) {", render.field )
-                .tabInc().ntab().append( "%s.accept( %s );", render.templateAccumulatorName, defaultValue )
-                .tabDec().ntab().append( "} else {" ).tabInc();
-        }
-
-        render.ntab().append( "%s.accept( %s );", render.templateAccumulatorName, render.field );
-
-        if( checkNull ) {
-            render.tabDec().ntab().append( "}" );
-        }
-    }
+public enum TestTemplateEnum {
+    VAL1, VAL2
 }

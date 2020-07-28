@@ -71,4 +71,8 @@ class TemplateType {
     public TemplateType getActualTypeArguments1() {
         return new TemplateType( ( ( ParameterizedType ) type ).getActualTypeArguments()[1] );
     }
+
+    public boolean isPrimitiveType() {
+        return getTypeClass().isPrimitive();
+    }
 }

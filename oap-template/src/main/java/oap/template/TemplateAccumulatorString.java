@@ -78,6 +78,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     }
 
     @Override
+    public void accept( Enum<?> e ) {
+        sb.append( e.name() );
+    }
+
+    @Override
     public void accept( TemplateAccumulatorString acc ) {
         sb.append( acc.sb );
     }

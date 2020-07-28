@@ -83,6 +83,14 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testEnumField() {
+        var c = new TestTemplateClass();
+        c.enumField = TestTemplateEnum.VAL1;
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING ).render( c ) )
+            .isEqualTo( "VAL1" );
+    }
+
+    @Test
     public void testMethod() {
         var c = new TestTemplateClass();
         c.field = "val2";
@@ -179,10 +187,10 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testDefaultBoolean() {
-        assertString( engine.getTemplate( testMethodName + "True", new TypeRef<Map<String, Boolean>>() {}, "${bbb??true}", STRING ).render( Map.of() ) )
+        var c = new TestTemplateClass();
+        c.booleanField = true;
+        assertString( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${booleanField??false}", STRING ).render( c ) )
             .isEqualTo( "true" );
-        assertString( engine.getTemplate( testMethodName + "False", new TypeRef<Map<String, Boolean>>() {}, "${bbb??false}", STRING ).render( Map.of() ) )
-            .isEqualTo( "false" );
     }
 
     @Test

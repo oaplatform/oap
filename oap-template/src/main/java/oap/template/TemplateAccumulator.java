@@ -48,6 +48,8 @@ public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAcc
 
     void accept( double d );
 
+    void accept( Enum<?> e );
+
     void accept( TTemplateAccumulator acc );
 
     boolean isEmpty();
