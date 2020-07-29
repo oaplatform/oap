@@ -50,6 +50,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -107,6 +108,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization, retry ) );
     }
 
+    private RemoteInvocationException throwException( String methodName, Throwable throwable ) {
+        if( throwable instanceof RemoteInvocationException ) return ( RemoteInvocationException ) throwable;
+        else if( throwable instanceof ExecutionException ) return throwException( methodName, throwable.getCause() );
+        else return new RemoteInvocationException( "invocation failed " + this + "#" + methodName, throwable );
+    }
+
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
         if( uri == null ) throw new RemoteInvocationException( "uri == null, service " + service + "#" + method.getName() );
@@ -129,7 +136,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         var invocationB = getInvocation( method, arguments );
 
-        Exception lastException = null;
+        Throwable lastException = null;
         for( int i = 0; i <= retry; i++ ) {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
             try {
@@ -217,13 +224,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 timeoutMetrics.increment();
                 lastException = e;
             } catch( Exception e ) {
-                log.error( "error invoking {}#{}: {}", this, method.getName(), e );
+                log.error( "error invoking {}#{}: {}", this, method.getName(), e.getMessage() );
                 errorMetrics.increment();
                 lastException = e;
             }
         }
-        throw lastException instanceof RemoteInvocationException ? ( RemoteInvocationException ) lastException
-            : new RemoteInvocationException( "invocation failed " + this + "#" + method.getName(), lastException );
+
+        throw throwException( method.getName(), lastException );
     }
 
     @SneakyThrows
