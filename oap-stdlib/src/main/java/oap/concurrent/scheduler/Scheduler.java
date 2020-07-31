@@ -28,13 +28,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Throwables;
 import oap.util.Try;
-import org.joda.time.DateTimeUtils;
 import org.quartz.CronScheduleBuilder;
-import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.SimpleScheduleBuilder;
-import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 
@@ -102,7 +99,7 @@ public final class Scheduler {
 
         var trigger = newTrigger()
             .withIdentity( identity + "/trigger" )
-            .startAt( new Date( DateTimeUtils.currentTimeMillis() + unit.toMillis( delay ) ) )
+            .startAt( new Date( System.currentTimeMillis() + unit.toMillis( delay ) ) )
             .withSchedule( scheduleBuilder )
             .build();
 
