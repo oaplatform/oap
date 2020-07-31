@@ -92,15 +92,15 @@ public final class Scheduler {
 
     @SneakyThrows
     private static Scheduled schedule( long delay, TimeUnit unit, Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
-        String identity = identity( runnable );
+        var identity = identity( runnable );
 
 
-        JobDetail jobDetail = newJob( RunnableJob.class )
+        var jobDetail = newJob( RunnableJob.class )
             .withIdentity( identity + "/job" )
             .storeDurably()
             .build();
 
-        Trigger trigger = newTrigger()
+        var trigger = newTrigger()
             .withIdentity( identity + "/trigger" )
             .startAt( new Date( DateTimeUtils.currentTimeMillis() + unit.toMillis( delay ) ) )
             .withSchedule( scheduleBuilder )
