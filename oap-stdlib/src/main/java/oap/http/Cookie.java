@@ -168,6 +168,11 @@ public class Cookie {
         return this;
     }
 
+    public Cookie secure( boolean secure ) {
+        this.secure = secure;
+        return this;
+    }
+
     public enum SameSite {
         Strict, Lax, None;
 
