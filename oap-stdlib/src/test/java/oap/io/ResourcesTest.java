@@ -28,11 +28,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import java.net.URL;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,17 +54,17 @@ public class ResourcesTest extends Fixtures {
     }
 
     @Test
-    public void testFilePaths() {
+    public void filePaths() {
         var paths = Resources.filePaths( getClass(), "/file-paths" );
         assertThat( paths ).hasSize( 1 );
         assertThat( paths.get( 0 ) ).isDirectory();
     }
 
     @Test
-    public void testReadResourcesAsString() {
-        assertThat( Resources.readResourcesAsString( getClass(), ResourcesTest.class.getSimpleName() + "/test.txt" ) )
+    public void readStrings() {
+        assertThat( Resources.readStrings( getClass(), ResourcesTest.class.getSimpleName() + "/test.txt" ) )
             .containsOnly( "test\n" );
-        assertThat( Resources.readResourcesAsString( getClass(), "/oap/io/" + ResourcesTest.class.getSimpleName() + "/test.txt" ) )
+        assertThat( Resources.readStrings( getClass(), "/oap/io/" + ResourcesTest.class.getSimpleName() + "/test.txt" ) )
             .containsOnly( "test\n" );
     }
 }
