@@ -37,12 +37,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -388,7 +390,12 @@ public final class Strings {
 
     //eiminating most used letters in english from source
     public static String toAccessKey( String email ) {
-        int[] transitions = { 6, 11, 3, 10, 4, 1, 5, 0, 7, 2, 9, 8 };
+        return toAccessKey( email, 12 );
+    }
+
+    public static String toAccessKey( String email, int length ) {
+        ArrayList<Integer> transitions = Lists.of( IntStream.range( 0, length ).toArray() );
+        java.util.Collections.shuffle( transitions, new Random( transitions.size() ) );
         StringBuilder result = new StringBuilder();
         Function<Character, Boolean> isGoodLetter = c ->
             ( c > 64 && c < 91 || c > 96 && c < 123 )
@@ -398,14 +405,12 @@ public final class Strings {
                 && c != 'O' && c != 'o'
                 && c != 'I' && c != 'i'
                 && c != 'N' && c != 'n';
-        for( int t : transitions ) {
+        for( int t : transitions )
             if( t >= email.length() || !isGoodLetter.apply( email.charAt( t ) ) ) {
                 var c = email.charAt( t % email.length() );
                 var base = Character.toUpperCase( isGoodLetter.apply( c ) ? c : 'A' + ( c % 26 ) );
                 result.append( ( char ) ( base + t <= 'Z' ? base + t : base - t ) );
-            } else
-                result.append( Character.toUpperCase( email.charAt( t ) ) );
-        }
+            } else result.append( Character.toUpperCase( email.charAt( t ) ) );
         return result.toString();
     }
 

@@ -219,13 +219,14 @@ public class StringsTest {
 
     @Test
     public void toAccessKey() {
-        assertString( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "HXMLFVRJTSMS" );
-        assertString( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "HUMMFNRJNSQC" );
-        assertString( Strings.toAccessKey( "a" ) ).isEqualTo( "ZIWJXUYTMVKL" );
-        assertString( Strings.toAccessKey( "A" ) ).isEqualTo( "TYQXROSNUPWV" );
-        assertString( Strings.toAccessKey( "b" ) ).isEqualTo( "HMELFCGBIDKJ" );
-        assertString( Strings.toAccessKey( "/" ) ).isEqualTo( "PKYLZWQVOXMN" );
-        assertString( Strings.toAccessKey( "@" ) ).isEqualTo( "SXPWQNRMTOVU" );
+        assertString( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "SMVRLFSMTXJH" );
+        assertString( Strings.toAccessKey( "j.smith@smith.com", 16 ) ).isEqualTo( "MWLFJHCSRMSHVHTX" );
+        assertString( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "SQNRMFCMNUJH" );
+        assertString( Strings.toAccessKey( "a" ) ).isEqualTo( "VKUYJXLWMITZ" );
+        assertString( Strings.toAccessKey( "A" ) ).isEqualTo( "PWOSXRVQUYNT" );
+        assertString( Strings.toAccessKey( "b" ) ).isEqualTo( "DKCGLFJEIMBH" );
+        assertString( Strings.toAccessKey( "/" ) ).isEqualTo( "XMWQLZNYOKVP" );
+        assertString( Strings.toAccessKey( "@" ) ).isEqualTo( "OVNRWQUPTXMS" );
     }
 
 }
