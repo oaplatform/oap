@@ -55,7 +55,7 @@ public class HttpGzipOutputStreamEntity extends AbstractHttpEntity {
     }
 
     @Override
-    public InputStream getContent() throws IOException, UnsupportedOperationException {
+    public InputStream getContent() {
         throw new UnsupportedOperationException();
     }
 

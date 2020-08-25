@@ -27,7 +27,6 @@ package oap.http;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Consumer;
@@ -37,9 +36,7 @@ public class HttpOutputStreamEntity extends AbstractHttpEntity {
 
     public HttpOutputStreamEntity( Consumer<OutputStream> cons, ContentType contentType ) {
         this.cons = cons;
-        if( contentType != null ) {
-            setContentType( contentType.toString() );
-        }
+        if( contentType != null ) setContentType( contentType.toString() );
     }
 
     @Override
@@ -53,12 +50,12 @@ public class HttpOutputStreamEntity extends AbstractHttpEntity {
     }
 
     @Override
-    public InputStream getContent() throws IOException, UnsupportedOperationException {
+    public InputStream getContent() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void writeTo( OutputStream outstream ) throws IOException {
+    public void writeTo( OutputStream outstream ) {
         cons.accept( outstream );
     }
 

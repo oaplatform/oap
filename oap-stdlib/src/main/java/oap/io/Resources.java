@@ -102,6 +102,11 @@ public final class Resources {
         return baseName.replace( '.', '/' );
     }
 
+    @Deprecated
+    /**
+     * @deprecated
+     * @see #readStrings(Class, String)
+     */
     public static List<String> readResourcesAsString( Class<?> contextClass, String name ) {
         var ret = new ArrayList<String>();
         try {
@@ -142,7 +147,7 @@ public final class Resources {
     }
 
     public static List<String> readStrings( Class<?> contextClass, String name ) {
-        return Lists.map( urls( name ), Try.map( Strings::readString ) );
+        return Lists.map( urls( contextClass, name ), Try.map( Strings::readString ) );
     }
 
     public static List<String> readStrings( String name ) {
