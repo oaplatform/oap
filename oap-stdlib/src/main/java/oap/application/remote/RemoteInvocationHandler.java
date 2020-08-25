@@ -28,9 +28,11 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.LogConsolidated;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Try;
+import org.slf4j.event.Level;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -220,11 +222,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     }
                 } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
             } catch( HttpTimeoutException | TimeoutException e ) {
-                log.error( "timeout invoking {}#{}", method.getName(), this );
+//                log.error( "timeout invoking {}#{}", method.getName(), this );
                 timeoutMetrics.increment();
                 lastException = e;
             } catch( Exception e ) {
-                log.error( "error invoking {}#{}: {}", this, method.getName(), e.getMessage() );
+//                log.error( "error invoking {}#{}: {}", this, method.getName(), e.getMessage() );
                 errorMetrics.increment();
                 lastException = e;
             }
