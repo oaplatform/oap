@@ -57,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.util.Dates.s;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
@@ -222,11 +223,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     }
                 } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
             } catch( HttpTimeoutException | TimeoutException e ) {
-                log.warn( "timeout invoking {}#{}", method.getName(), this );
+                LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();
                 lastException = e;
             } catch( Exception e ) {
-                log.warn( "error invoking {}#{}: {}", this, method.getName(), e.getMessage() );
+                LogConsolidated.log( log, Level.WARN, s( 5 ), "error invoking " + this + "#" + method.getName() + ": " + e.getMessage(), null );
                 errorMetrics.increment();
                 lastException = e;
             }
