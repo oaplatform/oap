@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.LogConsolidated;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -39,10 +40,12 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTimeUtils;
+import org.slf4j.event.Level;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -96,7 +99,7 @@ public class MessageSender implements Closeable, Runnable {
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
             default -> {
                 var str = checkStatus.apply( status );
-                yield str != null ? str : "Unknown status: " + status;
+                yield str !=null ? str : "Unknown status: " + status;
             }
         };
     }
@@ -270,7 +273,7 @@ public class MessageSender implements Closeable, Runnable {
                         poolSemaphore.release();
                     }
                 } catch( Exception e ) {
-                    log.error( msgFile + ": " + e.getMessage(), e );
+                    LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
                 }
             }
         }
@@ -380,10 +383,16 @@ public class MessageSender implements Closeable, Runnable {
                     Closeables.close( connection );
 
                     throw e;
+                } catch( UncheckedIOException e ) {
+                    loggingAvailable = false;
+
+                    Closeables.close( connection );
+
+                    throw e.getCause();
                 } catch( Exception e ) {
                     loggingAvailable = false;
 
-                    log.warn( e.getMessage() );
+                    LogConsolidated.log( log, Level.WARN, Dates.s( 5 ), e.getMessage(), null );
                     log.trace( e.getMessage(), e );
                     Closeables.close( connection );
                 }
