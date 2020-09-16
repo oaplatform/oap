@@ -43,6 +43,7 @@ import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -207,7 +208,11 @@ public final class Files {
     }
 
     public static void writeString( Path path, String value ) {
-        writeString( path, Encoding.from( path ), value );
+        writeString( path, value, false );
+    }
+
+    public static void writeString( Path path, String value, boolean safe ) {
+        IoStreams.write( path, Encoding.from( path ), new ByteArrayInputStream( value.getBytes() ), false, safe );
     }
 
     public static void write( Path path, byte[] value ) {
