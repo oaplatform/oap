@@ -53,6 +53,39 @@ public final class Result<S, F> implements Serializable {
         return new Result<>( null, value, false );
     }
 
+    public static <S> Result<S, Throwable> trying( Try.ThrowingSupplier<S> supplier ) {
+        try {
+            return success( supplier.get() );
+        } catch( Throwable e ) {
+            return failure( e );
+        }
+    }
+
+    /**
+     * @see #tryingInterruptible(Try.ThrowingSupplier)
+     * reason: "blocking" is not actual semantics but usecase
+     */
+    @Deprecated
+    public static <S> Result<S, Throwable> blockingTrying( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
+        return tryingInterruptible( supplier );
+    }
+
+    public static <S> Result<S, Throwable> tryingInterruptible( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
+
+        try {
+            return success( supplier.get() );
+        } catch( InterruptedException ie ) {
+            throw ie;
+        } catch( Throwable e ) {
+            return failure( e );
+        }
+    }
+
+    public <NS, NF> Result<NS, NF> map( Function<S, Result<NS, NF>> onSuccess, Function<F, Result<NS, NF>> onFailure ) {
+        if( success ) return onSuccess.apply( successValue );
+        else return onFailure.apply( failureValue );
+    }
+
     public Optional<Result<S, F>> filter( Predicate<S> predicate ) {
         return success && predicate.test( successValue ) ? Optional.of( this ) : Optional.empty();
     }
@@ -98,33 +131,5 @@ public final class Result<S, F> implements Serializable {
 
     public S orElse( S value ) {
         return success ? successValue : value;
-    }
-
-    public static <S> Result<S, Throwable> trying( Try.ThrowingSupplier<S> supplier ) {
-        try {
-            return success( supplier.get() );
-        } catch( Throwable e ) {
-            return failure( e );
-        }
-    }
-
-    /**
-     * @see #tryingInterruptible(Try.ThrowingSupplier)
-     * reason: "blocking" is not actual semantics but usecase
-     */
-    @Deprecated
-    public static <S> Result<S, Throwable> blockingTrying( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
-        return tryingInterruptible( supplier );
-    }
-
-    public static <S> Result<S, Throwable> tryingInterruptible( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
-
-        try {
-            return success( supplier.get() );
-        } catch( InterruptedException ie ) {
-            throw ie;
-        } catch( Throwable e ) {
-            return failure( e );
-        }
     }
 }
