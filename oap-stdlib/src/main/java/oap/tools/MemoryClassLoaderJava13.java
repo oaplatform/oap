@@ -91,7 +91,7 @@ public class MemoryClassLoaderJava13 extends ClassLoader {
 
         if( !list.isEmpty() ) {
             var out = new StringWriter();
-            var task = compiler.getTask( out, manager, diagnostics, List.of( "--enable-preview", "--release", "13" ), null, list );
+            var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
             if( task.call() ) {
                 if( diskCache != null ) {
                     for( var source : list ) {
