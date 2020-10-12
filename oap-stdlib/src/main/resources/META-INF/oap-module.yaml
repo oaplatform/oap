@@ -11,6 +11,9 @@ services:
       keepAliveTimeout: 5s
       originalServer: "OAP Server/4.0"
       responseDate: true
+      rejected:
+        code: 503
+        reason: "temporary overload" 
     supervision:
       supervise: true
 

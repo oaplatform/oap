@@ -29,16 +29,16 @@ import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
 import oap.http.cors.GenericCorsPolicy;
 import oap.testng.Env;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 
-import static oap.http.testng.HttpAsserts.assertGet;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Slf4j
 public class ServerTest {
@@ -62,10 +62,10 @@ public class ServerTest {
             listener = new SynchronizedThread( http );
             listener.start();
 
-            var f1 = CompletableFuture.runAsync( () -> assertGet( "http://localhost:" + Env.port() + "/test/" ).isOk() );
+            var f1 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + Env.port() + "/test/", "{}" ).isOk() );
             semaphore.acquire();
 
-            var f2 = CompletableFuture.runAsync( () -> assertGet( "http://localhost:" + Env.port() + "/test/" ).isOk() );
+            var f2 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + Env.port() + "/test/", "{}" ).isOk() );
 
             assertEventually( 10, 1000, () -> {
                 var activeCount = server.getActiveCount();
@@ -77,8 +77,9 @@ public class ServerTest {
                 assertThat( queueSize ).isEqualTo( 1 );
             } );
 
-            assertThatThrownBy( () -> assertGet( "http://localhost:" + Env.port() + "/test/" ).isOk() )
-                .hasCauseInstanceOf( IOException.class );
+            var body = RandomStringUtils.random( 1_000_000 );
+
+            assertPost( "http://localhost:" + Env.port() + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
         } finally {
             if( listener != null )
                 listener.stop();
