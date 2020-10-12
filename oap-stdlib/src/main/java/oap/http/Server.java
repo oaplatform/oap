@@ -231,7 +231,9 @@ public class Server implements HttpServer, Closeable {
                 try {
                     rejectedExecutor.execute( () -> {
                         try {
-                            connection.sendResponseHeader( new BasicHttpResponse( HttpVersion.HTTP_1_1, rejected.code, rejected.reason ) );
+                            var response = new BasicHttpResponse( HttpVersion.HTTP_1_1, rejected.code, rejected.reason );
+                            response.setHeader( "Connection", "close" );
+                            connection.sendResponseHeader( response );
                         } catch( Exception ignored ) {
                         } finally {
                             Closeables.close( connection );
