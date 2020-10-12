@@ -32,14 +32,16 @@ import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import oap.util.Lists;
-import oap.util.Maps;
-import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Throwables;
 import oap.util.Try;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,8 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
-
-import static oap.util.Pair.__;
 
 public class Request {
     private static final Splitter SPLITTER = Splitter.on( ";" ).trimResults().omitEmptyStrings();
@@ -145,20 +145,30 @@ public class Request {
 
     public ListMultimap<String, String> getHeaders() {
         if( headers == null ) {
-            headers = Stream.of( underlying.getAllHeaders() )
-                .map( h -> __( h.getName().toLowerCase(), h.getValue() ) )
-                .collect( Maps.Collectors.toListMultimap() );
+            headers = ArrayListMultimap.create();
+
+            for( var h : underlying.getAllHeaders() ) {
+                headers.put( h.getName().toLowerCase(), h.getValue() );
+            }
         }
         return headers;
     }
 
     public Map<String, String> getCookies() {
         if( cookies == null ) {
-            cookies = header( "Cookie" )
-                .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
-                    .map( s -> Strings.split( s, "=" ) )
-                    .collect( Maps.Collectors.<String, String>toMap() ) )
-                .orElse( Map.of() );
+            cookies = new HashMap<>();
+
+            var header = header2( "Cookie" );
+            if( header == null ) return cookies;
+
+            for( var cookie : SPLITTER.split( header2( "Cookie" ) ) ) {
+                var p = StringUtils.splitByWholeSeparatorPreserveAllTokens( cookie, "=", 2 );
+                if( p.length > 1 ) {
+                    cookies.put( p[0], p[1] );
+                } else {
+                    cookies.put( p[0], null );
+                }
+            }
         }
         return cookies;
     }
@@ -206,6 +216,16 @@ public class Request {
         } else return Optional.empty();
     }
 
+    public void skipBody() {
+        body.ifPresent( s -> {
+            try {
+                IOUtils.skip( s, Long.MAX_VALUE );
+            } catch( IOException e ) {
+                throw Throwables.propagate( e );
+            }
+        } );
+    }
+
     public Optional<byte[]> readBody() {
         return body.map( Try.mapOrThrow( ByteStreams::toByteArray, HttpException.class ) );
     }
@@ -213,6 +233,12 @@ public class Request {
     public Optional<String> header( String name ) {
         return getHeaders().containsKey( name.toLowerCase() ) ? Lists.headOpt( getHeaders().get( name.toLowerCase() ) )
             : Optional.empty();
+    }
+
+    public String header2( String name ) {
+        var nlc = name.toLowerCase();
+
+        return getHeaders().containsKey( nlc ) ? Lists.head2( getHeaders().get( nlc ) ) : null;
     }
 
     public List<String> headers( String name ) {

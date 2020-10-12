@@ -28,6 +28,7 @@ import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
 import oap.http.ServerHttpContext;
+import oap.http.testng.MockHttpServer;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.protocol.BasicHttpContext;
 import org.testng.annotations.Test;
@@ -46,7 +47,8 @@ public class GenericCorsPolicyTest {
         basicHttpRequest.addHeader( "Host", "some-host" );
 
         var request = new Request( basicHttpRequest, new Context( "not important",
-            InetAddress.getLocalHost(), new ServerHttpContext( new BasicHttpContext(), Protocol.HTTP, null ) )
+            InetAddress.getLocalHost(), 
+            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) )
         );
 
         final RequestCors requestCors = GenericCorsPolicy.DEFAULT.getCors( request );

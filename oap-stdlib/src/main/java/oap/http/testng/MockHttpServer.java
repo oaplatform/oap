@@ -22,47 +22,41 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.testng;
 
-import lombok.ToString;
-import org.apache.http.impl.DefaultBHttpServerConnection;
-import org.apache.http.protocol.HttpContext;
+import oap.http.Handler;
+import oap.http.HttpServer;
+import oap.http.Protocol;
+import oap.http.cors.CorsPolicy;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.net.Socket;
 
-@ToString
-public class ServerHttpContext implements HttpContext, Closeable {
-    public final Protocol protocol;
-    public final DefaultBHttpServerConnection connection;
-    private final HttpContext httpContext;
-    public final HttpServer httpServer;
-    public long start = System.nanoTime();
-
-    public ServerHttpContext( HttpServer httpServer, HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection ) {
-        this.httpServer = httpServer;
-        this.httpContext = httpContext;
-        this.protocol = protocol;
-        this.connection = connection;
+/**
+ * Created by igor.petrenko on 2020-10-12.
+ */
+public class MockHttpServer implements HttpServer {
+    @Override
+    public void bind( String context, CorsPolicy corsPolicy, Handler handler, Protocol protocol ) {
+        
     }
 
     @Override
-    public Object getAttribute( String id ) {
-        return httpContext.getAttribute( id );
+    public void unbind( String context ) {
+
     }
 
     @Override
-    public void setAttribute( String id, Object obj ) {
-        httpContext.setAttribute( id, obj );
+    public void accepted( Socket socket ) {
+
     }
 
     @Override
-    public Object removeAttribute( String id ) {
-        return httpContext.removeAttribute( id );
+    public int getQueueSize() {
+        return 0;
     }
 
     @Override
-    public void close() throws IOException {
-        connection.close();
+    public int getActiveCount() {
+        return 0;
     }
 }

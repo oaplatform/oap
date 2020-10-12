@@ -38,7 +38,7 @@ import java.net.InetAddress;
 @Deprecated
 public class MockRequest extends Request {
     public MockRequest( HttpRequest req ) {
-        super( req, new Context( "", getLocalHost(), new ServerHttpContext( new BasicHttpContext(), Protocol.HTTP, null ) ) );
+        super( req, new Context( "", getLocalHost(), new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) ) );
     }
 
     public MockRequest() {

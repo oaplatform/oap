@@ -44,7 +44,6 @@ import java.security.KeyStore;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.pathOfTestResource;
-import static org.testng.Assert.assertEquals;
 
 @Slf4j
 public class SecureHttpListenerTest {
@@ -57,7 +56,7 @@ public class SecureHttpListenerTest {
     @BeforeClass
     public void setUp() {
         Env.resetPorts();
-        server = new Server( 10, false );
+        server = new Server( 10, 0, false );
         server.start();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 
@@ -69,7 +68,7 @@ public class SecureHttpListenerTest {
             response.respond( HttpResponse.status( 200 ).response() );
         }, Protocol.HTTPS );
 
-        SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port(), false );
+        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port(), false );
         listener = new SynchronizedThread( http );
         listener.start();
     }
@@ -88,11 +87,11 @@ public class SecureHttpListenerTest {
             SSLContext sslContext = SSLContext.getInstance( "TLS" );
             sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
 
-            CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
+            var closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-            HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
+            var httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
 
-            CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
+            var closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
             Assert.assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
         }

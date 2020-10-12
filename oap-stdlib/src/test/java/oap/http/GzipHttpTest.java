@@ -47,7 +47,7 @@ public class GzipHttpTest {
     @BeforeMethod
     public void beforeMethod() {
         port = Env.port( getClass().getName() );
-        server = new Server( 1024, false );
+        server = new Server( 1024, 0, false );
         server.start();
         PlainHttpListener listener = new PlainHttpListener( server, port );
         thread = new SynchronizedThread( listener, 5000 );

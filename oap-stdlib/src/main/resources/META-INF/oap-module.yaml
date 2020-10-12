@@ -6,6 +6,7 @@ services:
     name: oap-http-server
     parameters:
       workers: 500
+      queueSize: 0
       registerStatic: false
       keepAliveTimeout: 5s
       originalServer: "OAP Server/4.0"

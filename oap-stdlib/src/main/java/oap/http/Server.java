@@ -26,6 +26,7 @@ package oap.http;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -50,15 +51,19 @@ import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -68,7 +73,7 @@ import java.util.concurrent.TimeUnit;
  * - http.*
  */
 @Slf4j
-public class Server implements HttpServer {
+public class Server implements HttpServer, Closeable {
     private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
 
     private static final Counter requests = Metrics.counter( "oap_http", "type", "requests" );
@@ -79,30 +84,38 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final int workers;
+    private final int queueSize;
     private final boolean registerStatic;
+    private final AtomicInteger activeCount = new AtomicInteger();
     public int keepAliveTimeout = 1000 * 20;
     public String originalServer = "OAP Server/1.0";
     public boolean responseDate = true;
     private HttpService httpService;
     private ExecutorService executor;
+    private BlockingQueue<Runnable> workQueue;
+    private Gauge workQueueMetric;
 
-    public Server( int workers, boolean registerStatic ) {
+    public Server( int workers, int queueSize, boolean registerStatic ) {
         this.workers = workers;
+        this.queueSize = queueSize;
         this.registerStatic = registerStatic;
 
         Metrics.gauge( "oap_http_connections", connections, ConcurrentHashMap::size );
+        Metrics.gauge( "oap_http_processes", activeCount, AtomicInteger::get );
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
-    private static ServerHttpContext createHttpContext( Socket socket, DefaultBHttpServerConnection connection ) {
+    private static ServerHttpContext createHttpContext( HttpServer httpServer, Socket socket, DefaultBHttpServerConnection connection ) {
         final Protocol protocol;
         if( !Inet.isLocalAddress( socket.getInetAddress() ) ) protocol = Protocol.LOCAL;
         else protocol = socket instanceof SSLSocket ? Protocol.HTTPS : Protocol.HTTP;
 
-        return new ServerHttpContext( HttpCoreContext.create(), protocol, connection );
+        return new ServerHttpContext( httpServer, HttpCoreContext.create(), protocol, connection );
     }
 
     public void start() {
+        log.info( "workers = {}, queue size = {}", workers, queueSize );
+
         var httpProcessorBuilder = HttpProcessorBuilder.create();
         if( originalServer != null )
             httpProcessorBuilder = httpProcessorBuilder.add( new ResponseServer( originalServer ) );
@@ -117,7 +130,13 @@ public class Server implements HttpServer {
             DefaultHttpResponseFactory.INSTANCE,
             mapper );
 
-        this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
+        workQueue = queueSize == 0 ? new SynchronousQueue<>() : new LinkedBlockingQueue<>( queueSize );
+
+        if( queueSize > 0 )
+            workQueueMetric = Gauge.builder( "oap_http_queue", workQueue, BlockingQueue::size ).register( Metrics.globalRegistry );
+
+        this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS,
+            workQueue,
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 
         if( registerStatic )
@@ -153,7 +172,7 @@ public class Server implements HttpServer {
 
                         log.debug( "connection accepted: {}", connection );
 
-                        var httpContext = createHttpContext( socket, connection );
+                        var httpContext = createHttpContext( this, socket, connection );
                         connections.put( connectionId, httpContext );
 
                         Thread.currentThread().setName( connection.toString() );
@@ -162,11 +181,17 @@ public class Server implements HttpServer {
                             log.trace( "start handling {}", connection );
                         while( !Thread.interrupted() && connection.isOpen() ) {
                             requests.increment();
-                            httpService.handleRequest( connection, httpContext );
+                            activeCount.incrementAndGet();
+                            try {
+                                httpService.handleRequest( connection, httpContext );
+                            } finally {
+                                activeCount.decrementAndGet();
+                            }
                         }
                     } catch( SocketTimeoutException e ) {
                         keepaliveTimeout.increment();
                         if( log.isTraceEnabled() )
+
                             log.trace( "{}: timeout", connection );
                     } catch( SocketException | SSLException e ) {
                         log.debug( "{}: {}", connection, e.getMessage() );
@@ -202,15 +227,35 @@ public class Server implements HttpServer {
         }
     }
 
-    public void preStop() {
+    @Override
+    public int getQueueSize() {
+        return workQueue.size();
+    }
+
+    @Override
+    public int getActiveCount() {
+        return activeCount.get();
+    }
+
+    public synchronized void preStop() {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
         Closeables.close( executor );
 
         log.info( "server gone down" );
+
+        if( workQueueMetric != null ) {
+            Metrics.globalRegistry.remove( workQueueMetric );
+            workQueueMetric = null;
+        }
     }
 
     public void stop() {
+        preStop();
+    }
+
+    @Override
+    public void close() {
         preStop();
     }
 }

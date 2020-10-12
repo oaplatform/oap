@@ -29,6 +29,7 @@ import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
 import oap.http.ServerHttpContext;
+import oap.http.testng.MockHttpServer;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.protocol.BasicHttpContext;
 import org.testng.annotations.Test;
@@ -50,7 +51,7 @@ public class PatternCorsPolicyTest {
         basicHttpRequest.addHeader( "Host", "some-host" );
 
         var context = new Context( "not important", InetAddress.getLocalHost(),
-            new ServerHttpContext( new BasicHttpContext(), Protocol.HTTP, null ) );
+            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) );
 
         return new Request( basicHttpRequest, context );
     }

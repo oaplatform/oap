@@ -50,7 +50,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     }
 
     @Override
-    public void handle( HttpRequest httpRequest, HttpResponse httpResponse,
+    public void handle( HttpRequest httpRequest, 
+                        HttpResponse httpResponse,
                         HttpContext httpContext ) {
         if( log.isTraceEnabled() )
             log.trace( "Handling [{}]", httpRequest );

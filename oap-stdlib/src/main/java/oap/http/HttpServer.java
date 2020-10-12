@@ -33,4 +33,8 @@ public interface HttpServer {
     void unbind( String context );
 
     void accepted( Socket socket );
+
+    int getQueueSize();
+
+    int getActiveCount();
 }
