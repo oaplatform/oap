@@ -24,6 +24,7 @@
 
 package oap.application.testng;
 
+import com.typesafe.config.impl.ConfigImpl;
 import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Files;
@@ -76,7 +77,7 @@ public class KernelFixture extends EnvFixture {
 //        deprecated
         define( "TMP_REMOTE_PORT", "${TEST_REMOTING_PORT}" );
         define( "TEST_HTTP_PORT", Env.port() );
-//        depracated
+//        deprecated
         define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
         define( "TEST_DIRECTORY", TestDirectoryFixture.testDirectory( ) );
 //        deprecated
@@ -112,6 +113,9 @@ public class KernelFixture extends EnvFixture {
 
     @Override
     public void beforeMethod() {
+        ConfigImpl.reloadSystemPropertiesConfig();
+        ConfigImpl.reloadEnvVariablesConfig();
+
         super.beforeMethod();
         List<URL> moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
@@ -128,5 +132,8 @@ public class KernelFixture extends EnvFixture {
     @Override
     public void afterMethod() {
         this.kernel.stop();
+
+        ConfigImpl.reloadSystemPropertiesConfig();
+        ConfigImpl.reloadEnvVariablesConfig();
     }
 }
