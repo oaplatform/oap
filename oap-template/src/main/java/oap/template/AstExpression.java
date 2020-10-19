@@ -24,24 +24,25 @@
 
 package oap.template;
 
+import lombok.ToString;
 import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Created by igor.petrenko on 2020-10-19.
  */
+@ToString( callSuper = true )
 public class AstExpression extends Ast {
-    private final Ast ast;
     private final String content;
 
     AstExpression( Ast ast, String content ) {
         super( ast.type );
-        this.ast = ast;
+        this.children.add( ast );
         this.content = content;
     }
 
     @Override
     void render( Render render ) {
         render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( content ) );
-        ast.render( render );
+        children.forEach( a -> a.render( render ) );
     }
 }
