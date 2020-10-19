@@ -68,10 +68,10 @@ public class LogConfiguration extends Configuration {
     }
 
     public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate ) {
-        return forType( clazz, type, predicate, TemplateStrategy.DEFAULT );
+        return forType( clazz, type, predicate, STRING );
     }
 
-    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate, TemplateStrategy<Template.Line> strategy ) {
+    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate, TemplateAccumulatorString templateAccumulator ) {
         var value = getLatestDictionary().getValue( type );
 
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
@@ -93,7 +93,7 @@ public class LogConfiguration extends Configuration {
             headers.add( id );
         }
 
-        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), STRING, ERROR ), sj.toString(), headers.toString() );
+        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), templateAccumulator, ERROR ), sj.toString(), headers.toString() );
     }
 
     public TemplateEngine getEngine() {

@@ -106,7 +106,7 @@ public class TemplateEngine implements Runnable {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy ) {
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>  getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy ) {
         assert template != null;
         assert acc != null;
         
