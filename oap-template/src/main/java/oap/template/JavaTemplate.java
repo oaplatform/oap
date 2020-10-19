@@ -65,7 +65,7 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
 
             log.trace( "\n" + ast.print() );
 
-            var render = new Render( name, new TemplateType( type.type() ), acc.getClass(), null, null, 0 );
+            var render = new Render( name, new TemplateType( type.type() ), acc, null, null, 0 );
             ast.render( render );
 
             var line = new AtomicInteger( 0 );

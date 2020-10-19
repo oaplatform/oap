@@ -37,46 +37,46 @@ import java.lang.reflect.Type;
 class Render {
     final String templateName;
     final TemplateType parentType;
-    final Type templateAccumulatorType;
+    final TemplateAccumulator<?,?> templateAccumulator;
     final String field;
     final String templateAccumulatorName;
     final int tab;
     private final StringBuilder sb;
 
-    public Render( String templateName, TemplateType parentType, Type templateAccumulatorType,
+    public Render( String templateName, TemplateType parentType, TemplateAccumulator<?,?> templateAccumulator,
                    String field, String templateAccumulatorName, int tab ) {
-        this( new StringBuilder(), templateName, parentType, templateAccumulatorType, field, templateAccumulatorName, tab );
+        this( new StringBuilder(), templateName, parentType, templateAccumulator, field, templateAccumulatorName, tab );
     }
 
-    public Render( StringBuilder sb, String templateName, TemplateType parentType, Type templateAccumulatorType,
+    public Render( StringBuilder sb, String templateName, TemplateType parentType, TemplateAccumulator<?,?> templateAccumulator,
                    String field, String templateAccumulatorName, int tab ) {
         this.sb = sb;
         this.templateName = templateName;
         this.parentType = parentType;
-        this.templateAccumulatorType = templateAccumulatorType;
+        this.templateAccumulator = templateAccumulator;
         this.field = field;
         this.templateAccumulatorName = templateAccumulatorName;
         this.tab = tab;
     }
 
     public Render withField( String field ) {
-        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulatorType, field, this.templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab );
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
-        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulatorType, this.field, templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulator, this.field, templateAccumulatorName, this.tab );
     }
 
     public Render tabInc() {
-        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulatorType, this.field, this.templateAccumulatorName, this.tab + 1 );
+        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab + 1 );
     }
 
     public Render tabDec() {
-        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulatorType, this.field, this.templateAccumulatorName, this.tab - 1 );
+        return new Render( this.sb, this.templateName, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab - 1 );
     }
 
     public Render withParentType( TemplateType parentType ) {
-        return new Render( this.sb, this.templateName, parentType, this.templateAccumulatorType, this.field, this.templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab );
     }
 
     public Render n() {

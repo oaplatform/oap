@@ -108,6 +108,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     }
 
     @Override
+    public String getTypeName() {
+        return "String";
+    }
+
+    @Override
     public String get() {
         return sb.toString();
     }

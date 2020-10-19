@@ -58,4 +58,6 @@ public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAcc
     boolean isEmpty();
 
     TTemplateAccumulator newInstance();
+
+    String getTypeName();
 }
