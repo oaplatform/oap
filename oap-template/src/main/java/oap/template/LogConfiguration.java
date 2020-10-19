@@ -93,7 +93,7 @@ public class LogConfiguration extends Configuration {
             headers.add( id );
         }
 
-        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), STRING, ERROR ), sj.toString(), headers );
+        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, sj.toString(), STRING, ERROR ), sj.toString(), headers.toString() );
     }
 
     public TemplateEngine getEngine() {
