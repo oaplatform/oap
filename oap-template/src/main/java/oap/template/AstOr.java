@@ -26,6 +26,7 @@ package oap.template;
 
 import lombok.ToString;
 import oap.template.TemplateGrammarAdaptor.MaxMin;
+import oap.util.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,11 +54,24 @@ public class AstOr extends Ast {
     }
 
     @Override
+    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+        printTop( buffer, prefix );
+        buffer.append( childrenPrefix + "│OR" );
+        buffer.append( '\n' );
+
+        for( var i = 0; i < or.size(); i++ ) {
+            var cp = Strings.fill( "│", or.size() - i );
+            or.get( i ).top.print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
+        }
+
+        printChildren( buffer, childrenPrefix, children );
+    }
+
+    @Override
     void render( Render render ) {
         var minMax = or.get( 0 );
 
-        var typeName = minMax.bottom.type.getTypeName();
-        render.ntab().append( typeName ).append( ' ' ).append( orVariable ).append( " = null;" );
+        render.ntab().append( "String " ).append( orVariable ).append( " = null;" );
 
         for( var i = 0; i < or.size(); i++ ) {
             minMax = or.get( i );
@@ -67,7 +81,7 @@ public class AstOr extends Ast {
             render = render
                 .ntab().append( "%s.run();", astRunnable.newFunctionId )
                 .ntab().append( "if( !%s.isEmpty() ) { ", astRunnable.templateAccumulatorName )
-                .tabInc().ntab().append( "%s = ( %s )%s.get();", orVariable, typeName, astRunnable.templateAccumulatorName )
+                .tabInc().ntab().append( "%s = %s.get();", orVariable, astRunnable.templateAccumulatorName )
                 .tabDec();
 
             if( i < or.size() - 1 ) {

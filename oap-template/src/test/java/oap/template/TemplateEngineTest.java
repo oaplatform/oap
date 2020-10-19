@@ -127,6 +127,15 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testOrCollections() {
+        var c = new TestTemplateClass();
+        c.list2 = List.of( 2, 3 );
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list | list2}", STRING ).render( c ) )
+            .isEqualTo( "[2,3]" );
+    }
+
+    @Test
     public void testOptional() {
         var c = new TestTemplateClass();
 

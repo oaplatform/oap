@@ -50,6 +50,7 @@ public class TestTemplateClass {
     public ITestTemplateClassExt ext2;
     public int intField;
     public List<Integer> list;
+    public List<Integer> list2;
 
     public String fieldM() {
         return field;

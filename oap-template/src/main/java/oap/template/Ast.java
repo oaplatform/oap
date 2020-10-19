@@ -67,10 +67,16 @@ abstract class Ast {
         return buffer.toString();
     }
 
-    private void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
-        buffer.append( prefix );
-        buffer.append( toString() );
-        buffer.append( '\n' );
+    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+        print( buffer, prefix, childrenPrefix, children );
+    }
+
+    protected void print( StringBuilder buffer, String prefix, String childrenPrefix, List<Ast> children ) {
+        printTop( buffer, prefix );
+        printChildren( buffer, childrenPrefix, children );
+    }
+
+    protected void printChildren( StringBuilder buffer, String childrenPrefix, List<Ast> children ) {
         for( var it = children.iterator(); it.hasNext(); ) {
             Ast next = it.next();
             if( it.hasNext() ) {
@@ -79,5 +85,11 @@ abstract class Ast {
                 next.print( buffer, childrenPrefix + "└── ", childrenPrefix + "    " );
             }
         }
+    }
+
+    protected void printTop( StringBuilder buffer, String prefix ) {
+        buffer.append( prefix );
+        buffer.append( toString() );
+        buffer.append( '\n' );
     }
 }
