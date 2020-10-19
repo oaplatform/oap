@@ -55,6 +55,8 @@ public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAcc
 
     void accept( TTemplateAccumulator acc );
 
+    void accept( Object obj );
+
     boolean isEmpty();
 
     TTemplateAccumulator newInstance();

@@ -26,99 +26,94 @@ package oap.template;
 
 import java.util.Collection;
 
-import static java.util.stream.Collectors.joining;
-
 /**
- * Created by igor.petrenko on 2020-07-13.
+ * Created by igor.petrenko on 2020-10-19.
  */
-public class TemplateAccumulatorString implements TemplateAccumulator<String, TemplateAccumulatorString> {
-    private final StringBuilder sb = new StringBuilder();
+public class TemplateAccumulatorObject implements TemplateAccumulator<Object, TemplateAccumulatorObject> {
+    private Object obj;
 
     @Override
     public void accept( String text ) {
-        if( text != null ) {
-            sb.append( text );
-        }
+        accept( ( Object ) text );
     }
 
     @Override
     public void accept( boolean b ) {
-        sb.append( b );
+        accept( ( Object ) b );
     }
 
     @Override
     public void accept( char ch ) {
-        sb.append( ch );
+        accept( ( Object ) ch );
     }
 
     @Override
     public void accept( byte b ) {
-        sb.append( b );
+        accept( ( Object ) b );
     }
 
     @Override
     public void accept( short s ) {
-        sb.append( s );
+        accept( ( Object ) s );
     }
 
     @Override
     public void accept( int i ) {
-        sb.append( i );
+        accept( ( Object ) i );
     }
 
     @Override
     public void accept( long l ) {
-        sb.append( l );
+        accept( ( Object ) l );
     }
 
     @Override
     public void accept( float f ) {
-        sb.append( f );
+        accept( ( Object ) f );
     }
 
     @Override
     public void accept( double d ) {
-        sb.append( d );
+        accept( ( Object ) d );
     }
 
     @Override
     public void accept( Enum<?> e ) {
-        sb.append( e.name() );
+        accept( ( Object ) e );
     }
 
     @Override
     public void accept( Collection<?> list ) {
-        if( list != null )
-            sb.append( list.stream().map( String::valueOf ).collect( joining( ",", "[", "]" ) ) );
+        accept( ( Object ) list );
     }
 
     @Override
-    public void accept( TemplateAccumulatorString acc ) {
-        sb.append( acc.sb );
+    public void accept( TemplateAccumulatorObject acc ) {
+        accept( acc.get() );
     }
 
     @Override
     public void accept( Object obj ) {
-        accept( String.valueOf( obj ) );
+        this.obj = obj;
     }
 
     @Override
     public boolean isEmpty() {
-        return sb.length() == 0;
+        return obj == null;
     }
 
     @Override
-    public TemplateAccumulatorString newInstance() {
-        return new TemplateAccumulatorString();
+    public TemplateAccumulatorObject newInstance() {
+        return new TemplateAccumulatorObject();
     }
 
     @Override
     public String getTypeName() {
-        return "String";
+        return "Object";
     }
 
     @Override
-    public String get() {
-        return sb.toString();
+    public Object get() {
+        return obj;
     }
 }

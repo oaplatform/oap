@@ -29,4 +29,5 @@ package oap.template;
  */
 public interface TemplateAccumulators {
     TemplateAccumulatorString STRING = new TemplateAccumulatorString();
+    TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
 }
