@@ -44,7 +44,7 @@ element[TemplateType parentType] returns [Ast ast]
         }
         
 	    try { 
-            $ast = grammarExp.expression( $parentType ).ast.top;
+            $ast = new AstExpression(grammarExp.expression( $parentType ).ast.top, $expression.content);
         } catch ( Exception e ) {
             throw new TemplateException( $expression.content, e ); 
         }

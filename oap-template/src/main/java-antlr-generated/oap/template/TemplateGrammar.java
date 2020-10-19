@@ -270,7 +270,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				        }
 				        
 					    try { 
-				            ((ElementContext)_localctx).ast =  grammarExp.expression( _localctx.parentType ).ast.top;
+				            ((ElementContext)_localctx).ast =  new AstExpression(grammarExp.expression( _localctx.parentType ).ast.top, ((ElementContext)_localctx).expression.content);
 				        } catch ( Exception e ) {
 				            throw new TemplateException( ((ElementContext)_localctx).expression.content, e ); 
 				        }
