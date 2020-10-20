@@ -38,6 +38,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Te
     }
 
     @Override
+    public void acceptText( String text ) {
+        accept( ( Object ) text );
+    }
+
+    @Override
     public void accept( boolean b ) {
         accept( ( Object ) b );
     }

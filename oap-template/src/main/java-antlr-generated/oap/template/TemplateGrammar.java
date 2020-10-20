@@ -253,7 +253,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				{
 				setState(24);
 				((ElementContext)_localctx).t = text();
-				 ((ElementContext)_localctx).ast =  new AstText((((ElementContext)_localctx).t!=null?_input.getText(((ElementContext)_localctx).t.start,((ElementContext)_localctx).t.stop):null)); _localctx.ast.addChild(new AstPrint(_localctx.ast.type, null)); 
+				 ((ElementContext)_localctx).ast =  new AstText((((ElementContext)_localctx).t!=null?_input.getText(((ElementContext)_localctx).t.start,((ElementContext)_localctx).t.stop):null)); 
 				}
 				break;
 			case STARTEXPR:

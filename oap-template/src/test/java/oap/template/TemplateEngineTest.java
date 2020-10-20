@@ -70,6 +70,15 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testEscapeVariables() {
+        var c = new TestTemplateClass();
+        c.field = "1";
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString() )
+            .render( c ) ).isEqualTo( "12\t12" );
+    }
+
+    @Test
     public void testMapProperty() {
         assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${prop}", STRING ).render( Map.of( "prop", "val" ) ) )
             .isEqualTo( "val" );
@@ -321,5 +330,17 @@ public class TemplateEngineTest extends Fixtures {
         assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${unknownField.unknownField}", STRING, ERROR ) )
             .isInstanceOf( TemplateException.class )
             .hasMessageContaining( "unknownField.unknownField" );
+    }
+
+    public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
+        @Override
+        public void accept( String text ) {
+            super.accept( text + "2" );
+        }
+
+        @Override
+        public TemplateAccumulatorString newInstance() {
+            return new TestTemplateAccumulatorString();
+        }
     }
 }

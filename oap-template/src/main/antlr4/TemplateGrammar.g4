@@ -34,7 +34,7 @@ elements[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<>
 	;
 
 element[TemplateType parentType] returns [Ast ast]
-	: t=text { $ast = new AstText($t.text); $ast.addChild(new AstPrint($ast.type, null)); }
+	: t=text { $ast = new AstText($t.text); }
 	| expression {
         var lexerExp = new TemplateLexerExpression( CharStreams.fromString( $expression.content ) );
         var grammarExp = new TemplateGrammarExpression( new BufferedTokenStream( lexerExp ), builtInFunction, errorStrategy );

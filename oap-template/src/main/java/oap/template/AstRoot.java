@@ -37,8 +37,9 @@ public class AstRoot extends Ast {
 
     @Override
     public void render( Render render ) {
-        var className = type.getTypeName();
+        var className = type.getTypeName().replace( '$', '.' );
 
+        var templateAccumulatorClassName = render.templateAccumulator.getClass().getTypeName().replace( '$', '.' );
         render.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
             + "\n"
             + "import oap.util.Strings;\n"
@@ -50,11 +51,11 @@ public class AstRoot extends Ast {
             + "import com.google.common.base.CharMatcher;\n"
             + "\n"
             + "public class " ).append( render.nameEscaped() )
-            .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, render.templateAccumulator.getClass().getTypeName() )
+            .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, templateAccumulatorClassName )
             .append( " {\n"
                 + "\n"
                 + "  @Override\n"
-                + "  public void accept( " ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( render.templateAccumulator.getClass().getTypeName() ).append( " acc ) {\n" );
+                + "  public void accept( " ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {\n" );
 
         var childRender = render.tabInc().tabInc().tabInc().withField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
         children.forEach( child -> child.render( childRender ) );

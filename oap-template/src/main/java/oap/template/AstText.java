@@ -40,10 +40,7 @@ public class AstText extends Ast {
 
     @Override
     void render( Render render ) {
-        var newVariable = newVariable();
-        render.ntab().append( "var %s = \"%s\";", newVariable, render.escapeJava( text ) );
-
-        var newRender = render.withField( newVariable ).withParentType( type );
-        children.forEach( ast -> ast.render( newRender ) );
+        render.ntab()
+            .append(  "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text ) );
     }
 }

@@ -42,6 +42,12 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     }
 
     @Override
+    public void acceptText( String text ) {
+        if( text != null )
+            sb.append( text );
+    }
+
+    @Override
     public void accept( boolean b ) {
         sb.append( b );
     }

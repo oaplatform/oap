@@ -33,6 +33,8 @@ import java.util.function.Supplier;
 public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAccumulator<T, TTemplateAccumulator>> extends Supplier<T> {
     void accept( String text );
 
+    void acceptText( String text );
+
     void accept( boolean b );
 
     void accept( char ch );
