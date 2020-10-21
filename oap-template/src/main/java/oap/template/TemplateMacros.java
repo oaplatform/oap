@@ -43,6 +43,10 @@ public class TemplateMacros {
         return URLEncoder.encode( src, StandardCharsets.UTF_8.name() );
     }
 
+    public static String urlencodePercent( String src ) {
+        return urlencode( src ).replaceAll( "\\+", "%20" );
+    }
+
     public static String toUpperCase( String src ) {
         return src != null ? src.toUpperCase() : null;
     }

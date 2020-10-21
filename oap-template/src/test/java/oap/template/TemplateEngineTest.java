@@ -242,6 +242,8 @@ public class TemplateEngineTest extends Fixtures {
             .isEqualTo( "id=a+i%2Fd" );
         assertString( engine.getTemplate( "testFunctionUrlencode2", new TypeRef<Map<String, String>>() {}, "id=${v; urlencode ( 2 )}", STRING ).render( Map.of( "v", "a i/d" ) ) )
             .isEqualTo( "id=a%2Bi%252Fd" );
+        assertString( engine.getTemplate( "testFunctionUrlencode", new TypeRef<Map<String, String>>() {}, "id=${ v ; urlencodePercent() }", STRING ).render( Map.of( "v", "a i/d" ) ) )
+            .isEqualTo( "id=a%20i%2Fd" );
     }
 
     @Test
