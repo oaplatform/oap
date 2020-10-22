@@ -56,6 +56,7 @@ public class Engine implements Runnable {
 
     static {
         builtInFunction.put( "urlencode", "oap.template.Macros.encode" );
+        builtInFunction.put( "urlencodePercent", "oap.template.Macros.encodePercent" );
         builtInFunction.put( "toUpperCase", "oap.template.Macros.toUpperCase" );
         builtInFunction.put( "toLowerCase", "oap.template.Macros.toLowerCase" );
     }
