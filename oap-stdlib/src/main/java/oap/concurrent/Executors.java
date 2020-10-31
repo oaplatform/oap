@@ -70,7 +70,7 @@ public final class Executors {
         return new BlockingExecutor( nThreads, threadFactory );
     }
 
-    public ScheduledExecutorService newScheduledThreadPool( int corePoolSize, String threadPrefix ) {
+    public static ScheduledExecutorService newScheduledThreadPool( int corePoolSize, String threadPrefix ) {
         return new ScheduledExecutorService( java.util.concurrent.Executors.newScheduledThreadPool(
             corePoolSize,
             new ThreadFactoryBuilder().setNameFormat( threadPrefix + "-%d" ).build() ) );
