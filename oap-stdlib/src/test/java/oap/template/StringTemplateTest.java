@@ -117,7 +117,7 @@ public class StringTemplateTest extends Fixtures {
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(2)}" )
             .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a%2Bi%252Fd" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencodePercent() }" )
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencodePercent(1) }" )
             .renderString( new Container( test ), Map.of() ) ).isEqualTo( "id=a%20i%2Fd" );//why?????
     }
 

@@ -47,6 +47,14 @@ public class TemplateMacros {
         return urlencode( src ).replaceAll( "\\+", "%20" );
     }
 
+    public static String urlencodePercent( String src, long depth ) {
+        String res = src;
+        for( long curr = 0; curr < depth; curr++ ) {
+            res = urlencodePercent( res );
+        }
+        return res;
+    }
+
     public static String toUpperCase( String src ) {
         return src != null ? src.toUpperCase() : null;
     }

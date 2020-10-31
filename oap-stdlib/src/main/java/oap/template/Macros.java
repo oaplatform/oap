@@ -43,6 +43,18 @@ public class Macros {
         return URLEncoder.encode( src, StandardCharsets.UTF_8.name() );
     }
 
+    private static String encodePercent( String src ) {
+        return encode(src).replaceAll( "\\+", "%20" );
+    }
+
+    public static String encodePercent( String src, long depth ) {
+        String res = src;
+        for( long curr = 0; curr < depth; curr++ ) {
+            res = encodePercent( res );
+        }
+        return res;
+    }
+
     public static String toUpperCase( String src ) {
         return src != null ? src.toUpperCase() : null;
     }
