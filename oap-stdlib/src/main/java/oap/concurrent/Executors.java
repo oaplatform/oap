@@ -24,6 +24,9 @@
 
 package oap.concurrent;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import oap.concurrent.scheduler.ScheduledExecutorService;
+
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -65,6 +68,12 @@ public final class Executors {
 
     public static BlockingExecutor newFixedBlockingThreadPool( int nThreads, ThreadFactory threadFactory ) {
         return new BlockingExecutor( nThreads, threadFactory );
+    }
+
+    public ScheduledExecutorService newScheduledThreadPool( int corePoolSize, String threadPrefix ) {
+        return new ScheduledExecutorService( java.util.concurrent.Executors.newScheduledThreadPool(
+            corePoolSize,
+            new ThreadFactoryBuilder().setNameFormat( threadPrefix + "-%d" ).build() ) );
     }
 
     public static class BlockingExecutor implements Executor {
