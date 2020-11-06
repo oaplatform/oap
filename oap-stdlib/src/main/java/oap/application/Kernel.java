@@ -260,6 +260,7 @@ public class Kernel implements Closeable {
                 if( !service.isRemoteService() ) try {
                     var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
                     instance = reflect.newInstance( parametersWithoutLinks );
+                    setServiceName( reflect, instance, service.name );
 //                    updateLoggerIfExists( instance, implName );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}, remote = {}, profiles = {}", implName, service.remote, service.profiles );
@@ -278,6 +279,25 @@ public class Kernel implements Closeable {
         } );
 
         return ret;
+    }
+
+    private void setServiceName( Reflection reflect, Object instance, String serviceName ) {
+        var fields = reflect.annotatedFields( ServiceName.class );
+        for( var field : fields ) {
+            if( !String.class.equals( field.underlying.getType() ) )
+                throw new ApplicationException( "The " + serviceName + "#" + field.name() + " field must be of type 'String'." );
+
+            field.set( instance, serviceName );
+        }
+
+        var methods = reflect.annotatedMethods( ServiceName.class );
+        for( var method : methods ) {
+            if( method.parameters.size() != 1 && !String.class.equals( method.parameters.get( 0 ).underlying.getType() ) ) {
+                throw new ApplicationException( "The " + serviceName + "#" + method.name() + " method must be only one parameter of type 'String'." );
+            }
+
+            method.invoke( instance, serviceName );
+        }
     }
 
     @SneakyThrows
