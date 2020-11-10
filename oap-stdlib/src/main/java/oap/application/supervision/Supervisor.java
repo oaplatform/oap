@@ -96,6 +96,7 @@ public class Supervisor {
                 .forEach( ( name, service ) -> {
                     log.debug( "pre stopping {}...", name );
                     service.stop();
+                    log.debug( "pre stopping {}... Done.", name );
                 } );
             this.wrappers.clear();
 
@@ -104,6 +105,7 @@ public class Supervisor {
                 .forEach( ( name, service ) -> {
                     log.debug( "pre stopping {}...", name );
                     service.preStop();
+                    log.debug( "pre stopping {}... Done.", name );
                 } );
         }
     }
@@ -118,6 +120,7 @@ public class Supervisor {
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
                     service.stop();
+                    log.debug( "stopping {}... Done.", name );
                 } );
             this.supervised.clear();
         }
@@ -133,7 +136,7 @@ public class Supervisor {
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
                     service.stop();
-                    log.debug( "stopped {}", name );
+                    log.debug( "stopping {}... Done.", name );
                 } );
             this.wrappers.clear();
 
@@ -143,7 +146,7 @@ public class Supervisor {
                     log.debug( "stopping {}...", name );
                     service.preStop();
                     service.stop();
-                    log.debug( "stopped {}", name );
+                    log.debug( "stopping {}... Done.", name );
                 } );
         }
     }
