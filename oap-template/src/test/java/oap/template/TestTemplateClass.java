@@ -34,7 +34,7 @@ import java.util.Optional;
  */
 public class TestTemplateClass {
     public String field;
-    public Optional<String> fieldOpt;
+    public Optional<String> fieldOpt = Optional.empty();
     @Template2.Nullable
     public String fieldNullable;
     public String field2;
@@ -42,7 +42,7 @@ public class TestTemplateClass {
     public TestTemplateClass2 child_2;
     public TestTemplateEnum enumField;
     public boolean booleanField;
-    public Optional<TestTemplateClass> childOpt;
+    public Optional<TestTemplateClass> childOpt = Optional.empty();
     @Template2.Nullable
     public TestTemplateClass childNullable;
     @Template2.Nullable

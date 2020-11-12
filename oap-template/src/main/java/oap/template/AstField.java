@@ -52,4 +52,10 @@ public class AstField extends Ast {
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
+
+    @Override
+    protected boolean equalsAst( Ast ast ) {
+        if( !( ast instanceof AstField ) ) return false;
+        return ( ( AstField ) ast ).fieldName.equals( fieldName );
+    }
 }

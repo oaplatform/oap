@@ -31,7 +31,7 @@ import lombok.ToString;
  */
 @ToString( callSuper = true )
 public class AstText extends Ast {
-    private final String text;
+    public final String text;
 
     public AstText( String text ) {
         super( new TemplateType( String.class ) );
@@ -41,6 +41,11 @@ public class AstText extends Ast {
     @Override
     void render( Render render ) {
         render.ntab()
-            .append(  "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text ) );
+            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text ) );
+    }
+
+    @Override
+    protected boolean equalsAst( Ast ast ) {
+        return ast instanceof AstText;
     }
 }

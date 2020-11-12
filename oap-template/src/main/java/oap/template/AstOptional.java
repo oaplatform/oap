@@ -30,24 +30,28 @@ import lombok.ToString;
  * Created by igor.petrenko on 2020-07-14.
  */
 @ToString( callSuper = true )
-public class AstOptional extends Ast {
-    final String variableName;
-
+public class AstOptional extends AstIfElse {
     AstOptional( TemplateType type ) {
         super( type );
-        variableName = newVariable();
     }
 
     @Override
-    void render( Render render ) {
-        render
-            .ntab().append( "var %sOpt = %s;", variableName, render.field )
-            .ntab().append( "if ( %sOpt.isPresent() ) {", variableName )
-            .tabInc().ntab().append( "var %s = %sOpt.get();", variableName, variableName );
+    protected String getTrue() {
+        return ".isPresent()";
+    }
 
-        var newRender = render.withField( variableName ).withParentType( type ).tabInc();
-        children.forEach( a -> a.render( newRender ) );
+    @Override
+    protected String getFalseToString() {
+        return "isEmpty()";
+    }
 
-        render.ntab().append( "}" );
+    @Override
+    protected String getInnerVariable() {
+        return variableName;
+    }
+
+    @Override
+    protected String getInnerVariableSetter( Render render ) {
+        return "var %s = %s.get();".formatted( variableName, render.field );
     }
 }

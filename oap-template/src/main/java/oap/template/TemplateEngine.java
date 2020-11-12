@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Created by igor.petrenko on 2020-07-14.
@@ -101,25 +102,28 @@ public class TemplateEngine implements Runnable {
         }
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc ) {
-        return getTemplate( name, type, template, acc, ErrorStrategy.ERROR );
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
+        return getTemplate( name, type, template, acc, ErrorStrategy.ERROR, postProcess );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>  getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy ) {
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         assert template != null;
         assert acc != null;
-        
-        var id = name + "_" + getHashName( template ) + "_" + getHashName( acc.getClass().getName() );
 
-        log.trace( "id = {}, acc = {}, template = {}", id, acc.getClass(), template );
+        var id = name + "_" + getHashName( template ) + "_" + getHashName( acc.getClass().getName() ) + ( postProcess != null ? "_" + postProcess.getClass().hashCode()
+            : "" );
+
+        log.trace( "id = {}, acc = {}, template = {}", id, acc.getClass(),  template );
 
         var tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
         if( tFunc == null ) {
             synchronized( id.intern() ) {
                 tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
                 if( tFunc == null ) {
-                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, errorStrategy );
+                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, errorStrategy, postProcess );
                     templates.put( id, tFunc );
                 }
             }

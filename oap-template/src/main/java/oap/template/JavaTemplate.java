@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.joining;
@@ -51,7 +52,14 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, TypeRef<TIn> type, String template, Map<String, List<Method>> builtInFunction, Path cacheFile, TA acc, ErrorStrategy errorStrategy ) {
+    public JavaTemplate( String name,
+                         TypeRef<TIn> type,
+                         String template,
+                         Map<String, List<Method>> builtInFunction,
+                         Path cacheFile,
+                         TA acc,
+                         ErrorStrategy errorStrategy,
+                         Consumer<Ast> postProcess ) {
         this.acc = acc;
         try {
             var lexer = new TemplateLexer( CharStreams.fromString( template ) );
@@ -64,6 +72,9 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
             var ast = grammar.template( new TemplateType( type.type() ) ).rootAst;
 
             log.trace( "\n" + ast.print() );
+
+            if( postProcess != null )
+                postProcess.accept( ast );
 
             var render = new Render( name, new TemplateType( type.type() ), acc, null, null, 0 );
             ast.render( render );

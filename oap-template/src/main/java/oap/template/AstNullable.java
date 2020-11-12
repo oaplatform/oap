@@ -30,19 +30,28 @@ import lombok.ToString;
  * Created by igor.petrenko on 2020-07-14.
  */
 @ToString( callSuper = true )
-public class AstNullable extends Ast {
+public class AstNullable extends AstIfElse {
     AstNullable( TemplateType type ) {
         super( type );
     }
 
     @Override
-    void render( Render render ) {
-        render
-            .ntab().append( "if ( %s != null ) {", render.field );
+    protected String getTrue() {
+        return " != null";
+    }
 
-        var newRender = render.tabInc();
-        children.forEach( a -> a.render( newRender ) );
+    @Override
+    protected String getFalseToString() {
+        return "NULL";
+    }
 
-        render.ntab().append( "}" );
+    @Override
+    protected String getInnerVariable() {
+        return null;
+    }
+
+    @Override
+    protected String getInnerVariableSetter( Render render ) {
+        return null;
     }
 }

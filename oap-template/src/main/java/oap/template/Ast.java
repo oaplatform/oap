@@ -92,4 +92,8 @@ abstract class Ast {
         buffer.append( toString() );
         buffer.append( '\n' );
     }
+
+    protected boolean equalsAst( Ast ast ) {
+        return false;
+    }
 }

@@ -27,22 +27,26 @@ package oap.template;
 import lombok.ToString;
 import org.apache.commons.text.StringEscapeUtils;
 
+import java.util.ArrayList;
+
 /**
  * Created by igor.petrenko on 2020-10-19.
  */
 @ToString( callSuper = true )
 public class AstExpression extends Ast {
-    private final String content;
+    final ArrayList<String> content = new ArrayList<>();
 
     AstExpression( Ast ast, String content ) {
         super( ast.type );
         this.children.add( ast );
-        this.content = content;
+        this.content.add( content );
     }
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( content ) );
+        for( var c : content ) {
+            render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
+        }
         children.forEach( a -> a.render( render ) );
     }
 }
