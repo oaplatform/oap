@@ -26,12 +26,14 @@ package oap.application;
 
 import org.testng.annotations.Test;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 public class KernelLinkImplementationsTest {
 
@@ -97,6 +99,22 @@ public class KernelLinkImplementationsTest {
         }
     }
 
+    @Test
+    public void testDifferentTypesOfFieldAndConstructor() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "cons-field-diff-types.conf" ) )
+        );
+
+        try {
+            kernel.start();
+            var list = kernel.<TestList>serviceOfClass2( TestList.class );
+
+            assertThat( list.list ).containsExactly( entry( "a", "a" ), entry( "b", "b" ), entry( "c", "c" ) );
+        } finally {
+            kernel.stop();
+        }
+    }
+
     public interface TestInterface {
 
     }
@@ -128,5 +146,13 @@ public class KernelLinkImplementationsTest {
 
     public static class FieldReferences {
         public List<TestInterface> tis;
+    }
+
+    public static class TestList {
+        public final LinkedHashMap<String, String> list = new LinkedHashMap<>();
+
+        public TestList( List<String> list ) {
+            for( var item : list ) this.list.put( item, item );
+        }
     }
 }

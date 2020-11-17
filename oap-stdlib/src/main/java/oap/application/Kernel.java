@@ -366,10 +366,13 @@ public class Kernel implements Closeable {
 
         } else if( parameterValue instanceof List<?> ) {
             var parameterList = ( List<?> ) parameterValue;
-            var instanceList = ( List<Object> ) lRef.get();
-            var instanceIterator = instanceList.listIterator();
-            for( var parameter : parameterList ) {
-                linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
+            var instance = lRef.get();
+            if( instance instanceof List<?> ) {
+                var instanceList = ( List<Object> ) instance;
+                var instanceIterator = instanceList.listIterator();
+                for( var parameter : parameterList ) {
+                    linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
+                }
             }
         } else if( parameterValue instanceof Map ) {
             var parameterMap = ( Map<Object, Object> ) parameterValue;
