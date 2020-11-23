@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by igor.petrenko on 2020-07-13.
  */
 @ToString( of = { "type" } )
-abstract class Ast {
+public abstract class Ast {
     private static final HashMap<Class<?>, AtomicInteger> ids = new HashMap<>();
     public final TemplateType type;
     final ArrayList<Ast> children = new ArrayList<>();
