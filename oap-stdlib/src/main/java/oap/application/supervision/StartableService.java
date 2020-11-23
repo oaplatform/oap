@@ -75,6 +75,7 @@ public class StartableService implements Supervised {
         }
     }
 
+    @Override
     public void preStop() {
         try {
             if( started ) {

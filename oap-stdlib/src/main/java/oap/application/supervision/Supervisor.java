@@ -24,6 +24,7 @@
 package oap.application.supervision;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.KernelHelper;
 import oap.util.BiStream;
 
 import java.util.LinkedHashMap;
@@ -63,7 +64,12 @@ public class Supervisor {
 
         this.supervised.forEach( ( name, service ) -> {
             log.debug( "pre starting {}...", name );
-            service.preStart();
+            KernelHelper.setThreadNameSuffix( name );
+            try {
+                service.preStart();
+            } finally {
+                KernelHelper.restoreThreadName();
+            }
         } );
     }
 
@@ -73,7 +79,12 @@ public class Supervisor {
         this.supervised.forEach( ( name, service ) -> {
             log.debug( "starting {}...", name );
             long start = System.currentTimeMillis();
-            service.start();
+            KernelHelper.setThreadNameSuffix( name );
+            try {
+                service.start();
+            } finally {
+                KernelHelper.restoreThreadName();
+            }
             long end = System.currentTimeMillis();
             log.debug( "starting {}... Done. ({}ms)", name, end - start );
         } );
@@ -81,7 +92,12 @@ public class Supervisor {
         this.wrappers.forEach( ( name, service ) -> {
             log.debug( "schedule {}...", name );
             long start = System.currentTimeMillis();
-            service.start();
+            KernelHelper.setThreadNameSuffix( name );
+            try {
+                service.start();
+            } finally {
+                KernelHelper.restoreThreadName();
+            }
             long end = System.currentTimeMillis();
             log.debug( "schedule {}... Done. ({}ms)", name, end - start );
         } );
@@ -95,7 +111,12 @@ public class Supervisor {
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "pre stopping {}...", name );
-                    service.stop();
+                    KernelHelper.setThreadNameSuffix( name );
+                    try {
+                        service.preStop();
+                    } finally {
+                        KernelHelper.restoreThreadName();
+                    }
                     log.debug( "pre stopping {}... Done.", name );
                 } );
             this.wrappers.clear();
@@ -104,7 +125,12 @@ public class Supervisor {
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "pre stopping {}...", name );
-                    service.preStop();
+                    KernelHelper.setThreadNameSuffix( name );
+                    try {
+                        service.preStop();
+                    } finally {
+                        KernelHelper.restoreThreadName();
+                    }
                     log.debug( "pre stopping {}... Done.", name );
                 } );
         }
@@ -119,7 +145,12 @@ public class Supervisor {
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
-                    service.stop();
+                    KernelHelper.setThreadNameSuffix( name );
+                    try {
+                        service.stop();
+                    } finally {
+                        KernelHelper.restoreThreadName();
+                    }
                     log.debug( "stopping {}... Done.", name );
                 } );
             this.supervised.clear();
@@ -135,7 +166,13 @@ public class Supervisor {
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
-                    service.stop();
+                    KernelHelper.setThreadNameSuffix( name );
+                    try {
+                        service.preStop();
+                        service.stop();
+                    } finally {
+                        KernelHelper.restoreThreadName();
+                    }
                     log.debug( "stopping {}... Done.", name );
                 } );
             this.wrappers.clear();
@@ -144,8 +181,13 @@ public class Supervisor {
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
-                    service.preStop();
-                    service.stop();
+                    KernelHelper.setThreadNameSuffix( name );
+                    try {
+                        service.preStop();
+                        service.stop();
+                    } finally {
+                        KernelHelper.restoreThreadName();
+                    }
                     log.debug( "stopping {}... Done.", name );
                 } );
         }

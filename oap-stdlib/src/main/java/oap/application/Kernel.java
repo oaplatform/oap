@@ -111,7 +111,7 @@ public class Kernel implements Closeable {
         log.trace( "service[{}].dependsOn.addAll({}); module={}", service.name, list, module.name );
         service.dependsOn.addAll( list );
     }
-
+    
     private void fixDeps() {
         for( var module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );

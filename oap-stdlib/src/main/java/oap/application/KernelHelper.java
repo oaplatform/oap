@@ -26,6 +26,7 @@ package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Lists;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -222,5 +223,30 @@ public class KernelHelper {
 
     public static boolean isServiceEnabled( Module.Service service, Set<String> systemProfiles ) {
         return profileEnabled( service.profiles, systemProfiles );
+    }
+
+    public static void setThreadNameSuffix( String suffix ) {
+        var threadSuffix = StringUtils.replace( suffix, "###", "---" );
+
+        var thread = Thread.currentThread();
+        var name = thread.getName();
+
+        var index = name.lastIndexOf( "###" );
+        if( index > 0 ) {
+            name = name.substring( 0, index );
+        }
+
+        thread.setName( name + "###" + threadSuffix );
+    }
+
+    public static void restoreThreadName() {
+        var thread = Thread.currentThread();
+        var name = thread.getName();
+
+        var index = name.lastIndexOf( "###" );
+        if( index > 0 ) {
+            thread.setName( name.substring( 0, index ) );
+        }
+
     }
 }
