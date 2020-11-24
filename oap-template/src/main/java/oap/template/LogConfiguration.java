@@ -63,6 +63,8 @@ public class LogConfiguration extends Configuration {
         this.engine = engine;
     }
 
+    public boolean compact = false;
+    
     public String getStandardDelimiter() {
         return STANDARD_DELIMITER;
     }
@@ -106,7 +108,7 @@ public class LogConfiguration extends Configuration {
             template,
             templateAccumulator,
             ERROR,
-            CompactAstPostProcessor.INSTANCE );
+            compact ? CompactAstPostProcessor.INSTANCE : null );
         return new DictionaryTemplate<>( templateFunc, template, headers.toString() );
     }
 
