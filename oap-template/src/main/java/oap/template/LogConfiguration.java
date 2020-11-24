@@ -49,6 +49,7 @@ public class LogConfiguration extends Configuration {
 
     private static final String STANDARD_DELIMITER = "\t";
     private final TemplateEngine engine;
+    public boolean compact = false;
 
     public LogConfiguration( TemplateEngine engine ) {
         this( engine, null );
@@ -63,8 +64,6 @@ public class LogConfiguration extends Configuration {
         this.engine = engine;
     }
 
-    public boolean compact = false;
-    
     public String getStandardDelimiter() {
         return STANDARD_DELIMITER;
     }
@@ -99,7 +98,7 @@ public class LogConfiguration extends Configuration {
             headers.add( id );
         }
 
-        cols.sort( String::compareTo );
+        if( compact ) cols.sort( String::compareTo );
 
         var template = String.join( "\t", cols );
         var templateFunc = engine.getTemplate(
