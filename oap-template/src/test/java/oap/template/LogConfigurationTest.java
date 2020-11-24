@@ -168,6 +168,7 @@ public class LogConfigurationTest extends Fixtures {
             """ );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        logConfiguration.compact = true;
         var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
 
         var c = new TestTemplateClass();
