@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -76,10 +77,14 @@ public class TemplateEngine implements Runnable {
     }
 
     public static String getHashName( String template ) {
+        long hash = getHash( template );
+        return hashToName( hash );
+    }
+
+    public static long getHash( String template ) {
         var hashFunction = Hashing.murmur3_128();
 
-        var hash = hashFunction.hashUnencodedChars( template ).asLong();
-        return hashToName( hash );
+        return hashFunction.hashUnencodedChars( template ).asLong();
     }
 
     private static String hashToName( long hash ) {
@@ -104,26 +109,42 @@ public class TemplateEngine implements Runnable {
 
     public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
-        return getTemplate( name, type, template, acc, ErrorStrategy.ERROR, postProcess );
+        return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
+    }
+
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+        return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
+    }
+
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+        return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
     @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         assert template != null;
         assert acc != null;
 
-        var id = name + "_" + getHashName( template ) + "_" + getHashName( acc.getClass().getName() ) + ( postProcess != null ? "_" + postProcess.getClass().hashCode()
-            : "" );
+        var id = name
+            + "_"
+            + getHash( template )
+            + "_"
+            + aliases.hashCode()
+            + "_"
+            + acc.getClass().hashCode()
+            + ( postProcess != null ? "_" + postProcess.getClass().hashCode() : "" );
 
-        log.trace( "id = {}, acc = {}, template = {}", id, acc.getClass(),  template );
+        log.trace( "id = {}, acc = {}, template = {}, aliases = {}", id, acc.getClass(), template, aliases );
 
         var tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
         if( tFunc == null ) {
             synchronized( id.intern() ) {
                 tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
                 if( tFunc == null ) {
-                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, errorStrategy, postProcess );
+                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, aliases, errorStrategy, postProcess );
                     templates.put( id, tFunc );
                 }
             }

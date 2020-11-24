@@ -245,6 +245,22 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-${prop}-${b}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ) )
             .isEqualTo( "-val-b1-" );
     }
+    
+    @Test
+    public void testAliases() {
+        var c1 = new TestTemplateClass();
+        var c2 = new TestTemplateClass();
+        var c3 = new TestTemplateClass2();
+        c1.child = c2;
+        c1.child_2 = c3;
+        
+        c2.field = "val3";
+        c3.field2 = "f2";
+        
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING, 
+            Map.of("child.field", "child_2.field2"), null ).render( c1 ) )
+            .isEqualTo( "f2" );
+    }
 
     @Test
     public void testFunctionUrlencode() {

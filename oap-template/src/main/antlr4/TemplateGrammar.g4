@@ -25,17 +25,17 @@ import java.util.Map;
 
 }
 
-template[TemplateType parentType] returns [AstRoot rootAst]
-	: elements[parentType] { $rootAst = new AstRoot($parentType); $rootAst.addChildren($elements.list); } EOF
+template[TemplateType parentType, Map<String,String> aliases] returns [AstRoot rootAst]
+	: elements[parentType, aliases] { $rootAst = new AstRoot($parentType); $rootAst.addChildren($elements.list); } EOF
 	;
 
-elements[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<>()]
-	: (element[parentType] { $list.add($element.ast); })*
+elements[TemplateType parentType, Map<String,String> aliases] returns [ArrayList<Ast> list = new ArrayList<>()]
+	: (element[parentType, aliases] { $list.add($element.ast); })*
 	;
 
-element[TemplateType parentType] returns [Ast ast]
+element[TemplateType parentType, Map<String,String> aliases] returns [Ast ast]
 	: t=text { $ast = new AstText($t.text); }
-	| expression {
+	| expression[aliases] {
         var lexerExp = new TemplateLexerExpression( CharStreams.fromString( $expression.content ) );
         var grammarExp = new TemplateGrammarExpression( new BufferedTokenStream( lexerExp ), builtInFunction, errorStrategy );
         if( errorStrategy == ErrorStrategy.ERROR ) {
@@ -55,9 +55,12 @@ text
     : TEXT+
     ;
 
-expression returns [String content]
-    : STARTEXPR expressionContent RBRACE { $content = $expressionContent.text; }
-    ;
+expression[Map<String,String> aliases] returns [String content]
+    : STARTEXPR expressionContent RBRACE { 
+        $content = $expressionContent.text;
+        var alias = aliases.get( $content );
+        if( alias != null ) $content = alias;  
+    };
 
 expressionContent
     : (EXPRESSION|LBRACE|RBRACE)+

@@ -107,6 +107,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class TemplateContext extends ParserRuleContext {
 		public TemplateType parentType;
+		public Map<String,String> aliases;
 		public AstRoot rootAst;
 		public ElementsContext elements;
 		public ElementsContext elements() {
@@ -114,9 +115,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		}
 		public TerminalNode EOF() { return getToken(TemplateGrammar.EOF, 0); }
 		public TemplateContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public TemplateContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
+		public TemplateContext(ParserRuleContext parent, int invokingState, TemplateType parentType, Map<String,String> aliases) {
 			super(parent, invokingState);
 			this.parentType = parentType;
+			this.aliases = aliases;
 		}
 		@Override public int getRuleIndex() { return RULE_template; }
 		@Override
@@ -129,14 +131,14 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		}
 	}
 
-	public final TemplateContext template(TemplateType parentType) throws RecognitionException {
-		TemplateContext _localctx = new TemplateContext(_ctx, getState(), parentType);
+	public final TemplateContext template(TemplateType parentType,Map<String,String> aliases) throws RecognitionException {
+		TemplateContext _localctx = new TemplateContext(_ctx, getState(), parentType, aliases);
 		enterRule(_localctx, 0, RULE_template);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(12);
-			((TemplateContext)_localctx).elements = elements(parentType);
+			((TemplateContext)_localctx).elements = elements(parentType, aliases);
 			 ((TemplateContext)_localctx).rootAst =  new AstRoot(_localctx.parentType); _localctx.rootAst.addChildren(((TemplateContext)_localctx).elements.list); 
 			setState(14);
 			match(EOF);
@@ -155,6 +157,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class ElementsContext extends ParserRuleContext {
 		public TemplateType parentType;
+		public Map<String,String> aliases;
 		public ArrayList<Ast> list = new ArrayList<>();
 		public ElementContext element;
 		public List<ElementContext> element() {
@@ -164,9 +167,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			return getRuleContext(ElementContext.class,i);
 		}
 		public ElementsContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public ElementsContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
+		public ElementsContext(ParserRuleContext parent, int invokingState, TemplateType parentType, Map<String,String> aliases) {
 			super(parent, invokingState);
 			this.parentType = parentType;
+			this.aliases = aliases;
 		}
 		@Override public int getRuleIndex() { return RULE_elements; }
 		@Override
@@ -179,8 +183,8 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		}
 	}
 
-	public final ElementsContext elements(TemplateType parentType) throws RecognitionException {
-		ElementsContext _localctx = new ElementsContext(_ctx, getState(), parentType);
+	public final ElementsContext elements(TemplateType parentType,Map<String,String> aliases) throws RecognitionException {
+		ElementsContext _localctx = new ElementsContext(_ctx, getState(), parentType, aliases);
 		enterRule(_localctx, 2, RULE_elements);
 		int _la;
 		try {
@@ -193,7 +197,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				{
 				{
 				setState(16);
-				((ElementsContext)_localctx).element = element(parentType);
+				((ElementsContext)_localctx).element = element(parentType, aliases);
 				 _localctx.list.add(((ElementsContext)_localctx).element.ast); 
 				}
 				}
@@ -216,6 +220,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public static class ElementContext extends ParserRuleContext {
 		public TemplateType parentType;
+		public Map<String,String> aliases;
 		public Ast ast;
 		public TextContext t;
 		public ExpressionContext expression;
@@ -226,9 +231,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			return getRuleContext(ExpressionContext.class,0);
 		}
 		public ElementContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
-		public ElementContext(ParserRuleContext parent, int invokingState, TemplateType parentType) {
+		public ElementContext(ParserRuleContext parent, int invokingState, TemplateType parentType, Map<String,String> aliases) {
 			super(parent, invokingState);
 			this.parentType = parentType;
+			this.aliases = aliases;
 		}
 		@Override public int getRuleIndex() { return RULE_element; }
 		@Override
@@ -241,8 +247,8 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		}
 	}
 
-	public final ElementContext element(TemplateType parentType) throws RecognitionException {
-		ElementContext _localctx = new ElementContext(_ctx, getState(), parentType);
+	public final ElementContext element(TemplateType parentType,Map<String,String> aliases) throws RecognitionException {
+		ElementContext _localctx = new ElementContext(_ctx, getState(), parentType, aliases);
 		enterRule(_localctx, 4, RULE_element);
 		try {
 			setState(30);
@@ -260,7 +266,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(27);
-				((ElementContext)_localctx).expression = expression();
+				((ElementContext)_localctx).expression = expression(aliases);
 
 				        var lexerExp = new TemplateLexerExpression( CharStreams.fromString( ((ElementContext)_localctx).expression.content ) );
 				        var grammarExp = new TemplateGrammarExpression( new BufferedTokenStream( lexerExp ), builtInFunction, errorStrategy );
@@ -352,6 +358,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	public static class ExpressionContext extends ParserRuleContext {
+		public Map<String,String> aliases;
 		public String content;
 		public ExpressionContentContext expressionContent;
 		public TerminalNode STARTEXPR() { return getToken(TemplateGrammar.STARTEXPR, 0); }
@@ -359,8 +366,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			return getRuleContext(ExpressionContentContext.class,0);
 		}
 		public TerminalNode RBRACE() { return getToken(TemplateGrammar.RBRACE, 0); }
-		public ExpressionContext(ParserRuleContext parent, int invokingState) {
+		public ExpressionContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public ExpressionContext(ParserRuleContext parent, int invokingState, Map<String,String> aliases) {
 			super(parent, invokingState);
+			this.aliases = aliases;
 		}
 		@Override public int getRuleIndex() { return RULE_expression; }
 		@Override
@@ -373,8 +382,8 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		}
 	}
 
-	public final ExpressionContext expression() throws RecognitionException {
-		ExpressionContext _localctx = new ExpressionContext(_ctx, getState());
+	public final ExpressionContext expression(Map<String,String> aliases) throws RecognitionException {
+		ExpressionContext _localctx = new ExpressionContext(_ctx, getState(), aliases);
 		enterRule(_localctx, 8, RULE_expression);
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -385,7 +394,11 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			((ExpressionContext)_localctx).expressionContent = expressionContent();
 			setState(39);
 			match(RBRACE);
-			 ((ExpressionContext)_localctx).content =  (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null); 
+			 
+			        ((ExpressionContext)_localctx).content =  (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null);
+			        var alias = aliases.get( _localctx.content );
+			        if( alias != null ) ((ExpressionContext)_localctx).content =  alias;  
+			    
 			}
 		}
 		catch (RecognitionException re) {

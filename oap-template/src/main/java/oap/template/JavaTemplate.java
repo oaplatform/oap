@@ -58,6 +58,7 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
                          Map<String, List<Method>> builtInFunction,
                          Path cacheFile,
                          TA acc,
+                         Map<String,String> aliases,
                          ErrorStrategy errorStrategy,
                          Consumer<Ast> postProcess ) {
         this.acc = acc;
@@ -69,7 +70,7 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
                 grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
             }
 
-            var ast = grammar.template( new TemplateType( type.type() ) ).rootAst;
+            var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
 
             log.trace( "\n" + ast.print() );
 
