@@ -77,6 +77,15 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
             .render( c ) ).isEqualTo( "12\t12" );
     }
+    
+    @Test
+    public void testEscapeExpression() {
+        var c = new TestTemplateClass();
+        c.field = "1";
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "$${field}", new TestTemplateAccumulatorString(), null )
+            .render( c ) ).isEqualTo( "${field}" );
+    }
 
     @Test
     public void testMapProperty() {

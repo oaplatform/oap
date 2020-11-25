@@ -35,6 +35,7 @@ elements[TemplateType parentType, Map<String,String> aliases] returns [ArrayList
 
 element[TemplateType parentType, Map<String,String> aliases] returns [Ast ast]
 	: t=text { $ast = new AstText($t.text); }
+	| comment { $ast = new AstText($comment.text.substring(1));}
 	| expression[aliases] {
         var lexerExp = new TemplateLexerExpression( CharStreams.fromString( $expression.content ) );
         var grammarExp = new TemplateGrammarExpression( new BufferedTokenStream( lexerExp ), builtInFunction, errorStrategy );
@@ -54,6 +55,10 @@ element[TemplateType parentType, Map<String,String> aliases] returns [Ast ast]
 text
     : TEXT+
     ;
+
+comment
+    : STARTESCEXPR expressionContent RBRACE;
+
 
 expression[Map<String,String> aliases] returns [String content]
     : STARTEXPR expressionContent RBRACE { 

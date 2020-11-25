@@ -55,6 +55,16 @@ public interface TemplateGrammarListener extends ParseTreeListener {
 	 */
 	void exitText(TemplateGrammar.TextContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#comment}.
+	 * @param ctx the parse tree
+	 */
+	void enterComment(TemplateGrammar.CommentContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#comment}.
+	 * @param ctx the parse tree
+	 */
+	void exitComment(TemplateGrammar.CommentContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TemplateGrammar#expression}.
 	 * @param ctx the parse tree
 	 */

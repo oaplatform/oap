@@ -71,6 +71,18 @@ public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterComment(TemplateGrammar.CommentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitComment(TemplateGrammar.CommentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExpression(TemplateGrammar.ExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}

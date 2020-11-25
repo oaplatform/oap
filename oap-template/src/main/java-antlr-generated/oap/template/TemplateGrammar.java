@@ -24,13 +24,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		STARTEXPR=1, TEXT=2, LBRACE=3, RBRACE=4, EXPRESSION=5;
+		STARTESCEXPR=1, STARTEXPR=2, TEXT=3, LBRACE=4, RBRACE=5, EXPRESSION=6;
 	public static final int
 		RULE_template = 0, RULE_elements = 1, RULE_element = 2, RULE_text = 3, 
-		RULE_expression = 4, RULE_expressionContent = 5;
+		RULE_comment = 4, RULE_expression = 5, RULE_expressionContent = 6;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"template", "elements", "element", "text", "expression", "expressionContent"
+			"template", "elements", "element", "text", "comment", "expression", "expressionContent"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
@@ -42,7 +42,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "STARTEXPR", "TEXT", "LBRACE", "RBRACE", "EXPRESSION"
+			null, "STARTESCEXPR", "STARTEXPR", "TEXT", "LBRACE", "RBRACE", "EXPRESSION"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -137,10 +137,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(12);
+			setState(14);
 			((TemplateContext)_localctx).elements = elements(parentType, aliases);
 			 ((TemplateContext)_localctx).rootAst =  new AstRoot(_localctx.parentType); _localctx.rootAst.addChildren(((TemplateContext)_localctx).elements.list); 
-			setState(14);
+			setState(16);
 			match(EOF);
 			}
 		}
@@ -190,18 +190,18 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(21);
+			setState(23);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==STARTEXPR || _la==TEXT) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STARTESCEXPR) | (1L << STARTEXPR) | (1L << TEXT))) != 0)) {
 				{
 				{
-				setState(16);
+				setState(18);
 				((ElementsContext)_localctx).element = element(parentType, aliases);
 				 _localctx.list.add(((ElementsContext)_localctx).element.ast); 
 				}
 				}
-				setState(23);
+				setState(25);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -223,9 +223,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		public Map<String,String> aliases;
 		public Ast ast;
 		public TextContext t;
+		public CommentContext comment;
 		public ExpressionContext expression;
 		public TextContext text() {
 			return getRuleContext(TextContext.class,0);
+		}
+		public CommentContext comment() {
+			return getRuleContext(CommentContext.class,0);
 		}
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
@@ -251,21 +255,29 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		ElementContext _localctx = new ElementContext(_ctx, getState(), parentType, aliases);
 		enterRule(_localctx, 4, RULE_element);
 		try {
-			setState(30);
+			setState(35);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case TEXT:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(24);
+				setState(26);
 				((ElementContext)_localctx).t = text();
 				 ((ElementContext)_localctx).ast =  new AstText((((ElementContext)_localctx).t!=null?_input.getText(((ElementContext)_localctx).t.start,((ElementContext)_localctx).t.stop):null)); 
 				}
 				break;
-			case STARTEXPR:
+			case STARTESCEXPR:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(27);
+				setState(29);
+				((ElementContext)_localctx).comment = comment();
+				 ((ElementContext)_localctx).ast =  new AstText((((ElementContext)_localctx).comment!=null?_input.getText(((ElementContext)_localctx).comment.start,((ElementContext)_localctx).comment.stop):null).substring(1));
+				}
+				break;
+			case STARTEXPR:
+				enterOuterAlt(_localctx, 3);
+				{
+				setState(32);
 				((ElementContext)_localctx).expression = expression(aliases);
 
 				        var lexerExp = new TemplateLexerExpression( CharStreams.fromString( ((ElementContext)_localctx).expression.content ) );
@@ -324,7 +336,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(33); 
+			setState(38); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -332,7 +344,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				case 1:
 					{
 					{
-					setState(32);
+					setState(37);
 					match(TEXT);
 					}
 					}
@@ -340,10 +352,55 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(35); 
+				setState(40); 
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class CommentContext extends ParserRuleContext {
+		public TerminalNode STARTESCEXPR() { return getToken(TemplateGrammar.STARTESCEXPR, 0); }
+		public ExpressionContentContext expressionContent() {
+			return getRuleContext(ExpressionContentContext.class,0);
+		}
+		public TerminalNode RBRACE() { return getToken(TemplateGrammar.RBRACE, 0); }
+		public CommentContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_comment; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).enterComment(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof TemplateGrammarListener ) ((TemplateGrammarListener)listener).exitComment(this);
+		}
+	}
+
+	public final CommentContext comment() throws RecognitionException {
+		CommentContext _localctx = new CommentContext(_ctx, getState());
+		enterRule(_localctx, 8, RULE_comment);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(42);
+			match(STARTESCEXPR);
+			setState(43);
+			expressionContent();
+			setState(44);
+			match(RBRACE);
 			}
 		}
 		catch (RecognitionException re) {
@@ -384,15 +441,15 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public final ExpressionContext expression(Map<String,String> aliases) throws RecognitionException {
 		ExpressionContext _localctx = new ExpressionContext(_ctx, getState(), aliases);
-		enterRule(_localctx, 8, RULE_expression);
+		enterRule(_localctx, 10, RULE_expression);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(37);
+			setState(46);
 			match(STARTEXPR);
-			setState(38);
+			setState(47);
 			((ExpressionContext)_localctx).expressionContent = expressionContent();
-			setState(39);
+			setState(48);
 			match(RBRACE);
 			 
 			        ((ExpressionContext)_localctx).content =  (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null);
@@ -441,13 +498,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	public final ExpressionContentContext expressionContent() throws RecognitionException {
 		ExpressionContentContext _localctx = new ExpressionContentContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_expressionContent);
+		enterRule(_localctx, 12, RULE_expressionContent);
 		int _la;
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(43); 
+			setState(52); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
@@ -455,7 +512,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				case 1:
 					{
 					{
-					setState(42);
+					setState(51);
 					_la = _input.LA(1);
 					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LBRACE) | (1L << RBRACE) | (1L << EXPRESSION))) != 0)) ) {
 					_errHandler.recoverInline(this);
@@ -471,7 +528,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(45); 
+				setState(54); 
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,3,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
@@ -489,19 +546,21 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\7\62\4\2\t\2\4\3"+
-		"\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\3\2\3\2\3\2\3\2\3\3\3\3\3\3\7\3\26"+
-		"\n\3\f\3\16\3\31\13\3\3\4\3\4\3\4\3\4\3\4\3\4\5\4!\n\4\3\5\6\5$\n\5\r"+
-		"\5\16\5%\3\6\3\6\3\6\3\6\3\6\3\7\6\7.\n\7\r\7\16\7/\3\7\2\2\b\2\4\6\b"+
-		"\n\f\2\3\3\2\5\7\2/\2\16\3\2\2\2\4\27\3\2\2\2\6 \3\2\2\2\b#\3\2\2\2\n"+
-		"\'\3\2\2\2\f-\3\2\2\2\16\17\5\4\3\2\17\20\b\2\1\2\20\21\7\2\2\3\21\3\3"+
-		"\2\2\2\22\23\5\6\4\2\23\24\b\3\1\2\24\26\3\2\2\2\25\22\3\2\2\2\26\31\3"+
-		"\2\2\2\27\25\3\2\2\2\27\30\3\2\2\2\30\5\3\2\2\2\31\27\3\2\2\2\32\33\5"+
-		"\b\5\2\33\34\b\4\1\2\34!\3\2\2\2\35\36\5\n\6\2\36\37\b\4\1\2\37!\3\2\2"+
-		"\2 \32\3\2\2\2 \35\3\2\2\2!\7\3\2\2\2\"$\7\4\2\2#\"\3\2\2\2$%\3\2\2\2"+
-		"%#\3\2\2\2%&\3\2\2\2&\t\3\2\2\2\'(\7\3\2\2()\5\f\7\2)*\7\6\2\2*+\b\6\1"+
-		"\2+\13\3\2\2\2,.\t\2\2\2-,\3\2\2\2./\3\2\2\2/-\3\2\2\2/\60\3\2\2\2\60"+
-		"\r\3\2\2\2\6\27 %/";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\b;\4\2\t\2\4\3\t"+
+		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\3\2\3\2\3\2\3\2\3\3\3\3\3\3"+
+		"\7\3\30\n\3\f\3\16\3\33\13\3\3\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4\5\4&"+
+		"\n\4\3\5\6\5)\n\5\r\5\16\5*\3\6\3\6\3\6\3\6\3\7\3\7\3\7\3\7\3\7\3\b\6"+
+		"\b\67\n\b\r\b\16\b8\3\b\2\2\t\2\4\6\b\n\f\16\2\3\3\2\6\b\28\2\20\3\2\2"+
+		"\2\4\31\3\2\2\2\6%\3\2\2\2\b(\3\2\2\2\n,\3\2\2\2\f\60\3\2\2\2\16\66\3"+
+		"\2\2\2\20\21\5\4\3\2\21\22\b\2\1\2\22\23\7\2\2\3\23\3\3\2\2\2\24\25\5"+
+		"\6\4\2\25\26\b\3\1\2\26\30\3\2\2\2\27\24\3\2\2\2\30\33\3\2\2\2\31\27\3"+
+		"\2\2\2\31\32\3\2\2\2\32\5\3\2\2\2\33\31\3\2\2\2\34\35\5\b\5\2\35\36\b"+
+		"\4\1\2\36&\3\2\2\2\37 \5\n\6\2 !\b\4\1\2!&\3\2\2\2\"#\5\f\7\2#$\b\4\1"+
+		"\2$&\3\2\2\2%\34\3\2\2\2%\37\3\2\2\2%\"\3\2\2\2&\7\3\2\2\2\')\7\5\2\2"+
+		"(\'\3\2\2\2)*\3\2\2\2*(\3\2\2\2*+\3\2\2\2+\t\3\2\2\2,-\7\3\2\2-.\5\16"+
+		"\b\2./\7\7\2\2/\13\3\2\2\2\60\61\7\4\2\2\61\62\5\16\b\2\62\63\7\7\2\2"+
+		"\63\64\b\7\1\2\64\r\3\2\2\2\65\67\t\2\2\2\66\65\3\2\2\2\678\3\2\2\28\66"+
+		"\3\2\2\289\3\2\2\29\17\3\2\2\2\6\31%*8";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {
