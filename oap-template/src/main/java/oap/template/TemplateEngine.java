@@ -28,6 +28,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hashing;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
@@ -67,13 +68,17 @@ public class TemplateEngine implements Runnable {
 
         templates = CacheBuilder.newBuilder()
             .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
+            .recordStats()
             .build();
 
         loadFunctions();
 
         log.info( "functions {}", builtInFunction.keySet() );
 
-        Metrics.gauge( "oap_template_cache_size", templates, Cache::size );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
     }
 
     public static String getHashName( String template ) {
