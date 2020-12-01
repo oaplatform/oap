@@ -33,10 +33,10 @@ import oap.reflect.Reflect;
  */
 @ToString
 @Slf4j
-public class ObjectPointer implements Pointer {
-    private final Object v;
+public class ObjectPointer<T extends Object> implements Pointer {
+    protected final T v;
 
-    public ObjectPointer( Object v ) {
+    public ObjectPointer( T v ) {
         this.v = v;
     }
 

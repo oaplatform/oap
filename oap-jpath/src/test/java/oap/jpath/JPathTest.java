@@ -69,6 +69,13 @@ public class JPathTest {
     }
 
     @Test
+    public void testSuperMethod() {
+        var output = new StringBuilderJPathOutput();
+        JPath.evaluate( "${test.keySet().stream().count()}", Map.of( "test", Map.of( "1", "2", "3", "4" ) ), output );
+        assertThat( output.toString() ).isEqualTo( "2" );
+    }
+
+    @Test
     public void testMethodString() {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.getString(\"str\")}", Map.of( "test", new TestBean( "val1", null, null ) ), output );

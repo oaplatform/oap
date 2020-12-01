@@ -24,7 +24,6 @@
 
 package oap.jpath;
 
-import com.google.common.base.Preconditions;
 import lombok.ToString;
 
 import java.util.Map;
@@ -33,23 +32,16 @@ import java.util.Map;
  * Created by igor.petrenko on 2020-06-09.
  */
 @ToString
-public class MapPointer implements Pointer {
-    private final Map<Object, Object> map;
-
+public class MapPointer extends ObjectPointer<Map<Object, Object>> {
     public MapPointer( Map<Object, Object> map ) {
-        this.map = map;
+        super( map );
     }
 
     @Override
     public Pointer resolve( PathNode n ) {
-        Preconditions.checkArgument( n.type == PathType.FIELD );
-        
-        var ret = map.get( n.name );
-        return ret != null ? Pointer.get( ret ) : NullPointer.INSTANCE;
-    }
-
-    @Override
-    public Object get() {
-        return map;
+        if( n.type == PathType.FIELD ) {
+            var ret = v.get( n.name );
+            return ret != null ? Pointer.get( ret ) : NullPointer.INSTANCE;
+        } else return super.resolve( n );
     }
 }
