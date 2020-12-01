@@ -24,12 +24,9 @@
 
 package oap.jpath;
 
-import lombok.ToString;
-
 /**
  * Created by igor.petrenko on 2020-06-08.
  */
-@ToString
 public class StringBuilderJPathOutput implements JPathOutput {
     private final StringBuilder sb = new StringBuilder();
 

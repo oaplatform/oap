@@ -27,19 +27,24 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
-import oap.testng.NetworkFixture;
+import oap.testng.EnvFixture;
+import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
 import static oap.testng.Asserts.assertString;
 
-public class PrometheusExporterTest {
+public class PrometheusExporterTest extends Fixtures {
     private static final Counter TEST_1 = Metrics.counter( "test1" );
+    private final EnvFixture envFixture;
 
+    {
+        envFixture = fixture( new EnvFixture() );
+    }
     @Test
     public void server() throws IOException {
-        var port = NetworkFixture.FIXTURE.port( "prometheus" );
+        var port = envFixture.portFor( "prometheus" );
         try( var exporter = new PrometheusExporter( port ) ) {
             exporter.start();
 

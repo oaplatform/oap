@@ -30,8 +30,8 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import io.findify.s3mock.S3Mock;
 import oap.io.Files;
+import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
-import oap.testng.NetworkFixture;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -50,16 +50,18 @@ public class S3FileManagerTest extends Fixtures {
 
     private S3Mock api;
     private S3FileManager fileManager;
-//    private Path tmp = TestDirectoryFixture.testPath( "s3" );
+    //    private Path tmp = TestDirectoryFixture.testPath( "s3" );
+
+    private final EnvFixture envFixture;
 
     {
         fixture( TestDirectoryFixture.FIXTURE );
-        fixture( NetworkFixture.FIXTURE );
+        envFixture = fixture( new EnvFixture() );
     }
 
     @BeforeClass
     public void setUp() {
-        var port = NetworkFixture.FIXTURE.port( "s3" );
+        var port = envFixture.portFor( getClass() );
 
         api = new S3Mock.Builder().withPort( port ).withInMemoryBackend().build();
         api.start();
@@ -79,7 +81,7 @@ public class S3FileManagerTest extends Fixtures {
     public void tearDown() {
         api.stop();
     }
-    
+
     @Test
     public void readWrite() throws InterruptedException {
         var inputBytes = Base64.getDecoder().decode( "dGVzdA==" );

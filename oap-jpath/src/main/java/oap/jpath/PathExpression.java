@@ -40,6 +40,7 @@ public class PathExpression {
         list.add( path );
     }
 
+    @SuppressWarnings( "unchecked" )
     public void evaluate( Map<String, Object> variables, JPathOutput output ) {
         Pointer pointer = new MapPointer( ( Map<Object, Object> ) ( Object ) variables );
 

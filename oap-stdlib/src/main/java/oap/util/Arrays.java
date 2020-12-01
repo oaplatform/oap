@@ -51,6 +51,7 @@ public class Arrays {
         return result;
     }
 
+    @SuppressWarnings( "unchecked" )
     public static <E, EO> EO[] map( Class<EO> resultClass, List<E> list, Function<E, EO> func ) {
         var size = list.size();
         EO[] result = ( EO[] ) Array.newInstance( resultClass, size );

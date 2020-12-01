@@ -47,9 +47,9 @@ public final class ResourceSchemaStorage implements SchemaStorage {
         var conf = Resources.readStringOrThrow( getClass(), name );
         if( "yaml".equalsIgnoreCase( ext ) ) conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
 
-        var extConf = Resources.readResourcesAsString( getClass(), prefix + "/" + fileName + ".conf" );
-        var extJson = Resources.readResourcesAsString( getClass(), prefix + "/" + fileName + ".json" );
-        var extYaml = Resources.readResourcesAsString( getClass(), prefix + "/" + fileName + ".yaml" );
+        var extConf = Resources.readStrings( getClass(), prefix + "/" + fileName + ".conf" );
+        var extJson = Resources.readStrings( getClass(), prefix + "/" + fileName + ".json" );
+        var extYaml = Resources.readStrings( getClass(), prefix + "/" + fileName + ".yaml" );
 
         if( extConf.isEmpty() && extJson.isEmpty() && extYaml.isEmpty() ) return conf;
 

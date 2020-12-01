@@ -88,12 +88,12 @@ public class Env {
 
     @Deprecated
     public static int port() {
-        return NetworkFixture.FIXTURE.port( "DEFAULT" );
+        return EnvFixture.DEFAULT.portFor( "DEFAULT" );
     }
 
     @Deprecated
     public static int port( String key ) {
-        return NetworkFixture.FIXTURE.port( key );
+        return EnvFixture.DEFAULT.portFor( key );
     }
 
     @SneakyThrows
@@ -112,7 +112,7 @@ public class Env {
 
     @Deprecated
     public static void resetPorts() {
-        NetworkFixture.FIXTURE.clearPorts();
+        EnvFixture.DEFAULT.clearPorts();
     }
 
     @Deprecated

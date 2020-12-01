@@ -30,10 +30,11 @@ import java.util.Map;
  * Created by igor.petrenko on 2020-06-09.
  */
 public interface Pointer {
+    @SuppressWarnings( "unchecked" )
     static Pointer get( Object ret ) {
         if( ret instanceof Map<?, ?> ) return new MapPointer( ( Map<Object, Object> ) ret );
         else if( ret == null ) return NullPointer.INSTANCE;
-        else return new ObjectPointer( ret );
+        else return new ObjectPointer<>( ret );
     }
 
     Pointer resolve( PathNode n );

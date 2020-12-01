@@ -28,7 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
-import oap.testng.NetworkFixture;
+import oap.testng.EnvFixture;
+import oap.testng.Fixtures;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.testng.Assert;
@@ -44,16 +45,21 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.pathOfTestResource;
 
 @Slf4j
-public class SecureHttpListenerTest {
+public class SecureHttpListenerTest extends Fixtures {
 
     private static final String KEYSTORE_PASSWORD = "123456";
 
     private Server server;
     private SynchronizedThread listener;
 
+    private final EnvFixture envFixture;
+
+    {
+        envFixture = fixture( new EnvFixture() );
+    }
+
     @BeforeClass
     public void setUp() {
-        NetworkFixture.FIXTURE.clearPorts();
         server = new Server( 10, 0, false );
         server.start();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
@@ -66,7 +72,7 @@ public class SecureHttpListenerTest {
             response.respond( HttpResponse.status( 200 ).response() );
         }, Protocol.HTTPS );
 
-        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, NetworkFixture.FIXTURE.port(), false );
+        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, envFixture.defaultHttpPort(), false );
         listener = new SynchronizedThread( http );
         listener.start();
     }
@@ -87,7 +93,7 @@ public class SecureHttpListenerTest {
 
             var closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-            var httpGet = new HttpGet( "https://localhost:" + NetworkFixture.FIXTURE.port() + "/test/" );
+            var httpGet = new HttpGet( "https://localhost:" + envFixture.defaultHttpPort() + "/test/" );
 
             var closeableHttpResponse = closeableHttpClient.execute( httpGet );
 

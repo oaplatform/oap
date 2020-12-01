@@ -31,6 +31,12 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Pair;
 import oap.util.Strings;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static oap.testng.EnvFixture.Scope.CLASS;
 import static oap.testng.EnvFixture.Scope.METHOD;
 import static oap.testng.EnvFixture.Scope.SUITE;
@@ -39,6 +45,13 @@ import static oap.util.Pair.__;
 @Slf4j
 public class EnvFixture implements Fixture {
     private final ListMultimap<Scope, Pair<String, Object>> properties = ArrayListMultimap.create();
+    private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
+
+    /**
+     * @deprecated backward compatibility for Env until removed
+     */
+    @Deprecated
+    public static final EnvFixture DEFAULT = new EnvFixture();
 
     public EnvFixture() {
     }
@@ -77,7 +90,40 @@ public class EnvFixture implements Fixture {
         init( METHOD );
     }
 
+    @Override
+    public void afterMethod() {
+        clearPorts();
+    }
+
     public enum Scope {
         METHOD, CLASS, SUITE
     }
+
+    public int defaultHttpPort() {
+        return portFor( "DEFAULT" );
+    }
+
+    public int portFor( Class<?> clazz ) {
+        return portFor( clazz.getName() );
+    }
+
+    public int portFor( String key ) {
+        return ports.computeIfAbsent( key, k -> {
+            try( var socket = new ServerSocket() ) {
+                socket.setReuseAddress( true );
+                socket.bind( new InetSocketAddress( 0 ) );
+                var localPort = socket.getLocalPort();
+                log.debug( "finding port for key=" + key + "... port=" + localPort );
+                return localPort;
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
+        } );
+    }
+
+    public void clearPorts() {
+        log.debug( "clear ports" );
+        ports.clear();
+    }
+
 }

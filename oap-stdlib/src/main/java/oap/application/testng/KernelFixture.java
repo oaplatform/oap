@@ -30,7 +30,6 @@ import oap.application.Module;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
-import oap.testng.NetworkFixture;
 import oap.testng.TestDirectoryFixture;
 
 import javax.annotation.Nonnull;
@@ -81,10 +80,10 @@ public class KernelFixture extends EnvFixture {
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
-        define( "TEST_REMOTING_PORT", NetworkFixture.FIXTURE.port( "TEST_REMOTING_PORT" ) );
+        define( "TEST_REMOTING_PORT", portFor( "TEST_REMOTING_PORT" ) );
 //        deprecated
         define( "TMP_REMOTE_PORT", "${TEST_REMOTING_PORT}" );
-        define( "TEST_HTTP_PORT", NetworkFixture.FIXTURE.port() );
+        define( "TEST_HTTP_PORT", defaultHttpPort() );
 //        deprecated
         define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
         define( "TEST_DIRECTORY", TestDirectoryFixture.testDirectory() );
