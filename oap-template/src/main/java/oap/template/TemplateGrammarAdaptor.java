@@ -85,7 +85,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 var parentClass = parentType.getTypeClass();
                 var field = parentClass.getField( text );
 
-                var fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Template2.Nullable.class ) );
+                var fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Template.Nullable.class ) );
                 boolean forceCast = false;
                 if( fieldType.isInstanceOf( Ext.class ) ) {
                     var extClass = ExtDeserializer.extensionOf( parentClass, text );
@@ -97,7 +97,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 var parentClass = parentType.getTypeClass();
                 var method = parentClass.getMethod( text );
 
-                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template2.Nullable.class ) ) ) );
+                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ) ) );
             }
         } catch( NoSuchFieldException | NoSuchMethodException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage() );
@@ -118,7 +118,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
             return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
         }
 
-        return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template2.Nullable.class ) ), method, args );
+        return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), method, args );
     }
 
     static class MaxMin {

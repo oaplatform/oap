@@ -60,7 +60,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>8.2.2</oap.project.version>
+        <oap.project.version>8.2.3</oap.project.version>
 
 
         <oap.deps.testng.version>7.1.0</oap.deps.testng.version>

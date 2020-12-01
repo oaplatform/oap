@@ -47,7 +47,7 @@ import static java.util.stream.Collectors.joining;
  * Created by igor.petrenko on 2020-07-13.
  */
 @Slf4j
-public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> implements Template2<TIn, TOut, TA> {
+public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> implements Template<TIn, TOut, TA> {
     private final Functions.TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> cons;
     private final TA acc;
 

@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hashing;
@@ -55,8 +56,9 @@ import java.util.function.Consumer;
 public class TemplateEngine implements Runnable {
     public final Path tmpPath;
     public final long ttl;
+    public long maxSize = 1_000_000;
     private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
-    private final Cache<String, Template2<?, ?, ?>> templates;
+    private final Cache<String, TemplateFunction> templates;
 
     public TemplateEngine( Path tmpPath ) {
         this( tmpPath, Dates.d( 30 ) );
@@ -69,6 +71,7 @@ public class TemplateEngine implements Runnable {
         templates = CacheBuilder.newBuilder()
             .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
             .recordStats()
+            .maximumSize( maxSize )
             .build();
 
         loadFunctions();
@@ -112,23 +115,23 @@ public class TemplateEngine implements Runnable {
         }
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template2<TIn, TOut, TA>
+    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         assert template != null;
         assert acc != null;
@@ -144,18 +147,19 @@ public class TemplateEngine implements Runnable {
 
         log.trace( "id = {}, acc = {}, template = {}, aliases = {}", id, acc.getClass(), template, aliases );
 
-        var tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
+        var tFunc = templates.getIfPresent( id );
         if( tFunc == null ) {
             synchronized( id.intern() ) {
-                tFunc = ( Template2<TIn, TOut, TA> ) templates.getIfPresent( id );
+                tFunc = templates.getIfPresent( id );
                 if( tFunc == null ) {
-                    tFunc = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, aliases, errorStrategy, postProcess );
+                    var tf = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, aliases, errorStrategy, postProcess );
+                    tFunc = new TemplateFunction( tf, new Exception().getStackTrace() );
                     templates.put( id, tFunc );
                 }
             }
         }
 
-        return tFunc;
+        return ( Template<TIn, TOut, TA> ) tFunc.template;
     }
 
     public long getCacheSize() {
@@ -180,6 +184,17 @@ public class TemplateEngine implements Runnable {
             } );
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
+        }
+    }
+
+    public static class TemplateFunction {
+        @JsonIgnore
+        public final Template<?, ?, ?> template;
+        public final StackTraceElement[] stackTrace;
+
+        public TemplateFunction( Template<?, ?, ?> template, StackTraceElement[] stackTrace ) {
+            this.template = template;
+            this.stackTrace = stackTrace;
         }
     }
 }

@@ -34,14 +34,14 @@ import java.util.Optional;
 public class TestTemplateClass2 {
     public String field2;
     public Optional<String> fieldOpt2;
-    @Template2.Nullable
+    @Template.Nullable
     public String fieldNullable2;
     public String field22;
     public TestTemplateClass2 child2;
     public Optional<TestTemplateClass2> childOpt2;
-    @Template2.Nullable
+    @Template.Nullable
     public TestTemplateClass2 childNullable2;
-    @Template2.Nullable
+    @Template.Nullable
     public Ext ext2;
     public ITestTemplateClassExt2 ext22;
     public int intField2;
