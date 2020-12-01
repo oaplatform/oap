@@ -45,7 +45,7 @@ public class TestDirectoryFixture implements Fixture {
 
     static {
         Files.ensureDirectory( testDirectory() );
-        System.out.println( "initializing test directory " + testDirectory() );
+        log.debug( "initializing test directory " + testDirectory() );
     }
 
     public static Path globalTestDirectory() {
