@@ -49,12 +49,9 @@ import static oap.util.Pair.__;
 public abstract class Configuration {
     protected final DictionaryRoot mappings;
 
-    public Configuration(
-        Path mappingLocation,
-        String resourceLocation,
-        DictionaryParser.IdStrategy idStrategy ) {
-
-        var logConfigs = new ArrayList<URL>();
+    public Configuration( Path mappingLocation, String resourceLocation, DictionaryParser.IdStrategy idStrategy ) {
+        Preconditions.checkNotNull( resourceLocation, "no resourceLocation provided" );
+            var logConfigs = new ArrayList<URL>();
         if( mappingLocation != null ) {
             log.info( "mappingLocation = {}", mappingLocation );
             logConfigs.addAll( Stream.of( Files.fastWildcard( mappingLocation, "*.json" ).stream() )
