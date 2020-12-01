@@ -27,8 +27,8 @@ package oap.message;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
-import oap.testng.Env;
 import oap.testng.Fixtures;
+import oap.testng.NetworkFixture;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
@@ -363,7 +363,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void testQueue() {
-        var port = Env.port( "server" );
+        var port = NetworkFixture.FIXTURE.port( "server" );
         var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
         try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
             client.poolSize = 2;

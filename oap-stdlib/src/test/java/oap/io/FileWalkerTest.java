@@ -1,6 +1,5 @@
 package oap.io;
 
-import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.BeforeMethod;
@@ -13,6 +12,7 @@ import java.util.function.Consumer;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertEqualsNoOrder;
@@ -24,15 +24,15 @@ public class FileWalkerTest extends Fixtures {
 
     @BeforeMethod
     public void init() {
-        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
-        Files.writeString( Env.tmp( "/wildcard/w2/3.txt" ), "1" );
-        Files.writeString( Env.tmp( "/wildcard/w2/33.txt" ), "1" );
-        Files.writeString( Env.tmp( "/wildcard/w2/w1/4.txt" ), "1" );
+        Files.writeString( testPath( "/wildcard/1.txt" ), "1" );
+        Files.writeString( testPath( "/wildcard/w2/3.txt" ), "1" );
+        Files.writeString( testPath( "/wildcard/w2/33.txt" ), "1" );
+        Files.writeString( testPath( "/wildcard/w2/w1/4.txt" ), "1" );
     }
 
     @Test
     public void walkFileTreeBasePathNotFound() {
-        final MockVisitor visitor = new MockVisitor();
+        final CollectingVisitor visitor = new CollectingVisitor();
         new FileWalker( Paths.get( "/aaa" ), "*.txt" ).walkFileTree( visitor );
 
         assertThat( visitor.files ).isEmpty();
@@ -40,63 +40,63 @@ public class FileWalkerTest extends Fixtures {
 
     @Test
     public void walkFileTreeStaticPath() {
-        final MockVisitor visitor = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
+        final CollectingVisitor visitor = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
 
-        assertEquals( visitor.files, singletonList( TestDirectoryFixture.testPath( "/wildcard/w2/3.txt" ) ) );
+        assertEquals( visitor.files, singletonList( testPath( "/wildcard/w2/3.txt" ) ) );
     }
 
     @Test
     public void walkFileTreeStaticPathNotFound() {
-        final MockVisitor visitor = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "unknown/3.txt" ).walkFileTree( visitor );
+        final CollectingVisitor visitor = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "unknown/3.txt" ).walkFileTree( visitor );
 
         assertEquals( visitor.files, emptyList() );
     }
 
     @Test
     public void walkFileTreeAny() {
-        final MockVisitor visitor = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "w2\\*" ).walkFileTree( visitor );
+        final CollectingVisitor visitor = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "w2\\*" ).walkFileTree( visitor );
 
         assertEqualsNoOrder( visitor.files.toArray(), new Path[] {
-            TestDirectoryFixture.testPath( "/wildcard/w2/33.txt" ), TestDirectoryFixture.testPath( "/wildcard/w2/w1" ), TestDirectoryFixture.testPath( "/wildcard/w2/3.txt" )
+            testPath( "/wildcard/w2/33.txt" ), testPath( "/wildcard/w2/w1" ), testPath( "/wildcard/w2/3.txt" )
         } );
     }
 
     @Test
     public void walkFileTreeAny2() {
-        final MockVisitor visitor = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "*/*.txt" ).walkFileTree( visitor );
+        final CollectingVisitor visitor = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "*/*.txt" ).walkFileTree( visitor );
 
         assertEqualsNoOrder( visitor.files.toArray(), new Path[] {
-            TestDirectoryFixture.testPath( "/wildcard/w2/33.txt" ), TestDirectoryFixture.testPath( "/wildcard/w2/3.txt" )
+            testPath( "/wildcard/w2/33.txt" ), testPath( "/wildcard/w2/3.txt" )
         } );
     }
 
     @Test
     public void walkFileTreeFilePattern() {
-        final MockVisitor visitor = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
+        final CollectingVisitor visitor = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
 
         assertThat( visitor.files )
-            .containsOnly( TestDirectoryFixture.testPath( "/wildcard/w2/3.txt" ), TestDirectoryFixture.testPath( "/wildcard/w2/33.txt" ) );
+            .containsOnly( testPath( "/wildcard/w2/3.txt" ), testPath( "/wildcard/w2/33.txt" ) );
     }
 
     @Test
     public void walkFileTreeFilePatternCache() {
         final FileWalkerCache fwc = new FileWalkerCache();
 
-        final MockVisitor visitor1 = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor1 );
-        assertThat( visitor1.files ).containsOnly( TestDirectoryFixture.testPath( "/wildcard/w2/3.txt" ), TestDirectoryFixture.testPath( "/wildcard/w2/33.txt" ) );
+        final CollectingVisitor visitor1 = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor1 );
+        assertThat( visitor1.files ).containsOnly( testPath( "/wildcard/w2/3.txt" ), testPath( "/wildcard/w2/33.txt" ) );
 
-        final MockVisitor visitor2 = new MockVisitor();
-        new FileWalker( TestDirectoryFixture.testPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor2 );
-        assertThat( visitor2.files ).containsOnly( TestDirectoryFixture.testPath( "/wildcard/w2/3.txt" ), TestDirectoryFixture.testPath( "/wildcard/w2/33.txt" ) );
+        final CollectingVisitor visitor2 = new CollectingVisitor();
+        new FileWalker( testPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor2 );
+        assertThat( visitor2.files ).containsOnly( testPath( "/wildcard/w2/3.txt" ), testPath( "/wildcard/w2/33.txt" ) );
     }
 
-    private class MockVisitor implements Consumer<Path> {
+    private static class CollectingVisitor implements Consumer<Path> {
         public final ArrayList<Path> files = new ArrayList<>();
 
         @Override

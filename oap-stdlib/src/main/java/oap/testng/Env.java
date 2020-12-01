@@ -25,23 +25,18 @@ package oap.testng;
 
 import lombok.SneakyThrows;
 import oap.net.Inet;
-import org.apache.commons.lang3.SystemUtils;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.testng.TestDirectoryFixture.testDirectory;
+import static oap.testng.TestDirectoryFixture.testPath;
+import static oap.testng.TestDirectoryFixture.testUri;
+import static oap.testng.TestDirectoryFixture.testUrl;
 
-
+@Deprecated
 public class Env {
 
     @Deprecated
@@ -51,21 +46,20 @@ public class Env {
      */
     @Deprecated
     public static final Path tmpRoot = testDirectory();
-    private static final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
-
 
     @Deprecated
     public static String tmp( String name ) {
-        return TestDirectoryFixture.testPath( name ).toString();
+        return testPath( name ).toString();
     }
 
+    @Deprecated
     public static URI tmpURI( String name ) {
-        return TestDirectoryFixture.testPath( name ).toUri();
+        return testUri( name );
     }
 
-    @SneakyThrows
+    @Deprecated
     public static URL tmpURL( String name ) {
-        return tmpURI( name ).toURL();
+        return testUrl( name );
     }
 
     /**
@@ -73,7 +67,7 @@ public class Env {
      */
     @Deprecated
     public static Path tmpPath( String name ) {
-        return TestDirectoryFixture.testPath( name );
+        return testPath( name );
     }
 
     /**
@@ -92,22 +86,14 @@ public class Env {
         return TestDirectoryFixture.deployTestData( contextClass, name );
     }
 
+    @Deprecated
     public static int port() {
-        return port( "DEFAULT" );
+        return NetworkFixture.FIXTURE.port( "DEFAULT" );
     }
 
+    @Deprecated
     public static int port( String key ) {
-        return ports.computeIfAbsent( key, k -> {
-            try( var socket = new ServerSocket( ) ) {
-                socket.setReuseAddress( true );
-                socket.bind( new InetSocketAddress( 0 ) );
-                var localPort = socket.getLocalPort();
-                System.out.println( "ENV::key=" + key + "; port = " + localPort );
-                return localPort;
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return NetworkFixture.FIXTURE.port( key );
     }
 
     @SneakyThrows
@@ -124,57 +110,13 @@ public class Env {
         return oap.system.Env.env( name, defaultValue );
     }
 
+    @Deprecated
     public static void resetPorts() {
-        System.out.println( "ENV::ports = []" );
-        ports.clear();
+        NetworkFixture.FIXTURE.clearPorts();
     }
 
-    @SneakyThrows
+    @Deprecated
     public static void putEnv( String name, String value ) {
-        try {
-            Class<?> processEnvironmentClass = Class.forName( "java.lang.ProcessEnvironment" );
-            Field theEnvironmentField = processEnvironmentClass.getDeclaredField( "theEnvironment" );
-            theEnvironmentField.setAccessible( true );
-            @SuppressWarnings( "unchecked" )
-            var env = ( Map<Object, Object> ) theEnvironmentField.get( null );
-
-            if( SystemUtils.IS_OS_WINDOWS )
-                if( value == null ) env.remove( name );
-                else env.put( name, value );
-            else {
-                var variableClass = Class.forName( "java.lang.ProcessEnvironment$Variable" );
-                var convertToVariable = variableClass.getMethod( "valueOf", String.class );
-                convertToVariable.setAccessible( true );
-
-                var valueClass = Class.forName( "java.lang.ProcessEnvironment$Value" );
-                var convertToValue = valueClass.getMethod( "valueOf", String.class );
-                convertToValue.setAccessible( true );
-
-                if( value == null ) env.remove( convertToVariable.invoke( null, name ) );
-                else env.put( convertToVariable.invoke( null, name ), convertToValue.invoke( null, value ) );
-            }
-
-            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField( "theCaseInsensitiveEnvironment" );
-            theCaseInsensitiveEnvironmentField.setAccessible( true );
-            @SuppressWarnings( "unchecked" )
-            Map<String, String> cienv = ( Map<String, String> ) theCaseInsensitiveEnvironmentField.get( null );
-
-            if( value == null ) cienv.remove( name );
-            else cienv.put( name, value );
-        } catch( NoSuchFieldException e ) {
-            Class<?>[] classes = Collections.class.getDeclaredClasses();
-            Map<String, String> env = System.getenv();
-            for( Class<?> clazz : classes )
-                if( "java.util.Collections$UnmodifiableMap".equals( clazz.getName() ) ) {
-                    Field field = clazz.getDeclaredField( "m" );
-                    field.setAccessible( true );
-                    Object obj = field.get( env );
-                    @SuppressWarnings( "unchecked" )
-                    Map<String, String> map = ( Map<String, String> ) obj;
-
-                    if( value == null ) map.remove( name );
-                    else map.put( name, value );
-                }
-        }
+        oap.system.Env.set( name, value );
     }
 }

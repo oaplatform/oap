@@ -30,30 +30,36 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import io.findify.s3mock.S3Mock;
 import oap.io.Files;
-import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.NetworkFixture;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
-import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Map;
 
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class S3FileManagerTest {
-    private static final Path TEST_FOLDER = Path.of( "test/testDir" );
+public class S3FileManagerTest extends Fixtures {
+    //    private static final Path TEST_FOLDER = Path.of( "test/testDir" );
     private static final String TEST_BUCKET = "default";
 
     private S3Mock api;
     private S3FileManager fileManager;
-    private Path tmp = TestDirectoryFixture.testPath( "s3" );
+//    private Path tmp = TestDirectoryFixture.testPath( "s3" );
+
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
+        fixture( NetworkFixture.FIXTURE );
+    }
 
     @BeforeClass
-    public void setUp() throws Exception {
-        var port = Env.port( "s3" );
+    public void setUp() {
+        var port = NetworkFixture.FIXTURE.port( "s3" );
 
         api = new S3Mock.Builder().withPort( port ).withInMemoryBackend().build();
         api.start();
@@ -65,22 +71,20 @@ public class S3FileManagerTest {
             .withCredentials( new AWSStaticCredentialsProvider( new AnonymousAWSCredentials() ) )
             .build();
 
-        fileManager = new S3FileManager( Map.of( TEST_BUCKET, TEST_FOLDER ), client );
+        fileManager = new S3FileManager( Map.of( TEST_BUCKET, testPath( "test" ) ), client );
         client.createBucket( TEST_BUCKET );
     }
 
     @AfterClass
     public void tearDown() {
-        Files.cleanDirectory( tmp );
         api.stop();
     }
-
-
+    
     @Test
-    public void readWrite() throws Exception {
+    public void readWrite() throws InterruptedException {
         var inputBytes = Base64.getDecoder().decode( "dGVzdA==" );
         var data = new S3Data( "file.txt", new ByteArrayInputStream( inputBytes ), ( long ) inputBytes.length );
-        var resultFile = tmp.resolve( "output.txt" ).toFile();
+        var resultFile = testPath( "test" ).resolve( "output.txt" ).toFile();
 
         var upload = fileManager.uploadStream( TEST_BUCKET, data ).waitForUploadResult();
         fileManager.download( TEST_BUCKET, upload.getKey(), resultFile ).waitForCompletion();

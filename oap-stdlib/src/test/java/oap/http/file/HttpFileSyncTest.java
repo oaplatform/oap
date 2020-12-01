@@ -25,8 +25,8 @@
 package oap.http.file;
 
 import oap.io.FileSync;
-import oap.testng.Env;
 import oap.testng.Fixtures;
+import oap.testng.NetworkFixture;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import org.apache.http.client.utils.DateUtils;
@@ -47,7 +47,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpFileSyncTest extends Fixtures {
-    private static final int PORT = Env.port( HttpFileSyncTest.class.toString() );
+    private static final int PORT = NetworkFixture.FIXTURE.port( HttpFileSyncTest.class.toString() );
 
     private ClientAndServer mockServer;
 

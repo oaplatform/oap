@@ -31,7 +31,7 @@ import oap.application.ServiceOne.Complex;
 import oap.application.linked.ServiceContainee;
 import oap.application.linked.ServiceContainer;
 import oap.concurrent.Threads;
-import oap.testng.Env;
+import oap.system.Env;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public class KernelTest {
         new ArrayList<>( System.getenv().keySet() )
             .stream()
             .filter( k -> k.startsWith( "CONFIG." ) )
-            .forEach( k -> Env.putEnv( k, null ) );
+            .forEach( k -> Env.set( k, null ) );
     }
 
     @Test
@@ -233,8 +233,8 @@ public class KernelTest {
     public void mapEnvToConfig() {
         var modules = Lists.of( urlOfTestResource( getClass(), "env/env.conf" ) );
 
-        Env.putEnv( "CONFIG.services.s1.enabled", "false" );
-        Env.putEnv( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
+        Env.set( "CONFIG.services.s1.enabled", "false" );
+        Env.set( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
 
         Kernel kernel = new Kernel( modules );
         try {

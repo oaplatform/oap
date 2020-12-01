@@ -27,7 +27,7 @@ package oap.http;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
-import oap.testng.Env;
+import oap.testng.NetworkFixture;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -46,7 +46,7 @@ public class GzipHttpTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        port = Env.port( getClass().getName() );
+        port = NetworkFixture.FIXTURE.port( getClass().getName() );
         server = new Server( 1024, 0, false );
         server.start();
         PlainHttpListener listener = new PlainHttpListener( server, port );

@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
 import oap.http.cors.GenericCorsPolicy;
-import oap.testng.Env;
+import oap.testng.NetworkFixture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
 
@@ -45,7 +45,7 @@ public class ServerTest {
 
     @Test
     public void testWithoutQueue() throws InterruptedException {
-        Env.resetPorts();
+        NetworkFixture.FIXTURE.clearPorts();
         SynchronizedThread listener = null;
 
         var semaphore = new Semaphore( 0 );
@@ -58,14 +58,14 @@ public class ServerTest {
             }, Protocol.HTTP );
             server.start();
 
-            var http = new PlainHttpListener( server, Env.port() );
+            var http = new PlainHttpListener( server, NetworkFixture.FIXTURE.port() );
             listener = new SynchronizedThread( http );
             listener.start();
 
-            var f1 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + Env.port() + "/test/", "{}" ).isOk() );
+            var f1 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + NetworkFixture.FIXTURE.port() + "/test/", "{}" ).isOk() );
             semaphore.acquire();
 
-            var f2 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + Env.port() + "/test/", "{}" ).isOk() );
+            var f2 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + NetworkFixture.FIXTURE.port() + "/test/", "{}" ).isOk() );
 
             assertEventually( 10, 1000, () -> {
                 var activeCount = server.getActiveCount();
@@ -79,7 +79,7 @@ public class ServerTest {
 
             var body = RandomStringUtils.random( 1_000_000 );
 
-            assertPost( "http://localhost:" + Env.port() + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
+            assertPost( "http://localhost:" + NetworkFixture.FIXTURE.port() + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
         } finally {
             if( listener != null )
                 listener.stop();

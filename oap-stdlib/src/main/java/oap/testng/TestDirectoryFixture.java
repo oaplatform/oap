@@ -32,6 +32,8 @@ import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -69,6 +71,15 @@ public class TestDirectoryFixture implements Fixture {
         return path;
     }
 
+    public static URI testUri( String name ) {
+        return testPath( name ).toUri();
+    }
+
+    @SneakyThrows
+    public static URL testUrl( String name ) {
+        return testUri( name ).toURL();
+    }
+
     public static Path deployTestData( Class<?> contextClass ) {
         return deployTestData( contextClass, "" );
     }
@@ -95,7 +106,7 @@ public class TestDirectoryFixture implements Fixture {
     private void cleanTestDirectories() {
         try( var stream = java.nio.file.Files.list( globalTestDirectory() ) ) {
             stream
-                .filter( path -> java.nio.file.Files.isDirectory( path ) )
+                .filter( java.nio.file.Files::isDirectory )
                 .filter( path -> Files.getLastModifiedTime( path ) < DateTimeUtils.currentTimeMillis() - Dates.h( 2 ) )
                 .forEach( path -> {
                     try {

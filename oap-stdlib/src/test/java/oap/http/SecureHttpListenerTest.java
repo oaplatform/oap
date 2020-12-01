@@ -28,10 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
-import oap.testng.Env;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import oap.testng.NetworkFixture;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -55,7 +53,7 @@ public class SecureHttpListenerTest {
 
     @BeforeClass
     public void setUp() {
-        Env.resetPorts();
+        NetworkFixture.FIXTURE.clearPorts();
         server = new Server( 10, 0, false );
         server.start();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
@@ -68,7 +66,7 @@ public class SecureHttpListenerTest {
             response.respond( HttpResponse.status( 200 ).response() );
         }, Protocol.HTTPS );
 
-        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port(), false );
+        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, NetworkFixture.FIXTURE.port(), false );
         listener = new SynchronizedThread( http );
         listener.start();
     }
@@ -89,7 +87,7 @@ public class SecureHttpListenerTest {
 
             var closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-            var httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
+            var httpGet = new HttpGet( "https://localhost:" + NetworkFixture.FIXTURE.port() + "/test/" );
 
             var closeableHttpResponse = closeableHttpClient.execute( httpGet );
 

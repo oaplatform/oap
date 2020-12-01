@@ -22,35 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.prometheus;
+package oap.testng;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Metrics;
-import oap.http.Client;
-import oap.testng.NetworkFixture;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
+import static oap.testng.TestDirectoryFixture.deployTestData;
+import static oap.testng.TestDirectoryFixture.testPath;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static oap.testng.Asserts.assertString;
-
-public class PrometheusExporterTest {
-    private static final Counter TEST_1 = Metrics.counter( "test1" );
-
-    @Test
-    public void server() throws IOException {
-        var port = NetworkFixture.FIXTURE.port( "prometheus" );
-        try( var exporter = new PrometheusExporter( port ) ) {
-            exporter.start();
-
-            TEST_1.increment( 2 );
-            var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertString( response ).contains( """
-                # HELP test1_total \s
-                # TYPE test1_total counter
-                test1_total 2.0
-                """ );
-        }
+public class TestDirectoryFixtureTest extends Fixtures {
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
+    @Test
+    public void deploy() {
+        deployTestData( getClass(), "test" );
+
+        assertThat( testPath( "test/test.txt" ) ).hasContent( "1" );
+    }
 }
