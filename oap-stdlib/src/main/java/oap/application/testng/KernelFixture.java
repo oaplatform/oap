@@ -49,24 +49,32 @@ public class KernelFixture extends EnvFixture {
     private final List<URL> additionalModules = new ArrayList<>();
 
     public KernelFixture( Path conf ) {
-        this( conf, List.of() );
+        this( conf, null, List.of() );
     }
 
     public KernelFixture( String conf ) {
-        this( conf, List.of() );
+        this( conf, null, List.of() );
     }
 
     public KernelFixture( String conf, List<URL> additionalModules ) {
-        this( Resources.filePath( KernelFixture.class, conf )
-            .orElseThrow( () -> new IllegalArgumentException( conf ) ), null, additionalModules );
+        this( conf, null, additionalModules );
     }
 
     public KernelFixture( Path conf, String confd ) {
         this( conf, confd, List.of() );
     }
 
+    public KernelFixture( String conf, String confd ) {
+        this( conf, confd, List.of() );
+    }
+
     public KernelFixture( Path conf, List<URL> additionalModules ) {
         this( conf, null, additionalModules );
+    }
+
+    public KernelFixture( String conf, String confd, List<URL> additionalModules ) {
+        this( Resources.filePath( KernelFixture.class, conf )
+            .orElseThrow( () -> new IllegalArgumentException( conf ) ), confd, additionalModules );
     }
 
     public KernelFixture( Path conf, String confd, List<URL> additionalModules ) {
@@ -79,7 +87,7 @@ public class KernelFixture extends EnvFixture {
         define( "TEST_HTTP_PORT", Env.port() );
 //        deprecated
         define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
-        define( "TEST_DIRECTORY", TestDirectoryFixture.testDirectory( ) );
+        define( "TEST_DIRECTORY", TestDirectoryFixture.testDirectory() );
 //        deprecated
         define( "TMP_PATH", "${TEST_DIRECTORY}" );
         define( "TEST_RESOURCE_PATH", Resources.path( getClass(), "/" ).orElseThrow() );
@@ -87,7 +95,7 @@ public class KernelFixture extends EnvFixture {
         define( "RESOURCE_PATH", "${TEST_RESOURCE_PATH}" );
         define( "TEST_HTTP_PREFIX", httpPrefix() );
 //        deprecated
-        define( "HTTP_PREFIX", "${TEST_RESOURCE_PATH}" );
+        define( "HTTP_PREFIX", httpPrefix() );
 
     }
 
