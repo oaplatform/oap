@@ -48,11 +48,11 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class MemoryClassLoaderJava13 extends ClassLoader {
+public class MemoryClassLoaderJava extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final MemoryFileManager manager = new MemoryFileManager( compiler );
 
-    public MemoryClassLoaderJava13( String classname, String filecontent, Path diskCache ) {
+    public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         List<Source> list = new ArrayList<>();
 

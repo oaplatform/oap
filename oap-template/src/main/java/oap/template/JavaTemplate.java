@@ -26,19 +26,14 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
-import oap.tools.MemoryClassLoaderJava13;
+import oap.tools.MemoryClassLoaderJava;
 import oap.util.Functions;
-import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.CharStreams;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.joining;
@@ -52,32 +47,10 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name,
-                         TypeRef<TIn> type,
-                         String template,
-                         Map<String, List<Method>> builtInFunction,
-                         Path cacheFile,
-                         TA acc,
-                         Map<String,String> aliases,
-                         ErrorStrategy errorStrategy,
-                         Consumer<Ast> postProcess ) {
+    public JavaTemplate( String name, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
         this.acc = acc;
         try {
-            var lexer = new TemplateLexer( CharStreams.fromString( template ) );
-            var grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
-            if( errorStrategy == ErrorStrategy.ERROR ) {
-                lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
-                grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
-            }
-
-            var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
-
-            log.trace( "\n" + ast.print() );
-
-            if( postProcess != null )
-                postProcess.accept( ast );
-
-            var render = new Render( name, new TemplateType( type.type() ), acc, null, null, 0 );
+            var render = Render.init( name, new TemplateType( type.type() ), acc );
             ast.render( render );
 
             var line = new AtomicInteger( 0 );
@@ -88,8 +61,11 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            var mcl = new MemoryClassLoaderJava13( fullTemplateName, render.out(), cacheFile );
-            cons = ( Functions.TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
+            var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
+            cons = ( Functions.TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> ) mcl
+                .loadClass( fullTemplateName )
+                .getDeclaredConstructor()
+                .newInstance();
         } catch( Exception e ) {
             throw new TemplateException( e );
         }

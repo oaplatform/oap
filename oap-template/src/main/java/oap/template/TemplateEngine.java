@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hashing;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ import oap.io.Resources;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
 import oap.util.Try;
+import org.antlr.v4.runtime.BufferedTokenStream;
+import org.antlr.v4.runtime.CharStreams;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -46,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -56,9 +60,9 @@ import java.util.function.Consumer;
 public class TemplateEngine implements Runnable {
     public final Path tmpPath;
     public final long ttl;
-    public long maxSize = 1_000_000;
     private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
+    public long maxSize = 1_000_000;
 
     public TemplateEngine( Path tmpPath ) {
         this( tmpPath, Dates.d( 30 ) );
@@ -147,19 +151,35 @@ public class TemplateEngine implements Runnable {
 
         log.trace( "id = {}, acc = {}, template = {}, aliases = {}", id, acc.getClass(), template, aliases );
 
-        var tFunc = templates.getIfPresent( id );
-        if( tFunc == null ) {
-            synchronized( id.intern() ) {
-                tFunc = templates.getIfPresent( id );
-                if( tFunc == null ) {
-                    var tf = new JavaTemplate<>( name, type, template, builtInFunction, tmpPath, acc, aliases, errorStrategy, postProcess );
-                    tFunc = new TemplateFunction( tf, new Exception().getStackTrace() );
-                    templates.put( id, tFunc );
+        try {
+            TemplateFunction tFunc = templates.get( id, () -> {
+                var lexer = new TemplateLexer( CharStreams.fromString( template ) );
+                var grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+                if( errorStrategy == ErrorStrategy.ERROR ) {
+                    lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+                    grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
-            }
-        }
 
-        return ( Template<TIn, TOut, TA> ) tFunc.template;
+                var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
+
+                log.trace( "\n" + ast.print() );
+
+                if( postProcess != null )
+                    postProcess.accept( ast );
+
+                var tf = new JavaTemplate<>( name, type, tmpPath, acc, ast );
+                return new TemplateFunction( tf, new Exception().getStackTrace() );
+
+            } );
+
+            return ( Template<TIn, TOut, TA> ) tFunc.template;
+        } catch( UncheckedExecutionException | ExecutionException e ) {
+            if( e.getCause() instanceof TemplateException ) {
+                throw ( TemplateException ) e.getCause();
+            }
+            
+            throw new TemplateException( e.getCause() );
+        }
     }
 
     public long getCacheSize() {
