@@ -65,6 +65,9 @@ public class EnvFixture implements Fixture {
         return this;
     }
 
+    public EnvFixture definePort( String property, String portKey ) {
+        return define( property, portFor( portKey ) );
+    }
 
     private void init( Scope scope ) {
         properties.get( scope ).forEach( p -> {

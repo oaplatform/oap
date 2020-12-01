@@ -108,6 +108,11 @@ public class KernelFixture extends EnvFixture {
         return ( KernelFixture ) super.define( scope, property, value );
     }
 
+    @Override
+    public KernelFixture definePort( String property, String portKey ) {
+        return ( KernelFixture ) super.definePort( property, portKey );
+    }
+
     @Nonnull
     public <T> T service( @Nonnull Class<T> klass ) {
         return kernel.serviceOfClass( klass ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + klass ) );
