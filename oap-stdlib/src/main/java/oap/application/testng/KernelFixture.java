@@ -77,8 +77,10 @@ public class KernelFixture extends EnvFixture {
     public KernelFixture( String conf, String confd, List<URL> additionalModules ) {
         this( Resources.filePath( KernelFixture.class, conf )
                 .orElseThrow( () -> new IllegalArgumentException( conf ) ),
-            Resources.filePath( KernelFixture.class, confd )
-                .orElseThrow( () -> new IllegalArgumentException( confd ) ),
+            confd != null
+                ? Resources.filePath( KernelFixture.class, confd )
+                .orElseThrow( () -> new IllegalArgumentException( confd ) )
+                : null,
             additionalModules );
     }
 
