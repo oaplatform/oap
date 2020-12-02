@@ -97,7 +97,7 @@ public class EnvFixture implements Fixture {
     }
 
     public int defaultHttpPort() {
-        return portFor( "DEFAULT" );
+        return portFor( "TEST_HTTP_PORT" );
     }
 
     public int portFor( Class<?> clazz ) {
