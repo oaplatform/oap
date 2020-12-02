@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.typesafe.config.impl.ConfigImpl;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static oap.util.Lists.concat;
 
@@ -64,8 +64,9 @@ public class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( URL appConfigPath, List<String> configs ) {
-        log.trace( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
-
+        log.trace( "application configurations: {}, configs = {}", appConfigPath, configs );
+        ConfigImpl.reloadSystemPropertiesConfig();
+        ConfigImpl.reloadEnvVariablesConfig();
         return Binder.hoconWithConfig( concat( configs, List.of( getEnvConfig() ) ) )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
@@ -79,8 +80,8 @@ public class ApplicationConfiguration {
         List<Path> paths = confd != null ? concat( Files.wildcard( confd, "*.conf" ), Files.wildcard( confd, "*.yaml" ) ) : emptyList();
         log.info( "global configurations: {}", paths );
 
-        var confs = Lists.map( paths, p -> 
-            p.toString().endsWith( ".yaml" ) ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) ) : Files.readString( p ) 
+        var confs = Lists.map( paths, p ->
+            p.toString().endsWith( ".yaml" ) ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) ) : Files.readString( p )
         );
 
         return load( appConfigPath, confs );
