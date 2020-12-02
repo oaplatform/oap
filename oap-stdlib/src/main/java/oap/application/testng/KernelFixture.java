@@ -39,6 +39,11 @@ import java.util.List;
 import static oap.http.testng.HttpAsserts.httpPrefix;
 
 public class KernelFixture extends EnvFixture {
+    public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
+    public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
+    public static final String TEST_DIRECTORY = "TEST_DIRECTORY";
+    public static final String TEST_RESOURCE_PATH = "TEST_RESOURCE_PATH";
+    public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
     private static int kernelN = 0;
     public Kernel kernel;
     private final Path conf;
@@ -81,19 +86,19 @@ public class KernelFixture extends EnvFixture {
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
-        define( "TEST_REMOTING_PORT", portFor( "TEST_REMOTING_PORT" ) );
+        define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
 //        deprecated
         define( "TMP_REMOTE_PORT", "${TEST_REMOTING_PORT}" );
-        define( "TEST_HTTP_PORT", defaultHttpPort() );
+        define( TEST_HTTP_PORT, portFor( TEST_HTTP_PORT ) );
 //        deprecated
         define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
-        define( "TEST_DIRECTORY", TestDirectoryFixture.testDirectory() );
+        define( TEST_DIRECTORY, TestDirectoryFixture.testDirectory() );
 //        deprecated
         define( "TMP_PATH", "${TEST_DIRECTORY}" );
-        define( "TEST_RESOURCE_PATH", Resources.path( getClass(), "/" ).orElseThrow() );
+        define( TEST_RESOURCE_PATH, Resources.path( getClass(), "/" ).orElseThrow() );
 //        deprecated
         define( "RESOURCE_PATH", "${TEST_RESOURCE_PATH}" );
-        define( "TEST_HTTP_PREFIX", httpPrefix() );
+        define( TEST_HTTP_PREFIX, httpPrefix() );
 //        deprecated
         define( "HTTP_PREFIX", httpPrefix() );
 

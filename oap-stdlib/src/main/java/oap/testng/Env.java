@@ -25,6 +25,7 @@ package oap.testng;
 
 import lombok.SneakyThrows;
 import oap.net.Inet;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.net.ServerSocket;
 import java.net.URI;
@@ -88,12 +89,12 @@ public class Env {
 
     @Deprecated
     public static int port() {
-        return EnvFixture.DEFAULT.portFor( "DEFAULT" );
+        throw new NotImplementedException( "this thing is deprecated" );
     }
 
     @Deprecated
     public static int port( String key ) {
-        return EnvFixture.DEFAULT.portFor( key );
+        throw new NotImplementedException( "this thing is deprecated" );
     }
 
     @SneakyThrows
@@ -112,7 +113,7 @@ public class Env {
 
     @Deprecated
     public static void resetPorts() {
-        EnvFixture.DEFAULT.clearPorts();
+        throw new NotImplementedException( "this thing is deprecated" );
     }
 
     @Deprecated

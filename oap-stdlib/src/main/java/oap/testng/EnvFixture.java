@@ -47,12 +47,6 @@ public class EnvFixture implements Fixture {
     private final ListMultimap<Scope, Pair<String, Object>> properties = ArrayListMultimap.create();
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
 
-    /**
-     * @deprecated backward compatibility for Env until removed
-     */
-    @Deprecated
-    public static final EnvFixture DEFAULT = new EnvFixture();
-
     public EnvFixture() {
     }
 
