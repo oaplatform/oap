@@ -27,7 +27,6 @@ package oap.application.testng;
 import com.typesafe.config.impl.ConfigImpl;
 import oap.application.Kernel;
 import oap.application.Module;
-import oap.io.Files;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
 import oap.testng.TestDirectoryFixture;
@@ -44,7 +43,7 @@ public class KernelFixture extends EnvFixture {
     private static int kernelN = 0;
     public Kernel kernel;
     private final Path conf;
-    private final String confd;
+    private final Path confd;
     private final List<URL> additionalModules = new ArrayList<>();
 
     public KernelFixture( Path conf ) {
@@ -59,7 +58,7 @@ public class KernelFixture extends EnvFixture {
         this( conf, null, additionalModules );
     }
 
-    public KernelFixture( Path conf, String confd ) {
+    public KernelFixture( Path conf, Path confd ) {
         this( conf, confd, List.of() );
     }
 
@@ -73,10 +72,13 @@ public class KernelFixture extends EnvFixture {
 
     public KernelFixture( String conf, String confd, List<URL> additionalModules ) {
         this( Resources.filePath( KernelFixture.class, conf )
-            .orElseThrow( () -> new IllegalArgumentException( conf ) ), confd, additionalModules );
+                .orElseThrow( () -> new IllegalArgumentException( conf ) ),
+            Resources.filePath( KernelFixture.class, confd )
+                .orElseThrow( () -> new IllegalArgumentException( confd ) ),
+            additionalModules );
     }
 
-    public KernelFixture( Path conf, String confd, List<URL> additionalModules ) {
+    public KernelFixture( Path conf, Path confd, List<URL> additionalModules ) {
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
@@ -125,20 +127,13 @@ public class KernelFixture extends EnvFixture {
 
     @Override
     public void beforeMethod() {
-        ConfigImpl.reloadSystemPropertiesConfig();
-        ConfigImpl.reloadEnvVariablesConfig();
-
         super.beforeMethod();
         List<URL> moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
 
-        if( confd != null ) {
-            var confdDeployed = TestDirectoryFixture.testPath( confd );
-            Resources.filePaths( getClass(), confd )
-                .forEach( path -> Files.copyDirectory( path, confdDeployed ) );
-            this.kernel.start( conf, confdDeployed );
-        } else this.kernel.start( conf );
+        if( confd != null ) this.kernel.start( conf, confd );
+        else this.kernel.start( conf );
     }
 
     @Override
