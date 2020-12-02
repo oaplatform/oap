@@ -94,6 +94,12 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testEscapeClassName() {
+        assertString( engine.getTemplate( "111-" + testMethodName + "-? ()?пп1", new TypeRef<Map<String, String>>() {}, "${prop}", STRING, null ).render( Map.of( "prop", "val" ) ) )
+            .isEqualTo( "val" );
+    }
+
+    @Test
     public void testField() {
         var c = new TestTemplateClass();
         c.field = "val1";

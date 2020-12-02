@@ -126,7 +126,9 @@ class Render {
     }
 
     public String nameEscaped() {
-        return templateName.replaceAll( "[\\s%\\-;\\\\/:*?\"<>|]", "_" );
+        var nameEscaped = templateName.replaceAll( "[^a-zA-Z0-9_]", "_" );
+        if( nameEscaped.matches( "^[0-9].*" ) ) nameEscaped = "_" + nameEscaped;
+        return nameEscaped;
     }
 
     public String escapeJava( String text ) {
