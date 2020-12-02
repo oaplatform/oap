@@ -24,7 +24,6 @@
 
 package oap.application.testng;
 
-import com.typesafe.config.impl.ConfigImpl;
 import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Resources;
@@ -139,8 +138,6 @@ public class KernelFixture extends EnvFixture {
     @Override
     public void afterMethod() {
         this.kernel.stop();
-
-        ConfigImpl.reloadSystemPropertiesConfig();
-        ConfigImpl.reloadEnvVariablesConfig();
+        super.afterMethod();
     }
 }
