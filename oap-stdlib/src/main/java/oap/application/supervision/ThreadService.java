@@ -36,7 +36,7 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
 
     private final Supervisor supervisor;
     private final SynchronizedThread thread = new SynchronizedThread( this );
-    private Runnable supervisee;
+    private final Runnable supervisee;
     private int maxFailures = 100;
 
     public ThreadService( final String name, final Runnable supervisee, final Supervisor supervisor ) {

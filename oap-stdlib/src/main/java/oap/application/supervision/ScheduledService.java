@@ -23,14 +23,12 @@
  */
 package oap.application.supervision;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.RemoteInvocationException;
 import oap.concurrent.scheduler.Scheduled;
-import org.slf4j.Logger;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
+@Slf4j
 public abstract class ScheduledService implements Supervised, Runnable {
-    private static Logger logger = getLogger( ScheduledService.class );
     protected final Runnable runnable;
     private Scheduled scheduled;
 
@@ -55,9 +53,9 @@ public abstract class ScheduledService implements Supervised, Runnable {
             this.runnable.run();
         } catch( Exception e ) {
             if( e instanceof RemoteInvocationException && e.getCause() instanceof java.net.http.HttpTimeoutException ) {
-                logger.error( e.getMessage() );
+                log.error( e.getMessage() );
             } else {
-                logger.error( e.getMessage(), e );
+                log.error( e.getMessage(), e );
             }
         }
     }
