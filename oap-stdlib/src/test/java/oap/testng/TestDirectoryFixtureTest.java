@@ -38,7 +38,8 @@ public class TestDirectoryFixtureTest extends Fixtures {
     @Test
     public void deploy() {
         deployTestData( getClass(), "test" );
-
         assertThat( testPath( "test/test.txt" ) ).hasContent( "1" );
+        deployTestData( getClass() );
+        assertThat( testPath( "test.txt" ) ).hasContent( "1" );
     }
 }
