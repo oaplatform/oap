@@ -31,38 +31,36 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-//@todo per module supervisor hierarchy
-//@todo restart policy
-
 @Slf4j
 public class Supervisor {
 
-    private LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
-    private LinkedHashMap<String, Supervised> wrappers = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Supervised> services = new LinkedHashMap<>();
     private boolean stopped = false;
 
     public void startSupervised( String name, Object service,
                                  List<String> preStartWith, List<String> startWith,
                                  List<String> preStopWith, List<String> stopWith ) {
-        this.supervised.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
+        this.services.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
-    public void startThread( String name, Object instance ) {
-        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
+    public void startThread( String name, Object instance,
+                             List<String> preStartWith, List<String> startWith,
+                             List<String> preStopWith, List<String> stopWith ) {
+        this.services.put( name, new ThreadService( name, ( Runnable ) instance, this, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
     public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
-        this.wrappers.put( name, new DelayScheduledService( service, delay, unit ) );
+        this.services.put( name, new DelayScheduledService( service, delay, unit ) );
     }
 
     public void scheduleCron( String name, Runnable service, String cron ) {
-        this.wrappers.put( name, new CronScheduledService( service, cron ) );
+        this.services.put( name, new CronScheduledService( service, cron ) );
     }
 
     public synchronized void preStart() {
         log.debug( "pre starting..." );
 
-        this.supervised.forEach( ( name, service ) -> {
+        this.services.forEach( ( name, service ) -> {
             log.debug( "pre starting {}...", name );
             KernelHelper.setThreadNameSuffix( name );
             try {
@@ -76,7 +74,7 @@ public class Supervisor {
     public synchronized void start() {
         log.debug( "starting..." );
         this.stopped = false;
-        this.supervised.forEach( ( name, service ) -> {
+        this.services.forEach( ( name, service ) -> {
             log.debug( "starting {}...", name );
             long start = System.currentTimeMillis();
             KernelHelper.setThreadNameSuffix( name );
@@ -88,40 +86,12 @@ public class Supervisor {
             long end = System.currentTimeMillis();
             log.debug( "starting {}... Done. ({}ms)", name, end - start );
         } );
-
-        this.wrappers.forEach( ( name, service ) -> {
-            log.debug( "schedule {}...", name );
-            long start = System.currentTimeMillis();
-            KernelHelper.setThreadNameSuffix( name );
-            try {
-                service.start();
-            } finally {
-                KernelHelper.restoreThreadName();
-            }
-            long end = System.currentTimeMillis();
-            log.debug( "schedule {}... Done. ({}ms)", name, end - start );
-        } );
     }
 
     public synchronized void preStop() {
         if( !stopped ) {
             log.debug( "pre stopping..." );
-
-            BiStream.of( this.wrappers )
-                .reversed()
-                .forEach( ( name, service ) -> {
-                    log.debug( "pre stopping {}...", name );
-                    KernelHelper.setThreadNameSuffix( name );
-                    try {
-                        service.preStop();
-                    } finally {
-                        KernelHelper.restoreThreadName();
-                    }
-                    log.debug( "pre stopping {}... Done.", name );
-                } );
-            this.wrappers.clear();
-
-            BiStream.of( this.supervised )
+            BiStream.of( this.services )
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "pre stopping {}...", name );
@@ -141,7 +111,7 @@ public class Supervisor {
             log.debug( "stopping..." );
             this.stopped = true;
 
-            BiStream.of( this.supervised )
+            BiStream.of( this.services )
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
@@ -153,7 +123,7 @@ public class Supervisor {
                     }
                     log.debug( "stopping {}... Done.", name );
                 } );
-            this.supervised.clear();
+            this.services.clear();
         }
     }
 
@@ -161,23 +131,7 @@ public class Supervisor {
         if( !stopped ) {
             log.debug( "stopping..." );
             this.stopped = true;
-
-            BiStream.of( this.wrappers )
-                .filter( s -> s._1.equals( serviceName ) )
-                .forEach( ( name, service ) -> {
-                    log.debug( "stopping {}...", name );
-                    KernelHelper.setThreadNameSuffix( name );
-                    try {
-                        service.preStop();
-                        service.stop();
-                    } finally {
-                        KernelHelper.restoreThreadName();
-                    }
-                    log.debug( "stopping {}... Done.", name );
-                } );
-            this.wrappers.clear();
-
-            BiStream.of( this.supervised )
+            BiStream.of( this.services )
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );

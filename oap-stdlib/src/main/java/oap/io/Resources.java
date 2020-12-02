@@ -24,20 +24,13 @@
 package oap.io;
 
 import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.reflect.ClassPath;
 import lombok.SneakyThrows;
-import oap.concurrent.Executors;
 import oap.util.Lists;
-import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.collections4.EnumerationUtils;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Predicate;
 
 public final class Resources {
     public static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
@@ -170,24 +164,18 @@ public final class Resources {
 
     public static List<URL> urls( String atPackage, String... ext ) {
         var extSet = Stream.of( ext ).map( e -> "." + e ).toList();
+        String pkg = atPackage.replace( ".", "/" );
+        return find( name -> name.startsWith( pkg ) && Lists.anyMatch( extSet, name::endsWith ) );
+    }
 
-        var executorService = Executors.newFixedThreadPool(
-            Runtime.getRuntime().availableProcessors(),
-            new ThreadFactoryBuilder().setNameFormat( "reflections-%d" ).build()
-        );
-        try {
-            var configuration = new ConfigurationBuilder()
-                .setUrls( ClasspathHelper.forPackage( atPackage ) )
-                .setScanners( new ResourcesScanner() )
-                .filterInputsBy( new FilterBuilder().includePackage( atPackage ) )
-                .setExecutorService( executorService );
-            var reflections = new Reflections( configuration );
-
-            var resources = reflections.getResources( in -> Lists.anyMatch( extSet, in::endsWith ) );
-            return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
-        } finally {
-            executorService.shutdown();
-        }
+    @SneakyThrows
+    public static List<URL> find( Predicate<String> filter ) {
+        return Stream.of( ClassPath.from( Thread.currentThread()
+            .getContextClassLoader() )
+            .getResources() )
+            .filter( ri -> filter.test( ri.getResourceName() ) )
+            .map( ClassPath.ResourceInfo::url )
+            .toList();
     }
 
     public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {

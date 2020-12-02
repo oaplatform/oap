@@ -107,7 +107,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start();
-            var list = kernel.<TestList>serviceOfClass2( TestList.class );
+            var list = kernel.serviceOfClass( TestList.class ).orElseThrow();
 
             assertThat( list.list ).containsExactly( entry( "a", "a" ), entry( "b", "b" ), entry( "c", "c" ) );
         } finally {

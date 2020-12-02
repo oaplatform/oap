@@ -21,42 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application.supervision;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.application.remote.RemoteInvocationException;
-import oap.concurrent.scheduler.Scheduled;
+package oap.testng;
 
-@Slf4j
-public abstract class ScheduledService implements Supervised, Runnable {
-    protected final Runnable runnable;
-    private Scheduled scheduled;
+import org.testng.annotations.Test;
 
-    public ScheduledService( Runnable runnable ) {
-        this.runnable = runnable;
+import static oap.testng.TestDirectoryFixture.deployTestData;
+import static oap.testng.TestDirectoryFixture.testPath;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestDirectoryFixtureTest extends Fixtures {
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    public void start() {
-        this.scheduled = schedule();
-    }
-
-    protected abstract Scheduled schedule();
-
-    @Override
-    public void stop() {
-        Scheduled.cancel( scheduled );
-    }
-
-    @Override
-    public void run() {
-        try {
-            this.runnable.run();
-        } catch( Exception e ) {
-            if( e instanceof RemoteInvocationException && e.getCause() instanceof java.net.http.HttpTimeoutException ) {
-                log.error( e.getMessage() );
-            } else {
-                log.error( e.getMessage(), e );
-            }
-        }
+    @Test
+    public void deploy() {
+        deployTestData( getClass(), "test" );
+        assertThat( testPath( "test/test.txt" ) ).hasContent( "1" );
+        deployTestData( getClass() );
+        assertThat( testPath( "test.txt" ) ).hasContent( "1" );
     }
 }

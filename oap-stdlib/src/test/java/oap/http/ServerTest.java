@@ -28,7 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
 import oap.http.cors.GenericCorsPolicy;
-import oap.testng.Env;
+import oap.testng.EnvFixture;
+import oap.testng.Fixtures;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
 
@@ -41,11 +42,16 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-public class ServerTest {
+public class ServerTest extends Fixtures {
+
+    private EnvFixture envFixture;
+
+    {
+        envFixture = fixture( new EnvFixture() );
+    }
 
     @Test
     public void testWithoutQueue() throws InterruptedException {
-        Env.resetPorts();
         SynchronizedThread listener = null;
 
         var semaphore = new Semaphore( 0 );
@@ -58,14 +64,14 @@ public class ServerTest {
             }, Protocol.HTTP );
             server.start();
 
-            var http = new PlainHttpListener( server, Env.port() );
+            var http = new PlainHttpListener( server, envFixture.defaultHttpPort() );
             listener = new SynchronizedThread( http );
             listener.start();
 
-            var f1 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + Env.port() + "/test/", "{}" ).isOk() );
+            var f1 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + envFixture.defaultHttpPort() + "/test/", "{}" ).isOk() );
             semaphore.acquire();
 
-            var f2 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + Env.port() + "/test/", "{}" ).isOk() );
+            var f2 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + envFixture.defaultHttpPort() + "/test/", "{}" ).isOk() );
 
             assertEventually( 10, 1000, () -> {
                 var activeCount = server.getActiveCount();
@@ -79,7 +85,7 @@ public class ServerTest {
 
             var body = RandomStringUtils.random( 1_000_000 );
 
-            assertPost( "http://localhost:" + Env.port() + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
+            assertPost( "http://localhost:" + envFixture.defaultHttpPort() + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
         } finally {
             if( listener != null )
                 listener.stop();

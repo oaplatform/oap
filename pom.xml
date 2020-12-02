@@ -60,7 +60,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>8.2.5</oap.project.version>
+        <oap.project.version>8.2.18</oap.project.version>
 
 
         <oap.deps.testng.version>7.1.0</oap.deps.testng.version>
@@ -92,7 +92,6 @@
 
         <oap.deps.lombok.version>1.18.14</oap.deps.lombok.version>
 
-        <oap.deps.reflections.version>0.9.12</oap.deps.reflections.version>
         <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
         <oap.deps.micrometer.version>1.3.6</oap.deps.micrometer.version>
         <oap.deps.fastutil.version>8.3.1</oap.deps.fastutil.version>

@@ -27,7 +27,7 @@ package oap.message;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
-import oap.testng.Env;
+import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
@@ -46,9 +46,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
 public class MessageServerTest extends Fixtures {
+
+    private final EnvFixture envFixture;
+
     {
         fixture( TestDirectoryFixture.FIXTURE );
         fixture( SystemTimerFixture.FIXTURE );
+        envFixture = fixture( new EnvFixture() );
     }
 
     @Test
@@ -145,7 +149,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceiveJson_OneThread() throws Exception {
+    public void testSendAndReceiveJsonOneThread() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
@@ -363,7 +367,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void testQueue() {
-        var port = Env.port( "server" );
+        var port = envFixture.portFor( "server" );
         var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
         try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
             client.poolSize = 2;

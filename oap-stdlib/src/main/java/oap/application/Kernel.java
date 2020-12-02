@@ -111,7 +111,7 @@ public class Kernel implements Closeable {
         log.trace( "service[{}].dependsOn.addAll({}); module={}", service.name, list, module.name );
         service.dependsOn.addAll( list );
     }
-    
+
     private void fixDeps() {
         for( var module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
@@ -433,18 +433,21 @@ public class Kernel implements Closeable {
     private void startService( ServiceInitialization si ) {
         var service = si.service;
         var instance = si.instance;
-        if( service.supervision.supervise ) {
+        if( service.supervision.thread )
+            supervisor.startThread( service.name, instance,
+                service.supervision.preStartWith,
+                service.supervision.startWith,
+                service.supervision.preStopWith,
+                service.supervision.stopWith
+            );
+        else if( service.supervision.supervise ) {
             supervisor.startSupervised( service.name, instance,
                 service.supervision.preStartWith,
                 service.supervision.startWith,
                 service.supervision.preStopWith,
                 service.supervision.stopWith
             );
-        }
-
-        if( service.supervision.thread )
-            supervisor.startThread( service.name, instance );
-        else {
+        } else {
             if( service.supervision.schedule && service.supervision.cron != null )
                 supervisor.scheduleCron( service.name, ( Runnable ) instance,
                     service.supervision.cron );

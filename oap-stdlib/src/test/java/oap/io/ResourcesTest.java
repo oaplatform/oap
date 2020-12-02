@@ -28,6 +28,8 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,7 +39,7 @@ public class ResourcesTest extends Fixtures {
     }
 
     @Test
-    public void urls() {
+    public void urls() throws IOException {
         var urls = Resources.urls( getClass().getName(), "txt" );
         assertThat( urls ).containsOnly(
             urlOfTestResource( getClass(), "resource.txt" ),

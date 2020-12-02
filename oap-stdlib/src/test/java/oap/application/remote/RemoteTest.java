@@ -42,7 +42,7 @@ public class RemoteTest extends Fixtures {
     protected KernelFixture kernelFixture;
 
     {
-        fixture( kernelFixture = new KernelFixture(
+        kernelFixture = fixture( new KernelFixture(
             pathOfTestResource( RemoteTest.class, "application.conf" ),
             List.of( urlOfTestResource( RemoteTest.class, "module.conf" ) )
         ) );

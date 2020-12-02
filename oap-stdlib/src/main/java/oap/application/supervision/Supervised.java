@@ -28,5 +28,7 @@ interface Supervised {
 
     void stop();
 
+    default void preStart() {}
+
     default void preStop() {}
 }

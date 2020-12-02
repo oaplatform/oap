@@ -27,9 +27,9 @@ import java.util.concurrent.Semaphore;
 
 public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyListener {
     public long stopTimeout = 60000;
-    private Thread thread = new Thread( this );
-    private Runnable child;
-    private Semaphore semaphore = new Semaphore( 0 );
+    private final Thread thread = new Thread( this );
+    private final Runnable child;
+    private final Semaphore semaphore = new Semaphore( 0 );
     private boolean stopped = true;
 
     public SynchronizedThread( SynchronizedRunnable child ) {
@@ -72,7 +72,7 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
         }
     }
 
-    @SuppressWarnings( "deprecated" )
+    @SuppressWarnings( "deprecation" )
     public synchronized void stop() {
         stopped = true;
         thread.interrupt();

@@ -56,6 +56,7 @@ public class FST {
 
     }
 
+    @SuppressWarnings( "unchecked" )
     public <T> T readObject( DataInputStream dis, int size ) throws IOException {
         var bytes = new byte[size];
         dis.readFully( bytes );

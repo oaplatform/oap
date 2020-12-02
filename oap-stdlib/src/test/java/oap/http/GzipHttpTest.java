@@ -27,7 +27,8 @@ package oap.http;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
-import oap.testng.Env;
+import oap.testng.EnvFixture;
+import oap.testng.Fixtures;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -39,17 +40,21 @@ import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GzipHttpTest {
-    private int port;
+public class GzipHttpTest extends Fixtures {
     private Server server;
     private SynchronizedThread thread;
 
+    private final EnvFixture envFixture;
+
+    {
+        envFixture = fixture( new EnvFixture() );
+    }
+
     @BeforeMethod
     public void beforeMethod() {
-        port = Env.port( getClass().getName() );
         server = new Server( 1024, 0, false );
         server.start();
-        PlainHttpListener listener = new PlainHttpListener( server, port );
+        PlainHttpListener listener = new PlainHttpListener( server, envFixture.portFor( getClass() ) );
         thread = new SynchronizedThread( listener, 5000 );
         listener.readyListener( thread );
     }
@@ -67,13 +72,13 @@ public class GzipHttpTest {
 
         thread.start();
 
-        var response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
+        var response = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
         assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
         assertThat( response.contentString() ).isEqualTo( "test" );
 
-        var responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
+        var responseGzip = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
             Map.of(), Map.of( "Accept-encoding", "gzip" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );

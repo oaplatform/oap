@@ -23,7 +23,6 @@
  */
 package oap.io;
 
-import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
@@ -43,6 +42,7 @@ import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.IoStreams.Encoding.ZIP;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -57,17 +57,17 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void wildcard() {
-        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
-        assertThat( Files.wildcard( Env.tmp( "/wildcard" ), "*.txt" ) )
-            .containsOnly( TestDirectoryFixture.testPath( "/wildcard/1.txt" ) );
+        Files.writeString( testPath( "/wildcard/1.txt" ), "1" );
+        assertThat( Files.wildcard( testPath( "/wildcard" ), "*.txt" ) )
+            .containsOnly( testPath( "/wildcard/1.txt" ) );
         assertThat( Files.wildcard( "/aaa", "*.txt" ) ).isEmpty();
 
-        Files.writeString( Env.tmp( "/wildcard/a/a/1.txt" ), "1" );
-        Files.writeString( Env.tmp( "/wildcard/b/1.txt" ), "1" );
-        assertThat( Files.wildcard( Env.tmp( "/wildcard" ), "**/*.txt" ) )
+        Files.writeString( testPath( "/wildcard/a/a/1.txt" ), "1" );
+        Files.writeString( testPath( "/wildcard/b/1.txt" ), "1" );
+        assertThat( Files.wildcard( testPath( "/wildcard" ), "**/*.txt" ) )
             .containsOnly(
-                TestDirectoryFixture.testPath( "/wildcard/a/a/1.txt" ),
-                TestDirectoryFixture.testPath( "/wildcard/b/1.txt" )
+                testPath( "/wildcard/a/a/1.txt" ),
+                testPath( "/wildcard/b/1.txt" )
             );
     }
 
@@ -78,56 +78,56 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void copy() {
-        Files.writeString( TestDirectoryFixture.testPath( "src/a/1.txt" ), "1" );
-        Files.writeString( TestDirectoryFixture.testPath( "src/a/2.txt" ), "1" );
-        Files.writeString( TestDirectoryFixture.testPath( "src/2.txt" ), "${x}" );
+        Files.writeString( testPath( "src/a/1.txt" ), "1" );
+        Files.writeString( testPath( "src/a/2.txt" ), "1" );
+        Files.writeString( testPath( "src/2.txt" ), "${x}" );
         if( !Resources.IS_WINDOWS )
-            Files.setPosixPermissions( TestDirectoryFixture.testPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
+            Files.setPosixPermissions( testPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
 
-        Files.copyContent( TestDirectoryFixture.testPath( "src" ), TestDirectoryFixture.testPath( "all" ) );
-        assertFile( TestDirectoryFixture.testPath( "all/a/1.txt" ) ).hasContent( "1" );
-        assertFile( TestDirectoryFixture.testPath( "all/a/2.txt" ) ).hasContent( "1" );
-        assertFile( TestDirectoryFixture.testPath( "all/2.txt" ) ).hasContent( "${x}" );
+        Files.copyContent( testPath( "src" ), testPath( "all" ) );
+        assertFile( testPath( "all/a/1.txt" ) ).hasContent( "1" );
+        assertFile( testPath( "all/a/2.txt" ) ).hasContent( "1" );
+        assertFile( testPath( "all/2.txt" ) ).hasContent( "${x}" );
 
         if( !Resources.IS_WINDOWS )
-            assertEquals( Files.getPosixPermissions( TestDirectoryFixture.testPath( "all/2.txt" ) ),
+            assertEquals( Files.getPosixPermissions( testPath( "all/2.txt" ) ),
                 Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
-        Files.copyContent( TestDirectoryFixture.testPath( "src" ), TestDirectoryFixture.testPath( "selected" ), Lists.of( "**/2.txt" ), Lists.of() );
-        assertFile( TestDirectoryFixture.testPath( "selected/a/2.txt" ) ).hasContent( "1" );
-        assertFile( TestDirectoryFixture.testPath( "selected/2.txt" ) ).hasContent( "${x}" );
+        Files.copyContent( testPath( "src" ), testPath( "selected" ), Lists.of( "**/2.txt" ), Lists.of() );
+        assertFile( testPath( "selected/a/2.txt" ) ).hasContent( "1" );
+        assertFile( testPath( "selected/2.txt" ) ).hasContent( "${x}" );
 
         if( !Resources.IS_WINDOWS )
-            assertEquals( Files.getPosixPermissions( TestDirectoryFixture.testPath( "selected/2.txt" ) ),
+            assertEquals( Files.getPosixPermissions( testPath( "selected/2.txt" ) ),
                 Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
-        Files.copyContent( TestDirectoryFixture.testPath( "src" ), TestDirectoryFixture.testPath( "selected" ), Lists.of(), Lists.of( "**/1.txt" ) );
-        assertFile( TestDirectoryFixture.testPath( "selected/a/2.txt" ) ).hasContent( "1" );
-        assertFile( TestDirectoryFixture.testPath( "selected/2.txt" ) ).hasContent( "${x}" );
+        Files.copyContent( testPath( "src" ), testPath( "selected" ), Lists.of(), Lists.of( "**/1.txt" ) );
+        assertFile( testPath( "selected/a/2.txt" ) ).hasContent( "1" );
+        assertFile( testPath( "selected/2.txt" ) ).hasContent( "${x}" );
 
         if( !Resources.IS_WINDOWS )
-            assertEquals( Files.getPosixPermissions( TestDirectoryFixture.testPath( "selected/2.txt" ) ),
+            assertEquals( Files.getPosixPermissions( testPath( "selected/2.txt" ) ),
                 Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
-        Files.copyContent( TestDirectoryFixture.testPath( "src" ), TestDirectoryFixture.testPath( "filtered" ), Lists.of( "**/2.txt" ), Lists.of(), true,
+        Files.copyContent( testPath( "src" ), testPath( "filtered" ), Lists.of( "**/2.txt" ), Lists.of(), true,
             macro -> "x".equals( macro ) ? "y" : macro );
-        assertFile( TestDirectoryFixture.testPath( "filtered/a/2.txt" ) ).hasContent( "1" );
-        assertFile( TestDirectoryFixture.testPath( "filtered/2.txt" ) ).hasContent( "y" );
+        assertFile( testPath( "filtered/a/2.txt" ) ).hasContent( "1" );
+        assertFile( testPath( "filtered/2.txt" ) ).hasContent( "y" );
 
         if( !Resources.IS_WINDOWS )
-            assertEquals( Files.getPosixPermissions( TestDirectoryFixture.testPath( "filtered/2.txt" ) ),
+            assertEquals( Files.getPosixPermissions( testPath( "filtered/2.txt" ) ),
                 Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
     }
 
     @Test
     public void isDirectoryEmpty() {
-        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
+        Files.writeString( testPath( "/wildcard/1.txt" ), "1" );
 
-        assertThat( Files.isDirectoryEmpty( TestDirectoryFixture.testPath( "/wildcard" ) ) ).isFalse();
+        assertThat( Files.isDirectoryEmpty( testPath( "/wildcard" ) ) ).isFalse();
 
-        Files.delete( TestDirectoryFixture.testPath( "/wildcard/1.txt" ) );
+        Files.delete( testPath( "/wildcard/1.txt" ) );
 
-        assertThat( Files.isDirectoryEmpty( TestDirectoryFixture.testPath( "/wildcard" ) ) ).isTrue();
+        assertThat( Files.isDirectoryEmpty( testPath( "/wildcard" ) ) ).isTrue();
     }
 
     @Test
@@ -159,7 +159,7 @@ public class FilesTest extends Fixtures {
     @Test( dataProvider = "variants" )
     public void ensureFileEncodingValid( String ext, IoStreams.Encoding encoding ) {
         try {
-            Path path = TestDirectoryFixture.testPath( "file" + ext );
+            Path path = testPath( "file" + ext );
             Files.writeString( path, encoding, "value" );
             Files.ensureFileEncodingValid( path );
             if( IoStreams.Encoding.from( ext ) != encoding ) fail( "should throw exception" );
@@ -170,8 +170,8 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void move() {
-        final Path path = TestDirectoryFixture.testPath( "file.txt" );
-        final Path newPath = TestDirectoryFixture.testPath( "test/newFile.txt" );
+        final Path path = testPath( "file.txt" );
+        final Path newPath = testPath( "test/newFile.txt" );
         Files.writeString( path, "test" );
         Files.writeString( newPath, "test2" );
         Files.move( path, newPath, REPLACE_EXISTING );
@@ -183,21 +183,21 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void deleteEmptyDirectories() {
-        Files.writeString( Env.tmp( "/dir1/1.txt" ), "1" );
-        Files.writeString( Env.tmp( "/dir1/dir2/1.txt" ), "1" );
+        Files.writeString( testPath( "/dir1/1.txt" ), "1" );
+        Files.writeString( testPath( "/dir1/dir2/1.txt" ), "1" );
 
-        var dir3 = TestDirectoryFixture.testPath( "/dir1/dir3" );
-        var dir4 = TestDirectoryFixture.testPath( "/dir1/dir3/dir4" );
+        var dir3 = testPath( "/dir1/dir3" );
+        var dir4 = testPath( "/dir1/dir3/dir4" );
 
         Files.ensureDirectory( dir3 );
         Files.ensureDirectory( dir4 );
 
-        Files.deleteEmptyDirectories( TestDirectoryFixture.testPath( "/" ), false );
+        Files.deleteEmptyDirectories( testPath( "/" ), false );
 
         assertThat( dir4 ).doesNotExist();
         assertThat( dir3 ).doesNotExist();
-        assertThat( TestDirectoryFixture.testPath( "/dir1/dir2" ) ).exists();
-        assertThat( Env.tmp( "/dir1/1.txt" ) ).contains( "1" );
+        assertThat( testPath( "/dir1/dir2" ) ).exists();
+        assertThat( testPath( "/dir1/1.txt" ).toString() ).contains( "1" );
 
         Files.ensureDirectory( dir3 );
         Files.ensureDirectory( dir4 );

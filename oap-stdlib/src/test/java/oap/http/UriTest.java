@@ -24,8 +24,9 @@
 
 package oap.http;
 
-import oap.util.Maps;
 import org.testng.annotations.Test;
+
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static oap.testng.Asserts.assertString;
@@ -34,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class UriTest {
     @Test
     public void uri() {
-        var uri = Uri.uri( "http://test", Maps.of2( "id", asList( 1, 2 ) ) );
+        var uri = Uri.uri( "http://test", Map.of( "id", asList( 1, 2 ) ) );
         assertThat( uri ).hasQuery( "id=1&id=2" );
     }
 

@@ -56,56 +56,43 @@ public class StartableService implements Supervised {
     @SneakyThrows
     @Override
     public void start() {
-        try {
-            findMethod( startWith ).ifPresent( m -> m.invoke( supervised ) );
-            started = true;
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-            throw e;
-        }
+        invoke( startWith, supervised, logger, true );
+        started = true;
     }
 
     @SneakyThrows
     public void preStart() {
-        try {
-            findMethod( preStartWith ).ifPresent( m -> m.invoke( supervised ) );
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-            throw e;
-        }
+        invoke( preStartWith, supervised, logger, true );
     }
 
     @Override
     public void preStop() {
-        try {
-            if( started ) {
-                findMethod( preStopWith ).ifPresent( m -> m.invoke( supervised ) );
-            }
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-        }
+        if( started ) invoke( preStopWith, supervised, logger, false );
     }
 
     @Override
     public void stop() {
+        if( started ) invoke( stopWith, supervised, logger, false );
+        started = false;
+    }
+
+    protected static void invoke( List<String> methods, Object supervised, Logger logger, boolean rethrow ) {
         try {
-            if( started ) {
-                findMethod( stopWith ).ifPresent( m -> m.invoke( supervised ) );
-                started = false;
-            }
+            findMethod( methods, supervised ).ifPresent( m -> m.invoke( supervised ) );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
+            if( rethrow ) throw e;
         }
     }
 
-    private Optional<Reflection.Method> findMethod( List<String> names ) {
+    private static Optional<Reflection.Method> findMethod( List<String> names, Object supervised ) {
         return names
             .stream()
-            .flatMap( m -> Optionals.toStream( getControlMethod( m ) ) )
+            .flatMap( m -> Optionals.toStream( getControlMethod( m, supervised ) ) )
             .findFirst();
     }
 
-    private Optional<Reflection.Method> getControlMethod( String name ) {
+    private static Optional<Reflection.Method> getControlMethod( String name, Object supervised ) {
         return Reflect.reflect( supervised.getClass() ).methods
             .stream()
             .filter( m -> name.equals( m.name() ) && m.parameters.isEmpty() )

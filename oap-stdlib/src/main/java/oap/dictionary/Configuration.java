@@ -49,11 +49,7 @@ import static oap.util.Pair.__;
 public abstract class Configuration {
     protected final DictionaryRoot mappings;
 
-    public Configuration(
-        Path mappingLocation,
-        String resourceLocation,
-        DictionaryParser.IdStrategy idStrategy ) {
-
+    public Configuration( Path mappingLocation, String resourceLocation, DictionaryParser.IdStrategy idStrategy ) {
         var logConfigs = new ArrayList<URL>();
         if( mappingLocation != null ) {
             log.info( "mappingLocation = {}", mappingLocation );

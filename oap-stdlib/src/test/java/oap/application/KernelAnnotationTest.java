@@ -24,9 +24,7 @@
 
 package oap.application;
 
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
-
 
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,11 +38,11 @@ public class KernelAnnotationTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start();
 
-            var fServiceName = kernel.serviceOfClass2( TestServiceNameField.class );
+            var fServiceName = kernel.serviceOfClass( TestServiceNameField.class ).orElseThrow();
             System.out.println( fServiceName.serviceName );
             assertThat( fServiceName.serviceName ).isEqualTo( "field" );
 
-            var sServiceName = kernel.serviceOfClass2( TestServiceNameFSetter.class );
+            var sServiceName = kernel.serviceOfClass( TestServiceNameFSetter.class ).orElseThrow();
             assertThat( sServiceName.serviceName ).isEqualTo( "setter" );
         }
     }

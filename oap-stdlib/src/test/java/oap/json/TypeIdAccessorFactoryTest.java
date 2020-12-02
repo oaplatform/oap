@@ -33,7 +33,6 @@ import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.id.Id;
-import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
@@ -71,7 +70,7 @@ public class TypeIdAccessorFactoryTest {
         assertThat( vm.properties )
             .isNotNull()
             .containsEntry( "unknown-typeid1", "10" )
-            .containsEntry( "unknown-typeid2", Maps.of2( "a", "10" ) );
+            .containsEntry( "unknown-typeid2", Map.of( "a", "10" ) );
     }
 
     @ToString

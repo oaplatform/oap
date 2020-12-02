@@ -27,27 +27,34 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
-import oap.testng.Env;
+import oap.testng.EnvFixture;
+import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
 import static oap.testng.Asserts.assertString;
 
-public class PrometheusExporterTest {
+public class PrometheusExporterTest extends Fixtures {
     private static final Counter TEST_1 = Metrics.counter( "test1" );
+    private final EnvFixture envFixture;
 
+    {
+        envFixture = fixture( new EnvFixture() );
+    }
     @Test
-    public void testServer() throws IOException {
-        var port = Env.port( "prometheus" );
+    public void server() throws IOException {
+        var port = envFixture.portFor( "prometheus" );
         try( var exporter = new PrometheusExporter( port ) ) {
             exporter.start();
 
             TEST_1.increment( 2 );
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertString( response ).contains( "# HELP test1_total  \n" +
-                "# TYPE test1_total counter\n" +
-                "test1_total 2.0\n" );
+            assertString( response ).contains( """
+                # HELP test1_total \s
+                # TYPE test1_total counter
+                test1_total 2.0
+                """ );
         }
     }
 

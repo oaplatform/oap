@@ -26,17 +26,22 @@ package oap.application;
 
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ApplicationConfigurationTest {
     @Test
     public void load() {
+        System.setProperty( "KEY", "VALUE" );
         ApplicationConfiguration config = ApplicationConfiguration.load(
-            pathOfTestResource( KernelTest.class, "application.conf" ),
-            pathOfTestResource( KernelTest.class, "conf.d" )
+            pathOfTestResource( getClass(), "application.conf" ),
+            pathOfTestResource( getClass(), "conf.d" )
         );
-        assertThat( config.services ).hasSize( 2 );
-        config.services.forEach( ( k, v ) -> System.out.println( k + " -> " + v ) );
+        assertThat( config.services ).isEqualTo( Map.of(
+            "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
+            "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
+        ) );
     }
 }

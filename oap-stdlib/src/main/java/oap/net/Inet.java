@@ -47,7 +47,7 @@ public class Inet {
 
     @SneakyThrows
     public static String hostname() {
-        return Env.env( "HOSTNAME", InetAddress.getLocalHost().getHostName() );
+        return Env.get( "HOSTNAME", InetAddress.getLocalHost().getHostName() );
     }
 
     public static boolean isLocalAddress( InetAddress addr ) {

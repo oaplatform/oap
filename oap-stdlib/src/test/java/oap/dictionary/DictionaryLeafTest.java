@@ -25,8 +25,9 @@
 package oap.dictionary;
 
 import oap.json.Binder;
-import oap.util.Maps;
 import org.testng.annotations.Test;
+
+import java.util.Map;
 
 import static java.util.Collections.emptyMap;
 import static oap.testng.Asserts.assertString;
@@ -34,7 +35,7 @@ import static oap.testng.Asserts.assertString;
 public class DictionaryLeafTest {
     @Test
     public void serializeProperties() {
-        var dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Maps.of2( "p1", "v1" ) );
+        var dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Map.of( "p1", "v1" ) );
         assertString( Binder.json.marshal( dictionaryLeaf ) )
             .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"properties\":{\"p1\":\"v1\"}}" );
     }

@@ -24,19 +24,15 @@
 
 package oap.testng;
 
-import org.testng.annotations.Test;
+public class TestDataFixture implements Fixture {
+    private final Class<?> contextClass;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class EnvTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    public TestDataFixture( Class<?> contextClass ) {
+        this.contextClass = contextClass;
     }
 
-    @Test
-    public void testDeployTestData() {
-        Env.deployTestData( getClass(), "test" );
-
-        assertThat( TestDirectoryFixture.testPath( "test/test.txt" ) ).hasContent( "1" );
+    @Override
+    public void beforeMethod() {
+        TestDirectoryFixture.deployTestData( contextClass );
     }
 }

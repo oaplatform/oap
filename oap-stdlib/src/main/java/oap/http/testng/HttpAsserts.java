@@ -26,10 +26,10 @@ package oap.http.testng;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.application.testng.KernelFixture;
 import oap.http.Client;
 import oap.http.Cookie;
 import oap.json.testng.JsonAsserts;
-import oap.testng.Env;
 import oap.util.BiStream;
 import oap.util.Pair;
 import oap.util.Stream;
@@ -65,7 +65,7 @@ public class HttpAsserts {
     }
 
     public static String httpPrefix() {
-        return "http://localhost:" + Env.port();
+        return "http://localhost:" + System.getProperty( KernelFixture.TEST_HTTP_PORT );
     }
 
     @SuppressWarnings( "CheckStyle" )

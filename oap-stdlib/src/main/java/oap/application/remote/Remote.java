@@ -131,20 +131,16 @@ public class Remote implements HttpHandler {
                              var dos = new DataOutputStream( bos ) ) {
                             dos.writeBoolean( result.isSuccess() );
 
-                            if( !result.isSuccess() ) {
-                                fst.writeObjectWithSize( dos, result.failureValue );
-                            } else {
-                                if( result.successValue instanceof Stream<?> ) {
-                                    dos.writeBoolean( true );
+                            if( !result.isSuccess() ) fst.writeObjectWithSize( dos, result.failureValue );
+                            else if( result.successValue instanceof Stream<?> ) {
+                                dos.writeBoolean( true );
 
-                                    ( ( Stream ) result.successValue ).forEach( Try.consume( ( obj -> {
-                                        fst.writeObjectWithSize( dos, obj );
-                                    } ) ) );
-                                    dos.writeInt( 0 );
-                                } else {
-                                    dos.writeBoolean( false );
-                                    fst.writeObjectWithSize( dos, result.successValue );
-                                }
+                                ( ( Stream<?> ) result.successValue ).forEach( Try.consume( obj ->
+                                    fst.writeObjectWithSize( dos, obj ) ) );
+                                dos.writeInt( 0 );
+                            } else {
+                                dos.writeBoolean( false );
+                                fst.writeObjectWithSize( dos, result.successValue );
                             }
                         }
                         successMetrics.increment();

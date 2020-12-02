@@ -36,15 +36,16 @@ import java.util.LinkedList;
 public class Fixtures {
     private final LinkedList<Fixture> fixtures = new LinkedList<>();
 
-    public void fixture( Fixture fixture ) {
-        fixture( Position.LAST, fixture );
+    public <F extends Fixture> F fixture( F fixture ) {
+        return fixture( Position.LAST, fixture );
     }
 
-    public void fixture( Position position, Fixture fixture ) {
+    public <F extends Fixture> F fixture( Position position, F fixture ) {
         switch( position ) {
             case FIRST -> fixtures.addFirst( fixture );
             case LAST -> fixtures.addLast( fixture );
         }
+        return fixture;
     }
 
     @BeforeSuite
