@@ -27,37 +27,46 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.SynchronizedRunnableReadyListener;
 import oap.concurrent.SynchronizedThread;
-import oap.io.Closeables;
 
-import java.io.Closeable;
+import java.util.List;
 
 @Slf4j
 public class ThreadService extends SynchronizedRunnable implements Supervised, SynchronizedRunnableReadyListener {
 
     private final Supervisor supervisor;
+    private final List<String> preStartWith;
+    private final List<String> startWith;
+    private final List<String> preStopWith;
+    private final List<String> stopWith;
     private final SynchronizedThread thread = new SynchronizedThread( this );
-    private final Runnable supervisee;
+    private final Runnable supervised;
     private int maxFailures = 100;
 
-    public ThreadService( final String name, final Runnable supervisee, final Supervisor supervisor ) {
-        this.supervisee = supervisee;
+    public ThreadService( final String name, final Runnable supervised, final Supervisor supervisor,
+                          List<String> preStartWith, List<String> startWith,
+                          List<String> preStopWith, List<String> stopWith ) {
+        this.supervised = supervised;
         this.supervisor = supervisor;
+        this.preStartWith = preStartWith;
+        this.startWith = startWith;
+        this.preStopWith = preStopWith;
+        this.stopWith = stopWith;
         this.thread.setName( name );
-        if( supervisee instanceof SynchronizedRunnable )
-            ( ( SynchronizedRunnable ) supervisee ).readyListener( this );
+        if( supervised instanceof SynchronizedRunnable )
+            ( ( SynchronizedRunnable ) supervised ).readyListener( this );
         else notifyReady();
     }
 
     @Override
     public void run() {
         while( thread.isRunning() && maxFailures > 0 ) try {
-            supervisee.run();
+            supervised.run();
         } catch( Exception e ) {
             maxFailures--;
             log.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
         }
         if( maxFailures <= 0 ) {
-            log.error( supervisee + " constantly crushing. Requesting shutdown..." );
+            log.error( supervised + " constantly crushing. Requesting shutdown..." );
             new Thread( () -> {
                 supervisor.preStop();
                 supervisor.stop();
@@ -65,16 +74,26 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
         }
     }
 
+    @Override
+    public void preStart() {
+        StartableService.invoke( preStartWith, supervised, log, true );
+    }
+
+    @Override
+    public void preStop() {
+        StartableService.invoke( preStopWith, supervised, log, false );
+    }
 
     public synchronized void start() {
         log.debug( "starting " + thread.getName() );
+        StartableService.invoke( startWith, supervised, log, true );
         thread.start();
     }
 
     public synchronized void stop() {
         log.debug( "stopping " + thread.getName() );
 
-        if( supervisee instanceof Closeable ) Closeables.close( ( Closeable ) supervisee );
         thread.stop();
+        StartableService.invoke( stopWith, supervised, log, false );
     }
 }

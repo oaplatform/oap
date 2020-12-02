@@ -89,9 +89,9 @@ public class Module {
         public boolean supervise;
         public boolean thread;
         public boolean schedule;
-        public List<String> preStartWith = List.of( "preStart", "pre_start" );
+        public List<String> preStartWith = List.of( "preStart" );
         public List<String> startWith = List.of( "start" );
-        public List<String> preStopWith = List.of( "preStop", "pre_stop" );
+        public List<String> preStopWith = List.of( "preStop" );
         public List<String> stopWith = List.of( "stop", "close" );
         public long delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger

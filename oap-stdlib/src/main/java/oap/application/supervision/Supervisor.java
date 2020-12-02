@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 public class Supervisor {
 
     private final LinkedHashMap<String, Supervised> services = new LinkedHashMap<>();
-//    private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
     private boolean stopped = false;
 
     public void startSupervised( String name, Object service,
@@ -44,8 +43,10 @@ public class Supervisor {
         this.services.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
-    public void startThread( String name, Object instance ) {
-        this.services.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
+    public void startThread( String name, Object instance,
+                             List<String> preStartWith, List<String> startWith,
+                             List<String> preStopWith, List<String> stopWith ) {
+        this.services.put( name, new ThreadService( name, ( Runnable ) instance, this, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
     public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
@@ -85,39 +86,11 @@ public class Supervisor {
             long end = System.currentTimeMillis();
             log.debug( "starting {}... Done. ({}ms)", name, end - start );
         } );
-
-//        this.scheduled.forEach( ( name, service ) -> {
-//            log.debug( "schedule {}...", name );
-//            long start = System.currentTimeMillis();
-//            KernelHelper.setThreadNameSuffix( name );
-//            try {
-//                service.start();
-//            } finally {
-//                KernelHelper.restoreThreadName();
-//            }
-//            long end = System.currentTimeMillis();
-//            log.debug( "schedule {}... Done. ({}ms)", name, end - start );
-//        } );
     }
 
     public synchronized void preStop() {
         if( !stopped ) {
             log.debug( "pre stopping..." );
-
-//            BiStream.of( this.scheduled )
-//                .reversed()
-//                .forEach( ( name, service ) -> {
-//                    log.debug( "pre stopping {}...", name );
-//                    KernelHelper.setThreadNameSuffix( name );
-//                    try {
-//                        service.preStop();
-//                    } finally {
-//                        KernelHelper.restoreThreadName();
-//                    }
-//                    log.debug( "pre stopping {}... Done.", name );
-//                } );
-//            this.scheduled.clear();
-
             BiStream.of( this.services )
                 .reversed()
                 .forEach( ( name, service ) -> {
@@ -158,22 +131,6 @@ public class Supervisor {
         if( !stopped ) {
             log.debug( "stopping..." );
             this.stopped = true;
-
-//            BiStream.of( this.scheduled )
-//                .filter( s -> s._1.equals( serviceName ) )
-//                .forEach( ( name, service ) -> {
-//                    log.debug( "stopping {}...", name );
-//                    KernelHelper.setThreadNameSuffix( name );
-//                    try {
-//                        service.preStop();
-//                        service.stop();
-//                    } finally {
-//                        KernelHelper.restoreThreadName();
-//                    }
-//                    log.debug( "stopping {}... Done.", name );
-//                } );
-//            this.scheduled.clear();
-
             BiStream.of( this.services )
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
