@@ -59,7 +59,6 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
 
     public void preStop() {
         Closeables.close( serverSocket );
-        serverSocket = null;
     }
     
     @Override
