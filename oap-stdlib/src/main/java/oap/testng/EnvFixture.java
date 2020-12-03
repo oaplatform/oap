@@ -44,11 +44,10 @@ import static oap.util.Pair.__;
 
 @Slf4j
 public class EnvFixture implements Fixture {
+    public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
+
     private final ListMultimap<Scope, Pair<String, Object>> properties = ArrayListMultimap.create();
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
-
-    public EnvFixture() {
-    }
 
     public EnvFixture define( String property, Object value ) {
         return define( METHOD, property, value );
@@ -92,12 +91,8 @@ public class EnvFixture implements Fixture {
         clearPorts();
     }
 
-    public enum Scope {
-        METHOD, CLASS, SUITE
-    }
-
     public int defaultHttpPort() {
-        return portFor( "TEST_HTTP_PORT" );
+        return portFor( TEST_HTTP_PORT );
     }
 
     public int portFor( Class<?> clazz ) {
@@ -121,6 +116,10 @@ public class EnvFixture implements Fixture {
     public void clearPorts() {
         log.debug( "clear ports" );
         ports.clear();
+    }
+
+    public enum Scope {
+        METHOD, CLASS, SUITE
     }
 
 }
