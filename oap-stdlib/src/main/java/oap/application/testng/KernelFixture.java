@@ -24,6 +24,7 @@
 
 package oap.application.testng;
 
+import com.google.common.base.Preconditions;
 import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Resources;
@@ -37,6 +38,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
+import static oap.testng.Fixture.Scope.CLASS;
+import static oap.testng.Fixture.Scope.METHOD;
+import static oap.testng.Fixture.Scope.SUITE;
 
 public class KernelFixture extends EnvFixture {
     public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
@@ -45,10 +49,11 @@ public class KernelFixture extends EnvFixture {
     public static final String TEST_RESOURCE_PATH = "TEST_RESOURCE_PATH";
     public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
     private static int kernelN = 0;
-    public Kernel kernel;
     private final Path conf;
     private final Path confd;
     private final List<URL> additionalModules = new ArrayList<>();
+    private final Scope scope;
+    public Kernel kernel;
 
     public KernelFixture( Path conf ) {
         this( conf, null, List.of() );
@@ -75,7 +80,7 @@ public class KernelFixture extends EnvFixture {
     }
 
     public KernelFixture( String conf, String confd, List<URL> additionalModules ) {
-        this( Resources.filePath( KernelFixture.class, conf )
+        this( METHOD, Resources.filePath( KernelFixture.class, conf )
                 .orElseThrow( () -> new IllegalArgumentException( conf ) ),
             confd != null
                 ? Resources.filePath( KernelFixture.class, confd )
@@ -85,9 +90,17 @@ public class KernelFixture extends EnvFixture {
     }
 
     public KernelFixture( Path conf, Path confd, List<URL> additionalModules ) {
+        this( METHOD, conf, confd, additionalModules );
+    }
+
+    private KernelFixture( Scope scope, Path conf, Path confd, List<URL> additionalModules ) {
+        this.scope = scope;
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
+    }
+
+    protected void defineDefaultPorts() {
         define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
 //        deprecated
         define( "TMP_REMOTE_PORT", "${TEST_REMOTING_PORT}" );
@@ -103,7 +116,10 @@ public class KernelFixture extends EnvFixture {
         define( TEST_HTTP_PREFIX, httpPrefix() );
 //        deprecated
         define( "HTTP_PREFIX", httpPrefix() );
+    }
 
+    public KernelFixture withScope( Scope scope ) {
+        return new KernelFixture( scope, this.conf, this.confd, this.additionalModules );
     }
 
     @Override
@@ -132,8 +148,29 @@ public class KernelFixture extends EnvFixture {
     }
 
     @Override
+    public void beforeSuite() {
+        defineDefaultPorts();
+        super.beforeSuite();
+        if( scope == SUITE ) start();
+    }
+
+    @Override
+    public void beforeClass() {
+        defineDefaultPorts();
+        super.beforeClass();
+        if( scope == CLASS ) start();
+    }
+
+    @Override
     public void beforeMethod() {
+        defineDefaultPorts();
         super.beforeMethod();
+        if( scope == METHOD ) start();
+    }
+
+    protected void start() {
+        Preconditions.checkArgument( this.kernel == null );
+        
         List<URL> moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
@@ -144,7 +181,24 @@ public class KernelFixture extends EnvFixture {
 
     @Override
     public void afterMethod() {
-        this.kernel.stop();
+        if( scope == METHOD ) stop();
         super.afterMethod();
+    }
+
+    @Override
+    public void afterClass() {
+        if( scope == CLASS ) stop();
+        super.afterClass();
+    }
+
+    @Override
+    public void afterSuite() {
+        if( scope == SUITE ) stop();
+        super.afterSuite();
+    }
+
+    protected void stop() {
+        this.kernel.stop();
+        this.kernel = null;
     }
 }
