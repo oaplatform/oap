@@ -76,7 +76,15 @@ public class CuidTest {
 
     @Test
     public void testToStringUniqueCuid() {
-        System.out.println( Cuid.UniqueCuid.toString( "171859AD799000C0AF45F03" ) );
+        System.out.println( Cuid.UniqueCuid.toString( "17621A6D3E200230AF4D60C" ) );
+
+        System.out.println("--");
+        System.out.println( Cuid.UniqueCuid.toString( "17621A46AC200320AF4D60C" ) );
+        System.out.println( Cuid.UniqueCuid.toString( "17621A7B10700820AF4E002" ) );
+
+        System.out.println("--");
+        System.out.println( Cuid.UniqueCuid.toString( "17621CDBBFB001A0AF4E303" ) );
+        System.out.println( Cuid.UniqueCuid.toString( "17621D24FDC00340AF4D20C" ) );
     }
 }
 

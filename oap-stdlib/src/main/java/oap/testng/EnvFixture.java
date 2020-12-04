@@ -37,9 +37,9 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static oap.testng.EnvFixture.Scope.CLASS;
-import static oap.testng.EnvFixture.Scope.METHOD;
-import static oap.testng.EnvFixture.Scope.SUITE;
+import static oap.testng.Fixture.Scope.CLASS;
+import static oap.testng.Fixture.Scope.METHOD;
+import static oap.testng.Fixture.Scope.SUITE;
 import static oap.util.Pair.__;
 
 @Slf4j
@@ -117,9 +117,4 @@ public class EnvFixture implements Fixture {
         log.debug( "clear ports" );
         ports.clear();
     }
-
-    public enum Scope {
-        METHOD, CLASS, SUITE
-    }
-
 }

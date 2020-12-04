@@ -26,8 +26,8 @@ package oap.testng;
 
 import org.testng.annotations.Test;
 
-import static oap.testng.EnvFixture.Scope.CLASS;
-import static oap.testng.EnvFixture.Scope.SUITE;
+import static oap.testng.Fixture.Scope.CLASS;
+import static oap.testng.Fixture.Scope.SUITE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EnvFixtureTest {

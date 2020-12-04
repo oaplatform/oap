@@ -204,11 +204,13 @@ public class Kernel implements Closeable {
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
 
-        this.modules.addAll( Stream.of( moduleConfigurations )
-            .map( module -> Module.CONFIGURATION.fromFile( module, config.services ) )
-            .toList() );
-        log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
-        log.trace( "modules configs = " + this.modules );
+        for( var moduleConfiguration : moduleConfigurations ) {
+            this.modules.add( Module.CONFIGURATION.fromFile( moduleConfiguration, config.services ) );
+        }
+        var configurations = Lists.filterThanMap( this.modules, m -> !m.configuration.isEmpty(), m -> m.configuration );
+        log.debug( "modules = {}", Sets.map( this.modules, m -> m.name ) );
+        log.trace( "modules configs = {}", this.modules );
+        log.trace( "modules configurations = {}", configurations );
 
         fixServiceName();
         fixDeps();
@@ -225,9 +227,10 @@ public class Kernel implements Closeable {
     }
 
     private void fixServiceName() {
-        for( var module : modules )
+        for( var module : modules ) {
             module.services.forEach( ( implName, service ) ->
                 service.name = service.name != null ? service.name : implName );
+        }
     }
 
     private Map<String, ServiceInitialization> instantiateServices() {

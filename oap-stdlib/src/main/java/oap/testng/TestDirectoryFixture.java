@@ -24,6 +24,7 @@
 
 package oap.testng;
 
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
@@ -39,13 +40,23 @@ import java.nio.file.Paths;
 
 @Slf4j
 public class TestDirectoryFixture implements Fixture {
-    public static TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
     private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Suite.uniqueExecutionId() );
+    public static TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
 
     static {
         Files.ensureDirectory( testDirectory() );
         log.debug( "initializing test directory " + testDirectory() );
+    }
+
+    private final DeployTestData deployTestData;
+
+    public TestDirectoryFixture() {
+        this( null );
+    }
+
+    public TestDirectoryFixture( DeployTestData deployTestData ) {
+        this.deployTestData = deployTestData;
     }
 
     public static Path globalTestDirectory() {
@@ -91,6 +102,29 @@ public class TestDirectoryFixture implements Fixture {
         return to;
     }
 
+    public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name, Scope scope ) {
+        return new TestDirectoryFixture( new DeployTestData( contextClass, name, scope ) );
+    }
+
+    private void deployTestData( Scope suite ) {
+        if( deployTestData != null && deployTestData.scope == suite ) deployTestData( deployTestData.contextClass, deployTestData.name );
+    }
+
+    @Override
+    public void beforeSuite() {
+        deployTestData( Scope.SUITE );
+    }
+
+    @Override
+    public void beforeClass() {
+        deployTestData( Scope.CLASS );
+    }
+
+    @Override
+    public void beforeMethod() {
+        deployTestData( Scope.METHOD );
+    }
+
     @Override
     public void afterClass() {
         TestDirectoryFixture.deleteDirectory( testDirectory() );
@@ -115,5 +149,12 @@ public class TestDirectoryFixture implements Fixture {
                     }
                 } );
         }
+    }
+
+    @AllArgsConstructor
+    private static class DeployTestData {
+        public final Class<?> contextClass;
+        public final String name;
+        public final Scope scope;
     }
 }

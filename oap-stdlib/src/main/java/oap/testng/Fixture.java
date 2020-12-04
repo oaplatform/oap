@@ -37,4 +37,7 @@ public interface Fixture {
 
     default void afterMethod() {}
 
+    enum Scope {
+        METHOD, CLASS, SUITE
+    }
 }

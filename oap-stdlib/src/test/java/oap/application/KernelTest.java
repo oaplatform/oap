@@ -236,16 +236,13 @@ public class KernelTest {
         Env.set( "CONFIG.services.s1.enabled", "false" );
         Env.set( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
 
-        Kernel kernel = new Kernel( modules );
-        try {
+        try( var kernel = new Kernel( modules ) ) {
             kernel.start();
 
             assertThat( kernel.<Service1>service( "s1" ) ).isNotPresent();
             assertThat( kernel.<Service2>service( "s2" ) ).isPresent();
             assertThat( kernel.<Service2>service( "s2" ) ).isPresent().get()
                 .satisfies( s2 -> assertThat( s2.val ).isEqualTo( "test$value" ) );
-        } finally {
-            kernel.stop();
         }
     }
 
@@ -253,13 +250,24 @@ public class KernelTest {
     public void testReference() {
         var modules = Lists.of( urlOfTestResource( getClass(), "reference/reference.conf" ) );
 
-        var kernel = new Kernel( modules );
-        try {
+        try( var kernel = new Kernel( modules ) ) {
             assertThatCode( kernel::start )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "dependencies are not ready [s1]" );
-        } finally {
-            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testConfiguration() {
+        var modules = Lists.of(
+            urlOfTestResource( getClass(), "modules/oap-module.conf" ),
+            urlOfTestResource( getClass(), "modules/oap-module-configuration.conf" )
+        );
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start();
+            
+            assertThat( kernel.serviceOfClass2( ServiceOne.class ).i ).isEqualTo( 2 );
         }
     }
 
