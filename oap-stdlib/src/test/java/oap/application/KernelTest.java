@@ -257,20 +257,6 @@ public class KernelTest {
         }
     }
 
-    @Test
-    public void testConfiguration() {
-        var modules = Lists.of(
-            urlOfTestResource( getClass(), "modules/oap-module.conf" ),
-            urlOfTestResource( getClass(), "modules/oap-module-configuration.conf" )
-        );
-
-        try( var kernel = new Kernel( modules ) ) {
-            kernel.start();
-            
-            assertThat( kernel.serviceOfClass2( ServiceOne.class ).i ).isEqualTo( 2 );
-        }
-    }
-
     @Slf4j
     public static class TestCloseable implements Closeable {
 

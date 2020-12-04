@@ -54,7 +54,6 @@ public class Module {
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
     @JsonAlias( { "profile", "profiles" } )
     public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
-    public final LinkedHashMap<String, Object> configuration = new LinkedHashMap<>();
     public String name;
 
     @JsonCreator

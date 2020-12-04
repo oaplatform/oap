@@ -207,10 +207,8 @@ public class Kernel implements Closeable {
         for( var moduleConfiguration : moduleConfigurations ) {
             this.modules.add( Module.CONFIGURATION.fromFile( moduleConfiguration, config.services ) );
         }
-        var configurations = Lists.filterThanMap( this.modules, m -> !m.configuration.isEmpty(), m -> m.configuration );
         log.debug( "modules = {}", Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = {}", this.modules );
-        log.trace( "modules configurations = {}", configurations );
 
         fixServiceName();
         fixDeps();
