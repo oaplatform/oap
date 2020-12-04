@@ -59,12 +59,18 @@ public class Remote implements HttpHandler {
     private final Counter successMetrics;
 
     private final FST.SerializationMethod serialization;
+    private final int port;
+    private final String context;
     private final Kernel kernel;
+    private final long timeout;
     private final Undertow undertow;
 
     public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel, long timeout ) {
         this.serialization = serialization;
+        this.port = port;
+        this.context = context;
         this.kernel = kernel;
+        this.timeout = timeout;
 
         undertow = Undertow
             .builder()
@@ -80,6 +86,8 @@ public class Remote implements HttpHandler {
     }
 
     public void start() {
+        log.info( "port = {}, timeout = {}, serialization = {}, context = {}", port, timeout, serialization, context );
+
         undertow.start();
     }
 
