@@ -88,7 +88,17 @@ public class EnvFixture implements Fixture {
 
     @Override
     public void afterMethod() {
-        clearPorts();
+        clearPorts( METHOD );
+    }
+
+    @Override
+    public void afterClass() {
+        clearPorts( CLASS );
+    }
+
+    @Override
+    public void afterSuite() {
+        clearPorts( SUITE );
     }
 
     public int defaultHttpPort() {
@@ -115,6 +125,15 @@ public class EnvFixture implements Fixture {
 
     public void clearPorts() {
         log.debug( "clear ports" );
+        ports.clear();
+    }
+
+    private void clearPorts( Scope scope ) {
+        properties.asMap().forEach( ( pscope, list ) -> {
+            if( scope == pscope ) {
+                for( var p : list ) ports.remove( p._1 );
+            }
+        } );
         ports.clear();
     }
 }
