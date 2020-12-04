@@ -49,13 +49,15 @@ public class TestDirectoryFixture implements Fixture {
         log.debug( "initializing test directory " + testDirectory() );
     }
 
+    private final Scope scope;
     private final DeployTestData deployTestData;
 
     public TestDirectoryFixture() {
-        this( null );
+        this( Scope.METHOD, null );
     }
 
-    public TestDirectoryFixture( DeployTestData deployTestData ) {
+    public TestDirectoryFixture( Scope scope, DeployTestData deployTestData ) {
+        this.scope = scope;
         this.deployTestData = deployTestData;
     }
 
@@ -102,12 +104,20 @@ public class TestDirectoryFixture implements Fixture {
         return to;
     }
 
-    public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name, Scope scope ) {
-        return new TestDirectoryFixture( new DeployTestData( contextClass, name, scope ) );
+    public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name ) {
+        return new TestDirectoryFixture( this.scope, new DeployTestData( contextClass, name ) );
+    }
+
+    public TestDirectoryFixture withDeployTestData( Class<?> contextClass ) {
+        return withDeployTestData( contextClass, "" );
+    }
+
+    public TestDirectoryFixture withScope( Scope scope ) {
+        return new TestDirectoryFixture( scope, this.deployTestData );
     }
 
     private void deployTestData( Scope suite ) {
-        if( deployTestData != null && deployTestData.scope == suite ) deployTestData( deployTestData.contextClass, deployTestData.name );
+        if( deployTestData != null && scope == suite ) deployTestData( deployTestData.contextClass, deployTestData.name );
     }
 
     @Override
@@ -126,14 +136,23 @@ public class TestDirectoryFixture implements Fixture {
     }
 
     @Override
-    public void afterClass() {
-        TestDirectoryFixture.deleteDirectory( testDirectory() );
+    public void afterSuite() {
+        deleteTestDirectory( Scope.SUITE );
         cleanTestDirectories();
     }
 
     @Override
+    public void afterClass() {
+        deleteTestDirectory( Scope.CLASS );
+    }
+
+    @Override
     public void afterMethod() {
-        TestDirectoryFixture.deleteDirectory( testDirectory() );
+        deleteTestDirectory( Scope.METHOD );
+    }
+
+    private void deleteTestDirectory( Scope suite ) {
+        if( scope == suite ) TestDirectoryFixture.deleteDirectory( testDirectory() );
     }
 
     @SneakyThrows
@@ -155,6 +174,5 @@ public class TestDirectoryFixture implements Fixture {
     private static class DeployTestData {
         public final Class<?> contextClass;
         public final String name;
-        public final Scope scope;
     }
 }

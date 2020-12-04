@@ -24,6 +24,10 @@
 
 package oap.testng;
 
+/**
+ * @see TestDirectoryFixture#withDeployTestData
+ */
+@Deprecated( forRemoval = true )
 public class TestDataFixture implements Fixture {
     private final Class<?> contextClass;
 
