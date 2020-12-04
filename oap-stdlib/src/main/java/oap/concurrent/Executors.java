@@ -120,5 +120,13 @@ public final class Executors {
         public void shutdown() {
             threadPoolExecutor.shutdown();
         }
+
+        public void shutdownNow() {
+            threadPoolExecutor.shutdownNow();
+        }
+
+        public void awaitTermination( long temout, TimeUnit unit ) throws InterruptedException {
+            threadPoolExecutor.awaitTermination( temout, unit );
+        }
     }
 }
