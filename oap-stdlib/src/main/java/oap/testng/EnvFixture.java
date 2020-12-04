@@ -27,6 +27,7 @@ package oap.testng;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Pair;
 import oap.util.Strings;
@@ -69,6 +70,9 @@ public class EnvFixture implements Fixture {
             log.debug( "system property {} = {}", p._1, value );
             System.setProperty( p._1, value );
         } );
+
+        ConfigImpl.reloadEnvVariablesConfig();
+        ConfigImpl.reloadSystemPropertiesConfig();
     }
 
     @Override
