@@ -21,26 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application.supervision;
 
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
+/**
+ * Created by igor.petrenko on 2020-12-08.
+ */
+public interface WrapperService<TService> extends Supervised {
+    String type();
 
-import java.util.concurrent.TimeUnit;
-
-public class DelayScheduledService extends ScheduledService {
-    private final long delay;
-    private final TimeUnit unit;
-
-    public DelayScheduledService( Runnable runnable, long delay, TimeUnit unit ) {
-        super( "delay", runnable );
-        this.delay = delay;
-        this.unit = unit;
-    }
-
-    @Override
-    protected Scheduled schedule() {
-        return Scheduler.scheduleWithFixedDelay( delay, unit, this );
-    }
-
+    TService service();
 }

@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.io.Closeable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,22 +81,6 @@ public class KernelTest {
         assertThat( service.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
         assertThat( thread.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
         assertThat( delayScheduled.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
-    }
-
-    @Test
-    public void stopCloseable() {
-        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
-
-        Kernel kernel = new Kernel( modules );
-        kernel.start();
-        TestCloseable tc = kernel.<TestCloseable>service( "c1" ).orElseThrow();
-        TestCloseable2 tc2 = kernel.<TestCloseable2>service( "c2" ).orElseThrow();
-        kernel.stop();
-
-        assertThat( tc.closed ).isTrue();
-        assertThat( tc2.closed ).isFalse();
-        assertThat( tc2.stopped ).isTrue();
     }
 
     @Test
@@ -256,37 +239,7 @@ public class KernelTest {
                 .hasMessage( "dependencies are not ready [s1]" );
         }
     }
-
-    @Slf4j
-    public static class TestCloseable implements Closeable {
-
-        public boolean closed;
-
-        @Override
-        public void close() {
-            log.info( "log_close" );
-            this.closed = true;
-        }
-    }
-
-    @Slf4j
-    public static class TestCloseable2 implements Closeable {
-        public boolean stopped;
-        public boolean closed;
-
-        public void stop() {
-            log.info( "log_stop" );
-            this.stopped = true;
-
-        }
-
-        @Override
-        public void close() {
-            log.info( "log_close" );
-            this.closed = true;
-        }
-    }
-
+    
     @Slf4j
     public static class Service1 {
         public final List<Object> list = new ArrayList<>();

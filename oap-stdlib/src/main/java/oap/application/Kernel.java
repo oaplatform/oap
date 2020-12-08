@@ -434,21 +434,18 @@ public class Kernel implements Closeable {
     private void startService( ServiceInitialization si ) {
         var service = si.service;
         var instance = si.instance;
-        if( service.supervision.thread )
-            supervisor.startThread( service.name, instance,
-                service.supervision.preStartWith,
-                service.supervision.startWith,
-                service.supervision.preStopWith,
-                service.supervision.stopWith
-            );
-        else if( service.supervision.supervise ) {
+        if( service.supervision.supervise ) {
             supervisor.startSupervised( service.name, instance,
                 service.supervision.preStartWith,
                 service.supervision.startWith,
                 service.supervision.preStopWith,
                 service.supervision.stopWith
             );
-        } else {
+        }
+
+        if( service.supervision.thread )
+            supervisor.startThread( service.name, instance );
+        else {
             if( service.supervision.schedule && service.supervision.cron != null )
                 supervisor.scheduleCron( service.name, ( Runnable ) instance,
                     service.supervision.cron );

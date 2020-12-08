@@ -30,7 +30,7 @@ public class CronScheduledService extends ScheduledService {
     private final String cron;
 
     public CronScheduledService( Runnable runnable, String cron ) {
-        super( runnable );
+        super( "cron", runnable );
         this.cron = cron;
     }
 

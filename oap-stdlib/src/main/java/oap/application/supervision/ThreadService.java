@@ -28,33 +28,33 @@ import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.SynchronizedRunnableReadyListener;
 import oap.concurrent.SynchronizedThread;
 
-import java.util.List;
-
 @Slf4j
-public class ThreadService extends SynchronizedRunnable implements Supervised, SynchronizedRunnableReadyListener {
+public class ThreadService extends SynchronizedRunnable implements WrapperService<Runnable>, SynchronizedRunnableReadyListener {
 
     private final Supervisor supervisor;
-    private final List<String> preStartWith;
-    private final List<String> startWith;
-    private final List<String> preStopWith;
-    private final List<String> stopWith;
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private final Runnable supervised;
+    protected SynchronizedRunnableReadyListener listener;
     private int maxFailures = 100;
 
-    public ThreadService( final String name, final Runnable supervised, final Supervisor supervisor,
-                          List<String> preStartWith, List<String> startWith,
-                          List<String> preStopWith, List<String> stopWith ) {
-        this.supervised = supervised;
+    public ThreadService( final String name, Runnable supervisee, final Supervisor supervisor ) {
+        this.supervised = supervisee;
+
         this.supervisor = supervisor;
-        this.preStartWith = preStartWith;
-        this.startWith = startWith;
-        this.preStopWith = preStopWith;
-        this.stopWith = stopWith;
         this.thread.setName( name );
-        if( supervised instanceof SynchronizedRunnable )
-            ( ( SynchronizedRunnable ) supervised ).readyListener( this );
+        if( supervisee instanceof SynchronizedRunnable )
+            ( ( SynchronizedRunnable ) supervisee ).readyListener( this );
         else notifyReady();
+    }
+
+    @Override
+    public String type() {
+        return "thread";
+    }
+
+    @Override
+    public Runnable service() {
+        return supervised;
     }
 
     @Override
@@ -74,26 +74,19 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
         }
     }
 
-    @Override
-    public void preStart() {
-        StartableService.invoke( preStartWith, supervised, log, true );
+
+    public synchronized void start() {
+        log.debug( "starting thread " + thread.getName() );
+        thread.start();
     }
 
     @Override
     public void preStop() {
-        StartableService.invoke( preStopWith, supervised, log, false );
-    }
+        log.debug( "stopping thread " + thread.getName() );
 
-    public synchronized void start() {
-        log.debug( "starting " + thread.getName() );
-        StartableService.invoke( startWith, supervised, log, true );
-        thread.start();
+        thread.stop();
     }
 
     public synchronized void stop() {
-        log.debug( "stopping " + thread.getName() );
-
-        thread.stop();
-        StartableService.invoke( stopWith, supervised, log, false );
     }
 }
