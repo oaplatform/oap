@@ -443,9 +443,12 @@ public class Kernel implements Closeable {
             );
         }
 
-        if( service.supervision.thread )
-            supervisor.startThread( service.name, instance );
-        else {
+        if( service.supervision.thread ) {
+            if( service.supervision.delay != 0 )
+                supervisor.startScheduledThread( service.name, instance, service.supervision.delay, MILLISECONDS );
+            else
+                supervisor.startThread( service.name, instance );
+        } else {
             if( service.supervision.schedule && service.supervision.cron != null )
                 supervisor.scheduleCron( service.name, ( Runnable ) instance,
                     service.supervision.cron );

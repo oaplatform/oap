@@ -55,8 +55,12 @@ public abstract class ScheduledService implements WrapperService<Runnable>, Runn
     protected abstract Scheduled schedule();
 
     @Override
-    public void stop() {
+    public void preStop() {
         Scheduled.cancel( scheduled );
+    }
+
+    @Override
+    public void stop() {
     }
 
     @Override
