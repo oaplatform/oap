@@ -48,9 +48,9 @@ public class Supervisor {
         this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
     }
 
-    public void startScheduledThread( String name, Object instance, long delay, TimeUnit milliseconds ) {
-        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
-    }
+//    public void startScheduledThread( String name, Object instance, long delay, TimeUnit milliseconds ) {
+//        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
+//    }
 
     public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
         this.wrappers.put( name, new DelayScheduledService( service, delay, unit ) );
