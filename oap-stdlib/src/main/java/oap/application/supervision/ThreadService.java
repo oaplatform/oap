@@ -36,6 +36,7 @@ public class ThreadService extends SynchronizedRunnable implements WrapperServic
     private final Runnable supervised;
     protected SynchronizedRunnableReadyListener listener;
     private int maxFailures = 100;
+    private boolean done = false;
 
     public ThreadService( final String name, Runnable supervisee, final Supervisor supervisor ) {
         this.supervised = supervisee;
@@ -59,7 +60,7 @@ public class ThreadService extends SynchronizedRunnable implements WrapperServic
 
     @Override
     public void run() {
-        while( thread.isRunning() && maxFailures > 0 ) try {
+        while( !done && thread.isRunning() && maxFailures > 0 ) try {
             supervised.run();
         } catch( Exception e ) {
             maxFailures--;
@@ -82,11 +83,12 @@ public class ThreadService extends SynchronizedRunnable implements WrapperServic
 
     @Override
     public void preStop() {
-        log.debug( "stopping thread " + thread.getName() );
-
-        thread.stop();
+        done = true;
     }
 
     public synchronized void stop() {
+        log.debug( "stopping thread " + thread.getName() );
+
+        thread.stop();
     }
 }
