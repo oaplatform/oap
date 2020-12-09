@@ -171,7 +171,8 @@ public class KernelFixture extends EnvFixture {
         moduleConfigurations.addAll( additionalModules );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
 
-        List<URL> confds = Lists.concat( ApplicationConfiguration.getConfdUrls( confd ),
+        List<URL> confds = Lists.concat(
+            ApplicationConfiguration.getConfdUrls( confd ),
             Resources.urls( getClass().getName() + ".confd", ".yaml", ".conf" )
         );
         this.kernel.start( ApplicationConfiguration.load( toUrl( conf ), confds ) );
