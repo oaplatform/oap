@@ -82,9 +82,10 @@ public final class Resources {
 
     @SneakyThrows
     public static List<URL> urls( Class<?> contextClass, String name ) {
-        if( name.startsWith( "/" ) ) name = name.substring( 1 );
-        else name = resolveName( contextClass ) + "/" + name;
-        return Collections.list( contextClass.getClassLoader().getResources( name ) );
+        return Collections.list( contextClass.getClassLoader()
+            .getResources( name.startsWith( "/" )
+                ? name.substring( 1 )
+                : resolveName( contextClass ) + "/" + name ) );
     }
 
     private static String resolveName( Class<?> contextClass ) {
@@ -96,11 +97,11 @@ public final class Resources {
         return baseName.replace( '.', '/' );
     }
 
-    @Deprecated
     /**
-     * @deprecated
      * @see #readStrings(Class, String)
+     * @deprecated
      */
+    @Deprecated
     public static List<String> readResourcesAsString( Class<?> contextClass, String name ) {
         var ret = new ArrayList<String>();
         try {
@@ -163,13 +164,23 @@ public final class Resources {
     }
 
     public static List<URL> urls( String atPackage, String... ext ) {
-        var extSet = Stream.of( ext ).map( e -> "." + e ).toList();
+        List<String> extSet = dotPrefix( ext );
         String pkg = atPackage.replace( ".", "/" );
-        return find( name -> name.startsWith( pkg ) && Lists.anyMatch( extSet, name::endsWith ) );
+        return urls( name -> name.startsWith( pkg ) && Lists.anyMatch( extSet, name::endsWith ) );
     }
 
+    public static List<URL> urlsByExts( String... ext ) {
+        List<String> extSet = dotPrefix( ext );
+        return urls( name -> Lists.anyMatch( extSet, name::endsWith ) );
+    }
+
+    private static List<String> dotPrefix( String... ext ) {
+        return Lists.map( ext, e -> e.startsWith( "." ) ? e : "." + e );
+    }
+
+
     @SneakyThrows
-    public static List<URL> find( Predicate<String> filter ) {
+    public static List<URL> urls( Predicate<String> filter ) {
         return Stream.of( ClassPath.from( Thread.currentThread()
             .getContextClassLoader() )
             .getResources() )

@@ -29,6 +29,8 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
 
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +62,12 @@ public class ResourcesTest extends Fixtures {
         var paths = Resources.filePaths( getClass(), "/file-paths" );
         assertThat( paths ).hasSize( 1 );
         assertThat( paths.get( 0 ) ).isDirectory();
+    }
+
+    @Test
+    public void filePath() {
+        Optional<Path> path = Resources.filePath( getClass(), "/file-paths" );
+        assertThat( path.orElseThrow() ).isDirectory();
     }
 
     @Test

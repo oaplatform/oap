@@ -26,27 +26,17 @@ package oap.testng;
 
 import org.testng.annotations.Test;
 
-import static oap.testng.Fixture.Scope.CLASS;
-import static oap.testng.Fixture.Scope.SUITE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EnvFixtureTest {
     @Test
     public void substitute() {
+        System.setProperty( "value", "1" );
         EnvFixture fixture = new EnvFixture()
-            .define( SUITE, "suite", 1 )
-            .define( CLASS, "class", "class:${suite}" )
-            .define( "method", "method:${class}" )
+            .define( "method", "method:${value}" )
             .define( "u", "u=${PWD}" );
-        fixture.beforeSuite();
-        assertThat( System.getProperty( "suite" ) ).isEqualTo( "1" );
-        assertThat( System.getProperty( "class" ) ).isNull();
-        assertThat( System.getProperty( "method" ) ).isNull();
-        fixture.beforeClass();
-        assertThat( System.getProperty( "class" ) ).isEqualTo( "class:1" );
-        assertThat( System.getProperty( "method" ) ).isNull();
         fixture.beforeMethod();
-        assertThat( System.getProperty( "method" ) ).isEqualTo( "method:class:1" );
+        assertThat( System.getProperty( "method" ) ).isEqualTo( "method:1" );
         assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
     }
 

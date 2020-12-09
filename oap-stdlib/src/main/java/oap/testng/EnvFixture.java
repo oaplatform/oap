@@ -25,37 +25,32 @@
 package oap.testng;
 
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Pair;
 import oap.util.Strings;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.testng.Fixture.Scope.CLASS;
 import static oap.testng.Fixture.Scope.METHOD;
 import static oap.testng.Fixture.Scope.SUITE;
-import static oap.util.Pair.__;
 
 @Slf4j
 public class EnvFixture implements Fixture {
     public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
 
-    private final ListMultimap<Scope, Pair<String, Object>> properties = ArrayListMultimap.create();
+    private final Map<String, Object> properties = new HashMap<>();
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
+    protected Scope scope = METHOD;
 
     public EnvFixture define( String property, Object value ) {
-        return define( METHOD, property, value );
-    }
-
-    public EnvFixture define( Scope scope, String property, Object value ) {
-        properties.get( scope ).add( __( property, value ) );
+        properties.put( property, value );
         return this;
     }
 
@@ -63,12 +58,12 @@ public class EnvFixture implements Fixture {
         return define( property, portFor( portKey ) );
     }
 
-    private void init( Scope scope ) {
-        properties.get( scope ).forEach( p -> {
-            String value = Strings.substitute( String.valueOf( p._2 ),
+    private void init() {
+        properties.forEach( ( n, v ) -> {
+            String value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            log.debug( "system property {} = {}", p._1, value );
-            System.setProperty( p._1, value );
+            log.debug( "system property {} = {}", n, value );
+            System.setProperty( n, value );
         } );
 
         ConfigImpl.reloadEnvVariablesConfig();
@@ -77,32 +72,34 @@ public class EnvFixture implements Fixture {
 
     @Override
     public void beforeSuite() {
-        init( SUITE );
+        if( scope == SUITE ) init();
     }
 
     @Override
     public void beforeClass() {
-        init( CLASS );
+        if( scope == CLASS ) init();
+
     }
 
     @Override
     public void beforeMethod() {
-        init( METHOD );
+        if( scope == METHOD ) init();
+
     }
 
     @Override
     public void afterMethod() {
-        clearPorts( METHOD );
+        if( scope == METHOD ) clearPorts();
     }
 
     @Override
     public void afterClass() {
-        clearPorts( CLASS );
+        if( scope == CLASS ) clearPorts();
     }
 
     @Override
     public void afterSuite() {
-        clearPorts( SUITE );
+        if( scope == SUITE ) clearPorts();
     }
 
     public int defaultHttpPort() {
@@ -129,15 +126,6 @@ public class EnvFixture implements Fixture {
 
     public void clearPorts() {
         log.debug( "clear ports" );
-        ports.clear();
-    }
-
-    private void clearPorts( Scope scope ) {
-        properties.asMap().forEach( ( pscope, list ) -> {
-            if( scope == pscope ) {
-                for( var p : list ) ports.remove( p._1 );
-            }
-        } );
         ports.clear();
     }
 }

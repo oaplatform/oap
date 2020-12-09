@@ -25,11 +25,12 @@
 package oap.application.testng;
 
 import com.google.common.base.Preconditions;
+import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
-import oap.testng.TestDirectoryFixture;
+import oap.util.Lists;
 
 import javax.annotation.Nonnull;
 import java.net.URL;
@@ -38,9 +39,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
+import static oap.io.Files.toUrl;
 import static oap.testng.Fixture.Scope.CLASS;
 import static oap.testng.Fixture.Scope.METHOD;
 import static oap.testng.Fixture.Scope.SUITE;
+import static oap.testng.TestDirectoryFixture.testDirectory;
 
 public class KernelFixture extends EnvFixture {
     public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
@@ -52,7 +55,6 @@ public class KernelFixture extends EnvFixture {
     private final Path conf;
     private final Path confd;
     private final List<URL> additionalModules = new ArrayList<>();
-    private final Scope scope;
     public Kernel kernel;
 
     public KernelFixture( Path conf ) {
@@ -98,21 +100,23 @@ public class KernelFixture extends EnvFixture {
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
+        this.defineDefaultPorts();
     }
 
     protected void defineDefaultPorts() {
         define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
 //        deprecated
-        define( "TMP_REMOTE_PORT", "${TEST_REMOTING_PORT}" );
+        define( "TMP_REMOTE_PORT", portFor( TEST_REMOTING_PORT ) );
         define( TEST_HTTP_PORT, portFor( TEST_HTTP_PORT ) );
 //        deprecated
-        define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
-        define( TEST_DIRECTORY, TestDirectoryFixture.testDirectory() );
+        define( "HTTP_PORT", portFor( TEST_HTTP_PORT ) );
+        define( TEST_DIRECTORY, testDirectory() );
 //        deprecated
-        define( "TMP_PATH", "${TEST_DIRECTORY}" );
-        define( TEST_RESOURCE_PATH, Resources.path( getClass(), "/" ).orElseThrow() );
+        define( "TMP_PATH", testDirectory() );
+        String resourcePath = Resources.path( getClass(), "/" ).orElseThrow();
+        define( TEST_RESOURCE_PATH, resourcePath );
 //        deprecated
-        define( "RESOURCE_PATH", "${TEST_RESOURCE_PATH}" );
+        define( "RESOURCE_PATH", resourcePath );
         define( TEST_HTTP_PREFIX, httpPrefix() );
 //        deprecated
         define( "HTTP_PREFIX", httpPrefix() );
@@ -125,11 +129,6 @@ public class KernelFixture extends EnvFixture {
     @Override
     public KernelFixture define( String property, Object value ) {
         return ( KernelFixture ) super.define( property, value );
-    }
-
-    @Override
-    public KernelFixture define( Scope scope, String property, Object value ) {
-        return ( KernelFixture ) super.define( scope, property, value );
     }
 
     @Override
@@ -149,34 +148,33 @@ public class KernelFixture extends EnvFixture {
 
     @Override
     public void beforeSuite() {
-        defineDefaultPorts();
         super.beforeSuite();
         if( scope == SUITE ) start();
     }
 
     @Override
     public void beforeClass() {
-        defineDefaultPorts();
         super.beforeClass();
         if( scope == CLASS ) start();
     }
 
     @Override
     public void beforeMethod() {
-        defineDefaultPorts();
         super.beforeMethod();
         if( scope == METHOD ) start();
     }
 
     protected void start() {
         Preconditions.checkArgument( this.kernel == null );
-        
+
         List<URL> moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
 
-        if( confd != null ) this.kernel.start( conf, confd );
-        else this.kernel.start( conf );
+        List<URL> confds = Lists.concat( ApplicationConfiguration.getConfdUrls( confd ),
+            Resources.urls( getClass().getName() + ".confd", ".yaml", ".conf" )
+        );
+        this.kernel.start( ApplicationConfiguration.load( toUrl( conf ), confds ) );
     }
 
     @Override

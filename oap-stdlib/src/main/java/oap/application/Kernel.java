@@ -61,7 +61,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
 import static oap.application.KernelHelper.forEachModule;
@@ -188,7 +187,7 @@ public class Kernel implements Closeable {
     }
 
     public void start( Path appConfigPath ) {
-        start( appConfigPath, emptyMap() );
+        start( appConfigPath, Map.of() );
     }
 
     public void start( Path appConfigPath, Map<Object, Object> properties ) {
@@ -196,10 +195,10 @@ public class Kernel implements Closeable {
         map.putAll( System.getProperties() );
         map.putAll( properties );
 
-        start( ApplicationConfiguration.load( appConfigPath, List.of( Binder.json.marshal( map ) ) ) );
+        start( ApplicationConfiguration.loadWithProperties( appConfigPath, List.of( Binder.json.marshal( map ) ) ) );
     }
 
-    void start( ApplicationConfiguration config ) {
+    public void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
@@ -447,7 +446,7 @@ public class Kernel implements Closeable {
 //            if( service.supervision.delay != 0 )
 //                supervisor.startScheduledThread( service.name, instance, service.supervision.delay, MILLISECONDS );
 //            else
-                supervisor.startThread( service.name, instance );
+            supervisor.startThread( service.name, instance );
         } else {
             if( service.supervision.schedule && service.supervision.cron != null )
                 supervisor.scheduleCron( service.name, ( Runnable ) instance,

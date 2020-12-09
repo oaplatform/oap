@@ -22,43 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.testng;
 
+import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ApplicationConfigurationTest {
-    @Test
-    public void load() {
-        System.setProperty( "KEY", "VALUE" );
-        ApplicationConfiguration config = ApplicationConfiguration.load(
-            pathOfTestResource( getClass(), "application.conf" ),
-            pathOfTestResource( getClass(), "conf.d" )
-        );
-        assertThat( config.services ).isEqualTo( Map.of(
-            "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
-            "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
+public class KernelFixtureTest extends Fixtures {
+
+    private final KernelFixture kernelFixture;
+
+    {
+        kernelFixture = fixture( new KernelFixture(
+            pathOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.yaml" ) )
         ) );
     }
 
     @Test
-    public void loadWithUrls() {
-        System.setProperty( "KEY", "VALUE" );
-        ApplicationConfiguration config = ApplicationConfiguration.load(
-            urlOfTestResource( getClass(), "application.conf" ),
-            List.of(
-                urlOfTestResource( getClass(), "conf.d/test.conf" ),
-                urlOfTestResource( getClass(), "conf.d/test2.yaml" )
-            ) );
-        assertThat( config.services ).isEqualTo( Map.of(
-            "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
-            "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
-        ) );
+    public void value() {
+        assertThat( kernelFixture.service( Service.class ).value )
+            .isEqualTo( "from fixture" );
+    }
+
+    public static class Service {
+        public String value;
     }
 }

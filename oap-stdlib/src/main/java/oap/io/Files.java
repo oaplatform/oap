@@ -129,14 +129,17 @@ public final class Files {
         return wildcard( Paths.get( basePath ), wildcard );
     }
 
-    public static ArrayList<Path> wildcard( Path basePath, String wildcard ) {
-        PathMatcher pm = FileSystems.getDefault()
-            .getPathMatcher( ( "glob:" + basePath + File.separator + wildcard ).replace( "\\", "\\\\" ) );
+    public static ArrayList<Path> wildcard( String basePath, String... wildcards ) {
+        return wildcard( Paths.get( basePath ), wildcards );
+    }
+
+    public static ArrayList<Path> wildcard( Path basePath, String... wildcards ) {
+        ArrayList<PathMatcher> matchers = Lists.map( wildcards, wc -> FileSystems.getDefault()
+            .getPathMatcher( ( "glob:" + basePath + File.separator + wc ).replace( "\\", "\\\\" ) ) );
         ArrayList<Path> result = new ArrayList<>();
-        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
-            @Override
+        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
-                if( pm.matches( file ) ) result.add( file );
+                if( matchers.stream().anyMatch( m -> m.matches( file ) ) ) result.add( file );
                 return FileVisitResult.CONTINUE;
             }
         };
@@ -149,6 +152,15 @@ public final class Files {
         }
         Collections.sort( result );
         return result;
+    }
+
+    public static ArrayList<Path> wildcard( Path basePath, String wildcard ) {
+        return wildcard( basePath, new String[] { wildcard } );
+    }
+
+    @SneakyThrows
+    public static URL toUrl( Path path ) {
+        return path.toUri().toURL();
     }
 
     public static List<Path> deepCollect( Path basePath, Predicate<Path> predicate ) {

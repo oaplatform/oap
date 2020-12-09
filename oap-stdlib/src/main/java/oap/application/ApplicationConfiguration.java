@@ -31,13 +31,15 @@ import oap.io.Files;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Maps;
+import oap.util.Stream;
+import oap.util.Strings;
 
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Collections.emptyList;
+import static oap.io.Files.wildcard;
 import static oap.util.Lists.concat;
 
 @Slf4j
@@ -55,19 +57,19 @@ public class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( Path appConfigPath ) {
-        return load( appConfigPath, emptyList() );
+        return loadWithProperties( appConfigPath, List.of() );
     }
 
     @SneakyThrows
-    public static ApplicationConfiguration load( Path appConfigPath, List<String> configs ) {
-        return load( appConfigPath.toUri().toURL(), configs );
+    public static ApplicationConfiguration loadWithProperties( Path appConfigPath, List<String> confdContents ) {
+        return loadWithProperties( appConfigPath.toUri().toURL(), confdContents );
     }
 
-    public static ApplicationConfiguration load( URL appConfigPath, List<String> configs ) {
-        log.trace( "application configurations: {}, configs = {}", appConfigPath, configs );
+    public static ApplicationConfiguration loadWithProperties( URL appConfigPath, List<String> confdContents ) {
+        log.trace( "application configurations: {}, configs = {}", appConfigPath, confdContents );
         ConfigImpl.reloadSystemPropertiesConfig();
         ConfigImpl.reloadEnvVariablesConfig();
-        return Binder.hoconWithConfig( concat( configs, List.of( getEnvConfig() ) ) )
+        return Binder.hoconWithConfig( concat( confdContents, List.of( getEnvConfig() ) ) )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
 
@@ -77,14 +79,24 @@ public class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( URL appConfigPath, String confd ) {
-        List<Path> paths = confd != null ? concat( Files.wildcard( confd, "*.conf" ), Files.wildcard( confd, "*.yaml" ) ) : emptyList();
-        log.info( "global configurations: {}", paths );
+        List<URL> confdUrls = getConfdUrls( Path.of( confd ) );
+        log.info( "global configurations: {}", confdUrls );
+        return load( appConfigPath, confdUrls );
+    }
 
-        var confs = Lists.map( paths, p ->
-            p.toString().endsWith( ".yaml" ) ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) ) : Files.readString( p )
-        );
+    public static List<URL> getConfdUrls( Path confd ) {
+        return confd != null
+            ? Stream.of( wildcard( confd, "*.conf", "*.yaml" ) )
+            .map( Files::toUrl )
+            .toList() : List.of();
+    }
 
-        return load( appConfigPath, confs );
+    public static ApplicationConfiguration load( URL appConfigPath, List<URL> confdUrls ) {
+        return loadWithProperties( appConfigPath, Lists.map( confdUrls, p ->
+            p.getPath().endsWith( ".yaml" )
+                ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) )
+                : Strings.readString( p )
+        ) );
     }
 
     private static String getEnvConfig() {
