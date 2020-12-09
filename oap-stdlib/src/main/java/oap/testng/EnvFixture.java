@@ -43,8 +43,6 @@ import static oap.testng.Fixture.Scope.SUITE;
 
 @Slf4j
 public class EnvFixture implements Fixture {
-    public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
-
     private final Map<String, Object> properties = new HashMap<>();
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     protected Scope scope = METHOD;
@@ -100,10 +98,6 @@ public class EnvFixture implements Fixture {
     @Override
     public void afterSuite() {
         if( scope == SUITE ) clearPorts();
-    }
-
-    public int defaultHttpPort() {
-        return portFor( TEST_HTTP_PORT );
     }
 
     public int portFor( Class<?> clazz ) {

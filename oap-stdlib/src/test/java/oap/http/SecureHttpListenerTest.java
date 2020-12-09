@@ -32,7 +32,6 @@ import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -43,6 +42,7 @@ import java.security.KeyStore;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.pathOfTestResource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class SecureHttpListenerTest extends Fixtures {
@@ -51,11 +51,11 @@ public class SecureHttpListenerTest extends Fixtures {
 
     private Server server;
     private SynchronizedThread listener;
-
+    private static final String PORT = "PORT";
     private final EnvFixture envFixture;
 
     {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture().definePort( PORT, PORT ) );
     }
 
     @BeforeClass
@@ -72,7 +72,7 @@ public class SecureHttpListenerTest extends Fixtures {
             response.respond( HttpResponse.status( 200 ).response() );
         }, Protocol.HTTPS );
 
-        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, envFixture.defaultHttpPort(), false );
+        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, envFixture.portFor( PORT ), false );
         listener = new SynchronizedThread( http );
         listener.start();
     }
@@ -93,11 +93,11 @@ public class SecureHttpListenerTest extends Fixtures {
 
             var closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-            var httpGet = new HttpGet( "https://localhost:" + envFixture.defaultHttpPort() + "/test/" );
+            var httpGet = new HttpGet( "https://localhost:" + envFixture.portFor( PORT ) + "/test/" );
 
             var closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
-            Assert.assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
+            assertThat( closeableHttpResponse.getStatusLine().getStatusCode() ).isEqualTo( 200 );
         }
     }
 

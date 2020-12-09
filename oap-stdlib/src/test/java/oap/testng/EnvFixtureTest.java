@@ -40,4 +40,10 @@ public class EnvFixtureTest {
         assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
     }
 
+    @Test
+    public void portFor() {
+        EnvFixture fixture = new EnvFixture();
+        assertThat( fixture.portFor( "AAA" ) ).isEqualTo( fixture.portFor( "AAA" ) );
+    }
+
 }

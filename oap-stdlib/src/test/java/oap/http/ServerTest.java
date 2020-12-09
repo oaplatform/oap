@@ -45,9 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ServerTest extends Fixtures {
 
     private final EnvFixture envFixture;
+    public static final String PORT = "PORT";
 
     {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture().definePort( PORT, PORT ) );
     }
 
     @Test
@@ -64,14 +65,14 @@ public class ServerTest extends Fixtures {
             }, Protocol.HTTP );
             server.start();
 
-            var http = new PlainHttpListener( server, envFixture.defaultHttpPort() );
+            var http = new PlainHttpListener( server, envFixture.portFor( PORT ) );
             listener = new SynchronizedThread( http );
             listener.start();
 
-            var f1 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + envFixture.defaultHttpPort() + "/test/", "{}" ).isOk() );
+            CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + envFixture.portFor( PORT ) + "/test/", "{}" ).isOk() );
             semaphore.acquire();
 
-            var f2 = CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + envFixture.defaultHttpPort() + "/test/", "{}" ).isOk() );
+            CompletableFuture.runAsync( () -> assertPost( "http://localhost:" + envFixture.portFor( PORT ) + "/test/", "{}" ).isOk() );
 
             assertEventually( 10, 1000, () -> {
                 var activeCount = server.getActiveCount();
@@ -85,7 +86,7 @@ public class ServerTest extends Fixtures {
 
             var body = RandomStringUtils.random( 1_000_000 );
 
-            assertPost( "http://localhost:" + envFixture.defaultHttpPort() + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
+            assertPost( "http://localhost:" + envFixture.portFor( PORT ) + "/test/", body ).hasCode( HTTP_UNAVAILABLE );
         } finally {
             if( listener != null )
                 listener.stop();

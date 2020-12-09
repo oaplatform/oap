@@ -103,6 +103,10 @@ public class KernelFixture extends EnvFixture {
         this.defineDefaultPorts();
     }
 
+    public int defaultHttpPort() {
+        return portFor( TEST_HTTP_PORT );
+    }
+
     protected void defineDefaultPorts() {
         define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
 //        deprecated
