@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 public class ServerTest extends Fixtures {
 
-    private EnvFixture envFixture;
+    private final EnvFixture envFixture;
 
     {
         envFixture = fixture( new EnvFixture() );
