@@ -23,6 +23,8 @@
  */
 package oap.application.remote;
 
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -38,6 +40,8 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -53,18 +57,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.util.Dates.s;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
+    public static final ExecutorService NEW_SINGLE_THREAD_EXECUTOR = Executors.newSingleThreadExecutor();
+    private static final SimpleTimeLimiter SIMPLE_TIME_LIMITER = SimpleTimeLimiter.create( NEW_SINGLE_THREAD_EXECUTOR );
     private final Counter timeoutMetrics;
     private final Counter errorMetrics;
     private final Counter successMetrics;
-
     private final URI uri;
     private final FST fst;
     private final int retry;
@@ -146,17 +153,18 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( invocationB );
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var responseFuture = client.sendAsync( request, HttpResponse.BodyHandlers.ofInputStream() );
-                var response = responseFuture.get( timeout, TimeUnit.MILLISECONDS );
+                var response = responseFuture.get( timeout, MILLISECONDS );
                 if( response.statusCode() == HTTP_OK && response.body() != null ) {
                     var inputStream = response.body();
                     var bis = new BufferedInputStream( inputStream );
                     var dis = new DataInputStream( bis );
-                    var success = dis.readBoolean();
+                    var success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
 
                     try {
                         if( !success ) {
                             try {
-                                var throwable = ( Throwable ) fst.readObjectWithSize( dis );
+                                var throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
+                                    () -> ( Throwable ) fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
 
                                 if( throwable instanceof RemoteInvocationException )
                                     throw ( RemoteInvocationException ) throwable;
@@ -168,7 +176,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                 dis.close();
                             }
                         } else {
-                            var stream = dis.readBoolean();
+                            var stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
                             if( stream ) {
                                 var it = new Iterator<>() {
                                     private Object obj = null;
@@ -181,14 +189,20 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
                                         if( obj != null ) return true;
 
-                                        var next = dis.readInt();
-                                        if( next > 0 ) {
-                                            obj = fst.readObject( dis, next );
-                                        } else {
-                                            end = true;
-                                            obj = null;
-                                            dis.close();
-                                        }
+                                        SIMPLE_TIME_LIMITER.runWithTimeout( () -> {
+                                            try {
+                                                var next = dis.readInt();
+                                                if( next > 0 ) {
+                                                    obj = fst.readObject( dis, next );
+                                                } else {
+                                                    end = true;
+                                                    obj = null;
+                                                    dis.close();
+                                                }
+                                            } catch( IOException e ) {
+                                                throw new UncheckedIOException( e );
+                                            }
+                                        }, timeout, MILLISECONDS );
 
                                         return obj != null;
                                     }
@@ -222,7 +236,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                         throw e;
                     }
                 } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
-            } catch( HttpTimeoutException | TimeoutException e ) {
+            } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();
                 lastException = e;
