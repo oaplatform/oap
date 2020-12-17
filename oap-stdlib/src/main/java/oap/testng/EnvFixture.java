@@ -76,13 +76,11 @@ public class EnvFixture implements Fixture {
     @Override
     public void beforeClass() {
         if( scope == CLASS ) init();
-
     }
 
     @Override
     public void beforeMethod() {
         if( scope == METHOD ) init();
-
     }
 
     @Override
@@ -110,7 +108,7 @@ public class EnvFixture implements Fixture {
                 socket.setReuseAddress( true );
                 socket.bind( new InetSocketAddress( 0 ) );
                 var localPort = socket.getLocalPort();
-                log.debug( "finding port for key=" + key + "... port=" + localPort );
+                log.debug( this.getClass().getSimpleName() + " finding port for key=" + key + "... port=" + localPort );
                 return localPort;
             } catch( IOException e ) {
                 throw new UncheckedIOException( e );
