@@ -78,4 +78,10 @@ public class ListsTest {
         IntArrayList collect = Stream.of( 1, 2, 3 ).collect( Lists.Collectors.toIntArrayList() );
         assertThat( collect.size() ).isEqualTo( 3 );
     }
+
+    @Test
+    public void indices() {
+        assertThat( Lists.indices( List.of( 11, 22, 33 ), 11, 33 ) ).containsExactly( 0, 2 );
+        assertThat( Lists.indices( List.of( 11, 22, 33 ), 11, 44, 33 ) ).containsExactly( 0, -1, 2 );
+    }
 }

@@ -151,6 +151,15 @@ public class Lists extends oap.util.Collections {
     }
 
     @SafeVarargs
+    public static <E> int[] indices( List<E> list, E... elements ) {
+        int[] result = new int[elements.length];
+        for( int i = 0; i < elements.length; i++ )
+            if( list.contains( elements[i] ) ) result[i] = list.indexOf( elements[i] );
+            else result[i] = -1;
+        return result;
+    }
+
+    @SafeVarargs
     public static <E> ArrayList<E> of( E... array ) {
         final var list = new ArrayList<E>( array.length );
         Collections.addAll( list, array );
