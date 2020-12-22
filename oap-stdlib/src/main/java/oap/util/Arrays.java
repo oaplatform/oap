@@ -23,6 +23,8 @@
  */
 package oap.util;
 
+import com.google.common.base.Preconditions;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +37,7 @@ import java.util.function.Predicate;
 import static oap.util.Pair.__;
 
 public class Arrays {
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
     @SafeVarargs
     public static <T> Optional<T> find( Predicate<T> predicate, T... array ) {
@@ -45,24 +47,24 @@ public class Arrays {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <A, B> B[] map( Class<?> elementType, Function<A, B> mapper, A... array ) {
+    public static <A, B> B[] map( Class<? super B> elementType, Function<A, B> mapper, A... array ) {
         B[] result = ( B[] ) Array.newInstance( elementType, array.length );
         for( int i = 0; i < array.length; i++ ) result[i] = mapper.apply( array[i] );
         return result;
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <E, EO> EO[] map( Class<EO> resultClass, List<E> list, Function<E, EO> func ) {
+    public static <A, B> B[] map( Class<? super B> resultType, List<A> list, Function<A, B> mapper ) {
         var size = list.size();
-        EO[] result = ( EO[] ) Array.newInstance( resultClass, size );
+        B[] result = ( B[] ) Array.newInstance( resultType, size );
 
-        for( var i = 0; i < size; i++ ) result[i] = func.apply( list.get( i ) );
+        for( var i = 0; i < size; i++ ) result[i] = mapper.apply( list.get( i ) );
 
         return result;
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <E> E[] of( Class<?> componentType, Collection<E> collection ) {
+    public static <E> E[] of( Class<E> componentType, Collection<E> collection ) {
         return collection.toArray( ( E[] ) Array.newInstance( componentType, collection.size() ) );
     }
 
@@ -81,18 +83,29 @@ public class Arrays {
         );
     }
 
+
+    @SafeVarargs
+    public static <E> E[][] splitBy( Class<?> componentType, int by, E... a ) {
+        Preconditions.checkArgument( a.length % by == 0, "illegal array size" );
+        int segments = a.length / by;
+        @SuppressWarnings( "unchecked" )
+        E[][] result = ( E[][] ) Array.newInstance( componentType, segments, by );
+        for( int i = 0; i < segments; i++ )
+            result[i] = java.util.Arrays.copyOfRange( a, i * by, i * by + by );
+        return result;
+    }
+
+
     @SafeVarargs
     public static <E> boolean contains( E v, E... array ) {
         if( v == null ) {
-            for( final E e : array ) if( e == null ) return true;
-        } else {
-            for( final E e : array ) if( e == v || v.equals( e ) ) return true;
-        }
+            for( E e : array ) if( e == null ) return true;
+        } else for( E e : array ) if( e == v || v.equals( e ) ) return true;
         return false;
     }
 
     public static boolean contains( int v, int[] array ) {
-        for( final int e : array ) if( e == v ) return true;
+        for( int e : array ) if( e == v ) return true;
         return false;
     }
 

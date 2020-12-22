@@ -43,4 +43,16 @@ public class ArraysTest {
         assertThat( Arrays.splitAt( 3, a ) )
             .isEqualTo( __( new int[] { 1, 2, 3 }, new int[] { 4, 5 } ) );
     }
+
+    @Test
+    public void splitBy() {
+        assertThat( Arrays.splitBy( String.class, 2, "1", "2", "3", "4", "5", "6" ) )
+            .containsExactly( new String[][] { { "1", "2" }, { "3", "4" }, { "5", "6" } } );
+        assertThat( Arrays.splitBy( String.class, 6, "1", "2", "3", "4", "5", "6" ) )
+            .containsExactly( new String[][] { { "1", "2", "3", "4", "5", "6" } } );
+        assertThat( Arrays.splitBy( String.class, 3, "1", "2", "3", "4", "5", "6" ) )
+            .containsExactly( new String[][] { { "1", "2", "3" }, { "4", "5", "6" } } );
+        assertThat( Arrays.splitBy( String.class, 1, "1", "2", "3", "4", "5", "6" ) )
+            .containsExactly( new String[][] { { "1" }, { "2" }, { "3" }, { "4" }, { "5" }, { "6" } } );
+    }
 }
