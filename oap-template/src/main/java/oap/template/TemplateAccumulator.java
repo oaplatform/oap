@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 2020-07-13.
+ * @todo refactor this to factory!
  */
 public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAccumulator<T, TTemplateAccumulator>> extends Supplier<T> {
     void accept( String text );
