@@ -127,6 +127,11 @@ public final class Asserts {
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
+    public static byte[] bytesOfTestResource( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
+        return Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
     public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
         String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
