@@ -48,4 +48,10 @@ public class AssertsTest {
             .isEqualTo( "1 = b" );
     }
 
+    @Test
+    public void locationOfTestResource() {
+        assertString( Asserts.locationOfTestResource( getClass(), "a.txt" ) )
+            .isEqualTo( "/oap/testng/AssertsTest/a.txt" );
+    }
+
 }

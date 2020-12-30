@@ -169,6 +169,10 @@ public final class Asserts {
         return pathOfTestResource( contextClass, null );
     }
 
+    public static String locationOfTestResource( Class<?> contetClass, String resource ) {
+        return "/" + contetClass.getName().replace( ".", "/" ) + "/" + resource;
+    }
+
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
         protected StringAssertion( CharSequence value ) {
             super( value, StringAssertion.class );
