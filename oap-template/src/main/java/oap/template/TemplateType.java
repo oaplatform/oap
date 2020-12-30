@@ -46,9 +46,12 @@ class TemplateType {
         this( type, false );
     }
 
+    /**
+     * this doesnt work with TypeVariables
+     * todo rewrite on TypeRef based type resolution
+     */
     static Class<?> getTypeClass( Type type ) {
         if( type instanceof ParameterizedType ) return getTypeClass( ( ( ParameterizedType ) type ).getRawType() );
-
         return ( Class<?> ) type;
     }
 

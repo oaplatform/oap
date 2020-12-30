@@ -45,7 +45,11 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
+/**
+ * all these functions are no longer required. Check the latest logstream
+ */
 @Slf4j
+@Deprecated
 public abstract class Configuration {
     protected final DictionaryRoot mappings;
 

@@ -33,7 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.StringJoiner;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
@@ -42,8 +41,10 @@ import static oap.template.TemplateAccumulators.STRING;
 
 /**
  * Created by igor.petrenko on 2020-07-15.
+ * No longer needed, see the latest logstream
  */
 @Slf4j
+@Deprecated
 public class LogConfiguration extends Configuration {
     public static final Predicate<Dictionary> FILTER_TAG_NE_SYSTEM = ( dictionary ) -> !dictionary.getTags().contains( "system" );
 
@@ -115,89 +116,4 @@ public class LogConfiguration extends Configuration {
         return engine;
     }
 
-    public static class CompactAstPostProcessor implements Consumer<Ast> {
-        public static final CompactAstPostProcessor INSTANCE = new CompactAstPostProcessor();
-
-        @Override
-        public void accept( Ast ast ) {
-            var children = ast.children;
-
-            for( var i = 0; i < children.size(); i++ ) {
-                var left = children.get( i );
-                if( left instanceof AstText ) continue;
-
-                if( i >= children.size() - 1 ) return;
-                i++;
-                AstText astText = null;
-                var right = children.get( i );
-                if( right instanceof AstText ) {
-                    astText = ( AstText ) right;
-                    if( i >= children.size() - 1 ) return;
-                    i++;
-                    right = children.get( i );
-                }
-
-                if( merge( left, right, astText ) ) {
-                    children.remove( i );
-                    i--;
-
-                    if( astText != null ) {
-                        children.remove( i );
-                        i--;
-                    }
-
-                    i--;
-                }
-            }
-
-            log.trace( "\n --- compact ---\n" + ast.print() );
-        }
-
-        public boolean merge( Ast root, Ast ast, AstText optText ) {
-            if( !( root.getClass().equals( ast.getClass() ) ) ) return false;
-
-            if( root instanceof AstExpression ) {
-                if( ast.children.size() == 1 && root.children.size() > 0 ) {
-                    var c = ast.children.get( 0 );
-                    var sc = root.children.get( 0 );
-                    if( sc.equalsAst( c ) ) {
-                        merge( sc, c, optText );
-                        ( ( AstExpression ) root ).content.addAll( ( ( AstExpression ) ast ).content );
-                        return true;
-                    }
-                }
-
-                return false;
-            } else if( root instanceof AstIfElse ) {
-                var r = defaultMerge( root, ast, optText );
-
-                if( optText != null ) {
-                    var astIfElse = ( AstIfElse ) root;
-                    if( astIfElse.printIfOptEmpty == null )
-                        astIfElse.printIfOptEmpty = optText;
-                    else astIfElse.printIfOptEmpty = new AstText( astIfElse.printIfOptEmpty.text + optText.text );
-                }
-
-                return r;
-            } else {
-                return defaultMerge( root, ast, optText );
-            }
-        }
-
-
-        private boolean defaultMerge( Ast root, Ast ast, AstText optText ) {
-            if( ast.children.size() == 1 && root.children.size() > 0 ) {
-                var c = ast.children.get( 0 );
-                var sc = root.children.get( 0 );
-                if( sc.equalsAst( c ) ) {
-                    merge( sc, c, optText );
-                    return true;
-                } else {
-                    if( optText != null ) root.children.add( 0, optText );
-                    root.children.add( 0, c );
-                }
-            }
-            return false;
-        }
-    }
 }

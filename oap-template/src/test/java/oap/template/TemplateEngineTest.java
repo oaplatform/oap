@@ -197,7 +197,7 @@ public class TemplateEngineTest extends Fixtures {
 
         cp.childOpt = Optional.of( c );
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING, 
-            LogConfiguration.CompactAstPostProcessor.INSTANCE ).render( cp ) )
+            CompactAstPostProcessor.INSTANCE ).render( cp ) )
             .isEqualTo( "10-o" );
     }
 

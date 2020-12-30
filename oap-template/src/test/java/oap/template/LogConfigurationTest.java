@@ -92,7 +92,7 @@ public class LogConfigurationTest extends Fixtures {
         var ar = new AstRoot( new TemplateType( getClass() ) );
         ar.children.addAll( List.of( exp1, new AstText( "123" ), exp2 ) );
 
-        LogConfiguration.CompactAstPostProcessor.INSTANCE.accept( ar );
+        CompactAstPostProcessor.INSTANCE.accept( ar );
 
         System.out.println( ar.print() );
 

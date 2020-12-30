@@ -26,7 +26,9 @@ package oap.template;
 
 /**
  * Created by igor.petrenko on 2020-07-15.
+ * No longer needed, see the latest logstream
  */
+@Deprecated
 public class DictionaryTemplate<F> {
     public final Template<F, String, TemplateAccumulatorString> templateFunction;
     public final String template;
