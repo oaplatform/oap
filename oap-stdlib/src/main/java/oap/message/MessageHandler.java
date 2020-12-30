@@ -154,6 +154,7 @@ public class MessageHandler implements Runnable, Closeable {
                     }
                 } else {
                     log.warn( "[{}/{}] buffer ({}, {}) already written.)", hostName, clientId, Hex.encodeHexString( md5 ), size );
+                    Metrics.counter( "oap.message.server.already_written", "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ).increment();
 
                     in.skipNBytes( size );
 
