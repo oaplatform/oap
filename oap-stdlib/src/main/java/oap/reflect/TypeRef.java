@@ -28,7 +28,7 @@ import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Type;
 
 public abstract class TypeRef<T> {
-    TypeToken<T> token = new TypeToken<T>( getClass() ) {
+    final TypeToken<T> token = new TypeToken<T>( getClass() ) {
     };
 
     public Type type() {
