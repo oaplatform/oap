@@ -90,7 +90,7 @@ public class OperationFunction {
     }
 
     private Optional<Object> getValue( Object rootJson, Optional<String> currentPath ) {
-        return Lists.headOpt( func.apply( rootJson, currentPath ) );
+        return Lists.headOf( func.apply( rootJson, currentPath ) );
     }
 
     public final boolean apply( Object rootJson, Optional<String> currentPath, Object value ) {

@@ -136,6 +136,10 @@ public class Arrays {
         return result;
     }
 
+    public static void times( int times, Runnable runnable ) {
+        for( int i = 0; i < times; i++ ) runnable.run();
+    }
+
     public static IntBuilder ints() {
         return new IntBuilder();
     }

@@ -40,10 +40,11 @@ import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collector;
 
+import static oap.util.Collectors.CH_ID;
 import static oap.util.Pair.__;
 
 public class Lists extends oap.util.Collections {
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
     @SafeVarargs
     public static <E> List<E> addAll( List<E> list, E... array ) {
@@ -53,31 +54,54 @@ public class Lists extends oap.util.Collections {
 
     @SafeVarargs
     public static <E> ArrayList<E> concat( List<? extends E>... lists ) {
-        final ArrayList<E> concatenated = new ArrayList<>();
+        ArrayList<E> result = new ArrayList<>();
 
-        for( List<? extends E> list : lists ) concatenated.addAll( list );
-        return concatenated;
+        for( List<? extends E> list : lists ) result.addAll( list );
+
+        return result;
     }
 
+    /**
+     * @param list
+     * @param <T>
+     * @return
+     * @see
+     */
+    @Deprecated
     public static <T> List<T> tail( List<T> list ) {
         if( list.isEmpty() ) throw new NoSuchElementException();
 
         return list.subList( 1, list.size() );
     }
 
+    /**
+     * @see #headOf(List)
+     */
+    @Deprecated
     public static <T> T head( List<T> list ) {
-        return headOpt( list ).orElseThrow( NoSuchElementException::new );
+        return headOf( list ).orElseThrow( NoSuchElementException::new );
     }
 
+    /**
+     * @see #headOf(List)
+     */
+    @Deprecated
     public static <T> Optional<T> headOpt( List<T> list ) {
-        if( list.isEmpty() ) return Optional.empty();
+        return headOf( list );
+    }
 
-        return Optional.of( list.get( 0 ) );
+    public static <T> Optional<T> headOf( List<T> list ) {
+        return list.isEmpty() ? Optional.empty() : Optional.of( list.get( 0 ) );
+    }
+
+    public static <T> List<T> tailOf( List<T> list ) {
+        if( list.isEmpty() ) throw new NoSuchElementException();
+        return list.subList( 1, list.size() );
     }
 
     public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
-        final var match = new ArrayList<T>();
-        final var nomatch = new ArrayList<T>();
+        var match = new ArrayList<T>();
+        var nomatch = new ArrayList<T>();
 
         for( T item : list )
             if( p.test( item ) ) match.add( item );
@@ -87,7 +111,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E, R> ArrayList<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
-        final var result = new ArrayList<R>( list.size() );
+        var result = new ArrayList<R>( list.size() );
         for( var e : list ) {
             result.add( mapper.apply( e ) );
         }
@@ -95,7 +119,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E, R> ArrayList<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
-        final var result = new ArrayList<R>();
+        var result = new ArrayList<R>();
         for( var e : list ) {
             if( !predicate.test( e ) ) continue;
             result.add( mapper.apply( e ) );
@@ -108,7 +132,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> ArrayList<E> filter( Collection<E> list, Predicate<E> predicate ) {
-        final var result = new ArrayList<E>();
+        var result = new ArrayList<E>();
 
         for( E e : list ) if( predicate.test( e ) ) result.add( e );
 
@@ -116,7 +140,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
-        final var result = new ArrayList<R>();
+        var result = new ArrayList<R>();
         while( enumeration.hasMoreElements() ) {
             result.add( mapper.apply( enumeration.nextElement() ) );
         }
@@ -124,11 +148,12 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> Optional<E> random( List<E> list ) {
-        return Optional.ofNullable( randomNull( list ) );
+        return Optional.ofNullable( list.isEmpty() ? null : list.get( random.nextInt( list.size() ) ) );
     }
 
+    @Deprecated
     public static <E> E randomNull( List<E> list ) {
-        return list.isEmpty() ? null : list.get( random.nextInt( list.size() ) );
+        return random( list ).orElse( null );
     }
 
     public static <E> List<E> randomSublist( List<E> list ) {
@@ -141,9 +166,9 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> ArrayList<E> shuffle( List<E> list ) {
-        var localCopy = new ArrayList<E>( list );
-        Collections.shuffle( localCopy );
-        return localCopy;
+        var result = new ArrayList<E>( list );
+        Collections.shuffle( result );
+        return result;
     }
 
     public static <E> ArrayList<E> distinct( List<E> list ) {
@@ -161,21 +186,21 @@ public class Lists extends oap.util.Collections {
 
     @SafeVarargs
     public static <E> ArrayList<E> of( E... array ) {
-        final var list = new ArrayList<E>( array.length );
-        Collections.addAll( list, array );
-        return list;
+        var result = new ArrayList<E>( array.length );
+        Collections.addAll( result, array );
+        return result;
     }
 
     public static ArrayList<Long> of( long[] array ) {
-        final var list = new ArrayList<Long>( array.length );
-        for( long i : array ) list.add( i );
-        return list;
+        var result = new ArrayList<Long>( array.length );
+        for( long i : array ) result.add( i );
+        return result;
     }
 
     public static ArrayList<Integer> of( int[] array ) {
-        final var list = new ArrayList<Integer>( array.length );
-        for( int i : array ) list.add( i );
-        return list;
+        var result = new ArrayList<Integer>( array.length );
+        for( int i : array ) result.add( i );
+        return result;
     }
 
     public static <T> ArrayList<T> empty() {
@@ -192,14 +217,12 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <T> int[] mapToIntArray( List<T> list, ToIntFunction<T> func ) {
-        final var size = list.size();
-        final var array = new int[size];
+        var size = list.size();
+        var result = new int[size];
 
-        for( int i = 0; i < size; i++ ) {
-            array[i] = func.applyAsInt( list.get( i ) );
-        }
+        for( int i = 0; i < size; i++ ) result[i] = func.applyAsInt( list.get( i ) );
 
-        return array;
+        return result;
     }
 
     public static class Collectors {
@@ -209,18 +232,18 @@ public class Lists extends oap.util.Collections {
                     left.addAll( right );
                     return left;
                 },
-                oap.util.Collectors.CH_ID );
+                CH_ID );
         }
 
         @SuppressWarnings( "deprecated" )
         public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
-            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, IntArrayList::add,
+            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new,
+                ( integers, key ) -> integers.add( ( int ) key ),
                 ( left, right ) -> {
                     left.addAll( right );
                     return left;
                 },
-                oap.util.Collectors.CH_ID );
+                CH_ID );
         }
     }
-
 }

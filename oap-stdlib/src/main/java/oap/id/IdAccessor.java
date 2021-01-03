@@ -42,8 +42,8 @@ public class IdAccessor {
         return ( Accessor<I> ) ids.computeIfAbsent( clazz, c -> {
             Reflection reflect = Reflect.reflect( c );
 
-            var idFields = reflect.annotatedFields( Id.class );
-            if( !idFields.isEmpty() ) return new FieldAccessor<I>( Lists.head( idFields ) );
+            var idField = Lists.headOf( reflect.annotatedFields( Id.class ) );
+            if( idField.isPresent() ) return new FieldAccessor<I>( idField.orElseThrow() );
 
             var idMethods = reflect.annotatedMethods( Id.class );
 

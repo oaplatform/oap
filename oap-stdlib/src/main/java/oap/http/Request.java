@@ -33,7 +33,6 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import oap.util.Lists;
 import oap.util.Strings;
-import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +40,6 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -85,11 +83,14 @@ public class Request {
         return Optional.ofNullable( values.get( 0 ) );
     }
 
-    public String parameterOrDefault( String name, String def ) {
+    public String parameter( String name, String def ) {
         ensureParametersParsed();
-        List<String> values = params.get( name );
-        if( values.isEmpty() ) return def;
-        return values.get( 0 );
+        return Lists.headOf( params.get( name ) ).orElse( def );
+    }
+
+    @Deprecated
+    public String parameterOrDefault( String name, String def ) {
+        return parameter( name, def );
     }
 
     public List<String> parameters( String name ) {
@@ -147,9 +148,8 @@ public class Request {
         if( headers == null ) {
             headers = ArrayListMultimap.create();
 
-            for( var h : underlying.getAllHeaders() ) {
+            for( var h : underlying.getAllHeaders() )
                 headers.put( h.getName().toLowerCase(), h.getValue() );
-            }
         }
         return headers;
     }
@@ -158,17 +158,13 @@ public class Request {
         if( cookies == null ) {
             cookies = new HashMap<>();
 
-            var header = header2( "Cookie" );
-            if( header == null ) return cookies;
-
-            for( var cookie : SPLITTER.split( header2( "Cookie" ) ) ) {
-                var p = StringUtils.splitByWholeSeparatorPreserveAllTokens( cookie, "=", 2 );
-                if( p.length > 1 ) {
-                    cookies.put( p[0], p[1] );
-                } else {
-                    cookies.put( p[0], null );
+            header( "Cookie" ).ifPresent( header -> {
+                for( var cookie : SPLITTER.split( header ) ) {
+                    var p = StringUtils.splitByWholeSeparatorPreserveAllTokens( cookie, "=", 2 );
+                    if( p.length > 1 ) cookies.put( p[0], p[1] );
+                    else cookies.put( p[0], null );
                 }
-            }
+            } );
         }
         return cookies;
     }
@@ -217,28 +213,27 @@ public class Request {
     }
 
     public void skipBody() {
-        body.ifPresent( s -> {
-            try {
-                IOUtils.skip( s, Long.MAX_VALUE );
-            } catch( IOException e ) {
-                throw Throwables.propagate( e );
-            }
-        } );
+        body.ifPresent( Try.consume( s -> IOUtils.skip( s, Long.MAX_VALUE ) ) );
     }
 
     public Optional<byte[]> readBody() {
-        return body.map( Try.mapOrThrow( ByteStreams::toByteArray, HttpException.class ) );
+        return body.map( Try.map( ByteStreams::toByteArray ) );
     }
 
     public Optional<String> header( String name ) {
-        return getHeaders().containsKey( name.toLowerCase() ) ? Lists.headOpt( getHeaders().get( name.toLowerCase() ) )
+        ListMultimap<String, String> headers = getHeaders();
+        String normalisedName = name.toLowerCase();
+        return headers.containsKey( normalisedName )
+            ? Lists.headOf( headers.get( normalisedName ) )
             : Optional.empty();
     }
 
+    /**
+     * use optional one
+     */
+    @Deprecated
     public String header2( String name ) {
-        var nlc = name.toLowerCase();
-
-        return getHeaders().containsKey( nlc ) ? Lists.head2( getHeaders().get( nlc ) ) : null;
+        return header( name.toLowerCase() ).orElse( null );
     }
 
     public List<String> headers( String name ) {

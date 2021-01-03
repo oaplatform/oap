@@ -38,9 +38,7 @@ public class Collections {
     public static <E, L extends Collection<E>> long count( L collection, Predicate<E> predicate ) {
         long count = 0;
 
-        for( E item : collection ) {
-            if( predicate.test( item ) ) count++;
-        }
+        for( E item : collection ) if( predicate.test( item ) ) count++;
 
         return count;
     }
@@ -50,6 +48,7 @@ public class Collections {
         return Optional.empty();
     }
 
+    @Deprecated
     public static <E, L extends Collection<E>> E find2( L list, Predicate<E> predicate ) {
         for( E e : list ) if( predicate.test( e ) ) return e;
         return null;
@@ -96,6 +95,7 @@ public class Collections {
         return max;
     }
 
+    @Deprecated
     public static <E> E head2( Collection<E> collection ) {
         return collection.isEmpty() ? null : collection.iterator().next();
     }

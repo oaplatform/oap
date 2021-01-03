@@ -118,13 +118,11 @@ public class IoStreamsTest extends Fixtures {
         for( int i = 0; i < columns; i++ ) {
             HashSet<String> set = new HashSet<>();
             boolean numbers = random.nextBoolean();
-            int[] values = Arrays.ints().range( 0, 1 + random.nextInt( 300 ) ).array();
+            int values = 1 + random.nextInt( 300 );
             if( numbers )
-                for( int a : values )
-                    set.add( RandomStringUtils.randomNumeric( 10 ) );
+                Arrays.times( values, () -> set.add( RandomStringUtils.randomNumeric( 10 ) ) );
             else
-                for( int a : values )
-                    set.add( RandomStringUtils.randomAlphabetic( 10, 30 ) );
+                Arrays.times( values, () -> set.add( RandomStringUtils.randomAlphabetic( 10, 30 ) ) );
             System.out.println( "column[" + i + "] variance is " + set.size() + ( numbers ? " numbers" : " strings" ) );
             sets.add( new ArrayList<>( set ) );
         }
