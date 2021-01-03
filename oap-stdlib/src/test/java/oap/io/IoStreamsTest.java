@@ -28,6 +28,8 @@ import oap.io.IoStreams.Encoding;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Arrays;
+import oap.util.Lists;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -36,6 +38,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
@@ -104,8 +110,38 @@ public class IoStreamsTest extends Fixtures {
     }
 
     @Test
+    @SneakyThrows
     public void compressionLevel() {
-        String content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
+        List<List<String>> sets = new ArrayList<>();
+        Random random = new Random();
+        int columns = 30;
+        for( int i = 0; i < columns; i++ ) {
+            HashSet<String> set = new HashSet<>();
+            boolean numbers = random.nextBoolean();
+            int[] values = Arrays.ints().range( 0, 1 + random.nextInt( 300 ) ).array();
+            if( numbers )
+                for( int a : values )
+                    set.add( RandomStringUtils.randomNumeric( 10 ) );
+            else
+                for( int a : values )
+                    set.add( RandomStringUtils.randomAlphabetic( 10, 30 ) );
+            System.out.println( "column[" + i + "] variance is " + set.size() + ( numbers ? " numbers" : " strings" ) );
+            sets.add( new ArrayList<>( set ) );
+        }
+        StringBuilder sb = new StringBuilder();
+        for( int i = 0; i < 100000; i++ ) {
+            for( List<String> set : sets ) sb.append( Lists.random( set ).orElseThrow() ).append( '\t' );
+            sb.append( '\n' );
+        }
+        String content = sb.toString();
+//        String content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
+        for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
+            Path path = testPath( "compressed.tsv" + encoding.extension );
+            Files.writeString( path, encoding, content );
+            System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
+        }
+        System.out.println( "Low variance file" );
+        content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
         for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
             Files.writeString( path, encoding, content );
