@@ -105,11 +105,11 @@ public class IoStreamsTest extends Fixtures {
 
     @Test
     public void compressionLevel() {
-        String string = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
+        String content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
         for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
-            Files.writeString( path, encoding, string );
-            System.out.println( encoding + " -> " + path.toFile().length() );
+            Files.writeString( path, encoding, content );
+            System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
     }
 }
