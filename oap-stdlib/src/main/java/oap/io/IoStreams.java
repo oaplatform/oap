@@ -35,6 +35,8 @@ import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -51,7 +53,6 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
@@ -59,15 +60,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static net.jpountz.lz4.LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Functions.empty.consume;
 
 @Slf4j
 public class IoStreams {
-
     public static final int DEFAULT_BUFFER = 8192;
-    private static LZ4FrameOutputStream.BLOCKSIZE lz4BlockSize;
 
     public static Stream<String> lines( URL url ) {
         return lines( url, Encoding.from( url ), consume() );
@@ -109,7 +110,7 @@ public class IoStreams {
     }
 
     public static Stream<String> lines( InputStream stream, boolean autoClose ) {
-        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) );
+        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, UTF_8 ) );
         java.util.stream.Stream<String> ustream = bufferedReader.lines();
         if( autoClose ) {
             ustream = ustream.onClose( Try.run( bufferedReader::close ) );
@@ -177,32 +178,28 @@ public class IoStreams {
 
     @SneakyThrows
     public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
-
+        checkArgument( !append || encoding.appendable, encoding + " is not appendable" );
         Files.ensureFile( path );
         if( append ) Files.ensureFileEncodingValid( path );
         OutputStream outputStream = safe
             ? new SafeFileOutputStream( path, append, encoding )
             : new FileOutputStream( path.toFile(), append );
         OutputStream fos = bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
-        switch( encoding ) {
-            case GZIP:
-                var gzout = Archiver.gzip( fos, bufferSize > 0 ? bufferSize : 512 );
-                if( bufferSize > 0 ) gzout = new BufferedOutputStream( gzout, bufferSize );
-                return gzout;
-            case ZIP:
-                if( append ) throw new IllegalArgumentException( "cannot append zip file" );
+        return switch( encoding ) {
+            case GZIP -> {
+                OutputStream gzout = Archiver.gzip( fos, bufferSize > 0 ? bufferSize : 512 );
+                yield bufferSize > 0 ? new BufferedOutputStream( gzout, bufferSize ) : gzout;
+            }
+            case ZIP -> {
                 var zip = new ZipOutputStream( fos );
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
-                return zip;
-            case LZ4_BLOCK:
-                return new LZ4BlockOutputStream( fos );
-            case LZ4:
-                return new LZ4FrameOutputStream( fos, SIZE_64KB );
-            case PLAIN:
-                return fos;
-            default:
-                throw new IllegalArgumentException( "unknown encoding " + encoding );
-        }
+                yield zip;
+            }
+            case LZ4_BLOCK -> new LZ4BlockOutputStream( fos );
+            case LZ4 -> new LZ4FrameOutputStream( fos, SIZE_64KB );
+            case ZSTD -> new ZstdCompressorOutputStream( fos );
+            case PLAIN -> fos;
+        };
     }
 
     public static InputStream in( Path path, Encoding encoding ) {
@@ -220,7 +217,7 @@ public class IoStreams {
     @SneakyThrows
     public static InputStream in( Path path, Encoding encoding, int bufferSize ) {
         try {
-            final FileInputStream fileInputStream = new FileInputStream( path.toFile() );
+            FileInputStream fileInputStream = new FileInputStream( path.toFile() );
             return decoded(
                 bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
@@ -235,7 +232,7 @@ public class IoStreams {
 
     @SneakyThrows
     public static String asString( InputStream stream, Encoding encoding ) {
-        return IOUtils.toString( decoded( stream, encoding ), StandardCharsets.UTF_8 );
+        return IOUtils.toString( decoded( stream, encoding ), UTF_8 );
     }
 
     @SneakyThrows
@@ -272,24 +269,34 @@ public class IoStreams {
                     stream.close();
                     throw e;
                 }
+            case ZSTD:
+                try {
+                    return new ZstdCompressorInputStream( stream );
+                } catch( Exception e ) {
+                    stream.close();
+                    throw e;
+                }
             default:
                 throw new IllegalArgumentException( "Unknown encoding " + encoding );
         }
     }
 
     public enum Encoding {
-        PLAIN( "", false ),
-        ZIP( ".zip", true ),
-        GZIP( ".gz", true ),
-        LZ4( ".lz4", true ),
-        LZ4_BLOCK( ".lz4b", true );
+        PLAIN( "", false, true ),
+        ZIP( ".zip", true, false ),
+        GZIP( ".gz", true, true ),
+        ZSTD( ".zstd", true, true ),
+        LZ4( ".lz4", true, true ),
+        LZ4_BLOCK( ".lz4b", true, false );
 
-        public final String extension;
-        public final boolean compressed;
+        public String extension;
+        public boolean compressed;
+        public boolean appendable;
 
-        Encoding( String extension, boolean compressed ) {
+        Encoding( String extension, boolean compressed, boolean appendable ) {
             this.extension = extension;
             this.compressed = compressed;
+            this.appendable = appendable;
         }
 
         public static Encoding from( Path path ) {
@@ -301,9 +308,7 @@ public class IoStreams {
         }
 
         public static Encoding from( String name ) {
-            for( var e : values() ) {
-                if( e.compressed && StringUtils.endsWithIgnoreCase( name, e.extension ) ) return e;
-            }
+            for( var e : values() ) if( e.compressed && StringUtils.endsWithIgnoreCase( name, e.extension ) ) return e;
 
             return PLAIN;
         }

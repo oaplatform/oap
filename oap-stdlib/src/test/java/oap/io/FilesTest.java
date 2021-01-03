@@ -140,7 +140,7 @@ public class FilesTest extends Fixtures {
         assertFalse( Files.wildcardMatch( "bid_v", "bb" ) );
         assertFalse( Files.wildcardMatch( "b", "bb" ) );
 
-        assertFalse( Files.wildcardMatch( "file.txt123", "file.txt" ) );
+        assertFalse( Files.wildcardMatch( "file.txt123", "oap/io/CompressionPerformance/file.txt" ) );
     }
 
     @DataProvider
@@ -170,8 +170,8 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void move() {
-        final Path path = testPath( "file.txt" );
-        final Path newPath = testPath( "test/newFile.txt" );
+        Path path = testPath( "oap/io/CompressionPerformance/file.txt" );
+        Path newPath = testPath( "test/newFile.txt" );
         Files.writeString( path, "test" );
         Files.writeString( newPath, "test2" );
         Files.move( path, newPath, REPLACE_EXISTING );

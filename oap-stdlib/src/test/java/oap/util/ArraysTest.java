@@ -46,13 +46,19 @@ public class ArraysTest {
 
     @Test
     public void splitBy() {
-        assertThat( Arrays.splitBy( String.class, 2, "1", "2", "3", "4", "5", "6" ) )
-            .containsExactly( new String[][] { { "1", "2" }, { "3", "4" }, { "5", "6" } } );
-        assertThat( Arrays.splitBy( String.class, 6, "1", "2", "3", "4", "5", "6" ) )
-            .containsExactly( new String[][] { { "1", "2", "3", "4", "5", "6" } } );
-        assertThat( Arrays.splitBy( String.class, 3, "1", "2", "3", "4", "5", "6" ) )
-            .containsExactly( new String[][] { { "1", "2", "3" }, { "4", "5", "6" } } );
-        assertThat( Arrays.splitBy( String.class, 1, "1", "2", "3", "4", "5", "6" ) )
-            .containsExactly( new String[][] { { "1" }, { "2" }, { "3" }, { "4" }, { "5" }, { "6" } } );
+        assertThat( Arrays.splitBy( 2, 1, 2, 3, 4, 5, 6 ) )
+            .containsExactly( new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } } );
+        assertThat( Arrays.splitBy( 6, 1, 2, 3, 4, 5, 6 ) )
+            .containsExactly( new Integer[][] { { 1, 2, 3, 4, 5, 6 } } );
+        assertThat( Arrays.splitBy( 3, 1, 2, 3, 4, 5, 6 ) )
+            .containsExactly( new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } } );
+        assertThat( Arrays.splitBy( 1, 1, 2, 3, 4, 5, 6 ) )
+            .containsExactly( new Integer[][] { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 6 } } );
+    }
+
+    @Test
+    public void filter() {
+        assertThat( Arrays.filter( x -> x % 2 == 0, 1, 2, 3, 4, 5, 6 ) )
+            .containsExactly( 2, 4, 6 );
     }
 }

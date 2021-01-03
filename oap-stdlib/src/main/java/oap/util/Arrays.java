@@ -47,16 +47,22 @@ public class Arrays {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <A, B> B[] map( Class<? super B> elementType, Function<A, B> mapper, A... array ) {
-        B[] result = ( B[] ) Array.newInstance( elementType, array.length );
+    public static <E> E[] filter( Predicate<E> predicate, E... array ) {
+        ArrayList<E> result = Lists.filter( List.of( array ), predicate );
+        return result.toArray( ( E[] ) Array.newInstance( array.getClass().getComponentType(), result.size() ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <A, B> B[] map( Class<? super B> resultElementType, Function<A, B> mapper, A... array ) {
+        B[] result = ( B[] ) Array.newInstance( resultElementType, array.length );
         for( int i = 0; i < array.length; i++ ) result[i] = mapper.apply( array[i] );
         return result;
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <A, B> B[] map( Class<? super B> resultType, List<A> list, Function<A, B> mapper ) {
+    public static <A, B> B[] map( Class<? super B> resultElementType, List<A> list, Function<A, B> mapper ) {
         var size = list.size();
-        B[] result = ( B[] ) Array.newInstance( resultType, size );
+        B[] result = ( B[] ) Array.newInstance( resultElementType, size );
 
         for( var i = 0; i < size; i++ ) result[i] = mapper.apply( list.get( i ) );
 
@@ -85,11 +91,17 @@ public class Arrays {
 
 
     @SafeVarargs
+    @Deprecated
     public static <E> E[][] splitBy( Class<?> componentType, int by, E... a ) {
+        return splitBy( by, a );
+    }
+
+    @SafeVarargs
+    public static <E> E[][] splitBy( int by, E... a ) {
         Preconditions.checkArgument( a.length % by == 0, "illegal array size" );
         int segments = a.length / by;
         @SuppressWarnings( "unchecked" )
-        E[][] result = ( E[][] ) Array.newInstance( componentType, segments, by );
+        E[][] result = ( E[][] ) Array.newInstance( a.getClass().getComponentType(), segments, by );
         for( int i = 0; i < segments; i++ )
             result[i] = java.util.Arrays.copyOfRange( a, i * by, i * by + by );
         return result;

@@ -27,6 +27,7 @@ import lombok.SneakyThrows;
 import oap.io.IoStreams.Encoding;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Arrays;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -40,6 +41,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IoStreamsTest extends Fixtures {
@@ -50,7 +52,7 @@ public class IoStreamsTest extends Fixtures {
     @Test
     @SneakyThrows
     public void emptyGz() {
-        Path path = TestDirectoryFixture.testPath( "test.gz" );
+        Path path = testPath( "test.gz" );
         try( OutputStream out = IoStreams.out( path, GZIP ) ) {
             out.flush();
         }
@@ -62,15 +64,14 @@ public class IoStreamsTest extends Fixtures {
 
     @DataProvider
     public Object[][] encodings() {
-        return new Object[][] {
-            { PLAIN },
-            { GZIP }
-        };
+        return Arrays.map( Encoding[].class, e -> new Encoding[] { e },
+            Arrays.filter( v -> v.appendable, Encoding.values() ) );
     }
 
     @Test( dataProvider = "encodings" )
-    public void append( Encoding encoding ) throws IOException {
-        Path path = encoding.resolve( TestDirectoryFixture.testPath( "test.txt" ) );
+    @SneakyThrows
+    public void append( Encoding encoding ) {
+        Path path = encoding.resolve( testPath( "test.txt" ) );
         try( OutputStream out = IoStreams.out( path, encoding ) ) {
             out.write( "12345".getBytes() );
             out.flush();
@@ -84,7 +85,7 @@ public class IoStreamsTest extends Fixtures {
 
     @Test
     public void lz4() throws IOException {
-        Path path = TestDirectoryFixture.testPath( "test.lz4" );
+        Path path = testPath( "test.lz4" );
 
         try( OutputStream out = IoStreams.out( path, LZ4 ) ) {
             out.write( "12345".getBytes() );

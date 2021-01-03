@@ -24,15 +24,16 @@
 
 package oap.io;
 
-import oap.testng.TestDirectoryFixture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongArray;
 
 import static oap.benchmark.Benchmark.benchmark;
+import static oap.testng.TestDirectoryFixture.testPath;
 
 @Test( enabled = false )
 public class FilesPerformance {
@@ -43,29 +44,29 @@ public class FilesPerformance {
     private Path pathNotExists;
 
     @BeforeMethod
-    public void init() throws Exception {
+    public void init() {
 
-        path = TestDirectoryFixture.testPath( "tt/test" );
-        path2 = TestDirectoryFixture.testPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
-        pathNotExists = TestDirectoryFixture.testPath( "tt/test2" );
+        path = testPath( "tt/test" );
+        path2 = testPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
+        pathNotExists = testPath( "tt/test2" );
         Files.writeString( path, RandomStringUtils.random( 10 ) );
         Files.writeString( path2, RandomStringUtils.random( 10 ) );
     }
 
     @Test( enabled = false )
     public void testLastModificationTime() {
-        final long[] size = { 0 };
+        AtomicLongArray size = new AtomicLongArray( new long[] { 0 } );
 
         benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES,
-            () -> size[0] += java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS ) ).run();
+            () -> size.getAndAdd( 0, ( java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS ) ) ) ).run();
 
         benchmark( "java.nio.file.Files.getLastModifiedTime()-2", SAMPLES,
-            () -> size[0] += java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS ) ).run();
+            () -> size.getAndAdd( 0, ( java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS ) ) ) ).run();
 
         benchmark( "java.io.File.lastModified()", SAMPLES,
-            () -> size[0] += path.toFile().lastModified() ).run();
+            () -> size.getAndAdd( 0, ( path.toFile().lastModified() ) ) ).run();
         benchmark( "java.io.File.lastModified()-2", SAMPLES,
-            () -> size[0] += path2.toFile().lastModified() ).run();
+            () -> size.getAndAdd( 0, ( path2.toFile().lastModified() ) ) ).run();
     }
 
     @Test( enabled = false )
