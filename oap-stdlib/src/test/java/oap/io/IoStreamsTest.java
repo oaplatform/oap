@@ -41,6 +41,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -100,5 +101,15 @@ public class IoStreamsTest extends Fixtures {
         assertThat( LZ4.resolve( Paths.get( "/x/a.txt.gz" ) ) ).isEqualTo( Paths.get( "/x/a.txt.lz4" ) );
         assertThat( PLAIN.resolve( Paths.get( "/x/a.txt.gz" ) ) ).isEqualTo( Paths.get( "/x/a.txt" ) );
         assertThat( GZIP.resolve( Paths.get( "/x/a.txt" ) ) ).isEqualTo( Paths.get( "/x/a.txt.gz" ) );
+    }
+
+    @Test
+    public void compressionLevel() {
+        String string = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
+        for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
+            Path path = testPath( "compressed.tsv" + encoding.extension );
+            Files.writeString( path, encoding, string );
+            System.out.println( encoding + " -> " + path.toFile().length() );
+        }
     }
 }
