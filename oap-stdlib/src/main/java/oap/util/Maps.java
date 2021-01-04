@@ -43,6 +43,7 @@ import static oap.util.Maps.Collectors.toSetMultimap;
 
 public class Maps {
 
+    @Deprecated
     public static <K, V> Map<K, V> empty() {
         return of();
     }
@@ -55,7 +56,7 @@ public class Maps {
 
     @SafeVarargs
     public static <K, V> LinkedHashMap<K, V> of( Pair<K, V>... pairs ) {
-        final LinkedHashMap<K, V> map = new LinkedHashMap<>();
+        LinkedHashMap<K, V> map = new LinkedHashMap<>();
         addAll( map, pairs );
         return map;
     }
@@ -65,7 +66,7 @@ public class Maps {
      */
     @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1 ) {
-        final LinkedHashMap<K, V> map = new LinkedHashMap<>();
+        LinkedHashMap<K, V> map = new LinkedHashMap<>();
         map.put( key1, value1 );
         return map;
     }
@@ -75,7 +76,7 @@ public class Maps {
      */
     @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2 ) {
-        final LinkedHashMap<K, V> map = of2( key1, value1 );
+        LinkedHashMap<K, V> map = of2( key1, value1 );
         map.put( key2, value2 );
         return map;
     }
@@ -85,7 +86,7 @@ public class Maps {
      */
     @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2, K key3, V value3 ) {
-        final LinkedHashMap<K, V> map = of2( key1, value1, key2, value2 );
+        LinkedHashMap<K, V> map = of2( key1, value1, key2, value2 );
         map.put( key3, value3 );
         return map;
     }
@@ -95,7 +96,7 @@ public class Maps {
      */
     @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2, K key3, V value3, K key4, V value4 ) {
-        final LinkedHashMap<K, V> map = of2( key1, value1, key2, value2, key3, value3 );
+        LinkedHashMap<K, V> map = of2( key1, value1, key2, value2, key3, value3 );
         map.put( key4, value4 );
         return map;
     }
@@ -105,14 +106,14 @@ public class Maps {
      */
     @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2, K key3, V value3, K key4, V value4, K key5, V value5 ) {
-        final LinkedHashMap<K, V> map = of2( key1, value1, key2, value2, key3, value3, key4, value4 );
+        LinkedHashMap<K, V> map = of2( key1, value1, key2, value2, key3, value3, key4, value4 );
         map.put( key5, value5 );
         return map;
     }
 
     @SafeVarargs
     public static <V> Map<String, V> ofStrings( Pair<String, V>... pairs ) {
-        final HashMap<String, V> map = new HashMap<>();
+        HashMap<String, V> map = new HashMap<>();
         addAll( map, pairs );
         return map;
     }
