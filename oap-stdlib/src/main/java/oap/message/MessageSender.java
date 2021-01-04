@@ -183,6 +183,7 @@ public class MessageSender implements Closeable, Runnable {
         throw new IllegalStateException( "no free states" );
     }
 
+
     @Override
     public synchronized void close() {
         closed = true;

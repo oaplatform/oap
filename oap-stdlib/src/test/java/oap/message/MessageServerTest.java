@@ -41,6 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
@@ -60,8 +61,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 assertThatCode( server::start )
@@ -74,12 +75,12 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testRejectedException() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.maximumPoolSize = 1;
             server.start();
 
-            try( var client1 = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) );
-                 var client2 = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client1 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+                 var client2 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client1.poolSize = 4;
                 client2.poolSize = 4;
                 
@@ -92,7 +93,7 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             }
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.poolSize = 4;
                 
                 client.start();
@@ -108,10 +109,10 @@ public class MessageServerTest extends Fixtures {
     public void testSendAndReceive() throws Exception {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             server.start();
 
-            var dir = TestDirectoryFixture.testPath( "dir" );
+            var dir = testPath( "dir" );
             try( var client = new MessageSender( "localhost", server.getPort(), dir ) ) {
                 client.start();
 
@@ -132,10 +133,10 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testSendAndReceiveJson() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
@@ -151,10 +152,10 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testSendAndReceiveJsonOneThread() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.poolSize = 1;
                 client.start();
 
@@ -171,10 +172,10 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testUnknownError() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.retryAfter = 1;
                 client.start();
 
@@ -199,10 +200,10 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testStatusError() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.retryAfter = 1;
                 client.start();
 
@@ -229,10 +230,10 @@ public class MessageServerTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
@@ -262,11 +263,11 @@ public class MessageServerTest extends Fixtures {
         MessageServer server = null;
         MessageSender client = null;
         try {
-            server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl );
+            server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl );
             server.soTimeout = 2000;
             server.start();
 
-            client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) );
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
             client.start();
 
             client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
@@ -277,7 +278,7 @@ public class MessageServerTest extends Fixtures {
 
             server.close();
 
-            try( var server2 = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), server.getPort(), List.of( listener ), hashTtl ) ) {
+            try( var server2 = new MessageServer( testPath( "controlStatePath.st" ), server.getPort(), List.of( listener ), hashTtl ) ) {
                 server2.soTimeout = 2000;
                 server2.start();
 
@@ -296,11 +297,11 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void clientPersistence() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
             listener.throwUnknownError( 1 );
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.retryAfter = Dates.h( 1 );
                 client.start();
 
@@ -311,7 +312,7 @@ public class MessageServerTest extends Fixtures {
 
             assertThat( listener.getMessages() ).isEmpty();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 assertThat( listener.getMessages() ).isEmpty();
@@ -326,10 +327,10 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testClientPersistenceLockExpiration() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
+            var msgDirectory = testPath( "tmp" );
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
                 client.poolSize = 2;
                 client.start();
@@ -368,7 +369,7 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testQueue() {
         var port = envFixture.portFor( "server" );
-        var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
+        var msgDirectory = testPath( "tmp" );
         try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
             client.poolSize = 2;
             client.start();
@@ -379,7 +380,7 @@ public class MessageServerTest extends Fixtures {
 
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
