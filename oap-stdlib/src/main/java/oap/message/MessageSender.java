@@ -99,7 +99,7 @@ public class MessageSender implements Closeable, Runnable {
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
             default -> {
                 var str = checkStatus.apply( status );
-                yield str !=null ? str : "Unknown status: " + status;
+                yield str != null ? str : "Unknown status: " + status;
             }
         };
     }
@@ -253,7 +253,7 @@ public class MessageSender implements Closeable, Runnable {
 
                     var data = Files.read( msgFile );
 
-                    log.trace( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
+                    log.debug( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
 
                     var msg = new Message( clientId, messageType, md5, data );
 
@@ -343,8 +343,7 @@ public class MessageSender implements Closeable, Runnable {
                     in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
                     var status = in.readShort();
 
-                    if( log.isTraceEnabled() )
-                        log.trace( "sending done, server status: {}", getServerStatus( status, checkStatus ) );
+                    log.trace( "sending done, server status: {}", getServerStatus( status, checkStatus ) );
 
                     switch( status ) {
                         case STATUS_ALREADY_WRITTEN -> {
@@ -414,17 +413,18 @@ public class MessageSender implements Closeable, Runnable {
                         }
 
                         Thread.sleep( retryAfter );
-                        log.trace( "retrying [type = {}]", message.messageType );
+                        log.debug( "retrying [type = {}]", message.messageType );
                     } catch( InterruptedException e ) {
                         log.info( e.getMessage() );
                         break;
                     } catch( Exception e ) {
                         Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
+                        log.debug( e.getMessage() );
                         log.trace( e.getMessage(), e );
                         try {
-                            log.trace( "sleep {}...", Dates.durationToString( retryAfter ) );
+                            log.debug( "sleep {}...", Dates.durationToString( retryAfter ) );
                             Thread.sleep( retryAfter );
-                            log.trace( "retrying..." );
+                            log.debug( "retrying..." );
                         } catch( InterruptedException interruptedException ) {
                             log.info( e.getMessage() );
                             break;

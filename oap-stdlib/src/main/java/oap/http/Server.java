@@ -72,12 +72,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 
-/**
- * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
- * <p>
- * metrics:
- * - http.*
- */
 @Slf4j
 public class Server implements HttpServer, Closeable {
     private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
@@ -189,8 +183,7 @@ public class Server implements HttpServer, Closeable {
 
                         Thread.currentThread().setName( connection.toString() );
 
-                        if( log.isTraceEnabled() )
-                            log.trace( "start handling {}", connection );
+                        log.trace( "start handling {}", connection );
                         while( !Thread.interrupted() && connection.isOpen() ) {
                             requestsCounter.increment();
                             activeCount.incrementAndGet();
@@ -202,9 +195,7 @@ public class Server implements HttpServer, Closeable {
                         }
                     } catch( SocketTimeoutException e ) {
                         keepaliveTimeoutCounter.increment();
-                        if( log.isTraceEnabled() )
-
-                            log.trace( "{}: timeout", connection );
+                        log.trace( "{}: timeout", connection );
                     } catch( SocketException | SSLException e ) {
                         log.debug( "{}: {}", connection, e.getMessage() );
                     } catch( ConnectionClosedException e ) {
@@ -214,9 +205,8 @@ public class Server implements HttpServer, Closeable {
                     } finally {
                         var info = connections.remove( connectionId );
 
-                        if( log.isTraceEnabled() )
-                            log.trace( "connection: {}, requests: {}, duration: {}",
-                                info.connection, ( long ) requestsCounter.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
+                        log.trace( "connection: {}, requests: {}, duration: {}",
+                            info.connection, ( long ) requestsCounter.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
                         try {
                             connection.close();
                         } catch( IOException e ) {

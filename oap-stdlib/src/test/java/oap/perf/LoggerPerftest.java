@@ -32,24 +32,24 @@ import java.util.Random;
 import static oap.benchmark.Benchmark.benchmark;
 
 @Slf4j
-public class LoggerPerformance {
+public class LoggerPerftest {
     @Test
-    public void testSlf4j() {
-        final Random random = new Random();
+    public void samePerformance() {
+        Random random = new Random();
 
         benchmark( "slf4j-trace-call", 10000000, () -> {
-            final int r1 = random.nextInt();
-            final int r2 = random.nextInt();
-            final String s1 = String.valueOf( random.nextInt() );
-            final String s2 = String.valueOf( random.nextInt() );
+            int r1 = random.nextInt();
+            int r2 = random.nextInt();
+            String s1 = String.valueOf( random.nextInt() );
+            String s2 = String.valueOf( random.nextInt() );
             log.trace( "test {}, {}, {}, {}", r1, r2, s1, s2 );
         } ).run();
         benchmark( "slf4j-trace-if", 10000000, () -> {
-            final int r1 = random.nextInt();
-            final int r2 = random.nextInt();
-            final String s1 = String.valueOf( random.nextInt() );
-            final String s2 = String.valueOf( random.nextInt() );
+            int r1 = random.nextInt();
+            int r2 = random.nextInt();
+            String s1 = String.valueOf( random.nextInt() );
+            String s2 = String.valueOf( random.nextInt() );
             if( log.isTraceEnabled() ) log.trace( "test {}, {}, {}, {}", r1, r2, s1, s2 );
-        } );
+        } ).run();
     }
 }

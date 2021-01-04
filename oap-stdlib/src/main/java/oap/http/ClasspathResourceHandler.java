@@ -50,7 +50,7 @@ public class ClasspathResourceHandler implements HttpRequestHandler {
 
     public void handle( HttpRequest req, HttpResponse resp, HttpContext context ) throws IOException {
         String resource = location + Strings.substringAfter( req.getRequestLine().getUri(), prefix );
-        if( logger.isTraceEnabled() ) logger.trace( req.getRequestLine().toString() + " -> " + resource );
+        logger.trace( req.getRequestLine().toString() + " -> " + resource );
         Optional<byte[]> file = Resources.read( getClass(), resource );
         if( file.isPresent() ) {
             ByteArrayEntity entity = new ByteArrayEntity( file.get() );
