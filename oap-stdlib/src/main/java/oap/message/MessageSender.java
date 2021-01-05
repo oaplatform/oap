@@ -205,6 +205,7 @@ public class MessageSender implements Closeable {
         throw new IllegalStateException( "no free states" );
     }
 
+
     @Override
     public synchronized void close() {
         closed = true;
@@ -311,7 +312,7 @@ public class MessageSender implements Closeable {
 
                     var data = Files.read( msgFile );
 
-                    log.trace( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
+                    log.debug( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
 
                     var msg = new Message( clientId, messageType, md5, data );
 
@@ -454,8 +455,7 @@ public class MessageSender implements Closeable {
                     in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
                     var status = in.readShort();
 
-                    if( log.isTraceEnabled() )
-                        log.trace( "sending done, server status: {}", getServerStatus( status, checkStatus ) );
+                    log.trace( "sending done, server status: {}", getServerStatus( status, checkStatus ) );
 
                     switch( status ) {
                         case STATUS_ALREADY_WRITTEN -> {

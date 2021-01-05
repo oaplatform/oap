@@ -132,9 +132,8 @@ public class MessageHandler implements Runnable, Closeable {
                 in.skipBytes( 8 ); // reserved
                 var size = in.readInt();
 
-                if( log.isTraceEnabled() )
-                    log.trace( "type = {}, version = {}, clientId = {}, md5 = {}, size = {}",
-                        messageType, messageVersion, clientId, Hex.encodeHexString( md5 ), size );
+                log.trace( "type = {}, version = {}, clientId = {}, md5 = {}, size = {}",
+                    messageType, messageVersion, clientId, Hex.encodeHexString( md5 ), size );
 
                 if( !control.contains( messageType, clientId, md5 ) ) {
                     var listener = listeners.get( messageType );
@@ -150,10 +149,9 @@ public class MessageHandler implements Runnable, Closeable {
                             if( status == STATUS_OK ) {
                                 Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
                                 control.add( messageType, clientId, md5 );
-                            } else if( log.isTraceEnabled() ) {
-                                log.warn( "[{}/{}] buffer ({}, " + size + ") status == {}.)",
-                                    hostName, clientId, Hex.encodeHexString( md5 ), MessageProtocol.statusToString( status ) );
-                            }
+                            } else
+                                log.trace( "WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
+                                hostName, clientId, Hex.encodeHexString( md5 ), MessageProtocol.statusToString( status ) );
                         } catch( Exception e ) {
                             log.error( "[" + hostName + "] " + e.getMessage(), e );
                             writeResponse( out, STATUS_UNKNOWN_ERROR, clientId, md5 );

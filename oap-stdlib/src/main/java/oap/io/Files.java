@@ -227,6 +227,14 @@ public final class Files {
         IoStreams.write( path, Encoding.from( path ), new ByteArrayInputStream( value.getBytes() ), false, safe );
     }
 
+    public static void writeBytes( Path path, byte[] value ) {
+        writeBytes( path, Encoding.from( path ), value );
+    }
+
+    public static void writeBytes( Path path, Encoding encoding, byte[] value ) {
+        IoStreams.write( path, encoding, new ByteArrayInputStream( value ), false, false );
+    }
+
     public static void write( Path path, byte[] value ) {
         ensureFile( path );
         try {
