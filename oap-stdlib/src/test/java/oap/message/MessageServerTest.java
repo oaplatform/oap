@@ -37,10 +37,12 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static oap.message.MessageAvailabilityReport.State.FAILED;
+import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
@@ -60,13 +62,13 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 assertThatCode( server::start )
                     .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessage( "duplicate [l2--1, l1--1]" );
+                    .hasMessage( "duplicate [l2-127, l1-127]" );
             }
         }
     }
@@ -74,33 +76,47 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testRejectedException() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.maximumPoolSize = 1;
             server.start();
 
-            try( var client1 = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) );
-                 var client2 = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            MessageSender client1, client2;
+            client1 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client2 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
+                client1.memorySyncPeriod = -1;
                 client1.poolSize = 4;
+                client2.memorySyncPeriod = -1;
                 client2.poolSize = 4;
-                
+
                 client1.start();
                 client2.start();
 
-                client1.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
+                client1.sendJson( MESSAGE_TYPE, "123" ).syncMemory();
                 client2.sendJson( MESSAGE_TYPE, "123" );
 
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            } finally {
+                client2.close();
+                client1.close();
             }
+            assertThat( client1.getMessagesMemorySize() ).isEqualTo( 0L );
+            assertThat( client2.getMessagesMemorySize() ).isEqualTo( 0L );
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
                 client.poolSize = 4;
-                
+
                 client.start();
 
-                client.sendJson( MESSAGE_TYPE, "1234" ).get( 5, SECONDS );
+                client.sendJson( MESSAGE_TYPE, "1234" ).syncMemory();
 
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) ) );
+            } finally {
+                client.close();
             }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
@@ -108,22 +124,29 @@ public class MessageServerTest extends Fixtures {
     public void testSendAndReceive() throws Exception {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             server.start();
 
-            var dir = TestDirectoryFixture.testPath( "dir" );
-            try( var client = new MessageSender( "localhost", server.getPort(), dir ) ) {
+            var dir = testPath( "dir" );
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), dir );
+            try {
                 client.start();
 
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE2, "555".getBytes() ).get( 5, SECONDS );
+                client
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE2, "555".getBytes(), 0, 3 )
+                    .syncMemory();
 
                 assertThat( listener1.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
                 assertThat( listener2.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
+            } finally {
+                client.close();
             }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
             assertThat( dir ).doesNotExist();
         }
@@ -132,18 +155,20 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testSendAndReceiveJson() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
-                client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
-                client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
-                client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
-                client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
+                client
+                    .sendJson( MESSAGE_TYPE, "123" )
+                    .sendJson( MESSAGE_TYPE, "124" )
+                    .sendJson( MESSAGE_TYPE, "124" )
+                    .sendJson( MESSAGE_TYPE, "123" )
+                    .syncMemory();
 
-                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
+                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
             }
         }
     }
@@ -151,19 +176,21 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testSendAndReceiveJsonOneThread() throws Exception {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.poolSize = 1;
                 client.start();
 
-                client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
-                client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
-                client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
-                client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
+                client
+                    .sendJson( MESSAGE_TYPE, "123" )
+                    .sendJson( MESSAGE_TYPE, "124" )
+                    .sendJson( MESSAGE_TYPE, "124" )
+                    .sendJson( MESSAGE_TYPE, "123" )
+                    .syncMemory();
 
-                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
+                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
             }
         }
     }
@@ -171,15 +198,16 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testUnknownError() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
-                client.retryAfter = 1;
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
                 client.start();
 
                 listener.throwUnknownError( 200000000 );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
 
                 while( listener.throwUnknownError > 200000000 - 10 )
                     Thread.sleep( 10 );
@@ -192,22 +220,24 @@ public class MessageServerTest extends Fixtures {
                 assertEventually( 100, 10, () -> {
                     assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
                 } );
+            } finally {
+                client.close();
             }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
     @Test
     public void testStatusError() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
-                client.retryAfter = 1;
+            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 listener.setStatus( 567 );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
 
                 while( listener.accessCount.get() > 4 )
                     Thread.sleep( 10 );
@@ -229,25 +259,33 @@ public class MessageServerTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
                 client.start();
 
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
+                client
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
                 DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
+                client
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
+            } finally {
+                client.close();
             }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
@@ -262,28 +300,32 @@ public class MessageServerTest extends Fixtures {
         MessageServer server = null;
         MessageSender client = null;
         try {
-            server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl );
+            server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl );
             server.soTimeout = 2000;
             server.start();
 
-            client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) );
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
             client.start();
 
-            client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-            client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-            client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
+            client
+                .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                .syncMemory();
 
             assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
 
             server.close();
 
-            try( var server2 = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), server.getPort(), List.of( listener ), hashTtl ) ) {
+            try( var server2 = new MessageServer( testPath( "controlStatePath.st" ), server.getPort(), List.of( listener ), hashTtl ) ) {
                 server2.soTimeout = 2000;
                 server2.start();
 
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
+                client
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .syncMemory();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             }
@@ -291,56 +333,75 @@ public class MessageServerTest extends Fixtures {
             Closeables.close( server );
             Closeables.close( client );
         }
+        assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
     }
 
     @Test
     public void clientPersistence() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
             listener.throwUnknownError( 1 );
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
-                client.retryAfter = Dates.h( 1 );
+            MessageSender client;
+
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
                 client.start();
 
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
                 while( listener.throwUnknownError > 0 )
                     Thread.sleep( 10 );
+            } finally {
+                client.close();
             }
 
             assertThat( listener.getMessages() ).isEmpty();
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
-            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
                 client.start();
 
                 assertThat( listener.getMessages() ).isEmpty();
 
-                client.run();
+                client.syncDisk();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            } finally {
+                client.close();
             }
+
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
     @Test
     public void testClientPersistenceLockExpiration() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
-            try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+            var msgDirectory = testPath( "tmp" );
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), msgDirectory );
+            try {
                 client.poolSize = 2;
                 client.start();
 
                 listener.throwUnknownError = 2;
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
-                client.sendObject( MESSAGE_TYPE, "124".getBytes() );
+                client
+                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 )
+                    .syncMemory();
 
                 while( listener.throwUnknownError > 0 )
                     Thread.sleep( 1 );
+            } finally {
+                client.close();
             }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
+
             var files = Files.wildcard( msgDirectory, "**/*.bin" );
             assertThat( files ).hasSize( 2 );
             // lock
@@ -352,44 +413,48 @@ public class MessageServerTest extends Fixtures {
             Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
 
 
-            try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+            client = new MessageSender( "localhost", server.getPort(), msgDirectory );
+            try {
                 client.storageLockExpiration = Dates.m( 5 );
                 client.start();
 
                 assertThat( listener.getMessages() ).isEmpty();
 
-                client.run();
+                client.syncDisk();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "124" ) ) );
+            } finally {
+                client.close();
             }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
     @Test
-    public void testQueue() {
-        var port = envFixture.portFor( "server" );
-        var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
-        try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
-            client.poolSize = 2;
-            client.start();
-
-            client.sendObject( MESSAGE_TYPE, "123".getBytes() );
-            client.sendObject( MESSAGE_TYPE, "124".getBytes() );
-        }
-
-
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+    public void testMemoryLimit() {
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( new MessageListenerMock( MESSAGE_TYPE ) ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
-                client.poolSize = 2;
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
+            try {
+                client.messagesLimitBytes = 161;
+                client.memorySyncPeriod = -1;
                 client.start();
 
-                client.run();
+                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
+                assertThat( client.availabilityReport().state ).isEqualTo( OPERATIONAL );
+
+                client.sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 );
+                assertThat( client.availabilityReport().state ).isEqualTo( FAILED );
+
+                client.syncMemory();
+
+                assertThat( client.availabilityReport().state ).isEqualTo( OPERATIONAL );
+
+            } finally {
+                client.close();
             }
         }
-
-        assertThat( listener.getMessages() ).containsOnlyOnce( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
     }
 }

@@ -35,6 +35,8 @@ public interface MessageProtocol {
     int RESERVED_LENGTH = RESERVED.length;
     int MD5_LENGTH = 16;
 
+    byte EOF_MESSAGE_TYPE = ( byte ) 0xFF;
+
     short STATUS_OK = 0;
     short STATUS_UNKNOWN_ERROR = 1;
 

@@ -27,7 +27,6 @@ package oap.message;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,8 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MessageListenerMock implements MessageListener {
-    public static final byte MESSAGE_TYPE = ( byte ) 0xFF;
-    public static final byte MESSAGE_TYPE2 = ( byte ) 0xFE;
+    public static final byte MESSAGE_TYPE = ( byte ) 0x7F;
+    public static final byte MESSAGE_TYPE2 = ( byte ) 0x7E;
     public final AtomicLong accessCount = new AtomicLong();
     private final CopyOnWriteArrayList<TestMessage> messages = new CopyOnWriteArrayList<>();
     private final String infoPrefix;
@@ -60,7 +59,7 @@ public class MessageListenerMock implements MessageListener {
 
     @Override
     public final String getInfo() {
-        return infoPrefix + messageType;
+        return infoPrefix + ( messageType & 0xFF );
     }
 
     @Override

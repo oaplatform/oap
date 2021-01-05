@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.concurrent.Threads.isInterrupted;
+import static oap.message.MessageProtocol.EOF_MESSAGE_TYPE;
 import static oap.message.MessageProtocol.MD5_LENGTH;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
@@ -115,8 +116,15 @@ public class MessageHandler implements Runnable, Closeable {
             socket.setKeepAlive( true );
 
             while( !closed && !isInterrupted() ) {
-                log.trace( "new message from {}", hostName );
                 var messageType = in.readByte();
+                log.trace( "new message from {}", hostName );
+
+                if( messageType == EOF_MESSAGE_TYPE ) {
+                    log.info( "EOF" );
+                    closed = true;
+                    return;
+                }
+
                 var messageVersion = in.readShort();
                 var clientId = in.readLong();
                 var md5 = in.readNBytes( MD5_LENGTH );

@@ -124,9 +124,10 @@ public class MessageServer implements Runnable, Closeable {
             while( thread.isRunning() && !serverSocket.isClosed() ) try {
                 socket = serverSocket.accept();
                 handledCounter.increment();
-                log.debug( "accepted connection {}", socket );
                 executor.execute( new MessageHandler( socket, soTimeout, map, hashes, hashTtl, activeCounter ) );
+                log.debug( "accepted connection {}", socket );
             } catch( RejectedExecutionException e ) {
+                log.error( "rejected connection {}", socket );
                 rejectedCounter.increment();
                 try {
                     if( socket != null ) {

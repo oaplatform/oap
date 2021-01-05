@@ -86,7 +86,7 @@ public class MessageHashStorage {
 
     public void store( Path path ) throws IOException {
         oap.io.Files.ensureFile( path );
-        
+
         try( var fos = new FileOutputStream( path.toFile() );
              var sw = new OutputStreamWriter( fos, UTF_8 ) ) {
 
