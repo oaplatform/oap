@@ -54,6 +54,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -84,8 +85,7 @@ public class MessageSender implements Closeable {
         .withGuessing( MemoryMeter.Guess.ALWAYS_SPEC )
         .omitSharedBufferOverhead()
         .ignoreOuterClassReference();
-
-
+    public final HashMap<Integer, String> statusMap = new HashMap<>();
     private final String host;
     private final int port;
     private final Path directory;
@@ -169,20 +169,12 @@ public class MessageSender implements Closeable {
     }
 
     public MessageSender sendJson( byte messageType, Object data ) {
-        return sendJson( messageType, data, s -> null );
-    }
-
-    public MessageSender sendJson( byte messageType, Object data, Function<Short, String> checkStatus ) {
         var baos = new FastByteArrayOutputStream();
         Binder.json.marshal( baos, data );
-        return sendObject( messageType, baos.array, 0, baos.length, checkStatus );
+        return sendObject( messageType, baos.array, 0, baos.length );
     }
 
-    public MessageSender sendObject( byte messageType, byte[] data, int from, int length ) {
-        return sendObject( messageType, data, from, length, s -> null );
-    }
-
-    public synchronized MessageSender sendObject( byte messageType, byte[] data, int from, int length, Function<Short, String> checkStatus ) {
+    public synchronized MessageSender sendObject( byte messageType, byte[] data, int from, int length ) {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
@@ -275,7 +267,7 @@ public class MessageSender implements Closeable {
                 try {
                     var state = findFreeState();
 
-                    var status = state.sendMessage( message, aShort -> null );
+                    var status = state.sendMessage( message, statusMap::get );
                     log.trace( "response status = {}", status );
                 } finally {
                     poolSemaphore.release();
