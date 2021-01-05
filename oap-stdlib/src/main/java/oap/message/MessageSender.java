@@ -55,7 +55,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -372,7 +372,7 @@ public class MessageSender implements Closeable {
 
     private static class Messages implements Iterable<Message> {
         private static final long ENTRY_SIZE = MessageSender.MEMORY_METER.measureDeep( new Pair<>( ByteSequence.of( new byte[0] ), null ) );
-        private final ConcurrentSkipListMap<ByteSequence, Message> map = new ConcurrentSkipListMap<>();
+        private final ConcurrentHashMap<ByteSequence, Message> map = new ConcurrentHashMap<>();
 
         private final AtomicLong size = new AtomicLong();
 

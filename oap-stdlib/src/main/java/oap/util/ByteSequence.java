@@ -33,26 +33,8 @@ import java.io.Serializable;
 @ToString
 @EqualsAndHashCode
 @Data( staticConstructor = "of" )
-public class ByteSequence implements Serializable, Comparable<ByteSequence> {
+public class ByteSequence implements Serializable {
     private static final long serialVersionUID = -7525710405210067693L;
 
     public final byte[] bytes;
-
-    @Override
-    public int compareTo( ByteSequence o ) {
-        var oBytes = o.bytes;
-        var oLength = oBytes.length;
-        var minLen = Math.min( this.bytes.length, oLength );
-
-        for( var i = 0; i < minLen; i++ ) {
-            var a = ( this.bytes[i] & 0xff );
-            var b = ( oBytes[i] & 0xff );
-
-            if( a != b ) {
-                return a - b;
-            }
-        }
-
-        return this.bytes.length - oLength;
-    }
 }
