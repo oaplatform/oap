@@ -208,4 +208,16 @@ public final class Resources {
             }
         } );
     }
+
+    public static Properties readAllProperties( String name ) {
+        Properties properties = new Properties();
+        for( var url : Resources.urls( name ) ) {
+            try( var is = url.openStream() ) {
+                properties.load( is );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( "Property: " + name + ", " + e.getMessage(), e );
+            }
+        }
+        return properties;
+    }
 }

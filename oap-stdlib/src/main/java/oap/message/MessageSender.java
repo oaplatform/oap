@@ -35,6 +35,7 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.io.Files;
+import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
@@ -62,7 +63,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
@@ -85,7 +85,18 @@ public class MessageSender implements Closeable {
         .withGuessing( MemoryMeter.Guess.ALWAYS_SPEC )
         .omitSharedBufferOverhead()
         .ignoreOuterClassReference();
-    public final HashMap<Integer, String> statusMap = new HashMap<>();
+    private static final HashMap<Short, String> statusMap = new HashMap<>();
+
+    static {
+        var properties = Resources.readAllProperties( "META-INF/oap-messages.properties" );
+        for( var propertyName : properties.stringPropertyNames() ) {
+            var key = propertyName.trim();
+            if( key.startsWith( "map." ) ) key = key.substring( 4 );
+
+            statusMap.put( Short.parseShort( properties.getProperty( propertyName ) ), key );
+        }
+    }
+
     private final String host;
     private final int port;
     private final Path directory;
@@ -99,7 +110,7 @@ public class MessageSender implements Closeable {
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
     private ThreadPoolExecutor pool;
-    private ConnectionState[] states;
+    private ConnectionState[] connections;
     private boolean closed = false;
     private Semaphore poolSemaphore;
     private Scheduled diskSyncScheduler;
@@ -111,14 +122,14 @@ public class MessageSender implements Closeable {
         this.directory = directory;
     }
 
-    private static String getServerStatus( short status, Function<Short, String> checkStatus ) {
+    private static String getServerStatus( short status ) {
         return switch( status ) {
             case STATUS_OK -> "OK";
             case STATUS_UNKNOWN_ERROR -> "UNKNOWN_ERROR";
             case STATUS_ALREADY_WRITTEN -> "ALREADY_WRITTEN";
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
             default -> {
-                var str = checkStatus.apply( status );
+                var str = statusMap.get( status );
                 yield str != null ? str : "Unknown status: " + status;
             }
         };
@@ -147,18 +158,18 @@ public class MessageSender implements Closeable {
     public void start() {
         log.info( "message server host = {}, port = {}, storage = {}, storageLockExpiration = {}",
             host, port, directory, durationToString( storageLockExpiration ) );
-
         log.info( "memory sync period = {}, disk sync period = {}",
             durationToString( memorySyncPeriod ), durationToString( diskSyncPeriod ) );
+        log.info( "custom status = {}", statusMap );
 
         pool = new ThreadPoolExecutor( poolSize, poolSize,
             0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build()
         );
 
-        states = new ConnectionState[poolSize];
+        connections = new ConnectionState[poolSize];
         for( var i = 0; i < poolSize; i++ ) {
-            states[i] = new ConnectionState();
+            connections[i] = new ConnectionState();
         }
         poolSemaphore = new Semaphore( poolSize, true );
 
@@ -191,7 +202,7 @@ public class MessageSender implements Closeable {
     }
 
     private ConnectionState findFreeState() {
-        for( var state : states ) {
+        for( var state : connections ) {
             if( state.free.compareAndExchange( true, false ) ) return state;
         }
         throw new IllegalStateException( "no free states" );
@@ -204,7 +215,7 @@ public class MessageSender implements Closeable {
 
         pool.shutdownNow();
 
-        for( var state : states )
+        for( var state : connections )
             Closeables.close( state );
 
         Closeables.close( memorySyncScheduler );
@@ -243,7 +254,7 @@ public class MessageSender implements Closeable {
     }
 
     private boolean networkAvailable() {
-        for( var state : states ) {
+        for( var state : connections ) {
             if( state.networkAvailable ) return true;
         }
 
@@ -267,7 +278,7 @@ public class MessageSender implements Closeable {
                 try {
                     var state = findFreeState();
 
-                    var status = state.sendMessage( message, statusMap::get );
+                    var status = state.sendMessage( message );
                     log.trace( "response status = {}", status );
                 } finally {
                     poolSemaphore.release();
@@ -313,7 +324,7 @@ public class MessageSender implements Closeable {
                         var state = findFreeState();
                         try {
 
-                            if( state._sendMessage( msg, s -> null ) != ERROR ) {
+                            if( state._sendMessage( msg ) != ERROR ) {
                                 Files.delete( msgFile );
                             }
                             Files.delete( lockFile );
@@ -412,7 +423,7 @@ public class MessageSender implements Closeable {
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean networkAvailable = true;
 
-        private MessageStatus _sendMessage( Message message, Function<Short, String> checkStatus ) throws IOException {
+        private MessageStatus _sendMessage( Message message ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
@@ -447,7 +458,7 @@ public class MessageSender implements Closeable {
                     in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
                     var status = in.readShort();
 
-                    log.trace( "sending done, server status: {}", getServerStatus( status, checkStatus ) );
+                    log.trace( "sending done, server status: {}", getServerStatus( status ) );
 
                     switch( status ) {
                         case STATUS_ALREADY_WRITTEN -> {
@@ -470,7 +481,7 @@ public class MessageSender implements Closeable {
                             return ERROR;
                         }
                         default -> {
-                            var clientStatus = checkStatus.apply( status );
+                            var clientStatus = statusMap.get( status );
                             if( clientStatus != null ) {
                                 Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
                             } else {
@@ -506,12 +517,12 @@ public class MessageSender implements Closeable {
             return ERROR;
         }
 
-        public MessageStatus sendMessage( Message message, Function<Short, String> checkStatus ) {
+        public MessageStatus sendMessage( Message message ) {
             try {
                 if( closed ) return ERROR;
 
                 try {
-                    var status = _sendMessage( message, checkStatus );
+                    var status = _sendMessage( message );
                     if( status != ERROR ) {
                         messages.remove( message.md5 );
                     }
