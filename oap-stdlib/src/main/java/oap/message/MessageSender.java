@@ -27,6 +27,7 @@ package oap.message;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
@@ -120,6 +121,10 @@ public class MessageSender implements Closeable {
         this.host = host;
         this.port = port;
         this.directory = directory;
+
+        Metrics.gauge( "message_memory_current_bytes", Tags.of( "host", host, "port", String.valueOf( port ) ), this, MessageSender::getMessagesMemorySize );
+        Metrics.gauge( "message_memory_limit_bytes", Tags.of( "host", host, "port", String.valueOf( port ) ), this, ms -> ms.messagesLimitBytes );
+        Metrics.gaugeMapSize( "message_memory_count", Tags.of( "host", host, "port", String.valueOf( port ) ), messages.map );
     }
 
     private static String getServerStatus( short status ) {
