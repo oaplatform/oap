@@ -443,15 +443,41 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
-                assertThat( client.availabilityReport().state ).isEqualTo( OPERATIONAL );
+                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
 
                 client.sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 );
-                assertThat( client.availabilityReport().state ).isEqualTo( FAILED );
+                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
 
                 client.syncMemory();
 
-                assertThat( client.availabilityReport().state ).isEqualTo( OPERATIONAL );
+                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+            } finally {
+                client.close();
+            }
+        }
+    }
+    
+    @Test
+    public void testAvailabilityReport() {
+        var messageListenerMock = new MessageListenerMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( messageListenerMock ), -1 ) ) {
+            server.start();
 
+            MessageSender client;
+            client = new MessageSender( "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
+            try {
+                client.memorySyncPeriod = -1;
+                client.start();
+
+                messageListenerMock.status = 300;
+                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
+                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
+                assertThat( client.availabilityReport( MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
+
+                messageListenerMock.status = MessageProtocol.STATUS_OK;
+                client.syncMemory();
+                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+                assertThat( client.availabilityReport( MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
             } finally {
                 client.close();
             }

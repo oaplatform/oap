@@ -70,13 +70,13 @@ import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.message.MessageProtocol.EOF_MESSAGE_TYPE;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
-import static oap.message.MessageProtocol.STATUS_OK;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
 import static oap.message.MessageStatus.ALREADY_WRITTEN;
 import static oap.message.MessageStatus.ERROR;
 import static oap.message.MessageStatus.OK;
 import static oap.util.Dates.durationToString;
+import static oap.util.Pair.__;
 import static org.apache.commons.io.FileUtils.byteCountToDisplaySize;
 
 @Slf4j
@@ -87,6 +87,7 @@ public class MessageSender implements Closeable {
         .omitSharedBufferOverhead()
         .ignoreOuterClassReference();
     private static final HashMap<Short, String> statusMap = new HashMap<>();
+    private static final Pair<MessageStatus, Short> STATUS_OK = __( OK, MessageProtocol.STATUS_OK );
 
     static {
         var properties = Resources.readAllProperties( "META-INF/oap-messages.properties" );
@@ -103,6 +104,7 @@ public class MessageSender implements Closeable {
     private final Path directory;
     private final long clientId = Cuid.UNIQUE.nextLong();
     private final Messages messages = new Messages();
+    private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long messagesLimitBytes = 1024 * 1024 * 128; // 128Mb
@@ -129,7 +131,7 @@ public class MessageSender implements Closeable {
 
     private static String getServerStatus( short status ) {
         return switch( status ) {
-            case STATUS_OK -> "OK";
+            case MessageProtocol.STATUS_OK -> "OK";
             case STATUS_UNKNOWN_ERROR -> "UNKNOWN_ERROR";
             case STATUS_ALREADY_WRITTEN -> "ALREADY_WRITTEN";
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
@@ -266,8 +268,11 @@ public class MessageSender implements Closeable {
         return false;
     }
 
-    public MessageAvailabilityReport availabilityReport() {
-        var operational = memoryAvailable() && networkAvailable() && !closed;
+    public MessageAvailabilityReport availabilityReport( byte messageType ) {
+        var operational = memoryAvailable()
+            && networkAvailable()
+            && !closed
+            && lastStatus.getOrDefault( messageType, STATUS_OK )._1 != ERROR;
         return new MessageAvailabilityReport( operational ? OPERATIONAL : FAILED );
     }
 
@@ -469,20 +474,24 @@ public class MessageSender implements Closeable {
                         case STATUS_ALREADY_WRITTEN -> {
                             log.trace( "already written {}", message.getHexMd5() );
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "already_written" ).increment();
+                            lastStatus.put( message.messageType, __( ALREADY_WRITTEN, status ) );
                             return ALREADY_WRITTEN;
                         }
-                        case STATUS_OK -> {
+                        case MessageProtocol.STATUS_OK -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "success" ).increment();
+                            lastStatus.put( message.messageType, __( OK, status ) );
                             return OK;
                         }
                         case STATUS_UNKNOWN_ERROR -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             log.error( "unknown error" );
+                            lastStatus.put( message.messageType, __( ERROR, status ) );
                             return ERROR;
                         }
                         case STATUS_UNKNOWN_MESSAGE_TYPE -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
                             log.error( "unknown message type: {}", status );
+                            lastStatus.put( message.messageType, __( ERROR, status ) );
                             return ERROR;
                         }
                         default -> {
@@ -493,6 +502,7 @@ public class MessageSender implements Closeable {
                                 Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
                                 log.error( "unknown status: {}", status );
                             }
+                            lastStatus.put( message.messageType, __( ERROR, status ) );
                             return ERROR;
                         }
                     }
