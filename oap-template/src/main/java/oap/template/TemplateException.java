@@ -24,9 +24,6 @@
 
 package oap.template;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 public class TemplateException extends RuntimeException {
     public TemplateException( String message ) {
         super( message );

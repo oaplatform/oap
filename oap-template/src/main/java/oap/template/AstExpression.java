@@ -29,9 +29,6 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.ArrayList;
 
-/**
- * Created by igor.petrenko on 2020-10-19.
- */
 @ToString( callSuper = true )
 public class AstExpression extends Ast {
     final ArrayList<String> content = new ArrayList<>();

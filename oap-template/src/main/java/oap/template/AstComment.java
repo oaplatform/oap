@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-07-24.
- */
 @ToString( callSuper = true )
 class AstComment extends Ast {
     final String comment;

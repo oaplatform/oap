@@ -28,9 +28,6 @@ import java.util.Collection;
 
 import static java.util.stream.Collectors.joining;
 
-/**
- * Created by igor.petrenko on 2020-07-13.
- */
 public class TemplateAccumulatorString implements TemplateAccumulator<String, TemplateAccumulatorString> {
     private final StringBuilder sb = new StringBuilder();
 

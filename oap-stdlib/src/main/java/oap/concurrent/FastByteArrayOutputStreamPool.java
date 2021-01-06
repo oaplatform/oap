@@ -42,7 +42,7 @@ import org.apache.commons.configuration2.EnvironmentConfiguration;
  * - POOL_MIN_SIZE: 5
  * - POOL_MAX_IDLE_MILLISECONDS: 300000
  */
-public class FastByteArrayOutputStreamPool {
+public final class FastByteArrayOutputStreamPool {
     private static final DisruptorObjectPool<FastByteArrayOutputStream> pool;
 
     static {

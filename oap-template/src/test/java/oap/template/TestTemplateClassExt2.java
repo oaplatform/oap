@@ -24,9 +24,6 @@
 
 package oap.template;
 
-/**
- * Created by igor.petrenko on 2020-07-15.
- */
 public class TestTemplateClassExt2 extends TestTemplateClass2.ITestTemplateClassExt2 {
     public String a2;
 

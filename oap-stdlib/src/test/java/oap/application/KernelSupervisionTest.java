@@ -34,9 +34,6 @@ import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 2020-12-08.
- */
 public class KernelSupervisionTest {
     @Test
     public void testSupervisionThread() {

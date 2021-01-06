@@ -28,9 +28,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflection;
 
-/**
- * Created by igor.petrenko on 2020-06-11.
- */
 @ToString( callSuper = true )
 @Slf4j
 public class PathNodeField extends PathNode {

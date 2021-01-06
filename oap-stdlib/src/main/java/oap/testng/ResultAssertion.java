@@ -46,7 +46,7 @@ public class ResultAssertion<S, F> extends AbstractAssert<ResultAssertion<S, F>,
         return myself;
     }
 
-    public static class ResultShouldBeSuccess extends BasicErrorMessageFactory {
+    public static final class ResultShouldBeSuccess extends BasicErrorMessageFactory {
         private ResultShouldBeSuccess( Class<?> resultClass, Object resultFailureValue ) {
             super( "%nExpecting success " + resultClass.getSimpleName() + " but was containing failure: <%s>.", resultFailureValue );
         }
@@ -56,7 +56,7 @@ public class ResultAssertion<S, F> extends AbstractAssert<ResultAssertion<S, F>,
         }
     }
 
-    public static class ResultShouldBeFailure extends BasicErrorMessageFactory {
+    public static final class ResultShouldBeFailure extends BasicErrorMessageFactory {
         private ResultShouldBeFailure( Class<?> resultClass, Object resultSuccessValue ) {
             super( "%nExpecting failure " + resultClass.getSimpleName() + " but was containing success: <%s>.", resultSuccessValue );
         }

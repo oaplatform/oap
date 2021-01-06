@@ -61,7 +61,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
     }
 
     private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
-        if( !schemaOpt.isPresent() ) return Result.success( dictionaries );
+        if( schemaOpt.isEmpty() ) return Result.success( dictionaries );
 
         final DictionarySchemaAST schema = schemaOpt.get();
 
@@ -117,8 +117,8 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
         validate( properties, schema.parent, dictionaries )
             .ifFailure( errors::addAll )
             .ifSuccess( successes -> {
-                if( !successes.isEmpty() &&
-                    successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
+                if( !successes.isEmpty()
+                    && successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
 
                     errors.addAll( Lists.of( properties.error( "instance does not match any member resolve "
                         + "the enumeration " + printIds( successes ) ) ) );

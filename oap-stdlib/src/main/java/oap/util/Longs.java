@@ -27,9 +27,6 @@ package oap.util;
 import java.util.Collection;
 import java.util.function.ToLongFunction;
 
-/**
- * Created by igor.petrenko on 2020-05-13.
- */
 public class Longs {
     public static <T> long sum( Collection<T> collection, ToLongFunction<T> func ) {
         var res = 0L;

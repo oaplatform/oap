@@ -24,10 +24,7 @@
 
 package oap.template;
 
-/**
- * Created by igor.petrenko on 2020-07-16.
- */
-public interface TemplateAccumulators {
-    TemplateAccumulatorString STRING = new TemplateAccumulatorString();
-    TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
+public final class TemplateAccumulators {
+    public static final TemplateAccumulatorString STRING = new TemplateAccumulatorString();
+    public static final TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
 }

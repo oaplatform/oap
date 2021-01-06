@@ -50,6 +50,7 @@ import org.github.jamm.MemoryMeter;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -232,27 +233,22 @@ public class MessageSender implements Closeable {
     }
 
     private void saveMessagesToDirectory( Path directory ) {
-        while( !messages.isEmpty() ) {
-            var it = messages.iterator();
-            while( it.hasNext() ) {
-                var msg = it.next();
-
-                var parentDirectory = directory
-                    .resolve( Long.toHexString( clientId ) )
-                    .resolve( String.valueOf( Byte.toUnsignedInt( msg.messageType ) ) );
-                var tmpMsgPath = parentDirectory.resolve( msg.getHexMd5() + ".bin.tmp" );
-                log.debug( "writing unsent message to {}", tmpMsgPath );
-                try {
-                    Files.write( tmpMsgPath, msg.data );
-                    var msgPath = parentDirectory.resolve( msg.getHexMd5() + ".bin" );
-                    Files.rename( tmpMsgPath, msgPath );
-                } catch( Exception e ) {
-                    log.error( "type: {}, md5: {}, data: {}",
-                        msg.messageType, msg.getHexMd5(), msg.getHexData() );
-                }
-
-                messages.remove( msg.md5 );
+        while( !messages.isEmpty() ) for( Message msg : messages ) {
+            var parentDirectory = directory
+                .resolve( Long.toHexString( clientId ) )
+                .resolve( String.valueOf( Byte.toUnsignedInt( msg.messageType ) ) );
+            var tmpMsgPath = parentDirectory.resolve( msg.getHexMd5() + ".bin.tmp" );
+            log.debug( "writing unsent message to {}", tmpMsgPath );
+            try {
+                Files.write( tmpMsgPath, msg.data );
+                var msgPath = parentDirectory.resolve( msg.getHexMd5() + ".bin" );
+                Files.rename( tmpMsgPath, msgPath );
+            } catch( Exception e ) {
+                log.error( "type: {}, md5: {}, data: {}",
+                    msg.messageType, msg.getHexMd5(), msg.getHexData() );
             }
+
+            messages.remove( msg.md5 );
         }
     }
 
@@ -334,7 +330,7 @@ public class MessageSender implements Closeable {
                         var state = findFreeState();
                         try {
 
-                            if( state._sendMessage( msg ) != ERROR ) {
+                            if( state.send( msg ) != ERROR ) {
                                 Files.delete( msgFile );
                             }
                             Files.delete( lockFile );
@@ -407,9 +403,10 @@ public class MessageSender implements Closeable {
         }
 
         @Override
+        @Nonnull
         public Iterator<Message> iterator() {
             var it = map.values().iterator();
-            return new Iterator<Message>() {
+            return new Iterator<>() {
                 @Override
                 public boolean hasNext() {
                     return it.hasNext();
@@ -433,7 +430,7 @@ public class MessageSender implements Closeable {
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean networkAvailable = true;
 
-        private MessageStatus _sendMessage( Message message ) throws IOException {
+        private MessageStatus send( Message message ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
@@ -537,10 +534,8 @@ public class MessageSender implements Closeable {
                 if( closed ) return ERROR;
 
                 try {
-                    var status = _sendMessage( message );
-                    if( status != ERROR ) {
-                        messages.remove( message.md5 );
-                    }
+                    var status = send( message );
+                    if( status != ERROR ) messages.remove( message.md5 );
 
                     return status;
                 } catch( Exception e ) {

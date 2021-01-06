@@ -27,9 +27,6 @@ package oap.util;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 2020-11-11.
- */
 public class ArrayLists {
     public static <T> ArrayList<T> of() {
         return new ArrayList<>();
@@ -48,6 +45,7 @@ public class ArrayLists {
         return list;
     }
 
+    @SafeVarargs
     public static <T> ArrayList<T> of( T... vs ) {
         var list = new ArrayList<T>( vs.length );
         list.addAll( List.of( vs ) );

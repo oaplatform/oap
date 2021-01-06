@@ -28,9 +28,6 @@ import lombok.ToString;
 
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 2020-06-09.
- */
 @ToString
 public class MapPointer extends ObjectPointer<Map<Object, Object>> {
     public MapPointer( Map<Object, Object> map ) {

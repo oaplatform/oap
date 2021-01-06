@@ -254,7 +254,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private byte[] getInvocation( Method method, List<RemoteInvocation.Argument> arguments ) {
         var baos = new ByteArrayOutputStream();
         var dos = new DataOutputStream( baos );
-        dos.writeInt( Remotes.VERSION );
+        dos.writeInt( RemoteInvocation.VERSION );
         fst.writeObjectWithSize( dos, new RemoteInvocation( service, method.getName(), arguments ) );
         baos.close();
 

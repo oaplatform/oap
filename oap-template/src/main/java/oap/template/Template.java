@@ -27,9 +27,6 @@ package oap.template;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 public interface Template<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> {
     TOut render( TIn obj );
 

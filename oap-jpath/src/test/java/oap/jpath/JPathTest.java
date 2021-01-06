@@ -32,9 +32,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 2020-06-08.
- */
 public class JPathTest {
     @Test
     public void testVariable() {

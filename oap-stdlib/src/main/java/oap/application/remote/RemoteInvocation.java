@@ -27,12 +27,15 @@ package oap.application.remote;
 import lombok.ToString;
 import oap.util.Arrays;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @ToString
 public class RemoteInvocation implements Serializable {
+    public static final int VERSION = 2;
+    @Serial
     private static final long serialVersionUID = -4083101417145198050L;
 
     public String service;

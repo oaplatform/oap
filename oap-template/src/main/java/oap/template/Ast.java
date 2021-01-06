@@ -31,9 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by igor.petrenko on 2020-07-13.
- */
 @ToString( of = { "type" } )
 public abstract class Ast {
     private static final HashMap<Class<?>, AtomicInteger> ids = new HashMap<>();

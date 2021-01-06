@@ -30,9 +30,6 @@ import oap.util.Try;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by igor.petrenko on 2020-10-31.
- */
 @Slf4j
 public class ScheduledExecutorService implements Closeable {
     public final java.util.concurrent.ScheduledExecutorService scheduledExecutorService;

@@ -41,9 +41,6 @@ import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Created by igor.petrenko on 2020-07-13.
- */
 public class TemplateEngineTest extends Fixtures {
 
     private TemplateEngine engine;

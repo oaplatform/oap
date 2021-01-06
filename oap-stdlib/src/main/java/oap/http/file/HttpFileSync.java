@@ -41,8 +41,8 @@ public class HttpFileSync extends FileSync {
 
     @SneakyThrows
     protected Optional<Path> download() {
-        final Optional<Long> modificationTime = Files.exists( localFile ) ?
-            Optional.of( Files.getLastModifiedTime( localFile ).toMillis() ) : Optional.empty();
+        Optional<Long> modificationTime = Files.exists( localFile )
+            ? Optional.of( Files.getLastModifiedTime( localFile ).toMillis() ) : Optional.empty();
         return Client.DEFAULT.download( uri.toString(), modificationTime, Optional.of( localFile ), ( i ) -> {} );
     }
 }

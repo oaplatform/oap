@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 @ToString( callSuper = true )
 public class AstPrint extends Ast {
     final String defaultValue;
@@ -40,19 +37,15 @@ public class AstPrint extends Ast {
 
     @Override
     void render( Render render ) {
-        render.ntab();
-        var checkNull = defaultValue != null && !render.parentType.isPrimitiveType();
-        if( checkNull ) {
-            render = render
-                .append( "if( %s == null ) {", render.field )
-                .tabInc().ntab().append( "%s.accept( %s );", render.templateAccumulatorName, defaultValue )
-                .tabDec().ntab().append( "} else {" ).tabInc();
-        }
+        var r = render.ntab();
+        var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
+        if( checkNull ) r = r
+            .append( "if( %s == null ) {", r.field )
+            .tabInc().ntab().append( "%s.accept( %s );", r.templateAccumulatorName, defaultValue )
+            .tabDec().ntab().append( "} else {" ).tabInc();
 
-        render.ntab().append( "%s.accept( %s );", render.templateAccumulatorName, render.field );
+        r.ntab().append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
 
-        if( checkNull ) {
-            render.tabDec().ntab().append( "}" );
-        }
+        if( checkNull ) r.tabDec().ntab().append( "}" );
     }
 }

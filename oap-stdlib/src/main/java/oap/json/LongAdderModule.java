@@ -47,7 +47,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
 
 class LongAdderModule {
-    public static class LongAdderSerializer extends StdScalarSerializer<LongAdder> {
+    public static final class LongAdderSerializer extends StdScalarSerializer<LongAdder> {
         private LongAdderSerializer() {
             super( LongAdder.class );
         }
@@ -70,8 +70,8 @@ class LongAdderModule {
         }
     }
 
-    static class LongAdderDeserializer extends StdScalarDeserializer<LongAdder> {
-        private NumberDeserializers.LongDeserializer deserializer;
+    static final class LongAdderDeserializer extends StdScalarDeserializer<LongAdder> {
+        private final NumberDeserializers.LongDeserializer deserializer;
 
         private LongAdderDeserializer() {
             super( LongAdder.class );

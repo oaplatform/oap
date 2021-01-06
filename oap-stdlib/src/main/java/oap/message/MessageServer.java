@@ -89,7 +89,7 @@ public class MessageServer implements Runnable, Closeable {
             new ThreadPoolExecutor( 0, maximumPoolSize, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
                 new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build(),
                 new java.util.concurrent.ThreadPoolExecutor.AbortPolicy() );
-        
+
         hashes = new MessageHashStorage( clientHashCacheSize );
 
         try {

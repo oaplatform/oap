@@ -28,9 +28,6 @@ import lombok.ToString;
 
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 2020-07-16.
- */
 @ToString( callSuper = true )
 public class AstConcatenation extends Ast {
     final List<Ast> items;

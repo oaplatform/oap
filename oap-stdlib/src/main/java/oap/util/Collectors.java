@@ -38,22 +38,23 @@ public class Collectors {
     public static final Set<Collector.Characteristics> CH_ID
         = Collections.unmodifiableSet( EnumSet.of( Collector.Characteristics.IDENTITY_FINISH ) );
 
-    public static <T, K, U>
-    Collector<T, ?, LinkedHashMap<K, U>> toLinkedHashMap( Function<? super T, ? extends K> keyMapper,
-                                                          Function<? super T, ? extends U> valueMapper ) {
+    public static <T, K, U> Collector<T, ?, LinkedHashMap<K, U>> toLinkedHashMap( Function<? super T, ? extends K> keyMapper,
+                                                                                  Function<? super T, ? extends U> valueMapper ) {
         return java.util.stream.Collectors.toMap( keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new );
     }
 
     private static <T> BinaryOperator<T> throwingMerger() {
-        return ( u, v ) -> { throw new IllegalStateException( String.format( "Duplicate key %s", u ) ); };
+        return ( u, v ) -> {
+            throw new IllegalStateException( String.format( "Duplicate key %s", u ) );
+        };
     }
 
     public static class CollectorImpl<T, A, R> implements Collector<T, A, R> {
         private final Supplier<A> supplier;
         private final BiConsumer<A, T> accumulator;
         private final BinaryOperator<A> combiner;
-        private Function<A, R> finisher;
-        private Set<Characteristics> characteristics;
+        private final Function<A, R> finisher;
+        private final Set<Characteristics> characteristics;
 
         public CollectorImpl( Supplier<A> supplier, BiConsumer<A, T> accumulator, BinaryOperator<A> combiner,
                               Function<A, R> finisher, Set<Characteristics> characteristics ) {

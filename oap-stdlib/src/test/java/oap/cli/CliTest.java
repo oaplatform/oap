@@ -44,7 +44,7 @@ public class CliTest {
                 Option.simple( "generate" ).required().description( "generate magic" ),
                 Option.string( "macaddress" ).required().description( "macaddress" ),
                 Option.string( "name" ).required().description( "magic name" ),
-                Option.<Map<String, String>>option( "attributes" ).argument( ValueParser.MAP ).description( "magic attributes( comma separated key=value pairs )" ) )
+                Option.<Map<String, String>>option( "attributes" ).argument( ValueParser.forMap ).description( "magic attributes( comma separated key=value pairs )" ) )
             .group( "magic inspection", result::putAll,
                 Option.simple( "inspect" ).required().description( "inspect magic" ),
                 Option.string( "magic" ).required().description( "magic file" ),

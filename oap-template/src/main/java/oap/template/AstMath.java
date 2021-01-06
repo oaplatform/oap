@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-07-17.
- */
 @ToString( callSuper = true )
 class AstMath extends Ast {
     final String operation;

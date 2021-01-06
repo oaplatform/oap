@@ -28,9 +28,6 @@ import oap.json.ext.Ext;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 public class TestTemplateClass2 {
     public String field2;
     public Optional<String> fieldOpt2;

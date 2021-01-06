@@ -31,9 +31,6 @@ import oap.util.Strings;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 @ToString( callSuper = true )
 public class AstOr extends Ast {
     final String orVariable;
@@ -56,7 +53,7 @@ public class AstOr extends Ast {
     @Override
     protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         printTop( buffer, prefix );
-        buffer.append( childrenPrefix + "│OR" );
+        buffer.append( childrenPrefix ).append( "│OR" );
         buffer.append( '\n' );
 
         for( var i = 0; i < or.size(); i++ ) {
@@ -71,29 +68,25 @@ public class AstOr extends Ast {
     void render( Render render ) {
         var minMax = or.get( 0 );
 
-        render.ntab().append( render.templateAccumulator.getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
-
+        var r = render;
+        r.ntab().append( render.templateAccumulator.getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
         for( var i = 0; i < or.size(); i++ ) {
             minMax = or.get( i );
             var astRunnable = ( AstRunnable ) minMax.top;
 
-            astRunnable.render( render );
-            render = render
+            astRunnable.render( r );
+            r = r
                 .ntab().append( "%s.run();", astRunnable.newFunctionId )
                 .ntab().append( "if( !%s.isEmpty() ) { ", astRunnable.templateAccumulatorName )
                 .tabInc().ntab().append( "%s = %s.get();", orVariable, astRunnable.templateAccumulatorName )
                 .tabDec();
 
-            if( i < or.size() - 1 ) {
-                render = render.ntab().append( "} else {" ).tabInc();
-            }
+            if( i < or.size() - 1 ) r = r.ntab().append( "} else {" ).tabInc();
         }
 
-        for( var i = 0; i < or.size(); i++ ) {
-            render = render.tabDec().ntab().append( "}" );
-        }
+        for( var i = 0; i < or.size(); i++ ) r = r.tabDec().ntab().append( "}" );
 
-        var newRender = render.withField( orVariable ).withParentType( new TemplateType( Object.class ) );
+        var newRender = r.withField( orVariable ).withParentType( new TemplateType( Object.class ) );
         children.forEach( a -> a.render( newRender ) );
     }
 }

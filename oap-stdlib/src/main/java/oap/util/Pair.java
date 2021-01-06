@@ -26,27 +26,25 @@ package oap.util;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
+import static java.util.Objects.deepEquals;
 import static oap.util.Strings.deepToString;
 
 public class Pair<K, V> implements Serializable {
-    @SuppressWarnings( "CheckStyle" )
+    //CHECKSTYLE:OFF
     public final K _1;
-    @SuppressWarnings( "CheckStyle" )
     public final V _2;
 
-    @SuppressWarnings( "CheckStyle" )
     public Pair( K _1, V _2 ) {
         this._1 = _1;
         this._2 = _2;
     }
 
-    @SuppressWarnings( "CheckStyle" )
     public static <K, V> Pair<K, V> __( K _1, V _2 ) {
         return new Pair<>( _1, _2 );
     }
+    //CHECKSTYLE:ON
 
     @Override
     public boolean equals( Object o ) {
@@ -55,21 +53,21 @@ public class Pair<K, V> implements Serializable {
 
         Pair<?, ?> pair = ( Pair<?, ?> ) o;
 
-        if( _1 != null ? !Objects.deepEquals( _1, pair._1 ) : pair._1 != null ) return false;
-        if( _2 != null ? !Objects.deepEquals( _2, pair._2 ) : pair._2 != null ) return false;
+        if( _1 != null ? !deepEquals( _1, pair._1 ) : pair._1 != null ) return false;
+        if( _2 != null ? !deepEquals( _2, pair._2 ) : pair._2 != null ) return false;
 
         return true;
     }
 
-    @SuppressWarnings( "CheckStyle" )
+    //CHECKSTYLE:OFF
     public K _1() {
         return _1;
     }
 
-    @SuppressWarnings( "CheckStyle" )
     public K _2() {
         return _1;
     }
+    //CHECKSTYLE:ON
 
     @SuppressWarnings( "unchecked" )
     public <CK extends Comparable<CK>, CV extends Comparable<CV>> ComparablePair<CK, CV> toComparable() {
@@ -102,15 +100,15 @@ public class Pair<K, V> implements Serializable {
     }
 
     public static class ComparablePair<CK extends Comparable<CK>, CV extends Comparable<CV>> extends Pair<CK, CV> implements Comparable<ComparablePair<CK, CV>> {
-        @SuppressWarnings( "CheckStyle" )
+        //CHECKSTYLE:OFF
         public ComparablePair( CK _1, CV _2 ) {
             super( _1, _2 );
         }
 
-        @SuppressWarnings( "CheckStyle" )
         public static <CK extends Comparable<CK>, CV extends Comparable<CV>> ComparablePair<CK, CV> ___( CK k, CV v ) {
             return new ComparablePair<>( k, v );
         }
+        //CHECKSTYLE:ON
 
         @Override
         public int compareTo( @Nonnull ComparablePair<CK, CV> other ) {
@@ -120,15 +118,15 @@ public class Pair<K, V> implements Serializable {
     }
 
     public static class KeyComparablePair<K extends Comparable<K>, V> extends Pair<K, V> implements Comparable<KeyComparablePair<K, V>> {
-        @SuppressWarnings( "CheckStyle" )
+        //CHECKSTYLE:OFF
         public KeyComparablePair( K _1, V _2 ) {
             super( _1, _2 );
         }
 
-        @SuppressWarnings( "CheckStyle" )
         public static <K extends Comparable<K>, V> KeyComparablePair<K, V> ___( K k, V v ) {
             return new KeyComparablePair<>( k, v );
         }
+        //CHECKSTYLE:OFF
 
         @Override
         public int compareTo( KeyComparablePair<K, V> other ) {

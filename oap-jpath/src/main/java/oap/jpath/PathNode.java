@@ -27,9 +27,6 @@ package oap.jpath;
 import lombok.ToString;
 import oap.reflect.Reflection;
 
-/**
- * Created by igor.petrenko on 2020-06-09.
- */
 @ToString
 public abstract class PathNode {
     public final PathType type;

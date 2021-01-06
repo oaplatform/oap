@@ -26,7 +26,7 @@ package oap.json.schema;
 
 import org.apache.commons.lang3.NotImplementedException;
 
-public class NoStorage implements SchemaStorage {
+public final class NoStorage implements SchemaStorage {
     public static final SchemaStorage INSTANCE = new NoStorage();
 
     private NoStorage() {

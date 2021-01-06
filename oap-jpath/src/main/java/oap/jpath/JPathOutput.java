@@ -24,9 +24,6 @@
 
 package oap.jpath;
 
-/**
- * Created by igor.petrenko on 2020-06-08.
- */
 public interface JPathOutput {
     void write( Pointer pointer );
 }

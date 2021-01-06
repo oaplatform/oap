@@ -29,9 +29,6 @@ import lombok.ToString;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 @ToString
 class TemplateType {
     public final Type type;

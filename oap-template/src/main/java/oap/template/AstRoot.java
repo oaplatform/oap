@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-07-13.
- */
 @ToString( callSuper = true )
 public class AstRoot extends Ast {
     AstRoot( TemplateType parentType ) {
@@ -40,28 +37,29 @@ public class AstRoot extends Ast {
         var className = type.getTypeName().replace( '$', '.' );
 
         var templateAccumulatorClassName = render.templateAccumulator.getClass().getTypeName().replace( '$', '.' );
-        render.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
-            + "\n"
-            + "import oap.util.Strings;\n"
-            + "import oap.concurrent.StringBuilderPool;\n"
-            + "\n"
-            + "import java.util.*;\n"
-            + "import oap.util.Functions.TriConsumer;\n"
-            + "import java.util.function.Supplier;\n"
-            + "import com.google.common.base.CharMatcher;\n"
-            + "\n"
-            + "public class " ).append( render.nameEscaped() )
+        render.append( "package " ).append( getClass().getPackage().getName() ).append( """
+            ;
+
+            import oap.util.Strings;
+            import oap.concurrent.StringBuilderPool;
+
+            import java.util.*;
+            import oap.util.Functions.TriConsumer;
+            import java.util.function.Supplier;
+            import com.google.common.base.CharMatcher;
+
+            public class\s""" ).append( render.nameEscaped() )
             .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, templateAccumulatorClassName )
-            .append( " {\n"
-                + "\n"
-                + "  @Override\n"
-                + "  public void accept( " ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {\n" );
+            .append( """
+                {
+
+                 @Override
+                 public void accept(\s""".indent( 1 ) ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {\n" );
 
         var childRender = render.tabInc().tabInc().tabInc().withField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
         children.forEach( child -> child.render( childRender ) );
 
         render.append( """
-                  
               }
             }""".stripIndent() );
     }

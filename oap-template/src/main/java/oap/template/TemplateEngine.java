@@ -53,9 +53,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 @Slf4j
 public class TemplateEngine implements Runnable {
     public final Path tmpPath;
@@ -177,7 +174,7 @@ public class TemplateEngine implements Runnable {
             if( e.getCause() instanceof TemplateException ) {
                 throw ( TemplateException ) e.getCause();
             }
-            
+
             throw new TemplateException( e.getCause() );
         }
     }

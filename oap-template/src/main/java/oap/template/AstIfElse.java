@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-10-29.
- */
 @ToString( callSuper = true )
 public abstract class AstIfElse extends Ast {
     final String variableName;
@@ -69,7 +66,7 @@ public abstract class AstIfElse extends Ast {
             render.ntab().append( "}" );
         }
     }
-    
+
     @Override
     protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         if( printIfOptEmpty != null ) {

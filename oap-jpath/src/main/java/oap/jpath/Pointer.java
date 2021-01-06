@@ -26,9 +26,6 @@ package oap.jpath;
 
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 2020-06-09.
- */
 public interface Pointer {
     @SuppressWarnings( "unchecked" )
     static Pointer get( Object ret ) {

@@ -33,7 +33,7 @@ import java.io.OutputStream;
 
 @ToString
 public final class ZabbixRequest {
-    private static final byte header[] = { 'Z', 'B', 'X', 'D', '\1' };
+    private static final byte[] header = { 'Z', 'B', 'X', 'D', '\1' };
 
     public static void writeExternal( Request request, OutputStream out ) throws IOException {
         out.write( header );

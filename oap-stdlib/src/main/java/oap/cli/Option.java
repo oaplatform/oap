@@ -28,7 +28,7 @@ import oap.util.Result;
 
 import java.nio.file.Path;
 
-public class Option<V> {
+public final class Option<V> {
     public final String name;
     private boolean withArgument;
     private ValueParser<V> parser;
@@ -40,15 +40,15 @@ public class Option<V> {
     }
 
     public static Option<Path> path( String name ) {
-        return Option.<Path>option( name ).argument( ValueParser.PATH );
+        return Option.<Path>option( name ).argument( ValueParser.forPath );
     }
 
     public static Option<String> string( String name ) {
-        return Option.<String>option( name ).argument( ValueParser.STRING );
+        return Option.<String>option( name ).argument( ValueParser.forString );
     }
 
     public static Option<Integer> integer( String name, int min, int max ) {
-        return Option.<Integer>option( name ).argument( ValueParser.INT( min, max ) );
+        return Option.<Integer>option( name ).argument( ValueParser.forInt( min, max ) );
     }
 
     public static <V> Option<V> option( String name ) {
@@ -87,6 +87,7 @@ public class Option<V> {
         return "--" + name + ( withArgument ? "=<value>" : "" ) + ( description != null ? " - " + description : "" );
     }
 
+    //CHECKSTYLE:OFF
     public static Pair<String, String> __( String key, String value ) {
         return Pair.__( key, value );
     }
@@ -94,12 +95,13 @@ public class Option<V> {
     public static Pair<String, String> __( String key ) {
         return Pair.__( key, null );
     }
+    //CHECKSTYLE:ON
 
     public Result<V, String> parse( String value ) {
         return ( parser != null ? parser.parse( value ) : Result.<V, String>success( null ) )
-            .filter( v -> v != null && withArgument || v == null )
+            .filter( v -> v == null || withArgument )
             .orElse( Result.failure( name + " should contain value" ) )
-            .filter( v -> v == null && !withArgument || v != null )
+            .filter( v -> v != null || !withArgument )
             .orElse( Result.failure( name + " should not contain a value" ) );
     }
 }

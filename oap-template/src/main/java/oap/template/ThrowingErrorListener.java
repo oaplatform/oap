@@ -28,9 +28,6 @@ import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
-/**
- * Created by igor.petrenko on 2020-07-15.
- */
 public class ThrowingErrorListener extends BaseErrorListener {
     public static final ThrowingErrorListener INSTANCE = new ThrowingErrorListener();
 

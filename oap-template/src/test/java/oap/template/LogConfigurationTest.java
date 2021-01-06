@@ -39,9 +39,6 @@ import java.util.Optional;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 2020-10-29.
- */
 public class LogConfigurationTest extends Fixtures {
     private TemplateEngine engine;
     private String testMethodName;

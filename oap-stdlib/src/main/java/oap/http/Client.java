@@ -166,11 +166,11 @@ public final class Client implements Closeable {
     }
 
     public Response get( String uri ) {
-        return get( uri, Maps.empty(), Maps.empty() );
+        return get( uri, Map.of(), Map.of() );
     }
 
     public Response get( URI uri ) {
-        return get( uri, Maps.empty() );
+        return get( uri, Map.of() );
     }
 
     @SafeVarargs
@@ -179,7 +179,7 @@ public final class Client implements Closeable {
     }
 
     public Response get( String uri, Map<String, Object> params ) {
-        return get( uri, params, Maps.empty() );
+        return get( uri, params, Map.of() );
     }
 
     public Response get( String uri, Map<String, Object> params, Map<String, Object> headers ) {
@@ -193,7 +193,7 @@ public final class Client implements Closeable {
     }
 
     public Optional<Response> get( String uri, Map<String, Object> params, long timeout ) {
-        return get( uri, params, Maps.empty(), timeout );
+        return get( uri, params, Map.of(), timeout );
     }
 
     public Optional<Response> get( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
@@ -206,7 +206,7 @@ public final class Client implements Closeable {
     }
 
     public Response post( String uri, Map<String, Object> params ) {
-        return post( uri, params, Maps.empty() );
+        return post( uri, params, Map.of() );
     }
 
     public Response post( String uri, Map<String, Object> params, Map<String, Object> headers ) {
@@ -215,7 +215,7 @@ public final class Client implements Closeable {
     }
 
     public Optional<Response> post( String uri, Map<String, Object> params, long timeout ) {
-        return post( uri, params, Maps.empty(), timeout );
+        return post( uri, params, Map.of(), timeout );
     }
 
     public Optional<Response> post( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
@@ -233,7 +233,7 @@ public final class Client implements Closeable {
     }
 
     public Response post( String uri, String content, ContentType contentType ) {
-        return post( uri, content, contentType, Maps.empty() );
+        return post( uri, content, contentType, Maps.of() );
     }
 
     public Response post( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
@@ -254,7 +254,7 @@ public final class Client implements Closeable {
     public Optional<Response> post( String uri, byte[] content, long timeout ) {
         var request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, APPLICATION_OCTET_STREAM ) );
-        return getResponse( request, timeout, execute( request, Maps.empty() ) );
+        return getResponse( request, timeout, execute( request, Map.of() ) );
     }
 
     @SneakyThrows
@@ -277,7 +277,7 @@ public final class Client implements Closeable {
             var pis = new PipedInputStream( pos );
             request.setEntity( new InputStreamEntity( pis, contentType ) );
 
-            return new OutputStreamWithResponse( pos, execute( request, Maps.empty() ), request, builder.timeout );
+            return new OutputStreamWithResponse( pos, execute( request, Map.of() ), request, builder.timeout );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -286,7 +286,7 @@ public final class Client implements Closeable {
     public Response post( String uri, InputStream content, ContentType contentType ) {
         var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
-        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
@@ -320,21 +320,21 @@ public final class Client implements Closeable {
     public Response put( String uri, String content, ContentType contentType ) {
         var request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, contentType ) );
-        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, byte[] content, ContentType contentType ) {
         var request = new HttpPut( uri );
         request.setEntity( new ByteArrayEntity( content, contentType ) );
-        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, InputStream is, ContentType contentType ) {
         var request = new HttpPut( uri );
         request.setEntity( new InputStreamEntity( is, contentType ) );
-        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
@@ -343,7 +343,7 @@ public final class Client implements Closeable {
     }
 
     public Response delete( String uri, long timeout ) {
-        return delete( uri, Maps.empty(), timeout );
+        return delete( uri, Map.of(), timeout );
     }
 
     public Response delete( String uri, Map<String, Object> headers ) {
@@ -460,10 +460,6 @@ public final class Client implements Closeable {
         }
     }
 
-    private Optional<HttpResponse> resolve( String url ) {
-        return resolve( url );
-    }
-
     private Optional<HttpResponse> resolve( String url, Optional<Long> ifModifiedSince ) throws InterruptedException, ExecutionException, IOException {
         HttpGet request = new HttpGet( url );
         ifModifiedSince.ifPresent( ims -> request.addHeader( "If-Modified-Since", DateUtils.formatDate( new Date( ims ) ) ) );
@@ -475,7 +471,7 @@ public final class Client implements Closeable {
             Header location = response.getFirstHeader( "Location" );
             if( location == null ) throw new IOException( "redirect w/o location!" );
             log.debug( "following {}", location.getValue() );
-            return resolve( location.getValue() );
+            return resolve( location.getValue(), Optional.empty() );
         } else if( response.getStatusLine().getStatusCode() == HTTP_NOT_MODIFIED ) {
             return Optional.empty();
         } else
@@ -657,10 +653,10 @@ public final class Client implements Closeable {
     public static class ClientBuilder extends AsyncCallbacks<ClientBuilder, Client> {
 
         private final BasicCookieStore basicCookieStore;
-        private Path certificateLocation;
-        private String certificatePassword;
-        private long connectTimeout;
-        private long timeout;
+        private final Path certificateLocation;
+        private final String certificatePassword;
+        private final long connectTimeout;
+        private final long timeout;
         private int maxConnTotal = 10000;
         private int maxConnPerRoute = 1000;
         private boolean redirectsEnabled = false;

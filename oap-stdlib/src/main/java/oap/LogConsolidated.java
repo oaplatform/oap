@@ -30,9 +30,6 @@ import org.slf4j.event.Level;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by igor.petrenko on 2020-08-25.
- */
 @Slf4j
 public class LogConsolidated {
     private static ConcurrentHashMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();

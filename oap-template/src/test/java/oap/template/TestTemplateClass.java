@@ -29,9 +29,6 @@ import oap.json.ext.Ext;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 public class TestTemplateClass {
     public String field;
     public Optional<String> fieldOpt = Optional.empty();

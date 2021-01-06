@@ -38,11 +38,11 @@ import java.util.zip.DeflaterInputStream;
  * See GzipOutputStream for details.
  */
 public class GZIPCompressingInputStream extends SequenceInputStream {
-    public GZIPCompressingInputStream( InputStream in ) throws IOException {
+    public GZIPCompressingInputStream( InputStream in ) {
         this( in, 512 );
     }
 
-    public GZIPCompressingInputStream( InputStream in, int bufferSize ) throws IOException {
+    public GZIPCompressingInputStream( InputStream in, int bufferSize ) {
         super( new StatefullGzipStreamEnumerator( in, bufferSize ) );
     }
 
@@ -69,18 +69,20 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
         }
 
         public InputStream nextElement() {
-            switch( state ) {
-                case HEADER:
+            return switch( state ) {
+                case HEADER -> {
                     state = StreamState.CONTENT;
-                    return createHeaderStream();
-                case CONTENT:
+                    yield createHeaderStream();
+                }
+                case CONTENT -> {
                     state = StreamState.TRAILER;
-                    return createContentStream();
-                case TRAILER:
+                    yield createContentStream();
+                }
+                case TRAILER -> {
                     state = null;
-                    return createTrailerStream();
-            }
-            return null;
+                    yield createTrailerStream();
+                }
+            };
         }
 
         static final int GZIP_MAGIC = 0x8b1f;
@@ -135,7 +137,7 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
             }
         }
 
-        protected final static int TRAILER_SIZE = 8;
+        protected static final int TRAILER_SIZE = 8;
 
         public byte[] createTrailer() {
             byte[] trailer = new byte[TRAILER_SIZE];

@@ -27,6 +27,7 @@ package oap.json.ext;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 public class ExtModule extends SimpleModule {
+    @SuppressWarnings( "unchecked" )
     public ExtModule() {
         ExtDeserializer.getDeserializers().forEach( this::addDeserializer );
     }

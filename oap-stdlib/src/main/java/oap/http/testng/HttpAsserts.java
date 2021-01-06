@@ -58,20 +58,8 @@ public class HttpAsserts {
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
-    @SuppressWarnings( "CheckStyle" )
-    @Deprecated
-    public static String HTTP_PREFIX() {
-        return httpPrefix();
-    }
-
     public static String httpPrefix() {
         return "http://localhost:" + System.getProperty( KernelFixture.TEST_HTTP_PORT );
-    }
-
-    @SuppressWarnings( "CheckStyle" )
-    @Deprecated
-    public static String HTTP_URL( String suffix ) {
-        return httpUrl( suffix );
     }
 
     public static String httpUrl( String suffix ) {

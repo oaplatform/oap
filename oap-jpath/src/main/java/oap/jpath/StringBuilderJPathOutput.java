@@ -24,9 +24,6 @@
 
 package oap.jpath;
 
-/**
- * Created by igor.petrenko on 2020-06-08.
- */
 public class StringBuilderJPathOutput implements JPathOutput {
     private final StringBuilder sb = new StringBuilder();
 

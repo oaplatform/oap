@@ -26,9 +26,6 @@ package oap.template;
 
 import java.util.Collection;
 
-/**
- * Created by igor.petrenko on 2020-10-19.
- */
 public class TemplateAccumulatorObject implements TemplateAccumulator<Object, TemplateAccumulatorObject> {
     private Object obj;
 

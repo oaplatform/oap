@@ -29,9 +29,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Created by igor.petrenko on 2020-11-06.
- */
 
 @Target( { ElementType.FIELD, ElementType.METHOD } )
 @Retention( RetentionPolicy.RUNTIME )

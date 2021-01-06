@@ -26,15 +26,10 @@ package oap.jpath;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.UnbufferedCharStream;
 
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 2020-06-08.
- */
 public class JPath {
     public final HashMap<String, Object> variables = new HashMap<>();
 

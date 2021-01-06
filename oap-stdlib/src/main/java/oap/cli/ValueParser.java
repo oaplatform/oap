@@ -42,27 +42,28 @@ public interface ValueParser<V> {
     String[] TRUE_VALUES = { "true", "yes", "y", "t" };
     String[] FALSE_VALUES = { "false", "no", "n", "f" };
 
-    ValueParser<Boolean> BOOLEAN = value -> {
+    ValueParser<Boolean> forBoolean = value -> {
         if( value == null ) return Result.failure( "null value" );
         for( String v : TRUE_VALUES ) if( v.equals( value.toLowerCase() ) ) return Result.success( true );
         for( String v : FALSE_VALUES ) if( v.equals( value.toLowerCase() ) ) return Result.success( false );
         return Result.failure( "wrong value: " + value );
     };
 
-    ValueParser<Path> PATH = value -> value != null ?
-        Result.success( Paths.get( value ) ) : Result.failure( "path should not be null" );
+    ValueParser<Path> forPath = value -> value != null
+        ? Result.success( Paths.get( value ) )
+        : Result.failure( "path should not be null" );
 
-    ValueParser<String> STRING = Result::success;
+    ValueParser<String> forString = Result::success;
 
-    ValueParser<Map<String, String>> MAP = value -> value == null ?
-        Result.failure( "value should not be null" ) :
-        Result.success( Maps.of(
+    ValueParser<Map<String, String>> forMap = value -> value == null
+        ? Result.failure( "value should not be null" )
+        : Result.success( Maps.of(
             Arrays.map(
                 Pair.class,
                 kv -> Strings.split( kv, "=" ),
                 value.split( "," ) ) ) );
 
-    static ValueParser<Long> LONG( long min, long max ) {
+    static ValueParser<Long> forLong( long min, long max ) {
         return value -> {
             try {
                 long l = Long.parseLong( value );
@@ -74,7 +75,7 @@ public interface ValueParser<V> {
         };
     }
 
-    static ValueParser<Integer> INT( int min, int max ) {
+    static ValueParser<Integer> forInt( int min, int max ) {
         return value -> {
             try {
                 int l = Integer.parseInt( value );
@@ -86,7 +87,7 @@ public interface ValueParser<V> {
         };
     }
 
-    static ValueParser<Date> DATE( String pattern ) {
+    static ValueParser<Date> forDate( String pattern ) {
         SimpleDateFormat format = new SimpleDateFormat( pattern );
         return value -> {
             if( value == null ) return Result.failure( "date should not be null" );

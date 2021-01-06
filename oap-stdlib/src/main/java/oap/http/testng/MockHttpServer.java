@@ -31,13 +31,10 @@ import oap.http.cors.CorsPolicy;
 
 import java.net.Socket;
 
-/**
- * Created by igor.petrenko on 2020-10-12.
- */
 public class MockHttpServer implements HttpServer {
     @Override
     public void bind( String context, CorsPolicy corsPolicy, Handler handler, Protocol protocol ) {
-        
+
     }
 
     @Override

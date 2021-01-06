@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 @ToString( callSuper = true )
 class AstPathNotFound extends Ast {
     final String description;

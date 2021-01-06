@@ -28,9 +28,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
 
-/**
- * Created by igor.petrenko on 2020-06-09.
- */
 @ToString
 @Slf4j
 public class ObjectPointer<T extends Object> implements Pointer {

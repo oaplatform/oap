@@ -24,8 +24,5 @@
 
 package oap.jpath;
 
-/**
- * Created by igor.petrenko on 2020-06-09.
- */
 public class PathNotFound extends RuntimeException {
 }

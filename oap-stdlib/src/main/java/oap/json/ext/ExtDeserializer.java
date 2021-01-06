@@ -89,13 +89,14 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
         return null;
     }
 
+    @SuppressWarnings( "rawtypes" )
     public static Map<Class, ExtDeserializer> getDeserializers() {
         var ret = new HashMap<Class, ExtDeserializer>();
 
         ret.put( Ext.class, new ExtDeserializer() );
         for( var c : extmap.values() ) {
-            if( c._abstract == null ) continue;
-            var clazz = c._abstract;
+            if( c.abstractClass == null ) continue;
+            var clazz = c.abstractClass;
 
             ret.put( clazz, new ExtDeserializer( c.implementation ) );
         }
@@ -130,7 +131,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
             public String field;
             public Class<?> implementation;
             @JsonProperty( "abstract" )
-            public Class<?> _abstract = null;
+            public Class<?> abstractClass = null;
         }
     }
 }

@@ -30,9 +30,6 @@ import oap.reflect.Reflection;
 
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 2020-06-11.
- */
 @ToString( callSuper = true )
 @Slf4j
 public class PathNodeMethod extends PathNode {
@@ -79,7 +76,7 @@ public class PathNodeMethod extends PathNode {
                 } else {
                     return false;
                 }
-                
+
                 continue;
             }
 

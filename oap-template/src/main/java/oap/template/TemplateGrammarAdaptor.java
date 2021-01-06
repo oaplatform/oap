@@ -37,9 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Created by igor.petrenko on 2020-07-14.
- */
 abstract class TemplateGrammarAdaptor extends Parser {
     Map<String, List<Method>> builtInFunction;
     ErrorStrategy errorStrategy;
@@ -137,7 +134,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
         public void setTop( Ast ast ) {
             this.bottom = this.top;
             this.top = ast;
-            
+
             this.top.addChild( this.bottom );
         }
 

@@ -81,8 +81,8 @@ public class Cookie {
         public static final String SameSite = "SameSite";
     }
 
-    private static class Parser {
-        private List<Pair<String, String>> components;
+    private static final class Parser {
+        private final List<Pair<String, String>> components;
 
         private Parser( String cookie ) {
             this.components = Stream.of( StringUtils.split( cookie, ";" ) )

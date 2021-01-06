@@ -30,9 +30,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
-/**
- * Created by igor.petrenko on 2020-07-13.
- */
 @ToString
 class Render {
     final String templateName;

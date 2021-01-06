@@ -27,9 +27,6 @@ package oap.util;
 import java.util.Collection;
 import java.util.function.ToIntFunction;
 
-/**
- * Created by igor.petrenko on 2020-05-13.
- */
 public class Ints {
     public static <T> int sum( Collection<T> collection, ToIntFunction<T> func ) {
         var res = 0;

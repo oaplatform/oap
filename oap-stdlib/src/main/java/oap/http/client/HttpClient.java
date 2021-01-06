@@ -42,7 +42,7 @@ import java.security.cert.X509Certificate;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
-public class HttpClient {
+public final class HttpClient {
     private java.net.http.HttpClient impl;
 
     private HttpClient() {

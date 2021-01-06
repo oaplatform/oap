@@ -29,9 +29,6 @@ import lombok.ToString;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 2020-07-15.
- */
 @ToString( callSuper = true )
 class AstFunction extends Ast {
     final String funcVariable;

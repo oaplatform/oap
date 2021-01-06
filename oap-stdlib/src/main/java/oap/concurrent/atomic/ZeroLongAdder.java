@@ -26,7 +26,7 @@ package oap.concurrent.atomic;
 
 import oap.concurrent.LongAdder;
 
-public class ZeroLongAdder extends LongAdder {
+public final class ZeroLongAdder extends LongAdder {
     public static final LongAdder ZERO = new ZeroLongAdder();
 
     private ZeroLongAdder() {

@@ -29,9 +29,6 @@ import lombok.ToString;
 import java.util.ArrayList;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 2020-06-09.
- */
 @ToString
 public class PathExpression {
     public final ArrayList<PathNode> list = new ArrayList<>();

@@ -44,10 +44,10 @@ import static oap.util.Lists.concat;
 
 @Slf4j
 @ToString
-public class ApplicationConfiguration {
+public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
     List<String> profiles = Lists.empty();
-    Map<String, Map<String, Object>> services = Maps.empty();
+    Map<String, Map<String, Object>> services = Maps.of();
 
     private ApplicationConfiguration() {
     }

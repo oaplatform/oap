@@ -27,9 +27,6 @@ package oap.json;
 import lombok.ToString;
 import oap.json.ext.Ext;
 
-/**
- * Created by igor.petrenko on 2020-07-03.
- */
 @ToString
 public class TestTemplateBeanExt extends Ext {
     public String value;

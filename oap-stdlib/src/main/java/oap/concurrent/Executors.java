@@ -27,6 +27,7 @@ package oap.concurrent;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -76,7 +77,7 @@ public final class Executors {
             new ThreadFactoryBuilder().setNameFormat( threadPrefix + "-%d" ).build() ) );
     }
 
-    public static class BlockingExecutor implements Executor {
+    public static final class BlockingExecutor implements Executor {
         private final Semaphore semaphore;
         private final ThreadPoolExecutor threadPoolExecutor;
 
@@ -98,7 +99,7 @@ public final class Executors {
         }
 
         @Override
-        public void execute( Runnable command ) {
+        public void execute( @Nonnull Runnable command ) {
             try {
                 semaphore.acquire();
             } catch( InterruptedException e ) {

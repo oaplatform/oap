@@ -22,18 +22,18 @@ public class SecureHttpListener extends AbstractHttpListener {
     private final Path keystoreLocation;
     private final String keystorePassword;
     private final int port;
-    private final boolean private_network;
+    private final boolean privateNetwork;
 
-    public SecureHttpListener( HttpServer server, int port, boolean private_network ) {
-        this( server, null, null, port, private_network );
+    public SecureHttpListener( HttpServer server, int port, boolean privateNetwork ) {
+        this( server, null, null, port, privateNetwork );
     }
 
-    public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port, boolean private_network ) {
+    public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port, boolean privateNetwork ) {
         super( server );
         this.keystoreLocation = keystoreLocation;
         this.keystorePassword = keystorePassword;
         this.port = port;
-        this.private_network = private_network;
+        this.privateNetwork = privateNetwork;
         log.info( "Secure HTTP listener configured to use {} and bind to port {}",
             keystoreLocation,
             port );
@@ -42,7 +42,7 @@ public class SecureHttpListener extends AbstractHttpListener {
     @SneakyThrows
     @Override
     protected ServerSocket createSocket() {
-        if( !private_network && keystoreLocation != null && Files.exists( keystoreLocation ) ) {
+        if( !privateNetwork && keystoreLocation != null && Files.exists( keystoreLocation ) ) {
             try( var inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
                 log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
@@ -65,7 +65,7 @@ public class SecureHttpListener extends AbstractHttpListener {
                 throw e;
             }
         } else {
-            if( private_network ) {
+            if( privateNetwork ) {
                 ServerSocket serverSocket = new ServerSocket();
                 init( serverSocket );
 

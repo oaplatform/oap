@@ -33,6 +33,7 @@ import oap.reflect.TypeRef;
 import oap.util.Lists;
 import oap.util.Sets;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,14 +47,14 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.collections4.CollectionUtils.subtract;
 
-public class JsonDiff {
+public final class JsonDiff {
     private final ArrayList<Line> diff;
 
     private JsonDiff( ArrayList<Line> diff ) {
         this.diff = diff;
     }
 
-    public static JsonDiff diff( String oldJson, String newJson, SchemaAST schema ) {
+    public static JsonDiff diff( String oldJson, String newJson, SchemaAST<?> schema ) {
         var result = new ArrayList<Line>();
 
         var to = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
@@ -66,7 +67,7 @@ public class JsonDiff {
         return new JsonDiff( result );
     }
 
-    private static void diff( String prefix, SchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
+    private static void diff( String prefix, SchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
         if( schema instanceof ObjectSchemaAST ) {
             diffObject( prefix, ( ObjectSchemaAST ) schema, result, to, from );
         } else if( schema instanceof ArraySchemaAST ) {
@@ -76,7 +77,7 @@ public class JsonDiff {
         }
     }
 
-    private static void diffField( String prefix, SchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
+    private static void diffField( String prefix, SchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
         if( !Objects.equals( to, from ) ) {
             result.add( new Line(
                 prefix,
@@ -104,16 +105,12 @@ public class JsonDiff {
             var added = unique( toList, fromList, idField );
             var removed = unique( fromList, toList, idField );
 
-            for( var i = 0; i < added.size(); i++ ) {
-                var item = added.get( i );
-
+            for( Object item : added ) {
                 var id = isIndex( idField ) ? fromList.size() : getId( idField, item );
                 diffField( prefixWithIndex( prefix, id ), items, result, item, null );
             }
 
-            for( var i = 0; i < removed.size(); i++ ) {
-                var item = removed.get( i );
-
+            for( Object item : removed ) {
                 var id = isIndex( idField ) ? toList.size() : getId( idField, item );
 
                 diffField( prefixWithIndex( prefix, id ), items, result, null, item );
@@ -126,7 +123,7 @@ public class JsonDiff {
                 }
             } else {
                 for( var fromItem : fromList ) {
-                    var fromItemMap = ( Map ) fromItem;
+                    var fromItemMap = ( Map<?, ?> ) fromItem;
                     var id = fromItemMap.get( idField );
                     if( id == null )
                         throw new IllegalArgumentException( prefix + ": id field " + idField + ": not found" );
@@ -134,7 +131,7 @@ public class JsonDiff {
                     toList
                         .stream()
                         .filter( toItem -> {
-                            var toItemMap = ( Map ) toItem;
+                            var toItemMap = ( Map<?, ?> ) toItem;
                             var toId = toItemMap.get( idField );
 
                             return Objects.equals( toId, id );
@@ -159,7 +156,7 @@ public class JsonDiff {
         return prefix.isEmpty() ? "[" + id + "]" : prefix + "[" + id + "]";
     }
 
-    private static List unique( List<?> to, List<?> from, String idField ) {
+    private static List<?> unique( List<?> to, List<?> from, String idField ) {
         if( isIndex( idField ) ) {
             if( to.size() <= from.size() ) return emptyList();
             return to.subList( from.size(), to.size() );
@@ -180,8 +177,8 @@ public class JsonDiff {
 
     private static void diffObject( String prefix, ObjectSchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
 
-        var toMap = ( Map ) to;
-        var fromMap = ( Map ) from;
+        var toMap = ( Map<?, ?> ) to;
+        var fromMap = ( Map<?, ?> ) from;
 
         for( var child : schema.properties.entrySet() ) {
             var property = child.getKey();
@@ -200,7 +197,7 @@ public class JsonDiff {
         }
     }
 
-    private static Line.LineType toLineType( SchemaAST schema ) {
+    private static Line.LineType toLineType( SchemaAST<?> schema ) {
         if( schema instanceof ObjectSchemaAST ) return Line.LineType.OBJECT;
         else if( schema instanceof ArraySchemaAST ) return Line.LineType.ARRAY;
         return Line.LineType.FIELD;
@@ -213,6 +210,7 @@ public class JsonDiff {
     @EqualsAndHashCode
     @ToString
     public static class Line implements Serializable {
+        @Serial
         private static final long serialVersionUID = 5804735144221122177L;
 
         public final String path;

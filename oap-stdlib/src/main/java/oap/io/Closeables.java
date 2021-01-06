@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class Closeables {
     private static final Logger logger = LoggerFactory.getLogger( Closeables.class );

@@ -46,7 +46,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> implements Mergeable<T> 
         public final Optional<EnumFunction> enumValue;
         public final Optional<Boolean> index;
         public final Optional<Boolean> norms;
-        public final Optional<Boolean> include_in_all;
+        public final Optional<Boolean> includeInAll;
         public final Optional<String> denormalized;
         public final Optional<String> analyzer;
 
@@ -56,7 +56,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> implements Mergeable<T> 
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
                                 Optional<Boolean> index,
-                                Optional<Boolean> include_in_all,
+                                Optional<Boolean> includeInAll,
                                 Optional<String> denormalized,
                                 Optional<String> analyzer,
                                 Optional<Boolean> norms ) {
@@ -66,7 +66,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> implements Mergeable<T> 
             this.defaultValue = defaultValue;
             this.enumValue = enumValue;
             this.index = index;
-            this.include_in_all = include_in_all;
+            this.includeInAll = includeInAll;
             this.denormalized = denormalized;
             this.analyzer = analyzer;
             this.norms = norms;
@@ -81,7 +81,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> implements Mergeable<T> 
                 defaultValue.isPresent() ? defaultValue : common.defaultValue,
                 enumValue.isPresent() ? enumValue : common.enumValue,
                 index.isPresent() ? index : common.index,
-                include_in_all.isPresent() ? include_in_all : common.include_in_all,
+                includeInAll.isPresent() ? includeInAll : common.includeInAll,
                 denormalized.isPresent() ? denormalized : common.denormalized,
                 analyzer.isPresent() ? analyzer : common.analyzer,
                 norms.isPresent() ? norms : common.norms

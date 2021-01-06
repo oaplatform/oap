@@ -140,7 +140,7 @@ public class ElasticSearchSchema {
     }
 
     private static void convertCommon( SchemaAST<?> schemaAST, JsonGenerator jsonGenerator ) throws IOException {
-        if( !schemaAST.common.include_in_all.orElse( true ) )
+        if( !schemaAST.common.includeInAll.orElse( true ) )
             jsonGenerator.writeBooleanField( "include_in_all", false );
 
         if( !schemaAST.common.index.orElse( true ) )

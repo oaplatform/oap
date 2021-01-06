@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 2020-07-13.
- */
 @ToString( callSuper = true )
 public class AstText extends Ast {
     public final String text;

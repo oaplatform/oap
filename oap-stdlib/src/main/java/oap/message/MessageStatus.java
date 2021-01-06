@@ -24,9 +24,6 @@
 
 package oap.message;
 
-/**
- * Created by igor.petrenko on 2020-05-13.
- */
 public enum MessageStatus {
     OK, ERROR, ALREADY_WRITTEN
 }

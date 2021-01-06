@@ -35,7 +35,7 @@ import java.util.function.LongFunction;
 import static oap.util.Functions.empty.run;
 
 @ToString( exclude = "code" )
-public class Benchmark {
+public final class Benchmark {
     public int experiments = 5;
     public Period period = Period.seconds( 1 );
     String name;

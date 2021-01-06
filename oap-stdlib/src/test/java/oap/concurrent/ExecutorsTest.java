@@ -33,9 +33,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-/**
- * Created by igor.petrenko on 2020-06-24.
- */
 public class ExecutorsTest {
     @Test
     public void test() throws InterruptedException, ExecutionException, TimeoutException {

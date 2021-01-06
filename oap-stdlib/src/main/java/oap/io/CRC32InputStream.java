@@ -49,12 +49,12 @@ public class CRC32InputStream extends FilterInputStream {
 
     @Override
     public int read( byte[] b, int off, int len ) throws IOException {
-        len = super.read( b, off, len );
-        if( len >= 0 ) {
-            crc.update( b, off, len );
-            byteCount += len;
+        int count = super.read( b, off, len );
+        if( count >= 0 ) {
+            crc.update( b, off, count );
+            byteCount += count;
         }
-        return len;
+        return count;
     }
 
     public long getCrcValue() {

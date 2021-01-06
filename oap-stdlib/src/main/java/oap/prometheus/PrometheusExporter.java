@@ -36,9 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
 
 import java.io.Closeable;
-import java.io.IOException;
 
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
@@ -51,11 +49,11 @@ public class PrometheusExporter implements Closeable {
 
     private final Undertow server;
 
-    public PrometheusExporter( int port ) throws IOException {
+    public PrometheusExporter( int port ) {
         this( port, "/metrics" );
     }
 
-    public PrometheusExporter( int port, String path ) throws IOException {
+    public PrometheusExporter( int port, String path ) {
         log.info( "Prometheus metrics port/path {}/{}", port, path );
 
         server = Undertow

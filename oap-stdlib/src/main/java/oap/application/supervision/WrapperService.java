@@ -24,9 +24,6 @@
 
 package oap.application.supervision;
 
-/**
- * Created by igor.petrenko on 2020-12-08.
- */
 public interface WrapperService<TService> extends Supervised {
     String type();
 
