@@ -29,38 +29,24 @@ import lombok.ToString;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 import static org.joda.time.DateTimeZone.UTC;
 
 @EqualsAndHashCode
 @ToString
-public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter<T>>, Serializable {
+public abstract class AbstractCounter<T extends AbstractCounter<T>> implements Mergeable<AbstractCounter<T>>, Serializable {
     public long tick = -1;
     public long value = 0;
 
-    private Counter() {
+    private AbstractCounter() {
     }
 
     protected abstract long getCurrentTick();
 
     public final void inc() {
         inc( 1 );
-    }
-
-    public final long get( long tick ) {
-        return this.tick == tick ? value : 0;
-    }
-
-    @Override
-    public synchronized Counter<T> merge( Counter<T> other ) {
-        if( this.tick == other.tick ) this.value += other.value;
-        else if( this.tick < other.tick ) {
-            this.value = other.value;
-            this.tick = other.tick;
-        }
-
-        return this;
     }
 
     public final synchronized void inc( long value ) {
@@ -72,6 +58,21 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
             this.value += value;
     }
 
+    public final long get( long tick ) {
+        return this.tick == tick ? value : 0;
+    }
+
+    @Override
+    public synchronized AbstractCounter<T> merge( AbstractCounter<T> other ) {
+        if( this.tick == other.tick ) this.value += other.value;
+        else if( this.tick < other.tick ) {
+            this.value = other.value;
+            this.tick = other.tick;
+        }
+
+        return this;
+    }
+
     public final synchronized void reset() {
         tick = -1;
         value = 0;
@@ -79,7 +80,8 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class CustomCounter extends Counter<HourlyCounter> {
+    public static final class CustomCounter extends AbstractCounter<HourlyCounter> {
+        @Serial
         private static final long serialVersionUID = 5833832571566146598L;
         private final long periodMs;
 
@@ -93,19 +95,20 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
             this.value = count;
         }
 
-        public final long currentTick() {
+        public long currentTick() {
             return DateTimeUtils.currentTimeMillis() / periodMs;
         }
 
         @Override
-        protected final long getCurrentTick() {
+        protected long getCurrentTick() {
             return currentTick();
         }
     }
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class HourlyCounter extends Counter<HourlyCounter> {
+    public static final class HourlyCounter extends AbstractCounter<HourlyCounter> {
+        @Serial
         private static final long serialVersionUID = -6350858231677830610L;
 
         public static long currentTick() {
@@ -113,14 +116,15 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         }
 
         @Override
-        protected final long getCurrentTick() {
+        protected long getCurrentTick() {
             return currentTick();
         }
     }
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class DailyCounter extends Counter<DailyCounter> {
+    public static final class DailyCounter extends AbstractCounter<DailyCounter> {
+        @Serial
         private static final long serialVersionUID = -4287987989875991573L;
 
         public static long currentTick() {
@@ -128,14 +132,15 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         }
 
         @Override
-        protected final long getCurrentTick() {
+        protected long getCurrentTick() {
             return currentTick();
         }
     }
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class MonthlyCounter extends Counter<MonthlyCounter> {
+    public static final class MonthlyCounter extends AbstractCounter<MonthlyCounter> {
+        @Serial
         private static final long serialVersionUID = 4419536959429173372L;
 
         public static long currentTick() {
@@ -143,7 +148,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         }
 
         @Override
-        protected final long getCurrentTick() {
+        protected long getCurrentTick() {
             return currentTick();
         }
     }

@@ -23,15 +23,15 @@
  */
 package oap.json.schema.validator.number;
 
+import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class NumberJsonValidator<T extends Number> extends JsonSchemaValidator<NumberSchemaAST> {
-    protected NumberJsonValidator( String type ) {
+public abstract class AbstractNumberJsonValidator<T extends Number> extends AbstractJsonSchemaValidator<NumberSchemaAST> {
+    protected AbstractNumberJsonValidator( String type ) {
         super( type );
     }
 
@@ -41,7 +41,7 @@ public abstract class NumberJsonValidator<T extends Number> extends JsonSchemaVa
     public List<String> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
         if( !valid( value ) ) return typeFailed( properties, schema, value );
 
-        final Double doubleValue = ( ( Number ) value ).doubleValue();
+        final double doubleValue = ( ( Number ) value ).doubleValue();
 
         final List<String> errors = new ArrayList<>();
 

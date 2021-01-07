@@ -23,11 +23,11 @@
  */
 package oap.json.schema.validator.number;
 
-import oap.json.schema.SchemaAST;
+import oap.json.schema.AbstractSchemaAST;
 
 import java.util.Optional;
 
-public class NumberSchemaAST extends SchemaAST<NumberSchemaAST> {
+public class NumberSchemaAST extends AbstractSchemaAST<NumberSchemaAST> {
     public Optional<Boolean> exclusiveMinimum;
 
     public Optional<Boolean> exclusiveMaximum;

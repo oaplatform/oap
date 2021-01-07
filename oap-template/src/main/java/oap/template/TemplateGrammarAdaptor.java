@@ -37,16 +37,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 abstract class TemplateGrammarAdaptor extends Parser {
     Map<String, List<Method>> builtInFunction;
     ErrorStrategy errorStrategy;
 
-    public TemplateGrammarAdaptor( TokenStream input ) {
+    TemplateGrammarAdaptor( TokenStream input ) {
         super( input );
-    }
-
-    MaxMin getAst( TemplateType parentType, String text, boolean isMethod ) {
-        return getAst( parentType, text, isMethod, null );
     }
 
     String sStringToDString( String sstr ) {
@@ -55,6 +52,10 @@ abstract class TemplateGrammarAdaptor extends Parser {
 
     String sdStringToString( String sstr ) {
         return sstr.substring( 1, sstr.length() - 1 );
+    }
+
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod ) {
+        return getAst( parentType, text, isMethod, null );
     }
 
     MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue ) {
@@ -122,12 +123,12 @@ abstract class TemplateGrammarAdaptor extends Parser {
         public Ast top;
         public Ast bottom;
 
-        public MaxMin( Ast top, Ast bottom ) {
+        MaxMin( Ast top, Ast bottom ) {
             this.top = top;
             this.bottom = bottom;
         }
 
-        public MaxMin( Ast top ) {
+        MaxMin( Ast top ) {
             this( top, top );
         }
 
@@ -166,7 +167,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
     static class Function {
         public final String name;
 
-        public Function( String name ) {
+        Function( String name ) {
             this.name = name;
         }
     }

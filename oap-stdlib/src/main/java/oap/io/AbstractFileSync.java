@@ -37,27 +37,27 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 
-public abstract class FileSync implements Runnable {
+public abstract class AbstractFileSync implements Runnable {
     private final HashSet<String> protocols;
     private final ArrayList<FileDownloaderListener> listeners = new ArrayList<>();
     protected URI uri;
     protected Path localFile;
 
-    protected FileSync( String... protocols ) {
+    protected AbstractFileSync( String... protocols ) {
         this.protocols = new HashSet<>( asList( protocols ) );
     }
 
     @SneakyThrows
-    public static FileSync create( String url, Path localFile ) {
+    public static AbstractFileSync create( String url, Path localFile ) {
         return create( new URI( url ), localFile );
     }
 
     @SneakyThrows
-    public static FileSync create( URI uri, Path localFile ) {
+    public static AbstractFileSync create( URI uri, Path localFile ) {
         var protocol = uri.getScheme();
 
-        final ServiceLoader<FileSync> load = ServiceLoader.load( FileSync.class );
-        for( FileSync fs : load ) {
+        final ServiceLoader<AbstractFileSync> load = ServiceLoader.load( AbstractFileSync.class );
+        for( AbstractFileSync fs : load ) {
             if( fs.accept( protocol ) ) {
                 fs.init( uri, localFile );
                 return fs;

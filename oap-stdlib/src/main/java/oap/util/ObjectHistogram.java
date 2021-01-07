@@ -30,6 +30,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 @NotThreadSafe
 public abstract class ObjectHistogram<T extends Mergeable<T>> implements Serializable {
     private final T[] values;

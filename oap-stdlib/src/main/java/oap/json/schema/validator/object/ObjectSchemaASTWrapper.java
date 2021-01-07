@@ -24,10 +24,10 @@
 
 package oap.json.schema.validator.object;
 
+import oap.json.schema.AbstractSchemaAST;
+import oap.json.schema.AbstractSchemaASTWrapper;
 import oap.json.schema.ContainerSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.SchemaAST;
-import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 
 import java.util.ArrayList;
@@ -36,10 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class ObjectSchemaASTWrapper extends SchemaASTWrapper<ObjectSchemaAST> implements ContainerSchemaASTWrapper {
+public class ObjectSchemaASTWrapper extends AbstractSchemaASTWrapper<ObjectSchemaAST> implements ContainerSchemaASTWrapper {
 
     Optional<ObjectSchemaASTWrapper> extendsSchema;
-    LinkedHashMap<String, SchemaASTWrapper<?>> declaredProperties;
+    LinkedHashMap<String, AbstractSchemaASTWrapper<?>> declaredProperties;
     Optional<Boolean> additionalProperties;
     Optional<String> extendsValue;
     Optional<Boolean> nested;
@@ -51,7 +51,7 @@ public class ObjectSchemaASTWrapper extends SchemaASTWrapper<ObjectSchemaAST> im
 
     @Override
     public ObjectSchemaAST unwrap( JsonSchemaParserContext context ) {
-        final LinkedHashMap<String, SchemaAST> p = new LinkedHashMap<>();
+        final LinkedHashMap<String, AbstractSchemaAST> p = new LinkedHashMap<>();
         declaredProperties.forEach( ( key, value ) -> p.put( key, context.computeIfAbsent( value.id, () -> value.unwrap( context ) ) ) );
 
         final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, nested, dynamic, p, id.toString() );
@@ -59,14 +59,14 @@ public class ObjectSchemaASTWrapper extends SchemaASTWrapper<ObjectSchemaAST> im
     }
 
     @Override
-    public Map<String, List<SchemaASTWrapper>> getChildren() {
-        final LinkedHashMap<String, List<SchemaASTWrapper>> map = new LinkedHashMap<>();
+    public Map<String, List<AbstractSchemaASTWrapper>> getChildren() {
+        final LinkedHashMap<String, List<AbstractSchemaASTWrapper>> map = new LinkedHashMap<>();
 
         extendsSchema.ifPresent( ps ->
-            ps.getChildren().forEach( ( key, value ) -> map.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).addAll( value ) )
+            ps.getChildren().forEach( ( key, value ) -> map.computeIfAbsent( key, k -> new ArrayList<>() ).addAll( value ) )
         );
 
-        declaredProperties.forEach( ( key, value ) -> map.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( value ) );
+        declaredProperties.forEach( ( key, value ) -> map.computeIfAbsent( key, k -> new ArrayList<>() ).add( value ) );
 
         return map;
     }

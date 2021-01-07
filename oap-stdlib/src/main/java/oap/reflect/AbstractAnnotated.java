@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-abstract class Annotated<T extends java.lang.reflect.AnnotatedElement> {
+abstract class AbstractAnnotated<T extends java.lang.reflect.AnnotatedElement> {
     public final T underlying;
 
-    Annotated( T underlying ) {
+    AbstractAnnotated( T underlying ) {
         this.underlying = underlying;
     }
 
@@ -64,7 +64,7 @@ abstract class Annotated<T extends java.lang.reflect.AnnotatedElement> {
     public boolean equals( Object o ) {
         if( this == o ) return true;
         if( o == null || getClass() != o.getClass() ) return false;
-        Annotated<?> annotated = ( Annotated<?> ) o;
+        AbstractAnnotated<?> annotated = ( AbstractAnnotated<?> ) o;
         System.out.println( underlying + " and " + annotated.underlying + " are: " );
         System.out.println( Objects.equals( underlying, annotated.underlying ) );
         // TODO: make equals similar to java.lang.reflect equals methods

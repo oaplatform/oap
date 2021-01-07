@@ -37,7 +37,7 @@ import java.util.function.Predicate;
 public final class Result<S, F> implements Serializable {
     public final S successValue;
     public final F failureValue;
-    private boolean success;
+    private final boolean success;
 
     Result( S successValue, F failureValue, boolean success ) {
         this.successValue = successValue;
@@ -71,11 +71,10 @@ public final class Result<S, F> implements Serializable {
     }
 
     public static <S> Result<S, Throwable> tryingInterruptible( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
-
         try {
             return success( supplier.get() );
-        } catch( InterruptedException ie ) {
-            throw ie;
+        } catch( InterruptedException e ) {
+            throw e;
         } catch( Throwable e ) {
             return failure( e );
         }

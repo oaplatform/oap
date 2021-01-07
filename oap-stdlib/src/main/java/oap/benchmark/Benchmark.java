@@ -41,7 +41,7 @@ public final class Benchmark {
     String name;
     int samples;
     IntConsumer code;
-    Runner runner = SingleThreadRunner.INSTANCE;
+    AbstractRunner runner = SingleThreadRunner.INSTANCE;
     Runnable beforeExperiment = run;
     Runnable afterExperiment = run;
     LongFunction<String> rateToString = rate -> rate + " action/${PERIOD}";
@@ -57,7 +57,7 @@ public final class Benchmark {
     }
 
     public static Benchmark benchmark( String name, int samples, Try.ThrowingRunnable code ) {
-        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, ( i ) -> code.run() );
+        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, i -> code.run() );
     }
 
     private static long getRate( int samples, Period period, long total ) {

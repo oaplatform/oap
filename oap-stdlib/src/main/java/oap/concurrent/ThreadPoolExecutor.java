@@ -58,11 +58,11 @@ public class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor 
         Throwable throwable = t;
         if( throwable == null && r instanceof Future<?> ) try {
             ( ( Future<?> ) r ).get();
-        } catch( CancellationException ce ) {
-            throwable = ce;
-        } catch( ExecutionException ee ) {
-            throwable = ee.getCause();
-        } catch( InterruptedException ie ) {
+        } catch( CancellationException e ) {
+            throwable = e;
+        } catch( ExecutionException e ) {
+            throwable = e.getCause();
+        } catch( InterruptedException e ) {
             Thread.currentThread().interrupt(); // ignore/reset
         }
         if( throwable != null ) log.error( throwable.getMessage(), throwable );

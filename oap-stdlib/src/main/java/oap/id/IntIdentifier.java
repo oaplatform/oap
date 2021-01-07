@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class IntIdentifier<T> extends GenericIdentifier<Integer, T> {
+public class IntIdentifier<T> extends AbstractIdentifier<Integer, T> {
     public static final int MAX_ATTEMPTS = 10000;
     public AtomicInteger generator = new AtomicInteger( 0 );
 

@@ -30,12 +30,12 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Te
     private Object obj;
 
     @Override
-    public void accept( String text ) {
+    public void acceptText( String text ) {
         accept( ( Object ) text );
     }
 
     @Override
-    public void acceptText( String text ) {
+    public void accept( String text ) {
         accept( ( Object ) text );
     }
 

@@ -34,7 +34,7 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
 
     private final MessageTransport<Message> transport;
     private final GuaranteedDeliveryTransport guaranteedDeliveryTransport;
-    private BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
 
     public BackgroundMessageStream( MessageTransport<Message> transport,
                                     GuaranteedDeliveryTransport guaranteedDeliveryTransport ) {
@@ -53,7 +53,7 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
             try {
                 Message p = messages.take();
                 guaranteedDeliveryTransport.send( p, transport );
-            } catch( InterruptedException ie ) {
+            } catch( InterruptedException e ) {
                 log.info( "Interrupted background message stream - exiting" );
                 return;
             } catch( Exception e ) {

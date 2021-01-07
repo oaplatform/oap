@@ -378,7 +378,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     private List<JsonDiff.Line> __diff( String schema, String from, String to ) {
-        final SchemaAST ast = schema( schema );
+        final AbstractSchemaAST ast = schema( schema );
 
         return diff( from, to, ast ).getDiff();
     }

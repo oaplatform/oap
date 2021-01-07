@@ -27,16 +27,22 @@ package oap.id;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static java.util.Objects.requireNonNull;
+public abstract class AbstractIdentifier<I, T> implements Identifier<I, T> {
+    protected final Function<? super T, I> getter;
+    protected final BiConsumer<? super T, I> setter;
 
-public abstract class Builder<T, I> {
-    protected final Function<T, I> getter;
-    protected final BiConsumer<T, I> setter;
-
-    public Builder( Function<T, I> getter, BiConsumer<T, I> setter ) {
-        this.getter = requireNonNull( getter, "getter must not be null" );
+    public AbstractIdentifier( Function<? super T, I> getter, BiConsumer<? super T, I> setter ) {
+        this.getter = getter;
         this.setter = setter;
     }
 
-    public abstract Identifier<I, T> build();
+    @Override
+    public void set( T object, I id ) {
+        if( setter != null ) setter.accept( object, id );
+    }
+
+    @Override
+    public I get( T object ) {
+        return getter.apply( object );
+    }
 }

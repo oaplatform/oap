@@ -84,7 +84,7 @@ public final class Strings {
     }
 
     public static boolean isEmpty( String s ) {
-        return s == null || s.equals( "" );
+        return s == null || "".equals( s );
     }
 
     public static Pair<String, String> split( String s, String delimiter ) {
@@ -183,13 +183,14 @@ public final class Strings {
     }
 
     public static String join( String delimiter, Collection<?> items, String prefix, String suffix, String quotes ) {
-        return join( delimiter, false, items, prefix, suffix, quotes );
-    }
-
-    public static String join( String delimiter, boolean skipNulls, Collection<?> items, String prefix, String suffix, String quotes ) {
         StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
         items.stream().filter( item -> !Objects.isNull( item ) ).forEach( e -> joiner.add( quotes + e + quotes ) );
         return joiner.toString();
+    }
+
+    @Deprecated
+    public static String join( String delimiter, boolean skipNulls, Collection<?> items, String prefix, String suffix, String quotes ) {
+        return join( delimiter, items, prefix, suffix, quotes );
     }
 
     public static void join( StringBuilder builder, Collection<?> items ) {
@@ -229,13 +230,9 @@ public final class Strings {
         return new String( output, 0, i );
     }
 
+    @Deprecated
     public static String fill( String content, int times ) {
-        final char[] charArray = content.toCharArray();
-        final StringBuilder sb = new StringBuilder( content.length() * times + 1 );
-        for( int i = 0; i < times; i++ ) {
-            sb.append( charArray );
-        }
-        return sb.toString();
+        return content.repeat( times );
     }
 
     public static String regex( String s, String regex ) {
@@ -335,12 +332,11 @@ public final class Strings {
             .toUpperCase();
 
 
-        String base = ( id.length() > length
+        String base = id.length() > length
             ? id.substring( 0, length )
             : Arrays.contains( FILL, opts )
                 ? id + fill( "X", length - id.length() )
-                : id
-        );
+                : id;
 
         StringBuilder sb = new StringBuilder( base );
         //10k max attempts

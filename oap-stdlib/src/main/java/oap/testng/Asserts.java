@@ -127,7 +127,7 @@ public final class Asserts {
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
-    public static byte[] bytesOfTestResource( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
+    public static byte[] bytesOfTestResource( Class<?> contextClass, String resource ) {
         return Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
@@ -143,7 +143,7 @@ public final class Asserts {
      */
     @Deprecated
     public static Path pathOfResource( Class<?> contextClass, String resource ) {
-        return Resources.filePath( contextClass, ( resource == null ? "" : resource ) )
+        return Resources.filePath( contextClass, resource == null ? "" : resource )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
@@ -151,6 +151,10 @@ public final class Asserts {
         return Resources.filePath( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
             : "/" + resource ) )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
+    public static Path pathOfTestResource( Class<?> contextClass ) {
+        return pathOfTestResource( contextClass, null );
     }
 
     public static Stream<String> linesOfTestResource( Class<?> contextClass, String resource ) {
@@ -165,9 +169,6 @@ public final class Asserts {
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
-    public static Path pathOfTestResource( Class<?> contextClass ) {
-        return pathOfTestResource( contextClass, null );
-    }
 
     public static String locationOfTestResource( Class<?> contetClass, String resource ) {
         return "/" + contetClass.getName().replace( ".", "/" ) + "/" + resource;

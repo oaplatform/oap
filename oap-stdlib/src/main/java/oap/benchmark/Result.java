@@ -30,7 +30,7 @@ class Result {
     public long rate;
     public long time;
 
-    public Result( long time, long rate ) {
+    Result( long time, long rate ) {
         this.time = time;
         this.rate = rate;
     }

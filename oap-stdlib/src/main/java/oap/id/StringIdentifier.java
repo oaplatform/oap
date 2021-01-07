@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 
 import static java.util.Objects.requireNonNull;
 
-public final class StringIdentifier<T> extends GenericIdentifier<String, T> {
+public final class StringIdentifier<T> extends AbstractIdentifier<String, T> {
 
     private final Function<T, String> suggestion;
     private final Strings.FriendlyIdOption[] options;

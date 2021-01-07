@@ -32,20 +32,20 @@ public class JsonValidatorProperties {
     public final Optional<Boolean> additionalProperties;
     public final boolean ignoreRequiredDefault;
     public final Object rootJson;
-    public final SchemaAST rootSchema;
-    public final Functions.TriFunction<JsonValidatorProperties, SchemaAST, Object, List<String>>
+    public final AbstractSchemaAST rootSchema;
+    public final Functions.TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>>
         validator;
     public final Optional<String> path;
     public final Optional<String> prefixPath;
 
     public JsonValidatorProperties(
-        SchemaAST rootSchema,
+        AbstractSchemaAST rootSchema,
         Object rootJson,
         Optional<String> prefixPath,
         Optional<String> path,
         Optional<Boolean> additionalProperties,
         boolean ignoreRequiredDefault,
-        Functions.TriFunction<JsonValidatorProperties, SchemaAST, Object, List<String>> validator ) {
+        Functions.TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>> validator ) {
         this.rootSchema = rootSchema;
         this.rootJson = rootJson;
         this.prefixPath = prefixPath;

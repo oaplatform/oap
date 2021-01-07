@@ -74,6 +74,12 @@ public class Arrays {
         return collection.toArray( ( E[] ) Array.newInstance( componentType, collection.size() ) );
     }
 
+    @SafeVarargs
+    public static <E> E[] of( E... e ) {
+        return e;
+    }
+
+
     @SuppressWarnings( "unchecked" )
     public static <E> Pair<E[], E[]> splitAt( int index, E... array ) {
         return __(
@@ -121,11 +127,6 @@ public class Arrays {
         return false;
     }
 
-    @SafeVarargs
-    public static <E> E[] of( E... e ) {
-        return e;
-    }
-
     public static <E> Optional<E> random( E[] array ) {
         return array.length > 0 ? Optional.ofNullable( array[random.nextInt( array.length )] ) : Optional.empty();
     }
@@ -145,7 +146,7 @@ public class Arrays {
     }
 
     public static class IntBuilder {
-        private List<Integer> numbers = new ArrayList<>();
+        private final List<Integer> numbers = new ArrayList<>();
 
         public IntBuilder with( int... ints ) {
             for( int i : ints ) numbers.add( i );

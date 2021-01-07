@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class AssocList<K, V> extends LinkedHashSet<V> {
     public AssocList() {
     }
@@ -42,7 +43,7 @@ public abstract class AssocList<K, V> extends LinkedHashSet<V> {
     }
 
     public static <K, V> AssocList<K, V> forKey( Function<? super V, ? extends K> keyOf ) {
-        return new AssocList<K, V>() {
+        return new AssocList<>() {
             @Override
             protected K keyOf( V v ) {
                 return keyOf.apply( v );

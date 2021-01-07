@@ -34,7 +34,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 @Slf4j
-public class FileSystemFileSync extends FileSync {
+public class FileSystemFileSync extends AbstractFileSync {
     public FileSystemFileSync() {
         super( "file" );
     }

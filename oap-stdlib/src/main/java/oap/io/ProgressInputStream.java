@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import javax.annotation.Nonnull;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,7 @@ import java.util.function.Consumer;
 import static oap.util.Functions.empty.consume;
 
 public class ProgressInputStream extends FilterInputStream {
-    private Progress progress;
+    private final Progress progress;
     private long total;
 
     protected ProgressInputStream( InputStream in, Progress progress ) {
@@ -48,12 +49,12 @@ public class ProgressInputStream extends FilterInputStream {
     }
 
     @Override
-    public int read( byte[] b ) throws IOException {
+    public int read( @Nonnull byte[] b ) throws IOException {
         return read( b, 0, b.length );
     }
 
     @Override
-    public int read( byte[] b, int off, int len ) throws IOException {
+    public int read( @Nonnull byte[] b, int off, int len ) throws IOException {
         int read = super.read( b, off, len );
         progress.soFar( total += read );
         return read;
@@ -82,9 +83,10 @@ public class ProgressInputStream extends FilterInputStream {
         };
     }
 
+    @SuppressWarnings( "checkstyle:AbstractClassName" )
     public abstract static class Progress {
         public static final Progress EMPTY = progress( Long.MAX_VALUE, consume() );
-        private long total;
+        private final long total;
         private int lastReport;
 
         public Progress( long total ) {

@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class LogConsolidated {
-    private static ConcurrentHashMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();
 
     public static void log( Logger logger, Level level, long timeBetweenLogs, String message, Throwable t ) {
         if( isEnabledFor( logger, level ) ) {
@@ -62,7 +62,7 @@ public class LogConsolidated {
                 case ERROR -> logger.error( message );
                 case INFO -> logger.info( message );
                 case TRACE -> logger.trace( message );
-                case WARN -> logger.warn( message );
+                default -> logger.warn( message );
             }
         } else {
             switch( level ) {
@@ -70,7 +70,7 @@ public class LogConsolidated {
                 case ERROR -> logger.error( message, t );
                 case INFO -> logger.info( message, t );
                 case TRACE -> logger.trace( message, t );
-                case WARN -> logger.warn( message, t );
+                default -> logger.warn( message, t );
             }
         }
     }

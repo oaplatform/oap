@@ -30,7 +30,7 @@ import oap.reflect.Reflection;
 
 @ToString( callSuper = true )
 @Slf4j
-public class PathNodeField extends PathNode {
+public class PathNodeField extends AbstractPathNode {
     protected PathNodeField( String name ) {
         super( PathType.FIELD, name );
     }

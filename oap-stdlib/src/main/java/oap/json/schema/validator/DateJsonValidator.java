@@ -23,17 +23,17 @@
  */
 package oap.json.schema.validator;
 
+import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.DefaultSchemaAST;
 import oap.json.schema.DefaultSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 import oap.util.Dates;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DateJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
+public class DateJsonValidator extends AbstractJsonSchemaValidator<DefaultSchemaAST> {
 
     public DateJsonValidator() {
         super( "date" );

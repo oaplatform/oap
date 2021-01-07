@@ -27,6 +27,7 @@ package oap.message;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class MessageListenerJson<T> implements MessageListener {
     private final byte messageType;
     private final String info;

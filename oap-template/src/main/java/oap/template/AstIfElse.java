@@ -26,6 +26,7 @@ package oap.template;
 
 import lombok.ToString;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 @ToString( callSuper = true )
 public abstract class AstIfElse extends Ast {
     final String variableName;
@@ -71,7 +72,7 @@ public abstract class AstIfElse extends Ast {
     protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         if( printIfOptEmpty != null ) {
             printTop( buffer, prefix );
-            buffer.append( childrenPrefix + "│" + getFalseToString() );
+            buffer.append( childrenPrefix ).append( "│" ).append( getFalseToString() );
             buffer.append( '\n' );
 
             printIfOptEmpty.print( buffer, childrenPrefix + "│" + "└── ", childrenPrefix + "│" + "    " );

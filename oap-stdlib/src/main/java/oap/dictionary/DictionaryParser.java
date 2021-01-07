@@ -64,12 +64,12 @@ public class DictionaryParser {
     private static final String VALUES = "values";
     private static final Set<String> defaultFields = new HashSet<>();
     private static final Function<Object, Optional<Integer>> intFunc = str -> {
-            if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
-            else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).intValue() );
-            else if( str instanceof String && ( ( String ) str ).length() == 1 )
-                return Optional.of( ( int ) ( ( String ) str ).charAt( 0 ) );
-            else return Optional.empty();
-        };
+        if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
+        else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).intValue() );
+        else if( str instanceof String && ( ( String ) str ).length() == 1 )
+            return Optional.of( ( int ) ( ( String ) str ).charAt( 0 ) );
+        else return Optional.empty();
+    };
 
     static {
         defaultFields.add( ID );
@@ -146,11 +146,6 @@ public class DictionaryParser {
         return parse( map, idStrategy );
     }
 
-    public static DictionaryRoot parseFromString( String dictionary ) {
-        Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
-        return parse( map, PROPERTY_ID_STRATEGY );
-    }
-
     private static DictionaryRoot parse( Map<?, ?> map, IdStrategy idStrategy ) {
         var dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
         var invalid = new ArrayList<InvalidEntry>();
@@ -172,6 +167,11 @@ public class DictionaryParser {
         }
 
         return dictionaryRoot;
+    }
+
+    public static DictionaryRoot parseFromString( String dictionary ) {
+        Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
+        return parse( map, PROPERTY_ID_STRATEGY );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -416,7 +416,7 @@ public class DictionaryParser {
     }
 
     public static class IncrementalIdStrategy implements IdStrategy {
-        private AtomicInteger id = new AtomicInteger();
+        private final AtomicInteger id = new AtomicInteger();
 
         @Override
         public int get( Map<Object, Object> valueMap ) {

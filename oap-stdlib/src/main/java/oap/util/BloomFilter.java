@@ -1,4 +1,4 @@
-/**
+/*
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,6 +22,8 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Objects;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 /**
  * Implementation of a Bloom-filter, as described here:
  * http://en.wikipedia.org/wiki/Bloom_filter
@@ -39,13 +41,13 @@ import java.util.Objects;
  */
 public class BloomFilter<E> implements Serializable {
     private BitSet bitset;
-    private int bitSetSize;
-    private double bitsPerElement;
-    private int expectedNumberOfFilterElements; // expected (maximum) number of elements to be added
+    private final int bitSetSize;
+    private final double bitsPerElement;
+    private final int expectedNumberOfFilterElements; // expected (maximum) number of elements to be added
     private int numberOfAddedElements; // number of elements actually added to the Bloom filter
-    private int k; // number of hash functions
+    private final int k; // number of hash functions
 
-    static final Charset charset = Charset.forName( "UTF-8" ); // encoding used for storing hash values as strings
+    static final Charset charset = UTF_8; // encoding used for storing hash values as strings
 
     static final String hashName = "MD5"; // MD5 gives good enough accuracy in most circumstances. Change to SHA1 if it's needed
     static final MessageDigest digestFunction;
@@ -158,6 +160,7 @@ public class BloomFilter<E> implements Serializable {
      * @param hashes number of hashes/int's to produce.
      * @return array of int-sized hashes
      */
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public static int[] createHashes( byte[] data, int hashes ) {
         int[] result = new int[hashes];
 
@@ -173,7 +176,7 @@ public class BloomFilter<E> implements Serializable {
 
             for( int i = 0; i < digest.length / 4 && k < hashes; i++ ) {
                 int h = 0;
-                for( int j = ( i * 4 ); j < ( i * 4 ) + 4; j++ ) {
+                for( int j = i * 4; j < ( i * 4 ) + 4; j++ ) {
                     h <<= 8;
                     h |= ( ( int ) digest[j] ) & 0xFF;
                 }
@@ -241,8 +244,7 @@ public class BloomFilter<E> implements Serializable {
      */
     public double getFalsePositiveProbability( double numberOfElements ) {
         // (1 - e^(-k * n / m)) ^ k
-        return Math.pow( ( 1 - Math.exp( -k * numberOfElements
-            / ( double ) bitSetSize ) ), k );
+        return Math.pow( 1 - Math.exp( -k * numberOfElements / ( double ) bitSetSize ), k );
 
     }
 

@@ -24,11 +24,11 @@
 
 package oap.json.schema.validator.dictionary;
 
-import oap.json.schema.SchemaAST;
+import oap.json.schema.AbstractSchemaAST;
 
 import java.util.Optional;
 
-public class DictionarySchemaAST extends SchemaAST<DictionarySchemaAST> {
+public class DictionarySchemaAST extends AbstractSchemaAST<DictionarySchemaAST> {
     public final String name;
     public final Optional<DictionarySchemaAST> parent;
 

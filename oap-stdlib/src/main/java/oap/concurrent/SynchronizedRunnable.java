@@ -23,6 +23,7 @@
  */
 package oap.concurrent;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class SynchronizedRunnable implements Runnable {
     protected SynchronizedRunnableReadyListener listener;
 

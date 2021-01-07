@@ -23,21 +23,21 @@
  */
 package oap.json.schema.validator.array;
 
-import oap.json.schema.SchemaAST;
+import oap.json.schema.AbstractSchemaAST;
 
 import java.util.Optional;
 
-public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
+public class ArraySchemaAST extends AbstractSchemaAST<ArraySchemaAST> {
     public final Optional<Boolean> additionalProperties;
     public final Optional<Integer> minItems;
     public final Optional<Integer> maxItems;
-    public final SchemaAST items;
+    public final AbstractSchemaAST items;
     public final Optional<String> idField;
 
     public ArraySchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                            Optional<Integer> minItems, Optional<Integer> maxItems,
                            Optional<String> idField,
-                           SchemaAST items, String path ) {
+                           AbstractSchemaAST items, String path ) {
         super( common, path );
         this.additionalProperties = additionalProperties;
         this.minItems = minItems;
@@ -55,7 +55,7 @@ public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
             minItems.isPresent() ? minItems : cs.minItems,
             maxItems.isPresent() ? maxItems : cs.maxItems,
             idField.isPresent() ? idField : cs.idField,
-            items.common.schemaType.equals( cs.items.common.schemaType ) ? ( SchemaAST ) items.merge( cs.items )
+            items.common.schemaType.equals( cs.items.common.schemaType ) ? ( AbstractSchemaAST ) items.merge( cs.items )
                 : items,
             path
         );

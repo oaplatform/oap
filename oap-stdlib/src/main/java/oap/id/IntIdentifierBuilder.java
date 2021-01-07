@@ -27,7 +27,7 @@ package oap.id;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class IntIdentifierBuilder<T> extends Builder<T, Integer> {
+public class IntIdentifierBuilder<T> extends AbstractBuilder<T, Integer> {
     public IntIdentifierBuilder( Function<T, Integer> getter, BiConsumer<T, Integer> setter ) {
         super( getter, setter );
     }

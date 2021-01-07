@@ -28,11 +28,11 @@ import oap.util.Mergeable;
 
 import java.util.Optional;
 
-public abstract class SchemaAST<T extends SchemaAST<T>> implements Mergeable<T> {
+public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implements Mergeable<T> {
     public final String path;
     public final CommonSchemaAST common;
 
-    public SchemaAST( CommonSchemaAST common, String path ) {
+    public AbstractSchemaAST( CommonSchemaAST common, String path ) {
         this.common = common;
         this.path = path;
     }

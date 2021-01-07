@@ -22,18 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.json.schema;
+package oap.benchmark;
 
-import lombok.ToString;
+abstract class AbstractRunner {
+    public abstract Result run( Benchmark benchmark );
 
-@ToString
-public abstract class SchemaASTWrapper<TAST extends SchemaAST<TAST>> {
-    public final SchemaId id;
-    public SchemaAST.CommonSchemaAST common;
-
-    public SchemaASTWrapper( SchemaId id ) {
-        this.id = id;
-    }
-
-    public abstract TAST unwrap( JsonSchemaParserContext context );
 }

@@ -38,6 +38,10 @@ public class Env {
         return get( name ).orElse( defaultValue );
     }
 
+    public static Optional<String> get( String name ) {
+        return Optional.ofNullable( System.getenv( name ) );
+    }
+
     @Deprecated
     public static String env( String name, String defaultValue ) {
         return get( name, defaultValue );
@@ -48,9 +52,6 @@ public class Env {
         return get( name );
     }
 
-    public static Optional<String> get( String name ) {
-        return Optional.ofNullable( System.getenv( name ) );
-    }
 
     @SneakyThrows
     public static void set( String name, String value ) {

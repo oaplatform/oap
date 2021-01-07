@@ -28,7 +28,7 @@ import java.net.URI;
 import java.nio.file.Path;
 
 public class RemoteLocation {
-    public static long DEFAULT_TIMEOUT = 5000L;
+    public static final long DEFAULT_TIMEOUT = 5000L;
     public URI url;
     public String name;
     public Path certificateLocation;

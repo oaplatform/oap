@@ -84,6 +84,6 @@ public final class Countries {
 
     public static Object valueOf( long ordinal ) {
         if( ordinal == 0 ) return Strings.UNKNOWN;
-        return iso3Countries[( ( int ) ordinal - 1 )];
+        return iso3Countries[( int ) ordinal - 1];
     }
 }

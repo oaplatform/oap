@@ -33,7 +33,7 @@ import java.util.List;
 
 @ToString( callSuper = true )
 @Slf4j
-public class PathNodeArray extends PathNode {
+public class PathNodeArray extends AbstractPathNode {
     private final int index;
 
     protected PathNodeArray( String name, int index ) {

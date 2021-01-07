@@ -23,10 +23,10 @@
  */
 package oap.json.schema.validator.object;
 
+import oap.json.schema.AbstractJsonSchemaValidator;
+import oap.json.schema.AbstractSchemaAST;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.json.schema.SchemaAST;
 import oap.json.schema.SchemaPath;
 import oap.util.Stream;
 
@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
+public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchemaAST> {
     public ObjectJsonValidator() {
         super( "object" );
     }
@@ -49,7 +49,7 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
 
         final List<String> errors = new ArrayList<>();
 
-        final HashMap<String, SchemaAST> objectProperties = new HashMap<>();
+        final HashMap<String, AbstractSchemaAST> objectProperties = new HashMap<>();
 
         schema.properties.forEach( ( k, ast ) -> {
             if( ast.common.enabled.map( e -> {
@@ -92,7 +92,7 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
         wrapper.dynamic = Optional.ofNullable( context.node.get( "dynamic" ) ).map( v -> Dynamic.valueOf( v.toString().toUpperCase() ) );
 
         wrapper.extendsSchema = wrapper.extendsValue
-            .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) ) );
+            .map( url -> ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) );
 
         wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
 

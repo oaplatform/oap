@@ -24,15 +24,15 @@
 
 package oap.json.schema.validator.dictionary;
 
+import oap.json.schema.AbstractSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 import oap.json.schema.SchemaWrapperPath;
 import oap.json.schema.ValidationSyntaxException;
 
 import java.util.Optional;
 
-public class DictionarySchemaASTWrapper extends SchemaASTWrapper<DictionarySchemaAST> {
+public class DictionarySchemaASTWrapper extends AbstractSchemaASTWrapper<DictionarySchemaAST> {
     Optional<String> name;
     Optional<String> parent;
 

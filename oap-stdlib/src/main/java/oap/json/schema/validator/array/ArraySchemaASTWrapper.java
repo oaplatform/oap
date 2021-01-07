@@ -24,9 +24,9 @@
 
 package oap.json.schema.validator.array;
 
+import oap.json.schema.AbstractSchemaASTWrapper;
 import oap.json.schema.ContainerSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 
 import java.util.HashMap;
@@ -36,9 +36,9 @@ import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
-public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> implements ContainerSchemaASTWrapper {
+public class ArraySchemaASTWrapper extends AbstractSchemaASTWrapper<ArraySchemaAST> implements ContainerSchemaASTWrapper {
 
-    public SchemaASTWrapper items;
+    public AbstractSchemaASTWrapper items;
     Optional<Boolean> additionalProperties;
     Optional<Integer> minItems;
     Optional<Integer> maxItems;
@@ -55,8 +55,8 @@ public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> impl
     }
 
     @Override
-    public Map<String, List<SchemaASTWrapper>> getChildren() {
-        return new HashMap<String, List<SchemaASTWrapper>>() {{
+    public Map<String, List<AbstractSchemaASTWrapper>> getChildren() {
+        return new HashMap<String, List<AbstractSchemaASTWrapper>>() {{
             put( "items", singletonList( items ) );
         }};
     }

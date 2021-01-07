@@ -277,7 +277,7 @@ public class MessageSender implements Closeable {
         if( closed ) return this;
 
         for( var message : messages ) {
-            log.trace( "msg type = {}", ( message.messageType & 0xFF ) );
+            log.trace( "msg type = {}", message.messageType & 0xFF );
             try {
                 poolSemaphore.acquire();
 
@@ -355,11 +355,11 @@ public class MessageSender implements Closeable {
         public final long clientId;
         public final byte[] data;
 
-        public Message( long clientId, byte messageType, ByteSequence md5, byte[] data, int from, int length ) {
+        private Message( long clientId, byte messageType, ByteSequence md5, byte[] data, int from, int length ) {
             this( clientId, messageType, md5, Arrays.copyOfRange( data, from, from + length ) );
         }
 
-        public Message( long clientId, byte messageType, ByteSequence md5, byte[] data ) {
+        private Message( long clientId, byte messageType, ByteSequence md5, byte[] data ) {
             this.clientId = clientId;
             this.md5 = md5;
             this.messageType = messageType;

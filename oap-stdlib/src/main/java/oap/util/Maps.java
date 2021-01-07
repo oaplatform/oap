@@ -61,6 +61,12 @@ public class Maps {
         return map;
     }
 
+    public static <K, V> Map<K, V> of( Iterable<Pair<K, V>> pairs ) {
+        Map<K, V> map = new LinkedHashMap<>();
+        for( Pair<K, V> pair : pairs ) map.put( pair._1, pair._2 );
+        return map;
+    }
+
     /**
      * @see Map#of(Object, Object)
      */
@@ -118,12 +124,6 @@ public class Maps {
         return map;
     }
 
-    public static <K, V> Map<K, V> of( Iterable<Pair<K, V>> pairs ) {
-        Map<K, V> map = new LinkedHashMap<>();
-        for( Pair<K, V> pair : pairs ) map.put( pair._1, pair._2 );
-        return map;
-    }
-
     public static <K, V> Optional<V> get( Map<? super K, V> map, K key ) {
         return Optional.ofNullable( map.get( key ) );
     }
@@ -177,7 +177,7 @@ public class Maps {
 
     public static class Collectors {
         public static <K, V> Collector<? super Pair<K, V>, ?, SetMultimap<K, V>> toSetMultimap() {
-            return Collector.<Pair<K, V>, SetMultimap<K, V>>of(
+            return Collector.of(
                 HashMultimap::create,
                 ( mm, pair ) -> mm.put( pair._1, pair._2 ),
                 ( left, right ) -> {
@@ -188,7 +188,7 @@ public class Maps {
         }
 
         public static <K, V> Collector<? super Pair<K, V>, ?, ListMultimap<K, V>> toListMultimap() {
-            return Collector.<Pair<K, V>, ListMultimap<K, V>>of(
+            return Collector.of(
                 ArrayListMultimap::create,
                 ( mm, pair ) -> mm.put( pair._1, pair._2 ),
                 ( left, right ) -> {
@@ -199,7 +199,7 @@ public class Maps {
         }
 
         public static <K, V> Collector<? super Pair<K, V>, Map<K, V>, Map<K, V>> toMap( Supplier<Map<K, V>> supplier ) {
-            return Collector.<Pair<K, V>, Map<K, V>>of(
+            return Collector.of(
                 supplier,
                 ( map, pair ) -> map.put( pair._1, pair._2 ),
                 ( left, right ) -> {
@@ -223,7 +223,7 @@ public class Maps {
         }
 
         private static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap( Supplier<ConcurrentMap<K, V>> supplier ) {
-            return Collector.<Pair<K, V>, ConcurrentMap<K, V>>of(
+            return Collector.of(
                 supplier,
                 ( map, pair ) -> map.put( pair._1, pair._2 ),
                 ( left, right ) -> {

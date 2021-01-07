@@ -24,7 +24,7 @@
 
 package oap.http.file;
 
-import oap.io.FileSync;
+import oap.io.AbstractFileSync;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
@@ -79,7 +79,7 @@ public class HttpFileSyncTest extends Fixtures {
 
         var localFile = TestDirectoryFixture.testPath( "ltest.file" );
 
-        var fileSync = FileSync.create( "http://localhost:" + envFixture.portFor( PORT ) + "/file", localFile );
+        var fileSync = AbstractFileSync.create( "http://localhost:" + envFixture.portFor( PORT ) + "/file", localFile );
         fileSync.addListener( path -> b.append( "f" ) );
 
         mockServer

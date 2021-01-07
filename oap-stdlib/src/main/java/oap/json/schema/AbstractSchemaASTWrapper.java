@@ -22,20 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.jpath;
+package oap.json.schema;
 
 import lombok.ToString;
-import oap.reflect.Reflection;
 
 @ToString
-public abstract class PathNode {
-    public final PathType type;
-    public final String name;
+public abstract class AbstractSchemaASTWrapper<TAST extends AbstractSchemaAST<TAST>> {
+    public final SchemaId id;
+    public AbstractSchemaAST.CommonSchemaAST common;
 
-    protected PathNode( PathType type, String name ) {
-        this.type = type;
-        this.name = name;
+    public AbstractSchemaASTWrapper( SchemaId id ) {
+        this.id = id;
     }
 
-    public abstract Object evaluate( Object v, Reflection reflect );
+    public abstract TAST unwrap( JsonSchemaParserContext context );
 }

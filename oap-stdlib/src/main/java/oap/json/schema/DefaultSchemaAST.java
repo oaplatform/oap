@@ -24,7 +24,7 @@
 
 package oap.json.schema;
 
-public class DefaultSchemaAST extends SchemaAST<DefaultSchemaAST> {
+public class DefaultSchemaAST extends AbstractSchemaAST<DefaultSchemaAST> {
     public DefaultSchemaAST( CommonSchemaAST common, String path ) {
         super( common, path );
     }

@@ -22,9 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.benchmark;
+package oap.id;
 
-abstract class Runner {
-    public abstract Result run( Benchmark benchmark );
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
+
+public abstract class AbstractBuilder<T, I> {
+    protected final Function<T, I> getter;
+    protected final BiConsumer<T, I> setter;
+
+    public AbstractBuilder( Function<T, I> getter, BiConsumer<T, I> setter ) {
+        this.getter = requireNonNull( getter, "getter must not be null" );
+        this.setter = setter;
+    }
+
+    public abstract Identifier<I, T> build();
 }

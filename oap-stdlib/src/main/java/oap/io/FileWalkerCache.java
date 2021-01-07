@@ -27,9 +27,11 @@ package oap.io;
 import com.google.common.collect.Iterators;
 import oap.util.Try;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -40,25 +42,26 @@ public class FileWalkerCache {
     private final HashMap<Path, ArrayList<Path>> map = new HashMap<>();
     private final HashMap<Path, Boolean> isDirectory = new HashMap<>();
     private final HashMap<Path, Boolean> exists = new HashMap<>();
-    private HashMap<Path, FileTime> lastModifiedTime = new HashMap<>();
+    private final HashMap<Path, FileTime> lastModifiedTime = new HashMap<>();
 
     public DirectoryStream<Path> newDirectoryStream( Path dir,
                                                      DirectoryStream.Filter<? super Path> filter ) throws IOException {
         final ArrayList<Path> list = map.get( dir );
         if( list == null ) {
-            final ArrayList<Path> paths = map.computeIfAbsent( dir, ( d ) -> new ArrayList<>() );
+            final ArrayList<Path> paths = map.computeIfAbsent( dir, d -> new ArrayList<>() );
 
-            return java.nio.file.Files.newDirectoryStream( dir, ( file ) -> {
+            return java.nio.file.Files.newDirectoryStream( dir, file -> {
                 paths.add( file );
                 exists.put( file, true );
                 return filter.accept( file );
             } );
         }
 
-        return new DirectoryStream<Path>() {
+        return new DirectoryStream<>() {
             @Override
+            @Nonnull
             public Iterator<Path> iterator() {
-                return Iterators.filter( list.iterator(), ( p ) -> {
+                return Iterators.filter( list.iterator(), p -> {
                     try {
                         return filter.accept( p );
                     } catch( IOException e ) {
@@ -68,21 +71,21 @@ public class FileWalkerCache {
             }
 
             @Override
-            public void close() throws IOException {
+            public void close() {
 
             }
         };
     }
 
     public boolean isDirectory( Path path ) {
-        return isDirectory.computeIfAbsent( path, ( p ) -> java.nio.file.Files.isDirectory( p ) );
+        return isDirectory.computeIfAbsent( path, Files::isDirectory );
     }
 
     public boolean exists( Path path ) {
-        return exists.computeIfAbsent( path, ( p ) -> java.nio.file.Files.exists( p ) );
+        return exists.computeIfAbsent( path, Files::exists );
     }
 
     public FileTime getLastModifiedTime( Path path ) {
-        return lastModifiedTime.computeIfAbsent( path, Try.map( p -> java.nio.file.Files.getLastModifiedTime( p ) ) );
+        return lastModifiedTime.computeIfAbsent( path, Try.map( Files::getLastModifiedTime ) );
     }
 }

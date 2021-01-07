@@ -63,21 +63,21 @@ public final class DictionaryRoot implements Dictionary {
     }
 
     @Override
-    public final String getOrDefault( int externlId, String defaultValue ) {
+    public String getOrDefault( int externlId, String defaultValue ) {
         final String id = indexByExternalId.get( externlId );
         if( id == null ) return defaultValue;
         return id;
     }
 
     @Override
-    public final int getOrDefault( String id, int defaultValue ) {
+    public int getOrDefault( String id, int defaultValue ) {
         final Dictionary rtb = indexById.get( id );
         if( rtb == null ) return defaultValue;
         return rtb.getExternalId();
     }
 
     @Override
-    public final Integer get( String id ) {
+    public Integer get( String id ) {
         final Dictionary rtb = indexById.get( id );
         if( rtb == null ) return null;
         return rtb.getExternalId();

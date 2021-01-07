@@ -51,7 +51,7 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.joining;
 import static oap.util.Pair.__;
 
-public class Reflection extends Annotated<Class<?>> {
+public class Reflection extends AbstractAnnotated<Class<?>> {
     //todo why map?
     public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
     private final Coercions coercions;
@@ -299,7 +299,7 @@ public class Reflection extends Annotated<Class<?>> {
         return this.typeToken.getTypes().interfaces().rawTypes().contains( clazz );
     }
 
-    public class Field extends Annotated<java.lang.reflect.Field> implements Comparable<Field> {
+    public class Field extends AbstractAnnotated<java.lang.reflect.Field> implements Comparable<Field> {
         @SuppressWarnings( "UnstableApiUsage" )
         private final Supplier<Reflection> type = Functions.memoize( () ->
             Reflect.reflect( typeToken.resolveType( this.underlying.getGenericType() ) ) );
@@ -356,7 +356,7 @@ public class Reflection extends Annotated<Class<?>> {
         }
     }
 
-    public class Method extends Annotated<java.lang.reflect.Method> {
+    public class Method extends AbstractAnnotated<java.lang.reflect.Method> {
         public List<Parameter> parameters;
         @SuppressWarnings( "UnstableApiUsage" )
         private final Supplier<Reflection> returnType = Functions.memoize( () ->
@@ -402,7 +402,7 @@ public class Reflection extends Annotated<Class<?>> {
         }
     }
 
-    public class Constructor extends Annotated<java.lang.reflect.Constructor<?>> {
+    public class Constructor extends AbstractAnnotated<java.lang.reflect.Constructor<?>> {
         public final List<Parameter> parameters;
         private final Supplier<List<Reflection>> parameterTypes;
         private final List<String> parameterNames;
@@ -492,7 +492,7 @@ public class Reflection extends Annotated<Class<?>> {
         }
     }
 
-    public class Parameter extends Annotated<java.lang.reflect.Parameter> {
+    public class Parameter extends AbstractAnnotated<java.lang.reflect.Parameter> {
         @SuppressWarnings( "UnstableApiUsage" )
         private final Supplier<Reflection> type = Functions.memoize( () ->
             Reflect.reflect( typeToken.resolveType( this.underlying.getParameterizedType() ) ) );

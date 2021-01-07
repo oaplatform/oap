@@ -54,8 +54,8 @@ public final class SchemaPath {
         return path.endsWith( ".items" ) ? path.substring( 0, path.length() - ".items".length() ) : path;
     }
 
-    public static Result traverse( SchemaAST root, String path ) {
-        SchemaAST schemaAST = root;
+    public static Result traverse( AbstractSchemaAST root, String path ) {
+        AbstractSchemaAST schemaAST = root;
         var additionalProperties = new MutableObject<Boolean>( null );
 
         final Supplier<Result> empty = () -> new Result( Optional.empty(), Optional.ofNullable( additionalProperties.getValue() ) );
@@ -81,7 +81,7 @@ public final class SchemaPath {
 
     @AllArgsConstructor
     public static class Result {
-        public final Optional<SchemaAST> schema;
+        public final Optional<AbstractSchemaAST> schema;
         public final Optional<Boolean> additionalProperties;
     }
 }

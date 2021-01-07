@@ -33,7 +33,7 @@ public class Stopwatch {
         try {
             code.run();
         } finally {
-            elapsed += ( System.nanoTime() - time );
+            elapsed += System.nanoTime() - time;
         }
     }
 

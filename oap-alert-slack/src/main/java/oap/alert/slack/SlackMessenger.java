@@ -72,7 +72,7 @@ public class SlackMessenger implements Messenger {
                 attachment.setColor( Color.WARNING );
                 attachment.setText( "WARNING: " + name + "/" + host + ": " + alert.message );
             }
-            case RED -> {
+            default -> {
                 payload.setIcon_emoji( ":bangbang:" );
                 attachment.setColor( Color.DANGER );
                 attachment.setText( "CRITICAL: " + name + "/" + host + ": " + alert.message );

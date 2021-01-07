@@ -24,13 +24,13 @@
 
 package oap.json.schema.validator.number;
 
+import oap.json.schema.AbstractSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 
 import java.util.Optional;
 
-public class NumberSchemaASTWrapper extends SchemaASTWrapper<NumberSchemaAST> {
+public class NumberSchemaASTWrapper extends AbstractSchemaASTWrapper<NumberSchemaAST> {
     Optional<Boolean> exclusiveMinimum;
     Optional<Boolean> exclusiveMaximum;
     Optional<Double> minimum;

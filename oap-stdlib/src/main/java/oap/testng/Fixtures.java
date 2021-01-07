@@ -41,10 +41,8 @@ public class Fixtures {
     }
 
     public <F extends Fixture> F fixture( Position position, F fixture ) {
-        switch( position ) {
-            case FIRST -> fixtures.addFirst( fixture );
-            case LAST -> fixtures.addLast( fixture );
-        }
+        if( position == Position.FIRST ) fixtures.addFirst( fixture );
+        else fixtures.addLast( fixture );
         return fixture;
     }
 

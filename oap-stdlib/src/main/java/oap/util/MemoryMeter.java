@@ -26,6 +26,7 @@ package oap.util;
 
 import lombok.extern.slf4j.Slf4j;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 @Slf4j
 public abstract class MemoryMeter {
     private static final MemoryMeter NULL_MEMORY_METER = new MemoryMeter() {
@@ -134,7 +135,7 @@ public abstract class MemoryMeter {
     private static class OapMemoryMeter extends MemoryMeter {
         private final org.github.jamm.MemoryMeter memoryMeter;
 
-        public OapMemoryMeter( org.github.jamm.MemoryMeter memoryMeter ) {
+        private OapMemoryMeter( org.github.jamm.MemoryMeter memoryMeter ) {
             this.memoryMeter = memoryMeter;
         }
 

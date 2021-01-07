@@ -25,6 +25,7 @@ package oap.concurrent.scheduler;
 
 import java.io.Closeable;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class Scheduled implements Closeable {
     public static void cancel( Scheduled scheduled ) {
         if( scheduled != null ) scheduled.cancel();

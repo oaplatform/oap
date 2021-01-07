@@ -59,7 +59,7 @@ public final class HttpClient {
         }
     }
 
-    public static HttpClient DEFAULT = new HttpClient();
+    public static final HttpClient DEFAULT = new HttpClient();
     public static final X509TrustManager ACCEPTING_TRUST_MANAGER = new X509TrustManager() {
         @Override
         public void checkClientTrusted( X509Certificate[] x509Certificates, String s ) {

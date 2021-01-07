@@ -46,8 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class JsonSchema {
-    private static final Map<String, JsonSchemaValidator<?>> validators = new HashMap<>();
-    private static Map<String, JsonSchema> schemas = new ConcurrentHashMap<>();
+    private static final Map<String, AbstractJsonSchemaValidator<?>> validators = new HashMap<>();
+    private static final Map<String, JsonSchema> schemas = new ConcurrentHashMap<>();
 
     static {
         JsonSchema.add( new BooleanJsonValidator() );
@@ -64,7 +64,7 @@ public class JsonSchema {
         JsonSchema.add( new AnyJsonValidator() );
     }
 
-    public final SchemaAST schema;
+    public final AbstractSchemaAST schema;
 
 
     JsonSchema( String schemaJson ) {
@@ -93,12 +93,8 @@ public class JsonSchema {
         return new JsonSchema( schemaJson );
     }
 
-    public static void add( JsonSchemaValidator<?> validator ) {
+    public static void add( AbstractJsonSchemaValidator<?> validator ) {
         validators.put( validator.type, validator );
-    }
-
-    private SchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
-        return parse( context.withNode( "", parseWithTemplate( schema, context.storage ) ) );
     }
 
     private Object parseWithTemplate( String schema, SchemaStorage storage ) {
@@ -149,8 +145,8 @@ public class JsonSchema {
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<String> validate( JsonValidatorProperties properties, SchemaAST schema, Object value ) {
-        JsonSchemaValidator jsonSchemaValidator = validators.get( schema.common.schemaType );
+    private List<String> validate( JsonValidatorProperties properties, AbstractSchemaAST schema, Object value ) {
+        AbstractJsonSchemaValidator jsonSchemaValidator = validators.get( schema.common.schemaType );
         if( jsonSchemaValidator == null ) {
             log.trace( "registered validators: " + validators.keySet() );
             throw new ValidationSyntaxException( "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
@@ -171,11 +167,29 @@ public class JsonSchema {
         }
     }
 
-    SchemaASTWrapper parse( String schema, SchemaStorage storage ) {
+    public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
+        JsonValidatorProperties properties = new JsonValidatorProperties(
+            schema,
+            json,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            ignoreRequiredDefault,
+            this::validate
+        );
+        return validate( properties, schema, json );
+    }
+
+
+    private AbstractSchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
+        return parse( context.withNode( "", parseWithTemplate( schema, context.storage ) ) );
+    }
+
+    AbstractSchemaASTWrapper parse( String schema, SchemaStorage storage ) {
         return parse( "", schema, "", storage );
     }
 
-    SchemaASTWrapper parse( String schemaName, String schema, String rootPath, SchemaStorage storage ) {
+    AbstractSchemaASTWrapper parse( String schemaName, String schema, String rootPath, SchemaStorage storage ) {
         var context = new JsonSchemaParserContext(
             schemaName,
             null, "",
@@ -185,7 +199,7 @@ public class JsonSchema {
         return parse( schema, context );
     }
 
-    private SchemaASTWrapper parse( JsonSchemaParserContext context ) {
+    private AbstractSchemaASTWrapper parse( JsonSchemaParserContext context ) {
         var schemaParser = validators.get( context.schemaType );
         if( schemaParser != null ) {
             return schemaParser.parse( context );
@@ -198,7 +212,7 @@ public class JsonSchema {
 
     public List<String> partialValidate( Object root, Object json, String path, boolean ignoreRequiredDefault ) {
         var traverseResult = SchemaPath.traverse( this.schema, path );
-        final SchemaAST partialSchema = traverseResult.schema
+        final AbstractSchemaAST partialSchema = traverseResult.schema
             .orElseThrow( () -> new ValidationSyntaxException( "path " + path + " not found" ) );
 
         JsonValidatorProperties properties = new JsonValidatorProperties(
@@ -212,18 +226,5 @@ public class JsonSchema {
         );
 
         return validate( properties, partialSchema, json );
-    }
-
-    public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
-        JsonValidatorProperties properties = new JsonValidatorProperties(
-            schema,
-            json,
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            ignoreRequiredDefault,
-            this::validate
-        );
-        return validate( properties, schema, json );
     }
 }

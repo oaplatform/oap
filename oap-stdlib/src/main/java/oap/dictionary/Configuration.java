@@ -48,6 +48,7 @@ import static oap.util.Pair.__;
 /**
  * all these functions are no longer required. Check the latest logstream
  */
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 @Slf4j
 @Deprecated
 public abstract class Configuration {
@@ -83,7 +84,7 @@ public abstract class Configuration {
         mappings = versionedDics.stream().filter( lc -> lc._1 == maxVersion )
             .findAny()
             .map( p -> parseDictionary( p, idStrategy ) )
-            .get()._2;
+            .orElseThrow()._2;
 
         //mappings.values().stream().forEach(this::validateSupportedTypes);
 

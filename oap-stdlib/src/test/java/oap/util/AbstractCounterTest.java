@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CounterTest extends Fixtures {
+public class AbstractCounterTest extends Fixtures {
     {
         fixture( SystemTimerFixture.FIXTURE );
     }
@@ -39,7 +39,7 @@ public class CounterTest extends Fixtures {
     public void hourly() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        var counter = new Counter.HourlyCounter();
+        var counter = new AbstractCounter.HourlyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -54,7 +54,7 @@ public class CounterTest extends Fixtures {
     public void daily() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        var counter = new Counter.DailyCounter();
+        var counter = new AbstractCounter.DailyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -69,7 +69,7 @@ public class CounterTest extends Fixtures {
     public void monthly() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        var counter = new Counter.MonthlyCounter();
+        var counter = new AbstractCounter.MonthlyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -83,14 +83,14 @@ public class CounterTest extends Fixtures {
     @Test
     public void merge() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
-        var counter1 = new Counter.HourlyCounter();
+        var counter1 = new AbstractCounter.HourlyCounter();
         counter1.inc();
 
-        var counter2 = new Counter.HourlyCounter();
+        var counter2 = new AbstractCounter.HourlyCounter();
         counter2.inc();
 
         Dates.setTimeFixed( 2017, 6, 2, 14 + 1, 16, 10 );
-        var counter3 = new Counter.HourlyCounter();
+        var counter3 = new AbstractCounter.HourlyCounter();
         counter3.inc();
 
         counter1.merge( counter2 );

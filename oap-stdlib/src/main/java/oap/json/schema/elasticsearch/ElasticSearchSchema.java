@@ -27,8 +27,8 @@ package oap.json.schema.elasticsearch;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import lombok.SneakyThrows;
+import oap.json.schema.AbstractSchemaAST;
 import oap.json.schema.DefaultSchemaAST;
-import oap.json.schema.SchemaAST;
 import oap.json.schema.validator.array.ArraySchemaAST;
 import oap.json.schema.validator.dictionary.DictionarySchemaAST;
 import oap.json.schema.validator.number.NumberSchemaAST;
@@ -42,7 +42,7 @@ import java.io.IOException;
 
 public class ElasticSearchSchema {
     @SneakyThrows
-    public static String convert( SchemaAST<?> schemaAST ) {
+    public static String convert( AbstractSchemaAST<?> schemaAST ) {
         var jfactory = new JsonFactory();
         var stringBuilder = new StringBuilder();
         try( var stringBuilderWriter = new StringBuilderWriter( stringBuilder );
@@ -55,7 +55,7 @@ public class ElasticSearchSchema {
         return stringBuilder.toString();
     }
 
-    private static void convert( SchemaAST<?> schemaAST, JsonGenerator jsonGenerator, boolean top ) throws IOException {
+    private static void convert( AbstractSchemaAST<?> schemaAST, JsonGenerator jsonGenerator, boolean top ) throws IOException {
         if( schemaAST instanceof ObjectSchemaAST ) {
             var objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
 
@@ -68,15 +68,9 @@ public class ElasticSearchSchema {
 
             if( objectSchemaAST.dynamic.isPresent() ) {
                 switch( objectSchemaAST.dynamic.orElse( Dynamic.TRUE ) ) {
-                    case TRUE:
-                        jsonGenerator.writeStringField( "dynamic", "true" );
-                        break;
-                    case FALSE:
-                        jsonGenerator.writeStringField( "dynamic", "false" );
-                        break;
-                    case STRICT:
-                        jsonGenerator.writeStringField( "dynamic", "strict" );
-                        break;
+                    case TRUE -> jsonGenerator.writeStringField( "dynamic", "true" );
+                    case FALSE -> jsonGenerator.writeStringField( "dynamic", "false" );
+                    default -> jsonGenerator.writeStringField( "dynamic", "strict" );
                 }
             }
 
@@ -96,14 +90,9 @@ public class ElasticSearchSchema {
             var schemaType = schemaAST.common.schemaType;
             if( schemaAST instanceof DefaultSchemaAST ) {
                 switch( schemaType ) {
-                    case "boolean":
-                        jsonGenerator.writeStringField( "type", "boolean" );
-                        break;
-                    case "date":
-                        jsonGenerator.writeStringField( "type", "date" );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "Unknown schema type " + schemaType );
+                    case "boolean" -> jsonGenerator.writeStringField( "type", "boolean" );
+                    case "date" -> jsonGenerator.writeStringField( "type", "date" );
+                    default -> throw new IllegalArgumentException( "Unknown schema type " + schemaType );
                 }
 
                 convertCommon( schemaAST, jsonGenerator );
@@ -117,15 +106,9 @@ public class ElasticSearchSchema {
                 convertCommon( schemaAST, jsonGenerator );
             } else if( schemaAST instanceof NumberSchemaAST ) {
                 switch( schemaType ) {
-                    case "integer":
-                    case "long":
-                        jsonGenerator.writeStringField( "type", "long" );
-                        break;
-                    case "double":
-                        jsonGenerator.writeStringField( "type", "double" );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "Unknown schema type " + schemaType );
+                    case "integer", "long" -> jsonGenerator.writeStringField( "type", "long" );
+                    case "double" -> jsonGenerator.writeStringField( "type", "double" );
+                    default -> throw new IllegalArgumentException( "Unknown schema type " + schemaType );
                 }
 
                 convertCommon( schemaAST, jsonGenerator );
@@ -139,7 +122,7 @@ public class ElasticSearchSchema {
         }
     }
 
-    private static void convertCommon( SchemaAST<?> schemaAST, JsonGenerator jsonGenerator ) throws IOException {
+    private static void convertCommon( AbstractSchemaAST<?> schemaAST, JsonGenerator jsonGenerator ) throws IOException {
         if( !schemaAST.common.includeInAll.orElse( true ) )
             jsonGenerator.writeBooleanField( "include_in_all", false );
 

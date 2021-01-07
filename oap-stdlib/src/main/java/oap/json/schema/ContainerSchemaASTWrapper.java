@@ -28,5 +28,5 @@ import java.util.List;
 import java.util.Map;
 
 public interface ContainerSchemaASTWrapper {
-    Map<String, List<SchemaASTWrapper>> getChildren();
+    Map<String, List<AbstractSchemaASTWrapper>> getChildren();
 }

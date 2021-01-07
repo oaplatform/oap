@@ -35,7 +35,7 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
-public final class StringIdentifierBuilder<T> extends Builder<T, String> {
+public final class StringIdentifierBuilder<T> extends AbstractBuilder<T, String> {
     public static final int DEFAULT_ID_SIZE = 10;
     protected Strings.FriendlyIdOption[] options = new Strings.FriendlyIdOption[] { NO_VOWELS };
     protected Function<T, String> suggestion = obj -> Cuid.UNIQUE.next();

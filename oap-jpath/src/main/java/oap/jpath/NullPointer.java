@@ -28,7 +28,7 @@ public class NullPointer implements Pointer {
     public static final Pointer INSTANCE = new NullPointer();
 
     @Override
-    public Pointer resolve( PathNode n ) {
+    public Pointer resolve( AbstractPathNode n ) {
         return this;
     }
 

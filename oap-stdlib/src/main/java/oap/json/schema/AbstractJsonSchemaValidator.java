@@ -33,12 +33,12 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
+public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>> {
     public static final String JSON_PATH = "json-path";
     protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
     public final String type;
 
-    protected JsonSchemaValidator( String type ) {
+    protected AbstractJsonSchemaValidator( String type ) {
         this.type = type;
     }
 
@@ -53,7 +53,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             throw new Error( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
     }
 
-    public static List<String> typeFailed( JsonValidatorProperties properties, SchemaAST<?> schema, Object value ) {
+    public static List<String> typeFailed( JsonValidatorProperties properties, AbstractSchemaAST<?> schema, Object value ) {
         return Lists.of( properties.error( "instance type is " + getType( value )
             + ", but allowed type is " + schema.common.schemaType ) );
     }
@@ -71,12 +71,12 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
 
     public abstract List<String> validate( JsonValidatorProperties properties, A schema, Object value );
 
-    public abstract SchemaASTWrapper<A> parse( JsonSchemaParserContext context );
+    public abstract AbstractSchemaASTWrapper<A> parse( JsonSchemaParserContext context );
 
     public static class PropertyParser<A> {
-        private Optional<A> value;
-        private JsonSchemaParserContext properties;
-        private String property;
+        private final Optional<A> value;
+        private final JsonSchemaParserContext properties;
+        private final String property;
 
         public PropertyParser( String property, JsonSchemaParserContext properties, Optional<A> value ) {
             this.property = property;
@@ -94,7 +94,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     }
 
     public static class NodeParser {
-        private JsonSchemaParserContext properties;
+        private final JsonSchemaParserContext properties;
 
         public NodeParser( JsonSchemaParserContext properties ) {
             this.properties = properties;
@@ -132,11 +132,11 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             return new PropertyParser<>( property, properties, Optional.ofNullable( ( String ) properties.node.get( property ) ).map( Pattern::compile ) );
         }
 
-        public PropertyParser<SchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
+        public PropertyParser<AbstractSchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
             return new PropertyParser<>( property, properties,
                 Optional.ofNullable( context.node.get( property ) ).map( n -> {
                     JsonSchemaParserContext newContext = context.withNode( property, n );
-                    SchemaASTWrapper aw = context.mapParser.apply( newContext );
+                    AbstractSchemaASTWrapper aw = context.mapParser.apply( newContext );
                     newContext.astW.putIfAbsent( aw.id, aw );
                     return aw;
                 } ) );
@@ -152,7 +152,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
                 Map<?, ?> map = ( Map<?, ?> ) anEnum;
 
                 String jsonPath = ( String ) map.get( JSON_PATH );
-                Function<Object, List<Object>> sourceFunc = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
+                Function<Object, List<Object>> sourceFunc = obj -> new JsonPath( jsonPath ).traverse( obj );
 
                 var of = getOperationFunction( map );
 
@@ -160,7 +160,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
                 if( filterMap != null ) {
                     Map source = ( Map ) filterMap.get( "source" );
                     String filterJsonPath = ( String ) source.get( JSON_PATH );
-                    Function<Object, List<Object>> filterSourceFunc = ( obj ) -> new JsonPath( filterJsonPath ).traverse( obj );
+                    Function<Object, List<Object>> filterSourceFunc = obj -> new JsonPath( filterJsonPath ).traverse( obj );
                     var filterOf = getOperationFunction( filterMap );
 
                     return Optional.of( new FilteredEnumFunction( sourceFunc, of, Pair.__( filterSourceFunc, filterOf ) ) );
@@ -175,8 +175,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             return OperationFunction.parse( map );
         }
 
-        @SuppressWarnings( "unchecked" )
-        public SchemaAST.CommonSchemaAST asCommon() {
+        public AbstractSchemaAST.CommonSchemaAST asCommon() {
             Optional<BooleanReference> required = asBooleanReference( "required" );
             Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
             Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
@@ -187,7 +186,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             Optional<String> analyzer = asString( "analyzer" ).optional();
             Optional<Boolean> norms = asBoolean( "norms" ).optional();
 
-            return new SchemaAST.CommonSchemaAST(
+            return new AbstractSchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
                 index, includeInAll,
@@ -196,8 +195,8 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
         }
 
         @SuppressWarnings( "unchecked" )
-        public PropertyParser<LinkedHashMap<String, SchemaASTWrapper<?>>> asMapAST( String property, JsonSchemaParserContext context ) {
-            LinkedHashMap<String, SchemaASTWrapper<?>> p = new LinkedHashMap<>();
+        public PropertyParser<LinkedHashMap<String, AbstractSchemaASTWrapper<?>>> asMapAST( String property, JsonSchemaParserContext context ) {
+            LinkedHashMap<String, AbstractSchemaASTWrapper<?>> p = new LinkedHashMap<>();
 
             Optional<Map<Object, Object>> map =
                 Optional.ofNullable( ( Map<Object, Object> ) context.node.get( property ) );
@@ -206,7 +205,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
                 m -> m.forEach( ( okey, value ) -> {
                     String key = ( String ) okey;
                     JsonSchemaParserContext newContext = context.withNode( key, value );
-                    SchemaASTWrapper astw = newContext.astW.get( newContext.getId() );
+                    AbstractSchemaASTWrapper astw = newContext.astW.get( newContext.getId() );
                     if( astw == null ) {
                         astw = context.mapParser.apply( newContext );
                         newContext.astW.put( newContext.getId(), astw );

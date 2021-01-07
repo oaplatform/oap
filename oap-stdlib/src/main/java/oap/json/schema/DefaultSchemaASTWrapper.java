@@ -27,7 +27,7 @@ package oap.json.schema;
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST> {
+public class DefaultSchemaASTWrapper extends AbstractSchemaASTWrapper<DefaultSchemaAST> {
     public DefaultSchemaASTWrapper( SchemaId id ) {
         super( id );
     }

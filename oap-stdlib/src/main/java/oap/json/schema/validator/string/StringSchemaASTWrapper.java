@@ -24,14 +24,14 @@
 
 package oap.json.schema.validator.string;
 
+import oap.json.schema.AbstractSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-public class StringSchemaASTWrapper extends SchemaASTWrapper<StringSchemaAST> {
+public class StringSchemaASTWrapper extends AbstractSchemaASTWrapper<StringSchemaAST> {
     Optional<Integer> minLength;
     Optional<Integer> maxLength;
     Optional<Pattern> pattern;

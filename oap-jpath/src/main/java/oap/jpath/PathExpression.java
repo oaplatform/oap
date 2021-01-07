@@ -31,9 +31,9 @@ import java.util.Map;
 
 @ToString
 public class PathExpression {
-    public final ArrayList<PathNode> list = new ArrayList<>();
+    public final ArrayList<AbstractPathNode> list = new ArrayList<>();
 
-    public void add( PathNode path ) {
+    public void add( AbstractPathNode path ) {
         list.add( path );
     }
 

@@ -123,15 +123,16 @@ public class Cookie {
             return find( key ).map( p -> mapper.apply( p._2 ) );
         }
 
+        public Optional<String> get( String key ) {
+            return get( key, Function.identity() );
+        }
+
         private Optional<Pair<String, String>> find( String key ) {
             for( Pair<String, String> component : components )
                 if( component._1.equalsIgnoreCase( key ) ) return Optional.of( component );
             return Optional.empty();
         }
 
-        public Optional<String> get( String key ) {
-            return get( key, Function.identity() );
-        }
     }
 
     public Cookie withDomain( String domain ) {

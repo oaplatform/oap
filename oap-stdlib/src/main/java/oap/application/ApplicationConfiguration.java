@@ -52,14 +52,6 @@ public final class ApplicationConfiguration {
     private ApplicationConfiguration() {
     }
 
-    public static ApplicationConfiguration load() {
-        return Binder.hocon.unmarshal( ApplicationConfiguration.class, getEnvConfig() );
-    }
-
-    public static ApplicationConfiguration load( Path appConfigPath ) {
-        return loadWithProperties( appConfigPath, List.of() );
-    }
-
     @SneakyThrows
     public static ApplicationConfiguration loadWithProperties( Path appConfigPath, List<String> confdContents ) {
         return loadWithProperties( appConfigPath.toUri().toURL(), confdContents );
@@ -73,6 +65,14 @@ public final class ApplicationConfiguration {
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
 
+    public static ApplicationConfiguration load() {
+        return Binder.hocon.unmarshal( ApplicationConfiguration.class, getEnvConfig() );
+    }
+
+    public static ApplicationConfiguration load( Path appConfigPath ) {
+        return loadWithProperties( appConfigPath, List.of() );
+    }
+
     @SneakyThrows
     public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
         return load( appConfigPath.toUri().toURL(), confd.toString() );
@@ -84,19 +84,19 @@ public final class ApplicationConfiguration {
         return load( appConfigPath, confdUrls );
     }
 
-    public static List<URL> getConfdUrls( Path confd ) {
-        return confd != null
-            ? Stream.of( wildcard( confd, "*.conf", "*.yaml" ) )
-            .map( Files::toUrl )
-            .toList() : List.of();
-    }
-
     public static ApplicationConfiguration load( URL appConfigPath, List<URL> confdUrls ) {
         return loadWithProperties( appConfigPath, Lists.map( confdUrls, p ->
             p.getPath().endsWith( ".yaml" )
                 ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) )
                 : Strings.readString( p )
         ) );
+    }
+
+    public static List<URL> getConfdUrls( Path confd ) {
+        return confd != null
+            ? Stream.of( wildcard( confd, "*.conf", "*.yaml" ) )
+            .map( Files::toUrl )
+            .toList() : List.of();
     }
 
     private static String getEnvConfig() {

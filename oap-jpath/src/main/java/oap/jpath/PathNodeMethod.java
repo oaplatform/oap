@@ -32,7 +32,7 @@ import java.util.List;
 
 @ToString( callSuper = true )
 @Slf4j
-public class PathNodeMethod extends PathNode {
+public class PathNodeMethod extends AbstractPathNode {
     private final List<Object> arguments;
 
     protected PathNodeMethod( String name, List<Object> arguments ) {

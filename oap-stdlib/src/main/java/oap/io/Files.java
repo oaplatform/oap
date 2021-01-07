@@ -87,7 +87,7 @@ public final class Files {
         BiFunction<Integer, Integer, String> f = ( hash, bits ) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
         int bitPerDir = 8;
 
-        int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
+        @SuppressWarnings( "UnstableApiUsage" ) int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
         String f1 = f.apply( hash, bitPerDir );
         hash >>>= bitPerDir;
         String f2 = f.apply( hash, bitPerDir );
@@ -165,7 +165,7 @@ public final class Files {
 
     public static List<Path> deepCollect( Path basePath, Predicate<Path> predicate ) {
         ArrayList<Path> result = new ArrayList<>();
-        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
                 if( predicate.test( file ) ) result.add( file );
@@ -227,6 +227,14 @@ public final class Files {
         IoStreams.write( path, Encoding.from( path ), new ByteArrayInputStream( value.getBytes() ), false, safe );
     }
 
+    public static void writeString( Path path, Encoding encoding, String value ) {
+        IoStreams.write( path, encoding, value );
+    }
+
+    public static void writeString( Path path, Encoding encoding, boolean append, String value ) {
+        IoStreams.write( path, encoding, value, append );
+    }
+
     public static void writeBytes( Path path, byte[] value ) {
         writeBytes( path, Encoding.from( path ), value );
     }
@@ -244,13 +252,6 @@ public final class Files {
         }
     }
 
-    public static void writeString( Path path, Encoding encoding, String value ) {
-        IoStreams.write( path, encoding, value );
-    }
-
-    public static void writeString( Path path, Encoding encoding, boolean append, String value ) {
-        IoStreams.write( path, encoding, value, append );
-    }
 
     public static void writeObject( Path path, Object value ) {
         try( ObjectOutputStream os = new ObjectOutputStream( IoStreams.out( path, Encoding.PLAIN ) ) ) {
@@ -406,13 +407,6 @@ public final class Files {
         }
     }
 
-    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
-        try {
-            java.nio.file.Files.setPosixFilePermissions( path, permissions );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
 
     public static void rename( Path sourcePath, Path destPath ) {
         try {
@@ -438,6 +432,14 @@ public final class Files {
             Files.ensureFile( target );
 
             java.nio.file.Files.move( source, target, options );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
+        try {
+            java.nio.file.Files.setPosixFilePermissions( path, permissions );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -499,7 +501,7 @@ public final class Files {
 
         while( fnPosition < fnLength ) {
             if( wmPosition >= wmLength ) break;
-            if( ( ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) ) break;
+            if( ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) break;
             if( wm != filename.charAt( fnPosition ) && wm != '?' ) return false;
 
             wmPosition++;

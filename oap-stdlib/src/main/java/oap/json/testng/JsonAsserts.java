@@ -103,12 +103,16 @@ public class JsonAsserts {
 
         }
 
+        @Override
+        public JsonAssertion isEqualTo( Object expected ) {
+            return isEqualTo( String.valueOf( expected ) );
+        }
+
         public JsonAssertion isStructurallyEqualTo( String expected ) {
             isNotNull();
             assertThat( unmarshal( actual ) )
                 .isEqualTo( unmarshal( expected ) );
             return this;
-
         }
 
         public JsonAssertion isStructurallyEqualToResource( Class<?> contextClass, String resource ) {
@@ -121,12 +125,6 @@ public class JsonAsserts {
             if( content.trim().startsWith( "[" ) ) return Binder.json.unmarshal( List.class, content );
             else return Binder.json.unmarshal( Map.class, content );
         }
-
-        @Override
-        public JsonAssertion isEqualTo( Object expected ) {
-            return isEqualTo( String.valueOf( expected ) );
-        }
-
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
             assertString( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
                 .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );

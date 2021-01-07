@@ -28,7 +28,7 @@ import oap.concurrent.scheduler.Scheduler;
 
 import java.util.concurrent.TimeUnit;
 
-public class DelayScheduledService extends ScheduledService {
+public class DelayScheduledService extends AbstractScheduledService {
     private final long delay;
     private final TimeUnit unit;
 

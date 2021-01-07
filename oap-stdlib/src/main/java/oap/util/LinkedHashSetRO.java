@@ -104,7 +104,7 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     }
 
     @Override
-    public boolean removeAll( Collection<?> c ) {
+    public boolean removeAll( @Nonnull Collection<?> c ) {
         throw new IllegalAccessError();
     }
 
@@ -131,8 +131,13 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
 
     @Override
     @Nonnull
-    public <T1> T1[] toArray( T1[] a ) {
+    public <T1> T1[] toArray( @Nonnull T1[] a ) {
         return list.toArray( a );
+    }
+
+    @Override
+    public <T1> T1[] toArray( IntFunction<T1[]> generator ) {
+        return list.toArray( generator );
     }
 
     @Override
@@ -146,11 +151,6 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     }
 
     @Override
-    public <T1> T1[] toArray( IntFunction<T1[]> generator ) {
-        return list.toArray( generator );
-    }
-
-    @Override
     public Stream<T> stream() {
         return list.stream();
     }
@@ -161,7 +161,7 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     }
 
     @Override
-    public boolean retainAll( Collection<?> c ) {
+    public boolean retainAll( @Nonnull Collection<?> c ) {
         throw new IllegalAccessError();
     }
 

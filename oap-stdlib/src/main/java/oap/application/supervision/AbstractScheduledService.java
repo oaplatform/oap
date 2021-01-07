@@ -28,12 +28,12 @@ import oap.application.remote.RemoteInvocationException;
 import oap.concurrent.scheduler.Scheduled;
 
 @Slf4j
-public abstract class ScheduledService implements WrapperService<Runnable>, Runnable {
+public abstract class AbstractScheduledService implements WrapperService<Runnable>, Runnable {
     protected final Runnable runnable;
     private Scheduled scheduled;
-    private String type;
+    private final String type;
 
-    public ScheduledService( String type, Runnable runnable ) {
+    public AbstractScheduledService( String type, Runnable runnable ) {
         this.type = type;
         this.runnable = runnable;
     }

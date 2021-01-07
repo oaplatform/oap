@@ -62,10 +62,7 @@ public class Lists extends oap.util.Collections {
     }
 
     /**
-     * @param list
-     * @param <T>
-     * @return
-     * @see
+     * @see #tailOf(List)
      */
     @Deprecated
     public static <T> List<T> tail( List<T> list ) {
@@ -118,6 +115,18 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
+    public static <E, R> ArrayList<R> map( E[] array, Function<? super E, R> mapper ) {
+        return map( of( array ), mapper );
+    }
+
+    public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
+        var result = new ArrayList<R>();
+        while( enumeration.hasMoreElements() ) {
+            result.add( mapper.apply( enumeration.nextElement() ) );
+        }
+        return result;
+    }
+
     public static <E, R> ArrayList<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
         var result = new ArrayList<R>();
         for( var e : list ) {
@@ -127,23 +136,12 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> ArrayList<R> map( E[] array, Function<? super E, R> mapper ) {
-        return map( of( array ), mapper );
-    }
 
     public static <E> ArrayList<E> filter( Collection<E> list, Predicate<E> predicate ) {
         var result = new ArrayList<E>();
 
         for( E e : list ) if( predicate.test( e ) ) result.add( e );
 
-        return result;
-    }
-
-    public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
-        var result = new ArrayList<R>();
-        while( enumeration.hasMoreElements() ) {
-            result.add( mapper.apply( enumeration.nextElement() ) );
-        }
         return result;
     }
 

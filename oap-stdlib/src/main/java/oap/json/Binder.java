@@ -95,12 +95,12 @@ public class Binder {
     private static final byte[] BEGIN_ARRAY = "[".getBytes();
     private static final byte[] END_ARRAY = "]".getBytes();
     private static final byte[] ITEM_SEP = ",".getBytes();
-    private static Set<Module> modules;
+    private static final Set<Module> modules;
 
     static {
         modules = Resources
             .lines( "META-INF/jackson.modules" )
-            .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) ) )
+            .map( Try.map( clazz -> ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) )
             .toSet();
 
         json = new Binder( initialize( new ObjectMapper(), false, false, true ) );
@@ -115,7 +115,7 @@ public class Binder {
         yaml = new Binder( initialize( new ObjectMapper( new YAMLFactory() ), false, false, true ) );
     }
 
-    private ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     public Binder( ObjectMapper mapper ) {
         this.mapper = mapper;
@@ -261,17 +261,17 @@ public class Binder {
         return marshalWithDefaultPrettyPrinter( unmarshal( clazz, json ) );
     }
 
-    public String marshal( Object value ) {
+    public String marshalWithDefaultPrettyPrinter( Object value ) {
         try {
-            return mapper.writeValueAsString( value );
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
     }
 
-    public String marshalWithDefaultPrettyPrinter( Object value ) {
+    public String marshal( Object value ) {
         try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );
+            return mapper.writeValueAsString( value );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
@@ -313,10 +313,23 @@ public class Binder {
     public void marshal( Path path, Object object ) {
         Files.ensureFile( path );
 
-        try( final OutputStream os = IoStreams.out( path ) ) {
+        try( OutputStream os = IoStreams.out( path ) ) {
             marshal( os, object );
         } catch( IOException e ) {
             throw new JsonException( e );
+        }
+    }
+
+    @SneakyThrows
+    public void marshal( Path path, Iterable<?> iterable ) {
+        try( OutputStream out = IoStreams.out( path, from( path ), DEFAULT_BUFFER, false, true ) ) {
+            out.write( BEGIN_ARRAY );
+            var it = iterable.iterator();
+            while( it.hasNext() ) {
+                marshal( out, it.next() );
+                if( it.hasNext() ) out.write( ITEM_SEP );
+            }
+            out.write( END_ARRAY );
         }
     }
 
@@ -362,28 +375,6 @@ public class Binder {
             log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
-    }
-
-    public ObjectReader readerFor( TypeRef<?> ref ) {
-        return mapper.readerFor( toTypeReference( ref ) );
-    }
-
-    @Deprecated
-    public ObjectReader readerFor( TypeReference<?> ref ) {
-        return mapper.readerFor( ref );
-    }
-
-    public ObjectReader readerForUpdating( Object obj ) {
-        return mapper.readerForUpdating( obj );
-    }
-
-    public ObjectWriter writerFor( TypeRef<?> ref ) {
-        return mapper.writerFor( toTypeReference( ref ) );
-    }
-
-    @Deprecated
-    public ObjectWriter writerFor( TypeReference<?> ref ) {
-        return mapper.writerFor( ref );
     }
 
     public <T> Optional<T> unmarshal( TypeRef<T> ref, Path path ) {
@@ -527,22 +518,32 @@ public class Binder {
 
     }
 
+    public ObjectReader readerFor( TypeRef<?> ref ) {
+        return mapper.readerFor( toTypeReference( ref ) );
+    }
+
+    @Deprecated
+    public ObjectReader readerFor( TypeReference<?> ref ) {
+        return mapper.readerFor( ref );
+    }
+
+    public ObjectReader readerForUpdating( Object obj ) {
+        return mapper.readerForUpdating( obj );
+    }
+
+    public ObjectWriter writerFor( TypeRef<?> ref ) {
+        return mapper.writerFor( toTypeReference( ref ) );
+    }
+
+    @Deprecated
+    public ObjectWriter writerFor( TypeReference<?> ref ) {
+        return mapper.writerFor( ref );
+    }
+
+
     @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
         return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
-    }
-
-    @SneakyThrows
-    public void marshal( Path path, Iterable<?> iterable ) {
-        try( OutputStream out = IoStreams.out( path, from( path ), DEFAULT_BUFFER, false, true ) ) {
-            out.write( BEGIN_ARRAY );
-            var it = iterable.iterator();
-            while( it.hasNext() ) {
-                marshal( out, it.next() );
-                if( it.hasNext() ) out.write( ITEM_SEP );
-            }
-            out.write( END_ARRAY );
-        }
     }
 
     public enum Format {

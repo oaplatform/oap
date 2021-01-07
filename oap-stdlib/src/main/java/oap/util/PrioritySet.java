@@ -32,8 +32,8 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 
 public class PrioritySet<E> extends AbstractSet<E> {
-    public static int PRIORITY_DEFAULT = 0;
-    private SetMultimap<Integer, E> map = MultimapBuilder
+    public static final int PRIORITY_DEFAULT = 0;
+    private final SetMultimap<Integer, E> map = MultimapBuilder
         .treeKeys( Integer::compareTo )
         .linkedHashSetValues()
         .build();

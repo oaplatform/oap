@@ -28,10 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryNotFoundError;
+import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.BooleanReference;
 import oap.json.schema.JsonPath;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaPath;
 import oap.util.Lists;
@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toList;
 import static oap.json.schema.SchemaPath.rightTrimItems;
 
 @Slf4j
-public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
+public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<DictionarySchemaAST> {
 
     public DictionaryJsonValidator() {
         super( "dictionary" );

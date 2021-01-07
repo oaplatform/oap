@@ -24,6 +24,7 @@
 
 package oap.io;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -58,12 +59,18 @@ public class LazyFileOutputStream extends OutputStream {
     }
 
     @Override
-    public void write( byte[] b, int off, int len ) throws IOException {
+    public void write( @Nonnull byte[] b, int off, int len ) throws IOException {
         open();
 
         fos.write( b, off, len );
     }
 
+    @Override
+    public void write( @Nonnull byte[] b ) throws IOException {
+        open();
+
+        fos.write( b );
+    }
     @Override
     public void close() throws IOException {
         if( fos != null ) fos.close();
@@ -74,10 +81,4 @@ public class LazyFileOutputStream extends OutputStream {
         if( fos != null ) fos.flush();
     }
 
-    @Override
-    public void write( byte[] b ) throws IOException {
-        open();
-
-        fos.write( b );
-    }
 }

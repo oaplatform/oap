@@ -23,14 +23,14 @@
  */
 package oap.json.schema.validator.string;
 
+import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class StringJsonValidator extends JsonSchemaValidator<StringSchemaAST> {
+public class StringJsonValidator extends AbstractJsonSchemaValidator<StringSchemaAST> {
     public StringJsonValidator( String type ) {
         super( type );
     }

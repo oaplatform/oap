@@ -35,11 +35,11 @@ public interface FileManager<T> {
 
     String write( String bucket, T data );
 
-    Optional<byte[]> read( String bucket, String relativePath );
-
     default String write( T data ) {
         return write( DEFAULT_BUCKET, data );
     }
+
+    Optional<byte[]> read( String bucket, String relativePath );
 
     default Optional<byte[]> read( String relativePath ) {
         return read( DEFAULT_BUCKET, relativePath );

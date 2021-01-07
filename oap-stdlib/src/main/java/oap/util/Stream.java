@@ -63,7 +63,7 @@ import static oap.util.Functions.empty.consume;
 import static oap.util.Pair.__;
 
 public class Stream<E> implements java.util.stream.Stream<E> {
-    private java.util.stream.Stream<E> underlying;
+    private final java.util.stream.Stream<E> underlying;
 
     protected Stream( java.util.stream.Stream<E> underlying ) {
         this.underlying = underlying;
@@ -97,6 +97,11 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( Iterators.of( initialState, hasNext, next ) );
     }
 
+    @SafeVarargs
+    public static <T> Stream<T> of( T... values ) {
+        return values == null ? empty() : of( java.util.stream.Stream.of( values ) );
+    }
+
     public static <T> Stream<T> traverse( T initialState, UnaryOperator<T> traverse ) {
         return of( Iterators.traverse( initialState, traverse ) );
     }
@@ -105,10 +110,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( Iterators.flatTraverse( initialState, e -> traverse.apply( e ).iterator() ) );
     }
 
-    @SafeVarargs
-    public static <T> Stream<T> of( T... values ) {
-        return values == null ? empty() : of( java.util.stream.Stream.of( values ) );
-    }
 
     public static <T> Stream<T> iterate( T seed, UnaryOperator<T> f ) {
         return of( java.util.stream.Stream.iterate( seed, f ) );
@@ -116,6 +117,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
     public static <T> Stream<T> generate( Supplier<T> s ) {
         return of( java.util.stream.Stream.generate( s ) );
+    }
+
+    public Stream<E> takeWhile( Predicate<? super E> predicate ) {
+        return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), underlying.isParallel() ) );
     }
 
     static <T> Spliterator<T> takeWhile( Spliterator<T> spliterator, Predicate<? super T> predicate ) {
@@ -155,8 +160,8 @@ public class Stream<E> implements java.util.stream.Stream<E> {
             : -1;
 
         Iterator<C> it = new Iterator<>() {
-            Iterator<E> aIterator = Spliterators.iterator( aSpliterator );
-            Iterator<B> bIterator = Spliterators.iterator( bSpliterator );
+            final Iterator<E> aIterator = Spliterators.iterator( aSpliterator );
+            final Iterator<B> bIterator = Spliterators.iterator( bSpliterator );
 
             @Override
             public boolean hasNext() {
@@ -234,7 +239,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public <T> Stream<Result<T, ? extends Throwable>> mapThrowableToResult( Function<? super E, ? extends T> mapper ) {
-        return map( ( f ) -> {
+        return map( f -> {
             try {
                 return Result.success( mapper.apply( f ) );
             } catch( Throwable t ) {
@@ -347,12 +352,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         underlying.forEachOrdered( action );
     }
 
-    @Override
-    @Nonnull
-    public Object[] toArray() {
-        return underlying.toArray();
-    }
-
     public List<E> toList() {
         return underlying.collect( Collectors.toList() );
     }
@@ -363,8 +362,21 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
     @Override
     @Nonnull
+    public Object[] toArray() {
+        return underlying.toArray();
+    }
+
+    @Override
+    @Nonnull
     public <A> A[] toArray( IntFunction<A[]> generator ) {
         return underlying.toArray( generator );
+    }
+
+    public <R> R foldLeft( R seed, BiFunction<R, ? super E, R> function ) {
+        final Iterator<E> it = underlying.iterator();
+        R result = seed;
+        while( it.hasNext() ) result = function.apply( result, it.next() );
+        return result;
     }
 
     @Override
@@ -376,13 +388,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     @Nonnull
     public Optional<E> reduce( BinaryOperator<E> accumulator ) {
         return underlying.reduce( accumulator );
-    }
-
-    public <R> R foldLeft( R seed, BiFunction<R, ? super E, R> function ) {
-        final Iterator<E> it = underlying.iterator();
-        R result = seed;
-        while( it.hasNext() ) result = function.apply( result, it.next() );
-        return result;
     }
 
     @Override
@@ -517,10 +522,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( underlying.onClose( closeHandler ) );
     }
 
-    public Stream<E> takeWhile( Predicate<? super E> predicate ) {
-        return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), underlying.isParallel() ) );
-    }
-
     @Override
     public void close() {
         underlying.close();
@@ -535,7 +536,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         private final Spliterator<E> base;
         private final int batchSize;
 
-        public BatchSpliterator( Spliterator<E> base, int batchSize ) {
+        private BatchSpliterator( Spliterator<E> base, int batchSize ) {
             this.base = base;
             this.batchSize = batchSize;
         }

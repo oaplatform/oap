@@ -38,7 +38,7 @@ public class ObjectPointer<T extends Object> implements Pointer {
     }
 
     @Override
-    public Pointer resolve( PathNode n ) {
+    public Pointer resolve( AbstractPathNode n ) {
         var reflect = Reflect.reflect( v.getClass() );
         return Pointer.get( n.evaluate( v, reflect ) );
     }

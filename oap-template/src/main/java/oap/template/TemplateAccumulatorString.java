@@ -32,16 +32,16 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     private final StringBuilder sb = new StringBuilder();
 
     @Override
+    public void acceptText( String text ) {
+        if( text != null )
+            sb.append( text );
+    }
+
+    @Override
     public void accept( String text ) {
         if( text != null ) {
             sb.append( text );
         }
-    }
-
-    @Override
-    public void acceptText( String text ) {
-        if( text != null )
-            sb.append( text );
     }
 
     @Override

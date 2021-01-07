@@ -111,7 +111,7 @@ public class TypeIdFactory implements TypeIdResolver {
 
     @Override
     public String idFromValueAndType( Object value, Class<?> suggestedType ) {
-        return classToId.computeIfAbsent( suggestedType, ( k ) -> {
+        return classToId.computeIfAbsent( suggestedType, k -> {
             throw new IllegalStateException( "cannot find class '" + k + "'" );
         } );
     }
@@ -123,7 +123,7 @@ public class TypeIdFactory implements TypeIdResolver {
 
     @Override
     public JavaType typeFromId( DatabindContext context, String id ) {
-        final Class<?> clazz = idToClass.computeIfAbsent( id, ( k ) -> {
+        final Class<?> clazz = idToClass.computeIfAbsent( id, k -> {
             throw new IllegalStateException( "cannot find id '" + k + "'" );
         } );
         return TypeFactory.defaultInstance().constructSpecializedType( baseType, clazz );

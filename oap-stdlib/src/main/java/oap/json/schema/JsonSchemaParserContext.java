@@ -33,12 +33,12 @@ public class JsonSchemaParserContext {
     public static final SchemaId ROOT_ID = new SchemaId( "", "", "" );
     public final Map<?, ?> node;
     public final String schemaType;
-    public final Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser;
-    public final BiFunction<String, String, SchemaASTWrapper> urlParser;
+    public final Function<JsonSchemaParserContext, AbstractSchemaASTWrapper> mapParser;
+    public final BiFunction<String, String, AbstractSchemaASTWrapper> urlParser;
     public final String rootPath;
     public final String path;
-    public final HashMap<SchemaId, SchemaASTWrapper> astW;
-    public final HashMap<SchemaId, SchemaAST> ast;
+    public final HashMap<SchemaId, AbstractSchemaASTWrapper> astW;
+    public final HashMap<SchemaId, AbstractSchemaAST> ast;
     public final SchemaStorage storage;
     private final String schemaName;
 
@@ -46,11 +46,11 @@ public class JsonSchemaParserContext {
         String schemaName,
         Map<?, ?> node,
         String schemaType,
-        Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser,
-        BiFunction<String, String, SchemaASTWrapper> urlParser,
+        Function<JsonSchemaParserContext, AbstractSchemaASTWrapper> mapParser,
+        BiFunction<String, String, AbstractSchemaASTWrapper> urlParser,
         String rootPath, String path,
-        HashMap<SchemaId, SchemaASTWrapper> astW,
-        HashMap<SchemaId, SchemaAST> ast,
+        HashMap<SchemaId, AbstractSchemaASTWrapper> astW,
+        HashMap<SchemaId, AbstractSchemaAST> ast,
         SchemaStorage storage ) {
         this.schemaName = schemaName;
         this.node = node;
@@ -83,7 +83,7 @@ public class JsonSchemaParserContext {
         }
     }
 
-    public <T extends SchemaASTWrapper> T createWrapper( Function<SchemaId, T> creator ) {
+    public <T extends AbstractSchemaASTWrapper> T createWrapper( Function<SchemaId, T> creator ) {
         final T w = creator.apply( getId() );
         astW.put( w.id, w );
         return w;
@@ -93,16 +93,16 @@ public class JsonSchemaParserContext {
         return new SchemaId( schemaName, rootPath, path );
     }
 
-    public SchemaASTWrapper getRoot() {
-        final SchemaASTWrapper root = astW.get( ROOT_ID );
+    public AbstractSchemaASTWrapper getRoot() {
+        final AbstractSchemaASTWrapper root = astW.get( ROOT_ID );
         if( root == null )
             throw new IllegalStateException( "root not found" );
         return root;
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T extends SchemaAST> T computeIfAbsent( SchemaId id, Supplier<T> s ) {
-        SchemaAST r = ast.get( id );
+    public <T extends AbstractSchemaAST> T computeIfAbsent( SchemaId id, Supplier<T> s ) {
+        AbstractSchemaAST r = ast.get( id );
         if( r == null ) {
             r = s.get();
             ast.put( id, r );

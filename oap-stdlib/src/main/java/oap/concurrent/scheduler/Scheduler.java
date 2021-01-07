@@ -77,15 +77,6 @@ public final class Scheduler {
     private Scheduler() {
     }
 
-    public static Scheduled scheduleWithFixedDelay( long delay, TimeUnit unit, Runnable runnable ) {
-        return schedule( delay, unit, Try.catching( runnable )
-                .logOnException( log )
-                .propagate(),
-            SimpleScheduleBuilder.simpleSchedule()
-                .withIntervalInMilliseconds( unit.toMillis( delay ) )
-                .withMisfireHandlingInstructionIgnoreMisfires()
-                .repeatForever() );
-    }
 
     @SneakyThrows
     private static Scheduled schedule( long delay, TimeUnit unit, Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
@@ -128,6 +119,16 @@ public final class Scheduler {
 
     private static String identity( Class<?> clazz ) {
         return clazz.getName() + "/" + ids.incrementAndGet();
+    }
+
+    public static Scheduled scheduleWithFixedDelay( long delay, TimeUnit unit, Runnable runnable ) {
+        return schedule( delay, unit, Try.catching( runnable )
+                .logOnException( log )
+                .propagate(),
+            SimpleScheduleBuilder.simpleSchedule()
+                .withIntervalInMilliseconds( unit.toMillis( delay ) )
+                .withMisfireHandlingInstructionIgnoreMisfires()
+                .repeatForever() );
     }
 
     public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, Consumer<Long> consume ) {

@@ -150,7 +150,7 @@ public class MessageHashStorage {
         public final ByteSequence hash;
         public final long time;
 
-        public HashInfo( ByteSequence hash, long time ) {
+        private HashInfo( ByteSequence hash, long time ) {
             this.hash = hash;
             this.time = time;
         }

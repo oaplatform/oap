@@ -66,19 +66,16 @@ public class Archiver {
 
     @SneakyThrows
     public void unpack( Path archive, Path dest, ArchiveType type ) {
-        switch( type ) {
-            case TAR_GZ:
-                try( TarArchiveInputStream tar = new TarArchiveInputStream( IoStreams.in( archive, GZIP ) ) ) {
-                    ArchiveEntry entry;
-                    while( ( entry = tar.getNextEntry() ) != null ) {
-                        Path path = dest.resolve( entry.getName() );
-                        if( entry.isDirectory() )
-                            path.toFile().mkdirs();
-                        else IoStreams.write( path, PLAIN, tar );
-                    }
-                    tar.close();
+        if( type == ArchiveType.TAR_GZ ) {
+            try( TarArchiveInputStream tar = new TarArchiveInputStream( IoStreams.in( archive, GZIP ) ) ) {
+                ArchiveEntry entry;
+                while( ( entry = tar.getNextEntry() ) != null ) {
+                    Path path = dest.resolve( entry.getName() );
+                    if( entry.isDirectory() ) path.toFile().mkdirs();
+                    else IoStreams.write( path, PLAIN, tar );
                 }
-        }
+            }
+        } else throw new IllegalArgumentException( String.valueOf( type ) );
     }
 
     public enum ArchiveType {

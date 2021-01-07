@@ -27,8 +27,9 @@ import com.google.common.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 
+@SuppressWarnings( { "UnstableApiUsage", "checkstyle:AbstractClassName" } )
 public abstract class TypeRef<T> {
-    final TypeToken<T> token = new TypeToken<T>( getClass() ) {
+    final TypeToken<T> token = new TypeToken<>( getClass() ) {
     };
 
     public Type type() {

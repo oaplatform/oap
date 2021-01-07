@@ -23,7 +23,7 @@
  */
 package oap.json.schema.validator.number;
 
-public class IntegerJsonValidator extends NumberJsonValidator<Integer> {
+public class IntegerJsonValidator extends AbstractNumberJsonValidator<Integer> {
     public IntegerJsonValidator() {
         super( "integer" );
     }

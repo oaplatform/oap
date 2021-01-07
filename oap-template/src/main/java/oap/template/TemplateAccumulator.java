@@ -32,9 +32,9 @@ import java.util.function.Supplier;
  * @todo refactor this to factory!
  */
 public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAccumulator<T, TTemplateAccumulator>> extends Supplier<T> {
-    void accept( String text );
-
     void acceptText( String text );
+
+    void accept( String text );
 
     void accept( boolean b );
 

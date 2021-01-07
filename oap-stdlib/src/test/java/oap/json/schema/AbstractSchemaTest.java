@@ -32,7 +32,7 @@ import static oap.json.schema.ResourceSchemaStorage.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractSchemaTest {
-    protected static SchemaAST schema( String schema ) {
+    protected static AbstractSchemaAST schema( String schema ) {
         return JsonSchema.schemaFromString( schema ).schema;
     }
 

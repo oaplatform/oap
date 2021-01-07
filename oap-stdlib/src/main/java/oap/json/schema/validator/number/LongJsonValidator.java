@@ -23,7 +23,7 @@
  */
 package oap.json.schema.validator.number;
 
-public class LongJsonValidator extends NumberJsonValidator<Long> {
+public class LongJsonValidator extends AbstractNumberJsonValidator<Long> {
     public LongJsonValidator() {
         super( "long" );
     }

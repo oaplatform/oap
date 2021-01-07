@@ -69,7 +69,7 @@ public class Collections {
 
         for( E e : list ) {
             final G key = classifier.apply( e );
-            result.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( e );
+            result.computeIfAbsent( key, k -> new ArrayList<>() ).add( e );
         }
 
         return result;

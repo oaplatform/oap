@@ -42,7 +42,7 @@ import java.nio.file.Paths;
 public class TestDirectoryFixture implements Fixture {
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
     private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Suite.uniqueExecutionId() );
-    public static TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
+    public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
 
     static {
         Files.ensureDirectory( testDirectory() );
@@ -104,6 +104,10 @@ public class TestDirectoryFixture implements Fixture {
         return to;
     }
 
+    private void deployTestData( Scope suite ) {
+        if( deployTestData != null && scope == suite ) deployTestData( deployTestData.contextClass, deployTestData.name );
+    }
+
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name ) {
         return new TestDirectoryFixture( this.scope, new DeployTestData( contextClass, name ) );
     }
@@ -116,9 +120,6 @@ public class TestDirectoryFixture implements Fixture {
         return new TestDirectoryFixture( scope, this.deployTestData );
     }
 
-    private void deployTestData( Scope suite ) {
-        if( deployTestData != null && scope == suite ) deployTestData( deployTestData.contextClass, deployTestData.name );
-    }
 
     @Override
     public void beforeSuite() {

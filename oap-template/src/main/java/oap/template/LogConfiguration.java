@@ -46,7 +46,7 @@ import static oap.template.TemplateAccumulators.STRING;
 @Slf4j
 @Deprecated
 public class LogConfiguration extends Configuration {
-    public static final Predicate<Dictionary> FILTER_TAG_NE_SYSTEM = ( dictionary ) -> !dictionary.getTags().contains( "system" );
+    public static final Predicate<Dictionary> FILTER_TAG_NE_SYSTEM = dictionary -> !dictionary.getTags().contains( "system" );
 
     private static final String STANDARD_DELIMITER = "\t";
     private final TemplateEngine engine;
@@ -90,7 +90,7 @@ public class LogConfiguration extends Configuration {
             if( !field.containsProperty( "path" ) ) continue;
 
             var id = field.getId();
-            var path = ( String ) field.getProperty( "path" ).get();
+            var path = ( String ) field.getProperty( "path" ).orElseThrow();
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
 

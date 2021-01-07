@@ -67,26 +67,21 @@ public class OperationFunction {
         }
     }
 
-    private static Object getValue( Condition condition, Map<?, ?> map ) {
-        switch( condition ) {
-            case EQ:
-                return map.get( EQ_OP );
-            case NE:
-                return map.get( NE_OP );
-            case IN:
-                return map.get( IN_OP );
-            case ANY:
-                return null;
-            default:
-                throw new IllegalStateException( "Unknown condition " + condition );
-        }
-    }
-
     private static Condition getCondition( Map<?, ?> map ) {
         if( map.containsKey( EQ_OP ) ) return EQ;
         else if( map.containsKey( NE_OP ) ) return NE;
         else if( map.containsKey( IN_OP ) ) return IN;
         return ANY;
+    }
+
+
+    private static Object getValue( Condition condition, Map<?, ?> map ) {
+        return switch( condition ) {
+            case EQ -> map.get( EQ_OP );
+            case NE -> map.get( NE_OP );
+            case IN -> map.get( IN_OP );
+            case ANY -> null;
+        };
     }
 
     private Optional<Object> getValue( Object rootJson, Optional<String> currentPath ) {

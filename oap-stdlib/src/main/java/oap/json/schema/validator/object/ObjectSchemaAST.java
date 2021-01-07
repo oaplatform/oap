@@ -23,21 +23,21 @@
  */
 package oap.json.schema.validator.object;
 
-import oap.json.schema.SchemaAST;
+import oap.json.schema.AbstractSchemaAST;
 
 import java.util.LinkedHashMap;
 import java.util.Optional;
 
-public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
+public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
     public final Optional<Boolean> additionalProperties;
     public final Optional<String> extendsValue;
     public final Optional<Boolean> nested;
     public final Optional<Dynamic> dynamic;
-    public final LinkedHashMap<String, SchemaAST> properties;
+    public final LinkedHashMap<String, AbstractSchemaAST> properties;
 
     public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                             Optional<String> extendsValue, Optional<Boolean> nested, Optional<Dynamic> dynamic,
-                            LinkedHashMap<String, SchemaAST> properties,
+                            LinkedHashMap<String, AbstractSchemaAST> properties,
                             String path ) {
         super( common, path );
         this.additionalProperties = additionalProperties;
@@ -61,8 +61,8 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
     }
 
     @SuppressWarnings( "unchecked" )
-    private LinkedHashMap<String, SchemaAST> merge( LinkedHashMap<String, SchemaAST> parentProperties, LinkedHashMap<String, SchemaAST> current ) {
-        final LinkedHashMap<String, SchemaAST> result = new LinkedHashMap<>();
+    private LinkedHashMap<String, AbstractSchemaAST> merge( LinkedHashMap<String, AbstractSchemaAST> parentProperties, LinkedHashMap<String, AbstractSchemaAST> current ) {
+        final LinkedHashMap<String, AbstractSchemaAST> result = new LinkedHashMap<>();
 
         current.entrySet().stream().filter( e -> !parentProperties.containsKey( e.getKey() ) ).forEach( e -> result.put( e.getKey(), e.getValue() ) );
 
@@ -71,7 +71,7 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
             if( cs == null || !v.common.schemaType.equals( cs.common.schemaType ) )
                 result.put( k, v );
             else {
-                result.put( k, ( SchemaAST ) v.merge( cs ) );
+                result.put( k, ( AbstractSchemaAST ) v.merge( cs ) );
             }
         } );
 

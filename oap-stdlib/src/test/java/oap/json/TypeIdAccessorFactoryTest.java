@@ -47,7 +47,7 @@ public class TypeIdAccessorFactoryTest {
         var marshal = Binder.json.marshal( new TestContainer( b ) );
         assertThat( marshal ).isEqualTo( "{\"ref\":{\"@object:type\":\"b\",\"id\":\"1\"}}" );
 
-        var unmarshal = Binder.json.<TestContainer>unmarshal( TestContainer.class, marshal );
+        var unmarshal = Binder.json.unmarshal( TestContainer.class, marshal );
         assertThat( unmarshal.ref ).isEqualTo( b );
     }
 
@@ -55,7 +55,7 @@ public class TypeIdAccessorFactoryTest {
     public void anySetterWithCustomValueWithTypeId() {
         var json = "{\"b\":{\"id\":\"val\"}}";
 
-        var vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
+        var vm = Binder.json.unmarshal( TestCustomValueMap.class, json );
         assertThat( vm.properties )
             .isNotNull()
             .containsKey( "b" )
@@ -66,7 +66,7 @@ public class TypeIdAccessorFactoryTest {
     public void anySetterWithCustomValueWithoutTypeId() {
         var json = "{\"unknown-typeid1\":\"10\", \"unknown-typeid2\":{\"a\":\"10\"}}";
 
-        var vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
+        var vm = Binder.json.unmarshal( TestCustomValueMap.class, json );
         assertThat( vm.properties )
             .isNotNull()
             .containsEntry( "unknown-typeid1", "10" )

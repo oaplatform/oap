@@ -26,7 +26,7 @@ package oap.application.supervision;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 
-public class CronScheduledService extends ScheduledService {
+public class CronScheduledService extends AbstractScheduledService {
     private final String cron;
 
     public CronScheduledService( Runnable runnable, String cron ) {

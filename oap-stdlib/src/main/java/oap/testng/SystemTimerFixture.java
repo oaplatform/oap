@@ -27,7 +27,7 @@ package oap.testng;
 import org.joda.time.DateTimeUtils;
 
 public class SystemTimerFixture implements Fixture {
-    public static SystemTimerFixture FIXTURE = new SystemTimerFixture();
+    public static final SystemTimerFixture FIXTURE = new SystemTimerFixture();
 
     @Override
     public void afterMethod() {

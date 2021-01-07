@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 public class CompactAstPostProcessor implements Consumer<Ast> {
     public static final CompactAstPostProcessor INSTANCE = new CompactAstPostProcessor();
 
+    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     @Override
     public void accept( Ast ast ) {
         var children = ast.children;

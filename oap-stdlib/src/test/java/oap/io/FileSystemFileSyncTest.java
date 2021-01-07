@@ -50,7 +50,7 @@ public class FileSystemFileSyncTest extends Fixtures {
 
         Files.setLastModifiedTime( Paths.get( remoteFile ), 10 );
 
-        final FileSync fileSync = FileSync.create( remoteFile, localFile );
+        final AbstractFileSync fileSync = AbstractFileSync.create( remoteFile, localFile );
         fileSync.addListener( path -> b.append( "f" ) );
         fileSync.run();
 

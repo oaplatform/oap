@@ -72,13 +72,13 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
     }
 
     @Override
-    public int getOrDefault( String id, int defaultValue ) {
-        return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( defaultValue );
+    public Integer get( String id ) {
+        return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( null );
     }
 
     @Override
-    public Integer get( String id ) {
-        return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( null );
+    public int getOrDefault( String id, int defaultValue ) {
+        return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( defaultValue );
     }
 
     @Override

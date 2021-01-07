@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 public final class Synchronized {
     private final Lock lock = new ReentrantLock();
 
-    public final void sync( Runnable runnable ) {
+    public void sync( Runnable runnable ) {
         lock.lock();
         try {
             runnable.run();
@@ -39,7 +39,7 @@ public final class Synchronized {
         }
     }
 
-    public final <T> T sync( Supplier<T> supplier ) {
+    public <T> T sync( Supplier<T> supplier ) {
         lock.lock();
         try {
             return supplier.get();

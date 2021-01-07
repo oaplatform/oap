@@ -54,7 +54,7 @@ public final class JsonDiff {
         this.diff = diff;
     }
 
-    public static JsonDiff diff( String oldJson, String newJson, SchemaAST<?> schema ) {
+    public static JsonDiff diff( String oldJson, String newJson, AbstractSchemaAST<?> schema ) {
         var result = new ArrayList<Line>();
 
         var to = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
@@ -67,7 +67,7 @@ public final class JsonDiff {
         return new JsonDiff( result );
     }
 
-    private static void diff( String prefix, SchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
+    private static void diff( String prefix, AbstractSchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
         if( schema instanceof ObjectSchemaAST ) {
             diffObject( prefix, ( ObjectSchemaAST ) schema, result, to, from );
         } else if( schema instanceof ArraySchemaAST ) {
@@ -77,7 +77,7 @@ public final class JsonDiff {
         }
     }
 
-    private static void diffField( String prefix, SchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
+    private static void diffField( String prefix, AbstractSchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
         if( !Objects.equals( to, from ) ) {
             result.add( new Line(
                 prefix,
@@ -197,7 +197,7 @@ public final class JsonDiff {
         }
     }
 
-    private static Line.LineType toLineType( SchemaAST<?> schema ) {
+    private static Line.LineType toLineType( AbstractSchemaAST<?> schema ) {
         if( schema instanceof ObjectSchemaAST ) return Line.LineType.OBJECT;
         else if( schema instanceof ArraySchemaAST ) return Line.LineType.ARRAY;
         return Line.LineType.FIELD;

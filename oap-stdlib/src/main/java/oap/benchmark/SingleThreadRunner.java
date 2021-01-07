@@ -33,8 +33,8 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 
 @ToString
-class SingleThreadRunner extends Runner {
-    static SingleThreadRunner INSTANCE = new SingleThreadRunner();
+class SingleThreadRunner extends AbstractRunner {
+    static final SingleThreadRunner INSTANCE = new SingleThreadRunner();
 
     @Override
     public Result run( Benchmark benchmark ) {

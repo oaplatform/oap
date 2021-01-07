@@ -35,9 +35,9 @@ import static java.util.stream.Collectors.toList;
 public interface Dictionary {
     int getOrDefault( String id, int defaultValue );
 
-    Integer get( String id );
-
     String getOrDefault( int externlId, String defaultValue );
+
+    Integer get( String id );
 
     boolean containsValueWithId( String id );
 

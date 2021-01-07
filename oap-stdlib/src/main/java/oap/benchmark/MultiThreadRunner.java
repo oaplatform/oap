@@ -36,11 +36,11 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 
 @ToString
-class MultiThreadRunner extends Runner {
-    private int threads;
-    private int warming;
+class MultiThreadRunner extends AbstractRunner {
+    private final int threads;
+    private final int warming;
 
-    public MultiThreadRunner( int threads, int warming ) {
+    MultiThreadRunner( int threads, int warming ) {
         this.threads = threads;
         this.warming = warming;
     }

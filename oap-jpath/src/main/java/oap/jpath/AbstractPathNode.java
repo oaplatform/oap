@@ -22,27 +22,20 @@
  * SOFTWARE.
  */
 
-package oap.id;
+package oap.jpath;
 
-import java.util.function.BiConsumer;
-import java.util.function.Function;
+import lombok.ToString;
+import oap.reflect.Reflection;
 
-public abstract class GenericIdentifier<I, T> implements Identifier<I, T> {
-    protected final Function<? super T, I> getter;
-    protected final BiConsumer<? super T, I> setter;
+@ToString
+public abstract class AbstractPathNode {
+    public final PathType type;
+    public final String name;
 
-    public GenericIdentifier( Function<? super T, I> getter, BiConsumer<? super T, I> setter ) {
-        this.getter = getter;
-        this.setter = setter;
+    protected AbstractPathNode( PathType type, String name ) {
+        this.type = type;
+        this.name = name;
     }
 
-    @Override
-    public void set( T object, I id ) {
-        if( setter != null ) setter.accept( object, id );
-    }
-
-    @Override
-    public I get( T object ) {
-        return getter.apply( object );
-    }
+    public abstract Object evaluate( Object v, Reflection reflect );
 }

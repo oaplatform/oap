@@ -43,7 +43,7 @@ public class DynamicConfig<T> {
     private final URL updateLocation;
     final Control control;
     @JsonIgnore
-    private EventListenerSupport<Listener> listeners = EventListenerSupport.create( Listener.class );
+    private final EventListenerSupport<Listener> listeners = EventListenerSupport.create( Listener.class );
     @JsonIgnore
     private String md5;
     @JsonIgnore
@@ -88,9 +88,9 @@ public class DynamicConfig<T> {
 
     class Control {
         private Scheduled scheduled;
-        private long refreshInterval;
+        private final long refreshInterval;
 
-        public Control( long refreshInterval ) {
+        Control( long refreshInterval ) {
             this.refreshInterval = refreshInterval;
         }
 

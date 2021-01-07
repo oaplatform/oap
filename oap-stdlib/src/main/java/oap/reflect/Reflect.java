@@ -37,11 +37,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+@SuppressWarnings( "UnstableApiUsage" )
 public class Reflect {
 
-    private static HashMap<TypeToken<?>, Reflection> reflections = new HashMap<>();
-    private static Map<String, Class<?>> classes = new ConcurrentHashMap<>();
-    private static SecurityManager securityManager = new SecurityManager();
+    private static final HashMap<TypeToken<?>, Reflection> reflections = new HashMap<>();
+    private static final Map<String, Class<?>> classes = new ConcurrentHashMap<>();
+    private static final SecurityManager securityManager = new SecurityManager();
 
     public static Reflection reflect( TypeRef<?> ref ) {
         return reflect( ref.token );
@@ -60,7 +61,7 @@ public class Reflect {
     }
 
     protected static synchronized Reflection reflect( TypeToken<?> token, Coercions coercions ) {
-        return reflections.computeIfAbsent( token, ( typeToken ) -> new Reflection( typeToken, coercions ) ).init();
+        return reflections.computeIfAbsent( token, typeToken -> new Reflection( typeToken, coercions ) ).init();
     }
 
     public static Reflection reflect( String className ) {

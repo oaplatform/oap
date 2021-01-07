@@ -41,8 +41,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     private final Handler handler;
     private final CorsPolicy corsPolicy;
 
-    public BlockingHandlerAdapter( String location, Handler handler,
-                                   CorsPolicy corsPolicy, Protocol protocol ) {
+    BlockingHandlerAdapter( String location, Handler handler,
+                            CorsPolicy corsPolicy, Protocol protocol ) {
         this.location = location;
         this.handler = handler;
         this.corsPolicy = corsPolicy;

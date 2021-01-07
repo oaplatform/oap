@@ -62,6 +62,7 @@ public class JsonPath {
 
     }
 
+    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     private Optional<Object> traverse( Object json, int index, int fromIndex ) {
         Object last = json;
 
@@ -100,6 +101,7 @@ public class JsonPath {
                     last = result;
                 }
 
+//                wtf?
                 i = path.length;
             } else return Optional.empty();
         }
@@ -108,7 +110,7 @@ public class JsonPath {
     }
 
     public String getFixedPath() {
-        if( !fromPath.isPresent() ) throw new IllegalArgumentException( "fromPath is required" );
+        if( fromPath.isEmpty() ) throw new IllegalArgumentException( "fromPath is required" );
 
         return getFixedPath( 0, 0 );
     }
@@ -119,7 +121,7 @@ public class JsonPath {
         for( int i = index; i < path.length; i++, fi++ ) {
             final String field = path[i];
 
-            final String[] fp = fromPath.get();
+            final String[] fp = fromPath.orElseThrow();
             if( fp.length <= fi )
                 throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
             String fromField = fp[fi];

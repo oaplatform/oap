@@ -80,14 +80,6 @@ public final class Resources {
             .orElseThrow( () -> new IllegalArgumentException( "resource not found " + name + " for context class " + contextClass ) );
     }
 
-    @SneakyThrows
-    public static List<URL> urls( Class<?> contextClass, String name ) {
-        return Collections.list( contextClass.getClassLoader()
-            .getResources( name.startsWith( "/" )
-                ? name.substring( 1 )
-                : resolveName( contextClass ) + "/" + name ) );
-    }
-
     private static String resolveName( Class<?> contextClass ) {
         Class<?> c = contextClass;
         while( c.isArray() ) {
@@ -155,6 +147,24 @@ public final class Resources {
         return result;
     }
 
+    public static List<URL> urlsByExts( String... ext ) {
+        List<String> extSet = dotPrefix( ext );
+        return urls( name -> Lists.anyMatch( extSet, name::endsWith ) );
+    }
+
+    private static List<String> dotPrefix( String... ext ) {
+        return Lists.map( ext, e -> e.startsWith( "." ) ? e : "." + e );
+    }
+
+    @SneakyThrows
+    public static List<URL> urls( Class<?> contextClass, String name ) {
+        return Collections.list( contextClass.getClassLoader()
+            .getResources( name.startsWith( "/" )
+                ? name.substring( 1 )
+                : resolveName( contextClass ) + "/" + name ) );
+    }
+
+
     public static List<URL> urls( String name ) {
         try {
             return Collections.list( Thread.currentThread().getContextClassLoader().getResources( name ) );
@@ -169,16 +179,9 @@ public final class Resources {
         return urls( name -> name.startsWith( pkg ) && Lists.anyMatch( extSet, name::endsWith ) );
     }
 
-    public static List<URL> urlsByExts( String... ext ) {
-        List<String> extSet = dotPrefix( ext );
-        return urls( name -> Lists.anyMatch( extSet, name::endsWith ) );
-    }
-
-    private static List<String> dotPrefix( String... ext ) {
-        return Lists.map( ext, e -> e.startsWith( "." ) ? e : "." + e );
-    }
 
 
+    @SuppressWarnings( "UnstableApiUsage" )
     @SneakyThrows
     public static List<URL> urls( Predicate<String> filter ) {
         return Stream.of( ClassPath.from( Thread.currentThread()

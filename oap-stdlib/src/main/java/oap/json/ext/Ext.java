@@ -32,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings( "checkstyle:AbstractClassName" )
 @EqualsAndHashCode
 public abstract class Ext implements Serializable {
     private static final ConcurrentHashMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();

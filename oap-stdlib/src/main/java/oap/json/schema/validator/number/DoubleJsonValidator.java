@@ -23,7 +23,7 @@
  */
 package oap.json.schema.validator.number;
 
-public class DoubleJsonValidator extends NumberJsonValidator<Double> {
+public class DoubleJsonValidator extends AbstractNumberJsonValidator<Double> {
     public DoubleJsonValidator() {
         super( "double" );
     }

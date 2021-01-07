@@ -73,7 +73,7 @@ public class IdAccessor {
     private static class FieldAccessor<I> implements Accessor<I> {
         private final Reflection.Field field;
 
-        public FieldAccessor( Reflection.Field field ) {
+        private FieldAccessor( Reflection.Field field ) {
             this.field = field;
         }
 
@@ -93,7 +93,7 @@ public class IdAccessor {
         private final Reflection.Method setter;
         private final Reflection.Method getter;
 
-        public MethodAccessor( Reflection.Method setter, Reflection.Method getter ) {
+        private MethodAccessor( Reflection.Method setter, Reflection.Method getter ) {
             this.setter = setter;
             this.getter = getter;
         }

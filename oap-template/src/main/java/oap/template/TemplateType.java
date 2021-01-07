@@ -34,12 +34,12 @@ class TemplateType {
     public final Type type;
     public final boolean nullable;
 
-    public TemplateType( Type type, boolean nullable ) {
+    TemplateType( Type type, boolean nullable ) {
         this.type = type;
         this.nullable = nullable;
     }
 
-    public TemplateType( Type type ) {
+    TemplateType( Type type ) {
         this( type, false );
     }
 
@@ -52,16 +52,16 @@ class TemplateType {
         return ( Class<?> ) type;
     }
 
+    Class<?> getTypeClass() {
+        return getTypeClass( type );
+    }
+
     String getTypeName() {
         return type.getTypeName().replace( '$', '.' );
     }
 
     public boolean isInstanceOf( Class<?> clazz ) {
         return clazz.isAssignableFrom( getTypeClass( type ) );
-    }
-
-    Class<?> getTypeClass() {
-        return getTypeClass( type );
     }
 
     public TemplateType getActualTypeArguments0() {

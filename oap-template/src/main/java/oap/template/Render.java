@@ -45,8 +45,8 @@ class Render {
         this( new StringBuilder(), templateName, parentType, templateAccumulator, field, templateAccumulatorName, tab );
     }
 
-    public Render( StringBuilder sb, String templateName, TemplateType parentType, TemplateAccumulator<?, ?> templateAccumulator,
-                   String field, String templateAccumulatorName, int tab ) {
+    Render( StringBuilder sb, String templateName, TemplateType parentType, TemplateAccumulator<?, ?> templateAccumulator,
+            String field, String templateAccumulatorName, int tab ) {
         this.sb = sb;
         this.templateName = templateName;
         this.parentType = parentType;

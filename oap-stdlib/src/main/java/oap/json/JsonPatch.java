@@ -40,8 +40,8 @@ public class JsonPatch {
     }
 
     public static Map<String, Object> patch( Object o, String key, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
-        Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
-        Map<String, Object> patchMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
+        Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<>() {}, o );
+        Map<String, Object> patchMap = Binder.json.unmarshal( new TypeRef<>() {}, patch );
         Map<String, Object> innerMap = select.apply( objectMap );
         if( innerMap.isEmpty() ) {
             @SuppressWarnings( "unchecked" )

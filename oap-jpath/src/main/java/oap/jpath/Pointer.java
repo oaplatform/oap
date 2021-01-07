@@ -34,7 +34,7 @@ public interface Pointer {
         else return new ObjectPointer<>( ret );
     }
 
-    Pointer resolve( PathNode n );
-
     Object get();
+
+    Pointer resolve( AbstractPathNode n );
 }

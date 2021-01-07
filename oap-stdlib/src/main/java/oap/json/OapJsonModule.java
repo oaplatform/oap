@@ -72,9 +72,9 @@ public class OapJsonModule extends Module {
 
     static class LongDeserializer extends StdScalarDeserializer<Long> {
 
-        private NumberDeserializers.LongDeserializer deserializer;
+        private final NumberDeserializers.LongDeserializer deserializer;
 
-        public LongDeserializer( Class<Long> cls, Long nullValue ) {
+        LongDeserializer( Class<Long> cls, Long nullValue ) {
             super( cls );
             deserializer = new NumberDeserializers.LongDeserializer( cls, nullValue );
         }

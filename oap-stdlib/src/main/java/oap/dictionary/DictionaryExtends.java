@@ -31,7 +31,7 @@ import java.util.Optional;
 class DictionaryExtends implements Dictionary {
     final Extends anExtends;
 
-    public DictionaryExtends( Extends anExtends ) {
+    DictionaryExtends( Extends anExtends ) {
         this.anExtends = anExtends;
     }
 
@@ -41,12 +41,12 @@ class DictionaryExtends implements Dictionary {
     }
 
     @Override
-    public Integer get( String id ) {
+    public String getOrDefault( int externlId, String defaultValue ) {
         throw new IllegalAccessError();
     }
 
     @Override
-    public String getOrDefault( int externlId, String defaultValue ) {
+    public Integer get( String id ) {
         throw new IllegalAccessError();
     }
 

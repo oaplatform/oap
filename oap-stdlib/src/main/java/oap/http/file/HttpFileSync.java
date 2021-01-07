@@ -27,14 +27,14 @@ package oap.http.file;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
-import oap.io.FileSync;
+import oap.io.AbstractFileSync;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
 @Slf4j
-public class HttpFileSync extends FileSync {
+public class HttpFileSync extends AbstractFileSync {
     public HttpFileSync() {
         super( "http", "https" );
     }
@@ -43,6 +43,6 @@ public class HttpFileSync extends FileSync {
     protected Optional<Path> download() {
         Optional<Long> modificationTime = Files.exists( localFile )
             ? Optional.of( Files.getLastModifiedTime( localFile ).toMillis() ) : Optional.empty();
-        return Client.DEFAULT.download( uri.toString(), modificationTime, Optional.of( localFile ), ( i ) -> {} );
+        return Client.DEFAULT.download( uri.toString(), modificationTime, Optional.of( localFile ), i -> {} );
     }
 }
