@@ -46,9 +46,9 @@ public class TemplateTest extends AbstractSchemaTest {
             + "}"
             + "}";
 
-        assertOk( schema, "{'a': 'test', 'b':'test'}", ( url ) -> schema2, false );
+        assertOk( schema, "{'a': 'test', 'b':'test'}", url -> schema2, false );
         assertFailure( schema, "{'a': 1}",
-            ( url ) -> schema2,
+            url -> schema2,
             "/a: instance type is number, but allowed type is string",
             "/b: required property is missing"
         );

@@ -108,7 +108,7 @@ public class ReflectionTest {
     public void assignableFrom() {
         assertThat( Reflect.reflect( Bean.class )
             .field( "l" )
-            .get()
+            .orElseThrow()
             .type()
             .assignableFrom( List.class ) ).isTrue();
     }
@@ -119,13 +119,13 @@ public class ReflectionTest {
         assertThat( Reflect
             .reflect( Bean.class )
             .field( "x" )
-            .get()
+            .orElseThrow()
             .isAnnotatedWith( Ann.class ) )
             .isTrue();
         assertThat( Reflect
             .reflect( Bean.class )
             .field( "x" )
-            .get()
+            .orElseThrow()
             .annotationOf( Ann.class ).get( 0 )
             .a() ).isEqualTo( 10 );
     }
@@ -174,7 +174,7 @@ public class ReflectionTest {
         Reflect.set( deepBean, "list.[0]", new Bean( 10, "aaa" ) );
         Reflect.set( deepBean, "list.[1]", new Bean( 11, "bbb" ) );
         Reflect.set( deepBean, "list.[*]", new Bean( 12, "ccc" ) );
-        Reflect.set( deepBean, "map.[x]", Maps.empty() );
+        Reflect.set( deepBean, "map.[x]", Map.of() );
         Reflect.set( deepBean, "map.[x].[1]", 1 );
         Reflect.set( deepBean, "bean.optional", "optional present" );
         Reflect.set( deepBean, "bean.i", 42 );
@@ -197,7 +197,7 @@ public class ReflectionTest {
             .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor: {} candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]. Classes must be compiled with '-parameters' option of javac." );
         assertThat( Reflect.reflect( NoConstructors.class ).constructors ).hasSize( 1 );
         assertThatExceptionOfType( ReflectException.class )
-            .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Maps.empty() ) )
+            .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Map.of() ) )
             .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor: {} candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]. Classes must be compiled with '-parameters' option of javac." );
     }
 
@@ -212,7 +212,7 @@ public class ReflectionTest {
     public void castMap() {
         Pair<Reflection, Reflection> params = Reflect.reflect( CForComponentType.class )
             .field( "map" )
-            .get()
+            .orElseThrow()
             .type()
             .getMapComponentsType();
         assertThat( params ).isNotNull();
@@ -251,32 +251,32 @@ class Bean {
     List<Bean> list;
     Map<String, Bean> map;
 
-    public Bean() {
+    Bean() {
         this( 10 );
     }
 
-    public Bean( int i ) {
+    Bean( int i ) {
         this.i = i;
     }
 
-    public Bean( int i, String str ) {
+    Bean( int i, String str ) {
         this.i = i;
         this.str = str;
     }
 
-    public Bean( int i, String str, Optional<String> optional ) {
+    Bean( int i, String str, Optional<String> optional ) {
         this.i = i;
         this.str = str;
         this.optional = optional;
     }
 
-    public Bean( int i, List<Bean> list, Map<String, Bean> map ) {
+    Bean( int i, List<Bean> list, Map<String, Bean> map ) {
         this.i = i;
         this.list = list;
         this.map = map;
     }
 
-    public Bean( int i, int x ) {
+    Bean( int i, int x ) {
         this.i = i;
         this.x = x;
     }
@@ -295,12 +295,12 @@ class DeepBean {
     public List<Bean> list = new ArrayList<>();
     public Map<String, Map<String, Integer>> map = Maps.empty();
 
-    public DeepBean( Bean bean, Optional<Bean> beanOptional ) {
+    DeepBean( Bean bean, Optional<Bean> beanOptional ) {
         this.bean = bean;
         this.beanOptional = beanOptional;
     }
 
-    public DeepBean( Bean bean, Optional<Bean> beanOptional, List<Bean> list, Map<String, Map<String, Integer>> map ) {
+    DeepBean( Bean bean, Optional<Bean> beanOptional, List<Bean> list, Map<String, Map<String, Integer>> map ) {
         this.bean = bean;
         this.beanOptional = beanOptional;
         this.list = list;
@@ -308,15 +308,15 @@ class DeepBean {
     }
 
     @SuppressWarnings( "unused" )
-    public DeepBean() {
+    DeepBean() {
     }
 }
 
 @SuppressWarnings( "unused" )
 class MatchingConstructor {
-    public MatchingConstructor( int i, List<Integer> list ) {}
+    MatchingConstructor( int i, List<Integer> list ) {}
 
-    public MatchingConstructor( List<Integer> list ) {}
+    MatchingConstructor( List<Integer> list ) {}
 }
 
 class NoConstructors {}

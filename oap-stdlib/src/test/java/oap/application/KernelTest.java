@@ -239,7 +239,7 @@ public class KernelTest {
                 .hasMessage( "dependencies are not ready [s1]" );
         }
     }
-    
+
     @Slf4j
     public static class Service1 {
         public final List<Object> list = new ArrayList<>();
@@ -289,4 +289,3 @@ public class KernelTest {
         }
     }
 }
-

@@ -68,7 +68,7 @@ class Cfg {
     String parameter;
 
     @JsonCreator
-    public Cfg( String parameter ) {
+    Cfg( String parameter ) {
         this.parameter = parameter;
     }
 }

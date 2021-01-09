@@ -119,10 +119,10 @@ public class ObjectHistogramTest {
     private static class TestObject implements Mergeable<TestObject> {
         private int value;
 
-        public TestObject() {
+        private TestObject() {
         }
 
-        public TestObject( int value ) {
+        private TestObject( int value ) {
             this.value = value;
         }
 
@@ -136,11 +136,11 @@ public class ObjectHistogramTest {
 
     private static class TestObjectHistogram extends ObjectHistogram<TestObject> {
 
-        public TestObjectHistogram( TestObject[] values, long lastTick ) {
+        private TestObjectHistogram( TestObject[] values, long lastTick ) {
             super( values, lastTick );
         }
 
-        public TestObjectHistogram() {
+        private TestObjectHistogram() {
             super();
         }
 

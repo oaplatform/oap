@@ -84,7 +84,6 @@ public class ServiceOne {
     public static class ComplexMap implements Map<String, Complex> {
 
         public ComplexMap() {
-            ;
         }
 
         @Override

@@ -40,7 +40,7 @@ public class GZIPCompressingInputStreamTest {
         byte[] result = IOUtils.toByteArray( uncompressedOut );
 
         assertThat( result )
-            .withFailMessage( ( "Test failed for: " + dataInfo ) )
+            .withFailMessage( "Test failed for: " + dataInfo )
             .containsExactly( data );
 
     }

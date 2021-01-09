@@ -27,7 +27,6 @@ package oap.message;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
@@ -49,12 +48,9 @@ import static org.testng.Assert.assertNotNull;
 
 public class MessageServerTest extends Fixtures {
 
-    private final EnvFixture envFixture;
-
     {
         fixture( TestDirectoryFixture.FIXTURE );
         fixture( SystemTimerFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
     }
 
     @Test
@@ -74,7 +70,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testRejectedException() throws Exception {
+    public void testRejectedException() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.maximumPoolSize = 1;
@@ -121,7 +117,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceive() throws Exception {
+    public void testSendAndReceive() {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
@@ -153,7 +149,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceiveJson() throws Exception {
+    public void testSendAndReceiveJson() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
@@ -174,7 +170,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceiveJsonOneThread() throws Exception {
+    public void testSendAndReceiveJsonOneThread() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
@@ -217,9 +213,8 @@ public class MessageServerTest extends Fixtures {
                 while( listener.throwUnknownError > 0 )
                     Thread.sleep( 10 );
 
-                assertEventually( 100, 10, () -> {
-                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
-                } );
+                assertEventually( 100, 10, () ->
+                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) ) );
             } finally {
                 client.close();
             }
@@ -245,15 +240,14 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener.getMessages() ).isEmpty();
 
                 listener.setStatusOk();
-                assertEventually( 10, 100, () -> {
-                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
-                } );
+                assertEventually( 10, 100, () ->
+                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) ) );
             }
         }
     }
 
     @Test
-    public void testTtl() throws Exception {
+    public void testTtl() {
         var hashTtl = 1000;
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -290,7 +284,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testPersistence() throws Exception {
+    public void testPersistence() {
         var hashTtl = 1000;
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -456,7 +450,7 @@ public class MessageServerTest extends Fixtures {
             }
         }
     }
-    
+
     @Test
     public void testAvailabilityReport() {
         var messageListenerMock = new MessageListenerMock( MESSAGE_TYPE );

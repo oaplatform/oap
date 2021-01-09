@@ -77,7 +77,7 @@ public class StringsPerformance {
         long bitwise3 = 0;
 
         for( char ch : characters ) {
-            long shift = ( 1 << ( ch - 1 ) );
+            long shift = 1L << ch - 1;
             if( ch < 64 ) bitwise0 |= shift;
             else if( ch < 128 ) bitwise1 |= shift;
             else if( ch < 192 ) bitwise2 |= shift;
@@ -88,7 +88,7 @@ public class StringsPerformance {
         int i = 0;
 
         for( char ch : str.toCharArray() ) {
-            long shift = ( 1 << ( ch - 1 ) );
+            long shift = 1L << ch - 1;
             if( ch < 64 ) {
                 if( ( bitwise0 & shift ) == 0 )
                     output[i++] = ch;

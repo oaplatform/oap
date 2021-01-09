@@ -203,13 +203,13 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
             + "}"
             + "}}";
 
-        assertOk( schema, "{'p':{'a':[{'parent': 'p1'}]}}", ( url ) -> schema2, false );
-        assertOk( schema, "{'p':{'a':[{'parent': 'p2'}]}}", ( url ) -> schema2, false );
+        assertOk( schema, "{'p':{'a':[{'parent': 'p1'}]}}", url -> schema2, false );
+        assertOk( schema, "{'p':{'a':[{'parent': 'p2'}]}}", url -> schema2, false );
         assertOk( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}}",
-            ( url ) -> schema2, false );
+            url -> schema2, false );
 
         assertFailure( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}",
-            ( url ) -> schema2, "/p/a/1/child: instance does not match any member resolve the enumeration [c21, c22, c23]" );
+            url -> schema2, "/p/a/1/child: instance does not match any member resolve the enumeration [c21, c22, c23]" );
     }
 
     @Test
@@ -249,15 +249,10 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
             + "}"
             + "}}";
 
-        final SchemaStorage schemaF = ( url ) -> {
-            switch( url ) {
-                case "schema2":
-                    return schema2;
-                case "schema3":
-                    return schema3;
-                default:
-                    throw new IllegalArgumentException( url );
-            }
+        final SchemaStorage schemaF = url -> switch( url ) {
+            case "schema2" -> schema2;
+            case "schema3" -> schema3;
+            default -> throw new IllegalArgumentException( url );
         };
 
         assertOk( schema, "{'p':{'p2':{'a':[{'parent': 'p1'}]}}}", schemaF, false );

@@ -46,17 +46,17 @@ public class MessageHashStorageTest extends Fixtures {
     @Test
     public void testPersistence() throws IOException, DecoderException {
         var md5 = DigestUtils.getMd5Digest();
-        var md5_1 = md5.digest( "test".getBytes() );
-        var md5_2 = md5.digest( "test1".getBytes() );
+        var md51 = md5.digest( "test".getBytes() );
+        var md52 = md5.digest( "test1".getBytes() );
 
         var mhs = new MessageHashStorage( 1024 );
         DateTimeUtils.setCurrentMillisFixed( 12 );
-        mhs.add( 1, 11, md5_1 );
+        mhs.add( 1, 11, md51 );
         DateTimeUtils.setCurrentMillisFixed( 456 );
-        mhs.add( 1, 11, md5_2 );
+        mhs.add( 1, 11, md52 );
 
         DateTimeUtils.setCurrentMillisFixed( 124 );
-        mhs.add( 2, 12, md5_1 );
+        mhs.add( 2, 12, md51 );
 
         var path = TestDirectoryFixture.testPath( "test" );
         mhs.store( path );
@@ -90,18 +90,18 @@ public class MessageHashStorageTest extends Fixtures {
     @Test
     public void testFifo() {
         var md5 = DigestUtils.getMd5Digest();
-        var md5_1 = md5.digest( "test".getBytes() );
-        var md5_2 = md5.digest( "test1".getBytes() );
-        var md5_3 = md5.digest( "test3".getBytes() );
+        var md51 = md5.digest( "test".getBytes() );
+        var md52 = md5.digest( "test1".getBytes() );
+        var md53 = md5.digest( "test3".getBytes() );
 
         var mhs = new MessageHashStorage( 2 );
-        mhs.add( 1, 1, md5_1 );
-        mhs.add( 1, 1, md5_2 );
-        mhs.add( 1, 1, md5_3 );
+        mhs.add( 1, 1, md51 );
+        mhs.add( 1, 1, md52 );
+        mhs.add( 1, 1, md53 );
 
         assertThat( mhs.size() ).isEqualTo( 2 );
-        assertFalse( mhs.contains( 1, 1, md5_1 ) );
-        assertTrue( mhs.contains( 1, 1, md5_2 ) );
-        assertTrue( mhs.contains( 1, 1, md5_3 ) );
+        assertFalse( mhs.contains( 1, 1, md51 ) );
+        assertTrue( mhs.contains( 1, 1, md52 ) );
+        assertTrue( mhs.contains( 1, 1, md53 ) );
     }
 }

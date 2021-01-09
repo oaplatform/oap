@@ -55,7 +55,7 @@ public class IntIdentifierTest {
 
     @ToString
     @EqualsAndHashCode
-    static class Bean {
+    public static class Bean {
 
         public Integer id;
         public String s;
@@ -70,6 +70,4 @@ public class IntIdentifierTest {
         }
 
     }
-
-
 }

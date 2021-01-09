@@ -50,7 +50,7 @@ public class AssocListTest {
         String id;
         String value;
 
-        public Bean( String id, String value ) {
+        Bean( String id, String value ) {
             this.id = id;
             this.value = value;
         }

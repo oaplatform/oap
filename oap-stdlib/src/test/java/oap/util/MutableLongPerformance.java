@@ -41,9 +41,9 @@ public class MutableLongPerformance {
         final HashMap<Integer, Long> map2 = new HashMap<>();
 
         benchmark( "mutable_long", SAMPLES,
-            ( i ) -> map1.computeIfAbsent( i % 5, ( k ) -> new MutableLong() ).increment() ).run();
+            i -> map1.computeIfAbsent( i % 5, k -> new MutableLong() ).increment() ).run();
 
         benchmark( "Long_compute", SAMPLES,
-            ( i ) -> map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L ) ).run();
+            i -> map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L ) ).run();
     }
 }

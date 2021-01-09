@@ -56,11 +56,11 @@ class Npe {
     public Ext ext;
 
     //    This is fix for NPE
-    public Npe() {
+    Npe() {
     }
 
-//    @JsonCreator
-    public Npe( String name ) {
+    //    @JsonCreator
+    Npe( String name ) {
         this.name = name;
     }
 

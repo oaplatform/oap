@@ -47,7 +47,7 @@ public class GenericCorsPolicyTest {
         basicHttpRequest.addHeader( "Host", "some-host" );
 
         var request = new Request( basicHttpRequest, new Context( "not important",
-            InetAddress.getLocalHost(), 
+            InetAddress.getLocalHost(),
             new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) )
         );
 

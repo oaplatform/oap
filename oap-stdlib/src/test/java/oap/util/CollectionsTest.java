@@ -27,6 +27,7 @@ package oap.util;
 import org.testng.annotations.Test;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,21 +36,21 @@ import static org.assertj.core.api.Assertions.entry;
 public class CollectionsTest {
     @Test
     public void count() {
-        assertThat( Collections.count( asList( "a", "b", "ab" ), ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( 2 );
+        assertThat( Collections.count( asList( "a", "b", "ab" ), str -> str.startsWith( "a" ) ) ).isEqualTo( 2 );
     }
 
     @Test
     public void find() {
         var list = asList( "a", "b", "ab" );
-        assertThat( Collections.find( list, ( str ) -> str.startsWith( "a" ) ) ).contains( "a" );
-        assertThat( Collections.find( list, ( str ) -> str.startsWith( "z" ) ) ).isEmpty();
+        assertThat( Collections.find( list, str -> str.startsWith( "a" ) ) ).contains( "a" );
+        assertThat( Collections.find( list, str -> str.startsWith( "z" ) ) ).isEmpty();
     }
 
     @Test
     public void find2() {
         var list = asList( "a", "b", "ab" );
-        assertThat( Collections.find2( list, ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( "a" );
-        assertThat( Collections.find2( list, ( str ) -> str.startsWith( "z" ) ) ).isNull();
+        assertThat( Collections.find2( list, str -> str.startsWith( "a" ) ) ).isEqualTo( "a" );
+        assertThat( Collections.find2( list, str -> str.startsWith( "z" ) ) ).isNull();
     }
 
     @Test
@@ -72,8 +73,8 @@ public class CollectionsTest {
     public void groupBy() {
         var list = asList( 1, 2, 1, 4 );
 
-        assertThat( Collections.groupBy( list, ( i ) -> i + 1 ) )
-            .containsOnly( entry( 2, asList( 1, 1 ) ), entry( 3, asList( 2 ) ), entry( 5, asList( 4 ) ) );
+        assertThat( Collections.groupBy( list, i -> i + 1 ) )
+            .containsOnly( entry( 2, asList( 1, 1 ) ), entry( 3, List.of( 2 ) ), entry( 5, List.of( 4 ) ) );
 
     }
 

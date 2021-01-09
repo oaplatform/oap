@@ -58,15 +58,15 @@ public class FilesPerformance {
         AtomicLongArray size = new AtomicLongArray( new long[] { 0 } );
 
         benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES,
-            () -> size.getAndAdd( 0, ( java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS ) ) ) ).run();
+            () -> size.getAndAdd( 0, java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS ) ) ).run();
 
         benchmark( "java.nio.file.Files.getLastModifiedTime()-2", SAMPLES,
-            () -> size.getAndAdd( 0, ( java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS ) ) ) ).run();
+            () -> size.getAndAdd( 0, java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS ) ) ).run();
 
         benchmark( "java.io.File.lastModified()", SAMPLES,
-            () -> size.getAndAdd( 0, ( path.toFile().lastModified() ) ) ).run();
+            () -> size.getAndAdd( 0, path.toFile().lastModified() ) ).run();
         benchmark( "java.io.File.lastModified()-2", SAMPLES,
-            () -> size.getAndAdd( 0, ( path2.toFile().lastModified() ) ) ).run();
+            () -> size.getAndAdd( 0, path2.toFile().lastModified() ) ).run();
     }
 
     @Test( enabled = false )

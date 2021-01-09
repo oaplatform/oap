@@ -60,13 +60,24 @@ public class BinderTest extends Fixtures {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
-//todo generic map-list binding
+    //todo generic map-list binding
     private static <T> void assertBind( Class<T> clazz, T source ) {
         System.out.println( "========================================" );
         String json = Binder.json.marshal( source );
         System.out.println( "JSON:" );
         System.out.println( json );
         T result = Binder.json.unmarshal( clazz, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertThat( result ).isEqualTo( source );
+    }
+
+    private static <T> void assertBind( TypeRef<T> ref, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.json.marshal( source );
+        System.out.println( "JSON:" );
+        System.out.println( json );
+        T result = Binder.json.unmarshal( ref, json );
         System.out.println( "Object:" );
         System.out.println( result );
         assertThat( result ).isEqualTo( source );
@@ -95,25 +106,14 @@ public class BinderTest extends Fixtures {
         assertThat( result ).isEqualTo( source );
     }
 
-    private static <T> void assertBind( TypeRef<T> ref, T source ) {
-        System.out.println( "========================================" );
-        String json = Binder.json.marshal( source );
-        System.out.println( "JSON:" );
-        System.out.println( json );
-        T result = Binder.json.unmarshal( ref, json );
-        System.out.println( "Object:" );
-        System.out.println( result );
-        assertThat( result ).isEqualTo( source );
-    }
-
     @Test
     public void deserializeTimeToNumber() {
-        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 1s}" ).l ).isEqualTo( 1000L );
-        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 1ms}" ).l ).isEqualTo( 1L );
-        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 2m}" ).l ).isEqualTo( 1000L * 60 * 2 );
-        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 3h}" ).l ).isEqualTo( 1000L * 60 * 60 * 3 );
-        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 4d}" ).l ).isEqualTo( 1000L * 60 * 60 * 24 * 4 );
-        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 5w}" ).l ).isEqualTo( 1000L * 60 * 60 * 24 * 7 * 5 );
+        assertThat( Binder.hocon.unmarshal( Bean.class, "{l = 1s}" ).l ).isEqualTo( 1000L );
+        assertThat( Binder.hocon.unmarshal( Bean.class, "{l = 1ms}" ).l ).isEqualTo( 1L );
+        assertThat( Binder.hocon.unmarshal( Bean.class, "{l = 2m}" ).l ).isEqualTo( 1000L * 60 * 2 );
+        assertThat( Binder.hocon.unmarshal( Bean.class, "{l = 3h}" ).l ).isEqualTo( 1000L * 60 * 60 * 3 );
+        assertThat( Binder.hocon.unmarshal( Bean.class, "{l = 4d}" ).l ).isEqualTo( 1000L * 60 * 60 * 24 * 4 );
+        assertThat( Binder.hocon.unmarshal( Bean.class, "{l = 5w}" ).l ).isEqualTo( 1000L * 60 * 60 * 24 * 7 * 5 );
     }
 
     @Test
@@ -130,7 +130,7 @@ public class BinderTest extends Fixtures {
     @Test
     public void bindString() {
         assertBind( String.class, "test" );
-        assertThat( Binder.json.<String>unmarshal( String.class, "\"test\"" ) ).isEqualTo( "test" );
+        assertThat( Binder.json.unmarshal( String.class, "\"test\"" ) ).isEqualTo( "test" );
         assertThat( Binder.json.<Double>unmarshal( double.class, "\"1.1\"" ) ).isEqualTo( 1.1d );
     }
 
@@ -142,7 +142,7 @@ public class BinderTest extends Fixtures {
 
     @Test
     public void bindList() {
-        assertBind( new TypeRef<ArrayList<Integer>>() {
+        assertBind( new TypeRef<>() {
         }, Lists.of( 1, 2, 3 ) );
     }
 
@@ -244,7 +244,7 @@ public class BinderTest extends Fixtures {
 
     @Test
     public void emptyListNotIncluded() {
-        JsonAsserts.assertJson( Binder.json.marshal( new Complex( null, Lists.empty(), Maps.empty() ) ) )
+        JsonAsserts.assertJson( Binder.json.marshal( new Complex( null, Lists.empty(), Map.of() ) ) )
             .isEqualTo( "{}" );
     }
 
@@ -256,8 +256,8 @@ public class BinderTest extends Fixtures {
 
     @Test
     public void customLong() {
-        assertThat( Binder.hocon.<LongBean>unmarshal( LongBean.class, "{l = 2s}" ) ).isEqualTo( new LongBean( 2000 ) );
-        assertThat( Binder.json.<LongBean>unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ) ).isEqualTo( new LongBean( 2048 ) );
+        assertThat( Binder.hocon.unmarshal( LongBean.class, "{l = 2s}" ) ).isEqualTo( new LongBean( 2000 ) );
+        assertThat( Binder.json.unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ) ).isEqualTo( new LongBean( 2048 ) );
     }
 
     @Test
@@ -272,7 +272,7 @@ public class BinderTest extends Fixtures {
             ) )
         );
         Bean expected = new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) );
-        assertThat( Binder.json.<Bean>unmarshal( Bean.class, map ) ).isEqualTo( expected );
+        assertThat( Binder.json.unmarshal( Bean.class, map ) ).isEqualTo( expected );
 
     }
 
@@ -315,14 +315,15 @@ class Bean {
     public long l;
     public Bean2 sb2;
 
-    public Bean() {
+    Bean() {
     }
 
-    public Bean( String str, int i, Bean2 sb2 ) {
+    Bean( String str, int i, Bean2 sb2 ) {
         this( str, i, 0, sb2 );
     }
 
-    public Bean( String str, int i, long l, Bean2 sb2 ) {
+
+    Bean( String str, int i, long l, Bean2 sb2 ) {
         this.str = str;
         this.i = i;
         this.l = l;
@@ -338,10 +339,10 @@ class Bean2 {
     int i2;
     ArrayList<Integer> list = new ArrayList<>();
 
-    public Bean2() {
+    Bean2() {
     }
 
-    public Bean2( String s2, int i2, ArrayList<Integer> list ) {
+    Bean2( String s2, int i2, ArrayList<Integer> list ) {
         this.s2 = s2;
         this.i2 = i2;
         this.list = list;
@@ -353,7 +354,8 @@ class Bean2 {
 class Bean3 {
     public ArrayList<Integer> list = new ArrayList<>();
 
-    public Bean3() {
+
+    Bean3() {
     }
 }
 
@@ -362,10 +364,10 @@ class Bean3 {
 class ListBean {
     public ArrayList<ArrayList<Integer>> l;
 
-    public ListBean() {
+    ListBean() {
     }
 
-    public ListBean( ArrayList<ArrayList<Integer>> l ) {
+    ListBean( ArrayList<ArrayList<Integer>> l ) {
         this.l = l;
     }
 
@@ -376,10 +378,10 @@ class ListBean {
 class BeanGeneric<A> {
     A a;
 
-    public BeanGeneric() {
+    BeanGeneric() {
     }
 
-    public BeanGeneric( A a ) {
+    BeanGeneric( A a ) {
         this.a = a;
     }
 }
@@ -389,10 +391,11 @@ class BeanGeneric<A> {
 class BeanGB {
     BeanGeneric<ArrayList<Integer>> bg;
 
-    public BeanGB() {
+
+    BeanGB() {
     }
 
-    public BeanGB( BeanGeneric<ArrayList<Integer>> bg ) {
+    BeanGB( BeanGeneric<ArrayList<Integer>> bg ) {
         this.bg = bg;
     }
 
@@ -405,11 +408,11 @@ class BeanGB2 {
     BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg;
     BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2;
 
-    public BeanGB2() {
+    BeanGB2() {
     }
 
-    public BeanGB2( BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg,
-                    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
+    BeanGB2( BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg,
+             BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
         this.bg = bg;
         this.bg2 = bg2;
     }
@@ -420,10 +423,10 @@ class BeanGB2 {
 class EnumBean {
     TestEnum v;
 
-    public EnumBean() {
+    EnumBean() {
     }
 
-    public EnumBean( TestEnum v ) {
+    EnumBean( TestEnum v ) {
         this.v = v;
     }
 }
@@ -434,10 +437,10 @@ class BeanAnyRef {
     @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "a:type" )
     public Object a;
 
-    public BeanAnyRef() {
+    BeanAnyRef() {
     }
 
-    public BeanAnyRef( Object a ) {
+    BeanAnyRef( Object a ) {
         this.a = a;
     }
 
@@ -451,7 +454,7 @@ class OptBean {
     Optional<List<String>> list = Optional.of( Lists.of( "a", "b" ) );
     Optional<List<String>> emptyList = Optional.empty();
 
-    public OptBean() {
+    OptBean() {
     }
 
 }
@@ -462,11 +465,11 @@ class NamedBean {
     @JsonProperty( "y" )
     public int x;
 
-    public NamedBean() {
+    NamedBean() {
 
     }
 
-    public NamedBean( int x ) {
+    NamedBean( int x ) {
         this.x = x;
     }
 }
@@ -476,12 +479,12 @@ class NamedBean {
 class MapBean {
     public LinkedHashMap<String, Long> map;
 
-    public MapBean() {
+    MapBean() {
 
     }
 
     @SafeVarargs
-    public MapBean( Pair<String, Long>... pairs ) {
+    MapBean( Pair<String, Long>... pairs ) {
         this.map = Maps.of( pairs );
     }
 }
@@ -490,10 +493,10 @@ class MapBean {
 class AtomicLongBean {
     public AtomicLong v = new AtomicLong();
 
-    public AtomicLongBean() {
+    AtomicLongBean() {
     }
 
-    public AtomicLongBean( long v ) {
+    AtomicLongBean( long v ) {
         this.v.set( v );
     }
 
@@ -519,11 +522,11 @@ class AtomicLongBean {
 class LongBean {
     long l;
 
-    public LongBean( long l ) {
+    LongBean( long l ) {
         this.l = l;
     }
 
-    public LongBean() {
+    LongBean() {
 
     }
 }
@@ -534,7 +537,7 @@ class DateTimeBean {
     DateTime date;
 
     @JsonCreator
-    public DateTimeBean( DateTime date ) {
+    DateTimeBean( DateTime date ) {
         this.date = date;
     }
 }
@@ -558,7 +561,7 @@ class Complex {
     Map<String, Bean> map;
 
 
-    public Complex( Bean bean, List<Bean> list, Map<String, Bean> map ) {
+    Complex( Bean bean, List<Bean> list, Map<String, Bean> map ) {
         this.bean = bean;
         this.list = list;
         this.map = map;

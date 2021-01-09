@@ -65,6 +65,7 @@ public class ExtDeserializerTest {
         }
     }
 
+    @SuppressWarnings( "checkstyle:AbstractClassName" )
     @EqualsAndHashCode( callSuper = true )
     @ToString
     public abstract static class Ext2 extends Ext {

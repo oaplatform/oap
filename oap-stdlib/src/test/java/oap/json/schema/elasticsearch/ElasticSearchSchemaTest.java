@@ -38,7 +38,7 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void convert_id() throws Exception {
+    public void convertId() {
         assertString( convert( schema( "{type:object,properties:{_id: {type:string}}}" ) ) )
             .isEqualTo( "{\"properties\":{}}" );
     }
@@ -62,7 +62,7 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void convertString_include_in_all() throws Exception {
+    public void convertStringIncludeInAll() {
         assertString( convert( schema( "{type:object,properties:{a: {type:string,include_in_all:false}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"include_in_all\":false}}}" );
         assertString( convert( schema( "{type:object,properties:{a: {type:string,include_in_all:true}}}" ) ) )

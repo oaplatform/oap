@@ -37,36 +37,36 @@ import static oap.benchmark.Benchmark.benchmark;
 public class ListsPerformance {
     @Test
     public void testAllMatch() {
-        final List<String> list = IntStream.range( 0, 10 ).mapToObj( i -> "sdfsdf" + i ).collect( Collectors.toList() );
+        List<String> list = IntStream.range( 0, 10 ).mapToObj( i -> "sdfsdf" + i ).collect( Collectors.toList() );
 
-        final AtomicBoolean res = new AtomicBoolean();
+        AtomicBoolean res = new AtomicBoolean();
 
-        final int samples = 100000000;
+        int samples = 100000000;
         benchmark( "stream-allMatch", samples, () -> {
-            final boolean b = list.stream().allMatch( ( v ) -> v.length() < 1000 );
+            boolean b = list.stream().allMatch( v -> v.length() < 1000 );
             res.compareAndSet( b, b );
         } ).run();
 
         benchmark( "foreach-allMatch", samples, () -> {
-            final boolean b = Lists.allMatch( list, v -> v.length() < 1000 );
+            boolean b = Lists.allMatch( list, v -> v.length() < 1000 );
             res.compareAndSet( b, b );
         } ).run();
     }
 
     @Test
     public void testFilter() {
-        final List<Integer> list = IntStream.range( 0, 10 ).boxed().collect( Collectors.toList() );
+        List<Integer> list = IntStream.range( 0, 10 ).boxed().collect( Collectors.toList() );
 
-        final AtomicInteger res = new AtomicInteger();
+        AtomicInteger res = new AtomicInteger();
 
-        final int samples = 100000000;
+        int samples = 100000000;
         benchmark( "stream-filter", samples, () -> {
-            final int b = list.stream().filter( ( v ) -> v < 6 ).collect( Collectors.toList() ).size();
+            int b = ( int ) list.stream().filter( v -> v < 6 ).count();
             res.addAndGet( b );
         } ).run();
 
         benchmark( "foreach-filter", samples, () -> {
-            final int b = Lists.filter( list, ( v ) -> v < 6 ).size();
+            int b = Lists.filter( list, v -> v < 6 ).size();
             res.addAndGet( b );
         } ).run();
     }

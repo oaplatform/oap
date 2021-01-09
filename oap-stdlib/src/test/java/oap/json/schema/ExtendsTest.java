@@ -44,9 +44,9 @@ public class ExtendsTest extends AbstractSchemaTest {
             + "}"
             + "}";
 
-        assertOk( schema, "{'a': 'test'}", ( url ) -> schema2, false );
+        assertOk( schema, "{'a': 'test'}", url -> schema2, false );
         assertFailure( schema, "{'a': 1}",
-            ( url ) -> schema2, "/a: instance type is number, but allowed type is string"
+            url -> schema2, "/a: instance type is number, but allowed type is string"
         );
     }
 
@@ -78,8 +78,8 @@ public class ExtendsTest extends AbstractSchemaTest {
             + "}"
             + "}";
 
-        assertOk( schema, "{'o': {'a1':'test'}}", ( url ) -> schema2, false );
-        assertOk( schema, "{'o': {'a2':'test'}}", ( url ) -> schema2, false );
+        assertOk( schema, "{'o': {'a1':'test'}}", url -> schema2, false );
+        assertOk( schema, "{'o': {'a2':'test'}}", url -> schema2, false );
     }
 
     @Test
@@ -116,8 +116,8 @@ public class ExtendsTest extends AbstractSchemaTest {
             + "}"
             + "}";
 
-        assertOk( schema, "{'o': [{'a1':'test'}]}", ( url ) -> schema2, false );
-        assertOk( schema, "{'o': [{'a2':'test'}]}", ( url ) -> schema2, false );
+        assertOk( schema, "{'o': [{'a1':'test'}]}", url -> schema2, false );
+        assertOk( schema, "{'o': [{'a2':'test'}]}", url -> schema2, false );
     }
 
     @Test
@@ -171,17 +171,11 @@ public class ExtendsTest extends AbstractSchemaTest {
             + "}"
             + "}";
 
-        SchemaStorage func = ( url ) -> {
-            switch( url ) {
-                case "test2":
-                    return schema2;
-                case "test11":
-                    return schema11;
-                case "test22":
-                    return schema22;
-                default:
-                    throw new IllegalAccessError();
-            }
+        SchemaStorage func = url -> switch( url ) {
+            case "test2" -> schema2;
+            case "test11" -> schema11;
+            case "test22" -> schema22;
+            default -> throw new IllegalAccessError();
         };
 
         assertOk( schema, "{'o': [{'a1':'test'}]}", func, false );

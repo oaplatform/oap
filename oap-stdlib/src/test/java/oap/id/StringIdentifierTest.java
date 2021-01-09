@@ -101,7 +101,7 @@ public class StringIdentifierTest {
 
     @ToString
     @EqualsAndHashCode
-    static class Bean {
+    public static class Bean {
 
         public String id;
         public String s;

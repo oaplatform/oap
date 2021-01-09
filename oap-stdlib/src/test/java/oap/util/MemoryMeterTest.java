@@ -29,9 +29,9 @@ import org.testng.annotations.Test;
 public class MemoryMeterTest {
     @Test
     public void get() throws Exception {
-        System.out.println(MemoryMeter.get().measureDeep( "sdfsdf" ));
-        System.out.println(MemoryMeter.get().measureDeep( 1 ));
-        System.out.println(MemoryMeter.get().measureDeep( "sdkjfhsd kjg hsfdj hsfkj h" ));
+        System.out.println( MemoryMeter.get().measureDeep( "sdfsdf" ) );
+        System.out.println( MemoryMeter.get().measureDeep( 1 ) );
+        System.out.println( MemoryMeter.get().measureDeep( "sdkjfhsd kjg hsfdj hsfkj h" ) );
     }
 
 }
