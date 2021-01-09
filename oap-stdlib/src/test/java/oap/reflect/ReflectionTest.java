@@ -174,7 +174,7 @@ public class ReflectionTest {
         Reflect.set( deepBean, "list.[0]", new Bean( 10, "aaa" ) );
         Reflect.set( deepBean, "list.[1]", new Bean( 11, "bbb" ) );
         Reflect.set( deepBean, "list.[*]", new Bean( 12, "ccc" ) );
-        Reflect.set( deepBean, "map.[x]", Map.of() );
+        Reflect.set( deepBean, "map.[x]", Maps.of() );
         Reflect.set( deepBean, "map.[x].[1]", 1 );
         Reflect.set( deepBean, "bean.optional", "optional present" );
         Reflect.set( deepBean, "bean.i", 42 );
