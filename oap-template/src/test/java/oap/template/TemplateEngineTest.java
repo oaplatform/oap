@@ -74,7 +74,7 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
             .render( c ) ).isEqualTo( "12\t12" );
     }
-    
+
     @Test
     public void testEscapeExpression() {
         var c = new TestTemplateClass();
@@ -193,7 +193,7 @@ public class TemplateEngineTest extends Fixtures {
         c.intField = 10;
 
         cp.childOpt = Optional.of( c );
-        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING, 
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING,
             CompactAstPostProcessor.INSTANCE ).render( cp ) )
             .isEqualTo( "10-o" );
     }
@@ -257,20 +257,20 @@ public class TemplateEngineTest extends Fixtures {
         assertString( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-${prop}-${b}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ) )
             .isEqualTo( "-val-b1-" );
     }
-    
+
     @Test
     public void testAliases() {
         var c1 = new TestTemplateClass();
         var c2 = new TestTemplateClass();
         var c3 = new TestTemplateClass2();
         c1.child = c2;
-        c1.child_2 = c3;
-        
+        c1.child2 = c3;
+
         c2.field = "val3";
         c3.field2 = "f2";
-        
-        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING, 
-            Map.of("child.field", "child_2.field2"), null ).render( c1 ) )
+
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING,
+            Map.of( "child.field", "child2.field2" ), null ).render( c1 ) )
             .isEqualTo( "f2" );
     }
 
@@ -334,11 +334,11 @@ public class TemplateEngineTest extends Fixtures {
     public void testNestedConcatenationWithDot() {
         var c = new TestTemplateClass();
         var c1 = new TestTemplateClass2();
-        c.child_2 = c1;
+        c.child2 = c1;
         c1.field2 = "f1";
         c1.field22 = "f2";
 
-        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child_2.{field2,\"x\",field22}}", STRING, null ).render( c ) )
+        assertString( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child2.{field2,\"x\",field22}}", STRING, null ).render( c ) )
             .isEqualTo( "f1xf2" );
     }
 

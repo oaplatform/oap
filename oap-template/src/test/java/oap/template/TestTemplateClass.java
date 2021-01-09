@@ -36,7 +36,7 @@ public class TestTemplateClass {
     public String fieldNullable;
     public String field2;
     public TestTemplateClass child;
-    public TestTemplateClass2 child_2;
+    public TestTemplateClass2 child2;
     public TestTemplateEnum enumField;
     public boolean booleanField;
     public Optional<TestTemplateClass> childOpt = Optional.empty();

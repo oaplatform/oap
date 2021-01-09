@@ -52,6 +52,6 @@ public class TestTemplateClass2 {
     }
 
     public static class ITestTemplateClassExt2 extends Ext {
-        
+
     }
 }
