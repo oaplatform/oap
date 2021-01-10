@@ -32,6 +32,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.concurrent.LongAdder;
 import oap.json.testng.JsonAsserts;
+import oap.reflect.Reflect;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -44,6 +45,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -189,6 +191,13 @@ public class BinderTest extends Fixtures {
     @Test
     public void bindDateTime() {
         assertBind( DateTimeBean.class, new DateTimeBean( Dates.nowUtc() ) );
+    }
+
+    @Test
+    public void bindLocalDate() {
+        assertBind( LocalDateBean.class, new LocalDateBean( LocalDate.now() ) );
+        assertThat( Binder.json.<LocalDate>unmarshal( Reflect.reflect( LocalDate.class ), "\"2021-01-10\"" ) )
+            .isEqualTo( LocalDate.of( 2021, 1, 10 ) );
     }
 
     @Test
@@ -538,6 +547,17 @@ class DateTimeBean {
 
     @JsonCreator
     DateTimeBean( DateTime date ) {
+        this.date = date;
+    }
+}
+
+@ToString
+@EqualsAndHashCode
+class LocalDateBean {
+    LocalDate date;
+
+    @JsonCreator
+    LocalDateBean( LocalDate date ) {
         this.date = date;
     }
 }

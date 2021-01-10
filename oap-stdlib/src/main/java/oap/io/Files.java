@@ -30,6 +30,9 @@ import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams.Encoding;
+import oap.net.Inet;
+import oap.time.Time;
+import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
@@ -70,6 +73,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -102,8 +106,8 @@ public final class Files {
 
     /**
      * it is NOT compatible with {@link #wildcard(Path, String)}
-     *
-     * @todo make compatible
+     * <p>
+     * todo make compatible
      */
     public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
         return fastWildcard( Paths.get( basePath ), wildcard );
@@ -280,6 +284,14 @@ public final class Files {
             FileUtils.cleanDirectory( path.toFile() );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    public static void deleteSafely( Path path ) {
+        try {
+            if( path != null ) delete( path );
+        } catch( Exception e ) {
+            log.warn( e.getMessage(), e );
         }
     }
 
@@ -596,5 +608,13 @@ public final class Files {
             if( result.toFile().exists() ) return Optional.of( result );
         }
         return Optional.empty();
+    }
+
+    public static Path format( Path base, String format, Map<String, Object> substitutions ) {
+        return base.resolve( Strings.substitute( format, v -> {
+            if( "HOST".equals( v ) ) return Inet.HOSTNAME;
+            if( v.startsWith( "DATE:" ) ) return Time.format( v.substring( "DATE:".length() ), Dates.nowUtc() );
+            return substitutions.get( v );
+        } ) );
     }
 }

@@ -23,8 +23,11 @@
  */
 package oap.io;
 
+import oap.net.Inet;
 import oap.testng.Fixtures;
+import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Sets;
 import org.testng.annotations.DataProvider;
@@ -32,6 +35,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
@@ -53,6 +57,7 @@ import static org.testng.Assert.fail;
 public class FilesTest extends Fixtures {
     {
         fixture( TestDirectoryFixture.FIXTURE );
+        fixture( SystemTimerFixture.FIXTURE );
     }
 
     @Test
@@ -208,5 +213,12 @@ public class FilesTest extends Fixtures {
 
         Files.deleteEmptyDirectories( dir3, true );
         assertThat( dir3 ).doesNotExist();
+    }
+
+    @Test
+    public void format() {
+        Dates.setTimeFixed( 2020, 1, 1, 1, 1 );
+        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${DATE:yyyy-MM-dd}/${A}-${B}.txt", Map.of( "A", "AAA", "B", "BBB" ) ) )
+            .isEqualTo( Path.of( "a/b/c/" + Inet.HOSTNAME + "/2020-01-01/AAA-BBB.txt" ) );
     }
 }

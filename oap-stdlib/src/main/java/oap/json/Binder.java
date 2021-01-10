@@ -51,6 +51,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
@@ -177,6 +178,7 @@ public class Binder {
         mapper.registerModule( new Jdk8Module().configureAbsentsAsNulls( true ) );
         mapper.registerModule( new JodaModule() );
         mapper.registerModule( new ExtModule() );
+        mapper.registerModule( new JavaTimeModule() );
         mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
         mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
         mapper.enable( JsonParser.Feature.ALLOW_SINGLE_QUOTES );
@@ -567,4 +569,3 @@ public class Binder {
     }
 
 }
-
