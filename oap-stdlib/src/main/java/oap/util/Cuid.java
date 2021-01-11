@@ -63,13 +63,18 @@ public interface Cuid {
         }
 
         @SneakyThrows
+        @Deprecated
         public static Info toString( String cuid ) {
+            return parse( cuid );
+        }
+
+        @SneakyThrows
+        public static Info parse( String cuid ) {
             var ip = cuid.substring( cuid.length() - 8 );
             int[] ipInts;
 
-            if( UNKNOWN_IP.equals( ip ) ) {
-                ipInts = new int[] { -1, -1, -1, -1 };
-            } else {
+            if( UNKNOWN_IP.equals( ip ) ) ipInts = new int[] { -1, -1, -1, -1 };
+            else {
                 var ipBytes = Hex.decodeHex( ip );
                 ipInts = IntStream.range( 0, ipBytes.length ).map( i -> ipBytes[i] & 0xFF ).toArray();
             }
@@ -78,9 +83,6 @@ public interface Cuid {
             var timeL = Long.parseLong( timeStr, 16 );
             var time = new DateTime( timeL >> 16, DateTimeZone.UTC );
             var count = timeL & 0xFF;
-
-            System.out.println( "timeStr = " + time );
-            System.out.println( "ip = " + ip );
 
             return new Info( ipInts, time, count );
         }
