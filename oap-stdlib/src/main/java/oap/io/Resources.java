@@ -23,18 +23,15 @@
  */
 package oap.io;
 
-import com.google.common.io.ByteStreams;
 import com.google.common.reflect.ClassPath;
 import lombok.SneakyThrows;
+import oap.io.content.ContentReader;
 import oap.util.Lists;
 import oap.util.Stream;
-import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.collections4.EnumerationUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -99,52 +96,61 @@ public final class Resources {
         try {
             var resourceName = name.startsWith( "/" ) ? name.substring( 1 ) : contextClass.getPackageName().replace( '.', '/' ) + '/' + name;
             var resources = EnumerationUtils.toList( contextClass.getClassLoader().getResources( resourceName ) );
-            for( var resource : resources ) {
+            for( var resource : resources )
                 try( var is = resource.openStream() ) {
-                    ret.add( Strings.readString( is ) );
+                    ret.add( ContentReader.read( is, ContentReader.ofString() ) );
                 }
-            }
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
         return ret;
     }
 
+    /**
+     * @see #read(Class, String, ContentReader)
+     */
+    @Deprecated
     public static Optional<String> readString( Class<?> contextClass, String name ) {
-        try( InputStream is = contextClass.getResourceAsStream( name ) ) {
-            return is == null ? Optional.empty()
-                : Optional.of( Strings.readString( is ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return read( contextClass, name, ContentReader.ofString() );
     }
 
-    public static String readStringOrThrow( Class<?> contextClass, String name ) {
-        return Resources.readString( contextClass, name )
+    public static <R> R readOrThrow( Class<?> contextClass, String name, ContentReader<R> reader ) {
+        return read( contextClass, name, reader )
             .orElseThrow( () -> new IllegalArgumentException( "resource not found " + name + " for context class " + contextClass ) );
+
     }
 
+    /**
+     * @see #readOrThrow(Class, String, ContentReader)
+     */
+    @Deprecated
+    public static String readStringOrThrow( Class<?> contextClass, String name ) {
+        return readOrThrow( contextClass, name, ContentReader.ofString() );
+    }
+
+    public static <R> Optional<R> read( Class<?> contextClass, String name, ContentReader<R> reader ) {
+        return url( contextClass, name ).map( url -> ContentReader.read( url, reader ) );
+    }
+
+    /**
+     * @see #read(Class, String, ContentReader)
+     */
+    @Deprecated
     public static Optional<byte[]> read( Class<?> contextClass, String name ) {
-        try( InputStream is = contextClass.getResourceAsStream( name ) ) {
-            return is == null ? Optional.empty()
-                : Optional.of( ByteStreams.toByteArray( is ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return read( contextClass, name, ContentReader.ofBytes() );
     }
 
     public static List<String> readStrings( Class<?> contextClass, String name ) {
-        return Lists.map( urls( contextClass, name ), Try.map( Strings::readString ) );
+        return Lists.map( urls( contextClass, name ), Try.map( url -> ContentReader.read( url, ContentReader.ofString() ) ) );
     }
 
     public static List<String> readStrings( String name ) {
-        return Lists.map( urls( name ), Try.map( Strings::readString ) );
+        return Lists.map( urls( name ), Try.map( url -> ContentReader.read( url, ContentReader.ofString() ) ) );
     }
 
     public static List<String> readLines( String name ) {
-        List<String> result = new ArrayList<>();
-        for( URL url : urls( name ) ) result.addAll( Strings.readLines( url ) );
-        return result;
+        return Stream.of( urls( name ) )
+            .<List<String>>foldLeft( new ArrayList<>(), ( l, url ) -> ContentReader.read( url, ContentReader.ofLines( l ) ) );
     }
 
     public static List<URL> urlsByExts( String... ext ) {
@@ -164,13 +170,9 @@ public final class Resources {
                 : resolveName( contextClass ) + "/" + name ) );
     }
 
-
+    @SneakyThrows
     public static List<URL> urls( String name ) {
-        try {
-            return Collections.list( Thread.currentThread().getContextClassLoader().getResources( name ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return Collections.list( Thread.currentThread().getContextClassLoader().getResources( name ) );
     }
 
     public static List<URL> urls( String atPackage, String... ext ) {
@@ -178,7 +180,6 @@ public final class Resources {
         String pkg = atPackage.replace( ".", "/" );
         return urls( name -> name.startsWith( pkg ) && Lists.anyMatch( extSet, name::endsWith ) );
     }
-
 
 
     @SuppressWarnings( "UnstableApiUsage" )
@@ -192,35 +193,28 @@ public final class Resources {
             .toList();
     }
 
+    /**
+     * @see #read(Class, String, ContentReader)
+     */
+    @Deprecated
     public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {
-        return url( contextClass, name ).map( IoStreams::lines );
+        return read( contextClass, name, ContentReader.ofLinesStream() );
     }
 
     public static Stream<String> lines( String name ) {
         return Stream.of( urls( name ) ).flatMap( IoStreams::lines );
     }
 
+    /**
+     * @see #read(Class, String, ContentReader)
+     */
+    @Deprecated
     public static Optional<Properties> readProperties( Class<?> contextClass, String name ) {
-        return Resources.read( contextClass, name ).map( bytes -> {
-            try {
-                Properties properties = new Properties();
-                properties.load( new ByteArrayInputStream( bytes ) );
-                return properties;
-            } catch( IOException ignore ) {
-                return null;
-            }
-        } );
+        return read( contextClass, name, ContentReader.ofProperties() );
     }
 
     public static Properties readAllProperties( String name ) {
-        Properties properties = new Properties();
-        for( var url : Resources.urls( name ) ) {
-            try( var is = url.openStream() ) {
-                properties.load( is );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( "Property: " + name + ", " + e.getMessage(), e );
-            }
-        }
-        return properties;
+        return Stream.of( Resources.urls( name ) )
+            .foldLeft( new Properties(), ( p, url ) -> ContentReader.read( url, ContentReader.ofProperties( p ) ) );
     }
 }

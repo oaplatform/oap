@@ -28,6 +28,7 @@ import oap.concurrent.Threads;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -44,6 +45,8 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
+import static oap.io.content.ContentReader.ofBytes;
+import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.fail;
 
@@ -122,18 +125,18 @@ public final class Asserts {
     }
 
     public static String contentOfTestResource( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
-        return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+        return Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource, ofString() )
             .map( content -> Strings.substitute( content, substitutions ) )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
     public static byte[] bytesOfTestResource( Class<?> contextClass, String resource ) {
-        return Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource )
+        return Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource, ofBytes() )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
     public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
-        String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+        String content = Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource, ofString() )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
         return Strings.sortLines( content );
     }
@@ -158,8 +161,8 @@ public final class Asserts {
     }
 
     public static Stream<String> linesOfTestResource( Class<?> contextClass, String resource ) {
-        return Resources.lines( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
-            : "/" + resource ) )
+        return Resources.read( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
+            : "/" + resource ), ContentReader.ofLinesStream() )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
@@ -220,7 +223,7 @@ public final class Asserts {
 
         public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
             exists();
-            String actual = Files.readString( this.actual.toPath(), encoding );
+            String actual = Files.read( this.actual.toPath(), encoding, ofString() );
             assertString( actual ).isEqualTo( expected );
             return this;
         }
@@ -232,7 +235,7 @@ public final class Asserts {
 
         public FileAssertion hasContentLineSorting( String expected, IoStreams.Encoding encoding ) {
             exists();
-            String content = Files.readString( this.actual.toPath(), encoding );
+            String content = Files.read( this.actual.toPath(), encoding, ofString() );
             assertString( content ).isEqualToLineSorting( expected );
             return this;
         }

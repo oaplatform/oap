@@ -45,6 +45,7 @@ import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static oap.io.content.ContentReader.ofString;
 
 @Mojo( name = "startup-scripts", defaultPhase = LifecyclePhase.PREPARE_PACKAGE )
 public class StartupScriptsMojo extends AbstractMojo {
@@ -62,7 +63,7 @@ public class StartupScriptsMojo extends AbstractMojo {
         Properties properties = project.getProperties();
         String serviceBin = properties.getOrDefault( "oap.service.home", "/opt/oap-service" ) + "/bin";
         Path functions = Paths.get( destinationDirectory, serviceBin, "functions.sh" );
-        Resources.readString( getClass(), "/bin/functions.sh" )
+        Resources.read( getClass(), "/bin/functions.sh", ofString() )
             .ifPresent( value -> Files.writeString( functions, value ) );
         PosixFilePermission[] permissions = {
             OWNER_EXECUTE, OWNER_READ, OWNER_WRITE,
@@ -76,7 +77,7 @@ public class StartupScriptsMojo extends AbstractMojo {
     private void script( String script, String preffix, String suffix, PosixFilePermission... permissions ) {
         Properties properties = project.getProperties();
         Path path = Paths.get( destinationDirectory, preffix, properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix );
-        Resources.readString( getClass(), script )
+        Resources.read( getClass(), script, ofString() )
             .ifPresent( value -> Files.writeString( path,
                 Strings.substitute( value, properties::getProperty ) ) );
         if( permissions.length > 0 ) {

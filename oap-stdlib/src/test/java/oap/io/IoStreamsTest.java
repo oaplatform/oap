@@ -25,6 +25,7 @@ package oap.io;
 
 import lombok.SneakyThrows;
 import oap.io.IoStreams.Encoding;
+import oap.io.content.ContentReader;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Arrays;
@@ -139,7 +140,7 @@ public class IoStreamsTest extends Fixtures {
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
         System.out.println( "Low variance file" );
-        content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
+        content = Files.read( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP, ContentReader.ofString() );
         for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
             Files.writeString( path, encoding, content );

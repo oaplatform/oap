@@ -26,6 +26,7 @@ package oap.http.publicsuffix;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.util.Sets;
 import org.apache.commons.lang3.StringUtils;
 
@@ -37,7 +38,7 @@ public class PublicSuffixData {
     public static final Set<String> suffixes;
 
     static {
-        suffixes = Resources.lines( PublicSuffixData.class, "public_suffix_list.dat.txt" )
+        suffixes = Resources.read( PublicSuffixData.class, "public_suffix_list.dat.txt", ContentReader.ofLinesStream() )
             .map( s -> s
                 .map( l -> l.trim().toLowerCase() )
                 .filter( l -> !l.isEmpty() && !l.startsWith( "//" ) && !l.startsWith( "!" ) )
@@ -63,4 +64,3 @@ public class PublicSuffixData {
         return split[split.length - 2] + "." + split[split.length - 1];
     }
 }
-

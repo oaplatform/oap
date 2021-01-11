@@ -293,7 +293,7 @@ class DeepBean {
     public Bean bean = new Bean();
     public Optional<Bean> beanOptional = Optional.of( new Bean() );
     public List<Bean> list = new ArrayList<>();
-    public Map<String, Map<String, Integer>> map = Maps.empty();
+    public Map<String, Map<String, Integer>> map = Maps.of();
 
     DeepBean( Bean bean, Optional<Bean> beanOptional ) {
         this.bean = bean;

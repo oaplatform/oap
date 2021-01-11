@@ -26,6 +26,7 @@ package oap.tools;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.io.content.ContentReader;
 import org.joda.time.DateTimeUtils;
 
 import javax.tools.Diagnostic;
@@ -66,7 +67,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
                 log.trace( "found: {}", classname );
 
-                var bytes = oap.io.Files.read( classFile );
+                var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
                 manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );

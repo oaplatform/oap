@@ -30,6 +30,7 @@ import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams.Encoding;
+import oap.io.content.ContentReader;
 import oap.net.Inet;
 import oap.time.Time;
 import oap.util.Dates;
@@ -37,7 +38,6 @@ import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.util.Throwables;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
@@ -52,7 +52,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -187,36 +186,57 @@ public final class Files {
         return result;
     }
 
-    @SuppressWarnings( "unchecked" )
+    /**
+     * @see #read(Path, ContentReader)
+     */
+    @Deprecated
+    @SneakyThrows
     public static <T> T readObject( Path path ) {
-        try( ObjectInputStream is = new ObjectInputStream( IoStreams.in( path, Encoding.PLAIN ) ) ) {
-            return ( T ) is.readObject();
-        } catch( Exception e ) {
-            throw Throwables.propagate( e );
+        try( var is = IoStreams.in( path, Encoding.PLAIN ) ) {
+            return ContentReader.read( is, ContentReader.ofObject() );
         }
     }
 
+    /**
+     * @see #read(Path, ContentReader)
+     */
+    @Deprecated
     public static String readString( String path ) {
-        return readString( Paths.get( path ), Encoding.from( path ) );
+        return read( Paths.get( path ), Encoding.from( path ), ContentReader.ofString() );
     }
 
     public static String readString( Path path ) {
-        return readString( path, Encoding.from( path ) );
+        return read( path, Encoding.from( path ), ContentReader.ofString() );
     }
 
+    /**
+     * @see #read(Path, Encoding, ContentReader)
+     */
+    @Deprecated
     public static String readString( Path path, Encoding encoding ) {
-        try( InputStream in = IoStreams.in( path, encoding ) ) {
-            return Strings.readString( in );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return read( path, encoding, ContentReader.ofString() );
     }
 
+    @Deprecated
     public static byte[] read( Path path ) {
         try {
             return java.nio.file.Files.readAllBytes( path );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    @SneakyThrows
+    public static <R> R read( Path path, Encoding encoding, ContentReader<R> reader ) {
+        try( InputStream in = IoStreams.in( path, encoding ) ) {
+            return ContentReader.read( in, reader );
+        }
+    }
+
+    @SneakyThrows
+    public static <R> R read( Path path, ContentReader<R> reader ) {
+        try( InputStream in = IoStreams.in( path ) ) {
+            return ContentReader.read( in, reader );
         }
     }
 

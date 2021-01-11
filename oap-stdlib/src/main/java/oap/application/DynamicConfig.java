@@ -29,9 +29,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Hash;
-import oap.util.Strings;
 import org.apache.commons.lang3.event.EventListenerSupport;
 
 import java.net.URL;
@@ -73,7 +73,7 @@ public class DynamicConfig<T> {
     }
 
     private void loadConfiguration( URL location ) {
-        String string = Strings.readString( location );
+        String string = ContentReader.read( location, ContentReader.ofString() );
         this.value = Binder.hocon.unmarshal( implementation, string );
         this.md5 = Hash.md5( string );
     }

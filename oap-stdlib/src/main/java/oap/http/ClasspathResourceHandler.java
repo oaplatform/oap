@@ -24,6 +24,7 @@
 package oap.http;
 
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.util.Strings;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -51,7 +52,7 @@ public class ClasspathResourceHandler implements HttpRequestHandler {
     public void handle( HttpRequest req, HttpResponse resp, HttpContext context ) throws IOException {
         String resource = location + Strings.substringAfter( req.getRequestLine().getUri(), prefix );
         logger.trace( req.getRequestLine().toString() + " -> " + resource );
-        Optional<byte[]> file = Resources.read( getClass(), resource );
+        Optional<byte[]> file = Resources.read( getClass(), resource, ContentReader.ofBytes() );
         if( file.isPresent() ) {
             ByteArrayEntity entity = new ByteArrayEntity( file.get() );
             entity.setContentType( mimeTypes.getContentType( req.getRequestLine().getUri() ) );

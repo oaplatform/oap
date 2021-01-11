@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +63,7 @@ public class JsonAsserts {
     @SafeVarargs
     public static String readCanonical( Class<?> context, Class<?> clazz, String resourcePath,
                                         Pair<String, Object>... substitutions ) {
-        return Resources.readString( context, resourcePath )
+        return Resources.read( context, resourcePath, ofString() )
             .map( json -> Binder.json.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
             .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
     }

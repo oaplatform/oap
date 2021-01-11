@@ -28,10 +28,10 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import static oap.io.content.ContentReader.ofProperties;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,7 +41,7 @@ public class ResourcesTest extends Fixtures {
     }
 
     @Test
-    public void urls() throws IOException {
+    public void urls() {
         var urls = Resources.urls( getClass().getName(), "txt" );
         assertThat( urls ).containsOnly(
             urlOfTestResource( getClass(), "resource.txt" ),
@@ -51,8 +51,8 @@ public class ResourcesTest extends Fixtures {
 
     @Test
     public void readProperties() {
-        var properties = Resources.readProperties( ResourcesTest.class,
-            ResourcesTest.class.getSimpleName() + "/resource.properties" );
+        var properties = Resources.read( ResourcesTest.class,
+            ResourcesTest.class.getSimpleName() + "/resource.properties", ofProperties() );
         assertThat( properties ).isPresent();
         assertThat( properties.get() ).hasSize( 2 );
     }

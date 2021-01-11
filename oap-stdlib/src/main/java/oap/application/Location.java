@@ -22,40 +22,32 @@
  * SOFTWARE.
  */
 
-package oap.fs;
+package oap.application;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
+import oap.io.Paths;
+import oap.io.Resources;
 import oap.io.content.ContentReader;
 
+import java.net.URL;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
 
-@Slf4j
-public class LocalFileManager extends AbstractFileManager implements FileManager<Data> {
+public class Location {
+    public final URL url;
 
-    public LocalFileManager( Map<String, Path> buckets ) {
-        super( buckets );
+    public Location( URL url ) {
+        this.url = url;
     }
 
-    @Override
-    public String write( String bucket, Data data ) {
-        var name = data.nameOrConstruct( cuid.next() );
-        var path = getBucket( bucket ).resolve( name );
-        Files.write( path, data.decoded() );
-        return name;
+    public Location( Path path ) {
+        this( Paths.toUrl( path ) );
     }
 
-    @Override
-    public Optional<byte[]> read( String bucket, String relativePath ) {
-        var path = getBucket( bucket ).resolve( relativePath );
-        return Files.exists( path ) ? Optional.of( Files.read( path, ContentReader.ofBytes() ) ) : Optional.empty();
+    public Location( String resource ) {
+        this( Resources.url( Location.class, resource )
+            .orElseThrow( () -> new IllegalArgumentException( "resource " + resource + " is not found" ) ) );
     }
 
-    @Override
-    public void copyFromTo( String src, String dist ) {
-        log.debug( "Copy files from {} to {}", src, dist );
-        Files.copyContent( Path.of( src ), Path.of( dist ) );
+    public <R> R read( ContentReader<R> reader ) {
+        return ContentReader.read( url, reader );
     }
 }

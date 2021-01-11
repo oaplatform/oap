@@ -24,13 +24,11 @@
 package oap.util;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.io.ByteStreams;
+import oap.io.content.ContentReader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +41,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -100,28 +97,28 @@ public final class Strings {
         return bytes == null ? "" : new String( bytes, UTF_8 );
     }
 
+    /**
+     * @see ContentReader#read(URL, ContentReader)
+     * */
+    @Deprecated
     public static String readString( InputStream is ) {
-        try {
-            return toString( ByteStreams.toByteArray( is ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return ContentReader.read( is, ContentReader.ofString() );
     }
 
+    /**
+     * @see ContentReader#read(URL, ContentReader)
+     * */
+    @Deprecated
     public static String readString( URL url ) {
-        try( InputStream is = url.openStream() ) {
-            return Strings.readString( is );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return ContentReader.read( url, ContentReader.ofString() );
     }
 
+    /**
+     * @see ContentReader#read(URL, ContentReader)
+     * */
+    @Deprecated
     public static List<String> readLines( URL url ) {
-        try( InputStream is = url.openStream() ) {
-            return Strings.readString( is ).lines().collect( Collectors.toList() );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return ContentReader.read( url, ContentReader.ofLines() );
     }
 
     public static boolean isUndefined( String s ) {

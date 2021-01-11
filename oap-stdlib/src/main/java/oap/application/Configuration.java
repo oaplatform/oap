@@ -25,6 +25,7 @@ package oap.application;
 
 import lombok.SneakyThrows;
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -61,7 +62,7 @@ public class Configuration<T> {
 
     @SneakyThrows
     public T fromUrl( URL url ) {
-        return fromString( Strings.readString( url ), Binder.Format.of( url, true ) );
+        return fromString( ContentReader.read( url, ContentReader.ofString() ), Binder.Format.of( url, true ) );
     }
 
     public T fromResource( Class<?> contextClass, String name ) {

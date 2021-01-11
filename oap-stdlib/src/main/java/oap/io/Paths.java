@@ -22,40 +22,16 @@
  * SOFTWARE.
  */
 
-package oap.fs;
+package oap.io;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
-import oap.io.content.ContentReader;
+import lombok.SneakyThrows;
 
+import java.net.URL;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
 
-@Slf4j
-public class LocalFileManager extends AbstractFileManager implements FileManager<Data> {
-
-    public LocalFileManager( Map<String, Path> buckets ) {
-        super( buckets );
-    }
-
-    @Override
-    public String write( String bucket, Data data ) {
-        var name = data.nameOrConstruct( cuid.next() );
-        var path = getBucket( bucket ).resolve( name );
-        Files.write( path, data.decoded() );
-        return name;
-    }
-
-    @Override
-    public Optional<byte[]> read( String bucket, String relativePath ) {
-        var path = getBucket( bucket ).resolve( relativePath );
-        return Files.exists( path ) ? Optional.of( Files.read( path, ContentReader.ofBytes() ) ) : Optional.empty();
-    }
-
-    @Override
-    public void copyFromTo( String src, String dist ) {
-        log.debug( "Copy files from {} to {}", src, dist );
-        Files.copyContent( Path.of( src ), Path.of( dist ) );
+public class Paths {
+    @SneakyThrows
+    public static URL toUrl( Path path ) {
+        return path.toUri().toURL();
     }
 }

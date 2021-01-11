@@ -25,6 +25,7 @@
 package oap.json.schema;
 
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Lists;
 import org.apache.commons.io.FilenameUtils;
@@ -44,7 +45,7 @@ public final class ResourceSchemaStorage implements SchemaStorage {
         var prefix = FilenameUtils.removeExtension( name );
         var fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
 
-        var conf = Resources.readStringOrThrow( getClass(), name );
+        var conf = Resources.readOrThrow( getClass(), name, ContentReader.ofString() );
         if( "yaml".equalsIgnoreCase( ext ) ) conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
 
         var extConf = Resources.readStrings( getClass(), prefix + "/" + fileName + ".conf" );

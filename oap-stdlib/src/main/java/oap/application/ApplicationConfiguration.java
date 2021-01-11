@@ -28,11 +28,11 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
-import oap.util.Strings;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -88,7 +88,7 @@ public final class ApplicationConfiguration {
         return loadWithProperties( appConfigPath, Lists.map( confdUrls, p ->
             p.getPath().endsWith( ".yaml" )
                 ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) )
-                : Strings.readString( p )
+                : ContentReader.read( p, ContentReader.ofString() )
         ) );
     }
 

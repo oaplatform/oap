@@ -46,10 +46,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import static oap.benchmark.Benchmark.benchmark;
+import static oap.io.content.ContentReader.ofString;
 
 public class ParserPerformance {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_MILLIS );
-    public static String yearJson = Resources.readString( ParserPerformance.class, "year.json" ).get();
+    public static String yearJson = Resources.read( ParserPerformance.class, "year.json", ofString() ).orElseThrow();
 
     @SuppressWarnings( "unchecked" )
     private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {

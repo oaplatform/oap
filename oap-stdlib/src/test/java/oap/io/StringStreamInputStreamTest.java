@@ -1,7 +1,6 @@
 package oap.io;
 
 import oap.util.Stream;
-import oap.util.Strings;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,15 +19,15 @@ public class StringStreamInputStreamTest {
 
     @Test
     public void readArray() {
-        assertThat( Strings.readString( new StringStreamInputStream( Stream.of( "a", "bbb", "cc", "ddd" ) ) ) )
-            .isEqualTo( "abbbccddd" );
+        assertThat( new StringStreamInputStream( Stream.of( "a", "bbb", "cc", "ddd" ) ) )
+            .hasContent( "abbbccddd" );
     }
 
     @Test
     public void withDelimiter() {
-        assertThat( Strings.readString( new StringStreamInputStream( Stream.of( "a", "bbb", "cc", "ddd" ), "," ) ) )
-            .isEqualTo( "a,bbb,cc,ddd" );
-        assertThat( Strings.readString( new StringStreamInputStream( Stream.of( "a" ), "," ) ) )
-            .isEqualTo( "a" );
+        assertThat( new StringStreamInputStream( Stream.of( "a", "bbb", "cc", "ddd" ), "," ) )
+            .hasContent( "a,bbb,cc,ddd" );
+        assertThat(  new StringStreamInputStream( Stream.of( "a" ), "," ) )
+            .hasContent( "a" );
     }
 }

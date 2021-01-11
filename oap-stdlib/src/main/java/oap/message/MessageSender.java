@@ -37,6 +37,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
@@ -319,7 +320,7 @@ public class MessageSender implements Closeable {
                     var clientIdStr = FilenameUtils.getName( clientIdPath );
                     var msgClientId = Long.parseLong( clientIdStr, 16 );
 
-                    var data = Files.read( msgFile );
+                    var data = Files.read( msgFile, ContentReader.ofBytes() );
 
                     log.debug( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
 

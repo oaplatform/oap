@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import oap.io.content.ContentReader;
 import oap.util.Strings;
 import org.slf4j.Logger;
 
@@ -44,7 +45,7 @@ public class Sockets {
             os.write( Strings.toByteArray( data ) );
             os.flush();
             socket.shutdownOutput();
-            return Strings.readString( is );
+            return ContentReader.read( is, ContentReader.ofString() );
         }
     }
 
