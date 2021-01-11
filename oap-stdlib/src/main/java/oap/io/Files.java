@@ -44,6 +44,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -613,7 +614,7 @@ public final class Files {
     public static Path format( Path base, String format, Map<String, Object> substitutions ) {
         return base.resolve( Strings.substitute( format, v -> {
             if( "HOST".equals( v ) ) return Inet.HOSTNAME;
-            if( v.startsWith( "DATE:" ) ) return Time.format( v.substring( "DATE:".length() ), Dates.nowUtc() );
+            if( v.startsWith( "DATE:" ) ) return Time.format( v.substring( "DATE:".length() ), DateTimeZone.UTC, Dates.nowUtc() );
             return substitutions.get( v );
         } ) );
     }
