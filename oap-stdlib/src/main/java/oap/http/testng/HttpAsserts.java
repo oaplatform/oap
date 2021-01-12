@@ -44,6 +44,7 @@ import java.util.function.Consumer;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
+import static oap.io.content.ContentReader.ofString;
 import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
@@ -223,7 +224,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
-            return this.respondedJson( contentOfTestResource( contextClass, resource ) );
+            return this.respondedJson( contentOfTestResource( contextClass, resource, ofString() ) );
         }
 
         public HttpAssertion respondedJson( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
@@ -336,7 +337,7 @@ public class HttpAsserts {
         }
 
         public JsonHttpAssertion isEqualTo( Class<?> contextClass, String resource ) {
-            return this.isEqualTo( contentOfTestResource( contextClass, resource ) );
+            return this.isEqualTo( contentOfTestResource( contextClass, resource, ofString() ) );
         }
 
         public JsonAsserts.JsonAssertion isJson() {

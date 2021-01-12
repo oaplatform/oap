@@ -30,6 +30,7 @@ import oap.json.Binder;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
 
 public class ExtNPETest {
@@ -43,7 +44,7 @@ public class ExtNPETest {
 
     @Test( dataProvider = "cases" )
     public void npe( String file ) {
-        Binder.json.unmarshal( Npe.class, contentOfTestResource( getClass(), file ) );
+        Binder.json.unmarshal( Npe.class, contentOfTestResource( getClass(), file, ofString() ) );
     }
 }
 

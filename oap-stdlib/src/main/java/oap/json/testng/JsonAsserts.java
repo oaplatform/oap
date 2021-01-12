@@ -78,7 +78,7 @@ public class JsonAsserts {
     }
 
     public static <T> T objectOfTestJsonResource( Class<?> context, Class<T> clazz, String resourcePath ) {
-        return Binder.json.unmarshal( clazz, contentOfTestResource( context, resourcePath ) );
+        return Binder.json.unmarshal( clazz, contentOfTestResource( context, resourcePath, ofString() ) );
     }
 
     public static JsonAssertion assertJson( String json ) {
@@ -118,7 +118,7 @@ public class JsonAsserts {
 
         public JsonAssertion isStructurallyEqualToResource( Class<?> contextClass, String resource ) {
             isNotNull();
-            return isStructurallyEqualTo( contentOfTestResource( contextClass, resource ) );
+            return isStructurallyEqualTo( contentOfTestResource( contextClass, resource, ofString() ) );
 
         }
 

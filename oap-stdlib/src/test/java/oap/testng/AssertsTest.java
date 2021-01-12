@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.assertString;
 
@@ -38,7 +39,7 @@ public class AssertsTest {
     @Test
     public void sortedContentOfFileResource() {
         Path unsorted = Asserts.pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
-        String expected = Asserts.contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
+        String expected = Asserts.contentOfTestResource( getClass(), "sorted-flow-of-mind.txt", ofString() );
         assertFile( unsorted ).hasContentLineSorting( expected, PLAIN );
     }
 

@@ -28,15 +28,13 @@ import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import oap.util.Lists;
 import oap.util.Stream;
-import oap.util.Try;
+import org.apache.commons.io.input.AutoCloseInputStream;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +53,7 @@ public interface ContentReader<R> {
         return read( ByteStreams.toByteArray( is ) );
     }
 
+
     static <R> R read( byte[] bytes, ContentReader<R> reader ) {
         return reader.read( bytes );
     }
@@ -63,12 +62,9 @@ public interface ContentReader<R> {
         return reader.read( is );
     }
 
+    @SneakyThrows
     static <R> R read( URL url, ContentReader<R> reader ) {
-        try( InputStream is = url.openStream() ) {
-            return read( is, reader );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return read( new AutoCloseInputStream( url.openStream() ), reader );
     }
 
     static ContentReader<String> ofString() {
@@ -94,17 +90,10 @@ public interface ContentReader<R> {
     }
 
     static ContentReader<Stream<String>> ofLinesStream() {
-        return ofLinesStream( false );
-    }
-
-    static ContentReader<Stream<String>> ofLinesStream( boolean autoClose ) {
         return new ContentReader<>() {
             @Override
             public Stream<String> read( InputStream is ) {
-                BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( is, UTF_8 ) );
-                java.util.stream.Stream<String> ustream = bufferedReader.lines();
-                if( autoClose ) ustream = ustream.onClose( Try.run( bufferedReader::close ) );
-                return Stream.of( ustream );
+                return Stream.of( new BufferedReader( new InputStreamReader( is, UTF_8 ) ).lines() );
             }
         };
     }
@@ -127,14 +116,14 @@ public interface ContentReader<R> {
         };
     }
 
-    static <T> ContentReader<T> ofObject() {
-        return new ContentReader<T>() {
+    static <R> ContentReader<R> ofObject() {
+        return new ContentReader<>() {
             @Override
             @SuppressWarnings( "unchecked" )
             @SneakyThrows
-            public T read( InputStream is ) {
+            public R read( InputStream is ) {
                 try( ObjectInputStream ois = new ObjectInputStream( is ) ) {
-                    return ( T ) ois.readObject();
+                    return ( R ) ois.readObject();
                 }
             }
         };

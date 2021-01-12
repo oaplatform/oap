@@ -120,6 +120,15 @@ public final class Asserts {
         failNotEquals( actual, expected, null );
     }
 
+    public static <R> R contentOfTestResource( Class<?> contextClass, String resource, ContentReader<R> reader ) {
+        return Resources.read( contextClass, contextClass.getSimpleName() + "/" + resource, reader )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
+    /**
+     * @see #contentOfTestResource(Class, String, ContentReader)
+     */
+    @Deprecated
     public static String contentOfTestResource( Class<?> contextClass, String resource ) {
         return contentOfTestResource( contextClass, resource, Map.of() );
     }

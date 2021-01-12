@@ -26,18 +26,18 @@ package oap.json;
 
 import org.testng.annotations.Test;
 
+import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 
 public class FormatterTest {
     @Test
     public void format() {
-        String unformatted = contentOfTestResource( getClass(), "unformatted.json" );
-        String formatted = contentOfTestResource( getClass(), "formatted.json" );
+        String unformatted = contentOfTestResource( getClass(), "unformatted.json", ofString() );
+        String formatted = contentOfTestResource( getClass(), "formatted.json", ofString() );
 //        String expected = "{\n\t\"a\": {\n\t\t\"xxxx\": \":y\\\" \\ry []\\n\\t\\t{}\"\n	},\n\t\"b\": [\n\t\t1,\n\t\t{\n\t\t\t\"xx\": null\n\t\t},\n\t\t3\n\t]\n}";
 //        String result = Formatter.format( "{\"a\": {\"xxxx\": \":y\\\" \\ry []\\n\\t\\t{}\"},\"b\":[1,{\"xx\":null},3]}" );
         assertString( Formatter.format( unformatted ) ).isEqualTo( formatted );
 //        System.out.println( result );
     }
 }
-
