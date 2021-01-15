@@ -30,7 +30,6 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static oap.testng.Asserts.assertString;
 import static oap.util.Functions.empty.reject;
 import static oap.util.Pair.__;
 import static oap.util.Strings.FriendlyIdOption.FILL;
@@ -40,29 +39,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class StringsTest {
     @Test
     public void toHexStringLong() {
-        assertString( Strings.toHexString( 0xFF000000L ) ).isEqualTo( "FF000000" );
-        assertString( Strings.toHexString( 0x10L ) ).isEqualTo( "10" );
-        assertString( Strings.toHexString( 0x101L ) ).isEqualTo( "101" );
+        assertThat( Strings.toHexString( 0xFF000000L ) ).isEqualTo( "FF000000" );
+        assertThat( Strings.toHexString( 0x10L ) ).isEqualTo( "10" );
+        assertThat( Strings.toHexString( 0x101L ) ).isEqualTo( "101" );
         long millis = DateTimeUtils.currentTimeMillis();
-        assertString( Strings.toHexString( millis ) ).isEqualTo( Long.toHexString( millis ).toUpperCase() );
+        assertThat( Strings.toHexString( millis ) ).isEqualTo( Long.toHexString( millis ).toUpperCase() );
     }
 
     @Test
     public void toHexStringBytes() {
-        assertString( Strings.toHexString( new byte[] { 16 } ) ).isEqualTo( "10" );
-        assertString( Strings.toHexString( new byte[] { 1, 10, 120, -78 } ) ).isEqualTo( "010A78B2" );
-        assertString( Strings.toHexString( new byte[] { 40, -78, -67, 42, -93, -91 } ) ).isEqualTo( "28B2BD2AA3A5" );
+        assertThat( Strings.toHexString( new byte[] { 16 } ) ).isEqualTo( "10" );
+        assertThat( Strings.toHexString( new byte[] { 1, 10, 120, -78 } ) ).isEqualTo( "010A78B2" );
+        assertThat( Strings.toHexString( new byte[] { 40, -78, -67, 42, -93, -91 } ) ).isEqualTo( "28B2BD2AA3A5" );
     }
 
 
     @Test
     public void substringAfter() {
-        assertString( Strings.substringAfter( "/bbb/aaa", "/bbb" ) ).isEqualTo( "/aaa" );
+        assertThat( Strings.substringAfter( "/bbb/aaa", "/bbb" ) ).isEqualTo( "/aaa" );
     }
 
     @Test
     public void substititute() {
-        assertString( Strings.substitute( "${x.a.s} -> ${y.a.s} -> ${a.b.c} -> ${x.d.e}", Reflect.substitutor( Map.of(
+        assertThat( Strings.substitute( "${x.a.s} -> ${y.a.s} -> ${a.b.c} -> ${x.d.e}", Reflect.substitutor( Map.of(
             "x", new B( new A( "aaa" ) ),
             "y", new B( new A( "bbb" ) )
         ) ) ) ).isEqualTo( "aaa -> bbb ->  -> " );
@@ -86,7 +85,7 @@ public class StringsTest {
 
     @Test
     public void substringBeforeLast() {
-        assertString( Strings.substringBeforeLast( "aa.conf.bak", "." ) ).isEqualTo( "aa.conf" );
+        assertThat( Strings.substringBeforeLast( "aa.conf.bak", "." ) ).isEqualTo( "aa.conf" );
     }
 
     @Test
@@ -97,7 +96,7 @@ public class StringsTest {
     @Test
     public void regex() {
         assertThat( Strings.regexAll( "aaaXbbb:cccXddd", "X([^:]*)" ) ).containsExactly( "bbb", "ddd" );
-        assertString( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ) ).isEqualTo( "bbb" );
+        assertThat( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ) ).isEqualTo( "bbb" );
     }
 
     @Test
@@ -115,51 +114,51 @@ public class StringsTest {
 
     @Test
     public void toSyntheticGuid() {
-        assertString( Strings.toSyntheticGuid( "a" ) ).isEqualTo( "0CC175B9-C0F1-B6A8-31C3-99E269772661" );
+        assertThat( Strings.toSyntheticGuid( "a" ) ).isEqualTo( "0CC175B9-C0F1-B6A8-31C3-99E269772661" );
         assertThat( Strings.isGuid( Strings.toSyntheticGuid( "a" ) ) ).isTrue();
     }
 
     @Test
     public void remove() {
-        assertString( Strings.remove( "12345", ' ', '-' ) ).isEqualTo( "12345" );
-        assertString( Strings.remove( "-123 - 45-", ' ', '-' ) ).isEqualTo( "12345" );
+        assertThat( Strings.remove( "12345", ' ', '-' ) ).isEqualTo( "12345" );
+        assertThat( Strings.remove( "-123 - 45-", ' ', '-' ) ).isEqualTo( "12345" );
     }
 
     @Test
     public void fill() {
-        assertString( Strings.fill( "12", 2 ) ).isEqualTo( "1212" );
+        assertThat( Strings.fill( "12", 2 ) ).isEqualTo( "1212" );
     }
 
     @Test
     public void deepToString() {
-        assertString( Strings.deepToString( null ) ).isEqualTo( "null" );
-        assertString( Strings.deepToString( new Object[] { "x", "y" } ) ).isEqualTo( "[x, y]" );
-        assertString( Strings.deepToString( new int[] { 1, 2 } ) ).isEqualTo( "[1, 2]" );
-        assertString( Strings.deepToString( "aaa" ) ).isEqualTo( "aaa" );
-        assertString( Strings.deepToString( new Object[] { new Object[] { "x" }, "y" } ) ).isEqualTo( "[[x], y]" );
+        assertThat( Strings.deepToString( null ) ).isEqualTo( "null" );
+        assertThat( Strings.deepToString( new Object[] { "x", "y" } ) ).isEqualTo( "[x, y]" );
+        assertThat( Strings.deepToString( new int[] { 1, 2 } ) ).isEqualTo( "[1, 2]" );
+        assertThat( Strings.deepToString( "aaa" ) ).isEqualTo( "aaa" );
+        assertThat( Strings.deepToString( new Object[] { new Object[] { "x" }, "y" } ) ).isEqualTo( "[[x], y]" );
     }
 
     @Test
     public void replace() {
-        assertString( Strings.replace( "test", "a", "b" ) ).isEqualTo( "test" );
-        assertString( Strings.replace( "test", "te", "b" ) ).isEqualTo( "bst" );
-        assertString( Strings.replace( "test", "st", "b" ) ).isEqualTo( "teb" );
-        assertString( Strings.replace( "test", "es", "b" ) ).isEqualTo( "tbt" );
+        assertThat( Strings.replace( "test", "a", "b" ) ).isEqualTo( "test" );
+        assertThat( Strings.replace( "test", "te", "b" ) ).isEqualTo( "bst" );
+        assertThat( Strings.replace( "test", "st", "b" ) ).isEqualTo( "teb" );
+        assertThat( Strings.replace( "test", "es", "b" ) ).isEqualTo( "tbt" );
     }
 
     @Test
     public void toUserFriendlyId() {
-        assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
+        assertThat( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
             .isEqualTo( "SMTXTXX" );
-        assertString( Strings.toUserFriendlyId( "another text", 7, reject(), NO_VOWELS, FILL ) )
+        assertThat( Strings.toUserFriendlyId( "another text", 7, reject(), NO_VOWELS, FILL ) )
             .isEqualTo( "NTHRTXT" );
 
-        assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS ) )
+        assertThat( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS ) )
             .isEqualTo( "SMTXT" );
 
-        assertString( Strings.toUserFriendlyId( "some text", 7, reject() ) )
+        assertThat( Strings.toUserFriendlyId( "some text", 7, reject() ) )
             .isEqualTo( "SOMETEX" );
-        assertString( Strings.toUserFriendlyId( "another text", 7, reject() ) )
+        assertThat( Strings.toUserFriendlyId( "another text", 7, reject() ) )
             .isEqualTo( "ANOTHER" );
 
         Set<String> items = Sets.empty();
@@ -219,14 +218,14 @@ public class StringsTest {
 
     @Test
     public void toAccessKey() {
-        assertString( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "SMVRLFSMTXJH" );
-        assertString( Strings.toAccessKey( "j.smith@smith.com", 16 ) ).isEqualTo( "MWLFJHCSRMSHVHTX" );
-        assertString( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "SQNRMFCMNUJH" );
-        assertString( Strings.toAccessKey( "a" ) ).isEqualTo( "VKUYJXLWMITZ" );
-        assertString( Strings.toAccessKey( "A" ) ).isEqualTo( "PWOSXRVQUYNT" );
-        assertString( Strings.toAccessKey( "b" ) ).isEqualTo( "DKCGLFJEIMBH" );
-        assertString( Strings.toAccessKey( "/" ) ).isEqualTo( "XMWQLZNYOKVP" );
-        assertString( Strings.toAccessKey( "@" ) ).isEqualTo( "OVNRWQUPTXMS" );
+        assertThat( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "SMVRLFSMTXJH" );
+        assertThat( Strings.toAccessKey( "j.smith@smith.com", 16 ) ).isEqualTo( "MWLFJHCSRMSHVHTX" );
+        assertThat( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "SQNRMFCMNUJH" );
+        assertThat( Strings.toAccessKey( "a" ) ).isEqualTo( "VKUYJXLWMITZ" );
+        assertThat( Strings.toAccessKey( "A" ) ).isEqualTo( "PWOSXRVQUYNT" );
+        assertThat( Strings.toAccessKey( "b" ) ).isEqualTo( "DKCGLFJEIMBH" );
+        assertThat( Strings.toAccessKey( "/" ) ).isEqualTo( "XMWQLZNYOKVP" );
+        assertThat( Strings.toAccessKey( "@" ) ).isEqualTo( "OVNRWQUPTXMS" );
     }
 
 }

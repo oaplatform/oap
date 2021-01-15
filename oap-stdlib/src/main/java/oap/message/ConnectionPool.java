@@ -22,15 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.message;
 
-import org.testng.annotations.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class HashTest {
-    @Test
-    public void md5() {
-        assertThat( Hash.md5( "abc" ) ).isEqualToIgnoringCase( "900150983cd24fb0d6963f7d28e17f72" );
-    }
+public class ConnectionPool {
 }

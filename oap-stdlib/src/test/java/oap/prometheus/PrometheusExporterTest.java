@@ -33,7 +33,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrometheusExporterTest extends Fixtures {
     private static final Counter TEST_1 = Metrics.counter( "test1" );
@@ -50,7 +50,7 @@ public class PrometheusExporterTest extends Fixtures {
 
             TEST_1.increment( 2 );
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertString( response ).contains( """
+            assertThat( response ).contains( """
                 # HELP test1_total \s
                 # TYPE test1_total counter
                 test1_total 2.0

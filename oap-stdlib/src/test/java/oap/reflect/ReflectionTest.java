@@ -43,7 +43,6 @@ import java.util.Set;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
-import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -134,7 +133,7 @@ public class ReflectionTest {
     public void typeRef() {
         Reflection reflection = Reflect.reflect( new TypeRef<List<Map<RetentionPolicy, List<Integer>>>>() {
         } );
-        assertString( reflection.toString() ).isEqualTo(
+        assertThat( reflection.toString() ).isEqualTo(
             "Reflection(java.util.List<java.util.Map<java.lang.annotation.RetentionPolicy, java.util.List<java.lang.Integer>>>)" );
     }
 
@@ -153,8 +152,8 @@ public class ReflectionTest {
             ) )
         ) );
         assertThat( Reflect.<Integer>get( deepBean, "bean.x" ) ).isEqualTo( 1 );
-        assertString( Reflect.<String>get( deepBean, "bean.str" ) ).isEqualTo( "bbb" );
-        assertString( Reflect.<String>get( deepBean, "beanOptional.str" ) ).isEqualTo( "bbb" );
+        assertThat( Reflect.<String>get( deepBean, "bean.str" ) ).isEqualTo( "bbb" );
+        assertThat( Reflect.<String>get( deepBean, "beanOptional.str" ) ).isEqualTo( "bbb" );
         assertThat( Reflect.<Bean>get( deepBean, "list.[0]" ) ).isEqualTo( bean );
         assertThat( Reflect.<Bean>get( deepBean, "list.[2]" ) ).isNull();
         assertThat( Reflect.<Integer>get( deepBean, "map.[x].[1]" ) ).isEqualTo( 1 );

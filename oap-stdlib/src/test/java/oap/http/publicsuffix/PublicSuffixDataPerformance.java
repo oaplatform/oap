@@ -27,12 +27,12 @@ package oap.http.publicsuffix;
 import org.testng.annotations.Test;
 
 import static oap.benchmark.Benchmark.benchmark;
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PublicSuffixDataPerformance {
     @Test
     public void baseDomainOf() {
-        assertString( PublicSuffixData.baseDomainOf( "facebook.com" ) ).isEqualTo( "facebook.com" );
+        assertThat( PublicSuffixData.baseDomainOf( "facebook.com" ) ).isEqualTo( "facebook.com" );
         benchmark( "baseDomainOf", 1000000,
             () -> PublicSuffixData.baseDomainOf( "facebook.com" )
         ).run();

@@ -30,7 +30,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryParserTest extends Fixtures {
@@ -43,7 +42,7 @@ public class DictionaryParserTest extends Fixtures {
         var path = TestDirectoryFixture.testPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
-        assertString( Files.readString( path ) ).isEqualTo( """
+        assertThat( Files.readString( path ) ).isEqualTo( """
             {
               "name" : "test-dictionary",
               "version" : 1,
@@ -88,8 +87,8 @@ public class DictionaryParserTest extends Fixtures {
     @Test
     public void zeroStringEid() {
         var dictionary = Dictionaries.getDictionary( "test-dictionary2" );
-        assertString( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
-        assertString( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
+        assertThat( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
+        assertThat( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
 
     }
 }

@@ -36,6 +36,7 @@ import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.assertj.core.api.AbstractFileAssert;
+import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 
 import java.lang.reflect.InvocationTargetException;
@@ -186,6 +187,12 @@ public final class Asserts {
         return "/" + contetClass.getName().replace( ".", "/" ) + "/" + resource;
     }
 
+    /**
+     * AssertJ has come with proper exception already
+     *
+     * @see Assertions#assertThat(CharSequence)
+     */
+    @Deprecated
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
         protected StringAssertion( CharSequence value ) {
             super( value, StringAssertion.class );
@@ -193,7 +200,7 @@ public final class Asserts {
 
         @Override
         public StringAssertion isEqualTo( Object expected ) {
-            Assert.assertEquals( this.actual, expected );
+            assertThat( this.actual ).isEqualTo( expected );
             return this;
         }
 
@@ -216,7 +223,7 @@ public final class Asserts {
 
         public FileAssertion hasSameContentAs( Path expected ) {
             String actual = Files.readString( this.actual.toPath() );
-            assertString( actual ).isEqualTo( Files.readString( expected ) );
+            assertThat( actual ).isEqualTo( Files.readString( expected ) );
             return this;
         }
 
@@ -233,7 +240,7 @@ public final class Asserts {
         public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
             exists();
             String actual = Files.read( this.actual.toPath(), encoding, ofString() );
-            assertString( actual ).isEqualTo( expected );
+            assertThat( actual ).isEqualTo( expected );
             return this;
         }
 
@@ -244,8 +251,7 @@ public final class Asserts {
 
         public FileAssertion hasContentLineSorting( String expected, IoStreams.Encoding encoding ) {
             exists();
-            String content = Files.read( this.actual.toPath(), encoding, ofString() );
-            assertString( content ).isEqualToLineSorting( expected );
+            assertThat( Strings.sortLines( Files.read( this.actual.toPath(), encoding, ofString() ) ) ).isEqualTo( expected );
             return this;
         }
     }

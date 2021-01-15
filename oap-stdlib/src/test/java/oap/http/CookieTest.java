@@ -34,7 +34,7 @@ import org.testng.annotations.Test;
 
 import java.util.Locale;
 
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CookieTest extends Fixtures {
     {
@@ -49,12 +49,12 @@ public class CookieTest extends Fixtures {
             .withExpires( DateTime.now()
                 .plus( new Period( 2, 30, 10, 0 ) )
                 .toDateTime( DateTimeZone.UTC ) );
-        assertString( cookie.toString() ).isEqualTo( "test=test; Expires=Mon, 11-Nov-2019 13:41:21 GMT; SameSite=None" );
+        assertThat( cookie.toString() ).isEqualTo( "test=test; Expires=Mon, 11-Nov-2019 13:41:21 GMT; SameSite=None" );
     }
 
     @Test
     public void parse() {
         String cookie = "test=test; Expires=Mon, 11-Nov-2019 13:41:21 GMT; Domain=oaplatform.org; Path=/; Secure; HttpOnly; SameSite=Lax";
-        assertString( Cookie.parse( cookie ).toString() ).isEqualTo( cookie );
+        assertThat( Cookie.parse( cookie ).toString() ).isEqualTo( cookie );
     }
 }

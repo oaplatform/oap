@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static oap.io.content.ContentReader.ofString;
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -98,7 +97,7 @@ public class JsonAsserts {
 
         public JsonAssertion isEqualTo( String expected ) {
             isNotNull();
-            assertString( Formatter.format( actual ) )
+            assertThat( Formatter.format( actual ) )
                 .isEqualTo( Formatter.format( expected ) );
             return this;
 
@@ -127,7 +126,7 @@ public class JsonAsserts {
             else return Binder.json.unmarshal( Map.class, content );
         }
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
-            assertString( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
+            assertThat( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
                 .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );
             return this;
         }

@@ -31,7 +31,6 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Optional;
 
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +53,7 @@ public class RemoteTest extends Fixtures {
             .satisfies( remote -> {
                 assertThat( remote.accessible() ).isTrue();
                 //this tests local methods of Object.class
-                assertString( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:8980/remote/" );
+                assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:8980/remote/" );
             } );
 
         assertThat( kernelFixture.<RemoteClient>service( "remote-client" ) )

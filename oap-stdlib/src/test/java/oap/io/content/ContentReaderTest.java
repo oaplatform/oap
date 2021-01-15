@@ -27,7 +27,6 @@ package oap.io.content;
 import org.testng.annotations.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.bytesOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -40,7 +39,7 @@ public class ContentReaderTest {
             .hasContent( new String( content ) );
         assertThat( ContentReader.read( content, ContentReader.ofBytes() ) )
             .isEqualTo( content );
-        assertString( ContentReader.read( content, ContentReader.ofString() ) )
+        assertThat( ContentReader.read( content, ContentReader.ofString() ) )
             .isEqualTo( new String( content ) );
         assertThat( ContentReader.read( content, ContentReader.ofLinesStream() ) )
             .containsExactly( "test1", "test2" );

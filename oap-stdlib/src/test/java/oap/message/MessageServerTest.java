@@ -34,6 +34,7 @@ import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
@@ -117,7 +118,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceive() {
+    public void testSendAndReceive() throws IOException {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {

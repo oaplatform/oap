@@ -53,7 +53,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -227,26 +226,26 @@ public class BinderTest extends Fixtures {
     @Test
     public void bindNamed() {
         assertBind( NamedBean.class, new NamedBean( 10 ) );
-        assertString( Binder.json.marshal( new NamedBean( 10 ) ) ).isEqualTo( "{\"y\":10}" );
+        assertThat( Binder.json.marshal( new NamedBean( 10 ) ) ).isEqualTo( "{\"y\":10}" );
     }
 
     @Test
     public void bindMap() {
         assertBind( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
-        assertString( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
+        assertThat( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
             .isEqualTo( "{\"map\":{\"a\":1,\"b\":2}}" );
     }
 
     @Test
     public void bindMapXml() {
         assertBindXml( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
-        assertString( Binder.xml.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
+        assertThat( Binder.xml.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
             .isEqualTo( "<?xml version='1.0' encoding='UTF-8'?><MapBean><map><a>1</a><b>2</b></map></MapBean>" );
     }
 
     @Test( enabled = false )
     public void bindMapXmlCaseInsensitive() {
-        assertString( Binder.xml.marshal( Binder.xml.unmarshal( CaseSensXmlBean.class,
+        assertThat( Binder.xml.marshal( Binder.xml.unmarshal( CaseSensXmlBean.class,
             "<?xml version='1.0' encoding='UTF-8'?><CaseSensXmlBean><Bean></Bean></CaseSensXmlBean>" ) ) )
             .isEqualTo( "<?xml version='1.0' encoding='UTF-8'?><CaseSensXmlBean><bean><i>0</i><l>0</l><bean></CaseSensXmlBean>" );
     }

@@ -32,9 +32,9 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static oap.testng.Asserts.assertString;
 import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class StringIdentifierTest {
@@ -42,15 +42,15 @@ public class StringIdentifierTest {
     @Test
     public void forPath() {
         var identifier = Identifier.<Bean>forPath( "s" ).build();
-        assertString( identifier.get( new Bean( "1", "aaaa" ) ) ).isEqualTo( "aaaa" );
-        assertString( identifier.get( new Bean( "2", "bbbb" ) ) ).isEqualTo( "bbbb" );
+        assertThat( identifier.get( new Bean( "1", "aaaa" ) ) ).isEqualTo( "aaaa" );
+        assertThat( identifier.get( new Bean( "2", "bbbb" ) ) ).isEqualTo( "bbbb" );
     }
 
     @Test
     public void forId() {
         var identifier = Identifier.<Bean>forId( b -> b.id ).build();
-        assertString( identifier.get( new Bean( "1", "aaaa" ) ) ).isEqualTo( "1" );
-        assertString( identifier.get( new Bean( "2", "bbbb" ) ) ).isEqualTo( "2" );
+        assertThat( identifier.get( new Bean( "1", "aaaa" ) ) ).isEqualTo( "1" );
+        assertThat( identifier.get( new Bean( "2", "bbbb" ) ) ).isEqualTo( "2" );
     }
 
     @Test
@@ -60,8 +60,8 @@ public class StringIdentifierTest {
             .options()
             .build();
         var a = new Bean( "aaaa" );
-        assertString( identifier.getOrInit( a, Functions.empty.reject() ) ).isEqualTo( "AAAA" );
-        assertString( a.id ).isEqualTo( "AAAA" );
+        assertThat( identifier.getOrInit( a, Functions.empty.reject() ) ).isEqualTo( "AAAA" );
+        assertThat( a.id ).isEqualTo( "AAAA" );
     }
 
     @Test
@@ -74,10 +74,10 @@ public class StringIdentifierTest {
         var a = new Bean( null, "some text" );
         var b = new Bean( null, "another text" );
 
-        assertString( identifier.getOrInit( a, Functions.empty.reject() ) ).isEqualTo( "SMTXTXX" );
-        assertString( a.id ).isEqualTo( "SMTXTXX" );
+        assertThat( identifier.getOrInit( a, Functions.empty.reject() ) ).isEqualTo( "SMTXTXX" );
+        assertThat( a.id ).isEqualTo( "SMTXTXX" );
 
-        assertString( identifier.getOrInit( b, Functions.empty.reject() ) ).isEqualTo( "NTHRTXT" );
+        assertThat( identifier.getOrInit( b, Functions.empty.reject() ) ).isEqualTo( "NTHRTXT" );
 
     }
 
@@ -94,7 +94,7 @@ public class StringIdentifierTest {
         for( int i = 0; i < 7; i++ ) {
             var value = identifier.getOrInit( new Bean( "some text" ), list::contains );
             list.add( value );
-            assertString( value ).isEqualTo( results[i] );
+            assertThat( value ).isEqualTo( results[i] );
         }
 
     }

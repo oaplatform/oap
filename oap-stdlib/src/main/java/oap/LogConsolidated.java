@@ -44,9 +44,7 @@ public class LogConsolidated {
                     if( now - lastTimeAndCount.time < timeBetweenLogs ) {
                         lastTimeAndCount.count++;
                         return;
-                    } else {
-                        log( logger, level, "|x" + lastTimeAndCount.count + "| " + message, t );
-                    }
+                    } else log( logger, level, "|x" + lastTimeAndCount.count + "| " + message, t );
                 }
             } else {
                 log( logger, level, message, t );

@@ -32,7 +32,7 @@ import java.util.Map;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AssertsTest {
 
@@ -45,13 +45,13 @@ public class AssertsTest {
 
     @Test
     public void contentOfTestResource() {
-        assertString( Asserts.contentOfTestResource( getClass(), "substitutions.txt", Map.of( "a", 1 ) ) )
+        assertThat( Asserts.contentOfTestResource( getClass(), "substitutions.txt", Map.of( "a", 1 ) ) )
             .isEqualTo( "1 = b" );
     }
 
     @Test
     public void locationOfTestResource() {
-        assertString( Asserts.locationOfTestResource( getClass(), "a.txt" ) )
+        assertThat( Asserts.locationOfTestResource( getClass(), "a.txt" ) )
             .isEqualTo( "/oap/testng/AssertsTest/a.txt" );
     }
 

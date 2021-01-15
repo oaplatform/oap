@@ -31,7 +31,6 @@ import java.net.IDN;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.linesOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +52,7 @@ public class PublicSuffixDataTest {
 
     @Test( dataProvider = "cases" )
     public void baseDomainOf( String domain, String expeted ) {
-        assertString( PublicSuffixData.baseDomainOf( domain ) ).isEqualTo( expeted );
+        assertThat( PublicSuffixData.baseDomainOf( domain ) ).isEqualTo( expeted );
     }
 
     @Test

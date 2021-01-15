@@ -29,7 +29,6 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class UriTest {
@@ -41,6 +40,6 @@ public class UriTest {
 
     @Test
     public void testGetProtocol() {
-        assertString( Uri.getProtocol( "test://uri:pass@host" ) ).isEqualTo( "test" );
+        assertThat( Uri.getProtocol( "test://uri:pass@host" ) ).isEqualTo( "test" );
     }
 }

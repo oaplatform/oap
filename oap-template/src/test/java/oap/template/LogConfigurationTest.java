@@ -36,7 +36,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LogConfigurationTest extends Fixtures {
@@ -187,7 +186,7 @@ public class LogConfigurationTest extends Fixtures {
 
         var res = dictionaryTemplate.templateFunction.render( cp );
 
-        assertString( res ).isEqualTo( "10\to\ta\t20\to2\tb\t5" );
+        assertThat( res ).isEqualTo( "10\to\ta\t20\to2\tb\t5" );
     }
 
     @Test
@@ -238,6 +237,6 @@ public class LogConfigurationTest extends Fixtures {
 
         var res = dictionaryTemplate.templateFunction.render( cp );
 
-        assertString( res ).isEqualTo( "1\t10" );
+        assertThat( res ).isEqualTo( "1\t10" );
     }
 }

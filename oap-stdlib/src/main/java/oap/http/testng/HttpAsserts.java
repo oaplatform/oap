@@ -46,7 +46,6 @@ import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;
 import static oap.json.testng.JsonAsserts.assertJson;
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -156,22 +155,22 @@ public class HttpAsserts {
         }
 
         public HttpAssertion hasReason( String reasonPhrase ) {
-            assertString( response.reasonPhrase ).isEqualTo( reasonPhrase );
+            assertThat( response.reasonPhrase ).isEqualTo( reasonPhrase );
             return this;
         }
 
         public HttpAssertion hasContentType( ContentType contentType ) {
-            assertString( response.contentType.toString() ).isEqualTo( contentType.toString() );
+            assertThat( response.contentType.toString() ).isEqualTo( contentType.toString() );
             return this;
         }
 
         public HttpAssertion hasBody( String body ) {
-            assertString( response.contentString() ).isEqualTo( body );
+            assertThat( response.contentString() ).isEqualTo( body );
             return this;
         }
 
         public HttpAssertion containsHeader( String name, String value ) {
-            assertString( response.header( name ).orElse( null ) ).isEqualTo( value );
+            assertThat( response.header( name ).orElse( null ) ).isEqualTo( value );
             return this;
         }
 
@@ -249,7 +248,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasValue( String value ) {
-            assertString( cookie.value ).isEqualTo( value );
+            assertThat( cookie.value ).isEqualTo( value );
             return this;
         }
 
@@ -258,7 +257,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasDomain( String domain ) {
-            assertString( cookie.domain ).isEqualTo( domain );
+            assertThat( cookie.domain ).isEqualTo( domain );
             return this;
         }
 
@@ -273,7 +272,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasPath( String path ) {
-            assertString( cookie.path ).isEqualTo( path );
+            assertThat( cookie.path ).isEqualTo( path );
             return this;
         }
 

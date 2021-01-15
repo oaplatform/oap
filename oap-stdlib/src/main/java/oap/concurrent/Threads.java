@@ -27,8 +27,11 @@ package oap.concurrent;
 import lombok.SneakyThrows;
 import oap.util.Try;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Threads {
     public static void interruptAndJoin( Thread thread ) {
@@ -42,8 +45,12 @@ public class Threads {
     }
 
     public static void sleepSafely( long time ) {
+        sleepSafely( time, MILLISECONDS );
+    }
+
+    public static void sleepSafely( long time, TimeUnit timeUnit ) {
         try {
-            Thread.sleep( time );
+            Thread.sleep( timeUnit.toMillis( time ) );
         } catch( InterruptedException ignored ) {
         }
     }
@@ -88,20 +95,20 @@ public class Threads {
     }
 
     @SneakyThrows
-    public static <T> T synchronously( Lock lock, Try.ThrowingSupplier<T> func ) {
+    public static <T> T synchronously( Lock lock, Try.ThrowingSupplier<T> action ) {
         lock.lockInterruptibly();
         try {
-            return func.get();
+            return action.get();
         } finally {
             lock.unlock();
         }
     }
 
     @SneakyThrows
-    public static void synchronously( Lock lock, Try.ThrowingRunnable func ) {
+    public static <E extends Exception> void synchronously( Lock lock, Try.ThrowingRunnable<E> action ) {
         lock.lockInterruptibly();
         try {
-            func.run();
+            action.run();
         } finally {
             lock.unlock();
         }

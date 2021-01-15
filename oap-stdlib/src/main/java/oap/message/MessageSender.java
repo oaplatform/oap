@@ -115,7 +115,7 @@ public class MessageSender implements Closeable {
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
     private ThreadPoolExecutor pool;
-    private ConnectionState[] connections;
+    private Connection[] connections;
     private boolean closed = false;
     private Semaphore poolSemaphore;
     private Scheduled diskSyncScheduler;
@@ -176,10 +176,9 @@ public class MessageSender implements Closeable {
             new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build()
         );
 
-        connections = new ConnectionState[poolSize];
-        for( var i = 0; i < poolSize; i++ ) {
-            connections[i] = new ConnectionState();
-        }
+        log.debug( "creating connection pool {}", poolSize );
+        connections = new Connection[poolSize];
+        for( var i = 0; i < poolSize; i++ ) connections[i] = new Connection();
         poolSemaphore = new Semaphore( poolSize, true );
 
         if( diskSyncPeriod > 0 )
@@ -210,7 +209,7 @@ public class MessageSender implements Closeable {
         return this;
     }
 
-    private ConnectionState findFreeState() {
+    private Connection findFreeState() {
         for( var state : connections ) {
             if( state.free.compareAndExchange( true, false ) ) return state;
         }
@@ -426,7 +425,7 @@ public class MessageSender implements Closeable {
         }
     }
 
-    private class ConnectionState implements Closeable {
+    private class Connection implements Closeable {
         public MessageSocketConnection connection;
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean networkAvailable = true;
@@ -520,7 +519,7 @@ public class MessageSender implements Closeable {
                     networkAvailable = false;
 
                     LogConsolidated.log( log, Level.WARN, Dates.s( 5 ), e.getMessage(), null );
-                    log.trace( e.getMessage(), e );
+                    log.debug( e.getMessage(), e );
                     Closeables.close( connection );
                 }
             }
