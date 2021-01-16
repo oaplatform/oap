@@ -97,17 +97,17 @@ public class PoolTest {
     }
 
     @Test
-    public void than() {
+    public void then() {
         try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
                 return new P();
             }
         } ) {
-            pool.borrow().than( p -> p.s += "+" ).release();
-            pool.borrow().than( p -> p.s += "+" ).release();
-            pool.borrow().than( p -> p.s += "+" ).release();
+            pool.borrow().then( p -> p.s += "+" ).release();
+            pool.borrow().then( p -> p.s += "+" ).release();
+            pool.borrow().then( p -> p.s += "+" ).release();
             pool.borrow()
-                .than( p -> assertThat( p.s ).isEqualTo( "+++" ) )
+                .then( p -> assertThat( p.s ).isEqualTo( "+++" ) )
                 .release();
         }
     }
@@ -127,7 +127,7 @@ public class PoolTest {
                 p.s = "discarded";
             }
         } ) {
-            Poolable<P> p1 = pool.borrow().than( p -> p.s = "invalid" ).release();
+            Poolable<P> p1 = pool.borrow().then( p -> p.s = "invalid" ).release();
             Poolable<P> p2 = pool.borrow();
             assertThat( p2 ).isNotSameAs( p1 );
             assertThat( p1.get().s ).isEqualTo( "discarded" );

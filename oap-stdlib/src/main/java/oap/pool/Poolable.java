@@ -49,7 +49,7 @@ public class Poolable<T> implements AutoCloseable {
         return value;
     }
 
-    public Poolable<T> than( Consumer<? super T> action ) {
+    public Poolable<T> then( Consumer<? super T> action ) {
         action.accept( get() );
         return this;
     }
