@@ -35,72 +35,82 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PoolTest {
     @Test
     public void borrow() {
-        Pool<P> pool = new Pool<>( 2 ) {
+        try( Pool<P> pool = new Pool<>( 2 ) {
             public P create() {
                 return new P();
             }
-        };
-        var p = pool.borrow();
-        var ignored = pool.borrow();
-        ForkJoinPool.commonPool().execute( () -> {
-            Threads.sleepSafely( 150 );
-            p.close();
-        } );
-        assertThat( pool.borrow( 100, MILLISECONDS ).isEmpty() ).isTrue();
-        Threads.sleepSafely( 100 );
-        assertThat( pool.borrow() ).isSameAs( p );
+        } ) {
+            var p1 = pool.borrow();
+            var p2 = pool.borrow();
+            ForkJoinPool.commonPool().execute( () -> {
+                Threads.sleepSafely( 150 );
+                p1.close();
+            } );
+            assertThat( pool.borrow( 100, MILLISECONDS ).isEmpty() ).isTrue();
+            Threads.sleepSafely( 100 );
+            Poolable<P> p3 = pool.borrow();
+            assertThat( p3 ).isSameAs( p1 );
+            p2.close();
+            p3.close();
+        }
     }
 
     @Test
     public void borrowOne() {
-        Pool<P> pool = new Pool<>( 1 ) {
+        try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
                 return new P();
             }
-        };
-        var p = pool.borrow();
-        ForkJoinPool.commonPool().execute( () -> {
-            Threads.sleepSafely( 100 );
-            p.close();
-        } );
-        assertThat( pool.borrow() ).isSameAs( p );
-
+        } ) {
+            var p = pool.borrow();
+            ForkJoinPool.commonPool().execute( () -> {
+                Threads.sleepSafely( 100 );
+                p.close();
+            } );
+            Poolable<P> p2 = pool.borrow();
+            assertThat( p2 ).isSameAs( p );
+            p2.close();
+        }
     }
 
     @Test
     public void resource() {
-        Pool<P> pool = new Pool<>( 1 ) {
+        try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
                 return new P();
             }
-        };
-        try( var ignored = pool.borrow() ) {
-            System.out.println( "borrow" );
-        }
-        try( var ignored = pool.borrow() ) {
-            System.out.println( "borrow" );
-        }
-        try( var ignored = pool.borrow() ) {
-            System.out.println( "borrow" );
+        } ) {
+            try( var ignored = pool.borrow() ) {
+                System.out.println( "borrow" );
+            }
+            try( var ignored = pool.borrow() ) {
+                System.out.println( "borrow" );
+            }
+            try( var ignored = pool.borrow() ) {
+                System.out.println( "borrow" );
+            }
         }
     }
 
     @Test
     public void ifPresent() {
-        Pool<P> pool = new Pool<>( 1 ) {
+        try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
                 return new P();
             }
-        };
-        pool.borrow().ifPresent( p -> p.s += "+" );
-        pool.borrow().ifPresent( p -> p.s += "+" );
-        pool.borrow().ifPresent( p -> p.s += "+" );
-        assertThat( pool.borrow().get().s ).isEqualTo( "+++" );
+        } ) {
+            pool.borrow().ifPresent( p -> p.s += "+" );
+            pool.borrow().ifPresent( p -> p.s += "+" );
+            pool.borrow().ifPresent( p -> p.s += "+" );
+            Poolable<P> p = pool.borrow();
+            assertThat( p.get().s ).isEqualTo( "+++" );
+            p.close();
+        }
     }
 
     @Test
     public void invalid() {
-        Pool<P> pool = new Pool<>( 1 ) {
+        try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
                 return new P();
             }
@@ -109,15 +119,57 @@ public class PoolTest {
                 return !"invalid".equals( p.s );
             }
 
-            @Override
             public void discarded( P p ) {
                 p.s = "discarded";
             }
+        } ) {
+            Poolable<P> p1 = pool.borrow();
+            p1.ifPresent( p -> p.s = "invalid" );
+            Poolable<P> p2 = pool.borrow();
+            assertThat( p2 ).isNotSameAs( p1 );
+            assertThat( p1.get().s ).isEqualTo( "discarded" );
+            p2.close();
+        }
+    }
+
+    @Test
+    public void afterClose() {
+        Pool<P> pool = new Pool<>( 3 ) {
+            public P create() {
+                return new P();
+            }
         };
-        Poolable<P> p1 = pool.borrow();
-        p1.ifPresent( p -> p.s = "invalid" );
-        assertThat( pool.borrow() ).isNotSameAs( p1 );
+        pool.close();
+        assertThat( pool.borrow().isEmpty() ).isTrue();
+    }
+
+    @Test
+    public void close() {
+        Poolable<P> p1;
+        Poolable<P> p2;
+        Poolable<P> p3;
+        try( Pool<P> pool = new Pool<>( 3 ) {
+            public P create() {
+                return new P();
+            }
+
+            public void discarded( P p ) {
+                p.s = "discarded";
+            }
+        } ) {
+            p1 = pool.borrow();
+            p2 = pool.borrow();
+            p3 = pool.borrow();
+            p1.close();
+            p2.close();
+            ForkJoinPool.commonPool().execute( () -> {
+                Threads.sleepSafely( 100 );
+                p3.close();
+            } );
+        }
         assertThat( p1.get().s ).isEqualTo( "discarded" );
+        assertThat( p2.get().s ).isEqualTo( "discarded" );
+        assertThat( p3.get().s ).isEqualTo( "discarded" );
     }
 
     private static class P {

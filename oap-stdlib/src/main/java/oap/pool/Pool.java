@@ -24,18 +24,26 @@
 
 package oap.pool;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import static oap.concurrent.Times.times;
+
+@Slf4j
 @SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class Pool<T> {
+public abstract class Pool<T> implements AutoCloseable {
     private final Semaphore semaphore;
     private final Queue<Poolable<T>> free = new LinkedList<>();
+    private  boolean closed = false;
+    private final int size;
 
     public Pool( int size ) {
-        this.semaphore = new Semaphore( size, true );
+        this.size = size;
+        this.semaphore = new Semaphore( this.size, true );
     }
 
     public abstract T create();
@@ -49,7 +57,7 @@ public abstract class Pool<T> {
 
     public Poolable<T> borrow( long timeout, TimeUnit unit ) {
         try {
-            if( !semaphore.tryAcquire( timeout, unit ) ) return Poolable.empty();
+            if( closed || !semaphore.tryAcquire( timeout, unit ) ) return Poolable.empty();
             return borrowOrCreate();
         } catch( InterruptedException e ) {
             return Poolable.empty();
@@ -58,6 +66,7 @@ public abstract class Pool<T> {
 
     public Poolable<T> borrow() {
         try {
+            if( closed ) return Poolable.empty();
             semaphore.acquire();
             return borrowOrCreate();
         } catch( InterruptedException e ) {
@@ -65,6 +74,9 @@ public abstract class Pool<T> {
         }
     }
 
+    /**
+     * @return never empty
+     */
     private Poolable<T> borrowOrCreate() {
         Poolable<T> p;
         while( ( p = free.poll() ) != null ) {
@@ -75,7 +87,22 @@ public abstract class Pool<T> {
     }
 
     protected void release( Poolable<T> poolable ) {
-        free.offer( poolable );
+        if( closed ) discarded( poolable.value );
+        else free.offer( poolable );
         semaphore.release();
+    }
+
+    @Override
+    public void close() {
+        closed = true;
+        times( size, () -> {
+            try {
+                semaphore.acquire();
+                Poolable<T> p = free.poll();
+                if( p != null ) discarded( p.value );
+            } catch( InterruptedException e ) {
+                log.debug( "abnormal pool shutdown", e );
+            }
+        } );
     }
 }

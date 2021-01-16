@@ -24,6 +24,7 @@
 package oap.io;
 
 import lombok.SneakyThrows;
+import oap.concurrent.Times;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;
 import oap.testng.Fixtures;
@@ -121,9 +122,9 @@ public class IoStreamsTest extends Fixtures {
             boolean numbers = random.nextBoolean();
             int values = 1 + random.nextInt( 300 );
             if( numbers )
-                Arrays.times( values, () -> set.add( RandomStringUtils.randomNumeric( 10 ) ) );
+                Times.times( values, () -> set.add( RandomStringUtils.randomNumeric( 10 ) ) );
             else
-                Arrays.times( values, () -> set.add( RandomStringUtils.randomAlphabetic( 10, 30 ) ) );
+                Times.times( values, () -> set.add( RandomStringUtils.randomAlphabetic( 10, 30 ) ) );
             System.out.println( "column[" + i + "] variance is " + set.size() + ( numbers ? " numbers" : " strings" ) );
             sets.add( new ArrayList<>( set ) );
         }

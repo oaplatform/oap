@@ -21,32 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.concurrent;
 
-import java.util.HashSet;
-import java.util.Set;
-
-public class Once {
-    private static final Set<Object> done = new HashSet<>();
-
-    public static void executeOnce( Runnable action ) {
-        if( !done.contains( action.getClass() ) ) {
-            action.run();
-            done.add( action.getClass() );
-        }
-    }
-
-    public static Runnable once( Runnable action ) {
-        return new Runnable() {
-            boolean done = false;
-
-            @Override
-            public void run() {
-                if( !done ) {
-                    done = true;
-                    action.run();
-                }
-            }
-        };
+public class Times {
+    public static void times( int times, Runnable action ) {
+        for( int i = 0; i < times; i++ ) action.run();
     }
 }
