@@ -25,14 +25,17 @@
 package oap.concurrent;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import oap.util.Try;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+@Slf4j
 public class Threads {
     public static void interruptAndJoin( Thread thread ) {
         if( thread != null ) {
@@ -115,4 +118,11 @@ public class Threads {
     }
 
 
+    public static void awaitTermination( ExecutorService service, long timeout, TimeUnit unit ) {
+        try {
+            if( !service.awaitTermination( timeout, unit ) ) log.warn( "service {} terminated with timeout", service );
+        } catch( InterruptedException e ) {
+            log.warn( "abnormal termination of " + service, e );
+        }
+    }
 }

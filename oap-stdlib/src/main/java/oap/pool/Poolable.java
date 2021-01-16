@@ -49,10 +49,9 @@ public class Poolable<T> implements AutoCloseable {
         return value;
     }
 
-    public void ifPresent( Consumer<? super T> action ) {
-        try( this ) {
-            action.accept( value );
-        }
+    public Poolable<T> than( Consumer<? super T> action ) {
+        action.accept( get() );
+        return this;
     }
 
     static <T> Poolable<T> of( Pool<T> pool, T object ) {
@@ -66,8 +65,12 @@ public class Poolable<T> implements AutoCloseable {
 
     @Override
     public void close() {
-        if( value != null )
-            pool.release( this );
+        release();
+    }
+
+    public Poolable<T> release() {
+        if( value != null ) pool.release( this );
+        return this;
     }
 
     public boolean isEmpty() {

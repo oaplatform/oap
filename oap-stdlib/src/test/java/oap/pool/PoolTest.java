@@ -24,14 +24,18 @@
 
 package oap.pool;
 
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static oap.concurrent.Times.times;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 public class PoolTest {
     @Test
     public void borrow() {
@@ -42,7 +46,7 @@ public class PoolTest {
         } ) {
             var p1 = pool.borrow();
             var p2 = pool.borrow();
-            ForkJoinPool.commonPool().execute( () -> {
+            CompletableFuture.runAsync( () -> {
                 Threads.sleepSafely( 150 );
                 p1.close();
             } );
@@ -63,13 +67,13 @@ public class PoolTest {
             }
         } ) {
             var p = pool.borrow();
-            ForkJoinPool.commonPool().execute( () -> {
+            CompletableFuture.runAsync( () -> {
                 Threads.sleepSafely( 100 );
-                p.close();
+                p.release();
             } );
             Poolable<P> p2 = pool.borrow();
             assertThat( p2 ).isSameAs( p );
-            p2.close();
+            p2.release();
         }
     }
 
@@ -99,12 +103,12 @@ public class PoolTest {
                 return new P();
             }
         } ) {
-            pool.borrow().ifPresent( p -> p.s += "+" );
-            pool.borrow().ifPresent( p -> p.s += "+" );
-            pool.borrow().ifPresent( p -> p.s += "+" );
-            Poolable<P> p = pool.borrow();
-            assertThat( p.get().s ).isEqualTo( "+++" );
-            p.close();
+            pool.borrow().than( p -> p.s += "+" ).release();
+            pool.borrow().than( p -> p.s += "+" ).release();
+            pool.borrow().than( p -> p.s += "+" ).release();
+            pool.borrow()
+                .than( p -> assertThat( p.s ).isEqualTo( "+++" ) )
+                .release();
         }
     }
 
@@ -123,8 +127,7 @@ public class PoolTest {
                 p.s = "discarded";
             }
         } ) {
-            Poolable<P> p1 = pool.borrow();
-            p1.ifPresent( p -> p.s = "invalid" );
+            Poolable<P> p1 = pool.borrow().than( p -> p.s = "invalid" ).release();
             Poolable<P> p2 = pool.borrow();
             assertThat( p2 ).isNotSameAs( p1 );
             assertThat( p1.get().s ).isEqualTo( "discarded" );
@@ -162,7 +165,7 @@ public class PoolTest {
             p3 = pool.borrow();
             p1.close();
             p2.close();
-            ForkJoinPool.commonPool().execute( () -> {
+            CompletableFuture.runAsync( () -> {
                 Threads.sleepSafely( 100 );
                 p3.close();
             } );
@@ -172,6 +175,29 @@ public class PoolTest {
         assertThat( p3.get().s ).isEqualTo( "discarded" );
     }
 
+    @Test
+    public void async() {
+        P[] px = new P[] { new P(), new P(), new P() };
+        try( Pool<P> pool = new Pool<>( 3 ) {
+            int index;
+
+            public P create() {
+                return px[index++];
+            }
+
+            public void discarded( P p ) {
+                p.s += "discarded";
+            }
+        } ) {
+            times( 12, () -> pool.async( p -> {
+                Threads.sleepSafely( 50, MILLISECONDS );
+                p.s += "+";
+            } ) );
+        }
+        for( P p : px ) assertThat( p.s ).isEqualTo( "++++discarded" );
+    }
+
+    @ToString
     private static class P {
         String s = "";
     }

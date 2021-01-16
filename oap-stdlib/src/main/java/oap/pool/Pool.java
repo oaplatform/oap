@@ -26,10 +26,14 @@ package oap.pool;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static oap.concurrent.Times.times;
 
@@ -37,8 +41,8 @@ import static oap.concurrent.Times.times;
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class Pool<T> implements AutoCloseable {
     private final Semaphore semaphore;
-    private final Queue<Poolable<T>> free = new LinkedList<>();
-    private  boolean closed = false;
+    private final Queue<Poolable<T>> free = new ConcurrentLinkedQueue<>();
+    private boolean closed = false;
     private final int size;
 
     public Pool( int size ) {
@@ -74,6 +78,14 @@ public abstract class Pool<T> implements AutoCloseable {
         }
     }
 
+    public Optional<Future<Void>> async( Consumer<T> action ) {
+        Poolable<T> poolable = borrow();
+        return poolable.isEmpty()
+            ? Optional.empty()
+            : Optional.of( CompletableFuture.runAsync( () -> poolable.than( action ).release() ) );
+    }
+
+
     /**
      * @return never empty
      */
@@ -88,7 +100,7 @@ public abstract class Pool<T> implements AutoCloseable {
 
     protected void release( Poolable<T> poolable ) {
         if( closed ) discarded( poolable.value );
-        else free.offer( poolable );
+        else free.add( poolable );
         semaphore.release();
     }
 
@@ -104,5 +116,10 @@ public abstract class Pool<T> implements AutoCloseable {
                 log.debug( "abnormal pool shutdown", e );
             }
         } );
+    }
+
+    @Override
+    public String toString() {
+        return "Pool(permits=" + semaphore.availablePermits() + ",free=" + free.size() + ",closed=" + closed + ")";
     }
 }
