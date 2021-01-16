@@ -48,14 +48,14 @@ public class PoolTest {
             var p2 = pool.borrow();
             CompletableFuture.runAsync( () -> {
                 Threads.sleepSafely( 150 );
-                p1.close();
+                p1.release();
             } );
             assertThat( pool.borrow( 100, MILLISECONDS ).isEmpty() ).isTrue();
             Threads.sleepSafely( 100 );
             Poolable<P> p3 = pool.borrow();
             assertThat( p3 ).isSameAs( p1 );
-            p2.close();
-            p3.close();
+            p2.release();
+            p3.release();
         }
     }
 
@@ -97,7 +97,7 @@ public class PoolTest {
     }
 
     @Test
-    public void ifPresent() {
+    public void than() {
         try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
                 return new P();
@@ -131,7 +131,7 @@ public class PoolTest {
             Poolable<P> p2 = pool.borrow();
             assertThat( p2 ).isNotSameAs( p1 );
             assertThat( p1.get().s ).isEqualTo( "discarded" );
-            p2.close();
+            p2.release();
         }
     }
 
