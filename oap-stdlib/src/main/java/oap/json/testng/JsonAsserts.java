@@ -24,6 +24,7 @@
 package oap.json.testng;
 
 import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.json.Formatter;
 import oap.util.Pair;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,8 +78,12 @@ public class JsonAsserts {
 
     }
 
+    /**
+     * #see {@link oap.testng.Asserts#contentOfTestResource(Class, String, ContentReader)}
+     */
+    @Deprecated
     public static <T> T objectOfTestJsonResource( Class<?> context, Class<T> clazz, String resourcePath ) {
-        return Binder.json.unmarshal( clazz, contentOfTestResource( context, resourcePath, ofString() ) );
+        return contentOfTestResource( context, resourcePath, ofJson( clazz ) );
     }
 
     public static JsonAssertion assertJson( String json ) {
@@ -125,6 +131,7 @@ public class JsonAsserts {
             if( content.trim().startsWith( "[" ) ) return Binder.json.unmarshal( List.class, content );
             else return Binder.json.unmarshal( Map.class, content );
         }
+
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
             assertThat( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
                 .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );

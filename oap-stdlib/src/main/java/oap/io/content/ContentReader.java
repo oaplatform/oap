@@ -26,6 +26,8 @@ package oap.io.content;
 
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
+import oap.json.Binder;
+import oap.reflect.TypeRef;
 import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.io.input.AutoCloseInputStream;
@@ -140,6 +142,24 @@ public interface ContentReader<R> {
             public Properties read( InputStream is ) {
                 properties.load( is );
                 return properties;
+            }
+        };
+    }
+
+    static <R> ContentReader<R> ofJson( Class<R> clazz ) {
+        return new ContentReader<R>() {
+            @Override
+            public R read( InputStream is ) {
+                return Binder.json.unmarshal( clazz, is );
+            }
+        };
+    }
+
+    static <R> ContentReader<R> ofJson( TypeRef<R> typeRef ) {
+        return new ContentReader<R>() {
+            @Override
+            public R read( InputStream is ) {
+                return Binder.json.unmarshal( typeRef, is );
             }
         };
     }

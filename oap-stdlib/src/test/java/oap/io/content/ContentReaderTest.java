@@ -24,11 +24,14 @@
 
 package oap.io.content;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.testng.annotations.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofBytes;
 import static oap.io.content.ContentReader.ofInputStream;
+import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofLines;
 import static oap.io.content.ContentReader.ofLinesStream;
 import static oap.io.content.ContentReader.ofProperties;
@@ -53,6 +56,14 @@ public class ContentReaderTest {
             .containsExactly( "test1", "test2" );
         assertThat( ContentReader.read( bytesOfTestResource( getClass(), "test.properties" ), ofProperties() ) )
             .contains( entry( "a", "b" ), entry( "c", "d" ) );
+        assertThat( ContentReader.read( "{\"s\":\"aaa\"}".getBytes( UTF_8 ), ofJson( Bean.class ) ) )
+            .isEqualTo( new Bean() );
+    }
+
+    @EqualsAndHashCode
+    @ToString
+    public static class Bean {
+        String s = "aaa";
     }
 
 }
