@@ -27,6 +27,12 @@ package oap.io.content;
 import org.testng.annotations.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static oap.io.content.ContentReader.ofBytes;
+import static oap.io.content.ContentReader.ofInputStream;
+import static oap.io.content.ContentReader.ofLines;
+import static oap.io.content.ContentReader.ofLinesStream;
+import static oap.io.content.ContentReader.ofProperties;
+import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.bytesOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -35,17 +41,17 @@ public class ContentReaderTest {
     @Test
     public void read() {
         byte[] content = "test1\ntest2\n".getBytes( UTF_8 );
-        assertThat( ContentReader.read( content, ContentReader.ofInputStream() ) )
+        assertThat( ContentReader.read( content, ofInputStream() ) )
             .hasContent( new String( content ) );
-        assertThat( ContentReader.read( content, ContentReader.ofBytes() ) )
+        assertThat( ContentReader.read( content, ofBytes() ) )
             .isEqualTo( content );
-        assertThat( ContentReader.read( content, ContentReader.ofString() ) )
+        assertThat( ContentReader.read( content, ofString() ) )
             .isEqualTo( new String( content ) );
-        assertThat( ContentReader.read( content, ContentReader.ofLinesStream() ) )
+        assertThat( ContentReader.read( content, ofLinesStream() ) )
             .containsExactly( "test1", "test2" );
-        assertThat( ContentReader.read( content, ContentReader.ofLines() ) )
+        assertThat( ContentReader.read( content, ofLines() ) )
             .containsExactly( "test1", "test2" );
-        assertThat( ContentReader.read( bytesOfTestResource( getClass(), "test.properties" ), ContentReader.ofProperties() ) )
+        assertThat( ContentReader.read( bytesOfTestResource( getClass(), "test.properties" ), ofProperties() ) )
             .contains( entry( "a", "b" ), entry( "c", "d" ) );
     }
 

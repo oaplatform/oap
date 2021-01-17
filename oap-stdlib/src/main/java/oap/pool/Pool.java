@@ -27,15 +27,15 @@ package oap.pool;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.TimeoutException;
 
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static oap.concurrent.Times.times;
 
 @Slf4j
@@ -45,9 +45,15 @@ public abstract class Pool<T> implements AutoCloseable {
     private final Queue<Poolable<T>> free = new ConcurrentLinkedQueue<>();
     private boolean closed = false;
     private final int size;
+    private final long shutdownTimeout;
 
     public Pool( int size ) {
+        this( size, MINUTES.toMillis( 1 ) );
+    }
+
+    public Pool( int size, long shutdownTimeout ) {
         this.size = size;
+        this.shutdownTimeout = shutdownTimeout;
         this.semaphore = new Semaphore( this.size, true );
     }
 
@@ -90,21 +96,21 @@ public abstract class Pool<T> implements AutoCloseable {
         }
     }
 
-    public Optional<Future<Void>> async( Consumer<T> action ) {
+    public CompletableFuture<Void> async( Consumer<T> action ) {
         return async( action, e -> log.error( e.getMessage(), e ) );
     }
 
-    public Optional<Future<Void>> async( Consumer<T> action, Consumer<? super Exception> onError ) {
+    public CompletableFuture<Void> async( Consumer<T> action, Consumer<? super Exception> onError ) {
         Poolable<T> poolable = borrow();
         return poolable.isEmpty()
-            ? Optional.empty()
-            : Optional.of( CompletableFuture.runAsync( () -> {
+            ? CompletableFuture.failedFuture( new IllegalStateException( "cannot borrow object from pool, closed=" + closed ) )
+            : CompletableFuture.runAsync( () -> {
                 try( poolable ) {
                     poolable.then( action );
                 } catch( Exception e ) {
                     onError.accept( e );
                 }
-            } ) );
+            } );
     }
 
 
@@ -131,12 +137,12 @@ public abstract class Pool<T> implements AutoCloseable {
         closed = true;
         times( size, () -> {
             try {
-                if( !semaphore.tryAcquire( 5, TimeUnit.SECONDS ) )
+                if( !semaphore.tryAcquire( shutdownTimeout, MILLISECONDS ) )
                     throw new TimeoutException( "cannot close pool properly, timeout waiting for returned resources" );
                 Poolable<T> p = free.poll();
                 if( p != null ) discarded( p.value );
             } catch( InterruptedException e ) {
-                log.debug( "abnormal pool shutdown", e );
+                log.warn( "abnormal pool shutdown", e );
             }
         } );
     }

@@ -21,29 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.io;
 
-import lombok.extern.slf4j.Slf4j;
+package oap.io.content;
 
-import java.io.Closeable;
-import java.util.concurrent.ExecutorService;
+import oap.json.Binder;
+import org.testng.annotations.Test;
 
-@Slf4j
-public class Closeables {
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    public static void close( Closeable closeable ) {
-        try {
-            if( closeable != null ) closeable.close();
-        } catch( Exception e ) {
-            log.error( e.getMessage(), e );
-        }
+public class ContentWriterTest {
+    @Test
+    public void write() {
+        assertThat( ContentWriter.write( "string", ContentWriter.ofString() ) )
+            .isEqualTo( "string".getBytes( UTF_8 ) );
+        assertThat( ContentWriter.write( new Bean(), ContentWriter.ofJson() ) )
+            .isEqualTo( Binder.json.marshal( new Bean() ).getBytes( UTF_8 ) );
     }
 
-    public static void close( ExecutorService service ) {
-        try {
-            if( service != null ) service.shutdownNow();
-        } catch( Exception e ) {
-            log.error( e.getMessage(), e );
-        }
+    public static class Bean {
+        String s = "aaa";
     }
 }

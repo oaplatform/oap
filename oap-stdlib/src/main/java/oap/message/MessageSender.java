@@ -37,12 +37,11 @@ import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
-import oap.json.Binder;
+import oap.io.content.ContentWriter;
 import oap.pool.Pool;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
-import oap.util.FastByteArrayOutputStream;
 import oap.util.Pair;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -54,15 +53,16 @@ import org.slf4j.event.Level;
 import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
@@ -112,14 +112,11 @@ public class MessageSender implements Closeable {
     public long diskSyncPeriod = Dates.m( 1 );
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
-    //    private ThreadPoolExecutor pool;
-//    private Connection[] connections;
     private Pool<Connection> connectionPool;
     private boolean closed = false;
-    //    private Semaphore poolSemaphore;
     private Scheduled diskSyncScheduler;
     private Scheduled memorySyncScheduler;
-    private boolean networkAvailable = false;
+    private boolean networkAvailable = true;
 
     public MessageSender( String host, int port, Path directory ) {
         this.host = host;
@@ -171,12 +168,6 @@ public class MessageSender implements Closeable {
             durationToString( memorySyncPeriod ), durationToString( diskSyncPeriod ) );
         log.info( "custom status = {}", statusMap );
 
-
-//        pool = new ThreadPoolExecutor( poolSize, poolSize,
-//            0L, TimeUnit.MILLISECONDS,
-//            new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build()
-//        );
-
         log.debug( "creating connection pool {}", poolSize );
         connectionPool = new Pool<>( poolSize ) {
             @Override
@@ -189,28 +180,33 @@ public class MessageSender implements Closeable {
                 connection.close();
             }
         };
-//        connections = new Connection[poolSize];
-//        for( var i = 0; i < poolSize; i++ ) connections[i] = new Connection();
-//        poolSemaphore = new Semaphore( poolSize, true );
-//
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
         if( memorySyncPeriod > 0 )
             memorySyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
     }
 
+    @Deprecated
     public MessageSender sendJson( byte messageType, Object data ) {
-        var baos = new FastByteArrayOutputStream();
-        Binder.json.marshal( baos, data );
-        return sendObject( messageType, baos.array, 0, baos.length );
+        return send( messageType, data, ContentWriter.ofJson() );
     }
 
+    @Deprecated
     public synchronized MessageSender sendObject( byte messageType, byte[] data, int from, int length ) {
+        return send( messageType, data, from, length );
+    }
+
+    public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
+        byte[] bytes = writer.write( data );
+        return sendObject( messageType, bytes, 0, bytes.length );
+    }
+
+    public synchronized MessageSender send( byte messageType, byte[] data, int offset, int length ) {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
         var md5 = DigestUtils.getMd5Digest().digest( data );
-        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data, from, length );
+        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data, offset, length );
         messages.put( message.md5, message );
 
         if( !memoryAvailable() ) {
@@ -221,13 +217,6 @@ public class MessageSender implements Closeable {
         return this;
     }
 
-//    private Connection findFreeState() {
-//        for( var state : connections ) {
-//            if( state.free.compareAndExchange( true, false ) ) return state;
-//        }
-//        throw new IllegalStateException( "no free states" );
-//    }
-
 
     @Override
     public synchronized void close() {
@@ -236,11 +225,6 @@ public class MessageSender implements Closeable {
         Closeables.close( diskSyncScheduler );
 
         connectionPool.close();
-//        pool.shutdownNow();
-
-//        for( var state : connections )
-//            Closeables.close( state );
-
 
         saveMessagesToDirectory( directory );
     }
@@ -277,32 +261,19 @@ public class MessageSender implements Closeable {
         return new MessageAvailabilityReport( operational ? OPERATIONAL : FAILED );
     }
 
-    public synchronized MessageSender syncMemory() {
+    @SneakyThrows
+    public synchronized void syncMemory() {
         log.trace( "sync..." );
-        if( closed ) return this;
+        if( closed ) return;
 
+        List<CompletableFuture<Void>> sends = new ArrayList<>();
         for( var message : messages ) {
             log.trace( "msg type = {}", message.messageType & 0xFF );
-            connectionPool.async( connection ->
-                log.trace( "response status = {}", connection.sendMessage( message ) ) );
-
-//            try {
-//                poolSemaphore.acquire();
-//
-//                try {
-//                    var state = findFreeState();
-//
-//                    var status = state.sendMessage( message );
-//                    log.trace( "response status = {}", status );
-//                } finally {
-//                    poolSemaphore.release();
-//                }
-//            } catch( InterruptedException e ) {
-//                LogConsolidated.log( log, Level.WARN, Dates.s( 5 ), e.getMessage(), null );
-//            }
+            sends.add( connectionPool.async( connection ->
+                log.trace( "response status = {}", connection.sendMessage( message ) ) ) );
         }
 
-        return this;
+        CompletableFuture.allOf( sends.toArray( new CompletableFuture[0] ) ).get();
     }
 
     public synchronized void syncDisk() {
@@ -336,21 +307,7 @@ public class MessageSender implements Closeable {
                     connectionPool.async( connection -> {
                         if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
                         Files.delete( lockFile );
-
                     } );
-//                    poolSemaphore.acquire();
-//                    try {
-//                        var state = findFreeState();
-//                        try {
-//
-//                            if( state.write( msg ) != ERROR ) Files.delete( msgFile );
-//                            Files.delete( lockFile );
-//                        } finally {
-//                            state.free.set( true );
-//                        }
-//                    } finally {
-//                        poolSemaphore.release();
-//                    }
                 } catch( Exception e ) {
                     LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
                 }
@@ -438,7 +395,6 @@ public class MessageSender implements Closeable {
 
     private class Connection implements Closeable {
         public MessageSocketConnection connection;
-        public AtomicBoolean free = new AtomicBoolean( true );
 
         @SneakyThrows
         private MessageStatus write( Message message ) {
@@ -514,42 +470,28 @@ public class MessageSender implements Closeable {
                             return ERROR;
                         }
                     }
-                } catch( IOException e ) {
-                    MessageSender.this.networkAvailable = false;
-                    Closeables.close( connection );
-
-                    throw e;
-                } catch( UncheckedIOException e ) {
-                    MessageSender.this.networkAvailable = false;
-                    Closeables.close( connection );
-                    throw e.getCause();
                 } catch( Exception e ) {
                     MessageSender.this.networkAvailable = false;
-
-                    LogConsolidated.log( log, Level.WARN, Dates.s( 5 ), e.getMessage(), null );
-                    log.debug( e.getMessage(), e );
                     Closeables.close( connection );
+                    log.debug( e.getMessage(), e );
+                    throw e;
                 }
             }
             return ERROR;
         }
 
         public MessageStatus sendMessage( Message message ) {
+            if( closed ) return ERROR;
+
             try {
-                if( closed ) return ERROR;
+                var status = write( message );
+                if( status != ERROR ) messages.remove( message.md5 );
 
-                try {
-                    var status = write( message );
-                    if( status != ERROR ) messages.remove( message.md5 );
-
-                    return status;
-                } catch( Exception e ) {
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
-                    LogConsolidated.log( log, Level.TRACE, Dates.s( 5 ), e.getMessage(), e );
-                    return ERROR;
-                }
-            } finally {
-                free.set( true );
+                return status;
+            } catch( Exception e ) {
+                Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
+                LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
+                return ERROR;
             }
         }
 

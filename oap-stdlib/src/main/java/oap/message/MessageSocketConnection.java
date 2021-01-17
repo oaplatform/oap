@@ -24,14 +24,13 @@
 
 package oap.message;
 
+import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.io.Sockets;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
@@ -40,18 +39,15 @@ public class MessageSocketConnection implements Closeable {
     public final DataInputStream in;
     private final Socket socket;
 
+    @SneakyThrows
     public MessageSocketConnection( String host, int port, long soTimeout, long connectTimeout ) {
         this.socket = new Socket();
-        try {
-            this.socket.setKeepAlive( true );
-            this.socket.setTcpNoDelay( true );
-            this.socket.connect( new InetSocketAddress( host, port ), ( int ) connectTimeout );
-            this.socket.setSoTimeout( ( int ) soTimeout );
-            this.out = new DataOutputStream( this.socket.getOutputStream() );
-            this.in = new DataInputStream( this.socket.getInputStream() );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        this.socket.setKeepAlive( true );
+        this.socket.setTcpNoDelay( true );
+        this.socket.connect( new InetSocketAddress( host, port ), ( int ) connectTimeout );
+        this.socket.setSoTimeout( ( int ) soTimeout );
+        this.out = new DataOutputStream( this.socket.getOutputStream() );
+        this.in = new DataInputStream( this.socket.getInputStream() );
     }
 
     public boolean isConnected() {

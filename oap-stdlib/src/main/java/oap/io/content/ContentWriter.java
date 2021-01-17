@@ -21,29 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.io;
 
-import lombok.extern.slf4j.Slf4j;
+package oap.io.content;
 
-import java.io.Closeable;
-import java.util.concurrent.ExecutorService;
+import lombok.SneakyThrows;
+import oap.json.Binder;
 
-@Slf4j
-public class Closeables {
+import java.io.OutputStream;
 
-    public static void close( Closeable closeable ) {
-        try {
-            if( closeable != null ) closeable.close();
-        } catch( Exception e ) {
-            log.error( e.getMessage(), e );
-        }
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+public interface ContentWriter<T> {
+    @SneakyThrows
+    default void write( OutputStream os, T object ) {
+        os.write( write( object ) );
     }
 
-    public static void close( ExecutorService service ) {
-        try {
-            if( service != null ) service.shutdownNow();
-        } catch( Exception e ) {
-            log.error( e.getMessage(), e );
-        }
+    byte[] write( T object );
+
+    static <T> byte[] write( T object, ContentWriter<T> writer ) {
+        return writer.write( object );
+    }
+
+    static <T> void write( OutputStream os, T object, ContentWriter<T> writer ) {
+        writer.write( os, object );
+    }
+
+    static ContentWriter<String> ofString() {
+        return object -> object.getBytes( UTF_8 );
+    }
+
+    static <T> ContentWriter<T> ofJson() {
+        return new ContentWriter<>() {
+            @Override
+            public byte[] write( Object object ) {
+                return Binder.json.marshal( object ).getBytes( UTF_8 );
+            }
+
+            @Override
+            public void write( OutputStream os, Object object ) {
+                Binder.json.marshal( os, object );
+            }
+        };
     }
 }

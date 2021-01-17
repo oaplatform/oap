@@ -24,6 +24,8 @@
 
 package oap.message;
 
+import lombok.SneakyThrows;
+import oap.concurrent.Threads;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
@@ -34,9 +36,10 @@ import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.List;
 
+import static oap.io.content.ContentWriter.ofJson;
+import static oap.io.content.ContentWriter.ofString;
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
@@ -55,7 +58,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testUniqueMessageTypeListener() {
+    public void uniqueMessageTypeListener() {
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
@@ -70,8 +73,9 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
+    @SneakyThrows
     @Test
-    public void testRejectedException() {
+    public void rejectedException() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.maximumPoolSize = 1;
@@ -89,8 +93,8 @@ public class MessageServerTest extends Fixtures {
                 client1.start();
                 client2.start();
 
-                client1.sendJson( MESSAGE_TYPE, "123" ).syncMemory();
-                client2.sendJson( MESSAGE_TYPE, "123" );
+                client1.send( MESSAGE_TYPE, "123", ofJson() ).syncMemory();
+                client2.send( MESSAGE_TYPE, "123", ofJson() );
 
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             } finally {
@@ -107,7 +111,7 @@ public class MessageServerTest extends Fixtures {
 
                 client.start();
 
-                client.sendJson( MESSAGE_TYPE, "1234" ).syncMemory();
+                client.send( MESSAGE_TYPE, "1234", ofJson() ).syncMemory();
 
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) ) );
             } finally {
@@ -117,8 +121,9 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
+    @SneakyThrows
     @Test
-    public void testSendAndReceive() throws IOException {
+    public void sendAndReceive() {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
@@ -131,11 +136,11 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 client
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE2, "555".getBytes(), 0, 3 )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE, "124", ofString() )
+                    .send( MESSAGE_TYPE, "124", ofString() )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE2, "555", ofString() )
                     .syncMemory();
 
                 assertThat( listener1.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
@@ -149,8 +154,9 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
+    @SneakyThrows
     @Test
-    public void testSendAndReceiveJson() {
+    public void sendAndReceiveJson() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
@@ -159,10 +165,10 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 client
-                    .sendJson( MESSAGE_TYPE, "123" )
-                    .sendJson( MESSAGE_TYPE, "124" )
-                    .sendJson( MESSAGE_TYPE, "124" )
-                    .sendJson( MESSAGE_TYPE, "123" )
+                    .send( MESSAGE_TYPE, "123", ofJson() )
+                    .send( MESSAGE_TYPE, "124", ofJson() )
+                    .send( MESSAGE_TYPE, "124", ofJson() )
+                    .send( MESSAGE_TYPE, "123", ofJson() )
                     .syncMemory();
 
                 assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
@@ -170,8 +176,9 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
+    @SneakyThrows
     @Test
-    public void testSendAndReceiveJsonOneThread() {
+    public void sendAndReceiveJsonOneThread() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
@@ -181,10 +188,10 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 client
-                    .sendJson( MESSAGE_TYPE, "123" )
-                    .sendJson( MESSAGE_TYPE, "124" )
-                    .sendJson( MESSAGE_TYPE, "124" )
-                    .sendJson( MESSAGE_TYPE, "123" )
+                    .send( MESSAGE_TYPE, "123", ofJson() )
+                    .send( MESSAGE_TYPE, "124", ofJson() )
+                    .send( MESSAGE_TYPE, "124", ofJson() )
+                    .send( MESSAGE_TYPE, "123", ofJson() )
                     .syncMemory();
 
                 assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
@@ -193,7 +200,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testUnknownError() throws Exception {
+    public void unknownError() {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
@@ -204,15 +211,15 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 listener.throwUnknownError( 200000000 );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
+                client.send( MESSAGE_TYPE, "123", ofString() );
 
                 while( listener.throwUnknownError > 200000000 - 10 )
-                    Thread.sleep( 10 );
+                    Threads.sleepSafely( 10 );
                 assertThat( listener.getMessages() ).isEmpty();
 
                 listener.throwUnknownError( 2 );
                 while( listener.throwUnknownError > 0 )
-                    Thread.sleep( 10 );
+                    Threads.sleepSafely( 10 );
 
                 assertEventually( 100, 10, () ->
                     assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) ) );
@@ -224,7 +231,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testStatusError() throws Exception {
+    public void statusError() {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
@@ -233,10 +240,10 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 listener.setStatus( 567 );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
+                client.send( MESSAGE_TYPE, "123", ofString() );
 
                 while( listener.accessCount.get() > 4 )
-                    Thread.sleep( 10 );
+                    Threads.sleepSafely( 10 );
 
                 assertThat( listener.getMessages() ).isEmpty();
 
@@ -247,8 +254,9 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
+    @SneakyThrows
     @Test
-    public void testTtl() {
+    public void ttl() {
         var hashTtl = 1000;
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -262,19 +270,17 @@ public class MessageServerTest extends Fixtures {
             try {
                 client.start();
 
-                client
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
                 assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
                 DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
-                client
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory()
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
             } finally {
@@ -284,8 +290,9 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
+    @SneakyThrows
     @Test
-    public void testPersistence() {
+    public void persistence() {
         var hashTtl = 1000;
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -303,9 +310,9 @@ public class MessageServerTest extends Fixtures {
             client.start();
 
             client
-                .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .send( MESSAGE_TYPE, "123", ofString() )
                 .syncMemory();
 
             assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
@@ -317,9 +324,9 @@ public class MessageServerTest extends Fixtures {
                 server2.start();
 
                 client
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE, "123", ofString() )
                     .syncMemory();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
@@ -332,7 +339,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void clientPersistence() throws Exception {
+    public void clientPersistence() {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
@@ -344,9 +351,9 @@ public class MessageServerTest extends Fixtures {
             try {
                 client.start();
 
-                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 while( listener.throwUnknownError > 0 )
-                    Thread.sleep( 10 );
+                    Threads.sleepSafely( 10 );
             } finally {
                 client.close();
             }
@@ -372,7 +379,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testClientPersistenceLockExpiration() throws Exception {
+    public void clientPersistenceLockExpiration() {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
@@ -386,12 +393,12 @@ public class MessageServerTest extends Fixtures {
 
                 listener.throwUnknownError = 2;
                 client
-                    .sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 )
-                    .sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE, "124", ofString() )
                     .syncMemory();
 
                 while( listener.throwUnknownError > 0 )
-                    Thread.sleep( 1 );
+                    Threads.sleepSafely( 1 );
             } finally {
                 client.close();
             }
@@ -416,8 +423,7 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener.getMessages() ).isEmpty();
 
                 client.syncDisk();
-
-                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "124" ) ) );
+                assertThat( listener.getMessages() ).containsExactly( new TestMessage( 1, "124" ) );
             } finally {
                 client.close();
             }
@@ -426,7 +432,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testMemoryLimit() {
+    public void memoryLimit() {
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( new MessageListenerMock( MESSAGE_TYPE ) ), -1 ) ) {
             server.start();
 
@@ -437,10 +443,10 @@ public class MessageServerTest extends Fixtures {
                 client.memorySyncPeriod = -1;
                 client.start();
 
-                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 );
+                client.send( MESSAGE_TYPE, "123", ofString() );
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
 
-                client.sendObject( MESSAGE_TYPE, "124".getBytes(), 0, 3 );
+                client.send( MESSAGE_TYPE, "124", ofString() );
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
 
                 client.syncMemory();
@@ -453,7 +459,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testAvailabilityReport() {
+    public void availabilityReport() {
         var messageListenerMock = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( messageListenerMock ), -1 ) ) {
             server.start();
@@ -465,7 +471,7 @@ public class MessageServerTest extends Fixtures {
                 client.start();
 
                 messageListenerMock.status = 300;
-                client.sendObject( MESSAGE_TYPE, "123".getBytes(), 0, 3 ).syncMemory();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
                 assertThat( client.availabilityReport( MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
 

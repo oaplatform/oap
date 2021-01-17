@@ -24,13 +24,16 @@
 
 package oap.pool;
 
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.concurrent.Times.times;
@@ -186,15 +189,41 @@ public class PoolTest {
             pool.sync( p -> p.s += "+" );
             pool.sync( p -> p.s += "+" );
             pool.sync( p -> p.s += "+" );
-            pool.borrow()
-                .then( p -> assertThat( p.s ).isEqualTo( "+++" ) )
-                .release();
+            pool.sync( p -> assertThat( p.s ).isEqualTo( "+++" ) );
         }
 
     }
 
     @Test
     public void syncError() {
+        try( Pool<P> pool = new Pool<>( 1 ) {
+            public P create() {
+                return new P();
+            }
+        } ) {
+            Consumer<P> action = p -> {
+                p.s += "+";
+                throw new RuntimeException();
+            };
+            try {
+                pool.sync( action );
+            } catch( Exception ignored ) {
+            }
+            try {
+                pool.sync( action );
+            } catch( Exception ignored ) {
+            }
+            try {
+                pool.sync( action );
+            } catch( Exception ignored ) {
+            }
+            pool.sync( p -> assertThat( p.s ).isEqualTo( "+++" ) );
+        }
+    }
+
+    @SneakyThrows
+    @Test
+    public void asyncError() {
         P p = new P();
         try( Pool<P> pool = new Pool<>( 1 ) {
             public P create() {
@@ -205,8 +234,8 @@ public class PoolTest {
             pool.async( px -> {
                 px.s = "error";
                 throw new RuntimeException( "exception" );
-            }, e -> ex.set( e.getMessage() ) );
-            Threads.sleepSafely( 100 );
+            }, e -> ex.set( e.getMessage() ) ).get();
+
             try( var poolable = pool.borrow() ) {
                 assertThat( poolable.isEmpty() ).isFalse();
                 assertThat( poolable.get().s ).isEqualTo( "error" );
@@ -235,6 +264,13 @@ public class PoolTest {
             } ) );
         }
         for( P p : px ) assertThat( p.s ).isEqualTo( "++++discarded" );
+    }
+
+    @Test
+    public void empty() {
+        AtomicBoolean happened = new AtomicBoolean( false );
+        Poolable.empty().then( p -> happened.set( true ) ).release();
+        assertThat( happened.get() ).isFalse();
     }
 
     @ToString

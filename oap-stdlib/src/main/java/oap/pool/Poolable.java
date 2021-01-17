@@ -50,7 +50,8 @@ public class Poolable<T> implements AutoCloseable {
     }
 
     public Poolable<T> then( Consumer<? super T> action ) {
-        action.accept( get() );
+        if( !isEmpty() )
+            action.accept( get() );
         return this;
     }
 

@@ -27,6 +27,7 @@ package oap.message;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public interface MessageProtocol {
@@ -56,6 +57,7 @@ public interface MessageProtocol {
     @EqualsAndHashCode
     @ToString
     class ClientId implements Serializable {
+        @Serial
         private static final long serialVersionUID = -6305024925123030053L;
 
         public final int messageType;
