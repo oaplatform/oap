@@ -30,6 +30,7 @@ import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.concurrent.Times.times;
@@ -173,6 +174,45 @@ public class PoolTest {
         assertThat( p1.get().s ).isEqualTo( "discarded" );
         assertThat( p2.get().s ).isEqualTo( "discarded" );
         assertThat( p3.get().s ).isEqualTo( "discarded" );
+    }
+
+    @Test
+    public void sync() {
+        try( Pool<P> pool = new Pool<>( 1 ) {
+            public P create() {
+                return new P();
+            }
+        } ) {
+            pool.sync( p -> p.s += "+" );
+            pool.sync( p -> p.s += "+" );
+            pool.sync( p -> p.s += "+" );
+            pool.borrow()
+                .then( p -> assertThat( p.s ).isEqualTo( "+++" ) )
+                .release();
+        }
+
+    }
+
+    @Test
+    public void syncError() {
+        P p = new P();
+        try( Pool<P> pool = new Pool<>( 1 ) {
+            public P create() {
+                return p;
+            }
+        } ) {
+            var ex = new AtomicReference<String>();
+            pool.async( px -> {
+                px.s = "error";
+                throw new RuntimeException( "exception" );
+            }, e -> ex.set( e.getMessage() ) );
+            Threads.sleepSafely( 100 );
+            try( var poolable = pool.borrow() ) {
+                assertThat( poolable.isEmpty() ).isFalse();
+                assertThat( poolable.get().s ).isEqualTo( "error" );
+            }
+            assertThat( ex.get() ).isEqualTo( "exception" );
+        }
     }
 
     @Test

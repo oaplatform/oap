@@ -25,6 +25,7 @@
 package oap.pool;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.TimeoutException;
 
 import java.util.Optional;
 import java.util.Queue;
@@ -78,11 +79,32 @@ public abstract class Pool<T> implements AutoCloseable {
         }
     }
 
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    public void sync( Consumer<T> action ) {
+        try( var p = borrow() ) {
+            p.then( action );
+        }
+    }
+
     public Optional<Future<Void>> async( Consumer<T> action ) {
+        return async( action, e -> log.error( e.getMessage(), e ) );
+    }
+
+    public Optional<Future<Void>> async( Consumer<T> action, Consumer<? super Exception> onError ) {
         Poolable<T> poolable = borrow();
         return poolable.isEmpty()
             ? Optional.empty()
-            : Optional.of( CompletableFuture.runAsync( () -> poolable.than( action ).release() ) );
+            : Optional.of( CompletableFuture.runAsync( () -> {
+                try( poolable ) {
+                    poolable.then( action );
+                } catch( Exception e ) {
+                    onError.accept( e );
+                }
+            } ) );
     }
 
 
@@ -109,7 +131,8 @@ public abstract class Pool<T> implements AutoCloseable {
         closed = true;
         times( size, () -> {
             try {
-                semaphore.acquire();
+                if( !semaphore.tryAcquire( 5, TimeUnit.SECONDS ) )
+                    throw new TimeoutException( "cannot close pool properly, timeout waiting for returned resources" );
                 Poolable<T> p = free.poll();
                 if( p != null ) discarded( p.value );
             } catch( InterruptedException e ) {
