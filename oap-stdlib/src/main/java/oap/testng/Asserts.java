@@ -36,7 +36,6 @@ import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.assertj.core.api.AbstractFileAssert;
-import org.assertj.core.api.Assertions;
 import org.testng.Assert;
 
 import java.lang.reflect.InvocationTargetException;
@@ -190,7 +189,7 @@ public final class Asserts {
     /**
      * AssertJ has come with proper exception already
      *
-     * @see Assertions#assertThat(CharSequence)
+     * @see {@link org.assertj.core.api.Assertions#assertThat(CharSequence)}
      */
     @Deprecated
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {

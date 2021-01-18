@@ -24,7 +24,6 @@
 package oap.json.testng;
 
 import oap.io.Resources;
-import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.json.Formatter;
 import oap.util.Pair;
@@ -79,7 +78,7 @@ public class JsonAsserts {
     }
 
     /**
-     * #see {@link oap.testng.Asserts#contentOfTestResource(Class, String, ContentReader)}
+     * #see {@link oap.testng.Asserts#contentOfTestResource(Class, String, oap.io.content.ContentReader)}
      */
     @Deprecated
     public static <T> T objectOfTestJsonResource( Class<?> context, Class<T> clazz, String resourcePath ) {
