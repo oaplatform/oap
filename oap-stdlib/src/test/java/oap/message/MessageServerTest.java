@@ -143,8 +143,8 @@ public class MessageServerTest extends Fixtures {
                     .send( MESSAGE_TYPE2, "555", ofString() )
                     .syncMemory();
 
-                assertThat( listener1.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
-                assertThat( listener2.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
+                assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
+                assertThat( listener2.getMessages() ).containsExactly( new TestMessage( 1, "555" ) );
             } finally {
                 client.close();
             }
