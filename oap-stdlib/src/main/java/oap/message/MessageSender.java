@@ -198,7 +198,7 @@ public class MessageSender implements Closeable {
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
         byte[] bytes = writer.write( data );
-        return sendObject( messageType, bytes, 0, bytes.length );
+        return send( messageType, bytes, 0, bytes.length );
     }
 
     public synchronized MessageSender send( byte messageType, byte[] data, int offset, int length ) {
