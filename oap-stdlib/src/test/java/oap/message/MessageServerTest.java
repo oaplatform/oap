@@ -96,7 +96,7 @@ public class MessageServerTest extends Fixtures {
                 client1.send( MESSAGE_TYPE, "123", ofJson() ).syncMemory();
                 client2.send( MESSAGE_TYPE, "123", ofJson() );
 
-                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" )  );
             } finally {
                 client2.close();
                 client1.close();
@@ -113,7 +113,7 @@ public class MessageServerTest extends Fixtures {
 
                 client.send( MESSAGE_TYPE, "1234", ofJson() ).syncMemory();
 
-                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) ) );
+                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" )  );
             } finally {
                 client.close();
             }
@@ -222,7 +222,7 @@ public class MessageServerTest extends Fixtures {
                     Threads.sleepSafely( 10 );
 
                 assertEventually( 100, 10, () ->
-                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) ) );
+                    assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) ) );
             } finally {
                 client.close();
             }
@@ -249,7 +249,7 @@ public class MessageServerTest extends Fixtures {
 
                 listener.setStatusOk();
                 assertEventually( 10, 100, () ->
-                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) ) );
+                    assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) ) );
             }
         }
     }
@@ -274,7 +274,7 @@ public class MessageServerTest extends Fixtures {
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
-                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
                 assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
                 DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
@@ -282,7 +282,7 @@ public class MessageServerTest extends Fixtures {
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
-                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "123" )  );
             } finally {
                 client.close();
             }
@@ -315,7 +315,7 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .syncMemory();
 
-            assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" )  );
 
             server.close();
 
@@ -329,7 +329,7 @@ public class MessageServerTest extends Fixtures {
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .syncMemory();
 
-                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" )  );
             }
         } finally {
             Closeables.close( server );
@@ -369,7 +369,7 @@ public class MessageServerTest extends Fixtures {
 
                 client.syncDisk();
 
-                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" )  );
             } finally {
                 client.close();
             }
