@@ -304,7 +304,7 @@ public class MessageSender implements Closeable {
 
                     var msg = new Message( clientId, messageType, md5, data );
 
-                    connectionPool.async( connection -> {
+                    connectionPool.sync( connection -> {
                         if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
                         Files.delete( lockFile );
                     } );
