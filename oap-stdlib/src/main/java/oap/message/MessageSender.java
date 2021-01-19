@@ -31,6 +31,8 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
+import oap.concurrent.Executors;
+import oap.concurrent.ThreadLocalMap;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
@@ -38,7 +40,6 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
-import oap.pool.Pool;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
@@ -59,7 +60,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -105,6 +105,7 @@ public class MessageSender implements Closeable {
     private final long clientId = Cuid.UNIQUE.nextLong();
     private final Messages messages = new Messages();
     private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
+    private final ThreadLocalMap<Connection> connections = ThreadLocalMap.withInitial( Connection::new );
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long messagesLimitBytes = 1024 * 1024 * 128; // 128Mb
@@ -112,7 +113,7 @@ public class MessageSender implements Closeable {
     public long diskSyncPeriod = Dates.m( 1 );
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
-    private Pool<Connection> connectionPool;
+    private Executors.BlockingExecutor connectionPool;
     private boolean closed = false;
     private Scheduled diskSyncScheduler;
     private Scheduled memorySyncScheduler;
@@ -169,17 +170,7 @@ public class MessageSender implements Closeable {
         log.info( "custom status = {}", statusMap );
 
         log.debug( "creating connection pool {}", poolSize );
-        connectionPool = new Pool<>( poolSize ) {
-            @Override
-            public Connection create() {
-                return new Connection();
-            }
-
-            @Override
-            public void discarded( Connection connection ) {
-                connection.close();
-            }
-        };
+        connectionPool = Executors.newFixedBlockingThreadPool( poolSize );
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
         if( memorySyncPeriod > 0 )
@@ -224,7 +215,8 @@ public class MessageSender implements Closeable {
         Closeables.close( memorySyncScheduler );
         Closeables.close( diskSyncScheduler );
 
-        connectionPool.close();
+        Closeables.close( connections );
+        connectionPool.shutdownNow();
 
         saveMessagesToDirectory( directory );
     }
@@ -262,24 +254,29 @@ public class MessageSender implements Closeable {
     }
 
     @SneakyThrows
-    public synchronized void syncMemory() {
+    public synchronized MessageSender syncMemory() {
         log.trace( "sync..." );
-        if( closed ) return;
+        if( closed ) return this;
 
-        List<CompletableFuture<Void>> sends = new ArrayList<>();
+        var sends = new ArrayList<CompletableFuture<?>>();
         for( var message : messages ) {
             log.trace( "msg type = {}", message.messageType & 0xFF );
-            sends.add( connectionPool.async( connection ->
-                log.trace( "response status = {}", connection.sendMessage( message ) ) ) );
+
+            sends.add( CompletableFuture.runAsync( () -> connections.get().sendMessage( message ), connectionPool ) );
         }
 
         CompletableFuture.allOf( sends.toArray( new CompletableFuture[0] ) ).get();
+
+        return this;
     }
 
-    public synchronized void syncDisk() {
-        if( closed ) return;
+    @SneakyThrows
+    public synchronized MessageSender syncDisk() {
+        if( closed ) return this;
 
         var messageFiles = Files.fastWildcard( directory, "*/*/*.bin" );
+
+        var sends = new ArrayList<CompletableFuture<?>>();
 
         for( var msgFile : messageFiles ) {
             Path lockFile;
@@ -304,17 +301,21 @@ public class MessageSender implements Closeable {
 
                     var msg = new Message( clientId, messageType, md5, data );
 
-                    connectionPool.sync( connection -> {
-                        if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
+                    sends.add( CompletableFuture.runAsync( () -> {
+                        if( connections.get().write( msg ) != ERROR ) Files.delete( msgFile );
                         Files.delete( lockFile );
-                    } );
+                    }, connectionPool ) );
                 } catch( Exception e ) {
                     LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
                 }
             }
         }
 
+        CompletableFuture.allOf( sends.toArray( new CompletableFuture[0] ) ).get();
+
         Files.deleteEmptyDirectories( directory, false );
+
+        return this;
     }
 
     private static final class Message {

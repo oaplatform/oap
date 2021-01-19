@@ -86,9 +86,9 @@ public class MessageServerTest extends Fixtures {
             client2 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client1.memorySyncPeriod = -1;
-                client1.poolSize = 4;
+                client1.poolSize = 1;
                 client2.memorySyncPeriod = -1;
-                client2.poolSize = 4;
+                client2.poolSize = 1;
 
                 client1.start();
                 client2.start();
@@ -107,11 +107,11 @@ public class MessageServerTest extends Fixtures {
             MessageSender client;
             client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
             try {
-                client.poolSize = 4;
+                client.poolSize = 1;
 
                 client.start();
 
-                client.send( MESSAGE_TYPE, "1234", ofJson() ).syncMemory();
+                client.send( MESSAGE_TYPE, "1234", ofJson() ).syncMemory().syncDisk();
 
                 assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" )  );
             } finally {
