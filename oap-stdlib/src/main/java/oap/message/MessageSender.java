@@ -210,7 +210,7 @@ public class MessageSender implements Closeable {
 
 
     @Override
-    public synchronized void close() {
+    public void close() {
         closed = true;
         Closeables.close( memorySyncScheduler );
         Closeables.close( diskSyncScheduler );
@@ -262,7 +262,18 @@ public class MessageSender implements Closeable {
         for( var message : messages ) {
             log.trace( "msg type = {}", message.messageType & 0xFF );
 
-            sends.add( CompletableFuture.runAsync( () -> connections.get().sendMessage( message ), connectionPool ) );
+            if( closed ) break;
+
+            sends.add( CompletableFuture.runAsync( () -> {
+                try {
+                    var status = connections.get().write( message );
+                    if( status != ERROR ) messages.remove( message.md5 );
+
+                } catch( Exception e ) {
+                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
+                    LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
+                }
+            }, connectionPool ) );
         }
 
         CompletableFuture.allOf( sends.toArray( new CompletableFuture[0] ) ).get();
@@ -479,21 +490,6 @@ public class MessageSender implements Closeable {
                 }
             }
             return ERROR;
-        }
-
-        public MessageStatus sendMessage( Message message ) {
-            if( closed ) return ERROR;
-
-            try {
-                var status = write( message );
-                if( status != ERROR ) messages.remove( message.md5 );
-
-                return status;
-            } catch( Exception e ) {
-                Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
-                LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
-                return ERROR;
-            }
         }
 
         private void refreshConnection() {
