@@ -50,7 +50,7 @@ public class ApacheHttpServerTest extends Fixtures {
     public static final String PORT = "PORT";
 
     {
-        envFixture = fixture( new EnvFixture().definePort( PORT, PORT ) );
+        envFixture = fixture( new EnvFixture() );
     }
 
     @Test
