@@ -29,6 +29,7 @@ import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.server.apache.ApacheHttpServer;
+import oap.http.server.apache.PlainHttpListener;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.apache.commons.lang3.RandomStringUtils;
