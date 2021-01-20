@@ -22,47 +22,50 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.server.apache.entity;
 
-import lombok.ToString;
-import org.apache.http.impl.DefaultBHttpServerConnection;
-import org.apache.http.protocol.HttpContext;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.entity.ContentType;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
 
-@ToString
-public class ServerHttpContext implements HttpContext, Closeable {
-    public final Protocol protocol;
-    public final DefaultBHttpServerConnection connection;
-    private final HttpContext httpContext;
-    public final HttpServer httpServer;
-    public long start = System.nanoTime();
+public class HttpStreamEntity extends AbstractHttpEntity {
+    private final java.util.stream.Stream<String> stream;
 
-    public ServerHttpContext( HttpServer httpServer, HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection ) {
-        this.httpServer = httpServer;
-        this.httpContext = httpContext;
-        this.protocol = protocol;
-        this.connection = connection;
+    public HttpStreamEntity( java.util.stream.Stream<String> stream, ContentType contentType ) {
+        this.stream = stream;
+        if( contentType != null ) setContentType( contentType.toString() );
     }
 
     @Override
-    public Object getAttribute( String id ) {
-        return httpContext.getAttribute( id );
+    public boolean isRepeatable() {
+        return false;
     }
 
     @Override
-    public void setAttribute( String id, Object obj ) {
-        httpContext.setAttribute( id, obj );
+    public long getContentLength() {
+        return -1;
     }
 
     @Override
-    public Object removeAttribute( String id ) {
-        return httpContext.removeAttribute( id );
+    public InputStream getContent() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void close() throws IOException {
-        connection.close();
+    public void writeTo( OutputStream outstream ) throws IOException {
+        Iterator<String> iterator = stream.iterator();
+        while( iterator.hasNext() ) {
+            outstream.write( iterator.next().getBytes() );
+            outstream.write( '\n' );
+        }
+    }
+
+    @Override
+    public boolean isStreaming() {
+        return false;
     }
 }

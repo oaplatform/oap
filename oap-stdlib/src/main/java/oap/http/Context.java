@@ -25,6 +25,7 @@
 package oap.http;
 
 import lombok.ToString;
+import oap.http.server.apache.ServerHttpContext;
 
 import java.net.InetAddress;
 

@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
 import oap.http.cors.GenericCorsPolicy;
+import oap.http.server.apache.ApacheHttpServer;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -42,7 +43,7 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-public class ServerTest extends Fixtures {
+public class ApacheHttpServerTest extends Fixtures {
 
     private final EnvFixture envFixture;
     public static final String PORT = "PORT";
@@ -57,7 +58,7 @@ public class ServerTest extends Fixtures {
 
         var semaphore = new Semaphore( 0 );
 
-        try( var server = new Server( 1, 1, false ) ) {
+        try( var server = new ApacheHttpServer( 1, 1, false ) ) {
             server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
                 semaphore.release();
                 Threads.sleepSafely( 100000 );

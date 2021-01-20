@@ -22,45 +22,16 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.server.apache;
 
-import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.ContentType;
+import lombok.extern.slf4j.Slf4j;
+import oap.http.server.HttpServer;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Consumer;
+import java.net.InetSocketAddress;
 
-public class HttpOutputStreamEntity extends AbstractHttpEntity {
-    private final Consumer<OutputStream> cons;
-
-    public HttpOutputStreamEntity( Consumer<OutputStream> cons, ContentType contentType ) {
-        this.cons = cons;
-        if( contentType != null ) setContentType( contentType.toString() );
-    }
-
-    @Override
-    public boolean isRepeatable() {
-        return false;
-    }
-
-    @Override
-    public long getContentLength() {
-        return -1;
-    }
-
-    @Override
-    public InputStream getContent() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeTo( OutputStream outstream ) {
-        cons.accept( outstream );
-    }
-
-    @Override
-    public boolean isStreaming() {
-        return false;
+@Slf4j
+public class LocalHttpListener extends PlainHttpListener {
+    public LocalHttpListener( HttpServer server, int port ) {
+        super( server, new InetSocketAddress( "localhost", port ) );
     }
 }

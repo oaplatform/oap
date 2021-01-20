@@ -28,7 +28,7 @@ import lombok.SneakyThrows;
 import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
-import oap.http.ServerHttpContext;
+import oap.http.server.apache.ServerHttpContext;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.BasicHttpContext;

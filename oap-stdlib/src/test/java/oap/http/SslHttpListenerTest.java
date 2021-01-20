@@ -27,6 +27,7 @@ package oap.http;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
+import oap.http.server.apache.ApacheHttpServer;
 import oap.io.IoStreams;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -45,11 +46,11 @@ import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-public class SecureHttpListenerTest extends Fixtures {
+public class SslHttpListenerTest extends Fixtures {
 
     private static final String KEYSTORE_PASSWORD = "123456";
 
-    private Server server;
+    private ApacheHttpServer server;
     private SynchronizedThread listener;
     private static final String PORT = "PORT";
     private final EnvFixture envFixture;
@@ -60,7 +61,7 @@ public class SecureHttpListenerTest extends Fixtures {
 
     @BeforeClass
     public void setUp() {
-        server = new Server( 10, 0, false );
+        server = new ApacheHttpServer( 10, 0, false );
         server.start();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 

@@ -22,39 +22,54 @@
  * SOFTWARE.
  */
 
-package oap.http.testng;
+package oap.http.server.apache.entity;
 
-import oap.http.Protocol;
-import oap.http.cors.CorsPolicy;
-import oap.http.server.Handler;
-import oap.http.server.HttpServer;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.entity.ContentType;
 
-import java.net.Socket;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.function.Consumer;
+import java.util.zip.GZIPOutputStream;
 
-@Deprecated
-public class MockHttpServer implements HttpServer {
-    @Override
-    public void bind( String context, CorsPolicy corsPolicy, Handler handler, Protocol protocol ) {
+public class HttpGzipOutputStreamEntity extends AbstractHttpEntity {
 
+    private final Consumer<OutputStream> consumer;
+
+    public HttpGzipOutputStreamEntity( Consumer<OutputStream> consumer, ContentType contentType ) {
+        this.consumer = consumer;
+        if( contentType != null ) {
+            setContentType( contentType.toString() );
+        }
     }
 
     @Override
-    public void unbind( String context ) {
-
+    public boolean isRepeatable() {
+        return false;
     }
 
     @Override
-    public void accepted( Socket socket ) {
-
+    public long getContentLength() {
+        return -1;
     }
 
     @Override
-    public int getQueueSize() {
-        return 0;
+    public InputStream getContent() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getActiveCount() {
-        return 0;
+    public void writeTo( OutputStream outputStream ) throws IOException {
+        final GZIPOutputStream gzipOutputStream = new GZIPOutputStream( outputStream );
+
+        consumer.accept( gzipOutputStream );
+
+        gzipOutputStream.close();
+    }
+
+    @Override
+    public boolean isStreaming() {
+        return false;
     }
 }

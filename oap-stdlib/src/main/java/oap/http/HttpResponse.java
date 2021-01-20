@@ -24,6 +24,9 @@
 package oap.http;
 
 import lombok.ToString;
+import oap.http.server.apache.entity.HttpGzipOutputStreamEntity;
+import oap.http.server.apache.entity.HttpOutputStreamEntity;
+import oap.http.server.apache.entity.HttpStreamEntity;
 import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;

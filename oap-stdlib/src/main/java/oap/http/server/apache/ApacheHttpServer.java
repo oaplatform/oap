@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
+package oap.http.server.apache;
 
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -33,7 +33,13 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
+import oap.http.ClasspathResourceHandler;
+import oap.http.Protocol;
 import oap.http.cors.CorsPolicy;
+import oap.http.cors.GenericCorsPolicy;
+import oap.http.server.Handler;
+import oap.http.server.HttpServer;
+import oap.http.server.health.HealthHttpHandler;
 import oap.io.Closeables;
 import oap.net.Inet;
 import oap.util.Dates;
@@ -73,7 +79,7 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 
 @Slf4j
-public class Server implements HttpServer, Closeable {
+public class ApacheHttpServer implements HttpServer, Closeable {
     private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
 
     private static final Counter requestsCounter = Metrics.counter( "oap_http", "type", "requests" );
@@ -96,8 +102,9 @@ public class Server implements HttpServer, Closeable {
     private ExecutorService rejectedExecutor;
     private BlockingQueue<Runnable> workQueue;
     private Gauge workQueueMetric;
+    protected HealthHttpHandler healthHttpHandler;
 
-    public Server( int workers, int queueSize, boolean registerStatic ) {
+    public ApacheHttpServer( int workers, int queueSize, boolean registerStatic ) {
         this.workers = workers;
         this.queueSize = queueSize;
         this.registerStatic = registerStatic;
@@ -147,6 +154,8 @@ public class Server implements HttpServer, Closeable {
 
         if( registerStatic )
             mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+        if( healthHttpHandler != null )
+            mapper.register( "/health", new BlockingHandlerAdapter( "/", healthHttpHandler, GenericCorsPolicy.DEFAULT, Protocol.HTTP ) );
     }
 
     @Override
@@ -292,4 +301,3 @@ public class Server implements HttpServer, Closeable {
         }
     }
 }
-

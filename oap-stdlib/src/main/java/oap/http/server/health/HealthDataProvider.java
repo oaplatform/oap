@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-/**
- * @see oap.http.server.Handler
- */
-@Deprecated
-public interface Handler extends oap.http.server.Handler {
+package oap.http.server.health;
+
+public interface HealthDataProvider<T> {
+    String name();
+
+    T data();
 }

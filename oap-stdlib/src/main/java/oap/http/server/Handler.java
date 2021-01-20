@@ -22,38 +22,11 @@
  * SOFTWARE.
  */
 
-package oap.http.cors;
+package oap.http.server;
 
-import oap.http.Context;
-import oap.http.Protocol;
 import oap.http.Request;
-import oap.http.server.apache.ServerHttpContext;
-import oap.http.testng.MockHttpServer;
-import org.apache.http.message.BasicHttpRequest;
-import org.apache.http.protocol.BasicHttpContext;
-import org.testng.annotations.Test;
+import oap.http.Response;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class GenericCorsPolicyTest {
-
-    @Test
-    public void shouldVerifyDefaultAllowMethods() throws UnknownHostException {
-        var basicHttpRequest = new BasicHttpRequest( "GET", "http://test.com" );
-        basicHttpRequest.addHeader( "Origin", "*" );
-        basicHttpRequest.addHeader( "Host", "some-host" );
-
-        var request = new Request( basicHttpRequest, new Context( "not important",
-            InetAddress.getLocalHost(),
-            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) )
-        );
-
-        final RequestCors requestCors = GenericCorsPolicy.DEFAULT.getCors( request );
-
-        assertThat( requestCors.allowMethods ).isEqualTo( "HEAD, POST, GET, PUT, DELETE, OPTIONS" );
-    }
-
+public interface Handler {
+    void handle( Request request, Response response );
 }

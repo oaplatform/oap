@@ -21,16 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
+package oap.http.server.apache;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.http.Context;
+import oap.http.Protocol;
+import oap.http.Request;
+import oap.http.Response;
 import oap.http.cors.CorsPolicy;
+import oap.http.server.Handler;
 import oap.net.Inet;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
+import static java.util.Objects.requireNonNull;
 import static oap.http.HttpResponse.FORBIDDEN;
 import static oap.http.HttpResponse.NO_CONTENT;
 
@@ -44,7 +50,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     BlockingHandlerAdapter( String location, Handler handler,
                             CorsPolicy corsPolicy, Protocol protocol ) {
         this.location = location;
-        this.handler = handler;
+        this.handler = requireNonNull( handler );
         this.corsPolicy = corsPolicy;
         this.protocol = protocol;
     }

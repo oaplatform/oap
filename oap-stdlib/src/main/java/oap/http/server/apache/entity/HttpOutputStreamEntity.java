@@ -22,24 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.server.apache.entity;
 
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
+import java.util.function.Consumer;
 
-public class HttpStreamEntity extends AbstractHttpEntity {
-    private final java.util.stream.Stream<String> stream;
+public class HttpOutputStreamEntity extends AbstractHttpEntity {
+    private final Consumer<OutputStream> cons;
 
-    public HttpStreamEntity( java.util.stream.Stream<String> stream, ContentType contentType ) {
-        this.stream = stream;
-        if( contentType != null ) {
-            setContentType( contentType.toString() );
-        }
+    public HttpOutputStreamEntity( Consumer<OutputStream> cons, ContentType contentType ) {
+        this.cons = cons;
+        if( contentType != null ) setContentType( contentType.toString() );
     }
 
     @Override
@@ -53,17 +50,13 @@ public class HttpStreamEntity extends AbstractHttpEntity {
     }
 
     @Override
-    public InputStream getContent() throws UnsupportedOperationException {
+    public InputStream getContent() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void writeTo( OutputStream outstream ) throws IOException {
-        final Iterator<String> iterator = stream.iterator();
-        while( iterator.hasNext() ) {
-            outstream.write( iterator.next().getBytes() );
-            outstream.write( '\n' );
-        }
+    public void writeTo( OutputStream outstream ) {
+        cons.accept( outstream );
     }
 
     @Override

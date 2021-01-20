@@ -1,0 +1,4 @@
+name: oap-http-health-test
+services:
+  test-data-provider:
+    implementation: oap.http.server.health.HealthHttpHandlerTest$TestDataProvider

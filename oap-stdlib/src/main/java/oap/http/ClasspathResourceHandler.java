@@ -23,6 +23,7 @@
  */
 package oap.http;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.util.Strings;
@@ -31,18 +32,16 @@ import org.apache.http.HttpResponse;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.IOException;
 import java.util.Optional;
 
+@Slf4j
 public class ClasspathResourceHandler implements HttpRequestHandler {
-    private static MimetypesFileTypeMap mimeTypes = new MimetypesFileTypeMap();
-    private static Logger logger = LoggerFactory.getLogger( ClasspathResourceHandler.class.getName() );
-    private String prefix;
-    private String location;
+    private static final MimetypesFileTypeMap mimeTypes = new MimetypesFileTypeMap();
+    private final String prefix;
+    private final String location;
 
     public ClasspathResourceHandler( String prefix, String location ) {
         this.prefix = prefix;
@@ -51,7 +50,7 @@ public class ClasspathResourceHandler implements HttpRequestHandler {
 
     public void handle( HttpRequest req, HttpResponse resp, HttpContext context ) throws IOException {
         String resource = location + Strings.substringAfter( req.getRequestLine().getUri(), prefix );
-        logger.trace( req.getRequestLine().toString() + " -> " + resource );
+        log.trace( req.getRequestLine().toString() + " -> " + resource );
         Optional<byte[]> file = Resources.read( getClass(), resource, ContentReader.ofBytes() );
         if( file.isPresent() ) {
             ByteArrayEntity entity = new ByteArrayEntity( file.get() );

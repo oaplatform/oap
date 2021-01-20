@@ -25,6 +25,7 @@ package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.RequestCors;
+import oap.http.server.apache.entity.HttpGzipOutputStreamEntity;
 import oap.util.Pair;
 
 import java.io.IOException;

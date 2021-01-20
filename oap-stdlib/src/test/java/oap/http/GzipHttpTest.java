@@ -26,6 +26,7 @@ package oap.http;
 
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
+import oap.http.server.apache.ApacheHttpServer;
 import oap.io.IoStreams;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -41,7 +42,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GzipHttpTest extends Fixtures {
-    private Server server;
+    private ApacheHttpServer server;
     private SynchronizedThread thread;
 
     private final EnvFixture envFixture;
@@ -52,7 +53,7 @@ public class GzipHttpTest extends Fixtures {
 
     @BeforeMethod
     public void beforeMethod() {
-        server = new Server( 1024, 0, false );
+        server = new ApacheHttpServer( 1024, 0, false );
         server.start();
         PlainHttpListener listener = new PlainHttpListener( server, envFixture.portFor( getClass() ) );
         thread = new SynchronizedThread( listener, 5000 );

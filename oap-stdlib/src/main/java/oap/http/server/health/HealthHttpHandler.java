@@ -21,18 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public class HttpException extends RuntimeException {
-    public HttpException( String message ) {
-        super( message );
+package oap.http.server.health;
+
+import lombok.extern.slf4j.Slf4j;
+import oap.http.HttpResponse;
+import oap.http.Request;
+import oap.http.Response;
+import oap.http.server.Handler;
+import oap.util.Stream;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import static oap.http.HttpResponse.NO_CONTENT;
+import static oap.util.Pair.__;
+
+@Slf4j
+public class HealthHttpHandler implements Handler {
+    private final List<HealthDataProvider<?>> providers = new ArrayList<>();
+    private final String secret;
+
+    public HealthHttpHandler( String secret ) {
+        this.secret = secret;
     }
 
-    public HttpException( String message, Throwable cause ) {
-        super( message, cause );
+    public HealthHttpHandler() {
+        this( null );
     }
 
-    public HttpException( Throwable cause ) {
-        super( cause );
+    @Override
+    public void handle( Request request, Response response ) {
+        log.trace( "providers: {}", providers );
+        if( secret != null && request.parameter( "secret" ).map( s -> Objects.equals( s, secret ) ).orElse( false ) )
+            response.respond( HttpResponse.ok(
+                Stream.of( providers )
+                    .mapToPairs( hdp -> __( hdp.name(), hdp.data() ) )
+                    .toMap() )
+                .response() );
+        else response.respond( NO_CONTENT );
     }
 }

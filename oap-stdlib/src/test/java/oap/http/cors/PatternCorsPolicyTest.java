@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList;
 import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
-import oap.http.ServerHttpContext;
+import oap.http.server.apache.ServerHttpContext;
 import oap.http.testng.MockHttpServer;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.protocol.BasicHttpContext;

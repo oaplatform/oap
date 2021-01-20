@@ -1,7 +1,7 @@
 name: oap
 services:
   oap-http-io-server:
-    implementation: oap.http.Server
+    implementation: oap.http.server.apache.ApacheHttpServer
     profile: http-io
     name: oap-http-server
     parameters:
@@ -11,11 +11,47 @@ services:
       keepAliveTimeout: 5s
       originalServer: "OAP Server/4.0"
       responseDate: true
+      healthHttpHandler: "@service:oap-http-health-handler"
       rejected:
         code: 503
-        reason: "temporary overload" 
+        reason: "temporary overload"
     supervision:
       supervise: true
+
+  oap-http-listener-plain:
+    profile: http-io-plain
+    implementation: oap.http.server.apache.PlainHttpListener
+    parameters:
+      port: 8880
+      server: "@service:oap-http-server"
+    supervision:
+      thread: true
+
+  oap-http-listener-ssl:
+    profile: http-io-ssl
+    implementation: oap.http.server.apache.SslHttpListener
+    parameters:
+      port: 8443
+      server: "@service:oap-http-server"
+      keystoreLocation: "/etc/oap/keystore.jks"
+      keystorePassword: "changeit"
+    supervision:
+      thread: true
+
+  local-http-listener:
+    profile: http-io-local
+    implementation: oap.http.server.apache.LocalHttpListener
+    parameters:
+      port: 18546
+      server: "@service:oap-http-server"
+    supervision:
+      thread: true
+
+  oap-http-health-handler:
+    implementation: oap.http.server.health.HealthHttpHandler
+    parameters:
+      providers:
+        - "@implementations:oap.http.server.health.HealthDataProvider"
 
   remoting:
     profile: remoting

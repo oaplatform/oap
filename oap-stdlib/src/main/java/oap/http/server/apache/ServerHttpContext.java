@@ -22,54 +22,49 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.server.apache;
 
-import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.ContentType;
+import lombok.ToString;
+import oap.http.Protocol;
+import oap.http.server.HttpServer;
+import org.apache.http.impl.DefaultBHttpServerConnection;
+import org.apache.http.protocol.HttpContext;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Consumer;
-import java.util.zip.GZIPOutputStream;
 
-public class HttpGzipOutputStreamEntity extends AbstractHttpEntity {
+@ToString
+public class ServerHttpContext implements HttpContext, Closeable {
+    public final Protocol protocol;
+    public final DefaultBHttpServerConnection connection;
+    private final HttpContext httpContext;
+    public final HttpServer httpServer;
+    public long start = System.nanoTime();
 
-    private final Consumer<OutputStream> consumer;
-
-    public HttpGzipOutputStreamEntity( Consumer<OutputStream> consumer, ContentType contentType ) {
-        this.consumer = consumer;
-        if( contentType != null ) {
-            setContentType( contentType.toString() );
-        }
+    public ServerHttpContext( HttpServer httpServer, HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection ) {
+        this.httpServer = httpServer;
+        this.httpContext = httpContext;
+        this.protocol = protocol;
+        this.connection = connection;
     }
 
     @Override
-    public boolean isRepeatable() {
-        return false;
+    public Object getAttribute( String id ) {
+        return httpContext.getAttribute( id );
     }
 
     @Override
-    public long getContentLength() {
-        return -1;
+    public void setAttribute( String id, Object obj ) {
+        httpContext.setAttribute( id, obj );
     }
 
     @Override
-    public InputStream getContent() {
-        throw new UnsupportedOperationException();
+    public Object removeAttribute( String id ) {
+        return httpContext.removeAttribute( id );
     }
 
     @Override
-    public void writeTo( OutputStream outputStream ) throws IOException {
-        final GZIPOutputStream gzipOutputStream = new GZIPOutputStream( outputStream );
-
-        consumer.accept( gzipOutputStream );
-
-        gzipOutputStream.close();
-    }
-
-    @Override
-    public boolean isStreaming() {
-        return false;
+    public void close() throws IOException {
+        connection.close();
     }
 }
