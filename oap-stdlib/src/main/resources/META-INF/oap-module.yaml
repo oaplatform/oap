@@ -49,13 +49,32 @@ services:
 
   oap-http-health-handler:
     implementation: oap.http.server.health.HealthHttpHandler
+    profile: http
     parameters:
       providers:
         - "@implementations:oap.http.server.health.HealthDataProvider"
 
+  corsPolicy-generic:
+    implementation: oap.http.cors.GenericCorsPolicy
+    profile: http
+    parameters:
+      allowOrigin: "*"
+      allowHeaders: "Content-type, Authorization, Set-cookie"
+      allowCredentials: true
+      allowMethods: [HEAD, POST, GET, PUT, DELETE, OPTIONS]
+
+  corsPolicy-subdomain:
+    implementation: oap.http.cors.PatternCorsPolicy
+    profile: http
+    parameters:
+      domainRegexp: "^[^:/]*\\.oaplatform\\.org$"
+      allowHeaders: "Content-type, Authorization, Set-cookie, Cookie"
+      allowCredentials: true
+      allowMethods: [HEAD, POST, GET, PUT, DELETE, OPTIONS]
+
   remoting:
-    profile: remoting
     implementation: oap.application.remote.Remote
+    profile: remoting
     parameters:
       port: 8980
       context: /remote/
