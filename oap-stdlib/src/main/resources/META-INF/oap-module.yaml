@@ -1,8 +1,8 @@
 name: oap
 services:
-  oap-http-io-server:
+  oap-http-apache-server:
     implementation: oap.http.server.apache.ApacheHttpServer
-    profile: http-io
+    profile: http
     name: oap-http-server
     parameters:
       workers: 500
@@ -19,7 +19,7 @@ services:
       supervise: true
 
   oap-http-listener-plain:
-    profile: http-io-plain
+    profile: http-plain
     implementation: oap.http.server.apache.PlainHttpListener
     parameters:
       port: 8880
@@ -28,7 +28,7 @@ services:
       thread: true
 
   oap-http-listener-ssl:
-    profile: http-io-ssl
+    profile: http-ssl
     implementation: oap.http.server.apache.SslHttpListener
     parameters:
       port: 8443
@@ -38,8 +38,8 @@ services:
     supervision:
       thread: true
 
-  local-http-listener:
-    profile: http-io-local
+  oap-http-listener-local:
+    profile: http-local
     implementation: oap.http.server.apache.LocalHttpListener
     parameters:
       port: 18546
