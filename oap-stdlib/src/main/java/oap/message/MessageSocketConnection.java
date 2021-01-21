@@ -24,13 +24,13 @@
 
 package oap.message;
 
-import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.io.Sockets;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
@@ -39,8 +39,7 @@ public class MessageSocketConnection implements Closeable {
     public final DataInputStream in;
     private final Socket socket;
 
-    @SneakyThrows
-    public MessageSocketConnection( String host, int port, long soTimeout, long connectTimeout ) {
+    public MessageSocketConnection( String host, int port, long soTimeout, long connectTimeout ) throws IOException {
         this.socket = new Socket();
         this.socket.setKeepAlive( true );
         this.socket.setTcpNoDelay( true );

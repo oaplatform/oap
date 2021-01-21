@@ -24,131 +24,110 @@
 
 package oap.pool;
 
+import cn.danielw.fop.DisruptorObjectPool;
+import cn.danielw.fop.ObjectFactory;
+import cn.danielw.fop.PoolConfig;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.TimeoutException;
+import oap.concurrent.Executors;
+import oap.util.Dates;
 
-import java.util.Queue;
+import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static oap.concurrent.Times.times;
+import java.util.function.Function;
 
 @Slf4j
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class Pool<T> implements AutoCloseable {
-    private final Semaphore semaphore;
-    private final Queue<Poolable<T>> free = new ConcurrentLinkedQueue<>();
-    private boolean closed = false;
-    private final int size;
-    private final long shutdownTimeout;
+/**
+ * @see https://github.com/DanielYWoo/fast-object-pool
+ */
+public class Pool<T> implements Closeable {
+    public static final int MAX_WAIT_MILLISECONDS = ( int ) Dates.s( 5 );
+    public static final int MAX_IDLE_MILLISECONDS = ( int ) Dates.m( 5 );
+    public static final int SCAVENGE_INTERVAL_MILLISECONDS = ( int ) Dates.m( 2 );
+    private final Executors.BlockingExecutor threadPool;
+    private DisruptorObjectPool<T> objectPool;
 
-    public Pool( int size ) {
-        this( size, MINUTES.toMillis( 1 ) );
+    public Pool( int size, ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
+        this( size, size, 1, MAX_WAIT_MILLISECONDS, MAX_IDLE_MILLISECONDS, 0, objectFactory, threadFactory );
     }
 
-    public Pool( int size, long shutdownTimeout ) {
-        this.size = size;
-        this.shutdownTimeout = shutdownTimeout;
-        this.semaphore = new Semaphore( this.size, true );
+    public Pool( int minSize, int maxSize, int partitionSize, ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
+        this( minSize, maxSize, partitionSize, MAX_WAIT_MILLISECONDS, MAX_IDLE_MILLISECONDS,
+            minSize == maxSize ? 0 : SCAVENGE_INTERVAL_MILLISECONDS, objectFactory, threadFactory );
     }
-
-    public abstract T create();
-
-    public boolean valid( T t ) {
-        return true;
-    }
-
-    public void discarded( T t ) {
-    }
-
-    public Poolable<T> borrow( long timeout, TimeUnit unit ) {
-        try {
-            if( closed || !semaphore.tryAcquire( timeout, unit ) ) return Poolable.empty();
-            return borrowOrCreate();
-        } catch( InterruptedException e ) {
-            return Poolable.empty();
-        }
-    }
-
-    public Poolable<T> borrow() {
-        try {
-            if( closed ) return Poolable.empty();
-            semaphore.acquire();
-            return borrowOrCreate();
-        } catch( InterruptedException e ) {
-            return Poolable.empty();
-        }
-    }
-
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
-
-    public void sync( Consumer<T> action ) {
-        try( var p = borrow() ) {
-            p.then( action );
-        }
-    }
-
-    public CompletableFuture<Void> async( Consumer<T> action ) {
-        return async( action, e -> log.error( e.getMessage(), e ) );
-    }
-
-    public CompletableFuture<Void> async( Consumer<T> action, Consumer<? super Exception> onError ) {
-        Poolable<T> poolable = borrow();
-        return poolable.isEmpty()
-            ? CompletableFuture.failedFuture( new IllegalStateException( "cannot borrow object from pool, closed=" + closed ) )
-            : CompletableFuture.runAsync( () -> {
-                try( poolable ) {
-                    poolable.then( action );
-                } catch( Exception e ) {
-                    onError.accept( e );
-                }
-            } );
-    }
-
 
     /**
-     * @return never empty
+     * @param minSize
+     * @param maxSize                      the maximum number of threads to allow in the pool
+     * @param partitionSize
+     * @param maxWaitMilliseconds          when pool is full, wait at most maxWaitMilliseconds, then throw an exception
+     * @param maxIdleMilliseconds          objects idle for maxIdleMilliseconds will be destroyed to shrink the pool size
+     * @param scavengeIntervalMilliseconds set it to zero if you don't want to automatically shrink your pool.
+     * @param objectFactory
      */
-    private Poolable<T> borrowOrCreate() {
-        Poolable<T> p;
-        while( ( p = free.poll() ) != null ) {
-            if( !valid( p.value ) ) discarded( p.value );
-            else break;
-        }
-        return p == null ? Poolable.of( this, create() ) : p;
+    public Pool( int minSize, int maxSize, int partitionSize, int maxWaitMilliseconds, int maxIdleMilliseconds, int scavengeIntervalMilliseconds,
+                 ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
+        var config = new PoolConfig()
+            .setMinSize( minSize )
+            .setMinSize( maxSize )
+            .setPartitionSize( partitionSize )
+            .setMaxWaitMilliseconds( maxWaitMilliseconds )
+            .setMaxIdleMilliseconds( maxIdleMilliseconds )
+            .setScavengeIntervalMilliseconds( scavengeIntervalMilliseconds );
+
+        objectPool = new DisruptorObjectPool<T>( config, objectFactory );
+        threadPool = Executors.newFixedBlockingThreadPool( minSize, maxSize, threadFactory );
     }
 
-    protected void release( Poolable<T> poolable ) {
-        if( closed ) discarded( poolable.value );
-        else free.add( poolable );
-        semaphore.release();
+    public <TResult> CompletableFuture<TResult> supply( Function<T, TResult> func ) {
+        var obj = objectPool.borrowObject( true );
+        try {
+            return CompletableFuture
+                .supplyAsync( () -> func.apply( obj.getObject() ), threadPool )
+                .whenComplete( ( r, e ) -> objectPool.returnObject( obj ) );
+        } catch( Exception e ) {
+            objectPool.returnObject( obj );
+            throw e;
+        }
+    }
+
+    public CompletableFuture<Void> run( Consumer<T> func ) {
+        var obj = objectPool.borrowObject( true );
+        try {
+            return CompletableFuture
+                .runAsync( () -> func.accept( obj.getObject() ), threadPool )
+                .whenComplete( ( r, e ) -> objectPool.returnObject( obj ) );
+        } catch( Exception e ) {
+            objectPool.returnObject( obj );
+            throw e;
+        }
+    }
+
+    public void shutdownNow() {
+        threadPool.shutdownNow();
+        try {
+            objectPool.shutdown();
+        } catch( InterruptedException e ) {
+            log.warn( e.getMessage() );
+        }
     }
 
     @Override
     public void close() {
-        closed = true;
-        times( size, () -> {
-            try {
-                if( !semaphore.tryAcquire( shutdownTimeout, MILLISECONDS ) )
-                    throw new TimeoutException( "cannot close pool properly, timeout waiting for returned resources" );
-                Poolable<T> p = free.poll();
-                if( p != null ) discarded( p.value );
-            } catch( InterruptedException e ) {
-                log.warn( "abnormal pool shutdown", e );
-            }
-        } );
-    }
+        try {
+            threadPool.shutdown();
+            threadPool.awaitTermination( 1, TimeUnit.HOURS );
+        } catch( InterruptedException e ) {
+            log.warn( e.getMessage() );
+        }
 
-    @Override
-    public String toString() {
-        return "Pool(permits=" + semaphore.availablePermits() + ",free=" + free.size() + ",closed=" + closed + ")";
+        try {
+            objectPool.shutdown();
+        } catch( InterruptedException e ) {
+            log.warn( e.getMessage() );
+        }
+
     }
 }

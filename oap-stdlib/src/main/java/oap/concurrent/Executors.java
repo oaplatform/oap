@@ -67,6 +67,10 @@ public final class Executors {
         return new BlockingExecutor( nThreads );
     }
 
+    public static BlockingExecutor newFixedBlockingThreadPool( int corePoolSize, int maximumPoolSize, ThreadFactory threadFactory ) {
+        return new BlockingExecutor( corePoolSize, maximumPoolSize, threadFactory );
+    }
+
     public static BlockingExecutor newFixedBlockingThreadPool( int nThreads, ThreadFactory threadFactory ) {
         return new BlockingExecutor( nThreads, threadFactory );
     }
@@ -82,18 +86,26 @@ public final class Executors {
         private final ThreadPoolExecutor threadPoolExecutor;
 
         private BlockingExecutor( int concurrentTasksLimit, ThreadFactory threadFactory ) {
-            semaphore = new Semaphore( concurrentTasksLimit );
+            this( concurrentTasksLimit, concurrentTasksLimit, threadFactory );
+        }
+
+        private BlockingExecutor( int corePoolSize, int maximumPoolSize, ThreadFactory threadFactory ) {
+            semaphore = new Semaphore( maximumPoolSize );
             this.threadPoolExecutor = new ThreadPoolExecutor(
-                concurrentTasksLimit, concurrentTasksLimit,
+                corePoolSize, maximumPoolSize,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
                 threadFactory );
         }
 
         private BlockingExecutor( int concurrentTasksLimit ) {
-            semaphore = new Semaphore( concurrentTasksLimit );
+            this( concurrentTasksLimit, concurrentTasksLimit );
+        }
+
+        private BlockingExecutor( int corePoolSize, int maximumPoolSize ) {
+            semaphore = new Semaphore( maximumPoolSize );
             this.threadPoolExecutor = new ThreadPoolExecutor(
-                concurrentTasksLimit, concurrentTasksLimit,
+                corePoolSize, maximumPoolSize,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>() );
         }

@@ -24,15 +24,15 @@
 
 package oap.message;
 
+import cn.danielw.fop.ObjectFactory;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
-import oap.concurrent.Executors;
-import oap.concurrent.ThreadLocalMap;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
@@ -40,6 +40,7 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
+import oap.pool.Pool;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
@@ -105,7 +106,7 @@ public class MessageSender implements Closeable {
     private final long clientId = Cuid.UNIQUE.nextLong();
     private final Messages messages = new Messages();
     private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
-    private final ThreadLocalMap<Connection> connections = ThreadLocalMap.withInitial( Connection::new );
+    //    private final ThreadLocalMap<Connection> connections = ThreadLocalMap.withInitial( Connection::new );
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long messagesLimitBytes = 1024 * 1024 * 128; // 128Mb
@@ -113,7 +114,8 @@ public class MessageSender implements Closeable {
     public long diskSyncPeriod = Dates.m( 1 );
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
-    private Executors.BlockingExecutor connectionPool;
+    //    private Executors.BlockingExecutor connectionPool;
+    private Pool<Connection> connectionPool;
     private boolean closed = false;
     private Scheduled diskSyncScheduler;
     private Scheduled memorySyncScheduler;
@@ -170,7 +172,22 @@ public class MessageSender implements Closeable {
         log.info( "custom status = {}", statusMap );
 
         log.debug( "creating connection pool {}", poolSize );
-        connectionPool = Executors.newFixedBlockingThreadPool( poolSize );
+        connectionPool = new Pool<>( poolSize, new ObjectFactory<Connection>() {
+            @Override
+            public Connection create() {
+                return new Connection();
+            }
+
+            @Override
+            public void destroy( Connection connection ) {
+                connection.close();
+            }
+
+            @Override
+            public boolean validate( Connection connection ) {
+                return connection.refreshConnection();
+            }
+        }, new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build() );
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
         if( memorySyncPeriod > 0 )
@@ -215,7 +232,6 @@ public class MessageSender implements Closeable {
         Closeables.close( memorySyncScheduler );
         Closeables.close( diskSyncScheduler );
 
-        Closeables.close( connections );
         connectionPool.shutdownNow();
 
         saveMessagesToDirectory( directory );
@@ -264,16 +280,15 @@ public class MessageSender implements Closeable {
 
             if( closed ) break;
 
-            sends.add( CompletableFuture.runAsync( () -> {
+            sends.add( connectionPool.run( connection -> {
                 try {
-                    var status = connections.get().write( message );
+                    var status = connection.write( message );
                     if( status != ERROR ) messages.remove( message.md5 );
-
                 } catch( Exception e ) {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                     LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
                 }
-            }, connectionPool ) );
+            } ) );
         }
 
         CompletableFuture.allOf( sends.toArray( new CompletableFuture[0] ) ).get();
@@ -287,7 +302,7 @@ public class MessageSender implements Closeable {
 
         var messageFiles = Files.fastWildcard( directory, "*/*/*.bin" );
 
-        var sends = new ArrayList<CompletableFuture<?>>();
+        var sends = new ArrayList<CompletableFuture<Void>>();
 
         for( var msgFile : messageFiles ) {
             Path lockFile;
@@ -312,10 +327,10 @@ public class MessageSender implements Closeable {
 
                     var msg = new Message( clientId, messageType, md5, data );
 
-                    sends.add( CompletableFuture.runAsync( () -> {
-                        if( connections.get().write( msg ) != ERROR ) Files.delete( msgFile );
+                    sends.add( connectionPool.run( connection -> {
+                        if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
                         Files.delete( lockFile );
-                    }, connectionPool ) );
+                    } ) );
                 } catch( Exception e ) {
                     LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
                 }
@@ -492,13 +507,21 @@ public class MessageSender implements Closeable {
             return ERROR;
         }
 
-        private void refreshConnection() {
+        private boolean refreshConnection() {
             if( this.connection == null || !connection.isConnected() ) {
                 Closeables.close( connection );
-                log.debug( "opening connection..." );
-                this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
-                log.debug( "connected! {}", this.connection );
+                try {
+                    log.debug( "opening connection..." );
+                    this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
+                    log.debug( "connected! {}", this.connection );
+                } catch( IOException e ) {
+                    if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
+                    else log.error( e.getMessage() );
+                    return false;
+                }
             }
+
+            return true;
         }
 
         @Override
