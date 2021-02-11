@@ -118,7 +118,6 @@ public class Kernel implements Closeable {
                 var service = serviceEntry.getValue();
                 if( !isServiceEnabled( service, this.profiles ) ) continue;
 
-                log.trace( "fix deps for {} in {}", serviceEntry.getKey(), module.name );
                 service.parameters.forEach( ( key, value ) ->
                     fixDepsParameter( module, service, value, false )
                 );
