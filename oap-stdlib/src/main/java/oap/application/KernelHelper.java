@@ -25,86 +25,17 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
-import static org.apache.commons.collections4.CollectionUtils.subtract;
 
 @Slf4j( topic = "oap.application.Kernel" )
 public class KernelHelper {
-
-    static Set<Module> forEachModule( Set<Module> modules, Set<String> profiles, Set<String> initializedModules, Consumer<Module> cons ) {
-        return forEachModule( modules, false, profiles, initializedModules, cons );
-    }
-
-    static Set<Module> forEachModule( Set<Module> modules, boolean skipDisabled, Set<String> profiles, Set<String> initializedModules, Consumer<Module> cons ) {
-        var deferred = new LinkedHashSet<Module>();
-
-        for( Module module : modules ) {
-            log.debug( "module {}", module.name );
-
-            if( skipDisabled && !isModuleEnabled( module, profiles ) ) {
-                log.debug( "skipping  module {}", module.name );
-                continue;
-            }
-
-            if( initializedModules.containsAll( getDependsOn( module.dependsOn, profiles ) ) ) {
-                cons.accept( module );
-
-                initializedModules.add( module.name );
-            } else {
-                log.debug( "dependencies are not ready - deferring {}: {}",
-                    module.name, subtract( getDependsOn( module.dependsOn, profiles ), initializedModules ) );
-                deferred.add( module );
-            }
-        }
-
-        return deferred.size() == modules.size()
-            ? deferred
-            : forEachModule( deferred, skipDisabled, profiles, initializedModules, cons );
-    }
-
-    static Map<String, Module.Service> forEachService( Set<Module> modules,
-                                                       Map<String, Module.Service> services,
-                                                       Set<String> initializedServices,
-                                                       BiConsumer<String, Module.Service> cons ) {
-        var deferred = new LinkedHashMap<String, Module.Service>();
-
-        for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
-            var service = entry.getValue();
-
-            List<String> dependsOn = Lists.filter( service.dependsOn, d -> serviceEnabled( modules, d ) );
-            if( initializedServices.containsAll( dependsOn ) ) {
-                cons.accept( entry.getKey(), service );
-            } else {
-                log.debug( "dependencies are not ready - deferring {}: {}, initialized {}",
-                    service.name, subtract( service.dependsOn, initializedServices ), initializedServices );
-                deferred.put( entry.getKey(), service );
-            }
-        }
-
-        return deferred.size() == services.size() ? deferred
-            : forEachService( modules, deferred, initializedServices, cons );
-    }
-
-    static boolean serviceEnabled( Set<Module> modules, String name ) {
-        for( Module module : modules ) {
-            Module.Service service = module.services.get( name );
-            if( service != null && !service.enabled ) return false;
-        }
-
-        return true;
-    }
 
     static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, Map<String, ServiceInitialization> initialized,
                                                                  LinkedHashMap<String, Object> parameters ) {
@@ -191,17 +122,6 @@ public class KernelHelper {
         }
 
         return value;
-    }
-
-    public static Set<String> getDependsOn( Set<Module.Depends> profiles, Set<String> systemProfiles ) {
-        var ret = new LinkedHashSet<String>();
-
-        for( var d : profiles ) {
-            if( profileEnabled( d.profiles, systemProfiles ) )
-                ret.add( d.name );
-        }
-
-        return ret;
     }
 
     public static boolean profileEnabled( Set<String> profiles, Set<String> systemProfiles ) {

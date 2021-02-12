@@ -236,7 +236,7 @@ public class KernelTest {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( kernel::start )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "dependencies are not ready [s1]" );
+                .hasMessage( "[reference:s1] dependencies are not enabled [s2]" );
         }
     }
 

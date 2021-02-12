@@ -96,7 +96,7 @@ public class KernelProfileTest {
     public void profile4() {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module4.yaml" ) ) ) ) {
             startWithProfile( kernel, "run" );
-            assertThat( kernel.service( "container" ) ).isPresent().get().isInstanceOf( TestContainer2.class );
+             assertThat( kernel.service( "container" ) ).isPresent().get().isInstanceOf( TestContainer2.class );
         }
     }
 

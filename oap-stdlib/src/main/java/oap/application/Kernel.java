@@ -38,13 +38,11 @@ import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
-import oap.util.Lists;
 import oap.util.PrioritySet;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -57,17 +55,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
-import static oap.application.KernelHelper.forEachModule;
-import static oap.application.KernelHelper.forEachService;
 import static oap.application.KernelHelper.isImplementations;
-import static oap.application.KernelHelper.isModuleEnabled;
-import static oap.application.KernelHelper.isServiceEnabled;
 import static oap.application.KernelHelper.isServiceLink;
 import static oap.application.KernelHelper.referenceName;
 
@@ -89,40 +82,6 @@ public class Kernel implements Closeable {
 
     public Kernel( List<URL> moduleConfigurations ) {
         this( DEFAULT, moduleConfigurations );
-    }
-
-    private static void fixDepsParameter( Module module, Module.Service service,
-                                          Object value, boolean optional ) {
-        if( isServiceLink( value ) ) {
-            if( !optional ) {
-                String linkName = Module.Reference.of( value ).name;
-                addDeps( module, service, Lists.of( linkName ) );
-            }
-        } else if( value instanceof List<?> )
-            for( var item : ( List<?> ) value )
-                fixDepsParameter( module, service, item, true );
-        else if( value instanceof Map<?, ?> )
-            for( var item : ( ( Map<?, ?> ) value ).values() )
-                fixDepsParameter( module, service, item, false );
-    }
-
-    private static void addDeps( Module module, Module.Service service, List<String> list ) {
-        log.trace( "service[{}].dependsOn.addAll({}); module={}", service.name, list, module.name );
-        service.dependsOn.addAll( list );
-    }
-
-    private void fixDeps() {
-        for( var module : modules ) {
-            log.trace( "module {} services {}", module.name, module.services.keySet() );
-            for( var serviceEntry : module.services.entrySet() ) {
-                var service = serviceEntry.getValue();
-                if( !isServiceEnabled( service, this.profiles ) ) continue;
-
-                service.parameters.forEach( ( key, value ) ->
-                    fixDepsParameter( module, service, value, false )
-                );
-            }
-        }
     }
 
     private void linkListeners( Module.Service service, Object instance ) {
@@ -208,9 +167,8 @@ public class Kernel implements Closeable {
         log.debug( "modules = {}", Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = {}", this.modules );
 
-        fixServiceName();
-        fixDeps();
-        var map = instantiateServices();
+        var modules = new Modules( this.modules, this.profiles );
+        var map = instantiateServices( modules );
         registerServices( map );
         linkServices( map );
         startServices( map );
@@ -222,39 +180,20 @@ public class Kernel implements Closeable {
         log.debug( "application kernel started" );
     }
 
-    private void fixServiceName() {
-        for( var module : modules ) {
-            module.services.forEach( ( implName, service ) ->
-                service.name = service.name != null ? service.name : implName );
-        }
-    }
-
-    private Map<String, ServiceInitialization> instantiateServices() {
+    private LinkedHashMap<String, ServiceInitialization> instantiateServices( Modules modules ) {
         var ret = new LinkedHashMap<String, ServiceInitialization>();
 
-        var initializedServices = new LinkedHashSet<String>();
-        forEachModule( modules, profiles, new LinkedHashSet<>(), module -> {
-            if( !isModuleEnabled( module, this.profiles ) ) {
-                log.debug( "skipping module {} with profiles {}", module.name, module.profiles );
-                return;
-            }
+        for( var moduleItem : modules.map.values() ) {
+            if( !moduleItem.enabled ) continue;
 
-            var services = forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
-                if( !service.enabled ) {
-                    log.debug( "service {} is disabled.", implName );
-                    return;
-                }
-                if( !isServiceEnabled( service, this.profiles ) ) {
-                    log.debug( "skipping service {} with profiles {}", implName, service.profiles );
-                    return;
-                }
+            for( var serviceEntry : moduleItem.services.entrySet() ) {
+                var serviceItem = serviceEntry.getValue();
+                if( !serviceItem.enabled ) continue;
 
-                log.debug( "initializing {} as {}", implName, service.name );
+                var service = serviceItem.service;
+                var implName = serviceEntry.getKey();
 
-                if( service.implementation == null )
-                    throw new ApplicationException( "failed to initialize service: " + service.name + ". implementation == null" );
-
-                Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
+                var reflect = Reflect.reflect( service.implementation, Module.coersions );
                 Object instance;
                 if( !service.isRemoteService() ) try {
                     var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
@@ -267,15 +206,9 @@ public class Kernel implements Closeable {
                 }
                 else instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
 
-                ret.put( service.name, new ServiceInitialization( implName, instance, module, service, reflect ) );
-
-                initializedServices.add( service.name );
-            } );
-
-            if( !services.isEmpty() ) {
-                throw new ApplicationException( "dependencies are not ready " + services.keySet() );
+                ret.put( service.name, new ServiceInitialization( implName, instance, moduleItem.module, service, reflect ) );
             }
-        } );
+        }
 
         return ret;
     }
@@ -296,24 +229,6 @@ public class Kernel implements Closeable {
             }
 
             method.invoke( instance, serviceName );
-        }
-    }
-
-    @SneakyThrows
-    private void updateLoggerIfExists( Object instance, String name ) {
-        try {
-            var clazz = instance.getClass();
-            var logField = clazz.getDeclaredField( "log" );
-            logField.setAccessible( true );
-            if( org.slf4j.Logger.class.isAssignableFrom( logField.getType() ) ) {
-                var logger = ( org.slf4j.Logger ) logField.get( java.lang.reflect.Modifier.isStatic( logField.getModifiers() ) ? null : instance );
-                if( logger instanceof ch.qos.logback.classic.Logger && !logger.getName().endsWith( "." + name ) ) {
-                    FieldUtils.writeDeclaredField( logger, "name", logger.getName() + "." + name, true );
-                }
-            }
-        } catch( NoSuchFieldException ignored ) {
-        } catch( Exception e ) {
-            log.warn( e.getMessage(), e );
         }
     }
 
@@ -391,41 +306,11 @@ public class Kernel implements Closeable {
     }
 
     private void startServices( Map<String, ServiceInitialization> services ) {
-        Set<Module> def = startModules( this.modules, services, new LinkedHashSet<>(), new LinkedHashSet<>() );
-        if( !def.isEmpty() ) {
-            Set<String> names = Sets.map( def, m -> m.name );
-            log.error( "failed to initialize: {} ", names );
-            throw new ApplicationException( "failed to initialize modules: " + names );
-        }
-    }
+        services.forEach( ( implName, si ) -> {
+            log.debug( "starting {} as {}...", si.service.name, implName );
 
-    private Set<Module> startModules( Set<Module> modules, Map<String, ServiceInitialization> services,
-                                      Set<String> initializedModules, Set<String> startedServices ) {
-
-        return forEachModule( modules, true, profiles, initializedModules, module -> {
-            Map<String, Module.Service> def = startModule( module.services, services, startedServices );
-            if( !def.isEmpty() ) {
-                var names = def.keySet();
-                log.error( "failed to initialize: {}", names );
-                throw new ApplicationException( "failed to initialize services: " + names );
-            }
-        } );
-    }
-
-    private Map<String, Module.Service> startModule( Map<String, Module.Service> services, Map<String, ServiceInitialization> sis,
-                                                     Set<String> startedServices ) {
-
-        return forEachService( modules, services, startedServices, ( implName, service ) -> {
-            log.debug( "starting {} as {}...", implName, service.name );
-
-            var si = sis.get( service.name );
-            if( si != null ) {
-                startService( si );
-                log.debug( "starting {} as {}... Done", implName, service.name );
-            } else {
-                log.debug( "starting {} as {}... Skip", implName, service.name );
-            }
-            startedServices.add( service.name );
+            startService( si );
+            log.debug( "starting {} as {}... Done", si.service.name, implName );
         } );
     }
 
