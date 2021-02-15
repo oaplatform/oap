@@ -25,6 +25,9 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.ModuleItem.ModuleReference;
+import oap.application.ModuleItem.ModuleReference.ServiceLink;
+import oap.application.ModuleItem.ServiceItem.ServiceReference;
 import oap.util.Lists;
 import oap.util.Pair;
 
@@ -87,9 +90,9 @@ class Modules {
         for( var moduleInfo : map.values() ) {
             if( !moduleInfo.enabled ) continue;
 
-            for( var dModuleInfo : moduleInfo.dependsOn ) {
-                if( !dModuleInfo.enabled ) {
-                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled [" + dModuleInfo.module.name + "]" );
+            for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
+                if( !dModuleInfo.moduleItem.enabled ) {
+                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled [" + dModuleInfo.moduleItem.module.name + "]" );
                 }
             }
         }
@@ -126,7 +129,7 @@ class Modules {
 
 
         graph.removeIf( moduleItem -> {
-            if( moduleItem.dependsOn.isEmpty() ) {
+            if( moduleItem.getDependsOn().isEmpty() ) {
                 noIncomingEdges.add( moduleItem );
                 return true;
             }
@@ -139,9 +142,9 @@ class Modules {
             newMap.put( moduleItem.module.name, moduleItem );
 
             graph.removeIf( node -> {
-                node.dependsOn.remove( moduleItem );
+                node.getDependsOn().remove( moduleItem.module.name );
 
-                if( node.dependsOn.isEmpty() ) {
+                if( node.getDependsOn().isEmpty() ) {
                     noIncomingEdges.add( node );
                     return true;
                 }
@@ -153,7 +156,12 @@ class Modules {
         if( !graph.isEmpty() ) {
             log.error( "graph has at least one cycle:" );
             for( var node : graph ) {
-                log.error( "  [{}]:{}", node.module.name, Lists.map( node.dependsOn, d -> d.module.name ) );
+                log.error( "  module: [{}]:{}", node.module.name, Lists.map( node.getDependsOn().values(), d -> d.moduleItem.module.name ) );
+                for( var d : node.getDependsOn().values() ) {
+                    for( var sl : d.serviceLink ) {
+                        log.error( "    service: {}:{} -> {}:{}", node.module.name, sl.from.serviceName, d.moduleItem.getName(), sl.to.serviceName );
+                    }
+                }
             }
 
             throw new ApplicationException( "graph has at least one cycle" );
@@ -221,7 +229,7 @@ class Modules {
                 enabled = false;
             }
 
-            map.put( module.name, new ModuleItem( module, enabled, new LinkedHashSet<>() ) );
+            map.put( module.name, new ModuleItem( module, enabled, new LinkedHashMap<>() ) );
         }
     }
 
@@ -272,9 +280,9 @@ class Modules {
                         }
 
                         if( !moduleItem.equals( moduleService._1 ) )
-                            moduleItem.dependsOn.add( moduleService._1 );
+                            moduleItem.addDependsOn( new ModuleReference( moduleService._1, new ServiceLink( serviceItem, moduleService._2 ) ) );
                         else
-                            serviceItem.addDependsOn( new ModuleItem.ServiceItem.ServiceReference( moduleService._2, true ) );
+                            serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
                     }
 
                     serviceItem.service.parameters.forEach( ( key, value ) ->
@@ -295,9 +303,9 @@ class Modules {
             }
 
             if( !moduleItem.equals( moduleService._1 ) )
-                moduleItem.dependsOn.add( moduleService._1 );
+                moduleItem.addDependsOn( new ModuleReference( moduleService._1, new ServiceLink( serviceItem, moduleService._2 ) ) );
             else
-                serviceItem.addDependsOn( new ModuleItem.ServiceItem.ServiceReference( moduleService._2, required ) );
+                serviceItem.addDependsOn( new ServiceReference( moduleService._2, required ) );
         } else if( value instanceof List<?> )
             for( var item : ( List<?> ) value )
                 initDepsParameter( moduleItem, serviceName, item, false, serviceItem );
@@ -331,7 +339,7 @@ class Modules {
             for( var d : moduleItem.module.dependsOn ) {
                 ModuleItem dModule;
                 if( KernelHelper.profileEnabled( d.profiles, profiles ) && ( dModule = findModule( map, moduleItem, d.name ) ).enabled ) {
-                    moduleItem.dependsOn.add( dModule );
+                    moduleItem.addDependsOn( new ModuleReference( dModule ) );
                 } else {
                     log.trace( "[module#{}]: skip dependsOn {}", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
                 }
@@ -339,101 +347,4 @@ class Modules {
         }
     }
 
-    static class ModuleItem {
-        public final Module module;
-        public final LinkedHashSet<ModuleItem> dependsOn;
-        public final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
-        public final boolean enabled;
-
-        ModuleItem( Module module, boolean enabled, LinkedHashSet<ModuleItem> dependsOn ) {
-            this.module = module;
-            this.enabled = enabled;
-            this.dependsOn = dependsOn;
-        }
-
-        @Override
-        public boolean equals( Object o ) {
-            if( this == o ) return true;
-            if( o == null || getClass() != o.getClass() ) return false;
-
-            var that = ( ModuleItem ) o;
-
-            return module.name.equals( that.module.name );
-        }
-
-        @Override
-        public int hashCode() {
-            return module.name.hashCode();
-        }
-
-        static class ServiceItem {
-            public final String serviceName;
-            public final ModuleItem moduleItem;
-            public final Module.Service service;
-            public final boolean enabled;
-            public final LinkedHashSet<ServiceReference> dependsOn = new LinkedHashSet<>();
-
-            ServiceItem( String serviceName, ModuleItem moduleItem, Module.Service service, boolean enabled ) {
-                this.serviceName = serviceName;
-                this.moduleItem = moduleItem;
-                this.service = service;
-                this.enabled = enabled;
-            }
-
-            public void fixServiceName( String implName ) {
-                service.name = service.name != null ? service.name : implName;
-            }
-
-            @Override
-            public boolean equals( Object o ) {
-                if( this == o ) return true;
-                if( o == null || getClass() != o.getClass() ) return false;
-
-                var that = ( ServiceItem ) o;
-
-                if( !moduleItem.module.name.equals( that.moduleItem.module.name ) ) return false;
-                return service.name.equals( that.service.name );
-            }
-
-            @Override
-            public int hashCode() {
-                int result = moduleItem.module.name.hashCode();
-                result = 31 * result + service.name.hashCode();
-                return result;
-            }
-
-            public void addDependsOn( ServiceReference serviceReference ) {
-                var found = Lists.find2( dependsOn, d -> d.equals( serviceReference ) );
-                if( found == null || found.required ) {
-                    if( found != null ) dependsOn.remove( found );
-                    dependsOn.add( serviceReference );
-                }
-            }
-
-            static class ServiceReference {
-                public final ServiceItem serviceItem;
-                public final boolean required;
-
-                ServiceReference( ServiceItem serviceItem, boolean required ) {
-                    this.serviceItem = serviceItem;
-                    this.required = required;
-                }
-
-                @Override
-                public boolean equals( Object o ) {
-                    if( this == o ) return true;
-                    if( o == null || getClass() != o.getClass() ) return false;
-
-                    var that = ( ServiceReference ) o;
-
-                    return serviceItem.service.name.equals( that.serviceItem.service.name );
-                }
-
-                @Override
-                public int hashCode() {
-                    return serviceItem.service.name.hashCode();
-                }
-            }
-        }
-    }
 }
