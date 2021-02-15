@@ -253,6 +253,17 @@ public class KernelTest {
         }
     }
 
+    @Test
+    public void testServiceWithoutImplementation() {
+        var modules = Lists.of( urlOfTestResource( getClass(), "modules/service-without-implementation.conf" ) );
+
+        try( var kernel = new Kernel( modules ) ) {
+            assertThatCode( kernel::start )
+                .isInstanceOf( ApplicationException.class )
+                .hasMessage( "failed to initialize service: service-without-implementation:test-service-without-implementation. implementation == null" );
+        }
+    }
+
     @Slf4j
     public static class Service1 {
         public final List<Object> list = new ArrayList<>();

@@ -53,6 +53,7 @@ class Modules {
         fixServiceName();
         initDeps( profiles );
         validateDeps();
+        validateImplementation();
         sort();
         removeDisabled();
     }
@@ -94,6 +95,19 @@ class Modules {
                 if( !dModuleInfo.moduleItem.enabled ) {
                     throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled [" + dModuleInfo.moduleItem.module.name + "]" );
                 }
+            }
+        }
+    }
+
+    private void validateImplementation() {
+        for( var moduleInfo : map.values() ) {
+            if( !moduleInfo.enabled ) continue;
+
+            for( var serviceInfo : moduleInfo.services.values() ) {
+                if( !serviceInfo.enabled ) continue;
+
+                if( serviceInfo.service.implementation == null )
+                    throw new ApplicationException( "failed to initialize service: " + moduleInfo.module.name + ":" + serviceInfo.serviceName + ". implementation == null" );
             }
         }
     }
