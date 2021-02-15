@@ -242,7 +242,7 @@ public class KernelTest {
 
     @Test
     public void testCyclicReferences() {
-        var modules = Lists.of( 
+        var modules = Lists.of(
             urlOfTestResource( getClass(), "reference/cyclic.conf" ),
             urlOfTestResource( getClass(), "reference/cyclic2.conf" ) );
 
@@ -251,8 +251,8 @@ public class KernelTest {
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "graph has at least one cycle" );
         }
-    } 
-    
+    }
+
     @Slf4j
     public static class Service1 {
         public final List<Object> list = new ArrayList<>();

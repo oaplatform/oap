@@ -29,16 +29,15 @@ import oap.util.Lists;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 
 /**
  * Created by igor.petrenko on 2021-02-15.
  */
 class ModuleItem {
     final Module module;
-    private final LinkedHashMap<String, ModuleReference> dependsOn;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
     final boolean enabled;
+    private final LinkedHashMap<String, ModuleReference> dependsOn;
 
     ModuleItem( Module module, boolean enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
         this.module = module;
