@@ -24,22 +24,26 @@
 package oap.cli;
 
 
-import oap.util.Maps;
 import oap.util.Result;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public class CliTest {
-    @Test
-    public void complex() {
-        Map<String, Object> result = new HashMap<>();
-        Cli cli = Cli.<String>create()
+
+    private Cli cli;
+    private Map<String, Object> result;
+
+    @BeforeMethod
+    public void beforeMethod() {
+        result = new HashMap<>();
+        cli = Cli.<String>create()
             .group( "magic generation", result::putAll,
                 Option.simple( "generate" ).required().description( "generate magic" ),
                 Option.string( "macaddress" ).required().description( "macaddress" ),
@@ -49,25 +53,31 @@ public class CliTest {
                 Option.simple( "inspect" ).required().description( "inspect magic" ),
                 Option.string( "magic" ).required().description( "magic file" ),
                 Option.string( "macaddress" ).required().description( "macaddress" ) );
+    }
+
+    @Test
+    public void complex() {
         cli.act( "--generate --macaddress=1:1:1:1:1:1 --name=aaa --attributes=1=2,3=4" );
-        assertEquals( result, Maps.of(
-            __( "generate", null ),
-            __( "macaddress", "1:1:1:1:1:1" ),
-            __( "name", "aaa" ),
-            __( "attributes", Maps.of( __( "1", "2" ), __( "3", "4" ) ) )
-        ) );
+        assertThat( result ).containsOnly(
+            entry( "generate", null ),
+            entry( "macaddress", "1:1:1:1:1:1" ),
+            entry( "name", "aaa" ),
+            entry( "attributes", Map.of( "1", "2", "3", "4" )
+            ) );
+
         result.clear();
         cli.act( "--inspect --macaddress=1:1:1:1:1:1 --magic=aaa" );
-        assertEquals( result, Maps.of(
-            __( "inspect", null ),
-            __( "macaddress", "1:1:1:1:1:1" ),
-            __( "magic", "aaa" )
-        ) );
+        assertThat( result ).containsOnly(
+            entry( "inspect", null ),
+            entry( "macaddress", "1:1:1:1:1:1" ),
+            entry( "magic", "aaa" )
+        );
+
         result.clear();
         cli.act( "--generate --macaddress=1:1:1:1:1:1 --attributes=1=2,3=4" );
-        assertTrue( result.isEmpty() );
+        assertThat( result ).isEmpty();
         cli.act( new String[] {} );
-        assertTrue( result.isEmpty() );
+        assertThat( result ).isEmpty();
     }
 
     @Test
