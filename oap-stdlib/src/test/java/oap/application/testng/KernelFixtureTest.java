@@ -40,6 +40,7 @@ public class KernelFixtureTest extends Fixtures {
     {
         kernelFixture = fixture( new KernelFixture(
             pathOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
+            pathOfTestResource( KernelFixture.class, "confd" ),
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.yaml" ) )
         ) );
     }

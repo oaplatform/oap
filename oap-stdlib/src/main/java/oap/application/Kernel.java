@@ -163,7 +163,11 @@ public class Kernel implements Closeable {
         this.profiles.addAll( config.profiles );
 
         for( var moduleConfiguration : moduleConfigurations ) {
-            this.modules.add( Module.CONFIGURATION.fromFile( moduleConfiguration, config.services ) );
+            var module = Module.CONFIGURATION.fromFile( moduleConfiguration, config.services );
+            if( StringUtils.isBlank( module.name ) ) {
+                throw new ApplicationException( moduleConfiguration + ": module.name is blank" );
+            }
+            this.modules.add( module );
         }
         log.debug( "modules = {}", Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = {}", this.modules );
