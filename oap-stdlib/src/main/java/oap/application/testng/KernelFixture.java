@@ -30,7 +30,6 @@ import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
-import oap.util.Lists;
 
 import javax.annotation.Nonnull;
 import java.net.URL;
