@@ -39,13 +39,15 @@ public class TestTemplateClass {
     public TestTemplateClass2 child2;
     public TestTemplateEnum enumField;
     public boolean booleanField;
+    public Boolean booleanObjectField;
+    public int intField;
+    public Integer intObjectField;
     public Optional<TestTemplateClass> childOpt = Optional.empty();
     @Template.Nullable
     public TestTemplateClass childNullable;
     @Template.Nullable
     public Ext ext;
     public ITestTemplateClassExt ext2;
-    public int intField;
     public List<Integer> list;
     public List<Integer> list2;
 

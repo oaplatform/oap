@@ -38,6 +38,7 @@ import java.util.Optional;
 
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -376,6 +377,23 @@ public class TemplateEngineTest extends Fixtures {
             .hasMessageContaining( "unknownField.unknownField" );
     }
 
+    @Test
+    public void testPrimitiveAsObject() {
+        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        var templateClass = new TestTemplateClass();
+        templateClass.booleanField = true;
+        templateClass.booleanObjectField = true;
+        templateClass.intField = 1;
+        templateClass.intObjectField = 2;
+
+        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "booleanField:${booleanField},booleanObjectField:${booleanObjectField},intField:${intField},intObjectField:${intObjectField}",
+            templateAccumulator, ERROR, null ).render( templateClass );
+
+
+        assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
+    }
+
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
         @Override
         public void accept( String text ) {
@@ -385,6 +403,23 @@ public class TemplateEngineTest extends Fixtures {
         @Override
         public TemplateAccumulatorString newInstance() {
             return new TestTemplateAccumulatorString();
+        }
+    }
+
+    public static class TestPrimitiveTemplateAccumulatorString extends TemplateAccumulatorString {
+        @Override
+        public void accept( boolean b ) {
+            super.accept( b + "_b" );
+        }
+
+        @Override
+        public void accept( int i ) {
+            super.accept( i + "_i" );
+        }
+
+        @Override
+        public TemplateAccumulatorString newInstance() {
+            return new TestPrimitiveTemplateAccumulatorString();
         }
     }
 }
