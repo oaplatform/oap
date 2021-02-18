@@ -45,6 +45,7 @@ import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
 import oap.util.Pair;
+import oap.util.Try;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -55,6 +56,7 @@ import org.slf4j.event.Level;
 import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -64,6 +66,7 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
@@ -185,7 +188,15 @@ public class MessageSender implements Closeable {
 
             @Override
             public boolean validate( Connection connection ) {
-                return connection.refreshConnection();
+                try {
+                    connection.refreshConnection();
+                    return true;
+                } catch( IOException e ) {
+                    if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
+                    else log.error( e.getMessage() );
+
+                    return false;
+                }
             }
         }, new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build() );
         if( diskSyncPeriod > 0 )
@@ -280,14 +291,23 @@ public class MessageSender implements Closeable {
 
             if( closed ) break;
 
+            var counter = new AtomicInteger();
+
             sends.add( connectionPool.run( connection -> {
-                try {
-                    var status = connection.write( message );
-                    if( status != ERROR ) messages.remove( message.md5 );
-                } catch( Exception e ) {
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
-                    LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
-                }
+                Exception ex;
+                do {
+                    ex = null;
+                    try {
+                        var status = connection.write( message );
+                        if( status != ERROR ) messages.remove( message.md5 );
+                    } catch( Exception e ) {
+                        ex = e;
+                        counter.incrementAndGet();
+
+                        Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
+                        LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
+                    }
+                } while( ex instanceof SocketException && counter.get() < 10 );
             } ) );
         }
 
@@ -327,10 +347,10 @@ public class MessageSender implements Closeable {
 
                     var msg = new Message( clientId, messageType, md5, data );
 
-                    sends.add( connectionPool.run( connection -> {
+                    sends.add( connectionPool.run( Try.consume( connection -> {
                         if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
                         Files.delete( lockFile );
-                    } ) );
+                    } ) ) );
                 } catch( Exception e ) {
                     LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
                 }
@@ -423,8 +443,7 @@ public class MessageSender implements Closeable {
     private class Connection implements Closeable {
         public MessageSocketConnection connection;
 
-        @SneakyThrows
-        private MessageStatus write( Message message ) {
+        private MessageStatus write( Message message ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
@@ -497,7 +516,7 @@ public class MessageSender implements Closeable {
                             return ERROR;
                         }
                     }
-                } catch( Exception e ) {
+                } catch( IOException e ) {
                     MessageSender.this.networkAvailable = false;
                     Closeables.close( connection );
                     log.debug( e.getMessage(), e );
@@ -507,21 +526,14 @@ public class MessageSender implements Closeable {
             return ERROR;
         }
 
-        private boolean refreshConnection() {
+        private void refreshConnection() throws IOException {
             if( this.connection == null || !connection.isConnected() ) {
                 Closeables.close( connection );
-                try {
-                    log.debug( "opening connection..." );
-                    this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
-                    log.debug( "connected! {}", this.connection );
-                } catch( IOException e ) {
-                    if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
-                    else log.error( e.getMessage() );
-                    return false;
-                }
-            }
 
-            return true;
+                log.debug( "opening connection..." );
+                this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
+                log.debug( "connected! {}", this.connection );
+            }
         }
 
         @Override
