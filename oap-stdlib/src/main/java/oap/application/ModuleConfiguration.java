@@ -34,13 +34,13 @@ public class ModuleConfiguration extends Configuration<Module> {
     }
 
     public Module fromFile( URL url, Map<String, Map<String, Object>> config ) {
-        Module module = super.fromUrl( url );
+        var module = super.fromUrl( url );
 
-        module.services
-            .entrySet()
-            .stream()
-            .filter( e -> config.containsKey( e.getKey() ) )
-            .forEach( e -> Binder.update( e.getValue(), config.get( e.getKey() ) ) );
+        module.services.forEach( ( serviceName, service ) -> {
+            var serviceConf = config.get( serviceName );
+            if( serviceConf != null )
+                Binder.update( service, serviceConf );
+        } );
 
         return module;
     }

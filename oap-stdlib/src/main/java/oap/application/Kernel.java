@@ -50,6 +50,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -167,6 +168,8 @@ public class Kernel implements Closeable {
         log.debug( "modules = {}", Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = {}", this.modules );
 
+        checkForUnknownServices( config.services );
+
         var modules = new Modules( this.modules, this.profiles );
         var map = instantiateServices( modules );
         registerServices( map );
@@ -178,6 +181,20 @@ public class Kernel implements Closeable {
 
         this.modules.add( new Module( Module.DEFAULT ) );
         log.debug( "application kernel started" );
+    }
+
+    private void checkForUnknownServices( Map<String, Map<String, Object>> services ) {
+        var applicationConfigurationServices = new HashSet<>( services.keySet() );
+
+        for( var module : this.modules ) {
+            for( var serviceName : module.services.keySet() ) {
+                applicationConfigurationServices.remove( serviceName );
+            }
+        }
+
+        if( !applicationConfigurationServices.isEmpty() ) {
+            throw new ApplicationException( "unknown application configuration services: " + applicationConfigurationServices );
+        }
     }
 
     private LinkedHashMap<String, ServiceInitialization> instantiateServices( Modules modules ) {

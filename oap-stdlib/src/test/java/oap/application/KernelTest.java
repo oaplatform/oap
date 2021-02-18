@@ -49,6 +49,7 @@ import static oap.testng.Asserts.urlOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
@@ -226,6 +227,21 @@ public class KernelTest {
             assertThat( kernel.<Service2>service( "s2" ) ).isPresent();
             assertThat( kernel.<Service2>service( "s2" ) ).isPresent().get()
                 .satisfies( s2 -> assertThat( s2.val ).isEqualTo( "test$value" ) );
+        }
+    }
+
+    @Test
+    public void testUnknownService() {
+        var modules = Lists.of( urlOfTestResource( getClass(), "env/env.conf" ) );
+
+        Env.set( "CONFIG.services.s1.enabled", "false" );
+        Env.set( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
+        Env.set( "CONFIG.services.unknownservice.val1", "false" );
+
+        try( var kernel = new Kernel( modules ) ) {
+            assertThatThrownBy( kernel::start )
+                .isInstanceOf( ApplicationException.class )
+                .hasMessage( "unknown application configuration services: [unknownservice]" );
         }
     }
 
