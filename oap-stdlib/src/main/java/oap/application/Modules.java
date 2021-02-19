@@ -56,6 +56,7 @@ class Modules {
         validateImplementation();
         sort();
         removeDisabled();
+        validateRemoting();
     }
 
     private static ModuleItem findModule( LinkedHashMap<String, ModuleItem> modules, ModuleItem fromModule, String name ) {
@@ -65,6 +66,24 @@ class Modules {
             throw new ApplicationException( "[" + fromModule.module.name + "]: dependsOn not found: " + name );
 
         return moduleItem;
+    }
+
+    private void validateRemoting() {
+        var invalidRemoting = new ArrayList<String>();
+
+        for( var moduleItem : map.values() ) {
+            for( var serviceItem : moduleItem.services.values() ) {
+                if( !serviceItem.service.isRemoteService() ) continue;
+
+                if( serviceItem.service.remote.url == null )
+                    invalidRemoting.add( moduleItem.getName() + ":" + serviceItem.serviceName );
+            }
+        }
+
+        if( !invalidRemoting.isEmpty() ) {
+            log.error( "uri == null, services " + invalidRemoting );
+            throw new ApplicationException( "remoting: uri == null, services " + invalidRemoting );
+        }
     }
 
     private void removeDisabled() {
