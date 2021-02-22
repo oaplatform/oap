@@ -222,7 +222,9 @@ public class Kernel implements Closeable {
                     setServiceName( reflect, instance, service.name );
 //                    updateLoggerIfExists( instance, implName );
                 } catch( ReflectException e ) {
-                    log.info( "service name = {}, remote = {}, profiles = {}", implName, service.remote, service.profiles );
+                    log.info( "service name = {}:{}, remote = {}, profiles = {}",
+                        moduleItem.getName(),
+                        implName, service.remote, service.profiles );
                     throw e;
                 }
                 else instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );

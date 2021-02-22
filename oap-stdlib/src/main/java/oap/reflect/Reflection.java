@@ -142,7 +142,8 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     private ReflectException constructorNotFound( Object args ) {
         List<String> candidates = Stream.of( constructors ).map( Constructor::toString ).toList();
 
-        return new ReflectException( underlying + ": cannot find matching constructor: " + args + " candidates: " + candidates + ". Classes must be compiled with '-parameters' option of javac." );
+        return new ReflectException( underlying + ": cannot find matching constructor:\n" + args + "\n  candidates:\n"
+            + String.join( "\n", candidates ) + "\n\nClasses must be compiled with '-parameters' option of javac." );
     }
 
     public boolean assignableTo( Class<?> clazz ) {

@@ -193,11 +193,11 @@ public class ReflectionTest {
         assertThat( Reflect.reflect( MatchingConstructor.class ).constructors ).hasSize( 2 );
         assertThatExceptionOfType( ReflectException.class )
             .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance() )
-            .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor: {} candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]. Classes must be compiled with '-parameters' option of javac." );
+            .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor:\n{}\n  candidates:\noap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list)\noap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)\n\nClasses must be compiled with '-parameters' option of javac." );
         assertThat( Reflect.reflect( NoConstructors.class ).constructors ).hasSize( 1 );
         assertThatExceptionOfType( ReflectException.class )
             .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Map.of() ) )
-            .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor: {} candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]. Classes must be compiled with '-parameters' option of javac." );
+            .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor:\n{}\n  candidates:\noap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list)\noap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)\n\nClasses must be compiled with '-parameters' option of javac." );
     }
 
     @Test
