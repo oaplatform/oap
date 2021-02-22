@@ -85,10 +85,15 @@ public final class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( URL appConfigPath, List<URL> confdUrls ) {
-        return loadWithProperties( appConfigPath, Lists.map( confdUrls, p ->
-            p.getPath().endsWith( ".yaml" )
-                ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, p ) )
-                : ContentReader.read( p, ContentReader.ofString() )
+        return loadWithProperties( appConfigPath, Lists.map( confdUrls, p -> {
+                var content = ContentReader.read( p, ContentReader.ofString() );
+
+                log.trace( "config: {}\n{}", p, content );
+
+                return p.getPath().endsWith( ".yaml" )
+                    ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, content ) )
+                    : content;
+            }
         ) );
     }
 
