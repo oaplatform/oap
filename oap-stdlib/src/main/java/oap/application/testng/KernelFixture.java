@@ -30,6 +30,7 @@ import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
+import oap.testng.TestDirectoryFixture;
 
 import javax.annotation.Nonnull;
 import java.net.URL;
@@ -52,9 +53,9 @@ public class KernelFixture extends EnvFixture {
     public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
     private static int kernelN = 0;
     private final Path conf;
-    private final Path confd;
     private final List<URL> additionalModules = new ArrayList<>();
     public Kernel kernel;
+    private Path confd;
 
     public KernelFixture( Path conf ) {
         this( conf, null, List.of() );
@@ -127,6 +128,15 @@ public class KernelFixture extends EnvFixture {
 
     public KernelFixture withScope( Scope scope ) {
         return new KernelFixture( scope, this.conf, this.confd, this.additionalModules );
+    }
+
+    public KernelFixture withConfdResources( Class<?> clazz, String confdResource ) {
+        this.confd = TestDirectoryFixture.testPath( "/test-application-conf.d" );
+
+        Resources.filePaths( clazz, confdResource )
+            .forEach( path -> oap.io.Files.copyDirectory( path, this.confd ) );
+
+        return this;
     }
 
     @Override
