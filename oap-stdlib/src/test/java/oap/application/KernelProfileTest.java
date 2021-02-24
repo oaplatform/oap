@@ -101,6 +101,15 @@ public class KernelProfileTest {
     }
 
     @Test
+    public void profile5() {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module5.yaml" ) ) ) ) {
+            startWithProfile( kernel, "run" );
+            assertThat( kernel.service( "container" ) ).isPresent().get().isInstanceOf( TestContainer3.class );
+            assertThat( kernel.<TestContainer3>service( "container" ).get().profile ).isInstanceOf( TestProfile2.class );
+        }
+    }
+
+    @Test
     public void moduleProfiles() {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
             startWithProfile( kernel, "test1" );
@@ -127,7 +136,10 @@ public class KernelProfileTest {
     }
 
     public static class TestContainer {
+        public final TestProfile profile;
+
         public TestContainer( TestProfile profile ) {
+            this.profile = profile;
             assertThat( profile ).isNotNull();
         }
     }
@@ -136,5 +148,15 @@ public class KernelProfileTest {
         public TestContainer2() {
         }
     }
+
+    public static class TestContainer3 {
+        public final TestProfile profile;
+
+        public TestContainer3( TestProfile profile ) {
+            this.profile = profile;
+            assertThat( profile ).isNotNull();
+        }
+    }
+
 }
 

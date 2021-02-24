@@ -140,7 +140,7 @@ class Modules {
 
                 for( var dServiceReference : serviceInfo.dependsOn ) {
                     if( !dServiceReference.serviceItem.enabled && dServiceReference.required ) {
-                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled [" + dServiceReference.serviceItem.service.name + "]" );
+                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled [" + dServiceReference.serviceItem.serviceName + "]" );
                     }
                 }
             }
