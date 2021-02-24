@@ -68,6 +68,10 @@ public class EnvFixture implements Fixture {
         ConfigImpl.reloadSystemPropertiesConfig();
     }
 
+    public Scope getScope() {
+        return scope;
+    }
+
     @Override
     public void beforeSuite() {
         if( scope == SUITE ) init();
