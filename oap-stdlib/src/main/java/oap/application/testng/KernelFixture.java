@@ -127,7 +127,8 @@ public class KernelFixture extends EnvFixture {
     }
 
     public KernelFixture withScope( Scope scope ) {
-        return new KernelFixture( scope, this.conf, this.confd, this.additionalModules );
+        this.scope = scope;
+        return this;
     }
 
     public KernelFixture withConfdResources( Class<?> clazz, String confdResource ) {
