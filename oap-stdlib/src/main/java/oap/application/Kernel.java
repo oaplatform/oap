@@ -217,6 +217,7 @@ public class Kernel implements Closeable {
 
                 var service = serviceItem.service;
                 var implName = serviceEntry.getKey();
+                log.trace( "instantiate {}:{}...", moduleItem.getName(), implName + " as " + service.name );
                 try {
                     var reflect = Reflect.reflect( service.implementation, Module.coersions );
                     Object instance;

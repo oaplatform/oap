@@ -1,0 +1,25 @@
+name: test-profile5
+dependsOn:
+  - module: unknown
+    profile: not-set
+services:
+  profile1:
+    profiles:
+      - run
+    implementation: oap.application.KernelProfileTest$TestProfile1
+    name: profile
+
+  profile2:
+    profiles:
+      - -run
+    implementation: oap.application.KernelProfileTest$TestProfile2
+    name: profile
+
+  container1:
+    profiles:
+      - run
+    name: container
+    implementation: oap.application.KernelProfileTest$TestContainer
+    parameters:
+      profile: "@service:profile"
+

@@ -110,6 +110,14 @@ public class KernelProfileTest {
     }
 
     @Test
+    public void profile6() {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module6.yaml" ) ) ) ) {
+            startWithProfile( kernel, "run" );
+            assertThat( kernel.<TestContainer>service( "container" ).get().profile ).isInstanceOf( TestProfile1.class );
+        }
+    }
+
+    @Test
     public void moduleProfiles() {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
             startWithProfile( kernel, "test1" );
