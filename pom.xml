@@ -60,14 +60,14 @@
     </repositories>
 
     <properties>
-        <oap.project.version>8.6.11</oap.project.version>
+        <oap.project.version>8.6.12</oap.project.version>
 
 
-        <oap.deps.testng.version>7.1.0</oap.deps.testng.version>
-        <oap.deps.assertj.version>3.15.0</oap.deps.assertj.version>
+        <oap.deps.testng.version>7.3.0</oap.deps.testng.version>
+        <oap.deps.assertj.version>3.19.0</oap.deps.assertj.version>
         <oap.deps.mockserver-netty.version>5.8.0</oap.deps.mockserver-netty.version>
 
-        <oap.deps.guava.version>28.2-jre</oap.deps.guava.version>
+        <oap.deps.guava.version>30.1-jre</oap.deps.guava.version>
 
         <oap.deps.logback.version>1.2.3</oap.deps.logback.version>
         <oap.deps.slf4j.version>1.7.30</oap.deps.slf4j.version>
@@ -78,22 +78,22 @@
         <oap.deps.apache.httpmime.version>4.5.11</oap.deps.apache.httpmime.version>
         <oap.deps.apache.configuration.version>2.6</oap.deps.apache.configuration.version>
 
-        <oap.deps.apache.lang.version>3.9</oap.deps.apache.lang.version>
-        <oap.deps.apache.commons.text.version>1.8</oap.deps.apache.commons.text.version>
+        <oap.deps.apache.lang.version>3.11</oap.deps.apache.lang.version>
+        <oap.deps.apache.commons.text.version>1.9</oap.deps.apache.commons.text.version>
         <oap.deps.apache.compress.version>1.20</oap.deps.apache.compress.version>
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.6</oap.deps.apache.io.version>
 
-        <oap.deps.joda.version>2.10.5</oap.deps.joda.version>
+        <oap.deps.joda.version>2.10.10</oap.deps.joda.version>
 
         <oap.deps.jackson.version>2.12.1</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
-        <oap.deps.typesafe-config.version>1.4.0</oap.deps.typesafe-config.version>
+        <oap.deps.typesafe-config.version>1.4.1</oap.deps.typesafe-config.version>
 
-        <oap.deps.lombok.version>1.18.16</oap.deps.lombok.version>
+        <oap.deps.lombok.version>1.18.18</oap.deps.lombok.version>
 
         <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
-        <oap.deps.micrometer.version>1.3.6</oap.deps.micrometer.version>
+        <oap.deps.micrometer.version>1.6.4</oap.deps.micrometer.version>
         <oap.deps.fastutil.version>8.3.1</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
         <oap.deps.fop.version>2.1.0</oap.deps.fop.version>
@@ -116,6 +116,6 @@
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
-        <oap.deps.undertow.version>2.0.30.Final</oap.deps.undertow.version>
+        <oap.deps.undertow.version>2.2.4.Final</oap.deps.undertow.version>
     </properties>
 </project>

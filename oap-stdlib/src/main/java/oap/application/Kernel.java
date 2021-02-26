@@ -25,7 +25,6 @@
 package oap.application;
 
 import com.google.common.base.Preconditions;
-import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.link.FieldLinkReflection;
@@ -46,6 +45,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,7 +86,7 @@ public class Kernel implements Closeable {
         this( DEFAULT, moduleConfigurations );
     }
 
-    private void linkListeners( Module.Service service, Object instance ) {
+    private void linkListeners( Module.Service service, Object instance ) throws ApplicationException {
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
             String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
@@ -102,7 +103,7 @@ public class Kernel implements Closeable {
     }
 
     @SuppressWarnings( "unchecked" )
-    private void linkLinks( Module.Service service, Object instance ) {
+    private void linkLinks( Module.Service service, Object instance ) throws ApplicationException {
         service.link.forEach( ( field, reference ) -> {
             log.debug( "linking {} to {} into {}", service.name, reference, field );
             Module.Reference ref = Module.Reference.of( reference );
@@ -122,34 +123,37 @@ public class Kernel implements Closeable {
         } );
     }
 
-    public void start() {
+    public void start() throws ApplicationException {
         start( ApplicationConfiguration.load() );
     }
 
-    @SneakyThrows
-    public void start( String appConfigPath, String confd ) {
-        var configURL =
-            appConfigPath.startsWith( "classpath:" )
-                ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
-                : new File( appConfigPath ).toURI().toURL();
+    public void start( String appConfigPath, String confd ) throws ApplicationException {
+        try {
+            var configURL =
+                appConfigPath.startsWith( "classpath:" )
+                    ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
+                    : new File( appConfigPath ).toURI().toURL();
 
-        Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
+            Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
 
-        var confdPath = confd != null ? Paths.get( confd )
-            : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
+            var confdPath = confd != null ? Paths.get( confd )
+                : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
 
-        start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
+            start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
+        } catch( MalformedURLException | URISyntaxException e ) {
+            throw new ApplicationException( e );
+        }
     }
 
-    public void start( Path appConfigPath, Path confd ) {
+    public void start( Path appConfigPath, Path confd ) throws ApplicationException {
         start( ApplicationConfiguration.load( appConfigPath, confd ) );
     }
 
-    public void start( Path appConfigPath ) {
+    public void start( Path appConfigPath ) throws ApplicationException {
         start( appConfigPath, Map.of() );
     }
 
-    public void start( Path appConfigPath, Map<Object, Object> properties ) {
+    public void start( Path appConfigPath, Map<Object, Object> properties ) throws ApplicationException {
         Map<Object, Object> map = new LinkedHashMap<>();
         map.putAll( System.getProperties() );
         map.putAll( properties );
@@ -157,7 +161,7 @@ public class Kernel implements Closeable {
         start( ApplicationConfiguration.loadWithProperties( appConfigPath, List.of( Binder.json.marshal( map ) ) ) );
     }
 
-    public void start( ApplicationConfiguration config ) {
+    public void start( ApplicationConfiguration config ) throws ApplicationException {
         log.debug( "initializing application kernel..." );
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
@@ -187,7 +191,7 @@ public class Kernel implements Closeable {
         log.debug( "application kernel started" );
     }
 
-    private void checkForUnknownServices( Map<String, Map<String, Object>> services ) {
+    private void checkForUnknownServices( Map<String, Map<String, Object>> services ) throws ApplicationException {
         var applicationConfigurationServices = new HashSet<>( services.keySet() );
 
         for( var module : this.modules ) {
@@ -201,7 +205,7 @@ public class Kernel implements Closeable {
         }
     }
 
-    private LinkedHashMap<String, ServiceInitialization> instantiateServices( Modules modules ) {
+    private LinkedHashMap<String, ServiceInitialization> instantiateServices( Modules modules ) throws ApplicationException {
         var ret = new LinkedHashMap<String, ServiceInitialization>();
 
         for( var moduleItem : modules.map.values() ) {
@@ -213,30 +217,32 @@ public class Kernel implements Closeable {
 
                 var service = serviceItem.service;
                 var implName = serviceEntry.getKey();
-
-                var reflect = Reflect.reflect( service.implementation, Module.coersions );
-                Object instance;
-                if( !service.isRemoteService() ) try {
-                    var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
-                    instance = reflect.newInstance( parametersWithoutLinks );
-                    setServiceName( reflect, instance, service.name );
+                try {
+                    var reflect = Reflect.reflect( service.implementation, Module.coersions );
+                    Object instance;
+                    if( !service.isRemoteService() ) {
+                        var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
+                        instance = reflect.newInstance( parametersWithoutLinks );
+                        setServiceName( reflect, instance, service.name );
 //                    updateLoggerIfExists( instance, implName );
+                    } else {
+                        instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
+                    }
+                    ret.put( service.name, new ServiceInitialization( implName, instance, moduleItem.module, service, reflect ) );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}:{}, remote = {}, profiles = {}",
                         moduleItem.getName(),
                         implName, service.remote, service.profiles );
-                    throw e;
+                    throw new ApplicationException( e );
                 }
-                else instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
 
-                ret.put( service.name, new ServiceInitialization( implName, instance, moduleItem.module, service, reflect ) );
             }
         }
 
         return ret;
     }
 
-    private void setServiceName( Reflection reflect, Object instance, String serviceName ) {
+    private void setServiceName( Reflection reflect, Object instance, String serviceName ) throws ApplicationException {
         var fields = reflect.annotatedFields( ServiceName.class );
         for( var field : fields ) {
             if( !String.class.equals( field.underlying.getType() ) )
@@ -276,7 +282,7 @@ public class Kernel implements Closeable {
 
     @SuppressWarnings( "unchecked" )
     private void linkService( LinkReflection lRef, Object parameterValue, ServiceInitialization si,
-                              boolean failIfNotFound ) {
+                              boolean failIfNotFound ) throws ApplicationException {
         if( isServiceLink( parameterValue ) ) {
             var linkName = referenceName( parameterValue );
             var linkService = service( linkName );
@@ -364,7 +370,7 @@ public class Kernel implements Closeable {
         }
     }
 
-    public void register( String name, Object service ) {
+    public void register( String name, Object service ) throws ApplicationException {
         Object registered;
         if( ( registered = services.putIfAbsent( name, service ) ) != null )
             throw new ApplicationException( "Service " + service + " is already registered [" + registered.getClass() + "]" );

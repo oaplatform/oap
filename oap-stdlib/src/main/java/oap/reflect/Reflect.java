@@ -27,7 +27,6 @@ import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
 import oap.util.Pair;
 import oap.util.Strings;
-import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -64,12 +63,24 @@ public class Reflect {
         return reflections.computeIfAbsent( token, typeToken -> new Reflection( typeToken, coercions ) ).init();
     }
 
-    public static Reflection reflect( String className ) {
-        return reflect( classes.computeIfAbsent( className, Try.map( Class::forName ) ) );
+    public static Reflection reflect( String className ) throws ReflectException {
+        return reflect( classes.computeIfAbsent( className, cn -> {
+            try {
+                return Class.forName( cn );
+            } catch( ClassNotFoundException e ) {
+                throw new ReflectException( e );
+            }
+        } ) );
     }
 
-    public static Reflection reflect( String className, Coercions coercions ) {
-        return reflect( classes.computeIfAbsent( className, Try.map( Class::forName ) ), coercions );
+    public static Reflection reflect( String className, Coercions coercions ) throws ReflectException {
+        return reflect( classes.computeIfAbsent( className, cn -> {
+            try {
+                return Class.forName( cn );
+            } catch( ClassNotFoundException e ) {
+                throw new ReflectException( e );
+            }
+        } ), coercions );
     }
 
     public static Class<?> caller() {
@@ -157,17 +168,17 @@ public class Reflect {
 
     }
 
-    private static class SecurityManager extends java.lang.SecurityManager {
-        @Override
-        public Class[] getClassContext() {
-            return super.getClassContext();
-        }
-    }
-
     public static Function<String, Object> substitutor( Map<String, Object> bindings ) {
         return macro -> {
             Pair<String, String> split = Strings.split( macro, "." );
             return get( bindings.get( split._1 ), split._2 );
         };
+    }
+
+    private static class SecurityManager extends java.lang.SecurityManager {
+        @Override
+        public Class[] getClassContext() {
+            return super.getClassContext();
+        }
     }
 }

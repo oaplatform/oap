@@ -47,13 +47,13 @@ public class ArraysTest {
     @Test
     public void splitBy() {
         assertThat( Arrays.splitBy( 2, 1, 2, 3, 4, 5, 6 ) )
-            .containsExactly( new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } } );
+            .isEqualTo( new Integer[][] { { 1, 2 }, { 3, 4 }, { 5, 6 } } );
         assertThat( Arrays.splitBy( 6, 1, 2, 3, 4, 5, 6 ) )
-            .containsExactly( new Integer[][] { { 1, 2, 3, 4, 5, 6 } } );
+            .isEqualTo( new Integer[][] { { 1, 2, 3, 4, 5, 6 } } );
         assertThat( Arrays.splitBy( 3, 1, 2, 3, 4, 5, 6 ) )
-            .containsExactly( new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } } );
+            .isEqualTo( new Integer[][] { { 1, 2, 3 }, { 4, 5, 6 } } );
         assertThat( Arrays.splitBy( 1, 1, 2, 3, 4, 5, 6 ) )
-            .containsExactly( new Integer[][] { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 6 } } );
+            .isEqualTo( new Integer[][] { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 6 } } );
     }
 
     @Test

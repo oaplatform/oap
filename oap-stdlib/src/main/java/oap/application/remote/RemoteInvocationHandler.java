@@ -263,6 +263,6 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
     @Override
     public String toString() {
-        return "remote:" + service + "(retry=" + retry + ")@" + uri;
+        return uri + " -> remote:" + service + "(retry=" + retry + ")@" + uri;
     }
 }

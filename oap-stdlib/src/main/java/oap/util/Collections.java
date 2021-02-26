@@ -48,7 +48,6 @@ public class Collections {
         return Optional.empty();
     }
 
-    @Deprecated
     public static <E, L extends Collection<E>> E find2( L list, Predicate<E> predicate ) {
         for( E e : list ) if( predicate.test( e ) ) return e;
         return null;

@@ -370,11 +370,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public boolean hasParameter( String name ) {
-            return Lists.find( this.parameters, p -> Objects.equals( p.name(), name ) ).isPresent();
+            return Lists.contains( this.parameters, p -> Objects.equals( p.name(), name ) );
         }
 
         public Parameter getParameter( String name ) {
-            return parameters.stream().filter( p -> p.name().equals( name ) ).findFirst().orElse( null );
+            return Lists.find2( parameters, p -> p.name().equals( name ) );
         }
 
         public String name() {
@@ -382,7 +382,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         @SuppressWarnings( "unchecked" )
-        public <T> T invoke( Object instance, Object... args ) {
+        public <T> T invoke( Object instance, Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.invoke( instance, args );
             } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException e ) {
@@ -413,17 +413,15 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             trySetAccessible( this.underlying );
             this.parameters = Lists.map( constructor.getParameters(), Parameter::new );
             this.parameterNames = Lists.map( constructor.getParameters(), java.lang.reflect.Parameter::getName );
-            this.parameterTypes = Suppliers.memoize( () ->
-                Stream.of( parameters ).map( Reflection.Parameter::type ).toList() );
-
+            this.parameterTypes = Suppliers.memoize( () -> Lists.map( parameters, Reflection.Parameter::type ) );
         }
 
         public boolean hasParameter( String name ) {
-            return Lists.find( this.parameters, p -> Objects.equals( p.name(), name ) ).isPresent();
+            return Lists.contains( this.parameters, p -> Objects.equals( p.name(), name ) );
         }
 
         public Parameter getParameter( String name ) {
-            return parameters.stream().filter( p -> p.name().equals( name ) ).findFirst().orElse( null );
+            return Lists.find2( parameters, p -> p.name().equals( name ) );
         }
 
         public String name() {
@@ -431,7 +429,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         @SuppressWarnings( "unchecked" )
-        public <T> T invoke( Object... args ) {
+        public <T> T invoke( Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.newInstance( args );
             } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException | InstantiationException e ) {
@@ -439,7 +437,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             }
         }
 
-        public <T> T invoke( Map<String, Object> args ) {
+        public <T> T invoke( Map<String, Object> args ) throws ReflectException {
             //      @todo check match of parameter types
             try {
                 Object[] cArgs = Stream.of( parameters )
