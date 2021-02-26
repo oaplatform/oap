@@ -200,8 +200,10 @@ class Modules {
             throw new ApplicationException( "graph has at least one cycle" );
         }
 
+        log.trace( "modules: before sort: \n{}", String.join( "\n", Lists.map( map.keySet(), k -> "  " + k ) ) );
         map.clear();
         map.putAll( newMap );
+        log.trace( "modules: after sort: \n{}", String.join( "\n", Lists.map( map.keySet(), k -> "  " + k ) ) );
     }
 
     private void sortServices( ModuleItem moduleInfo ) {
@@ -245,8 +247,10 @@ class Modules {
             throw new ApplicationException( "[" + moduleInfo.module.name + "] graph has at least one cycle" );
         }
 
+        log.trace( "{}: services: before sort: \n{}", moduleInfo.getName(), String.join( "\n", Lists.map( moduleInfo.services.keySet(), k -> "  " + k ) ) );
         moduleInfo.services.clear();
         moduleInfo.services.putAll( newMap );
+        log.trace( "{}: services: after sort: \n{}", moduleInfo.getName(), String.join( "\n", Lists.map( moduleInfo.services.keySet(), k -> "  " + k ) ) );
     }
 
     private void init( LinkedHashSet<Module> modules, LinkedHashSet<String> profiles ) {
