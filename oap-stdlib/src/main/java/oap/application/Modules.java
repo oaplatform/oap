@@ -207,7 +207,7 @@ class Modules {
         map.clear();
         map.putAll( newMap );
         log.trace( "modules: after sort: \n{}",
-            String.join( "\n", Lists.map( map.entrySet(), e -> "  " + e.getKey() + ": " + e.getValue().getDependsOn() ) )
+            String.join( "\n", Lists.map( map.keySet(), e -> "  " + e ) )
         );
     }
 
@@ -251,7 +251,7 @@ class Modules {
         if( !graph.isEmpty() ) {
             log.error( "[{}] module graph has at least one cycle:", moduleInfo.module.name );
             for( var node : graph ) {
-                log.error( "  [{}]:{}", node.service.name, Lists.map( node.dependsOn, d -> d.serviceItem.service.name ) );
+                log.error( "  [{}]:{}", node.serviceName, Lists.map( node.dependsOn, d -> d.serviceItem.serviceName ) );
             }
 
             throw new ApplicationException( "[" + moduleInfo.module.name + "] graph has at least one cycle" );
@@ -261,7 +261,7 @@ class Modules {
         moduleInfo.services.putAll( newMap );
         log.trace( "{}: services: after sort: \n{}",
             moduleInfo.getName(),
-            String.join( "\n", Lists.map( moduleInfo.services.entrySet(), e -> "  " + e.getKey() + ": " + Lists.map( e.getValue().dependsOn, d -> d.serviceItem.serviceName ) ) )
+            String.join( "\n", Lists.map( moduleInfo.services.keySet(), e -> "  " + e ) )
         );
     }
 

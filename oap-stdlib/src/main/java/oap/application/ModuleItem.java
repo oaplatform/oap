@@ -131,13 +131,13 @@ class ModuleItem {
             var that = ( ServiceItem ) o;
 
             if( !moduleItem.module.name.equals( that.moduleItem.module.name ) ) return false;
-            return service.name.equals( that.service.name );
+            return serviceName.equals( that.serviceName );
         }
 
         @Override
         public int hashCode() {
             int result = moduleItem.module.name.hashCode();
-            result = 31 * result + service.name.hashCode();
+            result = 31 * result + serviceName.hashCode();
             return result;
         }
 

@@ -113,7 +113,7 @@ public class KernelProfileTest {
     public void profile6() {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module6.yaml" ) ) ) ) {
             startWithProfile( kernel, "run" );
-            assertThat( kernel.<TestContainer>service( "container" ).get().profile ).isInstanceOf( TestProfile1.class );
+            assertThat( kernel.<TestContainer>service( "container1" ).get().profile ).isInstanceOf( TestProfile1.class );
         }
     }
 
@@ -135,6 +135,7 @@ public class KernelProfileTest {
     }
 
     public static class TestProfile1 implements TestProfile {
+        public TestProfile1 profile1;
     }
 
     public static class TestProfile2 implements TestProfile {

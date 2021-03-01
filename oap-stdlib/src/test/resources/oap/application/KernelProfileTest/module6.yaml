@@ -3,11 +3,12 @@ dependsOn:
   - module: unknown
     profile: not-set
 services:
-  profile1:
+  container1:
     profiles:
       - run
-    implementation: oap.application.KernelProfileTest$TestProfile1
-    name: profile
+    implementation: oap.application.KernelProfileTest$TestContainer
+    parameters:
+      profile: "@service:profile"
 
   profile2:
     profiles:
@@ -15,11 +16,13 @@ services:
     implementation: oap.application.KernelProfileTest$TestProfile2
     name: profile
 
-  container1:
+  profile1:
     profiles:
       - run
-    name: container
-    implementation: oap.application.KernelProfileTest$TestContainer
+    implementation: oap.application.KernelProfileTest$TestProfile1
+    name: profile
     parameters:
-      profile: "@service:profile"
+      profile1: "@service:profile-11"
 
+  profile-11:
+    implementation: oap.application.KernelProfileTest$TestProfile1
