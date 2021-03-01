@@ -155,6 +155,10 @@ class Modules {
     }
 
     private void sortModules() {
+        log.trace( "modules: before sort: \n{}",
+            String.join( "\n", Lists.map( map.entrySet(), e -> "  " + e.getKey() + ": " + e.getValue().getDependsOn() ) )
+        );
+
         var graph = new LinkedList<>( map.values() );
 
         var newMap = new LinkedHashMap<String, ModuleItem>();
@@ -200,13 +204,19 @@ class Modules {
             throw new ApplicationException( "graph has at least one cycle" );
         }
 
-        log.trace( "modules: before sort: \n{}", String.join( "\n", Lists.map( map.keySet(), k -> "  " + k ) ) );
         map.clear();
         map.putAll( newMap );
-        log.trace( "modules: after sort: \n{}", String.join( "\n", Lists.map( map.keySet(), k -> "  " + k ) ) );
+        log.trace( "modules: after sort: \n{}",
+            String.join( "\n", Lists.map( map.entrySet(), e -> "  " + e.getKey() + ": " + e.getValue().getDependsOn() ) )
+        );
     }
 
     private void sortServices( ModuleItem moduleInfo ) {
+        log.trace( "{}: services: before sort: \n{}",
+            moduleInfo.getName(),
+            String.join( "\n", Lists.map( moduleInfo.services.entrySet(), e -> "  " + e.getKey() + ": " + Lists.map( e.getValue().dependsOn, d -> d.serviceItem.serviceName ) ) )
+        );
+
         var graph = new LinkedList<>( moduleInfo.services.values() );
 
         var newMap = new LinkedHashMap<String, ModuleItem.ServiceItem>();
@@ -247,10 +257,12 @@ class Modules {
             throw new ApplicationException( "[" + moduleInfo.module.name + "] graph has at least one cycle" );
         }
 
-        log.trace( "{}: services: before sort: \n{}", moduleInfo.getName(), String.join( "\n", Lists.map( moduleInfo.services.keySet(), k -> "  " + k ) ) );
         moduleInfo.services.clear();
         moduleInfo.services.putAll( newMap );
-        log.trace( "{}: services: after sort: \n{}", moduleInfo.getName(), String.join( "\n", Lists.map( moduleInfo.services.keySet(), k -> "  " + k ) ) );
+        log.trace( "{}: services: after sort: \n{}",
+            moduleInfo.getName(),
+            String.join( "\n", Lists.map( moduleInfo.services.entrySet(), e -> "  " + e.getKey() + ": " + Lists.map( e.getValue().dependsOn, d -> d.serviceItem.serviceName ) ) )
+        );
     }
 
     private void init( LinkedHashSet<Module> modules, LinkedHashSet<String> profiles ) {
@@ -357,7 +369,7 @@ class Modules {
 
         for( var moduleInfo : map.values() ) {
             for( var entry : moduleInfo.services.entrySet() ) {
-                if( serviceName.equals( entry.getValue().service.name ) ) {
+                if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().service.name ) ) {
                     found.add( __( moduleInfo, entry.getValue() ) );
                 }
             }
