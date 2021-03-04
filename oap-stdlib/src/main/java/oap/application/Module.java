@@ -32,7 +32,6 @@ import lombok.ToString;
 import oap.application.remote.RemoteLocation;
 import oap.json.Binder;
 import oap.reflect.Coercions;
-import oap.util.PrioritySet;
 import oap.util.Strings;
 
 import java.util.LinkedHashMap;
@@ -66,11 +65,10 @@ public class Module {
     public static class Service {
         public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public final Supervision supervision = new Supervision();
-        public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
+        public final LinkedHashSet<Object> dependsOn = new LinkedHashSet<>();
         @JsonAlias( { "profile", "profiles" } )
         public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
-        public final LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference
         public String implementation;
         public String name;
         public RemoteLocation remote;
@@ -97,29 +95,54 @@ public class Module {
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
     }
 
-    @ToString
     @EqualsAndHashCode
     public static class Reference {
-        public int priority;
-        public String name;
+        public String service;
+        public String module;
 
-        public Reference( int priority, String name ) {
-            this.priority = priority;
-            this.name = name.substring( name.indexOf( ':' ) + 1 );
+        public Reference( String module, String service ) {
+            this.module = module;
+            this.service = service;
         }
 
-        public Reference( String name ) {
-            this( PrioritySet.PRIORITY_DEFAULT, name );
+        public static Reference of( Object reference ) throws ApplicationException {
+            return of( reference, null );
         }
 
         @SuppressWarnings( "unchecked" )
-        public static Reference of( Object reference ) {
-            if( reference instanceof String )
-                return new Reference( ( String ) reference );
-            if( reference instanceof Map<?, ?> )
+        public static Reference of( Object reference, String defaultModuleName ) throws ApplicationException {
+            if( reference instanceof String ) {
+                var referenceStr = ( String ) reference;
+                var serviceIdx = referenceStr.lastIndexOf( ':' );
+                if( serviceIdx < 0 ) {
+                    if( defaultModuleName != null ) return new Reference( defaultModuleName, referenceStr );
+
+                    throw new ApplicationException( "Invalid reference " + referenceStr );
+                }
+                var moduleIdx = referenceStr.lastIndexOf( ':', serviceIdx - 1 );
+
+                var serviceName = referenceStr.substring( serviceIdx + 1 );
+                if( moduleIdx <= 0 ) {
+                    return new Reference( referenceStr.substring( 0, serviceIdx ), serviceName );
+                }
+                var moduleName = referenceStr.substring( moduleIdx + 1, serviceIdx );
+
+                return new Reference( moduleName, serviceName );
+            } else if( reference instanceof Map<?, ?> )
                 return Binder.hocon.unmarshal( Reference.class, ( Map<String, Object> ) reference );
+
             throw new ApplicationException( "could not parse reference " + reference );
         }
+
+        public static boolean isServiceLink( Object value ) {
+            return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
+        }
+
+        @Override
+        public String toString() {
+            return module + ":" + service;
+        }
+
     }
 
     @ToString

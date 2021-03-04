@@ -36,13 +36,22 @@ import java.util.LinkedHashSet;
 class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
-    final boolean enabled;
+    private final boolean enabled;
     private final LinkedHashMap<String, ModuleReference> dependsOn;
+    private boolean load = false;
 
     ModuleItem( Module module, boolean enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
         this.module = module;
         this.enabled = enabled;
         this.dependsOn = dependsOn;
+    }
+
+    final void setLoad() {
+        load = true;
+    }
+
+    final boolean isEnabled() {
+        return enabled && load;
     }
 
     final String getName() {
@@ -91,6 +100,11 @@ class ModuleItem {
         ModuleReference( ModuleItem moduleItem, ServiceLink serviceLink ) {
             this.moduleItem = moduleItem;
             this.serviceLink.add( serviceLink );
+        }
+
+        @Override
+        public String toString() {
+            return "" + Lists.map( serviceLink, sl -> sl.from.moduleItem.getName() + ":" + sl.from.serviceName + "->" + sl.to.moduleItem.getName() + ":" + sl.to.serviceName );
         }
 
         @EqualsAndHashCode

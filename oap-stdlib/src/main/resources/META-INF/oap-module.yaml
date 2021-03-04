@@ -11,7 +11,7 @@ services:
       keepAliveTimeout: 5s
       originalServer: "OAP Server/4.0"
       responseDate: true
-      healthHttpHandler: "@service:oap-http-health-handler"
+      healthHttpHandler: "@service:this:oap-http-health-handler"
       rejected:
         code: 503
         reason: "temporary overload"
@@ -52,7 +52,7 @@ services:
     profile: http
     parameters:
       providers:
-        - "@implementations:oap.http.server.health.HealthDataProvider"
+        - "@implementations:*:oap.http.server.health.HealthDataProvider"
 
   corsPolicy-generic:
     implementation: oap.http.cors.GenericCorsPolicy

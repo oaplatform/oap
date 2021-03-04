@@ -223,6 +223,14 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
+    public static <T> List<T> reverse( Collection<T> values ) {
+        var ret = new ArrayList<>( values );
+        
+        Collections.reverse( ret );
+
+        return ret;
+    }
+
     public static class Collectors {
         public static <T> Collector<T, ?, ArrayList<T>> toArrayList() {
             return new oap.util.Collectors.CollectorImpl<T, ArrayList<T>, ArrayList<T>>( ArrayList::new, ArrayList::add,

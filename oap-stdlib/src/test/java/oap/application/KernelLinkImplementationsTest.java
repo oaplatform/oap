@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static oap.testng.Asserts.urlOfTestResource;
@@ -42,8 +43,8 @@ public class KernelLinkImplementationsTest {
         var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference.conf" ) ) );
 
         try {
-            kernel.start();
-            FieldReference service = kernel.<FieldReference>service( "m" ).get();
+            kernel.start( Map.of( "boot.main", "field-reference" ) );
+            FieldReference service = kernel.<FieldReference>service( "*:m" ).get();
 
             assertThat( service.ti ).isNotNull();
             assertThat( service.ti.toString() ).isEqualTo( "TestInterfaceImpl1" );
@@ -59,8 +60,8 @@ public class KernelLinkImplementationsTest {
         );
 
         try {
-            kernel.start();
-            FieldReferences service = kernel.<FieldReferences>service( "m" ).get();
+            kernel.start( Map.of( "boot.main", "field-references" ) );
+            FieldReferences service = kernel.<FieldReferences>service( "*:m" ).get();
 
             assertThat( service.tis ).isNotNull();
             assertThat( service.tis.stream().map( Object::toString ).collect( toList() ) )
@@ -77,7 +78,8 @@ public class KernelLinkImplementationsTest {
         );
 
         try {
-            assertThatThrownBy( kernel::start ).isInstanceOf( ApplicationException.class );
+            assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "field-reference-unknown-interface" ) ) )
+                .isInstanceOf( ApplicationException.class );
         } finally {
             kernel.stop();
         }
@@ -90,8 +92,8 @@ public class KernelLinkImplementationsTest {
         );
 
         try {
-            kernel.start();
-            FieldReferences service = kernel.<FieldReferences>service( "m" ).get();
+            kernel.start( Map.of( "boot.main", "field-references-unknown-interface" ) );
+            FieldReferences service = kernel.<FieldReferences>service( "*:m" ).get();
 
             assertThat( service.tis ).isEmpty();
         } finally {
@@ -106,7 +108,7 @@ public class KernelLinkImplementationsTest {
         );
 
         try {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "cons-field-diff-types" ) );
             var list = kernel.serviceOfClass( TestList.class ).orElseThrow();
 
             assertThat( list.list ).containsExactly( entry( "a", "a" ), entry( "b", "b" ), entry( "c", "c" ) );

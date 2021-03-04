@@ -94,7 +94,6 @@ public class Collections {
         return max;
     }
 
-    @Deprecated
     public static <E> E head2( Collection<E> collection ) {
         return collection.isEmpty() ? null : collection.iterator().next();
     }

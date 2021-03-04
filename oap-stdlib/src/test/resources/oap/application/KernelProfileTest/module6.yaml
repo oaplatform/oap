@@ -1,4 +1,4 @@
-name: test-profile5
+name: test-profile6
 dependsOn:
   - module: unknown
     profile: not-set
@@ -8,7 +8,7 @@ services:
       - run
     implementation: oap.application.KernelProfileTest$TestContainer
     parameters:
-      profile: "@service:profile"
+      profile: "@service:this:profile"
 
   profile2:
     profiles:
@@ -22,7 +22,7 @@ services:
     implementation: oap.application.KernelProfileTest$TestProfile1
     name: profile
     parameters:
-      profile1: "@service:profile-11"
+      profile1: "@service:this:profile-11"
 
   profile-11:
     implementation: oap.application.KernelProfileTest$TestProfile1

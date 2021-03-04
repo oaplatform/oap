@@ -36,8 +36,10 @@ import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import static oap.io.Files.wildcard;
 import static oap.util.Lists.concat;
@@ -46,6 +48,7 @@ import static oap.util.Lists.concat;
 @ToString
 public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
+    public ModuleBoot boot = new ModuleBoot();
     List<String> profiles = Lists.empty();
     Map<String, Map<String, Object>> services = Maps.of();
 
@@ -97,6 +100,12 @@ public final class ApplicationConfiguration {
         ) );
     }
 
+    static ApplicationConfiguration load( Map<String, Object> properties ) {
+        var sj = new StringJoiner( "\n" );
+        properties.forEach( ( k, v ) -> sj.add( k + " = " + v ) );
+        return Binder.hocon.unmarshal( ApplicationConfiguration.class, sj.toString() + "\n" + getEnvConfig() );
+    }
+
     public static List<URL> getConfdUrls( Path confd ) {
         return confd != null
             ? Stream.of( wildcard( confd, "*.conf", "*.yaml" ) )
@@ -105,7 +114,7 @@ public final class ApplicationConfiguration {
     }
 
     private static String getEnvConfig() {
-        var res = new StringBuilder( "{\n" );
+        var res = new StringBuilder( "" );
 
         System.getenv().forEach( ( key, value ) -> {
             if( key.startsWith( PREFIX ) ) {
@@ -113,10 +122,13 @@ public final class ApplicationConfiguration {
             }
         } );
 
-        res.append( "}" );
-
         log.trace( "env config = {}", res );
 
         return res.toString();
+    }
+
+    @ToString
+    public static class ModuleBoot {
+        public final LinkedHashSet<String> main = new LinkedHashSet<>();
     }
 }

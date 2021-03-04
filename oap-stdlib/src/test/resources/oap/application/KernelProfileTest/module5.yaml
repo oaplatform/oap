@@ -24,7 +24,7 @@ services:
     name: container
     implementation: oap.application.KernelProfileTest$TestContainer3
     parameters:
-      profile: "@service:profile"
+      profile: "@service:this:profile"
 
   container1:
     profiles:
@@ -33,5 +33,5 @@ services:
     name: container
     implementation: oap.application.KernelProfileTest$TestContainer
     parameters:
-      profile: "@service:profile"
+      profile: "@service:this:profile"
 

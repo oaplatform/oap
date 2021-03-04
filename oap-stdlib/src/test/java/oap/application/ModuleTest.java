@@ -28,39 +28,37 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static oap.testng.Asserts.urlOfTestResource;
-import static org.assertj.core.api.Assertions.assertThat;
+import static oap.testng.Asserts.assertString;
 
-public class KernelAnnotationTest {
+/**
+ * Created by igor.petrenko on 2021-02-26.
+ */
+public class ModuleTest {
     @Test
-    public void testServiceName() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/servicename.conf" ) );
-
-        try( var kernel = new Kernel( modules ) ) {
-            kernel.start( Map.of( "boot.main", "servicename" ) );
-
-            var fServiceName = kernel.serviceOfClass( TestServiceNameField.class ).orElseThrow();
-            System.out.println( fServiceName.serviceName );
-            assertThat( fServiceName.serviceName ).isEqualTo( "field" );
-
-            var sServiceName = kernel.serviceOfClass( TestServiceNameFSetter.class ).orElseThrow();
-            assertThat( sServiceName.serviceName ).isEqualTo( "setter" );
-        }
+    public void testReference() {
+        var reference = Module.Reference.of( "@service:test-module:test-service" );
+        assertString( reference.service ).isEqualTo( "test-service" );
+        assertString( reference.module ).isEqualTo( "test-module" );
     }
 
-    public static class TestServiceNameField {
-        @ServiceName
-        private String serviceName = "<change me>";
+    @Test
+    public void testReferenceObject() {
+        var reference = Module.Reference.of( Map.of( "module", "test-module", "service", "test-service" ) );
+        assertString( reference.service ).isEqualTo( "test-service" );
+        assertString( reference.module ).isEqualTo( "test-module" );
     }
 
-    public static class TestServiceNameFSetter {
-        private String serviceName = "<change me>";
+    @Test
+    public void testReferenceWithoutPrefix() {
+        var reference = Module.Reference.of( "test-module:test-service", "this" );
+        assertString( reference.service ).isEqualTo( "test-service" );
+        assertString( reference.module ).isEqualTo( "test-module" );
+    }
 
-        @ServiceName
-        public void setServiceName( String serviceName ) {
-            this.serviceName = serviceName;
-        }
+    @Test
+    public void testReferenceWithoutModuleAndPrefix() {
+        var reference = Module.Reference.of( "test-service", "this" );
+        assertString( reference.service ).isEqualTo( "test-service" );
+        assertString( reference.module ).isEqualTo( "this" );
     }
 }
-

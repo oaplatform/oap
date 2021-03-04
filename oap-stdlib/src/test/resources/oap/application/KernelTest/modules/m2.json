@@ -8,17 +8,14 @@
       "implementation": "oap.application.ServiceTwo",
       "parameters": {
         "j": 1,
-        "one": "@service:ServiceOne"
+        "one": "@service:m1:ServiceOne"
       },
       "listen": {
-        "some": "@service:ServiceOne"
+        "some": "@service:m1:ServiceOne"
       },
       "supervision": {
         "supervise": true
-      },
-      "dependsOn": [
-        "ServiceOne"
-      ]
+      }
     },
     "ServiceScheduled": {
       "implementation": "oap.application.ServiceScheduled",

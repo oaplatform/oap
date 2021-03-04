@@ -34,17 +34,21 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import static oap.application.Module.Reference.isServiceLink;
+
 @Slf4j( topic = "oap.application.Kernel" )
 public class KernelHelper {
+    public static final Set<String> THIS = Set.of( "this", "self" );
 
-    static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, Map<String, ServiceInitialization> initialized,
+    static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, String thisModuleName,
+                                                                 Map<String, LinkedHashMap<String, ServiceInitialization>> initialized,
                                                                  LinkedHashMap<String, Object> parameters ) {
-        fixLinks( kernel, initialized, parameters );
+        fixLinks( kernel, thisModuleName, initialized, parameters );
 
         var ret = new LinkedHashMap<String, Object>();
 
         parameters.forEach( ( name, value ) -> {
-            Object newValue = fixValue( kernel, initialized, value );
+            Object newValue = fixValue( kernel, thisModuleName, initialized, value );
             ret.put( name, newValue );
         } );
 
@@ -52,12 +56,20 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( "unchecked" )
-    static Object fixValue( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
+    static Object fixValue( Kernel kernel, String thisModuleName, Map<String, LinkedHashMap<String, ServiceInitialization>> initialized, Object value ) {
         Object newValue;
         if( isServiceLink( value ) ) {
-            var linkName = referenceName( value );
-            var si = initialized.get( linkName );
-            newValue = si != null ? si.instance : null;
+            var link = Module.Reference.of( value );
+            var linkName = link.service;
+            var moduleName = THIS.contains( link.module ) ? thisModuleName : link.module;
+            var mi = initialized.get( moduleName );
+            if( mi == null ) {
+                log.trace( "{} module {} not found", thisModuleName, moduleName );
+                newValue = null;
+            } else {
+                var si = mi.get( linkName );
+                newValue = si != null ? si.instance : null;
+            }
         } else if( isKernel( value ) ) {
             newValue = kernel;
         } else if( value instanceof String && ( ( String ) value ).matches( "@[^:]+:.+" ) ) {
@@ -65,7 +77,7 @@ public class KernelHelper {
         } else if( value instanceof List<?> ) {
             var newList = new ArrayList<>();
             for( var lValue : ( List<?> ) value ) {
-                var fixLValue = fixValue( kernel, initialized, lValue );
+                var fixLValue = fixValue( kernel, thisModuleName, initialized, lValue );
                 if( fixLValue != null ) newList.add( fixLValue );
             }
             newValue = newList;
@@ -73,7 +85,7 @@ public class KernelHelper {
             var newMap = new LinkedHashMap<>();
 
             ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> {
-                var v = fixValue( kernel, initialized, mValue );
+                var v = fixValue( kernel, thisModuleName, initialized, mValue );
                 if( v != null ) newMap.put( key, v );
             } );
 
@@ -84,10 +96,6 @@ public class KernelHelper {
         return newValue;
     }
 
-    static boolean isServiceLink( Object value ) {
-        return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
-    }
-
     static boolean isKernel( Object value ) {
         return "@kernel".equals( value );
     }
@@ -96,27 +104,30 @@ public class KernelHelper {
         return value instanceof String && ( ( String ) value ).startsWith( "@implementations:" );
     }
 
-    static String referenceName( Object ref ) {
-        return Module.Reference.of( ref ).name;
-    }
-
     @SuppressWarnings( "unchecked" )
-    static Object fixLinks( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
+    static Object fixLinks( Kernel kernel, String thisModuleName, Map<String, LinkedHashMap<String, ServiceInitialization>> initialized, Object value ) {
         if( isServiceLink( value ) ) {
-            var linkName = referenceName( value );
-            var si = initialized.get( linkName );
+            var link = Module.Reference.of( value );
+            var linkName = link.service;
+            var moduleName = THIS.contains( link.module ) ? thisModuleName : link.module;
+            var mi = initialized.get( moduleName );
+            if( mi == null ) {
+                log.trace( "{} module {} not found", thisModuleName, moduleName );
+                return null;
+            }
+            var si = mi.get( linkName );
             return si != null ? si.instance : null;
         } else if( isKernel( value ) ) {
             return kernel;
         } else if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
-                var v = fixLinks( kernel, initialized, it.next() );
+                var v = fixLinks( kernel, thisModuleName, initialized, it.next() );
                 if( v != null ) it.set( v );
             }
         } else if( value instanceof Map<?, ?> ) {
             for( var entry : ( ( Map<?, Object> ) value ).entrySet() ) {
-                var v = fixLinks( kernel, initialized, entry.getValue() );
+                var v = fixLinks( kernel, thisModuleName, initialized, entry.getValue() );
                 if( v != null ) entry.setValue( v );
             }
         }

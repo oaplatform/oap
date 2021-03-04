@@ -28,8 +28,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceOne.Complex;
-import oap.application.linked.ServiceContainee;
-import oap.application.linked.ServiceContainer;
 import oap.concurrent.Threads;
 import oap.system.Env;
 import oap.util.Lists;
@@ -41,6 +39,7 @@ import org.testng.annotations.Test;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static oap.testng.Asserts.assertEventually;
@@ -72,11 +71,11 @@ public class KernelTest {
         TestLifecycle delayScheduled;
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "lifecycle" ) );
 
-            service = kernel.<TestLifecycle>service( "service" ).orElseThrow();
-            thread = kernel.<TestLifecycle>service( "thread" ).orElseThrow();
-            delayScheduled = kernel.<TestLifecycle>service( "delayScheduled" ).orElseThrow();
+            service = kernel.<TestLifecycle>service( "lifecycle", "service" ).orElseThrow();
+            thread = kernel.<TestLifecycle>service( "lifecycle:thread" ).orElseThrow();
+            delayScheduled = kernel.<TestLifecycle>service( "lifecycle:delayScheduled" ).orElseThrow();
         }
 
         assertThat( service.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
@@ -98,8 +97,8 @@ public class KernelTest {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
-                Optional<ServiceOne> serviceOne = kernel.service( "ServiceOne" );
-                Optional<ServiceTwo> serviceTwo = kernel.service( "ServiceTwo" );
+                Optional<ServiceOne> serviceOne = kernel.service( "m1:ServiceOne" );
+                Optional<ServiceTwo> serviceTwo = kernel.service( "m2:ServiceTwo" );
 
                 assertThat( serviceOne ).isPresent().get().satisfies( one -> {
                     assertThat( one.kernel ).isSameAs( kernel );
@@ -117,12 +116,12 @@ public class KernelTest {
                 } );
                 //wait for scheduled service to be executed
                 Threads.sleepSafely( 2000 );
-                Optional<ServiceScheduled> serviceScheduled = kernel.service( "ServiceScheduled" );
+                Optional<ServiceScheduled> serviceScheduled = kernel.service( "m2:ServiceScheduled" );
                 assertThat( serviceScheduled ).isPresent().get().satisfies( scheduled ->
                     assertThat( scheduled.executed ).isTrue()
                 );
 
-                Optional<ServiceDepsList> serviceDepsList = kernel.service( "ServiceDepsList" );
+                Optional<ServiceDepsList> serviceDepsList = kernel.service( "m3:ServiceDepsList" );
                 assertThat( serviceDepsList ).isPresent().get()
                     .satisfies( depsList -> assertThat( depsList.deps ).contains( serviceOne.get(), serviceTwo.get() ) );
 
@@ -143,32 +142,11 @@ public class KernelTest {
 
         Kernel kernel = new Kernel( modules );
         try {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "disabled" ) );
 
-            assertThat( kernel.<ServiceOne>service( "s1" ) ).isPresent().get()
+            assertThat( kernel.<ServiceOne>service( "*:s1" ) ).isPresent().get()
                 .satisfies( s1 -> assertThat( s1.list ).isEmpty() );
-            assertThat( kernel.<ServiceOne>service( "s2" ) ).isNotPresent();
-        } finally {
-            kernel.stop();
-        }
-    }
-
-    @Test
-    public void linked() {
-        List<URL> modules = Lists.of(
-            urlOfTestResource( getClass(), "linked/container.conf" ),
-            urlOfTestResource( getClass(), "linked/containee.conf" )
-        );
-
-        Kernel kernel = new Kernel( modules );
-        try {
-            kernel.start();
-            assertThat( kernel.<ServiceContainer>service( "container" ) ).get().satisfies( container ->
-                assertThat( kernel.<ServiceContainee>service( "containee1" ) ).get().satisfies( containee1 ->
-                    assertThat( kernel.<ServiceContainee>service( "containee2" ) ).get().satisfies( containee2 -> {
-                        assertThat( container.containees ).contains( containee1, containee2 );
-                        assertThat( container.priorities ).containsExactly( containee2, containee1 );
-                    } ) ) );
+            assertThat( kernel.<ServiceOne>service( "*:s2" ) ).isNotPresent();
         } finally {
             kernel.stop();
         }
@@ -180,9 +158,9 @@ public class KernelTest {
 
         Kernel kernel = new Kernel( modules );
         try {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "map" ) );
 
-            assertThat( kernel.<ServiceOne>service( "s1" ) ).isPresent().get()
+            assertThat( kernel.<ServiceOne>service( "*:s1" ) ).isPresent().get()
                 .satisfies( s1 -> {
                     assertThat( s1.map ).hasSize( 2 );
                     assertThat( s1.map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
@@ -199,9 +177,9 @@ public class KernelTest {
 
         Kernel kernel = new Kernel( modules );
         try {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "map" ) );
 
-            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ) ).isPresent().get()
+            assertThat( kernel.<TestServiceMap>service( "*:ServiceMap" ) ).isPresent().get()
                 .satisfies( sm -> {
                     assertThat( sm.map1 ).hasSize( 1 );
                     assertThat( sm.map1.get( "ok" ) ).isInstanceOf( TestServiceMap.TestEntry.class );
@@ -221,11 +199,11 @@ public class KernelTest {
         Env.set( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "env" ) );
 
-            assertThat( kernel.<Service1>service( "s1" ) ).isNotPresent();
-            assertThat( kernel.<Service2>service( "s2" ) ).isPresent();
-            assertThat( kernel.<Service2>service( "s2" ) ).isPresent().get()
+            assertThat( kernel.<Service1>service( "*:s1" ) ).isNotPresent();
+            assertThat( kernel.<Service2>service( "*:s2" ) ).isPresent();
+            assertThat( kernel.<Service2>service( "*:s2" ) ).isPresent().get()
                 .satisfies( s2 -> assertThat( s2.val ).isEqualTo( "test$value" ) );
         }
     }
@@ -239,7 +217,7 @@ public class KernelTest {
         Env.set( "CONFIG.services.unknownservice.val1", "false" );
 
         try( var kernel = new Kernel( modules ) ) {
-            assertThatThrownBy( kernel::start )
+            assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "env" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "unknown application configuration services: [unknownservice]" );
         }
@@ -250,7 +228,7 @@ public class KernelTest {
         var modules = Lists.of( urlOfTestResource( getClass(), "reference/reference.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            assertThatCode( kernel::start )
+            assertThatCode( () -> kernel.start( Map.of( "boot.main", "reference" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "[reference:s1] dependencies are not enabled [s2]" );
         }
@@ -263,7 +241,7 @@ public class KernelTest {
             urlOfTestResource( getClass(), "reference/cyclic2.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            assertThatCode( kernel::start )
+            assertThatCode( () -> kernel.start( Map.of( "boot.main", "cyclic1" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "graph has at least one cycle" );
         }
@@ -274,9 +252,47 @@ public class KernelTest {
         var modules = Lists.of( urlOfTestResource( getClass(), "modules/service-without-implementation.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            assertThatCode( kernel::start )
+            assertThatCode( () -> kernel.start( Map.of( "boot.main", "service-without-implementation" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "failed to initialize service: service-without-implementation:test-service-without-implementation. implementation == null" );
+        }
+    }
+
+    @Test
+    public void testLoadModules() {
+        var modules = List.of(
+            urlOfTestResource( getClass(), "deps/m1.yaml" ),
+            urlOfTestResource( getClass(), "deps/m2.yaml" ),
+            urlOfTestResource( getClass(), "deps/m3.yaml" ),
+            urlOfTestResource( getClass(), "deps/m4.yaml" )
+        );
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot.main", "m1" ) );
+
+            assertThat( kernel.service( "m1:s11" ) ).isPresent();
+            assertThat( kernel.service( "m2:s21" ) ).isNotPresent();
+            assertThat( kernel.service( "m1:s31" ) ).isNotPresent();
+            assertThat( kernel.service( "m3:s31" ) ).isPresent();
+            assertThat( kernel.service( "m4:s41" ) ).isPresent();
+        }
+    }
+
+    @Test
+    public void testDuplicateServices() {
+        var modules = List.of(
+            urlOfTestResource( getClass(), "duplicate/d1.yaml" ),
+            urlOfTestResource( getClass(), "duplicate/d2.yaml" )
+        );
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot.main", Lists.of( "d1", "d2" ) ) );
+
+            assertThat( kernel.ofClass( ServiceOne.class ) ).hasSize( 2 );
+            assertThat( kernel.service( "d1:ServiceOne" ) ).isPresent();
+            assertThat( kernel.<ServiceOne>service( "d1:ServiceOne" ).get().i ).isEqualTo( 1 );
+            assertThat( kernel.service( "d2:ServiceOne" ) ).isPresent();
+            assertThat( kernel.<ServiceOne>service( "d2:ServiceOne" ).get().i ).isEqualTo( 2 );
         }
     }
 

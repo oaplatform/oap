@@ -107,7 +107,7 @@ public class Remote implements HttpHandler {
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
             var invocation = getRemoteInvocation( fst, body );
 
-            var service = kernel.service( invocation.service );
+            var service = kernel.service( "*", invocation.service );
 
             service.ifPresentOrElse( s -> {
                     try {

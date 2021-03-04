@@ -46,6 +46,8 @@ import static oap.testng.Fixture.Scope.SUITE;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
 public class KernelFixture extends EnvFixture {
+    public final static String ANY = "*";
+
     public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
     public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
     public static final String TEST_DIRECTORY = "TEST_DIRECTORY";
@@ -151,13 +153,18 @@ public class KernelFixture extends EnvFixture {
     }
 
     @Nonnull
-    public <T> T service( @Nonnull Class<T> klass ) {
-        return kernel.serviceOfClass( klass ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + klass ) );
+    public <T> T service( @Nonnull String moduleName, @Nonnull Class<T> klass ) {
+        return kernel.serviceOfClass( moduleName, klass ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + klass ) );
     }
 
     @Nonnull
-    public <T> T service( @Nonnull String name ) {
-        return kernel.<T>service( name ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + name ) );
+    public <T> T service( @Nonnull String moduleName, @Nonnull String serviceName ) {
+        return kernel.<T>service( moduleName, serviceName ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + serviceName ) );
+    }
+
+    @Nonnull
+    public <T> T service( @Nonnull String reference ) {
+        return kernel.<T>service( reference ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + reference ) );
     }
 
     @Override

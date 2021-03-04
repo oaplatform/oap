@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.testng.Asserts.assertEventually;
@@ -41,7 +42,7 @@ public class KernelSupervisionTest {
         modules.add( urlOfTestResource( getClass(), "modules/thread.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "thread" ) );
 
             var srv = kernel.serviceOfClass2( TestThread.class );
 
@@ -58,7 +59,7 @@ public class KernelSupervisionTest {
         modules.add( urlOfTestResource( getClass(), "modules/cron.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "cron" ) );
 
             var srv = kernel.serviceOfClass2( TestCron.class );
 
@@ -76,7 +77,7 @@ public class KernelSupervisionTest {
         modules.add( urlOfTestResource( getClass(), "modules/cronWithSupervise.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start();
+            kernel.start( Map.of( "boot.main", "cron" ) );
 
             var srv = kernel.serviceOfClass2( TestCron.class );
 
@@ -95,9 +96,9 @@ public class KernelSupervisionTest {
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 
         var kernel = new Kernel( modules );
-        kernel.start();
-        var tc = kernel.<TestCloseable>service( "c1" ).orElseThrow();
-        var tc2 = kernel.<TestCloseable2>service( "c2" ).orElseThrow();
+        kernel.start( Map.of( "boot.main", "start_stop" ) );
+        var tc = kernel.<TestCloseable>service( "*:c1" ).orElseThrow();
+        var tc2 = kernel.<TestCloseable2>service( "*:c2" ).orElseThrow();
         kernel.stop();
 
         assertThat( tc.closed ).isTrue();
@@ -158,8 +159,8 @@ public class KernelSupervisionTest {
 
     @Slf4j
     public static class TestCron implements Runnable {
-        public final AtomicLong count = new AtomicLong();
         public static final StringBuilder str = new StringBuilder();
+        public final AtomicLong count = new AtomicLong();
 
         public synchronized void start() {
             str.append( "start/" );

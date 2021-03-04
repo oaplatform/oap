@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static oap.application.testng.KernelFixture.ANY;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,7 @@ public class KernelFixtureTest extends Fixtures {
 
     @Test
     public void value() {
-        assertThat( kernelFixture.service( Service.class ).value )
+        assertThat( kernelFixture.service( ANY, Service.class ).value )
             .isEqualTo( "from fixture" );
     }
 

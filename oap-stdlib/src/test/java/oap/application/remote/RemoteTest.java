@@ -31,6 +31,7 @@ import oap.application.Module;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static oap.testng.Asserts.pathOfTestResource;
@@ -48,7 +49,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "remote-client" ) )
+            assertThat( kernel.<RemoteClient>service( "*:remote-client" ) )
                 .isPresent()
                 .get()
                 .satisfies( remote -> {
@@ -57,17 +58,17 @@ public class RemoteTest extends Fixtures {
                     assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:8980/remote/" );
                 } );
 
-            assertThat( kernel.<RemoteClient>service( "remote-client" ) )
+            assertThat( kernel.<RemoteClient>service( "*:remote-client" ) )
                 .isPresent()
                 .get()
                 .satisfies( remote -> assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class ) );
 
-            assertThat( kernel.<RemoteClient>service( "remote-client" ) )
+            assertThat( kernel.<RemoteClient>service( "*:remote-client" ) )
                 .isPresent()
                 .get()
                 .satisfies( RemoteClient::testRetry );
 
-            assertThat( kernel.<RemoteClient>service( "remote-client-unreachable" ) )
+            assertThat( kernel.<RemoteClient>service( "*:remote-client-unreachable" ) )
                 .isPresent()
                 .get()
                 .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( RemoteInvocationException.class ) );
@@ -82,9 +83,9 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "remote-client" ).get().testStream( "1", "2", "3" ) )
+            assertThat( kernel.<RemoteClient>service( "*:remote-client" ).get().testStream( "1", "2", "3" ) )
                 .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
-            assertThat( kernel.<RemoteClient>service( "remote-client" ).get().testStream( "1", "2", "3" ) )
+            assertThat( kernel.<RemoteClient>service( "*:remote-client" ).get().testStream( "1", "2", "3" ) )
                 .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
         }
     }
@@ -97,7 +98,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "remote-client" ).get().testStream() ).isEmpty();
+            assertThat( kernel.<RemoteClient>service( "*:remote-client" ).get().testStream() ).isEmpty();
         }
     }
 
@@ -107,7 +108,7 @@ public class RemoteTest extends Fixtures {
         modules.add( urlOfTestResource( getClass(), "invalid_remote.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            assertThatCode( kernel::start )
+            assertThatCode( () -> kernel.start( Map.of( "boot.main", "oap-module-with-invalid-remoting" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "remoting: uri == null, services [oap-module-with-invalid-remoting:remote-client]" );
         }

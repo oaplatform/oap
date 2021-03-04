@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class Supervisor {
+    private final LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
+    private final LinkedHashMap<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
 
-    private LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
-    private LinkedHashMap<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
     private boolean stopped = false;
 
     public void startSupervised( String name, Object service,
