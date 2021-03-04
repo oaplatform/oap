@@ -405,6 +405,7 @@ class Modules {
     }
 
 
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
     private Pair<ModuleItem, ModuleItem.ServiceItem> findService( String thisModuleName, String moduleName, String serviceName ) {
         var found = new ArrayList<Pair<ModuleItem, ModuleItem.ServiceItem>>();
 

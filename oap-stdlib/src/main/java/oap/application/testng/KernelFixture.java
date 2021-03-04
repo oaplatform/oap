@@ -46,7 +46,7 @@ import static oap.testng.Fixture.Scope.SUITE;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
 public class KernelFixture extends EnvFixture {
-    public final static String ANY = "*";
+    public static final String ANY = "*";
 
     public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
     public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";

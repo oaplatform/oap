@@ -225,7 +225,7 @@ public class Lists extends oap.util.Collections {
 
     public static <T> List<T> reverse( Collection<T> values ) {
         var ret = new ArrayList<>( values );
-        
+
         Collections.reverse( ret );
 
         return ret;

@@ -451,7 +451,7 @@ public class Kernel implements Closeable {
     public <T> T serviceOfClass2( String moduleName, Class<T> clazz ) {
         return Lists.head2( ofClass( moduleName, clazz ) );
     }
-    
+
     public void unregister( String moduleName, String serviceName ) {
         var module = services.get( moduleName );
         if( module == null ) return;
