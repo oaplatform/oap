@@ -38,6 +38,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
+import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 
 import java.io.InputStream;
@@ -108,6 +109,17 @@ public class Request {
             && underlying instanceof HttpEntityEnclosingRequest )
             Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) underlying ).getEntity() ), this.params );
 
+    }
+
+    /**
+     * Gets the entity's content type. This content type will be used as the value for the "Content-Type" header
+     * @return the entity's content type. null if absent
+     * */
+    public ContentType getContentType() {
+        var header = underlying.getFirstHeader( "Content-Type" );
+        return header != null
+            ? ContentType.parse( header.getValue() )
+            : null;
     }
 
     /**

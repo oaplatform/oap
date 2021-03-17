@@ -67,14 +67,18 @@ public class Response {
         log.trace( "cookies: {}", response.cookies );
 
         if( response.contentEntity != null )
-            if( isGzip ) underlying.setEntity( new HttpGzipOutputStreamEntity( out -> {
-                try {
-                    response.contentEntity.writeTo( out );
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
-                }
-            }, null ) );
-            else underlying.setEntity( response.contentEntity );
+            if( isGzip ) {
+                var contentType = request.getContentType();
+                underlying.setEntity( new HttpGzipOutputStreamEntity( out -> {
+                    try {
+                        response.contentEntity.writeTo( out );
+                    } catch( IOException e ) {
+                        throw new UncheckedIOException( e );
+                    }
+                }, contentType ) );
+            } else {
+                underlying.setEntity( response.contentEntity );
+            }
     }
 
 }
