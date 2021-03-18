@@ -25,11 +25,8 @@ package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.RequestCors;
-import oap.http.server.apache.entity.HttpGzipOutputStreamEntity;
 import oap.util.Pair;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import org.apache.http.client.entity.GzipCompressingEntity;
 
 @Slf4j
 public class Response {
@@ -60,25 +57,21 @@ public class Response {
         for( Pair<String, String> header : response.headers )
             underlying.setHeader( header._1, header._2 );
 
-        if( isGzip ) underlying.setHeader( "Content-encoding", "gzip" );
+        if( isGzip ) {
+            underlying.setHeader( "Content-encoding", request.header( "Accept-encoding" ).orElse( "gzip" ) );
+        }
 
         for( Pair<String, String> cookie : response.cookies ) underlying.addHeader( cookie._1, cookie._2 );
 
         log.trace( "cookies: {}", response.cookies );
 
-        if( response.contentEntity != null )
+        if( response.contentEntity != null ) {
             if( isGzip ) {
-                var contentType = request.getContentType();
-                underlying.setEntity( new HttpGzipOutputStreamEntity( out -> {
-                    try {
-                        response.contentEntity.writeTo( out );
-                    } catch( IOException e ) {
-                        throw new UncheckedIOException( e );
-                    }
-                }, contentType ) );
+                underlying.setEntity( new GzipCompressingEntity( response.contentEntity ) );
             } else {
                 underlying.setEntity( response.contentEntity );
             }
+        }
     }
 
 }

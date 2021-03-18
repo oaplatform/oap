@@ -42,8 +42,6 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GzipHttpTest extends Fixtures {
-    private static final String CONTENT_TYPE_K = "Content-type";
-    private static final String CONTENT_TYPE_V = "application/json; charset=utf-32";
     private ApacheHttpServer server;
     private SynchronizedThread thread;
 
@@ -82,10 +80,10 @@ public class GzipHttpTest extends Fixtures {
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
-            Map.of(), Map.of( "Accept-encoding", "gzip,deflate", CONTENT_TYPE_K, CONTENT_TYPE_V ) );
+            Map.of(), Map.of( "Accept-encoding", "gzip,deflate" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( responseGzip.contentType.toString() ).isEqualTo( CONTENT_TYPE_V );
+        assertThat( responseGzip.header( "Content-encoding" ).get() ).isEqualTo( "gzip,deflate" );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }
