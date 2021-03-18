@@ -24,7 +24,6 @@
 package oap.http;
 
 import lombok.ToString;
-import oap.http.server.apache.entity.HttpGzipOutputStreamEntity;
 import oap.http.server.apache.entity.HttpOutputStreamEntity;
 import oap.http.server.apache.entity.HttpStreamEntity;
 import oap.json.Binder;
@@ -133,18 +132,9 @@ public final class HttpResponse {
     }
 
 
-    /**
-     * use gzipOutputStream( HttpEntity httpEntity ) instead
-     * */
-    @Deprecated(forRemoval = true)
     public static Builder gzipOutputStream( Consumer<OutputStream> consumer, ContentType contentType ) {
         return status( HTTP_OK )
-            .withEntity( new HttpGzipOutputStreamEntity( consumer, contentType ) );
-    }
-
-    public static Builder gzipOutputStream( HttpEntity httpEntity ) {
-        return status( HTTP_OK )
-            .withEntity( new GzipCompressingEntity( httpEntity ) );
+            .withEntity(new GzipCompressingEntity(new HttpOutputStreamEntity( consumer, contentType )));
     }
 
     public static Builder file( Path file, ContentType contentType ) {
