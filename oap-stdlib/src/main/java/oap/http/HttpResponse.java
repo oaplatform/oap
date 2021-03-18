@@ -32,6 +32,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Strings;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
@@ -131,9 +132,19 @@ public final class HttpResponse {
             .withEntity( new HttpOutputStreamEntity( consumer, contentType ) );
     }
 
+
+    /**
+     * use gzipOutputStream( HttpEntity httpEntity ) instead
+     * */
+    @Deprecated(forRemoval = true)
     public static Builder gzipOutputStream( Consumer<OutputStream> consumer, ContentType contentType ) {
         return status( HTTP_OK )
             .withEntity( new HttpGzipOutputStreamEntity( consumer, contentType ) );
+    }
+
+    public static Builder gzipOutputStream( HttpEntity httpEntity ) {
+        return status( HTTP_OK )
+            .withEntity( new GzipCompressingEntity( httpEntity ) );
     }
 
     public static Builder file( Path file, ContentType contentType ) {

@@ -57,10 +57,6 @@ public class Response {
         for( Pair<String, String> header : response.headers )
             underlying.setHeader( header._1, header._2 );
 
-        if( isGzip ) {
-            underlying.setHeader( "Content-encoding", request.header( "Accept-encoding" ).orElse( "gzip" ) );
-        }
-
         for( Pair<String, String> cookie : response.cookies ) underlying.addHeader( cookie._1, cookie._2 );
 
         log.trace( "cookies: {}", response.cookies );
