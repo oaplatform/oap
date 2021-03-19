@@ -32,10 +32,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
-/**
- * use GzipCompressingEntity instead
- * */
-@Deprecated(forRemoval = true)
+
 public class HttpGzipOutputStreamEntity extends AbstractHttpEntity {
 
     private final Consumer<OutputStream> consumer;
