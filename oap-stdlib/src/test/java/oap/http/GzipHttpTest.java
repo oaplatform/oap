@@ -27,6 +27,7 @@ package oap.http;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.server.apache.ApacheHttpServer;
+import oap.http.server.apache.PlainHttpListener;
 import oap.io.IoStreams;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -42,10 +43,9 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GzipHttpTest extends Fixtures {
+    private final EnvFixture envFixture;
     private ApacheHttpServer server;
     private SynchronizedThread thread;
-
-    private final EnvFixture envFixture;
 
     {
         envFixture = fixture( new EnvFixture() );
@@ -55,7 +55,7 @@ public class GzipHttpTest extends Fixtures {
     public void beforeMethod() {
         server = new ApacheHttpServer( 1024, 0, false );
         server.start();
-        PlainHttpListener listener = new PlainHttpListener( server, envFixture.portFor( getClass() ) );
+        var listener = new PlainHttpListener( server, envFixture.portFor( getClass() ) );
         thread = new SynchronizedThread( listener, 5000 );
         listener.readyListener( thread );
     }
@@ -83,7 +83,7 @@ public class GzipHttpTest extends Fixtures {
             Map.of(), Map.of( "Accept-encoding", "gzip,deflate" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( responseGzip.header( "Content-encoding" ).get() ).isEqualTo( "gzip,deflate" );
+        assertThat( responseGzip.header( "Content-encoding" ).get() ).isEqualTo( "gzip" );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }
