@@ -191,8 +191,13 @@ class ModuleHelper {
                             serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
                     }
 
-                    serviceItem.service.parameters.forEach( ( key, value ) ->
-                        initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem ) );
+                    for( var link : serviceItem.service.link ) {
+                        initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem );
+                    }
+
+                    for( var value : serviceItem.service.parameters.values() ) {
+                        initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem );
+                    }
                 }
             } );
         }
@@ -214,17 +219,6 @@ class ModuleHelper {
                 moduleItem.addDependsOn( new ModuleReference( moduleService._1, new ServiceLink( serviceItem, moduleService._2 ) ) );
             else
                 serviceItem.addDependsOn( new ServiceReference( moduleService._2, required ) );
-        } else if( GroupKernelCommand.INSTANCE.matches( value ) ) {
-            var result = GroupKernelCommand.INSTANCE.get( value, kernel, moduleItem, map );
-            if( result.isSuccess() ) {
-                for( var dServiceItemObject : result.successValue ) {
-                    var dServiceItem = ( ModuleItem.ServiceItem ) dServiceItemObject;
-                    if( !moduleItem.equals( dServiceItem.moduleItem ) )
-                        moduleItem.addDependsOn( new ModuleReference( dServiceItem.moduleItem, new ServiceLink( serviceItem, dServiceItem ) ) );
-                    else
-                        serviceItem.addDependsOn( new ServiceReference( dServiceItem, required ) );
-                }
-            }
         } else if( value instanceof List<?> )
             for( var item : ( List<?> ) value )
                 initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem );

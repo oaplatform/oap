@@ -29,7 +29,6 @@ import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -77,7 +76,7 @@ public class KernelHelper {
         } else {
             var command = Lists.find2( Kernel.commands, c -> c.matches( value ) );
             if( command != null ) {
-                var result = command.get( value, kernel, thisModuleItem, storage );
+                var result = command.getInstance( value, kernel, thisModuleItem, storage );
                 if( result.isSuccess() ) {
                     newValue = result.successValue;
                 } else {
@@ -98,32 +97,22 @@ public class KernelHelper {
             while( it.hasNext() ) {
                 var oldValue = it.next();
                 var v = fixLinks( kernel, thisModuleItem, storage, oldValue );
-                if( v != oldValue ) {
-                    if( v instanceof List<?> ) {
-                        replaceAndAddAll( it, ( List<?> ) v );
-                    } else {
-                        it.set( v );
-                    }
+                if( v != null ) {
+                    it.set( v );
                 }
             }
         } else if( value instanceof Map<?, ?> ) {
             for( var entry : ( ( Map<?, Object> ) value ).entrySet() ) {
                 var v = fixLinks( kernel, thisModuleItem, storage, entry.getValue() );
                 if( v != null ) {
-                    if( entry.getValue() instanceof Collection<?> ) {
-                        entry.setValue( v );
-                    } else if( v instanceof Collection<?> && ( ( Collection<?> ) v ).size() == 1 ) {
-                        entry.setValue( ( ( Collection<?> ) v ).iterator().next() );
-                    } else {
-                        entry.setValue( v );
-                    }
+                    entry.setValue( v );
                 }
             }
         } else if( value instanceof String ) {
             var finalValue = value;
             var command = Lists.find2( Kernel.commands, c -> c.matches( finalValue ) );
             if( command != null ) {
-                var result = command.get( value, kernel, thisModuleItem, storage );
+                var result = command.getInstance( value, kernel, thisModuleItem, storage );
                 if( !result.isSuccess() ) {
                     log.trace( "{} not found", value );
                     value = null;
@@ -180,16 +169,5 @@ public class KernelHelper {
             thread.setName( name.substring( 0, index ) );
         }
 
-    }
-
-    private static void replaceAndAddAll( ListIterator<Object> it, List<?> data ) {
-        if( data.isEmpty() ) it.remove();
-        else {
-            var head = Lists.head2( data );
-            it.set( head );
-            for( var i = 1; i < data.size(); i++ ) {
-                it.add( data.get( i ) );
-            }
-        }
     }
 }

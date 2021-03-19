@@ -29,14 +29,13 @@ import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
 import oap.http.server.Handler;
-import oap.util.Stream;
+import oap.util.Collections;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import static oap.http.HttpResponse.NO_CONTENT;
-import static oap.util.Pair.__;
 
 @Slf4j
 public class HealthHttpHandler implements Handler {
@@ -55,11 +54,13 @@ public class HealthHttpHandler implements Handler {
     public void handle( Request request, Response response ) {
         log.trace( "providers: {}", providers );
         if( secret != null && request.parameter( "secret" ).map( s -> Objects.equals( s, secret ) ).orElse( false ) )
-            response.respond( HttpResponse.ok(
-                Stream.of( providers )
-                    .mapToPairs( hdp -> __( hdp.name(), hdp.data() ) )
-                    .toMap() )
-                .response() );
+            response
+                .respond( HttpResponse.ok( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) )
+                    .response() );
         else response.respond( NO_CONTENT );
+    }
+
+    public void addProvider( HealthDataProvider<?> provider ) {
+        this.providers.add( provider );
     }
 }

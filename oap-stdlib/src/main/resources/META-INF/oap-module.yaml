@@ -49,10 +49,10 @@ services:
 
   oap-http-health-handler:
     implementation: oap.http.server.health.HealthHttpHandler
+    add-link: addProvider
     profile: http
     parameters:
-      providers:
-        - groups..HealthDataProvider
+      providers: []
 
   corsPolicy-generic:
     implementation: oap.http.cors.GenericCorsPolicy

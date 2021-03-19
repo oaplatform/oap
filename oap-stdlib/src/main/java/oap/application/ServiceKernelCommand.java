@@ -38,7 +38,7 @@ import java.util.Set;
  */
 @ToString( callSuper = true )
 @Slf4j
-public class ServiceKernelCommand extends AbstractKernelCommand<Object> {
+public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitialization> {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
     public static final ServiceKernelCommand INSTANCE = new ServiceKernelCommand();
@@ -48,10 +48,10 @@ public class ServiceKernelCommand extends AbstractKernelCommand<Object> {
     }
 
     @Override
-    public Result<Object, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+    public Result<ServiceInitialization, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
         var reference = reference( ( String ) value, moduleItem );
 
-        return storage.findByName( reference.module, reference.service );
+        return storage.findByName( reference.module, reference.service ).mapSuccess( v -> ( ServiceInitialization ) v );
     }
 
     public Module.Reference reference( String value, @Nullable ModuleItem moduleItem ) {
@@ -64,5 +64,10 @@ public class ServiceKernelCommand extends AbstractKernelCommand<Object> {
         var linkName = matcher.group( 2 );
 
         return new Module.Reference( moduleName, linkName );
+    }
+
+    @Override
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+        return get( value, kernel, moduleItem, storage ).mapSuccess( v -> v.instance );
     }
 }

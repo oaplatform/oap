@@ -47,4 +47,6 @@ public abstract class AbstractKernelCommand<TResult> {
     }
 
     public abstract Result<TResult, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage );
+
+    public abstract Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage );
 }

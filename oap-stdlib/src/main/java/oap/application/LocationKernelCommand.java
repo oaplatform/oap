@@ -48,4 +48,9 @@ public class LocationKernelCommand extends AbstractKernelCommand<URL> {
 
         return Result.success( moduleItem.getLocation() );
     }
+
+    @Override
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+        return get( value, kernel, moduleItem, storage ).mapSuccess( v -> v );
+    }
 }

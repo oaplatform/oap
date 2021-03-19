@@ -62,11 +62,12 @@ public class Module {
         public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public final Supervision supervision = new Supervision();
         public final LinkedHashSet<Object> dependsOn = new LinkedHashSet<>();
-        @JsonAlias( { "group", "groups" } )
-        public final LinkedHashSet<String> groups = new LinkedHashSet<>();
         @JsonAlias( { "profile", "profiles" } )
         public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
+        public final LinkedHashSet<String> link = new LinkedHashSet<>();
+        @JsonAlias( { "add-link", "link-with", "linkWith", "link-method", "linkMethod" } )
+        public List<String> linkWith = List.of( "addLink" );
         public String implementation;
         public String name;
         public RemoteLocation remote;

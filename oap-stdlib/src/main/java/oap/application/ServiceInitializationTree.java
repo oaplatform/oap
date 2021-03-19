@@ -26,10 +26,8 @@ package oap.application;
 
 import oap.util.Result;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.function.BiConsumer;
 
 import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
@@ -73,30 +71,6 @@ class ServiceInitializationTree implements ServiceStorage {
         var service = moduleServices.get( serviceName );
         if( service == null ) return Result.failure( SERVICE_NOT_FOUND );
 
-        return Result.success( service.instance );
-    }
-
-    @Override
-    public Result<List<Object>, ErrorStatus> findByGroup( String moduleName, String groupName ) {
-        if( ALL_MODULES.contains( moduleName ) ) {
-            var ret = new ArrayList<>();
-            for( var moduleServices : map.values() ) {
-                for( var moduleService : moduleServices.values() ) {
-                    if( moduleService.service.groups.contains( groupName ) ) ret.add( moduleService.instance );
-                }
-            }
-            return Result.success( ret );
-        } else {
-            var moduleServices = map.get( moduleName );
-            if( moduleServices == null ) return Result.failure( MODULE_NOT_FOUND );
-
-            var ret = new ArrayList<>();
-
-            for( var moduleService : moduleServices.values() ) {
-                if( moduleService.service.groups.contains( groupName ) ) ret.add( moduleService.instance );
-            }
-
-            return Result.success( ret );
-        }
+        return Result.success( service );
     }
 }

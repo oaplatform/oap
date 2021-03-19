@@ -1,4 +1,6 @@
 name: oap-http-health-test
+dependsOn: oap
 services:
   test-data-provider:
     implementation: oap.http.server.health.HealthHttpHandlerTest$TestDataProvider
+    link: modules.oap.oap-http-health-handler

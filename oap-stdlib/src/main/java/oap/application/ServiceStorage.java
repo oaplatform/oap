@@ -26,15 +26,12 @@ package oap.application;
 
 import oap.util.Result;
 
-import java.util.List;
 import java.util.Set;
 
 public interface ServiceStorage {
     Set<String> ALL_MODULES = Set.of( "*", "" );
 
     Result<Object, ErrorStatus> findByName( String moduleName, String serviceName );
-
-    Result<List<Object>, ErrorStatus> findByGroup( String moduleName, String groupName );
 
     enum ErrorStatus {
         MODULE_NOT_FOUND, SERVICE_NOT_FOUND

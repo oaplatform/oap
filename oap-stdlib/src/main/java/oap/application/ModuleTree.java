@@ -27,10 +27,8 @@ package oap.application;
 import oap.util.Result;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -103,29 +101,5 @@ class ModuleTree implements ServiceStorage {
         if( service == null ) return Result.failure( SERVICE_NOT_FOUND );
 
         return Result.success( service );
-    }
-
-    @Override
-    public Result<List<Object>, ErrorStatus> findByGroup( String moduleName, String groupName ) {
-        if( ALL_MODULES.contains( moduleName ) ) {
-            var ret = new ArrayList<>();
-            for( var moduleInfo : map.values() ) {
-                for( var serviceInfo : moduleInfo.services.values() ) {
-                    if( serviceInfo.service.groups.contains( groupName ) ) ret.add( serviceInfo );
-                }
-            }
-
-            return Result.success( ret );
-        }
-
-        var moduleInfo = map.get( moduleName );
-        if( moduleInfo == null ) return Result.failure( MODULE_NOT_FOUND );
-
-        var ret = new ArrayList<>();
-        for( var serviceInfo : moduleInfo.services.values() ) {
-            if( serviceInfo.service.groups.contains( groupName ) ) ret.add( serviceInfo );
-        }
-
-        return Result.success( ret );
     }
 }

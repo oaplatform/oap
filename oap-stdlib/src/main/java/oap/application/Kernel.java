@@ -72,7 +72,6 @@ public class Kernel implements Closeable {
         commands.add( new LocationKernelCommand() );
         commands.add( new KernelKernelCommand() );
         commands.add( ServiceKernelCommand.INSTANCE );
-        commands.add( GroupKernelCommand.INSTANCE );
     }
 
     public final ServiceInitializationTree services = new ServiceInitializationTree();
@@ -290,9 +289,33 @@ public class Kernel implements Closeable {
                 log.trace( "linking service {}...", si.implementationName );
 
                 linkListeners( si.module, si.service, si.instance );
-                si.service.parameters.forEach( ( parameter, value ) -> linkService( new FieldLinkReflection( si.reflection,
-                    si.instance, parameter ), value, si, true ) );
+                linkLinks( si );
+                si.service.parameters.forEach( ( parameter, value ) ->
+                    linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si, true )
+                );
+            }
+        }
+    }
 
+    private void linkLinks( ServiceInitialization si ) {
+        for( var link : si.service.link ) {
+            var result = ServiceKernelCommand.INSTANCE.get( link, this, si.module, services );
+            if( result.isSuccess() ) {
+                var linkToSi = ( ServiceInitialization ) result.successValue;
+                var linkMethod = Reflect.reflect( linkToSi.service.implementation )
+                    .methods
+                    .stream()
+                    .filter( m -> linkToSi.service.linkWith.contains( m.name() ) && m.parameters.size() == 1 )
+                    .findAny()
+                    .orElse( null );
+
+                if( linkMethod == null )
+                    throw new ReflectException( "link to " + linkToSi.implementationName + "/" + linkToSi.service.implementation
+                        + " should have methods " + linkToSi.service.linkWith + " for " + si.implementationName + "/" + si.service.implementation );
+
+                linkMethod.invoke( linkToSi.instance, si.instance );
+            } else {
+                throw new ApplicationException( "Unknown service link " + link );
             }
         }
     }
@@ -325,23 +348,11 @@ public class Kernel implements Closeable {
                 linkService( linkReflection, entry.getValue(), si, !isMap );
             }
         } else if( ServiceKernelCommand.INSTANCE.matches( parameterValue ) ) {
-            var linkResult = ServiceKernelCommand.INSTANCE.get( parameterValue, this, si.module, services );
+            var linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si.module, services );
 
             if( failIfNotFound && !linkResult.isSuccess() )
                 throw new ApplicationException( "for " + si.implementationName + " linked object " + parameterValue + " is not found" );
             linkResult.ifSuccess( lRef::set );
-        } else if( GroupKernelCommand.INSTANCE.matches( parameterValue ) ) {
-            var linkServices = GroupKernelCommand.INSTANCE.get( parameterValue, this, si.module, services );
-
-            if( !linkServices.isSuccess() || linkServices.successValue.isEmpty() ) {
-                if( failIfNotFound )
-                    throw new ApplicationException( "for " + si.implementationName + " service group " + parameterValue + " is not found" );
-                lRef.set( null );
-            } else {
-                for( var linkService : linkServices.successValue ) {
-                    lRef.set( linkService );
-                }
-            }
         }
     }
 

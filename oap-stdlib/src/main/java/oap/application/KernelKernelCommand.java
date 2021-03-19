@@ -40,4 +40,9 @@ public class KernelKernelCommand extends AbstractKernelCommand<Kernel> {
     public Result<Kernel, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
         return Result.success( kernel );
     }
+
+    @Override
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+        return get( value, kernel, moduleItem, storage ).mapSuccess( v -> v );
+    }
 }

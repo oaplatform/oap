@@ -24,9 +24,11 @@
 
 package oap.http.server.health;
 
+import oap.application.Module;
 import oap.application.testng.KernelFixture;
 import oap.http.testng.HttpAsserts;
 import oap.testng.Fixtures;
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -41,7 +43,11 @@ public class HealthHttpHandlerTest extends Fixtures {
     {
         fixture( new KernelFixture(
             locationOfTestResource( getClass(), "application.test.conf" ),
-            List.of( urlOfTestResource( getClass(), "oap-module.yaml" ) ) ) );
+            Lists.concat(
+                List.of( urlOfTestResource( getClass(), "oap-module.yaml" ) ),
+                Module.CONFIGURATION.urlsFromClassPath()
+            )
+        ) );
     }
 
     @Test

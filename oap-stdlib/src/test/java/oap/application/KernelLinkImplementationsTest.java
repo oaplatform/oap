@@ -26,6 +26,7 @@ package oap.application;
 
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +57,14 @@ public class KernelLinkImplementationsTest {
     @Test
     public void fieldReferences() {
         var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "field-references.conf" ) )
+            List.of(
+                urlOfTestResource( getClass(), "field-references.conf" ),
+                urlOfTestResource( getClass(), "field-references2.conf" )
+            )
         );
 
         try {
-            kernel.start( Map.of( "boot.main", "field-references" ) );
+            kernel.start( Map.of( "boot.main", "field-references2" ) );
             FieldReferences service = kernel.<FieldReferences>service( "*.m" ).get();
 
             assertThat( service.tis ).isNotNull();
@@ -144,10 +148,18 @@ public class KernelLinkImplementationsTest {
 
     public static class FieldReference {
         public TestInterface ti;
+
+        public void addLink2( TestInterface testInterface ) {
+            ti = testInterface;
+        }
     }
 
     public static class FieldReferences {
-        public List<TestInterface> tis;
+        public final ArrayList<TestInterface> tis = new ArrayList<>();
+
+        public void addLink( TestInterface testInterface ) {
+            tis.add( testInterface );
+        }
     }
 
     public static class TestList {

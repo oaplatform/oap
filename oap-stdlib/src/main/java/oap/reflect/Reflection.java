@@ -433,7 +433,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             try {
                 return ( T ) underlying.newInstance( args );
             } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException | InstantiationException e ) {
-                throw new ReflectException( this + ":" + java.util.Arrays.toString( args ), e );
+                throw new ReflectException( underlying.getName() + ":" + java.util.Arrays.toString( args ), e );
             }
         }
 
