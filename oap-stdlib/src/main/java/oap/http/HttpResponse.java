@@ -134,7 +134,7 @@ public final class HttpResponse {
 
     public static Builder gzipOutputStream( Consumer<OutputStream> consumer, ContentType contentType ) {
         return status( HTTP_OK )
-            .withEntity(new GzipCompressingEntity(new HttpOutputStreamEntity( consumer, contentType )));
+            .withEntity( new GzipCompressingEntity( new HttpOutputStreamEntity( consumer, contentType ) ) );
     }
 
     public static Builder file( Path file, ContentType contentType ) {
