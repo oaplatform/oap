@@ -80,10 +80,10 @@ public class GzipHttpTest extends Fixtures {
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
-            Map.of(), Map.of( "Accept-encoding", "gzip" ) );
+            Map.of(), Map.of( "Accept-encoding", "gzip,deflate" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
+        assertThat( responseGzip.header( "Content-encoding" ).get() ).isEqualTo( "gzip,deflate" );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }
