@@ -209,7 +209,7 @@ public class Lists extends oap.util.Collections {
         return list.get( list.size() - 1 );
     }
 
-    public static <E> boolean contains( List<E> list, Predicate<E> predicate ) {
+    public static <E> boolean contains( Collection<E> list, Predicate<E> predicate ) {
         for( E e : list ) if( predicate.test( e ) ) return true;
         return false;
     }
@@ -229,6 +229,14 @@ public class Lists extends oap.util.Collections {
         Collections.reverse( ret );
 
         return ret;
+    }
+
+    public <E> void moveItem( List<E> list, int sourceIndex, int targetIndex ) {
+        if( sourceIndex <= targetIndex ) {
+            Collections.rotate( list.subList( sourceIndex, targetIndex + 1 ), -1 );
+        } else {
+            Collections.rotate( list.subList( targetIndex, sourceIndex + 1 ), 1 );
+        }
     }
 
     public static class Collectors {

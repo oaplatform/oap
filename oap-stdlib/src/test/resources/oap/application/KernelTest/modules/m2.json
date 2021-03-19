@@ -8,10 +8,10 @@
       "implementation": "oap.application.ServiceTwo",
       "parameters": {
         "j": 1,
-        "one": "@service:m1:ServiceOne"
+        "one": "modules.m1.ServiceOne"
       },
       "listen": {
-        "some": "@service:m1:ServiceOne"
+        "some": "modules.m1.ServiceOne"
       },
       "supervision": {
         "supervise": true

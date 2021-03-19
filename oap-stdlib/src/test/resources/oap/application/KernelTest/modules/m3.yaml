@@ -7,5 +7,5 @@ services:
     implementation: "oap.application.ServiceDepsList"
     parameters:
       deps:
-      - "@service:m1:ServiceOne"
-      - "@service:m2:ServiceTwo"
+      - modules.m1.ServiceOne
+      - modules.m2.ServiceTwo

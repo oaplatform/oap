@@ -11,7 +11,7 @@ services:
       keepAliveTimeout: 5s
       originalServer: "OAP Server/4.0"
       responseDate: true
-      healthHttpHandler: "@service:this:oap-http-health-handler"
+      healthHttpHandler: modules.this.oap-http-health-handler
       rejected:
         code: 503
         reason: "temporary overload"
@@ -23,7 +23,7 @@ services:
     implementation: oap.http.server.apache.PlainHttpListener
     parameters:
       port: 8880
-      server: "@service:oap-http-server"
+      server: modules.this.oap-http-server
     supervision:
       thread: true
 
@@ -32,7 +32,7 @@ services:
     implementation: oap.http.server.apache.SslHttpListener
     parameters:
       port: 8443
-      server: "@service:oap-http-server"
+      server: this.oap-http-server
       keystoreLocation: "/etc/oap/keystore.jks"
       keystorePassword: "changeit"
     supervision:
@@ -43,7 +43,7 @@ services:
     implementation: oap.http.server.apache.LocalHttpListener
     parameters:
       port: 18546
-      server: "@service:oap-http-server"
+      server: modules.this.oap-http-server
     supervision:
       thread: true
 
@@ -52,7 +52,7 @@ services:
     profile: http
     parameters:
       providers:
-        - "@implementations:*:oap.http.server.health.HealthDataProvider"
+        - groups..HealthDataProvider
 
   corsPolicy-generic:
     implementation: oap.http.cors.GenericCorsPolicy
@@ -79,7 +79,7 @@ services:
       port: 8980
       context: /remote/
       serialization: DEFAULT
-      kernel: "@kernel"
+      kernel: kernel.self
       timeout: 1m
     supervision:
       supervise: true

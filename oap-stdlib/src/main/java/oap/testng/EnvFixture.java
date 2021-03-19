@@ -35,7 +35,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.testng.Fixture.Scope.CLASS;
 import static oap.testng.Fixture.Scope.METHOD;
@@ -43,8 +42,8 @@ import static oap.testng.Fixture.Scope.SUITE;
 
 @Slf4j
 public class EnvFixture implements Fixture {
+    private static final HashMap<String, Integer> ports = new HashMap<>();
     private final Map<String, Object> properties = new HashMap<>();
-    private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     protected Scope scope = METHOD;
 
     public EnvFixture define( String property, Object value ) {
@@ -107,21 +106,25 @@ public class EnvFixture implements Fixture {
     }
 
     public int portFor( String key ) {
-        return ports.computeIfAbsent( key, k -> {
-            try( var socket = new ServerSocket() ) {
-                socket.setReuseAddress( true );
-                socket.bind( new InetSocketAddress( 0 ) );
-                var localPort = socket.getLocalPort();
-                log.debug( this.getClass().getSimpleName() + " finding port for key=" + key + "... port=" + localPort );
-                return localPort;
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        synchronized( ports ) {
+            return ports.computeIfAbsent( key, k -> {
+                try( var socket = new ServerSocket() ) {
+                    socket.setReuseAddress( true );
+                    socket.bind( new InetSocketAddress( 0 ) );
+                    var localPort = socket.getLocalPort();
+                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), key, localPort );
+                    return localPort;
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        }
     }
 
     public void clearPorts() {
-        log.debug( "clear ports" );
-        ports.clear();
+        synchronized( ports ) {
+            log.debug( "clear ports" );
+            ports.clear();
+        }
     }
 }

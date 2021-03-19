@@ -41,10 +41,10 @@ public class ApplicationConfigurationTest {
             pathOfTestResource( getClass(), "application.conf" ),
             pathOfTestResource( getClass(), "conf.d" )
         );
-        assertThat( config.services ).isEqualTo( Map.of(
+        assertThat( config.services ).isEqualTo( Map.of( "m1", Map.of(
             "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
             "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
-        ) );
+        ) ) );
     }
 
     @Test
@@ -56,9 +56,9 @@ public class ApplicationConfigurationTest {
                 urlOfTestResource( getClass(), "conf.d/test.conf" ),
                 urlOfTestResource( getClass(), "conf.d/test2.yaml" )
             ) );
-        assertThat( config.services ).isEqualTo( Map.of(
+        assertThat( config.services ).isEqualTo( Map.of( "m1", Map.of(
             "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
             "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
-        ) );
+        ) ) );
     }
 }

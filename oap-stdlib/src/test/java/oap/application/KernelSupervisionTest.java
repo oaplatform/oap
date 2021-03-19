@@ -97,8 +97,8 @@ public class KernelSupervisionTest {
 
         var kernel = new Kernel( modules );
         kernel.start( Map.of( "boot.main", "start_stop" ) );
-        var tc = kernel.<TestCloseable>service( "*:c1" ).orElseThrow();
-        var tc2 = kernel.<TestCloseable2>service( "*:c2" ).orElseThrow();
+        var tc = kernel.<TestCloseable>service( "*.c1" ).orElseThrow();
+        var tc2 = kernel.<TestCloseable2>service( "*.c2" ).orElseThrow();
         kernel.stop();
 
         assertThat( tc.closed ).isTrue();

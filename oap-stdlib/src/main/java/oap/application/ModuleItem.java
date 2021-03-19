@@ -27,6 +27,7 @@ package oap.application;
 import lombok.EqualsAndHashCode;
 import oap.util.Lists;
 
+import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
@@ -38,10 +39,12 @@ class ModuleItem {
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
     private final boolean enabled;
     private final LinkedHashMap<String, ModuleReference> dependsOn;
+    private final URL location;
     private boolean load = false;
 
-    ModuleItem( Module module, boolean enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
+    ModuleItem( Module module, URL location, boolean enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
         this.module = module;
+        this.location = location;
         this.enabled = enabled;
         this.dependsOn = dependsOn;
     }
@@ -86,6 +89,10 @@ class ModuleItem {
 
     final LinkedHashMap<String, ModuleReference> getDependsOn() {
         return dependsOn;
+    }
+
+    public URL getLocation() {
+        return location;
     }
 
     @EqualsAndHashCode

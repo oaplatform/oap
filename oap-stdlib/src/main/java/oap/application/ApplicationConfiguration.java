@@ -31,11 +31,11 @@ import oap.io.Files;
 import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Lists;
-import oap.util.Maps;
 import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +48,9 @@ import static oap.util.Lists.concat;
 @ToString
 public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
-    public ModuleBoot boot = new ModuleBoot();
-    List<String> profiles = Lists.empty();
-    Map<String, Map<String, Object>> services = Maps.of();
+    public final LinkedHashMap<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
+    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    public final ModuleBoot boot = new ModuleBoot();
 
     private ApplicationConfiguration() {
     }
@@ -125,6 +125,9 @@ public final class ApplicationConfiguration {
         log.trace( "env config = {}", res );
 
         return res.toString();
+    }
+
+    public static class ApplicationConfigurationModule extends LinkedHashMap<String, Object> {
     }
 
     @ToString

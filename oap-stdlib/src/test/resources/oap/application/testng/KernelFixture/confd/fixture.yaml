@@ -1,4 +1,5 @@
 services:
-  fixture-service:
-    parameters:
-      value: "from fixture"
+  kernel-fixture-test:
+    fixture-service:
+      parameters:
+        value: "from fixture"

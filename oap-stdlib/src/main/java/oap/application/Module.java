@@ -30,21 +30,17 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.remote.RemoteLocation;
-import oap.json.Binder;
 import oap.reflect.Coercions;
-import oap.util.Strings;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 
 import static java.util.Collections.emptyList;
 
 @EqualsAndHashCode
 @ToString
 public class Module {
-    public static final String DEFAULT = Strings.DEFAULT;
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     static final Coercions coersions = Coercions.basic().withIdentity();
     @JsonDeserialize( contentUsing = ModuleDependsDeserializer.class )
@@ -66,6 +62,8 @@ public class Module {
         public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public final Supervision supervision = new Supervision();
         public final LinkedHashSet<Object> dependsOn = new LinkedHashSet<>();
+        @JsonAlias( { "group", "groups" } )
+        public final LinkedHashSet<String> groups = new LinkedHashSet<>();
         @JsonAlias( { "profile", "profiles" } )
         public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
@@ -105,42 +103,9 @@ public class Module {
             this.service = service;
         }
 
-        public static Reference of( Object reference ) throws ApplicationException {
-            return of( reference, null );
-        }
-
-        @SuppressWarnings( "unchecked" )
-        public static Reference of( Object reference, String defaultModuleName ) throws ApplicationException {
-            if( reference instanceof String ) {
-                var referenceStr = ( String ) reference;
-                var serviceIdx = referenceStr.lastIndexOf( ':' );
-                if( serviceIdx < 0 ) {
-                    if( defaultModuleName != null ) return new Reference( defaultModuleName, referenceStr );
-
-                    throw new ApplicationException( "Invalid reference " + referenceStr );
-                }
-                var moduleIdx = referenceStr.lastIndexOf( ':', serviceIdx - 1 );
-
-                var serviceName = referenceStr.substring( serviceIdx + 1 );
-                if( moduleIdx <= 0 ) {
-                    return new Reference( referenceStr.substring( 0, serviceIdx ), serviceName );
-                }
-                var moduleName = referenceStr.substring( moduleIdx + 1, serviceIdx );
-
-                return new Reference( moduleName, serviceName );
-            } else if( reference instanceof Map<?, ?> )
-                return Binder.hocon.unmarshal( Reference.class, ( Map<String, Object> ) reference );
-
-            throw new ApplicationException( "could not parse reference " + reference );
-        }
-
-        public static boolean isServiceLink( Object value ) {
-            return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
-        }
-
         @Override
         public String toString() {
-            return module + ":" + service;
+            return module + "." + service;
         }
 
     }

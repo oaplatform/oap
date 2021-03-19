@@ -27,6 +27,7 @@ package oap.application;
 import com.google.common.base.Preconditions;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.application.ApplicationConfiguration.ApplicationConfigurationModule;
 import oap.application.link.FieldLinkReflection;
 import oap.application.link.LinkReflection;
 import oap.application.link.ListLinkReflection;
@@ -59,17 +60,26 @@ import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
-import static oap.application.KernelHelper.isImplementations;
 
 @Slf4j
 @ToString( of = "name" )
 public class Kernel implements Closeable {
     public static final String DEFAULT = Strings.DEFAULT;
-    public final LinkedHashMap<String, LinkedHashMap<String, Object>> services = new LinkedHashMap<>();
+
+    static final ArrayList<AbstractKernelCommand<?>> commands = new ArrayList<>();
+
+    static {
+        commands.add( new LocationKernelCommand() );
+        commands.add( new KernelKernelCommand() );
+        commands.add( ServiceKernelCommand.INSTANCE );
+        commands.add( GroupKernelCommand.INSTANCE );
+    }
+
+    public final ServiceInitializationTree services = new ServiceInitializationTree();
     public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     final String name;
     private final List<URL> moduleConfigurations;
-    private final LinkedHashSet<Module> modules = new LinkedHashSet<>();
+    private final LinkedHashSet<ModuleWithLocation> modules = new LinkedHashSet<>();
     private final LinkedHashMap<String, Supervisor> supervisor = new LinkedHashMap<>();
 
     public Kernel( String name, List<URL> moduleConfigurations ) {
@@ -81,19 +91,19 @@ public class Kernel implements Closeable {
         this( DEFAULT, moduleConfigurations );
     }
 
-    private void linkListeners( Module.Service service, Object instance ) throws ApplicationException {
+    private void linkListeners( ModuleItem moduleItem, Module.Service service, Object instance ) throws ApplicationException {
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
             var methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
-            var ref = Module.Reference.of( reference );
+            var ref = ServiceKernelCommand.INSTANCE.reference( reference, moduleItem );
             var linkedModule = services.get( ref.module );
-            Object linked;
+            ServiceInitialization linked;
             if( linkedModule == null || ( ( linked = linkedModule.get( ref.service ) ) ) == null )
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
-            var m = Reflect.reflect( linked.getClass() )
+            var m = Reflect.reflect( linked.instance.getClass() )
                 .method( methodName )
                 .orElse( null );
-            if( m != null ) m.invoke( linked, instance );
+            if( m != null ) m.invoke( linked.instance, instance );
             else
                 throw new ReflectException( "listener " + listener + " should have method " + methodName + " in " + reference );
         } );
@@ -144,6 +154,9 @@ public class Kernel implements Closeable {
     public void start( ApplicationConfiguration config ) throws ApplicationException {
         log.debug( "initializing application kernel..." );
         log.debug( "application config {}", config );
+
+        log.debug( "new application config {}", config );
+
         this.profiles.addAll( config.profiles );
 
         if( config.boot.main.isEmpty() ) throw new ApplicationException( "boot.main must contain at least one module name" );
@@ -153,57 +166,62 @@ public class Kernel implements Closeable {
             if( StringUtils.isBlank( module.name ) ) {
                 throw new ApplicationException( moduleConfiguration + ": module.name is blank" );
             }
-            this.modules.add( module );
+            this.modules.add( new ModuleWithLocation( module, moduleConfiguration ) );
         }
-        log.debug( "modules = {}", Sets.map( this.modules, m -> m.name ) );
+        log.debug( "modules = {}", Sets.map( this.modules, m -> m.module.name ) );
         log.trace( "modules configs = {}", this.modules );
 
         checkForUnknownServices( config.services );
 
-        var modules = new Modules( this.modules, this.profiles, config.boot.main );
+        var map = ModuleHelper.init( this.modules, this.profiles, config.boot.main, this );
 
-        for( var moduleName : modules.map.keySet() ) {
+        for( var moduleName : map.keySet() ) {
             var supervisor = new Supervisor();
             this.supervisor.put( moduleName, supervisor );
         }
 
-        var map = instantiateServices( modules );
-        registerServices( map );
-        linkServices( map );
-        startServices( map );
+        var servicesMap = instantiateServices( map );
+        registerServices( servicesMap );
+        linkServices( servicesMap );
+        startServices( servicesMap );
 
         for( var supervisor : this.supervisor.values() ) {
             supervisor.preStart();
             supervisor.start();
         }
 
-        this.modules.add( new Module( Module.DEFAULT ) );
         log.debug( "application kernel started" );
     }
 
-    private void checkForUnknownServices( Map<String, Map<String, Object>> services ) throws ApplicationException {
-        var applicationConfigurationServices = new HashSet<>( services.keySet() );
+    private void checkForUnknownServices( Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {
 
-        for( var module : this.modules ) {
-            for( var serviceName : module.services.keySet() ) {
-                applicationConfigurationServices.remove( serviceName );
-            }
+        for( var moduleName : services.keySet() ) {
+            if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) )
+                throw new ApplicationException( "unknown application configuration module: " + moduleName );
         }
 
-        if( !applicationConfigurationServices.isEmpty() ) {
-            throw new ApplicationException( "unknown application configuration services: " + applicationConfigurationServices );
+        for( var module : this.modules ) {
+            var moduleServices = services.get( module.module.name );
+            if( moduleServices != null ) {
+                var applicationConfigurationServices = new HashSet<>( moduleServices.keySet() );
+
+                for( var serviceName : module.module.services.keySet() ) {
+                    applicationConfigurationServices.remove( serviceName );
+                }
+
+                if( !applicationConfigurationServices.isEmpty() ) {
+                    throw new ApplicationException( "unknown application configuration services: " + module.module.name + "." + applicationConfigurationServices );
+                }
+            }
         }
     }
 
-    private LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> instantiateServices( Modules modules ) throws ApplicationException {
-        var retModules = new LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>>();
+    private ServiceInitializationTree instantiateServices( ModuleTree map ) throws ApplicationException {
+        var retModules = new ServiceInitializationTree();
 
-        for( var moduleItem : modules.map.values() ) {
+        for( var moduleItem : map.values() ) {
             if( !moduleItem.isEnabled() ) continue;
             var moduleName = moduleItem.getName();
-
-            var ret = new LinkedHashMap<String, ServiceInitialization>();
-            retModules.put( moduleName, ret );
 
             for( var serviceEntry : moduleItem.services.entrySet() ) {
                 var serviceItem = serviceEntry.getValue();
@@ -216,14 +234,14 @@ public class Kernel implements Closeable {
                     var reflect = Reflect.reflect( service.implementation, Module.coersions );
                     Object instance;
                     if( !service.isRemoteService() ) {
-                        var parametersWithoutLinks = fixLinksForConstructor( this, moduleName, retModules, service.parameters );
+                        var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service.parameters );
                         instance = reflect.newInstance( parametersWithoutLinks );
                         setServiceName( reflect, instance, service.name );
 //                    updateLoggerIfExists( instance, implName );
                     } else {
                         instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
                     }
-                    ret.put( service.name, new ServiceInitialization( implName, instance, moduleItem.module, service, reflect ) );
+                    retModules.put( moduleName, service.name, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}:{}, remote = {}, profiles = {}",
                         moduleName,
@@ -256,22 +274,22 @@ public class Kernel implements Closeable {
         }
     }
 
-    private void registerServices( Map<String, LinkedHashMap<String, ServiceInitialization>> moduleServices ) {
+    private void registerServices( ServiceInitializationTree moduleServices ) {
         moduleServices.forEach( ( moduleName, services ) -> {
             services.forEach( ( serviceName, si ) -> {
-                register( moduleName, serviceName, si.instance );
+                register( moduleName, serviceName, si );
                 if( !si.service.name.equals( serviceName ) )
-                    register( moduleName, si.service.name, si.instance );
+                    register( moduleName, si.service.name, si );
             } );
         } );
     }
 
-    private void linkServices( Map<String, LinkedHashMap<String, ServiceInitialization>> moduleServices ) {
+    private void linkServices( ServiceInitializationTree moduleServices ) {
         for( var services : moduleServices.values() ) {
             for( var si : services.values() ) {
                 log.trace( "linking service {}...", si.implementationName );
 
-                linkListeners( si.service, si.instance );
+                linkListeners( si.module, si.service, si.instance );
                 si.service.parameters.forEach( ( parameter, value ) -> linkService( new FieldLinkReflection( si.reflection,
                     si.instance, parameter ), value, si, true ) );
 
@@ -282,31 +300,7 @@ public class Kernel implements Closeable {
     @SuppressWarnings( "unchecked" )
     private void linkService( LinkReflection lRef, Object parameterValue, ServiceInitialization si,
                               boolean failIfNotFound ) throws ApplicationException {
-        if( Module.Reference.isServiceLink( parameterValue ) ) {
-            var link = Module.Reference.of( parameterValue );
-            var linkService = service( link );
-
-            if( failIfNotFound && linkService.isEmpty() )
-                throw new ApplicationException( "for " + si.implementationName + " linked object " + link + " is not found" );
-            linkService.ifPresent( lRef::set );
-        } else if( isImplementations( parameterValue ) ) {
-            var interfaceName = Module.Reference.of( parameterValue ).service;
-            try {
-                var linkServices = ofClass( Class.forName( interfaceName ) );
-                if( linkServices.isEmpty() ) {
-                    if( failIfNotFound )
-                        throw new ApplicationException( "for " + si.implementationName + " service link " + interfaceName + " is not found" );
-                    lRef.set( null );
-                } else {
-                    for( var linkService : linkServices ) {
-                        lRef.set( linkService );
-                    }
-                }
-            } catch( ClassNotFoundException e ) {
-                throw new ApplicationException( "interface " + interfaceName + " not found" );
-            }
-
-        } else if( parameterValue instanceof List<?> ) {
+        if( parameterValue instanceof List<?> ) {
             var parameterList = ( List<?> ) parameterValue;
             var instance = lRef.get();
             if( instance instanceof List<?> ) {
@@ -330,10 +324,28 @@ public class Kernel implements Closeable {
 
                 linkService( linkReflection, entry.getValue(), si, !isMap );
             }
+        } else if( ServiceKernelCommand.INSTANCE.matches( parameterValue ) ) {
+            var linkResult = ServiceKernelCommand.INSTANCE.get( parameterValue, this, si.module, services );
+
+            if( failIfNotFound && !linkResult.isSuccess() )
+                throw new ApplicationException( "for " + si.implementationName + " linked object " + parameterValue + " is not found" );
+            linkResult.ifSuccess( lRef::set );
+        } else if( GroupKernelCommand.INSTANCE.matches( parameterValue ) ) {
+            var linkServices = GroupKernelCommand.INSTANCE.get( parameterValue, this, si.module, services );
+
+            if( !linkServices.isSuccess() || linkServices.successValue.isEmpty() ) {
+                if( failIfNotFound )
+                    throw new ApplicationException( "for " + si.implementationName + " service group " + parameterValue + " is not found" );
+                lRef.set( null );
+            } else {
+                for( var linkService : linkServices.successValue ) {
+                    lRef.set( linkService );
+                }
+            }
         }
     }
 
-    private void startServices( Map<String, LinkedHashMap<String, ServiceInitialization>> moduleServices ) {
+    private void startServices( ServiceInitializationTree moduleServices ) {
         moduleServices.forEach( ( moduleName, services ) -> {
             var supervisor = this.supervisor.get( moduleName );
             services.forEach( ( implName, si ) -> {
@@ -372,13 +384,11 @@ public class Kernel implements Closeable {
         }
     }
 
-    public void register( String moduleName, String serviceName, Object service ) throws ApplicationException {
+    public void register( String moduleName, String serviceName, ServiceInitialization si ) throws ApplicationException {
         Object registered;
 
-        var module = services.computeIfAbsent( moduleName, mn -> new LinkedHashMap<>() );
-
-        if( ( registered = module.putIfAbsent( serviceName, service ) ) != null )
-            throw new ApplicationException( moduleName + ":" + serviceName + " Service " + service + " is already registered [" + registered.getClass() + "]" );
+        if( ( registered = services.putIfAbsent( moduleName, serviceName, si ) ) != null )
+            throw new ApplicationException( moduleName + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.getClass() + "]" );
     }
 
     public void stop() {
@@ -393,10 +403,10 @@ public class Kernel implements Closeable {
 
     @SuppressWarnings( "unchecked" )
     public <T> Optional<T> service( String moduleName, String serviceName ) {
-        if( "*".equals( moduleName ) ) {
+        if( ServiceStorage.ALL_MODULES.contains( moduleName ) ) {
             for( var services : services.values() ) {
                 var service = services.get( serviceName );
-                if( service != null ) return Optional.of( ( T ) service );
+                if( service != null ) return Optional.of( ( T ) service.instance );
             }
 
             return Optional.empty();
@@ -405,7 +415,7 @@ public class Kernel implements Closeable {
         var module = services.get( moduleName );
         if( module == null ) return Optional.empty();
 
-        return Optional.ofNullable( ( T ) module.get( serviceName ) );
+        return Optional.ofNullable( module.get( serviceName ) ).map( si -> ( T ) si.instance );
     }
 
     private <T> Optional<T> service( Module.Reference reference ) {
@@ -413,7 +423,7 @@ public class Kernel implements Closeable {
     }
 
     public <T> Optional<T> service( String reference ) {
-        var ref = Module.Reference.of( reference );
+        var ref = ServiceKernelCommand.INSTANCE.reference( reference.startsWith( "modules." ) ? reference : "modules." + reference, null );
         return service( ref );
     }
 
@@ -426,11 +436,10 @@ public class Kernel implements Closeable {
         var ret = new ArrayList<T>();
 
         this.services.forEach( ( module, services ) -> {
-            if( "*".equals( moduleName ) || module.equals( moduleName ) )
+            if( ServiceStorage.ALL_MODULES.contains( moduleName ) || module.equals( moduleName ) )
                 for( var service : services.values() ) {
-                    if( clazz.isInstance( service ) ) ret.add( ( T ) service );
+                    if( clazz.isInstance( service.instance ) ) ret.add( ( T ) service.instance );
                 }
-
         } );
 
         return ret;
@@ -470,5 +479,16 @@ public class Kernel implements Closeable {
     @Override
     public void close() {
         stop();
+    }
+
+    @ToString
+    public static class ModuleWithLocation {
+        public final Module module;
+        public final URL location;
+
+        public ModuleWithLocation( Module module, URL location ) {
+            this.module = module;
+            this.location = location;
+        }
     }
 }

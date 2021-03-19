@@ -24,16 +24,27 @@
 
 package oap.application;
 
-import lombok.AllArgsConstructor;
 import lombok.ToString;
-import oap.reflect.Reflection;
+import oap.application.ServiceStorage.ErrorStatus;
+import oap.util.Result;
 
+import javax.annotation.Nullable;
+import java.util.regex.Pattern;
+
+/**
+ * Created by igor.petrenko on 2021-03-16.
+ */
 @ToString
-@AllArgsConstructor
-class ServiceInitialization {
-    public final String implementationName;
-    public final Object instance;
-    public final ModuleItem module;
-    public final Module.Service service;
-    public final Reflection reflection;
+public abstract class AbstractKernelCommand<TResult> {
+    protected final Pattern pattern;
+
+    protected AbstractKernelCommand( String pattern ) {
+        this.pattern = Pattern.compile( pattern );
+    }
+
+    public boolean matches( Object value ) {
+        return value instanceof String && pattern.matcher( ( CharSequence ) value ).matches();
+    }
+
+    public abstract Result<TResult, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage );
 }

@@ -28,6 +28,7 @@ package oap.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,5 +97,25 @@ public class Collections {
 
     public static <E> E head2( Collection<E> collection ) {
         return collection.isEmpty() ? null : collection.iterator().next();
+    }
+
+    public <T, K, U> LinkedHashMap<K, U> toLinkedHashMap( Function<? super T, ? extends K> keyMapper,
+                                                          Function<? super T, ? extends U> valueMapper, Collection<T> collection ) {
+        var map = new LinkedHashMap<K, U>();
+        for( var item : collection ) {
+            map.put( keyMapper.apply( item ), valueMapper.apply( item ) );
+        }
+
+        return map;
+    }
+
+    public <T, K, U> HashMap<K, U> toHashMap( Function<? super T, ? extends K> keyMapper,
+                                              Function<? super T, ? extends U> valueMapper, Collection<T> collection ) {
+        var map = new HashMap<K, U>();
+        for( var item : collection ) {
+            map.put( keyMapper.apply( item ), valueMapper.apply( item ) );
+        }
+
+        return map;
     }
 }

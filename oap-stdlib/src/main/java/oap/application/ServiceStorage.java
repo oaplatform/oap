@@ -24,16 +24,19 @@
 
 package oap.application;
 
-import lombok.AllArgsConstructor;
-import lombok.ToString;
-import oap.reflect.Reflection;
+import oap.util.Result;
 
-@ToString
-@AllArgsConstructor
-class ServiceInitialization {
-    public final String implementationName;
-    public final Object instance;
-    public final ModuleItem module;
-    public final Module.Service service;
-    public final Reflection reflection;
+import java.util.List;
+import java.util.Set;
+
+public interface ServiceStorage {
+    Set<String> ALL_MODULES = Set.of( "*", "" );
+
+    Result<Object, ErrorStatus> findByName( String moduleName, String serviceName );
+
+    Result<List<Object>, ErrorStatus> findByGroup( String moduleName, String groupName );
+
+    enum ErrorStatus {
+        MODULE_NOT_FOUND, SERVICE_NOT_FOUND
+    }
 }

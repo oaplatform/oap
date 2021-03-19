@@ -24,16 +24,20 @@
 
 package oap.application;
 
-import lombok.AllArgsConstructor;
 import lombok.ToString;
-import oap.reflect.Reflection;
+import oap.application.ServiceStorage.ErrorStatus;
+import oap.util.Result;
 
-@ToString
-@AllArgsConstructor
-class ServiceInitialization {
-    public final String implementationName;
-    public final Object instance;
-    public final ModuleItem module;
-    public final Module.Service service;
-    public final Reflection reflection;
+import javax.annotation.Nullable;
+
+@ToString( callSuper = true )
+public class KernelKernelCommand extends AbstractKernelCommand<Kernel> {
+    protected KernelKernelCommand() {
+        super( "^kernel.self$" );
+    }
+
+    @Override
+    public Result<Kernel, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+        return Result.success( kernel );
+    }
 }

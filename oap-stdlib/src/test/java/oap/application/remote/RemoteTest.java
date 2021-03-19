@@ -49,7 +49,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "*:remote-client" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
                 .isPresent()
                 .get()
                 .satisfies( remote -> {
@@ -58,17 +58,17 @@ public class RemoteTest extends Fixtures {
                     assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:8980/remote/" );
                 } );
 
-            assertThat( kernel.<RemoteClient>service( "*:remote-client" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
                 .isPresent()
                 .get()
                 .satisfies( remote -> assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class ) );
 
-            assertThat( kernel.<RemoteClient>service( "*:remote-client" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
                 .isPresent()
                 .get()
                 .satisfies( RemoteClient::testRetry );
 
-            assertThat( kernel.<RemoteClient>service( "*:remote-client-unreachable" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client-unreachable" ) )
                 .isPresent()
                 .get()
                 .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( RemoteInvocationException.class ) );
@@ -83,9 +83,9 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "*:remote-client" ).get().testStream( "1", "2", "3" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream( "1", "2", "3" ) )
                 .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
-            assertThat( kernel.<RemoteClient>service( "*:remote-client" ).get().testStream( "1", "2", "3" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream( "1", "2", "3" ) )
                 .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
         }
     }
@@ -98,7 +98,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "*:remote-client" ).get().testStream() ).isEmpty();
+            assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream() ).isEmpty();
         }
     }
 

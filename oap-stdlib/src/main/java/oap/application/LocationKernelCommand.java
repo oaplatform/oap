@@ -24,16 +24,28 @@
 
 package oap.application;
 
-import lombok.AllArgsConstructor;
 import lombok.ToString;
-import oap.reflect.Reflection;
+import oap.application.ServiceStorage.ErrorStatus;
+import oap.util.Result;
 
-@ToString
-@AllArgsConstructor
-class ServiceInitialization {
-    public final String implementationName;
-    public final Object instance;
-    public final ModuleItem module;
-    public final Module.Service service;
-    public final Reflection reflection;
+import javax.annotation.Nullable;
+import java.net.URL;
+
+import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
+
+/**
+ * Created by igor.petrenko on 2021-03-16.
+ */
+@ToString( callSuper = true )
+public class LocationKernelCommand extends AbstractKernelCommand<URL> {
+    protected LocationKernelCommand() {
+        super( "^location.module$" );
+    }
+
+    @Override
+    public Result<URL, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+        if( moduleItem == null ) return Result.failure( MODULE_NOT_FOUND );
+
+        return Result.success( moduleItem.getLocation() );
+    }
 }

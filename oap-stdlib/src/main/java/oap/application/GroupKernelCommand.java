@@ -21,47 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application;
 
 import com.google.common.base.Preconditions;
-import oap.application.ApplicationConfiguration.ApplicationConfigurationModule;
-import oap.json.Binder;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import oap.application.ServiceStorage.ErrorStatus;
+import oap.util.Result;
+import org.apache.commons.lang3.StringUtils;
 
-import java.net.URL;
-import java.util.Map;
+import java.util.List;
+import java.util.Set;
 
-public class ModuleConfiguration extends Configuration<Module> {
-    public ModuleConfiguration() {
-        super( Module.class, "oap-module" );
+/**
+ * Created by igor.petrenko on 2021-03-16.
+ */
+@ToString( callSuper = true )
+@Slf4j
+public class GroupKernelCommand extends AbstractKernelCommand<List<Object>> {
+    public static final Set<String> THIS = Set.of( "this", "self" );
+
+    public static final GroupKernelCommand INSTANCE = new GroupKernelCommand();
+
+    private GroupKernelCommand() {
+        super( "^groups\\.([^.]*)\\.(.+)$" );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static Map<String, Object> toStringObjectMap( Object obj ) {
-        Preconditions.checkArgument( obj instanceof Map<?, ?> );
+    @Override
+    public Result<List<Object>, ErrorStatus> get( Object value, Kernel kernel, ModuleItem moduleItem, ServiceStorage storage ) {
+        var matcher = pattern.matcher( ( String ) value );
+        Preconditions.checkArgument( matcher.find() );
 
-        var map = ( Map<?, ?> ) obj;
+        var moduleName = matcher.group( 1 );
+        if( StringUtils.isBlank( moduleName ) ) moduleName = "*";
+        if( moduleItem != null && THIS.contains( moduleName ) ) moduleName = moduleItem.getName();
+        var groupName = matcher.group( 2 );
 
-        for( var mapKey : map.keySet() ) {
-            Preconditions.checkArgument( mapKey instanceof String );
-        }
-
-        return ( Map<String, Object> ) map;
+        return storage.findByGroup( moduleName, groupName );
     }
 
-    public Module fromFile( URL url, Map<String, ApplicationConfigurationModule> services ) {
-        var module = super.fromUrl( url );
-
-        var moduleConfig = services.get( module.name );
-        if( moduleConfig == null ) return module;
-
-        module.services.forEach( ( serviceName, service ) -> {
-            var serviceConf = moduleConfig.get( serviceName );
-            if( serviceConf != null ) {
-                var map = toStringObjectMap( serviceConf );
-                Binder.update( service, map );
-            }
-        } );
-
-        return module;
-    }
 }
