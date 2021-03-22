@@ -38,16 +38,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@Slf4j
 /**
  * @see https://github.com/DanielYWoo/fast-object-pool
  */
+@Slf4j
 public class Pool<T> implements Closeable {
     public static final int MAX_WAIT_MILLISECONDS = ( int ) Dates.s( 5 );
     public static final int MAX_IDLE_MILLISECONDS = ( int ) Dates.m( 5 );
     public static final int SCAVENGE_INTERVAL_MILLISECONDS = ( int ) Dates.m( 2 );
     private final Executors.BlockingExecutor threadPool;
-    private DisruptorObjectPool<T> objectPool;
+    private final DisruptorObjectPool<T> objectPool;
 
     public Pool( int size, ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
         this( size, size, 1, MAX_WAIT_MILLISECONDS, MAX_IDLE_MILLISECONDS, 0, objectFactory, threadFactory );
@@ -77,11 +77,11 @@ public class Pool<T> implements Closeable {
             .setMaxIdleMilliseconds( maxIdleMilliseconds )
             .setScavengeIntervalMilliseconds( scavengeIntervalMilliseconds );
 
-        objectPool = new DisruptorObjectPool<T>( config, objectFactory );
+        objectPool = new DisruptorObjectPool<>( config, objectFactory );
         threadPool = Executors.newFixedBlockingThreadPool( minSize, maxSize, threadFactory );
     }
 
-    public <TResult> CompletableFuture<TResult> supply( Function<T, TResult> func ) {
+    public <R> CompletableFuture<R> supply( Function<T, R> func ) {
         var obj = objectPool.borrowObject( true );
         try {
             return CompletableFuture
