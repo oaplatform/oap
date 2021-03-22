@@ -61,13 +61,9 @@ public class Response {
 
         log.trace( "cookies: {}", response.cookies );
 
-        if( response.contentEntity != null ) {
-            if( isGzip ) {
-                underlying.setEntity( new GzipCompressingEntity( response.contentEntity ) );
-            } else {
-                underlying.setEntity( response.contentEntity );
-            }
-        }
+        if( response.contentEntity != null )
+            if( isGzip ) underlying.setEntity( new GzipCompressingEntity( response.contentEntity ) );
+            else underlying.setEntity( response.contentEntity );
     }
 
 }
