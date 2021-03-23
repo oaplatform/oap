@@ -183,6 +183,8 @@ public class KernelFixture extends EnvFixture {
 
     @Override
     public KernelFixture withScope( Scope scope ) {
-        return ( KernelFixture ) super.withScope( scope );
+        super.withScope( scope );
+
+        return this;
     }
 }
