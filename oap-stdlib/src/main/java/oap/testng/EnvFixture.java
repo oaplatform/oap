@@ -33,17 +33,16 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class EnvFixture extends FixtureWithScope<EnvFixture> {
-    private static final HashMap<String, Integer> ports = new HashMap<>();
-    private final Map<String, Object> properties = new HashMap<>();
+    private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
     protected String variablePrefix = "";
 
     public EnvFixture define( String property, Object value ) {
-        properties.put( variablePrefix + property, value );
+        properties.put( property, value );
         return this;
     }
 
@@ -53,22 +52,18 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     }
 
     public EnvFixture definePort( String property, String portKey ) {
-        return define( property, portFor( variablePrefix + portKey ) );
-    }
-
-    protected void defineDefaults() {
-
+        return define( property, portFor( portKey ) );
     }
 
     @Override
     protected void before() {
-        defineDefaults();
-
         properties.forEach( ( n, v ) -> {
-            String value = Strings.substitute( String.valueOf( v ),
+            var variableName = variablePrefix + n;
+
+            var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            log.debug( "system property {} = {}", n, value );
-            System.setProperty( n, value );
+            log.debug( "system property {} = {}", variableName, value );
+            System.setProperty( variableName, value );
         } );
 
         ConfigImpl.reloadEnvVariablesConfig();
