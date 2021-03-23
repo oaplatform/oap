@@ -103,6 +103,11 @@ public class KernelFixture extends EnvFixture {
         this.defineDefaultPorts();
     }
 
+    @Override
+    public KernelFixture withVariablePrefix( String variablePrefix ) {
+        return ( KernelFixture ) super.withVariablePrefix( variablePrefix );
+    }
+
     public int defaultHttpPort() {
         return portFor( TEST_HTTP_PORT );
     }

@@ -40,14 +40,20 @@ import java.util.Map;
 public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private static final HashMap<String, Integer> ports = new HashMap<>();
     private final Map<String, Object> properties = new HashMap<>();
+    protected String variablePrefix = "";
 
     public EnvFixture define( String property, Object value ) {
-        properties.put( property, value );
+        properties.put( variablePrefix + property, value );
+        return this;
+    }
+
+    public EnvFixture withVariablePrefix( String variablePrefix ) {
+        this.variablePrefix = variablePrefix;
         return this;
     }
 
     public EnvFixture definePort( String property, String portKey ) {
-        return define( property, portFor( portKey ) );
+        return define( property, portFor( variablePrefix + portKey ) );
     }
 
     @Override
