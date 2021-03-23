@@ -36,15 +36,10 @@ import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.Map;
 
-import static oap.testng.Fixture.Scope.CLASS;
-import static oap.testng.Fixture.Scope.METHOD;
-import static oap.testng.Fixture.Scope.SUITE;
-
 @Slf4j
-public class EnvFixture implements Fixture {
+public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private static final HashMap<String, Integer> ports = new HashMap<>();
     private final Map<String, Object> properties = new HashMap<>();
-    protected Scope scope = METHOD;
 
     public EnvFixture define( String property, Object value ) {
         properties.put( property, value );
@@ -55,7 +50,8 @@ public class EnvFixture implements Fixture {
         return define( property, portFor( portKey ) );
     }
 
-    private void init() {
+    @Override
+    protected void before() {
         properties.forEach( ( n, v ) -> {
             String value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
@@ -65,40 +61,6 @@ public class EnvFixture implements Fixture {
 
         ConfigImpl.reloadEnvVariablesConfig();
         ConfigImpl.reloadSystemPropertiesConfig();
-    }
-
-    public Scope getScope() {
-        return scope;
-    }
-
-    @Override
-    public void beforeSuite() {
-        if( scope == SUITE ) init();
-    }
-
-    @Override
-    public void beforeClass() {
-        if( scope == CLASS ) init();
-    }
-
-    @Override
-    public void beforeMethod() {
-        if( scope == METHOD ) init();
-    }
-
-    @Override
-    public void afterMethod() {
-        if( scope == METHOD ) clearPorts();
-    }
-
-    @Override
-    public void afterClass() {
-        if( scope == CLASS ) clearPorts();
-    }
-
-    @Override
-    public void afterSuite() {
-        if( scope == SUITE ) clearPorts();
     }
 
     public int portFor( Class<?> clazz ) {
@@ -119,6 +81,11 @@ public class EnvFixture implements Fixture {
                 }
             } );
         }
+    }
+
+    @Override
+    protected void after() {
+        clearPorts();
     }
 
     public void clearPorts() {

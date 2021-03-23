@@ -40,9 +40,7 @@ import java.util.List;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
 import static oap.io.Files.toUrl;
-import static oap.testng.Fixture.Scope.CLASS;
 import static oap.testng.Fixture.Scope.METHOD;
-import static oap.testng.Fixture.Scope.SUITE;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
 public class KernelFixture extends EnvFixture {
@@ -128,11 +126,6 @@ public class KernelFixture extends EnvFixture {
         define( "HTTP_PREFIX", httpPrefix() );
     }
 
-    public KernelFixture withScope( Scope scope ) {
-        this.scope = scope;
-        return this;
-    }
-
     public KernelFixture withConfdResources( Class<?> clazz, String confdResource ) {
         this.confd = TestDirectoryFixture.testPath( "/test-application-conf.d" );
 
@@ -168,25 +161,9 @@ public class KernelFixture extends EnvFixture {
     }
 
     @Override
-    public void beforeSuite() {
-        super.beforeSuite();
-        if( scope == SUITE ) start();
-    }
-
-    @Override
-    public void beforeClass() {
-        super.beforeClass();
-        if( scope == CLASS ) start();
-    }
-
-    @Override
-    public void beforeMethod() {
-        super.beforeMethod();
-        if( scope == METHOD ) start();
-    }
-
-    protected void start() {
+    protected void before() {
         Preconditions.checkArgument( this.kernel == null );
+        super.before();
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
@@ -197,25 +174,15 @@ public class KernelFixture extends EnvFixture {
     }
 
     @Override
-    public void afterMethod() {
-        if( scope == METHOD ) stop();
-        super.afterMethod();
-    }
-
-    @Override
-    public void afterClass() {
-        if( scope == CLASS ) stop();
-        super.afterClass();
-    }
-
-    @Override
-    public void afterSuite() {
-        if( scope == SUITE ) stop();
-        super.afterSuite();
-    }
-
-    protected void stop() {
+    protected void after() {
         this.kernel.stop();
         this.kernel = null;
+
+        super.after();
+    }
+
+    @Override
+    public KernelFixture withScope( Scope scope ) {
+        return ( KernelFixture ) super.withScope( scope );
     }
 }
