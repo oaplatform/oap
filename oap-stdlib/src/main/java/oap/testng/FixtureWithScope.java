@@ -24,9 +24,20 @@
 
 package oap.testng;
 
+import java.util.ArrayList;
+
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements Fixture {
+    protected final ArrayList<FixtureWithScope<?>> fixtures = new ArrayList<>();
+
     protected Scope scope = Scope.METHOD;
+
+    @SuppressWarnings( "unchecked" )
+    public T fixture( FixtureWithScope<?> fixture ) {
+        this.fixtures.add( fixture );
+
+        return ( T ) this;
+    }
 
     @SuppressWarnings( "unchecked" )
     public T withScope( Scope scope ) {
@@ -41,32 +52,56 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
 
     @Override
     public void beforeSuite() {
-        if( scope == Scope.SUITE ) before();
+        if( scope == Scope.SUITE ) {
+            fixtures.forEach( FixtureWithScope::before );
+
+            before();
+        }
     }
 
     @Override
     public void afterSuite() {
-        if( scope == Scope.SUITE ) after();
+        if( scope == Scope.SUITE ) {
+            after();
+
+            fixtures.forEach( FixtureWithScope::after );
+        }
     }
 
     @Override
     public void beforeClass() {
-        if( scope == Scope.CLASS ) before();
+        if( scope == Scope.CLASS ) {
+            fixtures.forEach( FixtureWithScope::before );
+
+            before();
+        }
     }
 
     @Override
     public void afterClass() {
-        if( scope == Scope.CLASS ) after();
+        if( scope == Scope.CLASS ) {
+            after();
+
+            fixtures.forEach( FixtureWithScope::after );
+        }
     }
 
     @Override
     public void beforeMethod() {
-        if( scope == Scope.METHOD ) before();
+        if( scope == Scope.METHOD ) {
+            fixtures.forEach( FixtureWithScope::before );
+
+            before();
+        }
     }
 
     @Override
     public void afterMethod() {
-        if( scope == Scope.METHOD ) after();
+        if( scope == Scope.METHOD ) {
+            after();
+
+            fixtures.forEach( FixtureWithScope::after );
+        }
     }
 
     protected abstract void before();
