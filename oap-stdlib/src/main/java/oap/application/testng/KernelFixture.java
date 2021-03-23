@@ -100,7 +100,6 @@ public class KernelFixture extends EnvFixture {
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
-        this.defineDefaultPorts();
     }
 
     @Override
@@ -112,7 +111,8 @@ public class KernelFixture extends EnvFixture {
         return portFor( TEST_HTTP_PORT );
     }
 
-    protected void defineDefaultPorts() {
+    @Override
+    protected void defineDefaults() {
         define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
 //        deprecated
         define( "TMP_REMOTE_PORT", portFor( TEST_REMOTING_PORT ) );

@@ -56,8 +56,14 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
         return define( property, portFor( variablePrefix + portKey ) );
     }
 
+    protected void defineDefaults() {
+
+    }
+
     @Override
     protected void before() {
+        defineDefaults();
+
         properties.forEach( ( n, v ) -> {
             String value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
