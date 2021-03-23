@@ -37,7 +37,7 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 /**
  * Created by igor.petrenko on 2021-03-18.
  */
-class ServiceInitializationTree implements ServiceStorage {
+public class ServiceInitializationTree implements ServiceStorage {
     private final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> map = new LinkedHashMap<>();
 
     public void put( String moduleName, String serviceName, ServiceInitialization serviceInitialization ) {
