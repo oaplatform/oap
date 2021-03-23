@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 @Slf4j
 public class TestDirectoryFixture extends FixtureWithScope<TestDirectoryFixture> {
     public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
+
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
     private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Suite.uniqueExecutionId() );
 
@@ -52,9 +53,6 @@ public class TestDirectoryFixture extends FixtureWithScope<TestDirectoryFixture>
 
     public TestDirectoryFixture( DeployTestData deployTestData ) {
         this.deployTestData = deployTestData;
-
-        Files.ensureDirectory( testDirectory() );
-        log.debug( "initializing test directory " + testDirectory() );
     }
 
     public static Path globalTestDirectory() {
@@ -114,6 +112,9 @@ public class TestDirectoryFixture extends FixtureWithScope<TestDirectoryFixture>
 
     @Override
     protected void before() {
+        log.debug( "initializing test directory " + testDirectory() );
+        Files.ensureDirectory( testDirectory() );
+
         deployTestData();
     }
 

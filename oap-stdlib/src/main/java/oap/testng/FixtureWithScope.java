@@ -32,16 +32,17 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
 
     protected Scope scope = Scope.METHOD;
 
-    @SuppressWarnings( "unchecked" )
-    public T fixture( FixtureWithScope<?> fixture ) {
-        this.fixtures.add( fixture );
+    public <F extends FixtureWithScope<?>> F fixture( F fixture ) {
+        this.fixtures.add( fixture.withScope( scope ) );
 
-        return ( T ) this;
+        return fixture;
     }
 
     @SuppressWarnings( "unchecked" )
     public T withScope( Scope scope ) {
         this.scope = scope;
+
+        fixtures.forEach( f -> f.withScope( scope ) );
 
         return ( T ) this;
     }
