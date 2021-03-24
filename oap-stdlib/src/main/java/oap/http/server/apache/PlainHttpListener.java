@@ -46,6 +46,10 @@ public class PlainHttpListener extends AbstractHttpListener {
         this.address = address;
     }
 
+    public void start() {
+        log.info( "port = {}", address.getPort() );
+    }
+
     @Override
     protected ServerSocket createSocket() {
         try {
