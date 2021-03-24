@@ -58,8 +58,20 @@ public class HttpAsserts {
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
+    public static int getTestHttpPort() {
+        return Integer.parseInt( System.getProperty( KernelFixture.TEST_HTTP_PORT ) );
+    }
+
+    public static String httpPrefix( int port ) {
+        return "http://localhost:" + port;
+    }
+
     public static String httpPrefix() {
-        return "http://localhost:" + System.getProperty( KernelFixture.TEST_HTTP_PORT );
+        return httpPrefix( getTestHttpPort() );
+    }
+
+    public static String httpUrl( int port, String suffix ) {
+        return httpPrefix( port ) + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
     }
 
     public static String httpUrl( String suffix ) {
