@@ -62,7 +62,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            log.debug( "system property {} = {}", variableName, value );
+            log.debug( "[{}] system property {} = {}", variablePrefix, variableName, value );
             System.setProperty( variableName, value );
         } );
 
@@ -81,7 +81,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
                     var localPort = socket.getLocalPort();
-                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), key, localPort );
+                    log.debug( "[{}] {} finding port for key={}... port={}", variablePrefix, this.getClass().getSimpleName(), key, localPort );
                     return localPort;
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
@@ -97,7 +97,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     public void clearPorts() {
         synchronized( ports ) {
-            log.debug( "clear ports" );
+            log.debug( "[{}] clear ports", variablePrefix );
             ports.clear();
         }
     }
