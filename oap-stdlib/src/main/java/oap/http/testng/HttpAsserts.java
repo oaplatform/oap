@@ -39,6 +39,7 @@ import org.joda.time.DateTime;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -58,8 +59,8 @@ public class HttpAsserts {
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
-    public static int getTestHttpPort() {
-        return Integer.parseInt( System.getProperty( KernelFixture.TEST_HTTP_PORT ) );
+    public static Optional<Integer> getTestHttpPort() {
+        return Optional.ofNullable( System.getProperty( KernelFixture.TEST_HTTP_PORT ) ).map( Integer::parseInt );
     }
 
     public static String httpPrefix( int port ) {
@@ -67,7 +68,7 @@ public class HttpAsserts {
     }
 
     public static String httpPrefix() {
-        return httpPrefix( getTestHttpPort() );
+        return httpPrefix( getTestHttpPort().orElse( 80 ) );
     }
 
     public static String httpUrl( int port, String suffix ) {

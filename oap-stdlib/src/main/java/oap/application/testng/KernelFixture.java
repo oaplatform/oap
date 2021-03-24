@@ -116,9 +116,10 @@ public class KernelFixture extends EnvFixture {
         define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
 //        deprecated
         define( "TMP_REMOTE_PORT", portFor( TEST_REMOTING_PORT ) );
-        define( TEST_HTTP_PORT, portFor( TEST_HTTP_PORT ) );
+        var testHttpPort = portFor( TEST_HTTP_PORT );
+        define( TEST_HTTP_PORT, testHttpPort );
 //        deprecated
-        define( "HTTP_PORT", portFor( TEST_HTTP_PORT ) );
+        define( "HTTP_PORT", testHttpPort );
         define( TEST_DIRECTORY, testDirectory() );
 //        deprecated
         define( "TMP_PATH", testDirectory() );
@@ -126,9 +127,9 @@ public class KernelFixture extends EnvFixture {
         define( TEST_RESOURCE_PATH, resourcePath );
 //        deprecated
         define( "RESOURCE_PATH", resourcePath );
-        define( TEST_HTTP_PREFIX, httpPrefix() );
+        define( TEST_HTTP_PREFIX, httpPrefix( testHttpPort ) );
 //        deprecated
-        define( "HTTP_PREFIX", httpPrefix() );
+        define( "HTTP_PREFIX", httpPrefix( testHttpPort ) );
     }
 
     public KernelFixture withConfdResources( Class<?> clazz, String confdResource ) {
