@@ -153,17 +153,20 @@ public class KernelFixture extends EnvFixture {
 
     @Nonnull
     public <T> T service( @Nonnull String moduleName, @Nonnull Class<T> klass ) {
-        return kernel.serviceOfClass( moduleName, klass ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + klass ) );
+        return kernel.serviceOfClass( moduleName, klass )
+            .orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + klass ) );
     }
 
     @Nonnull
     public <T> T service( @Nonnull String moduleName, @Nonnull String serviceName ) {
-        return kernel.<T>service( moduleName, serviceName ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + serviceName ) );
+        return kernel.<T>service( moduleName, serviceName )
+            .orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + serviceName ) );
     }
 
     @Nonnull
     public <T> T service( @Nonnull String reference ) {
-        return kernel.<T>service( reference ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + reference ) );
+        return kernel.<T>service( reference )
+            .orElseThrow( () -> new IllegalArgumentException( "unknown service " + reference ) );
     }
 
     @Override
