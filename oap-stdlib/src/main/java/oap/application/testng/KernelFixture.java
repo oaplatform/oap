@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
-import static oap.io.Files.toUrl;
 import static oap.testng.Fixture.Scope.METHOD;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
@@ -52,12 +51,12 @@ public class KernelFixture extends EnvFixture {
     public static final String TEST_RESOURCE_PATH = "TEST_RESOURCE_PATH";
     public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
     private static int kernelN = 0;
-    private final Path conf;
+    private final URL conf;
     private final List<URL> additionalModules = new ArrayList<>();
     public Kernel kernel;
     private Path confd;
 
-    public KernelFixture( Path conf ) {
+    public KernelFixture( URL conf ) {
         this( conf, null, List.of() );
     }
 
@@ -69,7 +68,7 @@ public class KernelFixture extends EnvFixture {
         this( conf, null, additionalModules );
     }
 
-    public KernelFixture( Path conf, Path confd ) {
+    public KernelFixture( URL conf, Path confd ) {
         this( conf, confd, List.of() );
     }
 
@@ -77,12 +76,12 @@ public class KernelFixture extends EnvFixture {
         this( conf, confd, List.of() );
     }
 
-    public KernelFixture( Path conf, List<URL> additionalModules ) {
+    public KernelFixture( URL conf, List<URL> additionalModules ) {
         this( conf, null, additionalModules );
     }
 
     public KernelFixture( String conf, String confd, List<URL> additionalModules ) {
-        this( METHOD, Resources.filePath( KernelFixture.class, conf )
+        this( METHOD, Resources.url( KernelFixture.class, conf )
                 .orElseThrow( () -> new IllegalArgumentException( conf ) ),
             confd != null
                 ? Resources.filePath( KernelFixture.class, confd )
@@ -91,11 +90,11 @@ public class KernelFixture extends EnvFixture {
             additionalModules );
     }
 
-    public KernelFixture( Path conf, Path confd, List<URL> additionalModules ) {
+    public KernelFixture( URL conf, Path confd, List<URL> additionalModules ) {
         this( METHOD, conf, confd, additionalModules );
     }
 
-    private KernelFixture( Scope scope, Path conf, Path confd, List<URL> additionalModules ) {
+    private KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
         this.scope = scope;
         this.conf = conf;
         this.confd = confd;
@@ -179,7 +178,7 @@ public class KernelFixture extends EnvFixture {
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
 
         var confds = ApplicationConfiguration.getConfdUrls( confd );
-        this.kernel.start( ApplicationConfiguration.load( toUrl( conf ), confds ) );
+        this.kernel.start( ApplicationConfiguration.load( conf, confds ) );
     }
 
     @Override
