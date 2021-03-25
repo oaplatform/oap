@@ -54,55 +54,55 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
     @Override
     public void beforeSuite() {
         if( scope == Scope.SUITE ) {
-            fixtures.forEach( FixtureWithScope::before );
-
-            before();
+            beforeAll();
         }
     }
 
     @Override
     public void afterSuite() {
         if( scope == Scope.SUITE ) {
-            after();
-
-            fixtures.forEach( FixtureWithScope::after );
+            afterAll();
         }
     }
 
     @Override
     public void beforeClass() {
         if( scope == Scope.CLASS ) {
-            fixtures.forEach( FixtureWithScope::before );
-
-            before();
+            beforeAll();
         }
     }
 
     @Override
     public void afterClass() {
         if( scope == Scope.CLASS ) {
-            after();
-
-            fixtures.forEach( FixtureWithScope::after );
+            afterAll();
         }
     }
 
     @Override
     public void beforeMethod() {
         if( scope == Scope.METHOD ) {
-            fixtures.forEach( FixtureWithScope::before );
-
-            before();
+            beforeAll();
         }
     }
 
     @Override
     public void afterMethod() {
         if( scope == Scope.METHOD ) {
-            after();
-
-            fixtures.forEach( FixtureWithScope::after );
+            afterAll();
         }
+    }
+
+    protected void beforeAll() {
+        fixtures.forEach( FixtureWithScope::before );
+
+        before();
+    }
+
+    protected void afterAll() {
+        after();
+
+        fixtures.forEach( FixtureWithScope::after );
     }
 
     protected abstract void before();

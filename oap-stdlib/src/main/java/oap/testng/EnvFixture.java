@@ -27,6 +27,7 @@ package oap.testng;
 
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.util.Strings;
 
 import java.io.IOException;
@@ -34,12 +35,17 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Slf4j
 public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
     protected String variablePrefix = "";
+
+    public <F extends FixtureWithScope<?>> F fixture( String variablePrefix, Supplier<F> supplierFixture ) {
+        return Threads.withThreadName( variablePrefix, () -> super.fixture( supplierFixture.get() ) );
+    }
 
     public EnvFixture define( String property, Object value ) {
         properties.put( property, value );
@@ -57,17 +63,10 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     @Override
     protected void before() {
-        properties.forEach( ( n, v ) -> {
-            var variableName = variablePrefix + n;
+    }
 
-            var value = Strings.substitute( String.valueOf( v ),
-                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            log.debug( "[{}] system property {} = {}", variablePrefix, variableName, value );
-            System.setProperty( variableName, value );
-        } );
-
-        ConfigImpl.reloadEnvVariablesConfig();
-        ConfigImpl.reloadSystemPropertiesConfig();
+    @Override
+    protected void after() {
     }
 
     public int portFor( Class<?> clazz ) {
@@ -81,7 +80,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
                     var localPort = socket.getLocalPort();
-                    log.debug( "[{}] {} finding port for key={}... port={}", variablePrefix, this.getClass().getSimpleName(), key, localPort );
+                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), key, localPort );
                     return localPort;
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
@@ -91,13 +90,36 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     }
 
     @Override
-    protected void after() {
-        clearPorts();
+    protected void beforeAll() {
+        Threads.withThreadName( variablePrefix, () -> {
+            properties.forEach( ( n, v ) -> {
+                var variableName = variablePrefix + n;
+
+                var value = Strings.substitute( String.valueOf( v ),
+                    k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+                log.debug( "system property {} = {}", variableName, value );
+                System.setProperty( variableName, value );
+            } );
+
+            ConfigImpl.reloadEnvVariablesConfig();
+            ConfigImpl.reloadSystemPropertiesConfig();
+
+            super.beforeAll();
+        } );
+    }
+
+    @Override
+    protected void afterAll() {
+        Threads.withThreadName( variablePrefix, () -> {
+            super.afterAll();
+
+            clearPorts();
+        } );
     }
 
     public void clearPorts() {
         synchronized( ports ) {
-            log.debug( "[{}] clear ports", variablePrefix );
+            log.debug( "clear ports" );
             ports.clear();
         }
     }
