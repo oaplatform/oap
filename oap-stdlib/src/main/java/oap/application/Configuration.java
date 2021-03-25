@@ -24,10 +24,11 @@
 package oap.application;
 
 import lombok.SneakyThrows;
+import lombok.ToString;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.json.Binder;
-import oap.util.Stream;
+import oap.util.Lists;
 import oap.util.Strings;
 
 import java.net.URL;
@@ -35,19 +36,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@ToString
 public class Configuration<T> {
-    private Class<T> clazz;
-    private String name;
+    private final Class<T> clazz;
+    private final String name;
 
     public Configuration( Class<T> clazz, String name ) {
         this.clazz = clazz;
         this.name = name;
     }
 
-    public List<T> fromClassPath() {
-        return Stream.of( urlsFromClassPath() )
-            .map( this::fromUrl )
-            .toList();
+    public List<ConfigurationWithURL<T>> fromClassPath() {
+        return Lists.map( urlsFromClassPath(), url -> new ConfigurationWithURL<>( fromUrl( url ), url ) );
     }
 
     public List<URL> urlsFromClassPath() {
@@ -75,5 +75,16 @@ public class Configuration<T> {
 
     public T fromString( String config, Binder.Format format, Map<String, Object> substitutions ) {
         return format.binder.unmarshal( clazz, Strings.substitute( config, substitutions ) );
+    }
+
+    @ToString
+    public static class ConfigurationWithURL<T> {
+        public final T configuration;
+        public final URL url;
+
+        public ConfigurationWithURL( T configuration, URL url ) {
+            this.configuration = configuration;
+            this.url = url;
+        }
     }
 }
