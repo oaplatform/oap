@@ -35,6 +35,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @ToString
 public class Configuration<T> {
@@ -47,7 +48,7 @@ public class Configuration<T> {
     }
 
     public List<ConfigurationWithURL<T>> fromClassPath() {
-        return Lists.map( urlsFromClassPath(), url -> new ConfigurationWithURL<>( fromUrl( url ), url ) );
+        return Lists.map( urlsFromClassPath(), url -> new ConfigurationWithURL<>( fromUrl( url ), Optional.of( url ) ) );
     }
 
     public List<URL> urlsFromClassPath() {
@@ -80,9 +81,9 @@ public class Configuration<T> {
     @ToString
     public static class ConfigurationWithURL<T> {
         public final T configuration;
-        public final URL url;
+        public final Optional<URL> url;
 
-        public ConfigurationWithURL( T configuration, URL url ) {
+        public ConfigurationWithURL( T configuration, Optional<URL> url ) {
             this.configuration = configuration;
             this.url = url;
         }
