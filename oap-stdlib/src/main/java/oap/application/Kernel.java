@@ -358,6 +358,8 @@ public class Kernel implements Closeable {
 
     private void startServices( ServiceInitializationTree moduleServices ) {
         moduleServices.forEach( ( moduleName, services ) -> {
+            log.debug( "starting module {}...", moduleName );
+
             var supervisor = this.supervisor.get( moduleName );
             services.forEach( ( implName, si ) -> {
                 log.debug( "starting {} as {}...", si.service.name, implName );
@@ -365,6 +367,8 @@ public class Kernel implements Closeable {
                 startService( supervisor, si );
                 log.debug( "starting {} as {}... Done", si.service.name, implName );
             } );
+
+            log.debug( "starting module {}... Done", moduleName );
         } );
     }
 
@@ -403,12 +407,15 @@ public class Kernel implements Closeable {
     }
 
     public void stop() {
-        for( var supervisor : Lists.reverse( this.supervisor.values() ) ) {
-            log.debug( "stopping application kernel {}...", name );
+        for( var supervisorEntry : Lists.reverse( this.supervisor.entrySet() ) ) {
+            var supervisorModule = supervisorEntry.getKey();
+            var supervisor = supervisorEntry.getValue();
+
+            log.debug( "stopping application kernel {}/{}...", name, supervisorModule );
             supervisor.preStop();
             supervisor.stop();
             services.clear();
-            log.debug( "application kernel stopped" );
+            log.debug( "application kernel stopped {}/{}", name, supervisorModule );
         }
     }
 
