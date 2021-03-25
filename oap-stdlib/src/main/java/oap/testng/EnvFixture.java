@@ -35,17 +35,12 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 @Slf4j
 public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
     protected String variablePrefix = "";
-
-    public <F extends FixtureWithScope<?>> F fixture( String variablePrefix, Supplier<F> supplierFixture ) {
-        return Threads.withThreadName( variablePrefix, () -> super.fixture( supplierFixture.get() ) );
-    }
 
     public EnvFixture define( String property, Object value ) {
         properties.put( property, value );
@@ -63,10 +58,22 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     @Override
     protected void before() {
+        properties.forEach( ( n, v ) -> {
+            var variableName = variablePrefix + n;
+
+            var value = Strings.substitute( String.valueOf( v ),
+                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+            log.debug( "system property {} = {}", variableName, value );
+            System.setProperty( variableName, value );
+        } );
+
+        ConfigImpl.reloadEnvVariablesConfig();
+        ConfigImpl.reloadSystemPropertiesConfig();
     }
 
     @Override
     protected void after() {
+        clearPorts();
     }
 
     public int portFor( Class<?> clazz ) {
@@ -91,30 +98,12 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     @Override
     protected void beforeAll() {
-        Threads.withThreadName( variablePrefix, () -> {
-            properties.forEach( ( n, v ) -> {
-                var variableName = variablePrefix + n;
-
-                var value = Strings.substitute( String.valueOf( v ),
-                    k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-                log.debug( "system property {} = {}", variableName, value );
-                System.setProperty( variableName, value );
-            } );
-
-            ConfigImpl.reloadEnvVariablesConfig();
-            ConfigImpl.reloadSystemPropertiesConfig();
-
-            super.beforeAll();
-        } );
+        Threads.withThreadName( variablePrefix, super::beforeAll );
     }
 
     @Override
     protected void afterAll() {
-        Threads.withThreadName( variablePrefix, () -> {
-            super.afterAll();
-
-            clearPorts();
-        } );
+        Threads.withThreadName( variablePrefix, super::afterAll );
     }
 
     public void clearPorts() {

@@ -24,13 +24,20 @@
 
 package oap.testng;
 
+import oap.concurrent.Threads;
+
 import java.util.ArrayList;
+import java.util.function.Supplier;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements Fixture {
     protected final ArrayList<FixtureWithScope<?>> fixtures = new ArrayList<>();
 
     protected Scope scope = Scope.METHOD;
+
+    public <F extends FixtureWithScope<?>> F fixture( String variablePrefix, Supplier<F> supplierFixture ) {
+        return Threads.withThreadName( variablePrefix, () -> fixture( supplierFixture.get() ) );
+    }
 
     public <F extends FixtureWithScope<?>> F fixture( F fixture ) {
         this.fixtures.add( fixture.withScope( scope ) );
