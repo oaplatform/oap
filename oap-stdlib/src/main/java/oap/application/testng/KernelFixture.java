@@ -171,6 +171,8 @@ public class KernelFixture extends EnvFixture {
 
     @Override
     protected void before() {
+        defineDefaults();
+
         Preconditions.checkArgument( this.kernel == null );
         super.before();
 
