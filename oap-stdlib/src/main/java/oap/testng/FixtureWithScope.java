@@ -25,6 +25,7 @@
 package oap.testng;
 
 import oap.concurrent.Threads;
+import oap.util.Lists;
 
 import java.util.ArrayList;
 import java.util.function.Supplier;
@@ -109,7 +110,7 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
     protected void afterAll() {
         after();
 
-        fixtures.forEach( FixtureWithScope::after );
+        Lists.reverse( fixtures ).forEach( FixtureWithScope::after );
     }
 
     protected abstract void before();
