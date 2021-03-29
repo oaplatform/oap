@@ -101,8 +101,6 @@ public class KernelFixture extends EnvFixture {
         this.additionalModules.addAll( additionalModules );
 
         defineDefaults();
-
-        withKind( Kind.MAP );
     }
 
     @Override
