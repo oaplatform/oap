@@ -88,7 +88,11 @@ public final class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( URL appConfigPath, List<URL> confdUrls ) {
-        return loadWithProperties( appConfigPath, Lists.map( confdUrls, p -> {
+        return load( appConfigPath, confdUrls, Map.of() );
+    }
+
+    public static ApplicationConfiguration load( URL appConfigPath, List<URL> confdUrls, Map<String, Object> map ) {
+        return loadWithProperties( appConfigPath, Lists.concat( Lists.map( confdUrls, p -> {
                 var content = ContentReader.read( p, ContentReader.ofString() );
 
                 log.trace( "config: {}\n{}", p, content );
@@ -97,7 +101,7 @@ public final class ApplicationConfiguration {
                     ? Binder.json.marshal( Binder.yaml.unmarshal( Map.class, content ) )
                     : content;
             }
-        ) );
+        ), List.of( Binder.json.marshal( map ) ) ) );
     }
 
     static ApplicationConfiguration load( Map<String, Object> properties ) {

@@ -1,4 +1,0 @@
-name: kernel-fixture-test
-services:
-  fixture-service:
-    implementation: oap.application.testng.KernelFixtureTest$Service

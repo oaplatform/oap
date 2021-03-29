@@ -25,15 +25,19 @@
 package oap.testng;
 
 
+import com.google.common.base.Preconditions;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
+import oap.system.Env;
 import oap.util.Strings;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -41,6 +45,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
     protected String variablePrefix = "";
+    protected Kind kind = Kind.JAVA;
 
     public EnvFixture() {
     }
@@ -50,7 +55,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     }
 
     public EnvFixture define( String property, Object value ) {
-        properties.put( property, value );
+        properties.put( variablePrefix + property, value );
         return this;
     }
 
@@ -58,19 +63,50 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
         return define( property, portFor( portKey ) );
     }
 
+    public EnvFixture merge( EnvFixture envFixture ) {
+        ports.putAll( envFixture.ports );
+        properties.putAll( envFixture.properties );
+
+        return this;
+    }
+
+    public EnvFixture withKind( Kind kind ) {
+        Preconditions.checkNotNull( kind );
+
+        this.kind = kind;
+
+        return this;
+    }
+
     @Override
     protected void before() {
-        properties.forEach( ( n, v ) -> {
-            var variableName = variablePrefix + n;
-
+        properties.forEach( ( variableName, v ) -> {
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            log.debug( "system property {} = {}", variableName, value );
-            System.setProperty( variableName, value );
+
+            switch( kind ) {
+                case JAVA -> {
+                    log.debug( "system property {} = {}", variableName, value );
+                    System.setProperty( variableName, value );
+                }
+                case ENV -> {
+                    log.debug( "env property {} = {}", variableName, value );
+                    Env.set( variableName, value );
+                }
+                case MAP -> log.debug( "map property {} = {}", variableName, value );
+                default -> throw new IllegalStateException( "Unknown kind " + kind );
+            }
         } );
 
-        ConfigImpl.reloadEnvVariablesConfig();
-        ConfigImpl.reloadSystemPropertiesConfig();
+        switch( kind ) {
+            case ENV:
+                ConfigImpl.reloadEnvVariablesConfig();
+                break;
+            case JAVA:
+                ConfigImpl.reloadSystemPropertiesConfig();
+                break;
+            default:
+        }
     }
 
     @Override
@@ -84,12 +120,12 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     public int portFor( String key ) {
         synchronized( ports ) {
-            return ports.computeIfAbsent( key, k -> Threads.withThreadName( variablePrefix, () -> {
+            return ports.computeIfAbsent( variablePrefix + key, k -> Threads.withThreadName( variablePrefix, () -> {
                 try( var socket = new ServerSocket() ) {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
                     var localPort = socket.getLocalPort();
-                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), key, localPort );
+                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, localPort );
                     return localPort;
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
@@ -113,5 +149,13 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
             log.debug( "clear ports" );
             ports.clear();
         }
+    }
+
+    protected Map<String, Object> getProperties() {
+        return Collections.unmodifiableMap( properties );
+    }
+
+    public enum Kind {
+        JAVA, ENV, MAP
     }
 }

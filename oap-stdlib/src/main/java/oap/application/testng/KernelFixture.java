@@ -101,6 +101,13 @@ public class KernelFixture extends EnvFixture {
         this.additionalModules.addAll( additionalModules );
 
         defineDefaults();
+
+        withKind( Kind.MAP );
+    }
+
+    @Override
+    public KernelFixture withKind( Kind kind ) {
+        return ( KernelFixture ) super.withKind( kind );
     }
 
     public int defaultHttpPort() {
@@ -171,12 +178,16 @@ public class KernelFixture extends EnvFixture {
         Preconditions.checkArgument( this.kernel == null );
         super.before();
 
+        for( var f : fixtures ) {
+            if( f instanceof EnvFixture ) merge( ( EnvFixture ) f );
+        }
+
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
-        this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
+        this.kernel = new Kernel( variablePrefix + "FixtureKernel#" + kernelN++, moduleConfigurations );
 
         var confds = ApplicationConfiguration.getConfdUrls( confd );
-        this.kernel.start( ApplicationConfiguration.load( conf, confds ) );
+        this.kernel.start( ApplicationConfiguration.load( conf, confds, getProperties() ) );
     }
 
     @Override
