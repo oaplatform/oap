@@ -59,6 +59,10 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
         return this;
     }
 
+    public Object getProperty( String property ) {
+        return properties.get( property );
+    }
+
     public EnvFixture definePort( String property, String portKey ) {
         return define( property, portFor( portKey ) );
     }
