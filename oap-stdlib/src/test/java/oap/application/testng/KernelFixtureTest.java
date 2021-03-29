@@ -49,12 +49,14 @@ public class KernelFixtureTest extends Fixtures {
 
         kernelFixture.fixture( new TestFixture( "TEST", "-1" ).withKind( Kind.MAP ) );
         kernelFixture.fixture( new TestFixture( "TEST2", "-2" ).withKind( Kind.MAP ) );
+
+        kernelFixture.define( "TEST2_PROPERTY", "-o" );
     }
 
     @Test
     public void value() {
         assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( "from fixture-1-2" );
+            .isEqualTo( "from fixture-1-o" );
     }
 
     public static class Service {

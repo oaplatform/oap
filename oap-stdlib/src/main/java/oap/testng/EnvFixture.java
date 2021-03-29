@@ -64,8 +64,8 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     }
 
     public EnvFixture merge( EnvFixture envFixture ) {
-        ports.putAll( envFixture.ports );
-        properties.putAll( envFixture.properties );
+        envFixture.ports.forEach( ports::putIfAbsent );
+        envFixture.properties.forEach( properties::putIfAbsent );
 
         return this;
     }
