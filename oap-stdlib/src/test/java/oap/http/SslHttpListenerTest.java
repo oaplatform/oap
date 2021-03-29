@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.server.apache.ApacheHttpServer;
+import oap.http.server.apache.SslHttpListener;
 import oap.io.IoStreams;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -49,11 +50,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SslHttpListenerTest extends Fixtures {
 
     private static final String KEYSTORE_PASSWORD = "123456";
-
-    private ApacheHttpServer server;
-    private SynchronizedThread listener;
     private static final String PORT = "PORT";
     private final EnvFixture envFixture;
+    private ApacheHttpServer server;
+    private SynchronizedThread listener;
 
     {
         envFixture = fixture( new EnvFixture().definePort( PORT, PORT ) );
@@ -73,7 +73,7 @@ public class SslHttpListenerTest extends Fixtures {
             response.respond( HttpResponse.status( 200 ).response() );
         }, Protocol.HTTPS );
 
-        var http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, envFixture.portFor( PORT ), false );
+        var http = new SslHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, envFixture.portFor( PORT ) );
         listener = new SynchronizedThread( http );
         listener.start();
     }

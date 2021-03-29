@@ -42,13 +42,15 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
     protected String variablePrefix = "";
 
-    public EnvFixture define( String property, Object value ) {
-        properties.put( property, value );
-        return this;
+    public EnvFixture() {
     }
 
-    public EnvFixture withVariablePrefix( String variablePrefix ) {
+    public EnvFixture( String variablePrefix ) {
         this.variablePrefix = variablePrefix;
+    }
+
+    public EnvFixture define( String property, Object value ) {
+        properties.put( property, value );
         return this;
     }
 
@@ -82,7 +84,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     public int portFor( String key ) {
         synchronized( ports ) {
-            return ports.computeIfAbsent( key, k -> {
+            return ports.computeIfAbsent( key, k -> Threads.withThreadName( variablePrefix, () -> {
                 try( var socket = new ServerSocket() ) {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
@@ -92,7 +94,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
                 }
-            } );
+            } ) );
         }
     }
 

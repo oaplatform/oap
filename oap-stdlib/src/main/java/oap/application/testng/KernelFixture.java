@@ -56,56 +56,51 @@ public class KernelFixture extends EnvFixture {
     public Kernel kernel;
     private Path confd;
 
+    public KernelFixture( String variablePrefix, URL conf ) {
+        this( variablePrefix, conf, null, List.of() );
+    }
+
     public KernelFixture( URL conf ) {
-        this( conf, null, List.of() );
+        this( "", conf, null, List.of() );
     }
 
-    public KernelFixture( String conf ) {
-        this( conf, null, List.of() );
-    }
-
-    public KernelFixture( String conf, List<URL> additionalModules ) {
-        this( conf, null, additionalModules );
+    public KernelFixture( String variablePrefix, URL conf, Path confd ) {
+        this( variablePrefix, conf, confd, List.of() );
     }
 
     public KernelFixture( URL conf, Path confd ) {
-        this( conf, confd, List.of() );
+        this( "", conf, confd, List.of() );
     }
 
-    public KernelFixture( String conf, String confd ) {
-        this( conf, confd, List.of() );
+    public KernelFixture( String variablePrefix, URL conf, List<URL> additionalModules ) {
+        this( variablePrefix, conf, null, additionalModules );
     }
 
     public KernelFixture( URL conf, List<URL> additionalModules ) {
-        this( conf, null, additionalModules );
+        this( "", conf, null, additionalModules );
     }
 
-    public KernelFixture( String conf, String confd, List<URL> additionalModules ) {
-        this( METHOD, Resources.url( KernelFixture.class, conf )
-                .orElseThrow( () -> new IllegalArgumentException( conf ) ),
-            confd != null
-                ? Resources.filePath( KernelFixture.class, confd )
-                .orElseThrow( () -> new IllegalArgumentException( confd ) )
-                : null,
-            additionalModules );
+    public KernelFixture( String variablePrefix, URL conf, Path confd, List<URL> additionalModules ) {
+        this( variablePrefix, METHOD, conf, confd, additionalModules );
     }
 
     public KernelFixture( URL conf, Path confd, List<URL> additionalModules ) {
-        this( METHOD, conf, confd, additionalModules );
+        this( "", conf, confd, additionalModules );
     }
 
     private KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
+        this( "", scope, conf, confd, additionalModules );
+    }
+
+    private KernelFixture( String variablePrefix, Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
+        super( variablePrefix );
+
         this.scope = scope;
         this.conf = conf;
         this.confd = confd;
         this.additionalModules.addAll( additionalModules );
 
         defineDefaults();
-    }
-
-    @Override
-    public KernelFixture withVariablePrefix( String variablePrefix ) {
-        return ( KernelFixture ) super.withVariablePrefix( variablePrefix );
     }
 
     public int defaultHttpPort() {
