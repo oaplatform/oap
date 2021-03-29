@@ -96,7 +96,7 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
     }
 
     protected void beforeAll() {
-        fixtures.forEach( FixtureWithScope::before );
+        fixtures.forEach( FixtureWithScope::beforeAll );
 
         before();
     }
@@ -104,7 +104,7 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
     protected void afterAll() {
         after();
 
-        Lists.reverse( fixtures ).forEach( FixtureWithScope::after );
+        Lists.reverse( fixtures ).forEach( FixtureWithScope::afterAll );
     }
 
     protected abstract void before();
