@@ -53,10 +53,22 @@ public class Module {
     @JsonAlias( { "profile", "profiles" } )
     public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     public String name;
+    @JsonIgnore
+    public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
 
     @JsonCreator
     public Module( String name ) {
         this.name = name;
+    }
+
+    @JsonAnySetter
+    public void putUnknown( String key, Object val ) {
+        ext.put( key, val );
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getUnknown() {
+        return ext;
     }
 
     @EqualsAndHashCode
@@ -69,8 +81,6 @@ public class Module {
         public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public final LinkedHashSet<String> link = new LinkedHashSet<>();
-        @JsonIgnore
-        public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
         @JsonAlias( { "add-link", "link-with", "linkWith", "link-method", "linkMethod" } )
         public List<String> linkWith = List.of( "addLink" );
         public String implementation;
@@ -81,16 +91,6 @@ public class Module {
         @JsonIgnore
         public boolean isRemoteService() {
             return remote != null;
-        }
-
-        @JsonAnySetter
-        public void putUnknown( String key, Object val ) {
-            ext.put( key, val );
-        }
-
-        @JsonAnyGetter
-        public Map<String, Object> getUnknown() {
-            return ext;
         }
     }
 

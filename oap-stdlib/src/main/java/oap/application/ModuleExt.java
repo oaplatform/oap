@@ -24,16 +24,12 @@
 
 package oap.application;
 
-public class ServiceExt<T> {
+public class ModuleExt<T> {
     public final String module;
-    public final String service;
-    public final Object instance;
     public final T ext;
 
-    public ServiceExt( String module, String service, Object instance, T ext ) {
+    public ModuleExt( String module, T ext ) {
         this.module = module;
-        this.service = service;
-        this.instance = instance;
         this.ext = ext;
     }
 }

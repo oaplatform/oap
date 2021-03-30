@@ -240,7 +240,7 @@ public class Kernel implements Closeable {
                     } else {
                         instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
                     }
-                    retModules.put( moduleName, service.name, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
+                    retModules.put( moduleItem.module, service.name, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}:{}, remote = {}, profiles = {}",
                         moduleName,
@@ -276,9 +276,9 @@ public class Kernel implements Closeable {
     private void registerServices( ServiceInitializationTree moduleServices ) {
         moduleServices.forEach( ( moduleName, services ) -> {
             services.forEach( ( serviceName, si ) -> {
-                register( moduleName, serviceName, si );
+                register( si.module.module, serviceName, si );
                 if( !si.service.name.equals( serviceName ) )
-                    register( moduleName, si.service.name, si );
+                    register( si.module.module, si.service.name, si );
             } );
         } );
     }
@@ -399,11 +399,11 @@ public class Kernel implements Closeable {
         }
     }
 
-    public void register( String moduleName, String serviceName, ServiceInitialization si ) throws ApplicationException {
+    public void register( Module module, String serviceName, ServiceInitialization si ) throws ApplicationException {
         Object registered;
 
-        if( ( registered = services.putIfAbsent( moduleName, serviceName, si ) ) != null )
-            throw new ApplicationException( moduleName + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.getClass() + "]" );
+        if( ( registered = services.putIfAbsent( module, serviceName, si ) ) != null )
+            throw new ApplicationException( module.name + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.getClass() + "]" );
     }
 
     public void stop() {
@@ -479,21 +479,18 @@ public class Kernel implements Closeable {
         return Lists.head2( ofClass( moduleName, clazz ) );
     }
 
-    public <T> List<ServiceExt<T>> serviceByExt( String ext, Class<T> clazz ) {
-        var ret = new ArrayList<ServiceExt<T>>();
+    public <T> List<ModuleExt<T>> modulesByExt( String ext, Class<T> clazz ) {
+        var ret = new ArrayList<ModuleExt<T>>();
 
-        services.forEach( ( module, services ) -> {
-            services.forEach( ( service, si ) -> {
+        for( var module : services.values() ) {
+            var moduleExt = module.getExt( ext );
+            if( moduleExt == null ) continue;
 
-                var serviceExt = si.service.ext.get( ext );
-                if( serviceExt != null ) {
+            var extInstance = Binder.json.unmarshal( clazz, Binder.json.marshal( moduleExt ) );
 
-                    var extInstance = Binder.json.unmarshal( clazz, Binder.json.marshal( serviceExt ) );
+            ret.add( new ModuleExt<>( module.moduleName, extInstance ) );
 
-                    ret.add( new ServiceExt<>( module, service, si.instance, extInstance ) );
-                }
-            } );
-        } );
+        }
 
         return ret;
     }

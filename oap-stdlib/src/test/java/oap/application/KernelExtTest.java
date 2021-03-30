@@ -41,14 +41,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class KernelExtTest {
     @Test
-    public void testServiceExt() {
-        var modules = List.of( url( "service-ext.conf" ) );
+    public void testModuleExt() {
+        var modules = List.of( url( "module-ext.conf" ) );
 
         var kernel = new Kernel( modules );
         try {
-            kernel.start( Map.of( "boot.main", "service-ext" ) );
+            kernel.start( Map.of( "boot.main", "module-ext" ) );
 
-            var found = kernel.serviceByExt( "ws", TestKernelExt.class );
+            var found = kernel.modulesByExt( "ws", TestKernelExt.class );
             assertThat( found ).hasSize( 1 );
             assertThat( found.get( 0 ).ext ).isEqualTo( new TestKernelExt( "/p", "string" ) );
 

@@ -37,26 +37,26 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
  * Created by igor.petrenko on 2021-03-18.
  */
 public class ServiceInitializationTree implements ServiceStorage {
-    private final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> map = new LinkedHashMap<>();
+    private final LinkedHashMap<String, ModuleTree> map = new LinkedHashMap<>();
 
-    public void put( String moduleName, String serviceName, ServiceInitialization serviceInitialization ) {
-        map.computeIfAbsent( moduleName, mn -> new LinkedHashMap<>() ).put( serviceName, serviceInitialization );
+    public void put( Module module, String serviceName, ServiceInitialization serviceInitialization ) {
+        map.computeIfAbsent( module.name, mn -> new ModuleTree( module.name, module.ext ) ).put( serviceName, serviceInitialization );
     }
 
-    public void forEach( BiConsumer<String, LinkedHashMap<String, ServiceInitialization>> action ) {
+    public void forEach( BiConsumer<String, ModuleTree> action ) {
         map.forEach( action );
     }
 
-    public Collection<LinkedHashMap<String, ServiceInitialization>> values() {
+    public Collection<ModuleTree> values() {
         return map.values();
     }
 
-    public LinkedHashMap<String, ServiceInitialization> get( String module ) {
+    public ModuleTree get( String module ) {
         return map.get( module );
     }
 
-    public ServiceInitialization putIfAbsent( String moduleName, String serviceName, ServiceInitialization si ) {
-        return map.computeIfAbsent( moduleName, mn -> new LinkedHashMap<>() ).putIfAbsent( serviceName, si );
+    public ServiceInitialization putIfAbsent( Module module, String serviceName, ServiceInitialization si ) {
+        return map.computeIfAbsent( module.name, mn -> new ModuleTree( module.name, module.ext ) ).putIfAbsent( serviceName, si );
     }
 
     public void clear() {
@@ -72,5 +72,45 @@ public class ServiceInitializationTree implements ServiceStorage {
         if( service == null ) return Result.failure( SERVICE_NOT_FOUND );
 
         return Result.success( service );
+    }
+
+    public static class ModuleTree {
+        public final LinkedHashMap<String, ServiceInitialization> map = new LinkedHashMap<>();
+        public final String moduleName;
+        private final LinkedHashMap<String, Object> ext;
+
+        public ModuleTree( String moduleName, LinkedHashMap<String, Object> ext ) {
+            this.moduleName = moduleName;
+            this.ext = ext;
+        }
+
+        public void put( String serviceName, ServiceInitialization serviceInitialization ) {
+            map.put( serviceName, serviceInitialization );
+        }
+
+        public ServiceInitialization get( String serviceName ) {
+            return map.get( serviceName );
+        }
+
+        public ServiceInitialization putIfAbsent( String serviceName, ServiceInitialization si ) {
+            return map.putIfAbsent( serviceName, si );
+        }
+
+        public void forEach( BiConsumer<String, ServiceInitialization> consumer ) {
+            map.forEach( consumer );
+
+        }
+
+        public Collection<ServiceInitialization> values() {
+            return map.values();
+        }
+
+        public ServiceInitialization remove( String name ) {
+            return map.remove( name );
+        }
+
+        public Object getExt( String ext ) {
+            return this.ext.get( ext );
+        }
     }
 }
