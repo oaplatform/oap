@@ -39,6 +39,7 @@ import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Slf4j
 public class EnvFixture extends FixtureWithScope<EnvFixture> {
@@ -54,12 +55,25 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
         this.variablePrefix = variablePrefix;
     }
 
+    private static Object toValue( Object value ) {
+        if( value instanceof Supplier<?> ) return ( ( Supplier<?> ) value ).get();
+
+        return value;
+    }
+
     public EnvFixture define( String property, Object value ) {
         properties.put( variablePrefix + property, value );
+
         return this;
     }
 
-    public Object getProperty( String property ) {
+    public EnvFixture define( String property, EnvFixture fromFixture, String fromProperty ) {
+        properties.put( variablePrefix + property, ( Supplier<?> ) () -> fromFixture.getProperty( fromProperty ) );
+
+        return this;
+    }
+
+    protected Object getProperty( String property ) {
         return properties.get( property );
     }
 
@@ -67,7 +81,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
         return define( property, portFor( portKey ) );
     }
 
-    public EnvFixture merge( EnvFixture envFixture ) {
+    protected EnvFixture merge( EnvFixture envFixture ) {
         envFixture.ports.forEach( ports::putIfAbsent );
         envFixture.properties.forEach( properties::putIfAbsent );
 
@@ -85,7 +99,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     @Override
     protected void before() {
         properties.forEach( ( variableName, v ) -> {
-            var value = Strings.substitute( String.valueOf( v ),
+            var value = Strings.substitute( String.valueOf( toValue( v ) ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
 
             switch( kind ) {
