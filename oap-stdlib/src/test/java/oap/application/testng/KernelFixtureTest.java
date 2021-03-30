@@ -37,8 +37,8 @@ import static oap.testng.EnvFixture.Kind;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class KernelFixtureTest extends Fixtures {
-
     private final KernelFixture kernelFixture;
+    private final EnvFixture testFixture;
 
     {
         kernelFixture = fixture( new KernelFixture(
@@ -47,16 +47,21 @@ public class KernelFixtureTest extends Fixtures {
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
         ) ).withKind( Kind.MAP );
 
-        kernelFixture.fixture( new TestFixture( "TEST", "-1" ).withKind( Kind.MAP ) );
-        kernelFixture.fixture( new TestFixture( "TEST2", "-2" ).withKind( Kind.MAP ) );
+        testFixture = kernelFixture.fixture( new TestFixture().withKind( Kind.MAP ) );
 
-        kernelFixture.define( "TEST2_PROPERTY", "-o" );
+        kernelFixture.define( "MY_TEST_PORT", testFixture.portFor( "TEST_PORT" ) );
     }
 
     @Test
     public void value() {
         assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( "from fixture-1-o" );
+            .isEqualTo( "from fixture" + testFixture.portFor( "TEST_PORT" ) );
+    }
+
+    @Test( dependsOnMethods = "value" )
+    public void value2() {
+        assertThat( kernelFixture.service( ANY, Service.class ).value )
+            .isEqualTo( "from fixture" + testFixture.portFor( "TEST_PORT" ) );
     }
 
     public static class Service {
@@ -64,9 +69,8 @@ public class KernelFixtureTest extends Fixtures {
     }
 
     public static class TestFixture extends EnvFixture {
-        public TestFixture( String prefix, String value ) {
-            define( prefix + "_PROPERTY", value );
-            definePort( prefix + "_PORT", prefix + "_PORT" );
+        public TestFixture() {
+            definePort( "TEST_PORT", "TEST_PORT" );
         }
     }
 }

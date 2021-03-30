@@ -28,7 +28,6 @@ package oap.testng;
 import com.google.common.base.Preconditions;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Threads;
 import oap.system.Env;
 import oap.util.Strings;
 
@@ -39,36 +38,18 @@ import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 @Slf4j
 public class EnvFixture extends FixtureWithScope<EnvFixture> {
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
-    protected String variablePrefix = "";
     protected Kind kind = Kind.JAVA;
 
     public EnvFixture() {
     }
 
-    public EnvFixture( String variablePrefix ) {
-        this.variablePrefix = variablePrefix;
-    }
-
-    private static Object toValue( Object value ) {
-        if( value instanceof Supplier<?> ) return ( ( Supplier<?> ) value ).get();
-
-        return value;
-    }
-
     public EnvFixture define( String property, Object value ) {
-        properties.put( variablePrefix + property, value );
-
-        return this;
-    }
-
-    public EnvFixture define( String property, EnvFixture fromFixture, String fromProperty ) {
-        properties.put( variablePrefix + property, ( Supplier<?> ) () -> fromFixture.getProperty( fromProperty ) );
+        properties.put( property, value );
 
         return this;
     }
@@ -99,7 +80,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     @Override
     protected void before() {
         properties.forEach( ( variableName, v ) -> {
-            var value = Strings.substitute( String.valueOf( toValue( v ) ),
+            var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
 
             switch( kind ) {
@@ -129,7 +110,6 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     @Override
     protected void after() {
-        clearPorts();
     }
 
     public int portFor( Class<?> clazz ) {
@@ -138,7 +118,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
 
     public int portFor( String key ) {
         synchronized( ports ) {
-            return ports.computeIfAbsent( variablePrefix + key, k -> Threads.withThreadName( variablePrefix, () -> {
+            return ports.computeIfAbsent( key, k -> {
                 try( var socket = new ServerSocket() ) {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
@@ -148,24 +128,7 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
                 }
-            } ) );
-        }
-    }
-
-    @Override
-    protected void beforeAll() {
-        Threads.withThreadName( variablePrefix, super::beforeAll );
-    }
-
-    @Override
-    protected void afterAll() {
-        Threads.withThreadName( variablePrefix, super::afterAll );
-    }
-
-    public void clearPorts() {
-        synchronized( ports ) {
-            log.debug( "clear ports" );
-            ports.clear();
+            } );
         }
     }
 
