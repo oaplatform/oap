@@ -488,7 +488,7 @@ public class Kernel implements Closeable {
 
             var extInstance = Binder.json.unmarshal( clazz, Binder.json.marshal( moduleExt ) );
 
-            ret.add( new ModuleExt<>( module.moduleName, extInstance ) );
+            ret.add( new ModuleExt<>( module.module, extInstance ) );
 
         }
 

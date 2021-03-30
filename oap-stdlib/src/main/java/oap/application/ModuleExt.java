@@ -25,10 +25,10 @@
 package oap.application;
 
 public class ModuleExt<T> {
-    public final String module;
+    public final Module module;
     public final T ext;
 
-    public ModuleExt( String module, T ext ) {
+    public ModuleExt( Module module, T ext ) {
         this.module = module;
         this.ext = ext;
     }

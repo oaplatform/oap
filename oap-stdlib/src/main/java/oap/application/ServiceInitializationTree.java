@@ -40,7 +40,7 @@ public class ServiceInitializationTree implements ServiceStorage {
     private final LinkedHashMap<String, ModuleTree> map = new LinkedHashMap<>();
 
     public void put( Module module, String serviceName, ServiceInitialization serviceInitialization ) {
-        map.computeIfAbsent( module.name, mn -> new ModuleTree( module.name, module.ext ) ).put( serviceName, serviceInitialization );
+        map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).put( serviceName, serviceInitialization );
     }
 
     public void forEach( BiConsumer<String, ModuleTree> action ) {
@@ -56,7 +56,7 @@ public class ServiceInitializationTree implements ServiceStorage {
     }
 
     public ServiceInitialization putIfAbsent( Module module, String serviceName, ServiceInitialization si ) {
-        return map.computeIfAbsent( module.name, mn -> new ModuleTree( module.name, module.ext ) ).putIfAbsent( serviceName, si );
+        return map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).putIfAbsent( serviceName, si );
     }
 
     public void clear() {
@@ -76,12 +76,10 @@ public class ServiceInitializationTree implements ServiceStorage {
 
     public static class ModuleTree {
         public final LinkedHashMap<String, ServiceInitialization> map = new LinkedHashMap<>();
-        public final String moduleName;
-        private final LinkedHashMap<String, Object> ext;
+        public final Module module;
 
-        public ModuleTree( String moduleName, LinkedHashMap<String, Object> ext ) {
-            this.moduleName = moduleName;
-            this.ext = ext;
+        public ModuleTree( Module module ) {
+            this.module = module;
         }
 
         public void put( String serviceName, ServiceInitialization serviceInitialization ) {
@@ -110,7 +108,7 @@ public class ServiceInitializationTree implements ServiceStorage {
         }
 
         public Object getExt( String ext ) {
-            return this.ext.get( ext );
+            return this.module.ext.get( ext );
         }
     }
 }
