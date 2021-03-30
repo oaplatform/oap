@@ -24,12 +24,32 @@
 
 package oap.application;
 
+import com.google.common.base.Preconditions;
+
+import java.util.Map;
+
 public class ModuleExt<T> {
     public final Module module;
     public final T ext;
+    private final Map<String, ServiceInitialization> moduleServices;
 
-    public ModuleExt( Module module, T ext ) {
+    public ModuleExt( Module module, T ext, Map<String, ServiceInitialization> moduleServices ) {
         this.module = module;
         this.ext = ext;
+        this.moduleServices = moduleServices;
+    }
+
+    public boolean containsService( String serviceName ) {
+        return module.services.containsKey( serviceName );
+    }
+
+    public boolean isServiceInitialized( String serviceName ) {
+        return moduleServices.containsKey( serviceName );
+    }
+
+    public Object getInstance( String serviceName ) {
+        var si = moduleServices.get( serviceName );
+        Preconditions.checkNotNull( si );
+        return si.instance;
     }
 }
