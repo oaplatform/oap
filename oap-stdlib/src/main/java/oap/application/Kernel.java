@@ -479,6 +479,25 @@ public class Kernel implements Closeable {
         return Lists.head2( ofClass( moduleName, clazz ) );
     }
 
+    public <T> List<ServiceExt<T>> serviceByExt( String ext, Class<T> clazz ) {
+        var ret = new ArrayList<ServiceExt<T>>();
+
+        services.forEach( ( module, services ) -> {
+            services.forEach( ( service, si ) -> {
+
+                var serviceExt = si.service.ext.get( ext );
+                if( serviceExt != null ) {
+
+                    var extInstance = Binder.json.unmarshal( clazz, Binder.json.marshal( serviceExt ) );
+
+                    ret.add( new ServiceExt<>( module, service, si.instance, extInstance ) );
+                }
+            } );
+        } );
+
+        return ret;
+    }
+
     public void unregister( String moduleName, String serviceName ) {
         var module = services.get( moduleName );
         if( module == null ) return;
@@ -509,4 +528,5 @@ public class Kernel implements Closeable {
             this.location = location;
         }
     }
+
 }

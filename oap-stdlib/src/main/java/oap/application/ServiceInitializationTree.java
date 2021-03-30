@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import oap.util.LinkedHashMaps;
 import oap.util.Result;
 
 import java.util.Collection;
@@ -73,9 +72,5 @@ public class ServiceInitializationTree implements ServiceStorage {
         if( service == null ) return Result.failure( SERVICE_NOT_FOUND );
 
         return Result.success( service );
-    }
-
-    public LinkedHashMap<String, LinkedHashMap<String, Object>> instanceServices() {
-        return LinkedHashMaps.mapValues( map, ( moduleName, services ) -> LinkedHashMaps.mapValues( services, ( serviceName, si ) -> si.instance ) );
     }
 }

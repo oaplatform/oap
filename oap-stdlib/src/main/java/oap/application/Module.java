@@ -24,6 +24,8 @@
 package oap.application;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -35,6 +37,7 @@ import oap.reflect.Coercions;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.emptyList;
 
@@ -66,6 +69,8 @@ public class Module {
         public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public final LinkedHashSet<String> link = new LinkedHashSet<>();
+        @JsonIgnore
+        public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
         @JsonAlias( { "add-link", "link-with", "linkWith", "link-method", "linkMethod" } )
         public List<String> linkWith = List.of( "addLink" );
         public String implementation;
@@ -78,6 +83,15 @@ public class Module {
             return remote != null;
         }
 
+        @JsonAnySetter
+        public void putUnknown( String key, Object val ) {
+            ext.put( key, val );
+        }
+
+        @JsonAnyGetter
+        public Map<String, Object> getUnknown() {
+            return ext;
+        }
     }
 
     @EqualsAndHashCode
