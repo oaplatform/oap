@@ -27,7 +27,7 @@ package oap.application.testng;
 import com.google.common.base.Preconditions;
 import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
-import oap.application.Module;
+import oap.application.module.Module;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
 import oap.testng.TestDirectoryFixture;

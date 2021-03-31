@@ -22,27 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.module;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import com.google.common.base.Preconditions;
+import oap.application.ServiceInitialization;
 
-import java.io.IOException;
+import java.util.Map;
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
-    @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
+public class ModuleExt<T> {
+    public final Module module;
+    public final T ext;
+    private final Map<String, ServiceInitialization> moduleServices;
 
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
-        }
+    public ModuleExt( Module module, T ext, Map<String, ServiceInitialization> moduleServices ) {
+        this.module = module;
+        this.ext = ext;
+        this.moduleServices = moduleServices;
+    }
 
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
+    public boolean containsService( String serviceName ) {
+        return module.services.containsKey( serviceName );
+    }
+
+    public boolean isServiceInitialized( String serviceName ) {
+        return moduleServices.containsKey( serviceName );
+    }
+
+    public Object getInstance( String serviceName ) {
+        var si = moduleServices.get( serviceName );
+        Preconditions.checkNotNull( si );
+        return si.instance;
     }
 }

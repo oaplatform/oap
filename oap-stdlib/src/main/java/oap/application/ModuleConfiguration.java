@@ -25,6 +25,7 @@ package oap.application;
 
 import com.google.common.base.Preconditions;
 import oap.application.ApplicationConfiguration.ApplicationConfigurationModule;
+import oap.application.module.Module;
 import oap.json.Binder;
 
 import java.net.URL;

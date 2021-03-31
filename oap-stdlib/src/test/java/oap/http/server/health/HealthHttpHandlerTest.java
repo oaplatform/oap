@@ -24,7 +24,7 @@
 
 package oap.http.server.health;
 
-import oap.application.Module;
+import oap.application.module.Module;
 import oap.application.testng.KernelFixture;
 import oap.http.testng.HttpAsserts;
 import oap.testng.Fixtures;

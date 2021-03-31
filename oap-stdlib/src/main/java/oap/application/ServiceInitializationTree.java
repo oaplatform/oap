@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import oap.application.module.Module;
 import oap.util.Result;
 
 import java.util.Collection;
@@ -107,8 +108,9 @@ public class ServiceInitializationTree implements ServiceStorage {
             return map.remove( name );
         }
 
-        public Object getExt( String ext ) {
-            return this.module.ext.get( ext );
+        @SuppressWarnings( "unchecked" )
+        public <T> T getExt( String ext ) {
+            return ( T ) this.module.ext.get( ext );
         }
     }
 }

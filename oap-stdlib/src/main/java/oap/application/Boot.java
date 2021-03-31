@@ -24,6 +24,7 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.module.Module;
 import oap.cli.Cli;
 import oap.cli.Option;
 import sun.misc.Signal;

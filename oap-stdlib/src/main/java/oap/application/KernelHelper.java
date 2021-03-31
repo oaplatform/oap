@@ -25,6 +25,8 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.module.Module;
+import oap.application.module.Service;
 import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 
@@ -142,7 +144,7 @@ public class KernelHelper {
         return profileEnabled( module.profiles, systemProfiles );
     }
 
-    public static boolean isServiceEnabled( Module.Service service, Set<String> systemProfiles ) {
+    public static boolean isServiceEnabled( Service service, Set<String> systemProfiles ) {
         return profileEnabled( service.profiles, systemProfiles );
     }
 

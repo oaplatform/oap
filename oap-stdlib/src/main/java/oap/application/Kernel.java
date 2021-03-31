@@ -32,6 +32,11 @@ import oap.application.link.FieldLinkReflection;
 import oap.application.link.LinkReflection;
 import oap.application.link.ListLinkReflection;
 import oap.application.link.MapLinkReflection;
+import oap.application.module.Module;
+import oap.application.module.ModuleExt;
+import oap.application.module.Reference;
+import oap.application.module.Service;
+import oap.application.module.ServiceExt;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -90,7 +95,7 @@ public class Kernel implements Closeable {
         this( DEFAULT, moduleConfigurations );
     }
 
-    private void linkListeners( ModuleItem moduleItem, Module.Service service, Object instance ) throws ApplicationException {
+    private void linkListeners( ModuleItem moduleItem, Service service, Object instance ) throws ApplicationException {
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
             var methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
@@ -436,7 +441,7 @@ public class Kernel implements Closeable {
         return Optional.ofNullable( module.get( serviceName ) ).map( si -> ( T ) si.instance );
     }
 
-    private <T> Optional<T> service( Module.Reference reference ) {
+    private <T> Optional<T> service( Reference reference ) {
         return service( reference.module, reference.service );
     }
 
@@ -483,12 +488,27 @@ public class Kernel implements Closeable {
         var ret = new ArrayList<ModuleExt<T>>();
 
         for( var module : services.values() ) {
-            var moduleExt = module.getExt( ext );
+            var moduleExt = module.<T>getExt( ext );
             if( moduleExt == null ) continue;
 
-            var extInstance = Binder.json.unmarshal( clazz, Binder.json.marshal( moduleExt ) );
+            ret.add( new ModuleExt<>( module.module, moduleExt, module.map ) );
+        }
 
-            ret.add( new ModuleExt<>( module.module, extInstance, module.map ) );
+        return ret;
+    }
+
+    public <T> List<ServiceExt<T>> servicesByExt( String ext, Class<T> clazz ) {
+        var ret = new ArrayList<ServiceExt<T>>();
+
+        for( var module : services.values() ) {
+            for( var serviceEntry : module.map.entrySet() ) {
+                var service = serviceEntry.getValue();
+                var extConfiguration = service.service.<T>getExt( ext );
+                if( extConfiguration == null ) continue;
+
+                ret.add( new ServiceExt<T>( serviceEntry.getKey(), module.module, service, extConfiguration ) );
+            }
+
 
         }
 

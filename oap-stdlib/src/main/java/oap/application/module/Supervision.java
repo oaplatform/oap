@@ -22,34 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.module;
 
-import com.google.common.base.Preconditions;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.util.Map;
+import java.util.List;
 
-public class ModuleExt<T> {
-    public final Module module;
-    public final T ext;
-    private final Map<String, ServiceInitialization> moduleServices;
-
-    public ModuleExt( Module module, T ext, Map<String, ServiceInitialization> moduleServices ) {
-        this.module = module;
-        this.ext = ext;
-        this.moduleServices = moduleServices;
-    }
-
-    public boolean containsService( String serviceName ) {
-        return module.services.containsKey( serviceName );
-    }
-
-    public boolean isServiceInitialized( String serviceName ) {
-        return moduleServices.containsKey( serviceName );
-    }
-
-    public Object getInstance( String serviceName ) {
-        var si = moduleServices.get( serviceName );
-        Preconditions.checkNotNull( si );
-        return si.instance;
-    }
+/**
+ * Created by igor.petrenko on 2021-03-30.
+ */
+@EqualsAndHashCode
+@ToString
+public class Supervision {
+    public boolean supervise;
+    public boolean thread;
+    public boolean schedule;
+    public List<String> preStartWith = List.of( "preStart" );
+    public List<String> startWith = List.of( "start" );
+    public List<String> preStopWith = List.of( "preStop" );
+    public List<String> stopWith = List.of( "stop", "close" );
+    public long delay; //ms
+    public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
 }

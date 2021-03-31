@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceOne.Complex;
+import oap.application.module.Module;
 import oap.concurrent.Threads;
 import oap.system.Env;
 import oap.util.Maps;
