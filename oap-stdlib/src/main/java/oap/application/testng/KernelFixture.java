@@ -86,7 +86,7 @@ public class KernelFixture extends EnvFixture {
     }
 
     public KernelFixture withFileProperties( URL location ) {
-        var map = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, location );
+        var map = Binder.Format.of( location, true ).binder.unmarshal( new TypeRef<Map<String, Object>>() {}, location );
         properties.putAll( map );
 
         return this;
