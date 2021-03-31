@@ -37,6 +37,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -54,8 +55,8 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
         return this;
     }
 
-    protected Object getProperty( String property ) {
-        return properties.get( property );
+    public Optional<Object> getProperty( String property ) {
+        return Optional.ofNullable( properties.get( property ) );
     }
 
     public EnvFixture definePort( String property, String portKey ) {
