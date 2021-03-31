@@ -81,7 +81,7 @@ public class KernelExtConfiguration extends Configuration<KernelExt> {
 
     public Object deserializeService( String key, Object value ) {
         var item = services.get( key );
-        if( item == null ) throw new ApplicationException( "Unknown service parameter " + key + " with value " + value );
+        if( item == null ) return value;
 
         return item.deserialize( value );
     }
