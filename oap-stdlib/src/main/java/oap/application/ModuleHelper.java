@@ -52,15 +52,15 @@ class ModuleHelper {
     private ModuleHelper() {
     }
 
-    private static ModuleTree init( Set<Kernel.ModuleWithLocation> modules, Set<String> profiles ) {
+    private static ModuleItemTree init( Set<Kernel.ModuleWithLocation> modules, Set<String> profiles ) {
         var map = initModules( modules, profiles );
         initServices( map, profiles );
 
         return map;
     }
 
-    public static ModuleTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
-                                   Set<String> profiles, Set<String> main, Kernel kernel ) throws ApplicationException {
+    public static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
+                                       Set<String> profiles, Set<String> main, Kernel kernel ) throws ApplicationException {
         var map = init( modules, profiles );
 
         loadOnlyMainModuleAndDependsOn( map, main, profiles );
@@ -79,7 +79,7 @@ class ModuleHelper {
         return map;
     }
 
-    private static void validateServiceName( ModuleTree map ) throws ApplicationException {
+    private static void validateServiceName( ModuleItemTree map ) throws ApplicationException {
         for( var moduleInfo : map.values() ) {
             for( var serviceName : moduleInfo.services.keySet() ) {
                 if( !MODULE_SERVICE_NAME_PATTERN.matcher( serviceName ).matches() ) {
@@ -89,7 +89,7 @@ class ModuleHelper {
         }
     }
 
-    private static void validateModuleName( ModuleTree map ) throws ApplicationException {
+    private static void validateModuleName( ModuleItemTree map ) throws ApplicationException {
         for( var moduleName : map.keySet() ) {
             if( !MODULE_SERVICE_NAME_PATTERN.matcher( moduleName ).matches() ) {
                 throw new ApplicationException( "module name " + moduleName + " does not match specified regex " + MODULE_SERVICE_NAME_PATTERN.pattern() );
@@ -98,7 +98,7 @@ class ModuleHelper {
     }
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )
-    private static Pair<ModuleItem, ModuleItem.ServiceItem> findService( ModuleTree map, String thisModuleName, String moduleName, String serviceName ) {
+    private static Pair<ModuleItem, ModuleItem.ServiceItem> findService( ModuleItemTree map, String thisModuleName, String moduleName, String serviceName ) {
         var found = new ArrayList<Pair<ModuleItem, ModuleItem.ServiceItem>>();
 
         for( var moduleInfo : map.values() ) {
@@ -121,8 +121,8 @@ class ModuleHelper {
         return Lists.head2( found );
     }
 
-    private static ModuleTree initModules( Set<Kernel.ModuleWithLocation> modules, Set<String> profiles ) {
-        var map = new ModuleTree();
+    private static ModuleItemTree initModules( Set<Kernel.ModuleWithLocation> modules, Set<String> profiles ) {
+        var map = new ModuleItemTree();
 
         for( var module : modules ) {
             var enabled = true;
@@ -137,7 +137,7 @@ class ModuleHelper {
         return map;
     }
 
-    private static void initServices( ModuleTree map, Set<String> profiles ) {
+    private static void initServices( ModuleItemTree map, Set<String> profiles ) {
         for( var moduleInfo : map.values() ) {
             for( var serviceEntry : moduleInfo.module.services.entrySet() ) {
                 var serviceName = serviceEntry.getKey();
@@ -159,7 +159,7 @@ class ModuleHelper {
         }
     }
 
-    private static void initServicesDeps( ModuleTree map, Kernel kernel ) {
+    private static void initServicesDeps( ModuleItemTree map, Kernel kernel ) {
         for( var moduleItem : map.values() ) {
             if( !moduleItem.isEnabled() ) continue;
 
@@ -203,7 +203,7 @@ class ModuleHelper {
         }
     }
 
-    private static void initDepsParameter( ModuleTree map,
+    private static void initDepsParameter( ModuleItemTree map,
                                            Kernel kernel,
                                            ModuleItem moduleItem, String serviceName,
                                            Object value, boolean required,
@@ -228,7 +228,7 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleTree map, Set<String> main, Set<String> profiles ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, Set<String> main, Set<String> profiles ) {
         var modules = map.clone();
         loadOnlyMainModuleAndDependsOn( modules, main, profiles, new LinkedHashSet<>() );
 
@@ -238,7 +238,7 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleTree modules, Set<String> main, Set<String> profiles, LinkedHashSet<String> loaded ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules, Set<String> main, Set<String> profiles, LinkedHashSet<String> loaded ) {
         for( var module : main ) {
             var moduleItem = modules.get( module );
 
@@ -262,7 +262,7 @@ class ModuleHelper {
         }
     }
 
-    private static void validateRemoting( ModuleTree map ) throws ApplicationException {
+    private static void validateRemoting( ModuleItemTree map ) throws ApplicationException {
         var invalidRemoting = new ArrayList<String>();
 
         for( var moduleItem : map.values() ) {
@@ -280,27 +280,27 @@ class ModuleHelper {
         }
     }
 
-    private static void removeDisabled( ModuleTree map ) {
+    private static void removeDisabled( ModuleItemTree map ) {
         removeDisabledModules( map );
         removeDisabledServices( map );
     }
 
-    private static void removeDisabledModules( ModuleTree map ) {
+    private static void removeDisabledModules( ModuleItemTree map ) {
         map.values().removeIf( moduleInfo -> !moduleInfo.isEnabled() );
     }
 
-    private static void removeDisabledServices( ModuleTree map ) {
+    private static void removeDisabledServices( ModuleItemTree map ) {
         for( var moduleInfo : map.values() ) {
             moduleInfo.services.values().removeIf( serviceInfo -> !serviceInfo.enabled );
         }
     }
 
-    private static void validateDeps( ModuleTree map ) throws ApplicationException {
+    private static void validateDeps( ModuleItemTree map ) throws ApplicationException {
         validateModuleDeps( map );
         validateServiceDeps( map );
     }
 
-    private static void validateModuleDeps( ModuleTree map ) throws ApplicationException {
+    private static void validateModuleDeps( ModuleItemTree map ) throws ApplicationException {
         for( var moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
@@ -312,7 +312,7 @@ class ModuleHelper {
         }
     }
 
-    private static void validateImplementation( ModuleTree map ) throws ApplicationException {
+    private static void validateImplementation( ModuleItemTree map ) throws ApplicationException {
         for( var moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
@@ -325,7 +325,7 @@ class ModuleHelper {
         }
     }
 
-    private static void validateServiceDeps( ModuleTree map ) throws ApplicationException {
+    private static void validateServiceDeps( ModuleItemTree map ) throws ApplicationException {
         for( var moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
@@ -341,14 +341,14 @@ class ModuleHelper {
         }
     }
 
-    private static void sort( ModuleTree map ) {
+    private static void sort( ModuleItemTree map ) {
         sortModules( map );
         for( var moduleInfo : map.values() ) {
             sortServices( moduleInfo );
         }
     }
 
-    private static void sortModules( ModuleTree map ) {
+    private static void sortModules( ModuleItemTree map ) {
         log.trace( "modules: before sort: \n{}",
             String.join( "\n", Lists.map( map.entrySet(), e -> "  " + e.getKey() + ": " + e.getValue().getDependsOn() ) )
         );
@@ -458,19 +458,19 @@ class ModuleHelper {
         );
     }
 
-    private static void fixServiceName( ModuleTree map ) {
+    private static void fixServiceName( ModuleItemTree map ) {
         for( var module : map.values() ) {
             module.services.forEach( ( implName, serviceItem ) ->
                 serviceItem.fixServiceName( implName ) );
         }
     }
 
-    private static void initDeps( ModuleTree map, Set<String> profiles, Kernel kernel ) {
+    private static void initDeps( ModuleItemTree map, Set<String> profiles, Kernel kernel ) {
         initModuleDeps( map, profiles );
         initServicesDeps( map, kernel );
     }
 
-    private static void initModuleDeps( ModuleTree map, Set<String> profiles ) {
+    private static void initModuleDeps( ModuleItemTree map, Set<String> profiles ) {
         for( var moduleItem : map.values() ) {
             for( var d : moduleItem.module.dependsOn ) {
                 ModuleItem dModule;

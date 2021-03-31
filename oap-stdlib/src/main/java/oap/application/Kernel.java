@@ -220,7 +220,7 @@ public class Kernel implements Closeable {
         }
     }
 
-    private ServiceInitializationTree instantiateServices( ModuleTree map ) throws ApplicationException {
+    private ServiceInitializationTree instantiateServices( ModuleItemTree map ) throws ApplicationException {
         var retModules = new ServiceInitializationTree();
 
         for( var moduleItem : map.values() ) {

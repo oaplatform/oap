@@ -27,6 +27,7 @@ package oap.application;
 import oap.util.Result;
 
 import javax.annotation.Nonnull;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,13 +39,13 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 /**
  * Created by igor.petrenko on 2021-03-18.
  */
-class ModuleTree implements ServiceStorage {
+class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceStorage {
     private final LinkedHashMap<String, ModuleItem> map = new LinkedHashMap<>();
 
-    ModuleTree() {
+    ModuleItemTree() {
     }
 
-    ModuleTree( Map<String, ModuleItem> map ) {
+    ModuleItemTree( Map<String, ModuleItem> map ) {
         this.map.putAll( map );
     }
 
@@ -52,18 +53,22 @@ class ModuleTree implements ServiceStorage {
         return map.remove( moduleName );
     }
 
+    @Override
     public ModuleItem put( String moduleName, ModuleItem moduleItem ) {
         return map.put( moduleName, moduleItem );
     }
 
+    @Override
     public Collection<ModuleItem> values() {
         return map.values();
     }
 
+    @Override
     public Set<String> keySet() {
         return map.keySet();
     }
 
+    @Override
     public Set<Map.Entry<String, ModuleItem>> entrySet() {
         return map.entrySet();
     }
@@ -84,8 +89,8 @@ class ModuleTree implements ServiceStorage {
     }
 
     @Override
-    public ModuleTree clone() {
-        return new ModuleTree( map );
+    public ModuleItemTree clone() {
+        return new ModuleItemTree( map );
     }
 
     public ModuleItem get( String moduleName ) {

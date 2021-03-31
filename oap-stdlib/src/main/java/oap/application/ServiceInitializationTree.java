@@ -27,8 +27,10 @@ package oap.application;
 import oap.application.module.Module;
 import oap.util.Result;
 
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
@@ -37,19 +39,26 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 /**
  * Created by igor.petrenko on 2021-03-18.
  */
-public class ServiceInitializationTree implements ServiceStorage {
+public class ServiceInitializationTree extends AbstractMap<String, ServiceInitializationTree.ModuleTree> implements ServiceStorage {
     private final LinkedHashMap<String, ModuleTree> map = new LinkedHashMap<>();
 
     public void put( Module module, String serviceName, ServiceInitialization serviceInitialization ) {
         map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).put( serviceName, serviceInitialization );
     }
 
-    public void forEach( BiConsumer<String, ModuleTree> action ) {
+    @Override
+    public void forEach( BiConsumer<? super String, ? super ModuleTree> action ) {
         map.forEach( action );
     }
 
+    @Override
     public Collection<ModuleTree> values() {
-        return map.values();
+        return super.values();
+    }
+
+    @Override
+    public Set<Entry<String, ModuleTree>> entrySet() {
+        return map.entrySet();
     }
 
     public ModuleTree get( String module ) {
@@ -75,7 +84,7 @@ public class ServiceInitializationTree implements ServiceStorage {
         return Result.success( service );
     }
 
-    public static class ModuleTree {
+    public static class ModuleTree extends AbstractMap<String, ServiceInitialization> {
         public final LinkedHashMap<String, ServiceInitialization> map = new LinkedHashMap<>();
         public final Module module;
 
@@ -83,29 +92,38 @@ public class ServiceInitializationTree implements ServiceStorage {
             this.module = module;
         }
 
-        public void put( String serviceName, ServiceInitialization serviceInitialization ) {
-            map.put( serviceName, serviceInitialization );
+        @Override
+        public ServiceInitialization put( String serviceName, ServiceInitialization serviceInitialization ) {
+            return map.put( serviceName, serviceInitialization );
         }
 
         public ServiceInitialization get( String serviceName ) {
             return map.get( serviceName );
         }
 
+        @Override
         public ServiceInitialization putIfAbsent( String serviceName, ServiceInitialization si ) {
             return map.putIfAbsent( serviceName, si );
         }
 
-        public void forEach( BiConsumer<String, ServiceInitialization> consumer ) {
-            map.forEach( consumer );
-
+        @Override
+        public void forEach( BiConsumer<? super String, ? super ServiceInitialization> action ) {
+            map.forEach( action );
         }
 
+        @Override
         public Collection<ServiceInitialization> values() {
             return map.values();
         }
 
-        public ServiceInitialization remove( String name ) {
-            return map.remove( name );
+        @Override
+        public Set<Entry<String, ServiceInitialization>> entrySet() {
+            return map.entrySet();
+        }
+
+        @Override
+        public ServiceInitialization remove( Object key ) {
+            return map.remove( key );
         }
 
         @SuppressWarnings( "unchecked" )
