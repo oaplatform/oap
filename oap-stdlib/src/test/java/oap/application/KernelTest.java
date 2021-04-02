@@ -31,6 +31,7 @@ import oap.application.ServiceOne.Complex;
 import oap.application.module.Module;
 import oap.concurrent.Threads;
 import oap.system.Env;
+import oap.util.Lists;
 import oap.util.Maps;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
@@ -42,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.application.KernelTest.Enum.ONE;
+import static oap.application.KernelTest.Enum.TWO;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
@@ -300,6 +303,20 @@ public class KernelTest {
         }
     }
 
+    @Test
+    public void testListOfEnums() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "enum.conf" ) )
+        );
+        try {
+            kernel.start( Map.of( "boot.main", "enum" ) );
+            var enumList = kernel.serviceOfClass( TestEnum.class ).orElseThrow();
+            assertThat( enumList.enums ).containsExactly( ONE, TWO );
+        } finally {
+            kernel.stop();
+        }
+    }
+
     @Slf4j
     public static class Service1 {
         public final List<Object> list = new ArrayList<>();
@@ -347,5 +364,17 @@ public class KernelTest {
                 done = true;
             }
         }
+    }
+
+    public static class TestEnum {
+        public final List<Enum> enums = Lists.empty();
+
+        public TestEnum( List<Enum> enums ) {
+            this.enums.addAll( enums );
+        }
+    }
+
+    public enum Enum {
+        ONE, TWO
     }
 }
