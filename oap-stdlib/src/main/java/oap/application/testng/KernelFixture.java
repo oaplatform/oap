@@ -158,7 +158,15 @@ public class KernelFixture extends EnvFixture {
             .orElseThrow( () -> new IllegalArgumentException( "unknown service " + reference ) );
     }
 
-    @Override
+    public <T> List<T> ofClass( Class<T> clazz ) {
+        return kernel.ofClass( clazz );
+    }
+
+    public <T> List<T> ofClass( String moduleName, Class<T> clazz ) {
+        return kernel.ofClass( moduleName, clazz );
+    }
+
+        @Override
     protected void before() {
         defineDefaults();
 
