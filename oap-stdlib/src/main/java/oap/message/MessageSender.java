@@ -41,6 +41,7 @@ import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
 import oap.pool.Pool;
+import oap.time.TimeService;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
@@ -50,7 +51,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.github.jamm.MemoryMeter;
-import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
 import javax.annotation.Nonnull;
@@ -103,6 +103,7 @@ public class MessageSender implements Closeable {
         }
     }
 
+    private final TimeService timeService;
     private final String host;
     private final int port;
     private final Path directory;
@@ -124,7 +125,8 @@ public class MessageSender implements Closeable {
     private Scheduled memorySyncScheduler;
     private boolean networkAvailable = true;
 
-    public MessageSender( String host, int port, Path directory ) {
+    public MessageSender( TimeService timeService, String host, int port, Path directory ) {
+        this.timeService = timeService;
         this.host = host;
         this.port = port;
         this.directory = directory;
@@ -147,16 +149,16 @@ public class MessageSender implements Closeable {
         };
     }
 
-    public static Path lock( Path file, long storageLockExpiration ) {
+    public static Path lock( TimeService timeService, Path file, long storageLockExpiration ) {
         var lockFile = Paths.get( FilenameUtils.removeExtension( file.toString() ) + ".lock" );
 
         if( Files.createFile( lockFile ) ) return lockFile;
         if( storageLockExpiration <= 0 ) return null;
 
         log.trace( "lock found {}, expiration = {}", lockFile,
-            durationToString( Files.getLastModifiedTime( lockFile ) + storageLockExpiration - DateTimeUtils.currentTimeMillis() ) );
+            durationToString( Files.getLastModifiedTime( lockFile ) + storageLockExpiration - timeService.currentTimeMillis() ) );
 
-        return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < DateTimeUtils.currentTimeMillis() ? lockFile : null;
+        return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < timeService.currentTimeMillis() ? lockFile : null;
     }
 
     public long getMessagesMemorySize() {
@@ -327,7 +329,7 @@ public class MessageSender implements Closeable {
         for( var msgFile : messageFiles ) {
             Path lockFile;
 
-            if( ( lockFile = lock( msgFile, storageLockExpiration ) ) != null ) {
+            if( ( lockFile = lock( timeService, msgFile, storageLockExpiration ) ) != null ) {
                 log.debug( "reading unsent message {}", msgFile );
                 try {
                     var fileName = FilenameUtils.getName( msgFile.toString() );

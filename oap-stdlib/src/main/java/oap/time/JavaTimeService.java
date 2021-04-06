@@ -22,17 +22,36 @@
  * SOFTWARE.
  */
 
-package oap.testng;
+package oap.time;
 
-import oap.time.JavaTimeService;
-import oap.time.JodaTimeService;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
-public class SystemTimerFixture implements Fixture {
-    public static final SystemTimerFixture FIXTURE = new SystemTimerFixture();
+public class JavaTimeService implements TimeService {
+    public static final JavaTimeService INSTANCE = new JavaTimeService();
+
+    private Clock clock = Clock.system( ZoneOffset.UTC );
 
     @Override
-    public void afterMethod() {
-        JodaTimeService.INSTANCE.setCurrentMillisSystem();
-        JavaTimeService.INSTANCE.setCurrentMillisSystem();
+    public Instant now() {
+        return Instant.now( clock );
+    }
+
+    @Override
+    public long currentTimeMillis() {
+        return clock.millis();
+    }
+
+    public void useFixedClockAt( Instant date ) {
+        clock = Clock.fixed( date, ZoneOffset.UTC );
+    }
+
+    public void setCurrentMillisFixed( long fixedMillis ) {
+        clock = Clock.fixed( Instant.ofEpochMilli( fixedMillis ), ZoneOffset.UTC );
+    }
+
+    public void setCurrentMillisSystem() {
+        clock = Clock.system( ZoneOffset.UTC );
     }
 }

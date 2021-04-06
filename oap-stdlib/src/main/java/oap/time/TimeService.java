@@ -22,17 +22,12 @@
  * SOFTWARE.
  */
 
-package oap.testng;
+package oap.time;
 
-import oap.time.JavaTimeService;
-import oap.time.JodaTimeService;
+import java.time.Instant;
 
-public class SystemTimerFixture implements Fixture {
-    public static final SystemTimerFixture FIXTURE = new SystemTimerFixture();
+public interface TimeService {
+    Instant now();
 
-    @Override
-    public void afterMethod() {
-        JodaTimeService.INSTANCE.setCurrentMillisSystem();
-        JavaTimeService.INSTANCE.setCurrentMillisSystem();
-    }
+    long currentTimeMillis();
 }
