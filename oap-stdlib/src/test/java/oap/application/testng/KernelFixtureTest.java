@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class KernelFixtureTest extends Fixtures {
     private final KernelFixture kernelFixture;
-    private final EnvFixture testFixture;
+    private final TestFixture testFixture;
 
     {
         kernelFixture = fixture( new KernelFixture(
@@ -68,7 +68,7 @@ public class KernelFixtureTest extends Fixtures {
         public String value;
     }
 
-    public static class TestFixture extends EnvFixture {
+    public static class TestFixture extends EnvFixture<TestFixture> {
         public TestFixture() {
             definePort( "TEST_PORT", "TEST_PORT" );
         }

@@ -45,7 +45,7 @@ import java.util.Map;
 import static oap.http.testng.HttpAsserts.httpPrefix;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
-public class KernelFixture extends EnvFixture {
+public class KernelFixture extends EnvFixture<KernelFixture> {
     public static final String ANY = "*";
 
     public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
@@ -92,11 +92,6 @@ public class KernelFixture extends EnvFixture {
         return this;
     }
 
-    @Override
-    public KernelFixture withKind( Kind kind ) {
-        return ( KernelFixture ) super.withKind( kind );
-    }
-
     public int defaultHttpPort() {
         return portFor( TEST_HTTP_PORT );
     }
@@ -130,16 +125,6 @@ public class KernelFixture extends EnvFixture {
         return this;
     }
 
-    @Override
-    public KernelFixture define( String property, Object value ) {
-        return ( KernelFixture ) super.define( property, value );
-    }
-
-    @Override
-    public KernelFixture definePort( String property, String portKey ) {
-        return ( KernelFixture ) super.definePort( property, portKey );
-    }
-
     @Nonnull
     public <T> T service( @Nonnull String moduleName, @Nonnull Class<T> klass ) {
         return kernel.serviceOfClass( moduleName, klass )
@@ -166,7 +151,7 @@ public class KernelFixture extends EnvFixture {
         return kernel.ofClass( moduleName, clazz );
     }
 
-        @Override
+    @Override
     protected void before() {
         defineDefaults();
 
@@ -174,7 +159,7 @@ public class KernelFixture extends EnvFixture {
         super.before();
 
         for( var f : fixtures ) {
-            if( f instanceof EnvFixture ) merge( ( EnvFixture ) f );
+            if( f instanceof EnvFixture<?> ) importEnv( ( EnvFixture<?> ) f );
         }
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
@@ -196,12 +181,5 @@ public class KernelFixture extends EnvFixture {
         this.kernel = null;
 
         super.after();
-    }
-
-    @Override
-    public KernelFixture withScope( Scope scope ) {
-        super.withScope( scope );
-
-        return this;
     }
 }

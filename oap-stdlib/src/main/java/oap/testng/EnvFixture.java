@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class EnvFixture extends FixtureWithScope<EnvFixture> {
+public class EnvFixture<TEnvFixture extends EnvFixture<TEnvFixture>> extends FixtureWithScope<TEnvFixture> {
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
     protected Kind kind = Kind.JAVA;
@@ -49,33 +49,36 @@ public class EnvFixture extends FixtureWithScope<EnvFixture> {
     public EnvFixture() {
     }
 
-    public EnvFixture define( String property, Object value ) {
+    @SuppressWarnings( "unchecked" )
+    public TEnvFixture define( String property, Object value ) {
         properties.put( property, value );
 
-        return this;
+        return ( TEnvFixture ) this;
     }
 
     public Optional<Object> getProperty( String property ) {
         return Optional.ofNullable( properties.get( property ) );
     }
 
-    public EnvFixture definePort( String property, String portKey ) {
+    public TEnvFixture definePort( String property, String portKey ) {
         return define( property, portFor( portKey ) );
     }
 
-    protected EnvFixture merge( EnvFixture envFixture ) {
+    @SuppressWarnings( "unchecked" )
+    protected TEnvFixture importEnv( EnvFixture<?> envFixture ) {
         envFixture.ports.forEach( ports::putIfAbsent );
         envFixture.properties.forEach( properties::putIfAbsent );
 
-        return this;
+        return ( TEnvFixture ) this;
     }
 
-    public EnvFixture withKind( Kind kind ) {
+    @SuppressWarnings( "unchecked" )
+    public TEnvFixture withKind( Kind kind ) {
         Preconditions.checkNotNull( kind );
 
         this.kind = kind;
 
-        return this;
+        return ( TEnvFixture ) this;
     }
 
     @Override
