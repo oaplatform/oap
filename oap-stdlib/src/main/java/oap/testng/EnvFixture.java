@@ -65,7 +65,7 @@ public class EnvFixture<TEnvFixture extends EnvFixture<TEnvFixture>> extends Fix
     }
 
     @SuppressWarnings( "unchecked" )
-    protected TEnvFixture importEnv( EnvFixture<?> envFixture ) {
+    public TEnvFixture importEnv( EnvFixture<?> envFixture ) {
         envFixture.ports.forEach( ports::putIfAbsent );
         envFixture.properties.forEach( properties::putIfAbsent );
 
