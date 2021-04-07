@@ -24,13 +24,11 @@
 package oap.http.server.apache;
 
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.http.ClasspathResourceHandler;
@@ -96,7 +94,6 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     public int keepAliveTimeout = 1000 * 20;
     public String originalServer = "OAP Server/1.0";
     public boolean responseDate = true;
-    public RejectedInfo rejected = new RejectedInfo( HTTP_UNAVAILABLE, "temporary overload" );
     private HttpService httpService;
     private ExecutorService executor;
     private ExecutorService rejectedExecutor;
@@ -214,7 +211,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                     } finally {
                         var info = connections.remove( connectionId );
 
-                        log.trace( "connection: {}, requests: {}, duration: {}",
+                        log.trace( "closing connection: {}, requests: {}, duration: {}",
                             info.connection, ( long ) requestsCounter.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
                         try {
                             connection.close();
@@ -230,7 +227,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                 try {
                     rejectedExecutor.execute( () -> {
                         try {
-                            var response = new BasicHttpResponse( HttpVersion.HTTP_1_1, rejected.code, rejected.reason );
+                            var response = new BasicHttpResponse( HttpVersion.HTTP_1_1, HTTP_UNAVAILABLE, "temporary overload" );
                             response.setHeader( "Connection", "close" );
                             connection.sendResponseHeader( response );
                         } catch( Exception ignored ) {
@@ -283,21 +280,5 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     @Override
     public void close() {
         preStop();
-    }
-
-    @ToString
-    public static class RejectedInfo {
-        public final int code;
-        public final String reason;
-
-        @JsonCreator
-        public RejectedInfo( int code, String reason ) {
-            this.code = code;
-            this.reason = reason;
-        }
-
-        public RejectedInfo( int code ) {
-            this( code, null );
-        }
     }
 }
