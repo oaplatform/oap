@@ -77,6 +77,15 @@ public final class Resources {
             .orElseThrow( () -> new IllegalArgumentException( "resource not found " + name + " for context class " + contextClass ) );
     }
 
+    public static String resolveResourcePath( Class<?> contextClass, String resourceName ) {
+        Class<?> c = contextClass;
+        while( c.isArray() ) {
+            c = c.getComponentType();
+        }
+        var baseName = c.getPackageName();
+        return '/' + baseName.replace( '.', '/' ) + '/' + c.getSimpleName() + '/' + resourceName;
+    }
+
     private static String resolveName( Class<?> contextClass ) {
         Class<?> c = contextClass;
         while( c.isArray() ) {

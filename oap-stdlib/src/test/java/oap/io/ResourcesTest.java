@@ -77,4 +77,10 @@ public class ResourcesTest extends Fixtures {
         assertThat( Resources.readStrings( getClass(), "/oap/io/" + ResourcesTest.class.getSimpleName() + "/test.txt" ) )
             .containsOnly( "test\n" );
     }
+
+    @Test
+    public void testResolveResourcePath() {
+        assertThat( Resources.resolveResourcePath( getClass(), "test.resource" ) )
+            .isEqualTo( "/oap/io/ResourcesTest/test.resource" );
+    }
 }

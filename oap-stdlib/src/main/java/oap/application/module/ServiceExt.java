@@ -22,27 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.module;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import oap.application.ServiceInitialization;
 
-import java.io.IOException;
+/**
+ * Created by igor.petrenko on 2021-03-31.
+ */
+public class ServiceExt<T> {
+    public final Module module;
+    public final String name;
+    public final T ext;
+    private final ServiceInitialization serviceInitialization;
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
-    @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
+    public ServiceExt( String name, Module module, ServiceInitialization serviceInitialization, T ext ) {
+        this.module = module;
+        this.name = name;
+        this.serviceInitialization = serviceInitialization;
+        this.ext = ext;
+    }
 
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
-        }
-
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
+    public Object getInstance() {
+        return serviceInitialization.instance;
     }
 }

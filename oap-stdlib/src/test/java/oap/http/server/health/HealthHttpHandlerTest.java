@@ -24,7 +24,7 @@
 
 package oap.http.server.health;
 
-import oap.application.Module;
+import oap.application.module.Module;
 import oap.application.testng.KernelFixture;
 import oap.http.testng.HttpAsserts;
 import oap.testng.Fixtures;
@@ -36,13 +36,12 @@ import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.testng.Asserts.locationOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 
 public class HealthHttpHandlerTest extends Fixtures {
     {
         fixture( new KernelFixture(
-            locationOfTestResource( getClass(), "application.test.conf" ),
+            urlOfTestResource( getClass(), "application.test.conf" ),
             Lists.concat(
                 List.of( urlOfTestResource( getClass(), "oap-module.yaml" ) ),
                 Module.CONFIGURATION.urlsFromClassPath()

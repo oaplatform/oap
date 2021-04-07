@@ -481,6 +481,7 @@ public final class Client implements Closeable {
     public void reset() {
         Closeables.close( client );
         client = builder.client();
+        clearCookies();
     }
 
     @Override

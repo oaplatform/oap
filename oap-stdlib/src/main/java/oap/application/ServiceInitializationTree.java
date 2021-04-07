@@ -24,10 +24,13 @@
 
 package oap.application;
 
+import oap.application.module.Module;
 import oap.util.Result;
 
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
@@ -36,27 +39,34 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 /**
  * Created by igor.petrenko on 2021-03-18.
  */
-class ServiceInitializationTree implements ServiceStorage {
-    private final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> map = new LinkedHashMap<>();
+public class ServiceInitializationTree extends AbstractMap<String, ServiceInitializationTree.ModuleTree> implements ServiceStorage {
+    private final LinkedHashMap<String, ModuleTree> map = new LinkedHashMap<>();
 
-    public void put( String moduleName, String serviceName, ServiceInitialization serviceInitialization ) {
-        map.computeIfAbsent( moduleName, mn -> new LinkedHashMap<>() ).put( serviceName, serviceInitialization );
+    public void put( Module module, String serviceName, ServiceInitialization serviceInitialization ) {
+        map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).put( serviceName, serviceInitialization );
     }
 
-    public void forEach( BiConsumer<String, LinkedHashMap<String, ServiceInitialization>> action ) {
+    @Override
+    public void forEach( BiConsumer<? super String, ? super ModuleTree> action ) {
         map.forEach( action );
     }
 
-    public Collection<LinkedHashMap<String, ServiceInitialization>> values() {
-        return map.values();
+    @Override
+    public Collection<ModuleTree> values() {
+        return super.values();
     }
 
-    public LinkedHashMap<String, ServiceInitialization> get( String module ) {
+    @Override
+    public Set<Entry<String, ModuleTree>> entrySet() {
+        return map.entrySet();
+    }
+
+    public ModuleTree get( String module ) {
         return map.get( module );
     }
 
-    public ServiceInitialization putIfAbsent( String moduleName, String serviceName, ServiceInitialization si ) {
-        return map.computeIfAbsent( moduleName, mn -> new LinkedHashMap<>() ).putIfAbsent( serviceName, si );
+    public ServiceInitialization putIfAbsent( Module module, String serviceName, ServiceInitialization si ) {
+        return map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).putIfAbsent( serviceName, si );
     }
 
     public void clear() {
@@ -72,5 +82,53 @@ class ServiceInitializationTree implements ServiceStorage {
         if( service == null ) return Result.failure( SERVICE_NOT_FOUND );
 
         return Result.success( service );
+    }
+
+    public static class ModuleTree extends AbstractMap<String, ServiceInitialization> {
+        public final LinkedHashMap<String, ServiceInitialization> map = new LinkedHashMap<>();
+        public final Module module;
+
+        public ModuleTree( Module module ) {
+            this.module = module;
+        }
+
+        @Override
+        public ServiceInitialization put( String serviceName, ServiceInitialization serviceInitialization ) {
+            return map.put( serviceName, serviceInitialization );
+        }
+
+        public ServiceInitialization get( String serviceName ) {
+            return map.get( serviceName );
+        }
+
+        @Override
+        public ServiceInitialization putIfAbsent( String serviceName, ServiceInitialization si ) {
+            return map.putIfAbsent( serviceName, si );
+        }
+
+        @Override
+        public void forEach( BiConsumer<? super String, ? super ServiceInitialization> action ) {
+            map.forEach( action );
+        }
+
+        @Override
+        public Collection<ServiceInitialization> values() {
+            return map.values();
+        }
+
+        @Override
+        public Set<Entry<String, ServiceInitialization>> entrySet() {
+            return map.entrySet();
+        }
+
+        @Override
+        public ServiceInitialization remove( Object key ) {
+            return map.remove( key );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public <T> T getExt( String ext ) {
+            return ( T ) this.module.ext.get( ext );
+        }
     }
 }

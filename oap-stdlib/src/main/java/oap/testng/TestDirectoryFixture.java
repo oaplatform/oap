@@ -39,25 +39,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Slf4j
-public class TestDirectoryFixture implements Fixture {
-    private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
-    private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Suite.uniqueExecutionId() );
+public class TestDirectoryFixture extends FixtureWithScope<TestDirectoryFixture> {
     public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
 
-    static {
-        Files.ensureDirectory( testDirectory() );
-        log.debug( "initializing test directory " + testDirectory() );
-    }
+    private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
+    private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Suite.uniqueExecutionId() );
 
-    private final Scope scope;
     private final DeployTestData deployTestData;
 
     public TestDirectoryFixture() {
-        this( Scope.METHOD, null );
+        this( null );
     }
 
-    public TestDirectoryFixture( Scope scope, DeployTestData deployTestData ) {
-        this.scope = scope;
+    public TestDirectoryFixture( DeployTestData deployTestData ) {
         this.deployTestData = deployTestData;
     }
 
@@ -104,56 +98,36 @@ public class TestDirectoryFixture implements Fixture {
         return to;
     }
 
-    private void deployTestData( Scope suite ) {
-        if( deployTestData != null && scope == suite ) deployTestData( deployTestData.contextClass, deployTestData.name );
+    private void deployTestData() {
+        if( deployTestData != null ) deployTestData( deployTestData.contextClass, deployTestData.name );
     }
 
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name ) {
-        return new TestDirectoryFixture( this.scope, new DeployTestData( contextClass, name ) );
+        return new TestDirectoryFixture( new DeployTestData( contextClass, name ) );
     }
 
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass ) {
         return withDeployTestData( contextClass, "" );
     }
 
-    public TestDirectoryFixture withScope( Scope scope ) {
-        return new TestDirectoryFixture( scope, this.deployTestData );
-    }
-
-
     @Override
-    public void beforeSuite() {
-        deployTestData( Scope.SUITE );
-    }
+    protected void before() {
+        log.debug( "initializing test directory " + testDirectory() );
+        Files.ensureDirectory( testDirectory() );
 
-    @Override
-    public void beforeClass() {
-        deployTestData( Scope.CLASS );
-    }
-
-    @Override
-    public void beforeMethod() {
-        deployTestData( Scope.METHOD );
+        deployTestData();
     }
 
     @Override
     public void afterSuite() {
-        deleteTestDirectory( Scope.SUITE );
+        super.afterSuite();
+
         cleanTestDirectories();
     }
 
     @Override
-    public void afterClass() {
-        deleteTestDirectory( Scope.CLASS );
-    }
-
-    @Override
-    public void afterMethod() {
-        deleteTestDirectory( Scope.METHOD );
-    }
-
-    private void deleteTestDirectory( Scope suite ) {
-        if( scope == suite ) TestDirectoryFixture.deleteDirectory( testDirectory() );
+    protected void after() {
+        TestDirectoryFixture.deleteDirectory( testDirectory() );
     }
 
     @SneakyThrows

@@ -22,27 +22,30 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.module;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.List;
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
-    @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
+import static java.util.Collections.emptyList;
 
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
-        }
+/**
+ * Created by igor.petrenko on 2021-03-30.
+ */
+@ToString
+@EqualsAndHashCode
+public class Depends {
+    @JsonAlias( { "name", "service", "module" } )
+    public final String name;
+    @JsonAlias( { "profile", "profiles" } )
+    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
 
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
+    public Depends( String name, List<String> profiles ) {
+        this.name = name;
+        this.profiles.addAll( profiles != null ? profiles : emptyList() );
     }
 }

@@ -28,6 +28,7 @@ import com.google.common.base.Preconditions;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceStorage.ErrorStatus;
+import oap.application.module.Reference;
 import oap.util.Result;
 
 import javax.annotation.Nullable;
@@ -54,7 +55,7 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
         return storage.findByName( reference.module, reference.service ).mapSuccess( v -> ( ServiceInitialization ) v );
     }
 
-    public Module.Reference reference( String value, @Nullable ModuleItem moduleItem ) {
+    public Reference reference( String value, @Nullable ModuleItem moduleItem ) {
         var matcher = pattern.matcher( value );
         Preconditions.checkArgument( matcher.find(), "invalid reference " + value + ", pattern = " + pattern );
 
@@ -63,7 +64,7 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
         if( "".equals( moduleName ) ) moduleName = "*";
         var linkName = matcher.group( 2 );
 
-        return new Module.Reference( moduleName, linkName );
+        return new Reference( moduleName, linkName );
     }
 
     @Override

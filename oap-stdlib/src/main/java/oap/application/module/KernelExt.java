@@ -22,27 +22,36 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.module;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.json.Binder;
 
-import java.io.IOException;
+import java.util.LinkedHashMap;
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
-    @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
+/**
+ * Created by igor.petrenko on 2021-03-30.
+ */
+@ToString
+@EqualsAndHashCode
+public class KernelExt {
+    public final LinkedHashMap<String, ItemExt> modules = new LinkedHashMap<>();
+    public final LinkedHashMap<String, ItemExt> services = new LinkedHashMap<>();
 
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
+    @ToString
+    @EqualsAndHashCode
+    public static class ItemExt {
+        public final Class<?> implementation;
+
+        @JsonCreator
+        public ItemExt( Class<?> implementation ) {
+            this.implementation = implementation;
         }
 
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
+        public Object deserialize( Object value ) {
+            return Binder.json.unmarshal( implementation, Binder.json.marshal( value ) );
+        }
     }
 }

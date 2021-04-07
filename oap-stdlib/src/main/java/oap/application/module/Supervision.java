@@ -22,27 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.module;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.io.IOException;
+import java.util.List;
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
-    @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
-
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
-        }
-
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
-    }
+/**
+ * Created by igor.petrenko on 2021-03-30.
+ */
+@EqualsAndHashCode
+@ToString
+public class Supervision {
+    public boolean supervise;
+    public boolean thread;
+    public boolean schedule;
+    public List<String> preStartWith = List.of( "preStart" );
+    public List<String> startWith = List.of( "start" );
+    public List<String> preStopWith = List.of( "preStop" );
+    public List<String> stopWith = List.of( "stop", "close" );
+    public long delay; //ms
+    public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
 }

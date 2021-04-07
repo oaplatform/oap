@@ -24,13 +24,15 @@
 
 package oap.testng;
 
-import org.joda.time.DateTimeUtils;
+import oap.time.JavaTimeService;
+import oap.time.JodaTimeService;
 
 public class SystemTimerFixture implements Fixture {
     public static final SystemTimerFixture FIXTURE = new SystemTimerFixture();
 
     @Override
     public void afterMethod() {
-        DateTimeUtils.setCurrentMillisSystem();
+        JodaTimeService.INSTANCE.setCurrentMillisSystem();
+        JavaTimeService.INSTANCE.setCurrentMillisSystem();
     }
 }

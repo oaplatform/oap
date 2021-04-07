@@ -22,27 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.time;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import org.joda.time.DateTimeUtils;
 
-import java.io.IOException;
+import java.time.Instant;
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
+public class JodaTimeService implements TimeService {
+    public static final JodaTimeService INSTANCE = new JodaTimeService();
+
     @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
+    public Instant now() {
+        return Instant.ofEpochMilli( DateTimeUtils.currentTimeMillis() );
+    }
 
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
-        }
+    @Override
+    public long currentTimeMillis() {
+        return DateTimeUtils.currentTimeMillis();
+    }
 
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
+    public void setCurrentMillisSystem() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 }

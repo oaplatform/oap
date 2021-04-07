@@ -94,12 +94,12 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     public int keepAliveTimeout = 1000 * 20;
     public String originalServer = "OAP Server/1.0";
     public boolean responseDate = true;
+    protected HealthHttpHandler healthHttpHandler;
     private HttpService httpService;
     private ExecutorService executor;
     private ExecutorService rejectedExecutor;
     private BlockingQueue<Runnable> workQueue;
     private Gauge workQueueMetric;
-    protected HealthHttpHandler healthHttpHandler;
 
     public ApacheHttpServer( int workers, int queueSize, boolean registerStatic ) {
         this.workers = workers;
@@ -230,21 +230,19 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                             var response = new BasicHttpResponse( HttpVersion.HTTP_1_1, HTTP_UNAVAILABLE, "temporary overload" );
                             response.setHeader( "Connection", "close" );
                             connection.sendResponseHeader( response );
-                        } catch( Exception ignored ) {
+                        } catch( Exception t ) {
+                            log.trace( t.getMessage(), t );
                         } finally {
                             Closeables.close( connection );
                         }
                     } );
-                } catch( Exception ignored ) {
+                } catch( Exception t ) {
+                    log.trace( t.getMessage(), t );
                     connection.close();
                 }
             }
         } catch( final IOException e ) {
             log.warn( e.getMessage() );
-
-            connections.values().forEach( Closeables::close );
-            connections.clear();
-
             throw e;
         }
     }

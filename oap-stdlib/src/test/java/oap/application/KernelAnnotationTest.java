@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import oap.application.module.Module;
 import org.testng.annotations.Test;
 
 import java.util.Map;

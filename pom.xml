@@ -60,7 +60,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>9.0.2</oap.project.version>
+        <oap.project.version>9.0.43</oap.project.version>
 
 
         <oap.deps.testng.version>7.4.0</oap.deps.testng.version>
@@ -90,7 +90,7 @@
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
         <oap.deps.typesafe-config.version>1.4.1</oap.deps.typesafe-config.version>
 
-        <oap.deps.lombok.version>1.18.18</oap.deps.lombok.version>
+        <oap.deps.lombok.version>1.18.20</oap.deps.lombok.version>
 
         <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
         <oap.deps.micrometer.version>1.6.4</oap.deps.micrometer.version>

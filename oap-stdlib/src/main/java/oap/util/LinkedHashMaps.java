@@ -25,6 +25,8 @@
 package oap.util;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
 
 public class LinkedHashMaps {
     public static <K, V> LinkedHashMap<K, V> of() {
@@ -59,5 +61,15 @@ public class LinkedHashMaps {
         var map = of( key1, value1, key2, value2, key3, value3, key4, value4 );
         map.put( key5, value5 );
         return map;
+    }
+
+    public static <TKey, TValueIn, TValueOut> LinkedHashMap<TKey, TValueOut> mapValues( Map<TKey, TValueIn> map, BiFunction<TKey, TValueIn, TValueOut> func ) {
+        var res = new LinkedHashMap<TKey, TValueOut>();
+
+        map.forEach( ( key, value ) -> {
+            res.put( key, func.apply( key, value ) );
+        } );
+
+        return res;
     }
 }

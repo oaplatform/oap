@@ -25,80 +25,95 @@
 package oap.testng;
 
 
+import com.google.common.base.Preconditions;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
+import oap.system.Env;
 import oap.util.Strings;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
-
-import static oap.testng.Fixture.Scope.CLASS;
-import static oap.testng.Fixture.Scope.METHOD;
-import static oap.testng.Fixture.Scope.SUITE;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class EnvFixture implements Fixture {
-    private static final HashMap<String, Integer> ports = new HashMap<>();
-    private final Map<String, Object> properties = new HashMap<>();
-    protected Scope scope = METHOD;
+public class EnvFixture<TEnvFixture extends EnvFixture<TEnvFixture>> extends FixtureWithScope<TEnvFixture> {
+    private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
+    protected Kind kind = Kind.JAVA;
 
-    public EnvFixture define( String property, Object value ) {
-        properties.put( property, value );
-        return this;
+    public EnvFixture() {
     }
 
-    public EnvFixture definePort( String property, String portKey ) {
+    @SuppressWarnings( "unchecked" )
+    public TEnvFixture define( String property, Object value ) {
+        properties.put( property, value );
+
+        return ( TEnvFixture ) this;
+    }
+
+    public Optional<Object> getProperty( String property ) {
+        return Optional.ofNullable( properties.get( property ) );
+    }
+
+    public TEnvFixture definePort( String property, String portKey ) {
         return define( property, portFor( portKey ) );
     }
 
-    private void init() {
-        properties.forEach( ( n, v ) -> {
-            String value = Strings.substitute( String.valueOf( v ),
+    @SuppressWarnings( "unchecked" )
+    public TEnvFixture importEnv( EnvFixture<?> envFixture ) {
+        envFixture.ports.forEach( ports::putIfAbsent );
+        envFixture.properties.forEach( properties::putIfAbsent );
+
+        return ( TEnvFixture ) this;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public TEnvFixture withKind( Kind kind ) {
+        Preconditions.checkNotNull( kind );
+
+        this.kind = kind;
+
+        return ( TEnvFixture ) this;
+    }
+
+    @Override
+    protected void before() {
+        properties.forEach( ( variableName, v ) -> {
+            var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            log.debug( "system property {} = {}", n, value );
-            System.setProperty( n, value );
+
+            switch( kind ) {
+                case JAVA -> {
+                    log.debug( "system property {} = {}", variableName, value );
+                    System.setProperty( variableName, value );
+                }
+                case ENV -> {
+                    log.debug( "env property {} = {}", variableName, value );
+                    Env.set( variableName, value );
+                }
+                case MAP -> log.debug( "map property {} = {}", variableName, value );
+                default -> throw new IllegalStateException( "Unknown kind " + kind );
+            }
         } );
 
-        ConfigImpl.reloadEnvVariablesConfig();
-        ConfigImpl.reloadSystemPropertiesConfig();
-    }
-
-    public Scope getScope() {
-        return scope;
-    }
-
-    @Override
-    public void beforeSuite() {
-        if( scope == SUITE ) init();
-    }
-
-    @Override
-    public void beforeClass() {
-        if( scope == CLASS ) init();
+        switch( kind ) {
+            case ENV:
+                ConfigImpl.reloadEnvVariablesConfig();
+                break;
+            case JAVA:
+                ConfigImpl.reloadSystemPropertiesConfig();
+                break;
+            default:
+        }
     }
 
     @Override
-    public void beforeMethod() {
-        if( scope == METHOD ) init();
-    }
-
-    @Override
-    public void afterMethod() {
-        if( scope == METHOD ) clearPorts();
-    }
-
-    @Override
-    public void afterClass() {
-        if( scope == CLASS ) clearPorts();
-    }
-
-    @Override
-    public void afterSuite() {
-        if( scope == SUITE ) clearPorts();
+    protected void after() {
     }
 
     public int portFor( Class<?> clazz ) {
@@ -112,7 +127,7 @@ public class EnvFixture implements Fixture {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
                     var localPort = socket.getLocalPort();
-                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), key, localPort );
+                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, localPort );
                     return localPort;
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
@@ -121,10 +136,11 @@ public class EnvFixture implements Fixture {
         }
     }
 
-    public void clearPorts() {
-        synchronized( ports ) {
-            log.debug( "clear ports" );
-            ports.clear();
-        }
+    protected Map<String, Object> getProperties() {
+        return Collections.unmodifiableMap( properties );
+    }
+
+    public enum Kind {
+        JAVA, ENV, MAP
     }
 }

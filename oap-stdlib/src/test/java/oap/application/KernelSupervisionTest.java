@@ -25,6 +25,7 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.module.Module;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;

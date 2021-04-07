@@ -22,27 +22,36 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.time;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
-import oap.application.module.Depends;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
-import java.io.IOException;
+public class JavaTimeService implements TimeService {
+    public static final JavaTimeService INSTANCE = new JavaTimeService();
 
-public class ModuleDependsDeserializer extends JsonDeserializer<Depends> {
+    private Clock clock = Clock.system( ZoneOffset.UTC );
+
     @Override
-    public Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        var tree = p.readValueAsTree();
+    public Instant now() {
+        return Instant.now( clock );
+    }
 
-        if( tree instanceof TextNode ) {
-            return new Depends( ( ( TextNode ) tree ).textValue(), null );
-        }
+    @Override
+    public long currentTimeMillis() {
+        return clock.millis();
+    }
 
-        var objectMapper = ( ObjectMapper ) p.getCodec();
-        return objectMapper.treeToValue( tree, Depends.class );
+    public void useFixedClockAt( Instant date ) {
+        clock = Clock.fixed( date, ZoneOffset.UTC );
+    }
+
+    public void setCurrentMillisFixed( long fixedMillis ) {
+        clock = Clock.fixed( Instant.ofEpochMilli( fixedMillis ), ZoneOffset.UTC );
+    }
+
+    public void setCurrentMillisSystem() {
+        clock = Clock.system( ZoneOffset.UTC );
     }
 }

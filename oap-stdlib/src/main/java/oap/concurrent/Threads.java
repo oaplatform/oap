@@ -27,6 +27,7 @@ package oap.concurrent;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Try;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -123,6 +124,28 @@ public class Threads {
             if( !service.awaitTermination( timeout, unit ) ) log.warn( "service {} terminated with timeout", service );
         } catch( InterruptedException e ) {
             log.warn( "abnormal termination of " + service, e );
+        }
+    }
+
+    public static void withThreadName( String threadName, Runnable runnable ) {
+        var oldThreadName = Thread.currentThread().getName();
+        try {
+            Thread.currentThread().setName( StringUtils.isBlank( threadName ) ? oldThreadName : threadName );
+
+            runnable.run();
+        } finally {
+            Thread.currentThread().setName( oldThreadName );
+        }
+    }
+
+    public static <F> F withThreadName( String threadName, Supplier<F> supplier ) {
+        var oldThreadName = Thread.currentThread().getName();
+        try {
+            Thread.currentThread().setName( StringUtils.isBlank( threadName ) ? oldThreadName : threadName );
+
+            return supplier.get();
+        } finally {
+            Thread.currentThread().setName( oldThreadName );
         }
     }
 }

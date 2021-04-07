@@ -32,8 +32,9 @@ import oap.message.MessageListenerMock.TestMessage;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
+import oap.time.JavaTimeService;
+import oap.time.JodaTimeService;
 import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -63,7 +64,7 @@ public class MessageServerTest extends Fixtures {
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
-            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 assertThatCode( server::start )
@@ -82,8 +83,8 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             MessageSender client1, client2;
-            client1 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
-            client2 = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client1 = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
+            client2 = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client1.memorySyncPeriod = -1;
                 client1.poolSize = 1;
@@ -105,7 +106,7 @@ public class MessageServerTest extends Fixtures {
             assertThat( client2.getMessagesMemorySize() ).isEqualTo( 0L );
 
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client.poolSize = 1;
 
@@ -131,7 +132,7 @@ public class MessageServerTest extends Fixtures {
 
             var dir = testPath( "dir" );
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), dir );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), dir );
             try {
                 client.start();
 
@@ -161,7 +162,7 @@ public class MessageServerTest extends Fixtures {
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 client
@@ -183,7 +184,7 @@ public class MessageServerTest extends Fixtures {
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.poolSize = 1;
                 client.start();
 
@@ -206,7 +207,7 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client.start();
 
@@ -236,7 +237,7 @@ public class MessageServerTest extends Fixtures {
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
                 client.start();
 
                 listener.setStatus( 567 );
@@ -259,14 +260,14 @@ public class MessageServerTest extends Fixtures {
     public void ttl() {
         var hashTtl = 1000;
 
-        DateTimeUtils.setCurrentMillisFixed( 100 );
+        JavaTimeService.INSTANCE.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
             server.start();
 
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client.start();
 
@@ -277,7 +278,7 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
                 assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
-                DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
+                JavaTimeService.INSTANCE.setCurrentMillisFixed( JavaTimeService.INSTANCE.currentTimeMillis() + hashTtl + 1 );
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
@@ -295,7 +296,7 @@ public class MessageServerTest extends Fixtures {
     public void persistence() {
         var hashTtl = 1000;
 
-        DateTimeUtils.setCurrentMillisFixed( 100 );
+        JavaTimeService.INSTANCE.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
 
@@ -306,7 +307,7 @@ public class MessageServerTest extends Fixtures {
             server.soTimeout = 2000;
             server.start();
 
-            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             client.start();
 
             client
@@ -347,7 +348,7 @@ public class MessageServerTest extends Fixtures {
 
             MessageSender client;
 
-            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client.start();
 
@@ -361,7 +362,7 @@ public class MessageServerTest extends Fixtures {
             assertThat( listener.getMessages() ).isEmpty();
             assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
-            client = new MessageSender( "localhost", server.getPort(), testPath( "tmp" ) );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
             try {
                 client.start();
 
@@ -386,7 +387,7 @@ public class MessageServerTest extends Fixtures {
 
             var msgDirectory = testPath( "tmp" );
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), msgDirectory );
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), msgDirectory );
             try {
                 client.poolSize = 2;
                 client.start();
@@ -404,21 +405,19 @@ public class MessageServerTest extends Fixtures {
             }
             assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
-            assertEventually( 100, 30, () -> {
-                assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 );
-            } );
+            assertEventually( 100, 30, () -> assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 ) );
             var files = Files.wildcard( msgDirectory, "**/*.bin" );
 
             // lock
-            assertNotNull( MessageSender.lock( files.get( 0 ), -1 ) );
+            assertNotNull( MessageSender.lock( JavaTimeService.INSTANCE, files.get( 0 ), -1 ) );
 
             // lock expired
-            var lockFile2 = MessageSender.lock( files.get( 1 ), -1 );
+            var lockFile2 = MessageSender.lock( JavaTimeService.INSTANCE, files.get( 1 ), -1 );
             assertNotNull( lockFile2 );
-            Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
+            Files.setLastModifiedTime( lockFile2, JavaTimeService.INSTANCE.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
 
 
-            client = new MessageSender( "localhost", server.getPort(), msgDirectory );
+            client = new MessageSender( JavaTimeService.INSTANCE, "localhost", server.getPort(), msgDirectory );
             try {
                 client.storageLockExpiration = Dates.m( 5 );
                 client.start();
@@ -440,7 +439,7 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
+            client = new MessageSender( JavaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
             try {
                 client.messagesLimitBytes = 161;
                 client.memorySyncPeriod = -1;
@@ -468,7 +467,7 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             MessageSender client;
-            client = new MessageSender( "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
+            client = new MessageSender( JavaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
             try {
                 client.memorySyncPeriod = -1;
                 client.start();

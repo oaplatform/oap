@@ -24,6 +24,7 @@
 
 package oap.application.testng;
 
+import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
@@ -32,27 +33,44 @@ import java.util.List;
 import static oap.application.testng.KernelFixture.ANY;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
+import static oap.testng.EnvFixture.Kind;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class KernelFixtureTest extends Fixtures {
-
     private final KernelFixture kernelFixture;
+    private final TestFixture testFixture;
 
     {
         kernelFixture = fixture( new KernelFixture(
-            pathOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
+            urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
             pathOfTestResource( KernelFixture.class, "confd" ),
-            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.yaml" ) )
-        ) );
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+        ) ).withKind( Kind.MAP );
+
+        testFixture = kernelFixture.fixture( new TestFixture().withKind( Kind.MAP ) );
+
+        kernelFixture.define( "MY_TEST_PORT", testFixture.portFor( "TEST_PORT" ) );
     }
 
     @Test
     public void value() {
         assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( "from fixture" );
+            .isEqualTo( "from fixture" + testFixture.portFor( "TEST_PORT" ) );
+    }
+
+    @Test( dependsOnMethods = "value" )
+    public void value2() {
+        assertThat( kernelFixture.service( ANY, Service.class ).value )
+            .isEqualTo( "from fixture" + testFixture.portFor( "TEST_PORT" ) );
     }
 
     public static class Service {
         public String value;
+    }
+
+    public static class TestFixture extends EnvFixture<TestFixture> {
+        public TestFixture() {
+            definePort( "TEST_PORT", "TEST_PORT" );
+        }
     }
 }

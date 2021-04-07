@@ -27,7 +27,7 @@ package oap.application.remote;
 import oap.application.ApplicationConfiguration;
 import oap.application.ApplicationException;
 import oap.application.Kernel;
-import oap.application.Module;
+import oap.application.module.Module;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 

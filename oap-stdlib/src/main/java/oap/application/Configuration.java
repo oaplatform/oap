@@ -24,10 +24,11 @@
 package oap.application;
 
 import lombok.SneakyThrows;
+import lombok.ToString;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.json.Binder;
-import oap.util.Stream;
+import oap.util.Lists;
 import oap.util.Strings;
 
 import java.net.URL;
@@ -35,9 +36,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@ToString
 public class Configuration<T> {
-    private Class<T> clazz;
-    private String name;
+    private final Class<T> clazz;
+    private final String name;
 
     public Configuration( Class<T> clazz, String name ) {
         this.clazz = clazz;
@@ -45,9 +47,7 @@ public class Configuration<T> {
     }
 
     public List<T> fromClassPath() {
-        return Stream.of( urlsFromClassPath() )
-            .map( this::fromUrl )
-            .toList();
+        return Lists.map( urlsFromClassPath(), this::fromUrl );
     }
 
     public List<URL> urlsFromClassPath() {

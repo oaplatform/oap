@@ -25,6 +25,8 @@
 package oap.application;
 
 import lombok.EqualsAndHashCode;
+import oap.application.module.Module;
+import oap.application.module.Service;
 import oap.util.Lists;
 
 import java.net.URL;
@@ -129,11 +131,11 @@ class ModuleItem {
     static class ServiceItem {
         public final String serviceName;
         public final ModuleItem moduleItem;
-        public final Module.Service service;
+        public final Service service;
         public final boolean enabled;
         public final LinkedHashSet<ServiceReference> dependsOn = new LinkedHashSet<>();
 
-        ServiceItem( String serviceName, ModuleItem moduleItem, Module.Service service, boolean enabled ) {
+        ServiceItem( String serviceName, ModuleItem moduleItem, Service service, boolean enabled ) {
             this.serviceName = serviceName;
             this.moduleItem = moduleItem;
             this.service = service;

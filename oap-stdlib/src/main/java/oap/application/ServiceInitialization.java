@@ -26,14 +26,15 @@ package oap.application;
 
 import lombok.AllArgsConstructor;
 import lombok.ToString;
+import oap.application.module.Service;
 import oap.reflect.Reflection;
 
 @ToString
 @AllArgsConstructor
-class ServiceInitialization {
+public class ServiceInitialization {
     public final String implementationName;
     public final Object instance;
     public final ModuleItem module;
-    public final Module.Service service;
+    public final Service service;
     public final Reflection reflection;
 }
