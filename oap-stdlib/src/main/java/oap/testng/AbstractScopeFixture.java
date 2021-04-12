@@ -28,25 +28,24 @@ import oap.util.Lists;
 
 import java.util.ArrayList;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements Fixture {
-    protected final ArrayList<FixtureWithScope<?>> fixtures = new ArrayList<>();
+public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Self>> implements Fixture {
+    protected final ArrayList<AbstractScopeFixture<?>> fixtures = new ArrayList<>();
 
     protected Scope scope = Scope.METHOD;
 
-    public <F extends FixtureWithScope<?>> F fixture( F fixture ) {
+    public <F extends AbstractScopeFixture<?>> F fixture( F fixture ) {
         this.fixtures.add( fixture.withScope( scope ) );
 
         return fixture;
     }
 
     @SuppressWarnings( "unchecked" )
-    public T withScope( Scope scope ) {
+    public Self withScope( Scope scope ) {
         this.scope = scope;
 
         fixtures.forEach( f -> f.withScope( scope ) );
 
-        return ( T ) this;
+        return ( Self ) this;
     }
 
     public final Scope getScope() {
@@ -55,48 +54,36 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
 
     @Override
     public void beforeSuite() {
-        if( scope == Scope.SUITE ) {
-            beforeAll();
-        }
+        if( scope == Scope.SUITE ) beforeAll();
     }
 
     @Override
     public void afterSuite() {
-        if( scope == Scope.SUITE ) {
-            afterAll();
-        }
+        if( scope == Scope.SUITE ) afterAll();
     }
 
     @Override
     public void beforeClass() {
-        if( scope == Scope.CLASS ) {
-            beforeAll();
-        }
+        if( scope == Scope.CLASS ) beforeAll();
     }
 
     @Override
     public void afterClass() {
-        if( scope == Scope.CLASS ) {
-            afterAll();
-        }
+        if( scope == Scope.CLASS ) afterAll();
     }
 
     @Override
     public void beforeMethod() {
-        if( scope == Scope.METHOD ) {
-            beforeAll();
-        }
+        if( scope == Scope.METHOD ) beforeAll();
     }
 
     @Override
     public void afterMethod() {
-        if( scope == Scope.METHOD ) {
-            afterAll();
-        }
+        if( scope == Scope.METHOD ) afterAll();
     }
 
     protected void beforeAll() {
-        fixtures.forEach( FixtureWithScope::beforeAll );
+        fixtures.forEach( AbstractScopeFixture::beforeAll );
 
         before();
     }
@@ -104,7 +91,7 @@ public abstract class FixtureWithScope<T extends FixtureWithScope<T>> implements
     protected void afterAll() {
         after();
 
-        Lists.reverse( fixtures ).forEach( FixtureWithScope::afterAll );
+        Lists.reverse( fixtures ).forEach( AbstractScopeFixture::afterAll );
     }
 
     protected abstract void before();

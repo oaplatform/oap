@@ -31,7 +31,7 @@ import oap.application.module.Module;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
-import oap.testng.EnvFixture;
+import oap.testng.AbstractEnvFixture;
 import oap.testng.TestDirectoryFixture;
 
 import javax.annotation.Nonnull;
@@ -45,7 +45,7 @@ import java.util.Map;
 import static oap.http.testng.HttpAsserts.httpPrefix;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
-public class KernelFixture extends EnvFixture<KernelFixture> {
+public class KernelFixture extends AbstractEnvFixture<KernelFixture> {
     public static final String ANY = "*";
 
     public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
@@ -158,9 +158,9 @@ public class KernelFixture extends EnvFixture<KernelFixture> {
         Preconditions.checkArgument( this.kernel == null );
         super.before();
 
-        for( var f : fixtures ) {
-            if( f instanceof EnvFixture<?> ) importEnv( ( EnvFixture<?> ) f );
-        }
+        for( var f : fixtures )
+            if( f instanceof AbstractEnvFixture<?> )
+                importEnv( ( AbstractEnvFixture<?> ) f );
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );

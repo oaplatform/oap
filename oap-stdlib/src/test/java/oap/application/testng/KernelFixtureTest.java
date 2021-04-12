@@ -24,16 +24,16 @@
 
 package oap.application.testng;
 
-import oap.testng.EnvFixture;
+import oap.testng.AbstractEnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
 import static oap.application.testng.KernelFixture.ANY;
+import static oap.testng.AbstractEnvFixture.Kind;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
-import static oap.testng.EnvFixture.Kind;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class KernelFixtureTest extends Fixtures {
@@ -68,7 +68,7 @@ public class KernelFixtureTest extends Fixtures {
         public String value;
     }
 
-    public static class TestFixture extends EnvFixture<TestFixture> {
+    public static class TestFixture extends AbstractEnvFixture<TestFixture> {
         public TestFixture() {
             definePort( "TEST_PORT", "TEST_PORT" );
         }
