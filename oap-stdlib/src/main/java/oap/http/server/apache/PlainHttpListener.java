@@ -36,6 +36,7 @@ import java.net.ServerSocket;
 @Slf4j
 public class PlainHttpListener extends AbstractHttpListener {
     protected final InetSocketAddress address;
+    public int backlog = 50;
 
     public PlainHttpListener( HttpServer server, int port ) {
         this( server, new InetSocketAddress( port ) );
@@ -57,7 +58,7 @@ public class PlainHttpListener extends AbstractHttpListener {
             serverSocket.setReuseAddress( true );
             serverSocket.setSoTimeout( timeout );
             log.info( "binding to {}", address );
-            serverSocket.bind( address );
+            serverSocket.bind( address, backlog );
             return serverSocket;
         } catch( BindException e ) {
             log.error( "cannot bind to address {}", address );
