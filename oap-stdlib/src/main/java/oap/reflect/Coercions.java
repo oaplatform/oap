@@ -311,12 +311,20 @@ public final class Coercions {
         @Override
         public Object apply( Object value ) {
             if( value instanceof URL ) return value;
-            else if( value instanceof String ) try {
-                return new URL( ( String ) value );
-            } catch( MalformedURLException e ) {
-                throw new ReflectException( "cannot cast " + value + " to URL.class" );
-            }
-            else throw new ReflectException( "cannot cast " + value + " to URL.class" );
+            else if( value instanceof String ) {
+                try {
+                    return new URL( ( String ) value );
+                } catch( MalformedURLException e ) {
+                    var url = getClass().getResource( ( String ) value );
+                    if( url != null ) return url;
+
+                    try {
+                        return Paths.get( ( String ) value ).toUri().toURL();
+                    } catch( MalformedURLException malformedURLException ) {
+                        throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                    }
+                }
+            } else throw new ReflectException( "cannot cast " + value + " to URL.class" );
         }
     }
 

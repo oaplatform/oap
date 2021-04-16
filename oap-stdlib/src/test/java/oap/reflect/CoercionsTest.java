@@ -28,6 +28,8 @@ import oap.util.BitSet;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.RetentionPolicy;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -61,6 +63,17 @@ public class CoercionsTest {
     public void testCastOptional() {
         var coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( new TypeRef<Optional<String>>() {} ), "va" ) ).isEqualTo( Optional.of( "va" ) );
+    }
+
+    @Test
+    public void testUrl() throws MalformedURLException {
+        var coercions = Coercions.basic().withIdentity();
+
+        assertThat( coercions.cast( Reflect.reflect( URL.class ), "file:///tmp" ) ).isEqualTo( new URL( "file:/tmp" ) );
+        assertThat( coercions.cast( Reflect.reflect( URL.class ), "/tmp" ) ).isEqualTo( Paths.get( "/tmp" ).toUri().toURL() );
+
+        assertThat( coercions.cast( Reflect.reflect( URL.class ), "/oap/reflect/CoercionsTest.class" ) )
+            .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
     }
 
 }
