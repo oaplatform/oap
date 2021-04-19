@@ -24,7 +24,9 @@ services:
     parameters:
       port: 8880
       server: "@service:oap-http-server"
+      backlog: 50
     supervision:
+      supervise: true
       thread: true
 
   oap-http-listener-ssl:
@@ -36,6 +38,7 @@ services:
       keystoreLocation: "/etc/oap/keystore.jks"
       keystorePassword: "changeit"
     supervision:
+      supervise: true
       thread: true
 
   oap-http-listener-local:
@@ -45,6 +48,7 @@ services:
       port: 18546
       server: "@service:oap-http-server"
     supervision:
+      supervise: true
       thread: true
 
   oap-http-health-handler:

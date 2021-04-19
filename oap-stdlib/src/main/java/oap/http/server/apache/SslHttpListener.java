@@ -53,6 +53,10 @@ public class SslHttpListener extends AbstractHttpListener {
         this.port = port;
     }
 
+    public void start() {
+        log.info( "port = {}", port );
+    }
+
     @SneakyThrows
     @Override
     protected ServerSocket createSocket() {
@@ -82,6 +86,6 @@ public class SslHttpListener extends AbstractHttpListener {
     private void init( ServerSocket serverSocket ) throws IOException {
         serverSocket.setReuseAddress( true );
         serverSocket.setSoTimeout( timeout );
-        serverSocket.bind( new InetSocketAddress( port ) );
+        serverSocket.bind( new InetSocketAddress( port ), backlog );
     }
 }
