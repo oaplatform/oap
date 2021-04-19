@@ -33,9 +33,7 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
-/**
- * Created by igor.petrenko on 2021-02-15.
- */
+
 class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();

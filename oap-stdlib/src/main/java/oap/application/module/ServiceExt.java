@@ -26,9 +26,7 @@ package oap.application.module;
 
 import oap.application.ServiceInitialization;
 
-/**
- * Created by igor.petrenko on 2021-03-31.
- */
+
 public class ServiceExt<T> {
     public final Module module;
     public final String name;

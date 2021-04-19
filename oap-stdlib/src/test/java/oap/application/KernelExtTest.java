@@ -36,9 +36,7 @@ import java.util.Map;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 2021-03-30.
- */
+
 public class KernelExtTest {
     @Test
     public void testModuleExt() {

@@ -29,7 +29,7 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Maps;
 import oap.util.Stream;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import java.net.URL;
 import java.util.HashMap;

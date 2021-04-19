@@ -32,7 +32,7 @@ import oap.util.Numbers;
 import oap.util.Pair;
 import oap.util.Sets;
 import oap.util.Stream;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;

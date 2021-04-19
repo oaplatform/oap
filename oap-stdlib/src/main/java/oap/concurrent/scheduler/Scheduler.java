@@ -27,7 +27,7 @@ package oap.concurrent.scheduler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Throwables;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;

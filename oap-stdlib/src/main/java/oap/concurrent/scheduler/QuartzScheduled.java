@@ -27,7 +27,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.util.Lists;
-import oap.util.Try;
+import oap.util.function.Try;
 
 @Slf4j
 public class QuartzScheduled extends Scheduled {

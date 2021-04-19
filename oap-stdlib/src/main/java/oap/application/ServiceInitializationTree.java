@@ -36,9 +36,7 @@ import java.util.function.BiConsumer;
 import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
 import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 
-/**
- * Created by igor.petrenko on 2021-03-18.
- */
+
 public class ServiceInitializationTree extends AbstractMap<String, ServiceInitializationTree.ModuleTree> implements ServiceStorage {
     private final LinkedHashMap<String, ModuleTree> map = new LinkedHashMap<>();
 

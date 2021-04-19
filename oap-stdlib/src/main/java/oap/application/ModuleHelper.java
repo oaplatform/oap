@@ -42,9 +42,7 @@ import java.util.regex.Pattern;
 
 import static oap.util.Pair.__;
 
-/**
- * Created by igor.petrenko on 2021-02-12.
- */
+
 @Slf4j
 class ModuleHelper {
     public static final Pattern MODULE_SERVICE_NAME_PATTERN = Pattern.compile( "^[A-Za-z\\-_0-9]+$" );
@@ -176,9 +174,7 @@ class ModuleHelper {
                         } else if( dService instanceof String ) {
                             dModuleName = "this";
                             dServiceName = ( String ) dService;
-                        } else {
-                            throw new ApplicationException( "Unknown deps format " + dService );
-                        }
+                        } else throw new ApplicationException( "Unknown deps format " + dService );
 
                         var moduleService = findService( map, moduleItem.getName(), dModuleName, dServiceName );
                         if( moduleService == null ) {
@@ -191,9 +187,8 @@ class ModuleHelper {
                             serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
                     }
 
-                    for( var link : serviceItem.service.link ) {
+                    for( var link : serviceItem.service.link.values() )
                         initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem );
-                    }
 
                     for( var value : serviceItem.service.parameters.values() ) {
                         initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem );

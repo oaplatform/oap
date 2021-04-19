@@ -27,7 +27,7 @@ package oap.template;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
 import oap.tools.MemoryClassLoaderJava;
-import oap.util.Functions;
+import oap.util.function.TriConsumer;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.joining;
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> implements Template<TIn, TOut, TA> {
-    private final Functions.TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> cons;
+    private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> cons;
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
@@ -59,7 +59,7 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
             var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
-            cons = ( Functions.TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> ) mcl
+            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> ) mcl
                 .loadClass( fullTemplateName )
                 .getDeclaredConstructor()
                 .newInstance();

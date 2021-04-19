@@ -27,7 +27,7 @@ package oap.benchmark;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.ToString;
 import oap.testng.Teamcity;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

@@ -30,7 +30,7 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Pair;
 import oap.util.Stream;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.io.FilenameUtils;
 
 import java.net.URL;

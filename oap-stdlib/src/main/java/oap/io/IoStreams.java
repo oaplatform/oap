@@ -34,7 +34,7 @@ import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.apache.commons.io.IOUtils;
@@ -64,7 +64,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static net.jpountz.lz4.LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB;
 import static oap.io.ProgressInputStream.progress;
-import static oap.util.Functions.empty.consume;
+import static oap.util.function.Functions.empty.consume;
 
 @Slf4j
 public class IoStreams {

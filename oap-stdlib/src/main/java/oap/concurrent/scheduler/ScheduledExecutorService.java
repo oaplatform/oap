@@ -25,7 +25,7 @@
 package oap.concurrent.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;

@@ -65,7 +65,7 @@ import oap.json.ext.ExtModule;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.joda.time.ReadableInstant;
 
 import java.io.IOException;

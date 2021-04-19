@@ -22,24 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.application.module;
+package oap.util.function;
 
-import lombok.EqualsAndHashCode;
+import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
 
-@EqualsAndHashCode
-public class Reference {
-    public String service;
-    public String module;
+@FunctionalInterface
+public interface TriFunction<T, U, S, R> {
 
-    public Reference( String module, String service ) {
-        this.module = module;
-        this.service = service;
+    /**
+     * Applies this function to the given arguments.
+     *
+     * @param t the first function argument
+     * @param u the second function argument
+     * @param s the third function argument
+     * @return the function result
+     */
+    R apply( T t, U u, S s );
+
+    default <V> TriFunction<T, U, S, V> andThen(
+        Function<? super R, ? extends V> after ) {
+        requireNonNull( after );
+        return ( T t, U u, S s ) -> after.apply( apply( t, u, s ) );
     }
-
-    @Override
-    public String toString() {
-        return module + "." + service;
-    }
-
 }

@@ -25,7 +25,7 @@
 package oap.json.ext;
 
 import lombok.EqualsAndHashCode;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;

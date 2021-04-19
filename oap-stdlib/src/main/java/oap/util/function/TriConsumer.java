@@ -22,24 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.application.module;
+package oap.util.function;
 
-import lombok.EqualsAndHashCode;
-
-
-@EqualsAndHashCode
-public class Reference {
-    public String service;
-    public String module;
-
-    public Reference( String module, String service ) {
-        this.module = module;
-        this.service = service;
-    }
-
-    @Override
-    public String toString() {
-        return module + "." + service;
-    }
-
+@FunctionalInterface
+public interface TriConsumer<T, U, S> {
+    void accept( T t, U u, S s );
 }

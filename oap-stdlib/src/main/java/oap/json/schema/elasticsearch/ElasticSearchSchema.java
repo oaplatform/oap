@@ -35,7 +35,7 @@ import oap.json.schema.validator.number.NumberSchemaAST;
 import oap.json.schema.validator.object.Dynamic;
 import oap.json.schema.validator.object.ObjectSchemaAST;
 import oap.json.schema.validator.string.StringSchemaAST;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.IOException;

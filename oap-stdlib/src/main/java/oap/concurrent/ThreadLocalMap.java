@@ -32,9 +32,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-/**
- * Created by igor.petrenko on 2021-01-19.
- */
+
 @Slf4j
 public class ThreadLocalMap<T extends Closeable> implements Closeable {
     private final Supplier<T> init;

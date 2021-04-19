@@ -29,9 +29,7 @@ import lombok.ToString;
 
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 2021-03-30.
- */
+
 @EqualsAndHashCode
 @ToString
 public class Supervision {

@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.util.Result;
 import oap.util.Stream;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.slf4j.event.Level;
 
 import java.io.BufferedInputStream;

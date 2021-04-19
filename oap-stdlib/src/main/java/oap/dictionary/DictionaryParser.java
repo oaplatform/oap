@@ -29,7 +29,7 @@ import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import oap.json.Binder;
 import oap.util.Lists;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;

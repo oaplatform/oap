@@ -46,7 +46,7 @@ import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
 import oap.util.Pair;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;

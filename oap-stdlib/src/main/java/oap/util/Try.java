@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
+@Deprecated( forRemoval = true )
 public class Try {
 
     public static CatchingRunnable catching( Runnable runnable ) {

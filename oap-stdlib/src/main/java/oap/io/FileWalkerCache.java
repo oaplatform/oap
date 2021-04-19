@@ -25,7 +25,7 @@
 package oap.io;
 
 import com.google.common.collect.Iterators;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;

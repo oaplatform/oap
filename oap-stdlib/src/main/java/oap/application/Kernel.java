@@ -56,6 +56,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -65,6 +66,7 @@ import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
+import static oap.util.function.Functions.raise;
 
 @Slf4j
 @ToString( of = "name" )
@@ -302,27 +304,23 @@ public class Kernel implements Closeable {
         }
     }
 
-    private void linkLinks( ServiceInitialization si ) {
-        for( var link : si.service.link ) {
-            var result = ServiceKernelCommand.INSTANCE.get( link, this, si.module, services );
-            if( result.isSuccess() ) {
-                var linkToSi = ( ServiceInitialization ) result.successValue;
-                var linkMethod = Reflect.reflect( linkToSi.service.implementation )
-                    .methods
-                    .stream()
-                    .filter( m -> linkToSi.service.linkWith.contains( m.name() ) && m.parameters.size() == 1 )
-                    .findAny()
-                    .orElse( null );
-
-                if( linkMethod == null )
-                    throw new ReflectException( "link to " + linkToSi.implementationName + "/" + linkToSi.service.implementation
-                        + " should have methods " + linkToSi.service.linkWith + " for " + si.implementationName + "/" + si.service.implementation );
-
-                linkMethod.invoke( linkToSi.instance, si.instance );
-            } else {
-                throw new ApplicationException( "Unknown service link " + link );
-            }
-        }
+    @SuppressWarnings( "unchecked" )
+    private void linkLinks( ServiceInitialization initialization ) {
+        initialization.service.link.forEach( ( fieldName, serviceRef ) -> ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.module, services )
+            .ifSuccessOrElse(
+                service -> Reflect.reflect( service.service.implementation )
+                    .field( fieldName )
+                    .ifPresentOrElse(
+                        field -> {
+                            if( field.type().assignableTo( Collection.class ) )
+                                ( ( Collection<Object> ) field.get( service.instance ) )
+                                    .add( initialization.instance );
+                            else field.set( service.instance, initialization.instance );
+                        },
+                        raise( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
+                            + " should have field " + fieldName
+                            + " for " + initialization.implementationName + "/" + initialization.service.implementation ) ) ),
+                raise( e -> new ApplicationException( "Unknown service link " + serviceRef ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )

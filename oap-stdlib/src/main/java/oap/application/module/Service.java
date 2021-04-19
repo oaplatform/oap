@@ -34,12 +34,9 @@ import oap.application.remote.RemoteLocation;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 2021-03-30.
- */
+
 @EqualsAndHashCode
 @ToString
 public class Service {
@@ -49,9 +46,7 @@ public class Service {
     @JsonAlias( { "profile", "profiles" } )
     public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
-    public final LinkedHashSet<String> link = new LinkedHashSet<>();
-    @JsonAlias( { "add-link", "link-with", "linkWith", "link-method", "linkMethod" } )
-    public List<String> linkWith = List.of( "addLink" );
+    public final LinkedHashMap<String, String> link = new LinkedHashMap<>();
     public String implementation;
     public String name;
     public RemoteLocation remote;

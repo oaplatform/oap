@@ -36,9 +36,7 @@ import java.util.Set;
 import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
 import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 
-/**
- * Created by igor.petrenko on 2021-03-18.
- */
+
 class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceStorage {
     private final LinkedHashMap<String, ModuleItem> map = new LinkedHashMap<>();
 

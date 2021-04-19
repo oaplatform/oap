@@ -41,8 +41,8 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Throwables;
-import oap.util.Try;
-import oap.util.Try.ThrowingRunnable;
+import oap.util.function.Try;
+import oap.util.function.Try.ThrowingRunnable;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -370,7 +370,7 @@ public final class Client implements Closeable {
 
     @SneakyThrows
     private CompletableFuture<Response> execute( HttpUriRequest request, Map<String, Object> headers,
-                                                 ThrowingRunnable<IOException> asyncRunnable ) {
+                                                 ThrowingRunnable asyncRunnable ) {
         headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
         var completableFuture = new CompletableFuture<Response>();

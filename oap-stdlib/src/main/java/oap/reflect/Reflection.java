@@ -26,10 +26,10 @@ package oap.reflect;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
-import oap.util.Functions;
 import oap.util.Lists;
 import oap.util.Pair;
 import oap.util.Stream;
+import oap.util.function.Functions;
 
 import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;

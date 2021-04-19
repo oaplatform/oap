@@ -23,7 +23,7 @@
  */
 package oap.concurrent;
 
-import oap.util.Functions;
+import oap.util.function.Functions;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

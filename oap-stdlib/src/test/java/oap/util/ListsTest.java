@@ -64,7 +64,7 @@ public class ListsTest {
     @Test
     public void sxx() {
         Runnable f = () -> {};
-        System.out.println( Try.catching( f ) );
+        System.out.println( oap.util.function.Try.catching( f ) );
     }
 
 

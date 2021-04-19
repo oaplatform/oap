@@ -26,7 +26,7 @@ package oap.concurrent;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.concurrent.ExecutorService;
@@ -94,12 +94,8 @@ public class Threads {
         }
     }
 
-    public static boolean isInterrupted() {
-        return Thread.currentThread().isInterrupted();
-    }
-
     @SneakyThrows
-    public static <T> T synchronously( Lock lock, Try.ThrowingSupplier<T> action ) {
+    public static <R> R synchronizedOn( Lock lock, Try.ThrowingSupplier<R> action ) {
         lock.lockInterruptibly();
         try {
             return action.get();
@@ -109,13 +105,30 @@ public class Threads {
     }
 
     @SneakyThrows
-    public static <E extends Exception> void synchronously( Lock lock, Try.ThrowingRunnable<E> action ) {
+    public static void synchronizedOn( Lock lock, Try.ThrowingRunnable action ) {
         lock.lockInterruptibly();
         try {
             action.run();
         } finally {
             lock.unlock();
         }
+    }
+
+
+    public static boolean isInterrupted() {
+        return Thread.currentThread().isInterrupted();
+    }
+
+    @SneakyThrows
+    @Deprecated
+    public static <T> T synchronously( Lock lock, oap.util.Try.ThrowingSupplier<T> action ) {
+        return synchronizedOn( lock, action::get );
+    }
+
+    @SneakyThrows
+    @Deprecated
+    public static <E extends Exception> void synchronously( Lock lock, oap.util.Try.ThrowingRunnable<E> action ) {
+        synchronizedOn( lock, action::run );
     }
 
 

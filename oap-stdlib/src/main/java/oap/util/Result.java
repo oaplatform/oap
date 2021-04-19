@@ -25,6 +25,7 @@ package oap.util;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.util.function.Try;
 
 import java.io.Serializable;
 import java.util.Optional;
@@ -53,24 +54,35 @@ public final class Result<S, F> implements Serializable {
         return new Result<>( null, value, false );
     }
 
-    public static <S> Result<S, Throwable> trying( Try.ThrowingSupplier<S> supplier ) {
+    public static <S> Result<S, Throwable> catching( Try.ThrowingSupplier<S> supplier ) {
         try {
             return success( supplier.get() );
         } catch( Throwable e ) {
             return failure( e );
         }
+
+    }
+
+    @Deprecated
+    public static <S> Result<S, Throwable> trying( oap.util.Try.ThrowingSupplier<S> supplier ) {
+        return catching( supplier::get );
     }
 
     /**
-     * @see #tryingInterruptible(Try.ThrowingSupplier)
+     * @see #catchingInterruptible(Try.ThrowingSupplier)
      * reason: "blocking" is not actual semantics but usecase
      */
     @Deprecated
-    public static <S> Result<S, Throwable> blockingTrying( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
+    public static <S> Result<S, Throwable> blockingTrying( oap.util.Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
         return tryingInterruptible( supplier );
     }
 
-    public static <S> Result<S, Throwable> tryingInterruptible( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
+    @Deprecated
+    public static <S> Result<S, Throwable> tryingInterruptible( oap.util.Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
+        return catchingInterruptible( supplier::get );
+    }
+
+    public static <S> Result<S, Throwable> catchingInterruptible( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
         try {
             return success( supplier.get() );
         } catch( InterruptedException e ) {
@@ -109,6 +121,11 @@ public final class Result<S, F> implements Serializable {
     public Result<S, F> ifFailure( Consumer<F> consumer ) {
         if( !success ) consumer.accept( failureValue );
         return this;
+    }
+
+    public void ifSuccessOrElse( Consumer<S> onSuccess, Consumer<F> onFailure ) {
+        if( success ) onSuccess.accept( successValue );
+        else onFailure.accept( failureValue );
     }
 
     public S getSuccessValue() {

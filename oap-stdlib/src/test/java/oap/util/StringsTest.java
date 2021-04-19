@@ -30,10 +30,10 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static oap.util.Functions.empty.reject;
 import static oap.util.Pair.__;
 import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
+import static oap.util.function.Functions.empty.reject;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StringsTest {

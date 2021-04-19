@@ -30,7 +30,7 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static oap.util.Functions.empty.consume;
+import static oap.util.function.Functions.empty.consume;
 
 public class ProgressInputStream extends FilterInputStream {
     private final Progress progress;

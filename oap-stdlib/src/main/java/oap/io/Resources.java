@@ -28,7 +28,7 @@ import lombok.SneakyThrows;
 import oap.io.content.ContentReader;
 import oap.util.Lists;
 import oap.util.Stream;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.collections4.EnumerationUtils;
 
 import java.io.IOException;

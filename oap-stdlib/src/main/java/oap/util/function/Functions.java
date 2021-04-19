@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.util;
+package oap.util.function;
 
 import com.google.common.base.Suppliers;
 import oap.concurrent.Once;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -34,7 +33,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-@Deprecated
 public class Functions {
 
     public static <T> Supplier<T> memoize( Supplier<T> delegate ) {
@@ -53,29 +51,16 @@ public class Functions {
         return Once.once( runnable );
     }
 
-    @FunctionalInterface
-    public interface TriFunction<T, U, S, R> {
-
-        /**
-         * Applies this function to the given arguments.
-         *
-         * @param t the first function argument
-         * @param u the second function argument
-         * @param s the third function argument
-         * @return the function result
-         */
-        R apply( T t, U u, S s );
-
-        default <V> TriFunction<T, U, S, V> andThen(
-            Function<? super R, ? extends V> after ) {
-            Objects.requireNonNull( after );
-            return ( T t, U u, S s ) -> after.apply( apply( t, u, s ) );
-        }
+    public static Runnable raise( Exception exception ) {
+        return Try.run( () -> {
+            throw exception;
+        } );
     }
 
-    @FunctionalInterface
-    public interface TriConsumer<T, U, S> {
-        void accept( T t, U u, S s );
+    public static <T> Consumer<T> raise( Function<T, Exception> exception ) {
+        return Try.consume( a -> {
+            throw exception.apply( a );
+        } );
     }
 
     @SuppressWarnings( "unchecked" )

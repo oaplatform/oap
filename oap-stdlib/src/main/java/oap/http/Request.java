@@ -33,7 +33,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import oap.util.Lists;
 import oap.util.Strings;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntityEnclosingRequest;

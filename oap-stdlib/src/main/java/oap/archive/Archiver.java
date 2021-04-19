@@ -25,7 +25,7 @@ package oap.archive;
 
 import lombok.SneakyThrows;
 import oap.io.IoStreams;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;

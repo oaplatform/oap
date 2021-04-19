@@ -27,7 +27,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.system.Env;
 import oap.util.Stream;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;

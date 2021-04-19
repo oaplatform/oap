@@ -34,9 +34,7 @@ import oap.util.Result;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-/**
- * Created by igor.petrenko on 2021-03-16.
- */
+
 @ToString( callSuper = true )
 @Slf4j
 public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitialization> {

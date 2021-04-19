@@ -33,9 +33,7 @@ import java.net.URL;
 
 import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
 
-/**
- * Created by igor.petrenko on 2021-03-16.
- */
+
 @ToString( callSuper = true )
 public class LocationKernelCommand extends AbstractKernelCommand<URL> {
     protected LocationKernelCommand() {

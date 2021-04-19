@@ -34,7 +34,6 @@ import java.util.Map;
 import static java.util.stream.Collectors.toList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 public class KernelLinkImplementationsTest {
@@ -45,7 +44,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start( Map.of( "boot.main", "field-reference" ) );
-            FieldReference service = kernel.<FieldReference>service( "*.m" ).get();
+            FieldReference service = kernel.<FieldReference>service( "*.m" ).orElseThrow();
 
             assertThat( service.ti ).isNotNull();
             assertThat( service.ti.toString() ).isEqualTo( "TestInterfaceImpl1" );
@@ -65,7 +64,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start( Map.of( "boot.main", "field-references2" ) );
-            FieldReferences service = kernel.<FieldReferences>service( "*.m" ).get();
+            FieldReferences service = kernel.<FieldReferences>service( "*.m" ).orElseThrow();
 
             assertThat( service.tis ).isNotNull();
             assertThat( service.tis.stream().map( Object::toString ).collect( toList() ) )
@@ -75,19 +74,6 @@ public class KernelLinkImplementationsTest {
         }
     }
 
-    @Test
-    public void fieldReferenceUnknownInterface() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) )
-        );
-
-        try {
-            assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "field-reference-unknown-interface" ) ) )
-                .isInstanceOf( ApplicationException.class );
-        } finally {
-            kernel.stop();
-        }
-    }
 
     @Test
     public void fieldReferencesUnknownInterface() {
@@ -97,7 +83,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start( Map.of( "boot.main", "field-references-unknown-interface" ) );
-            FieldReferences service = kernel.<FieldReferences>service( "*.m" ).get();
+            FieldReferences service = kernel.<FieldReferences>service( "*.m" ).orElseThrow();
 
             assertThat( service.tis ).isEmpty();
         } finally {

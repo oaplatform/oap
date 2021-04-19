@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 

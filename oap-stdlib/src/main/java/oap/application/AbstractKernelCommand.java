@@ -31,9 +31,7 @@ import oap.util.Result;
 import javax.annotation.Nullable;
 import java.util.regex.Pattern;
 
-/**
- * Created by igor.petrenko on 2021-03-16.
- */
+
 @ToString
 public abstract class AbstractKernelCommand<TResult> {
     protected final Pattern pattern;

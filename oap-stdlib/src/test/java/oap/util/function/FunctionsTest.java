@@ -22,15 +22,16 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.util.function;
 
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import static oap.util.Functions.applyIfInstanceOf;
+import static oap.util.function.Functions.applyIfInstanceOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FunctionsTest {

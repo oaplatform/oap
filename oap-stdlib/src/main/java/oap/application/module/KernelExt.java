@@ -31,9 +31,7 @@ import oap.json.Binder;
 
 import java.util.LinkedHashMap;
 
-/**
- * Created by igor.petrenko on 2021-03-30.
- */
+
 @ToString
 @EqualsAndHashCode
 public class KernelExt {

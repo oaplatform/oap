@@ -23,15 +23,21 @@
  */
 package oap.concurrent;
 
-import oap.util.Try;
+import oap.util.function.Try;
 
 public class Stopwatch {
     private long elapsed = 0;
 
-    public <E extends Exception> void measure( Try.ThrowingRunnable<E> code ) throws E {
+    @Deprecated
+    public <E extends Exception> void measure( oap.util.Try.ThrowingRunnable<E> code ) throws E {
+        count( code::run );
+    }
+
+    @Deprecated
+    public void count( Try.ThrowingRunnable code ) {
         final long time = System.nanoTime();
         try {
-            code.run();
+            code.asRunnable().run();
         } finally {
             elapsed += System.nanoTime() - time;
         }

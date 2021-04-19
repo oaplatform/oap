@@ -26,13 +26,13 @@ package oap.benchmark;
 
 import lombok.ToString;
 import oap.reflect.Reflect;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.joda.time.Period;
 
 import java.util.function.IntConsumer;
 import java.util.function.LongFunction;
 
-import static oap.util.Functions.empty.run;
+import static oap.util.function.Functions.empty.run;
 
 @ToString( exclude = "code" )
 public final class Benchmark {

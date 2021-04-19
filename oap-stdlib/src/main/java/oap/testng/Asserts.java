@@ -32,7 +32,7 @@ import oap.io.content.ContentReader;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.util.Try;
+import oap.util.function.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.assertj.core.api.AbstractFileAssert;
@@ -53,7 +53,7 @@ import static org.testng.Assert.fail;
 public final class Asserts {
 
     @SneakyThrows
-    public static void assertEventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
+    public static void eventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
         boolean passed = false;
         Throwable exception = null;
         int count = retries;
@@ -71,6 +71,11 @@ public final class Asserts {
         if( !passed )
             if( exception != null ) throw exception;
             else throw new AssertionError( "timeout" );
+    }
+
+    @SneakyThrows
+    public static void assertEventually( long retryTimeout, int retries, oap.util.Try.ThrowingRunnable asserts ) {
+        eventually( retryTimeout, retries, asserts::run );
     }
 
     @Deprecated

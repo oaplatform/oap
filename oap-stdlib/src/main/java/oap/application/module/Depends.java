@@ -33,9 +33,7 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 
-/**
- * Created by igor.petrenko on 2021-03-30.
- */
+
 @ToString
 @EqualsAndHashCode
 public class Depends {

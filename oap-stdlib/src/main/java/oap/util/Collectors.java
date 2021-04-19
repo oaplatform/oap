@@ -24,6 +24,8 @@
 
 package oap.util;
 
+import oap.util.function.Functions;
+
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;

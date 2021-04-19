@@ -37,7 +37,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.util.Result;
-import oap.util.Try;
+import oap.util.function.Try;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;

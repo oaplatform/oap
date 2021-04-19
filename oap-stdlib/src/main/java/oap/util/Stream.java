@@ -59,8 +59,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
 
-import static oap.util.Functions.empty.consume;
 import static oap.util.Pair.__;
+import static oap.util.function.Functions.empty.consume;
 
 public class Stream<E> implements java.util.stream.Stream<E> {
     private final java.util.stream.Stream<E> underlying;

@@ -23,7 +23,7 @@
  */
 package oap.json.schema;
 
-import oap.util.Functions;
+import oap.util.function.TriFunction;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +33,7 @@ public class JsonValidatorProperties {
     public final boolean ignoreRequiredDefault;
     public final Object rootJson;
     public final AbstractSchemaAST rootSchema;
-    public final Functions.TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>>
+    public final TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>>
         validator;
     public final Optional<String> path;
     public final Optional<String> prefixPath;
@@ -45,7 +45,7 @@ public class JsonValidatorProperties {
         Optional<String> path,
         Optional<Boolean> additionalProperties,
         boolean ignoreRequiredDefault,
-        Functions.TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>> validator ) {
+        TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>> validator ) {
         this.rootSchema = rootSchema;
         this.rootJson = rootJson;
         this.prefixPath = prefixPath;
@@ -56,8 +56,8 @@ public class JsonValidatorProperties {
     }
 
     public JsonValidatorProperties withPath( String path ) {
-        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, this.path.map( p -> Optional.of( p + "/" + path ) ).orElse(
-            Optional.of( path ) ), additionalProperties, ignoreRequiredDefault, validator );
+        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, this.path.map( p -> p + "/" + path )
+            .or( () -> Optional.of( path ) ), additionalProperties, ignoreRequiredDefault, validator );
     }
 
     public JsonValidatorProperties withAdditionalProperties( Optional<Boolean> additionalProperties ) {
