@@ -3,4 +3,5 @@ dependsOn: oap
 services:
   test-data-provider:
     implementation: oap.http.server.health.HealthHttpHandlerTest$TestDataProvider
-    link: modules.oap.oap-http-health-handler
+    link:
+      providers: modules.oap.oap-http-health-handler

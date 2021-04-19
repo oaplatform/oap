@@ -44,7 +44,7 @@ public class AstRoot extends Ast {
             import oap.concurrent.StringBuilderPool;
 
             import java.util.*;
-            import oap.util.Functions.TriConsumer;
+            import oap.util.function.TriConsumer;
             import java.util.function.Supplier;
             import com.google.common.base.CharMatcher;
 
