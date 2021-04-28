@@ -380,7 +380,7 @@ class ModuleHelper {
         }
 
         if( !graph.isEmpty() ) {
-            log.error( "graph has at least one cycle:" );
+            log.error( "cyclic dependency detected:" );
             for( var node : graph ) {
                 log.error( "  module: [{}]:{}", node.module.name, Lists.map( node.getDependsOn().values(), d -> d.moduleItem.module.name ) );
                 for( var d : node.getDependsOn().values() ) {
@@ -390,7 +390,7 @@ class ModuleHelper {
                 }
             }
 
-            throw new ApplicationException( "graph has at least one cycle" );
+            throw new ApplicationException( "cyclic dependency detected" );
         }
 
         map.set( newMap );
@@ -437,12 +437,12 @@ class ModuleHelper {
         }
 
         if( !graph.isEmpty() ) {
-            log.error( "[{}] module graph has at least one cycle:", moduleInfo.module.name );
+            log.error( "[{}] module cyclic dependency detected:", moduleInfo.module.name );
             for( var node : graph ) {
                 log.error( "  [{}]:{}", node.serviceName, Lists.map( node.dependsOn, d -> d.serviceItem.serviceName ) );
             }
 
-            throw new ApplicationException( "[" + moduleInfo.module.name + "] graph has at least one cycle" );
+            throw new ApplicationException( "[" + moduleInfo.module.name + "] cyclic dependency detected" );
         }
 
         moduleInfo.services.clear();

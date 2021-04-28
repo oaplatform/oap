@@ -250,7 +250,7 @@ public class KernelTest {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "cyclic1" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "graph has at least one cycle" );
+                .hasMessage( "cyclic dependency detected" );
         }
     }
 
