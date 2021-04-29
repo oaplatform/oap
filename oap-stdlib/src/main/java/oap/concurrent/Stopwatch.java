@@ -33,7 +33,6 @@ public class Stopwatch {
         count( code::run );
     }
 
-    @Deprecated
     public void count( Try.ThrowingRunnable code ) {
         final long time = System.nanoTime();
         try {
