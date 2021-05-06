@@ -107,6 +107,23 @@ public class KernelLinkImplementationsTest {
         }
     }
 
+    @Test
+    public void testCyclicReferences() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "creference.conf" ) )
+        );
+
+        try {
+            kernel.start( Map.of( "boot.main", "creference" ) );
+
+            assertThat( kernel.serviceOfClass2( TestCLinks.class ).links ).hasSize( 2 );
+            assertThat( kernel.<TestCLink>service( "creference.link1" ).orElseThrow().link ).isNull();
+            assertThat( kernel.<TestCLink>service( "creference.link2" ).orElseThrow().link ).isNotNull();
+        } finally {
+            kernel.stop();
+        }
+    }
+
     public interface TestInterface {
 
     }
@@ -153,6 +170,18 @@ public class KernelLinkImplementationsTest {
 
         public TestList( List<String> list ) {
             for( var item : list ) this.list.put( item, item );
+        }
+    }
+
+    public static class TestCLink {
+        public TestCLink link;
+    }
+
+    public static class TestCLinks {
+        public final ArrayList<TestCLink> links = new ArrayList<>();
+
+        public void addTestLink( TestCLink link ) {
+            links.add( link );
         }
     }
 }

@@ -306,21 +306,34 @@ public class Kernel implements Closeable {
 
     @SuppressWarnings( "unchecked" )
     private void linkLinks( ServiceInitialization initialization ) {
-        initialization.service.link.forEach( ( fieldName, serviceRef ) -> ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.module, services )
-            .ifSuccessOrElse(
-                service -> Reflect.reflect( service.service.implementation )
-                    .field( fieldName )
-                    .ifPresentOrElse(
-                        field -> {
-                            if( field.type().assignableTo( Collection.class ) )
-                                ( ( Collection<Object> ) field.get( service.instance ) )
-                                    .add( initialization.instance );
-                            else field.set( service.instance, initialization.instance );
-                        },
-                        raise( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
-                            + " should have field " + fieldName
-                            + " for " + initialization.implementationName + "/" + initialization.service.implementation ) ) ),
-                raise( e -> new ApplicationException( "Unknown service link " + serviceRef ) ) ) );
+        initialization.service.link.forEach( ( fieldName, serviceRef ) ->
+            ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.module, services )
+                .ifSuccessOrElse(
+                    service -> {
+                        var reflect = Reflect.reflect( service.service.implementation );
+                        var methodSuffix = StringUtils.capitalize( fieldName );
+
+                        var linkMethod = reflect.method( "add" + methodSuffix ).orElse( null );
+                        if( linkMethod == null ) linkMethod = reflect.method( "set" + methodSuffix ).orElse( null );
+
+                        if( linkMethod != null && linkMethod.parameters.size() == 1 ) {
+                            linkMethod.invoke( service.instance, initialization.instance );
+                        } else {
+                            var linkField = reflect.field( fieldName ).orElse( null );
+                            if( linkField != null ) {
+                                if( linkField.type().assignableTo( Collection.class ) )
+                                    ( ( Collection<Object> ) linkField.get( service.instance ) )
+                                        .add( initialization.instance );
+                                else linkField.set( service.instance, initialization.instance );
+                            } else {
+                                raise( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
+                                    + " should have field " + fieldName
+                                    + " for " + initialization.implementationName + "/" + initialization.service.implementation ) );
+
+                            }
+                        }
+                    },
+                    raise( e -> new ApplicationException( "Unknown service link " + serviceRef ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
