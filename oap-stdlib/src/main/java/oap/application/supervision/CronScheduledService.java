@@ -23,15 +23,32 @@
  */
 package oap.application.supervision;
 
+import lombok.ToString;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.util.Numbers;
+import org.apache.commons.lang3.RandomUtils;
+
+import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
-    private final String cron;
+    public final String cron;
+    public final long jitter;
 
     public CronScheduledService( Runnable runnable, String cron ) {
         super( "cron", runnable );
-        this.cron = cron;
+        var info = parse( cron );
+        this.cron = info.cron;
+        this.jitter = info.jitter;
+    }
+
+    private static CronInfo parse( String cron ) {
+        var m = Pattern.compile( "(.+)\\s+jitter\s+(\\d+\\w*)$" ).matcher( cron );
+        if( m.matches() ) {
+            return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
+        }
+
+        return new CronInfo( cron.trim(), 0L );
     }
 
     @Override
@@ -39,4 +56,27 @@ public class CronScheduledService extends AbstractScheduledService {
         return Scheduler.scheduleCron( cron, this );
     }
 
+    @Override
+    public void run() {
+        if( jitter > 0 ) {
+            try {
+                Thread.sleep( RandomUtils.nextLong( 0, jitter + 1 ) );
+            } catch( InterruptedException e ) {
+                return;
+            }
+        }
+
+        super.run();
+    }
+
+    @ToString
+    private static class CronInfo {
+        public final String cron;
+        public final long jitter;
+
+        private CronInfo( String cron, long jitter ) {
+            this.cron = cron;
+            this.jitter = jitter;
+        }
+    }
 }
