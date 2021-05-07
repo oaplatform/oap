@@ -26,8 +26,8 @@ package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ModuleItem.ModuleReference;
-import oap.application.ModuleItem.ModuleReference.ServiceLink;
 import oap.application.ModuleItem.ServiceItem.ServiceReference;
+import oap.application.module.Reference;
 import oap.util.Lists;
 import oap.util.Pair;
 
@@ -181,17 +181,14 @@ class ModuleHelper {
                             throw new ApplicationException( "[" + dModuleName + ":" + dServiceName + "] 'this:" + dService + "' not found" );
                         }
 
-                        if( !moduleItem.equals( moduleService._1 ) )
-                            moduleItem.addDependsOn( new ModuleReference( moduleService._1, new ServiceLink( serviceItem, moduleService._2 ) ) );
-                        else
-                            serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
+                        serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
                     }
 
                     for( var link : serviceItem.service.link.values() )
-                        initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem );
+                        initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem, true );
 
                     for( var value : serviceItem.service.parameters.values() ) {
-                        initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem );
+                        initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem, false );
                     }
                 }
             } );
@@ -202,7 +199,8 @@ class ModuleHelper {
                                            Kernel kernel,
                                            ModuleItem moduleItem, String serviceName,
                                            Object value, boolean required,
-                                           ModuleItem.ServiceItem serviceItem ) {
+                                           ModuleItem.ServiceItem serviceItem,
+                                           boolean reverse ) {
         if( ServiceKernelCommand.INSTANCE.matches( value ) ) {
             var reference = ServiceKernelCommand.INSTANCE.reference( ( String ) value, moduleItem );
             var moduleService = findService( map, moduleItem.getName(), reference.module, reference.service );
@@ -210,16 +208,16 @@ class ModuleHelper {
                 throw new ApplicationException( "[" + moduleItem.module.name + ":" + serviceName + "#" + reference + "] " + reference + "  not found" );
             }
 
-            if( !moduleItem.equals( moduleService._1 ) )
-                moduleItem.addDependsOn( new ModuleReference( moduleService._1, new ServiceLink( serviceItem, moduleService._2 ) ) );
-            else
+            if( !reverse )
                 serviceItem.addDependsOn( new ServiceReference( moduleService._2, required ) );
+            else
+                moduleService._2.addDependsOn( new ServiceReference( serviceItem, required ) );
         } else if( value instanceof List<?> )
             for( var item : ( List<?> ) value )
-                initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem );
+                initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem, reverse );
         else if( value instanceof Map<?, ?> ) {
             for( var item : ( ( Map<?, ?> ) value ).values() )
-                initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem );
+                initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem, reverse );
         }
     }
 
@@ -338,9 +336,7 @@ class ModuleHelper {
 
     private static void sort( ModuleItemTree map ) {
         sortModules( map );
-        for( var moduleInfo : map.values() ) {
-            sortServices( moduleInfo );
-        }
+        sortServices( map );
     }
 
     private static void sortModules( ModuleItemTree map ) {
@@ -382,12 +378,7 @@ class ModuleHelper {
         if( !graph.isEmpty() ) {
             log.error( "cyclic dependency detected:" );
             for( var node : graph ) {
-                log.error( "  module: [{}]:{}", node.module.name, Lists.map( node.getDependsOn().values(), d -> d.moduleItem.module.name ) );
-                for( var d : node.getDependsOn().values() ) {
-                    for( var sl : d.serviceLink ) {
-                        log.error( "    service: {}:{} -> {}:{}", node.module.name, sl.from.serviceName, d.moduleItem.getName(), sl.to.serviceName );
-                    }
-                }
+                log.error( "  module: {} dependsOn {}", node.module.name, Lists.map( node.getDependsOn().values(), d -> d.moduleItem.module.name ) );
             }
 
             throw new ApplicationException( "cyclic dependency detected" );
@@ -399,15 +390,14 @@ class ModuleHelper {
         );
     }
 
-    private static void sortServices( ModuleItem moduleInfo ) {
-        log.trace( "{}: services: before sort: \n{}",
-            moduleInfo.getName(),
-            String.join( "\n", Lists.map( moduleInfo.services.entrySet(), e -> "  " + e.getKey() + ": " + Lists.map( e.getValue().dependsOn, d -> d.serviceItem.serviceName ) ) )
+    private static void sortServices( ModuleItemTree map ) {
+        log.trace( "services: before sort: \n{}",
+            String.join( "\n", Lists.map( map.services, e -> "  " + e.getModuleName() + "." + e.serviceName + " dependsOn " + Lists.map( e.dependsOn, d -> d.serviceItem.moduleItem.getName() + "." + d.serviceItem.serviceName ) ) )
         );
 
-        var graph = new LinkedList<>( moduleInfo.services.values() );
+        var graph = new LinkedList<>( map.services );
 
-        var newMap = new LinkedHashMap<String, ModuleItem.ServiceItem>();
+        var newMap = new LinkedHashMap<Reference, ModuleItem.ServiceItem>();
         var noIncomingEdges = new LinkedList<ModuleItem.ServiceItem>();
 
 
@@ -422,7 +412,7 @@ class ModuleHelper {
         while( !noIncomingEdges.isEmpty() ) {
             var serviceItem = noIncomingEdges.removeFirst();
 
-            newMap.put( serviceItem.serviceName, serviceItem );
+            newMap.put( new Reference( serviceItem.getModuleName(), serviceItem.serviceName ), serviceItem );
 
             graph.removeIf( node -> {
                 node.dependsOn.removeIf( sr -> sr.serviceItem.equals( serviceItem ) );
@@ -437,19 +427,18 @@ class ModuleHelper {
         }
 
         if( !graph.isEmpty() ) {
-            log.error( "[{}] module cyclic dependency detected:", moduleInfo.module.name );
+            log.error( "services cyclic dependency detected:" );
             for( var node : graph ) {
-                log.error( "  [{}]:{}", node.serviceName, Lists.map( node.dependsOn, d -> d.serviceItem.serviceName ) );
+                log.error( "  {}.{} dependsOn {}", node.getModuleName(), node.serviceName,
+                    Lists.map( node.dependsOn, d -> d.serviceItem.getModuleName() + "." + d.serviceItem.serviceName ) );
             }
 
-            throw new ApplicationException( "[" + moduleInfo.module.name + "] cyclic dependency detected" );
+            throw new ApplicationException( "services cyclic dependency detected" );
         }
 
-        moduleInfo.services.clear();
-        moduleInfo.services.putAll( newMap );
-        log.trace( "{}: services: after sort: \n{}",
-            moduleInfo.getName(),
-            String.join( "\n", Lists.map( moduleInfo.services.keySet(), e -> "  " + e ) )
+        map.setServices( newMap.values() );
+        log.trace( "services: after sort: \n{}",
+            String.join( "\n", Lists.map( map.services, e -> "  " + e ) )
         );
     }
 

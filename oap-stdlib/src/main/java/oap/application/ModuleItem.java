@@ -62,14 +62,7 @@ class ModuleItem {
     }
 
     public void addDependsOn( ModuleReference reference ) {
-        dependsOn.compute( reference.moduleItem.getName(), ( name, ref ) -> {
-            if( ref != null ) {
-                ref.serviceLink.addAll( reference.serviceLink );
-                return ref;
-            }
-
-            return reference;
-        } );
+        dependsOn.put( reference.getModuleName(), reference );
     }
 
     @Override
@@ -98,20 +91,18 @@ class ModuleItem {
     @EqualsAndHashCode
     static class ModuleReference {
         final ModuleItem moduleItem;
-        final LinkedHashSet<ServiceLink> serviceLink = new LinkedHashSet<>();
 
         ModuleReference( ModuleItem moduleItem ) {
             this.moduleItem = moduleItem;
         }
 
-        ModuleReference( ModuleItem moduleItem, ServiceLink serviceLink ) {
-            this.moduleItem = moduleItem;
-            this.serviceLink.add( serviceLink );
+        public String getModuleName() {
+            return moduleItem.getName();
         }
 
         @Override
         public String toString() {
-            return "" + Lists.map( serviceLink, sl -> sl.from.moduleItem.getName() + ":" + sl.from.serviceName + "->" + sl.to.moduleItem.getName() + ":" + sl.to.serviceName );
+            return "reference:" + moduleItem.getName();
         }
 
         @EqualsAndHashCode
@@ -138,6 +129,19 @@ class ModuleItem {
             this.moduleItem = moduleItem;
             this.service = service;
             this.enabled = enabled;
+        }
+
+        public String getModuleName() {
+            return moduleItem.getName();
+        }
+
+        public String getName() {
+            return service.name;
+        }
+
+        @Override
+        public String toString() {
+            return moduleItem.getName() + "." + serviceName;
         }
 
         public void fixServiceName( String implName ) {

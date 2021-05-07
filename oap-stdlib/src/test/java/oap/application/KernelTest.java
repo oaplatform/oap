@@ -288,8 +288,8 @@ public class KernelTest {
     @Test
     public void testDuplicateServices() {
         var modules = List.of(
-            url( "duplicate/d1.yaml" ),
-            url( "duplicate/d2.yaml" )
+            url( "duplicate/d1.conf" ),
+            url( "duplicate/d2.conf" )
         );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -315,6 +315,10 @@ public class KernelTest {
         } finally {
             kernel.stop();
         }
+    }
+
+    public enum Enum {
+        ONE, TWO
     }
 
     @Slf4j
@@ -372,9 +376,5 @@ public class KernelTest {
         public TestEnum( List<Enum> enums ) {
             this.enums.addAll( enums );
         }
-    }
-
-    public enum Enum {
-        ONE, TWO
     }
 }

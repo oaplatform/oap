@@ -33,7 +33,6 @@ import oap.application.link.LinkReflection;
 import oap.application.link.ListLinkReflection;
 import oap.application.link.MapLinkReflection;
 import oap.application.module.Module;
-import oap.application.module.ModuleExt;
 import oap.application.module.Reference;
 import oap.application.module.Service;
 import oap.application.module.ServiceExt;
@@ -86,7 +85,7 @@ public class Kernel implements Closeable {
     final String name;
     private final List<URL> moduleConfigurations;
     private final LinkedHashSet<ModuleWithLocation> modules = new LinkedHashSet<>();
-    private final LinkedHashMap<String, Supervisor> supervisor = new LinkedHashMap<>();
+    private final Supervisor supervisor = new Supervisor();
 
     public Kernel( String name, List<URL> moduleConfigurations ) {
         this.name = name;
@@ -102,7 +101,7 @@ public class Kernel implements Closeable {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
             var methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
             var ref = ServiceKernelCommand.INSTANCE.reference( reference, moduleItem );
-            var linkedModule = services.get( ref.module );
+            var linkedModule = services.getServices( ref.module );
             ServiceInitialization linked;
             if( linkedModule == null || ( ( linked = linkedModule.get( ref.service ) ) ) == null )
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
@@ -181,20 +180,13 @@ public class Kernel implements Closeable {
 
         var map = ModuleHelper.init( this.modules, this.profiles, config.boot.main, this );
 
-        for( var moduleName : map.keySet() ) {
-            var supervisor = new Supervisor();
-            this.supervisor.put( moduleName, supervisor );
-        }
-
         var servicesMap = instantiateServices( map );
         registerServices( servicesMap );
         linkServices( servicesMap );
         startServices( servicesMap );
 
-        for( var supervisor : this.supervisor.values() ) {
-            supervisor.preStart();
-            supervisor.start();
-        }
+        supervisor.preStart();
+        supervisor.start();
 
         log.debug( "application kernel started" );
     }
@@ -225,37 +217,34 @@ public class Kernel implements Closeable {
     private ServiceInitializationTree instantiateServices( ModuleItemTree map ) throws ApplicationException {
         var retModules = new ServiceInitializationTree();
 
-        for( var moduleItem : map.values() ) {
-            if( !moduleItem.isEnabled() ) continue;
+        for( var serviceItem : map.services ) {
+            if( !serviceItem.moduleItem.isEnabled() ) continue;
+            if( !serviceItem.enabled ) continue;
+
+            var moduleItem = serviceItem.moduleItem;
             var moduleName = moduleItem.getName();
 
-            for( var serviceEntry : moduleItem.services.entrySet() ) {
-                var serviceItem = serviceEntry.getValue();
-                if( !serviceItem.enabled ) continue;
-
-                var service = serviceItem.service;
-                var implName = serviceEntry.getKey();
-                log.trace( "instantiate {}:{}...", moduleName, implName + " as " + service.name );
-                try {
-                    var reflect = Reflect.reflect( service.implementation, Module.coersions );
-                    Object instance;
-                    if( !service.isRemoteService() ) {
-                        var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service.parameters );
-                        instance = reflect.newInstance( parametersWithoutLinks );
-                        setServiceName( reflect, instance, service.name );
+            var service = serviceItem.service;
+            var implName = serviceItem.serviceName;
+            log.trace( "instantiate {}.{} as {}...", moduleName, implName, service.name );
+            try {
+                var reflect = Reflect.reflect( service.implementation, Module.coersions );
+                Object instance;
+                if( !service.isRemoteService() ) {
+                    var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service.parameters );
+                    instance = reflect.newInstance( parametersWithoutLinks );
+                    setServiceName( reflect, instance, service.name );
 //                    updateLoggerIfExists( instance, implName );
-                    } else {
-                        instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
-                    }
-                    retModules.put( moduleItem.module, service.name, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
-                } catch( ReflectException e ) {
-                    log.info( "service name = {}:{}, remote = {}, profiles = {}",
-                        moduleName,
-                        implName, service.remote, service.profiles );
-                    throw new ApplicationException( e );
+                } else {
+                    instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
                 }
-
+                retModules.put( serviceItem, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
+            } catch( ReflectException e ) {
+                log.info( "service name = {}.{}, remote = {}, profiles = {}",
+                    moduleName, implName, service.remote, service.profiles );
+                throw new ApplicationException( e );
             }
+
         }
 
         return retModules;
@@ -281,26 +270,22 @@ public class Kernel implements Closeable {
     }
 
     private void registerServices( ServiceInitializationTree moduleServices ) {
-        moduleServices.forEach( ( moduleName, services ) -> {
-            services.forEach( ( serviceName, si ) -> {
-                register( si.module.module, serviceName, si );
-                if( !si.service.name.equals( serviceName ) )
-                    register( si.module.module, si.service.name, si );
-            } );
+        moduleServices.forEach( ( serviceItem, si ) -> {
+            register( serviceItem, serviceItem.serviceName, si );
+            if( !si.service.name.equals( serviceItem.serviceName ) )
+                register( serviceItem, si.service.name, si );
         } );
     }
 
     private void linkServices( ServiceInitializationTree moduleServices ) {
-        for( var services : moduleServices.values() ) {
-            for( var si : services.values() ) {
-                log.trace( "linking service {}...", si.implementationName );
+        for( var si : moduleServices.values() ) {
+            log.trace( "linking service {}...", si.implementationName );
 
-                linkListeners( si.module, si.service, si.instance );
-                linkLinks( si );
-                si.service.parameters.forEach( ( parameter, value ) ->
-                    linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si, true )
-                );
-            }
+            linkListeners( si.module, si.service, si.instance );
+            linkLinks( si );
+            si.service.parameters.forEach( ( parameter, value ) ->
+                linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si, true )
+            );
         }
     }
 
@@ -373,18 +358,12 @@ public class Kernel implements Closeable {
     }
 
     private void startServices( ServiceInitializationTree moduleServices ) {
-        moduleServices.forEach( ( moduleName, services ) -> {
-            log.debug( "starting module {}...", moduleName );
+        moduleServices.forEach( ( serviceItem, si ) -> {
 
-            var supervisor = this.supervisor.get( moduleName );
-            services.forEach( ( implName, si ) -> {
-                log.debug( "starting {} as {}...", si.service.name, implName );
+            log.debug( "starting {} as {}...", si.service.name, serviceItem.serviceName );
 
-                startService( supervisor, si );
-                log.debug( "starting {} as {}... Done", si.service.name, implName );
-            } );
-
-            log.debug( "starting module {}... Done", moduleName );
+            startService( supervisor, si );
+            log.debug( "starting {} as {}... Done", si.service.name, serviceItem.serviceName );
         } );
     }
 
@@ -415,41 +394,31 @@ public class Kernel implements Closeable {
         }
     }
 
-    public void register( Module module, String serviceName, ServiceInitialization si ) throws ApplicationException {
+    public void register( ModuleItem.ServiceItem serviceItem, String serviceName, ServiceInitialization si ) throws ApplicationException {
         Object registered;
 
-        if( ( registered = services.putIfAbsent( module, serviceName, si ) ) != null )
-            throw new ApplicationException( module.name + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.getClass() + "]" );
+        if( ( registered = services.putIfAbsent( serviceItem, serviceName, si ) ) != null )
+            throw new ApplicationException( serviceItem.getModuleName() + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.getClass() + "]" );
     }
 
     public void stop() {
-        for( var supervisorEntry : Lists.reverse( this.supervisor.entrySet() ) ) {
-            var supervisorModule = supervisorEntry.getKey();
-            var supervisor = supervisorEntry.getValue();
-
-            log.debug( "stopping application kernel {}/{}...", name, supervisorModule );
-            supervisor.preStop();
-            supervisor.stop();
-            services.clear();
-            log.debug( "application kernel stopped {}/{}", name, supervisorModule );
-        }
+        log.debug( "stopping application kernel {}...", name );
+        supervisor.preStop();
+        supervisor.stop();
+        services.clear();
+        log.debug( "application kernel stopped {}", name );
     }
 
     @SuppressWarnings( "unchecked" )
     public <T> Optional<T> service( String moduleName, String serviceName ) {
         if( ServiceStorage.ALL_MODULES.contains( moduleName ) ) {
-            for( var services : services.values() ) {
-                var service = services.get( serviceName );
-                if( service != null ) return Optional.of( ( T ) service.instance );
-            }
-
-            return Optional.empty();
+            return services.findFirstServiceByName( serviceName ).map( si -> ( T ) si.instance );
         }
 
-        var module = services.get( moduleName );
-        if( module == null ) return Optional.empty();
+        var si = services.get( moduleName, serviceName );
+        if( si == null ) return Optional.empty();
 
-        return Optional.ofNullable( module.get( serviceName ) ).map( si -> ( T ) si.instance );
+        return Optional.of( ( T ) si.instance );
     }
 
     private <T> Optional<T> service( Reference reference ) {
@@ -469,11 +438,9 @@ public class Kernel implements Closeable {
     public <T> List<T> ofClass( String moduleName, Class<T> clazz ) {
         var ret = new ArrayList<T>();
 
-        this.services.forEach( ( module, services ) -> {
-            if( ServiceStorage.ALL_MODULES.contains( moduleName ) || module.equals( moduleName ) )
-                for( var service : services.values() ) {
-                    if( clazz.isInstance( service.instance ) ) ret.add( ( T ) service.instance );
-                }
+        this.services.forEach( ( serviceItem, service ) -> {
+            if( ServiceStorage.ALL_MODULES.contains( moduleName ) || serviceItem.getModuleName().equals( moduleName ) )
+                if( clazz.isInstance( service.instance ) ) ret.add( ( T ) service.instance );
         } );
 
         return ret;
@@ -495,30 +462,14 @@ public class Kernel implements Closeable {
         return Lists.head2( ofClass( moduleName, clazz ) );
     }
 
-    public <T> List<ModuleExt<T>> modulesByExt( String ext, Class<T> clazz ) {
-        var ret = new ArrayList<ModuleExt<T>>();
-
-        for( var module : services.values() ) {
-            var moduleExt = module.<T>getExt( ext );
-            if( moduleExt == null ) continue;
-
-            ret.add( new ModuleExt<>( module.module, moduleExt, module.map ) );
-        }
-
-        return ret;
-    }
-
     public <T> List<ServiceExt<T>> servicesByExt( String ext, Class<T> clazz ) {
         var ret = new ArrayList<ServiceExt<T>>();
 
-        for( var module : services.values() ) {
-            for( var serviceEntry : module.map.entrySet() ) {
-                var service = serviceEntry.getValue();
-                var extConfiguration = service.service.<T>getExt( ext );
-                if( extConfiguration == null ) continue;
+        for( var si : services.values() ) {
+            var extConfiguration = si.service.<T>getExt( ext );
+            if( extConfiguration == null ) continue;
 
-                ret.add( new ServiceExt<T>( serviceEntry.getKey(), module.module, service, extConfiguration ) );
-            }
+            ret.add( new ServiceExt<T>( si.implementationName, si.module.module, si, extConfiguration ) );
 
 
         }
@@ -527,10 +478,7 @@ public class Kernel implements Closeable {
     }
 
     public void unregister( String moduleName, String serviceName ) {
-        var module = services.get( moduleName );
-        if( module == null ) return;
-
-        module.remove( name );
+        services.removeService( moduleName, serviceName );
     }
 
     public void unregisterServices() {

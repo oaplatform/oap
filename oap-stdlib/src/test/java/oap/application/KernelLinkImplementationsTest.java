@@ -179,6 +179,11 @@ public class KernelLinkImplementationsTest {
 
     public static class TestCLinks {
         public final ArrayList<TestCLink> links = new ArrayList<>();
+        public final TestCLink link;
+
+        public TestCLinks( TestCLink link ) {
+            this.link = link;
+        }
 
         public void addTestLink( TestCLink link ) {
             links.add( link );

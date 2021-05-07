@@ -29,8 +29,8 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 public class Reference {
-    public String service;
-    public String module;
+    public final String module;
+    public final String service;
 
     public Reference( String module, String service ) {
         this.module = module;

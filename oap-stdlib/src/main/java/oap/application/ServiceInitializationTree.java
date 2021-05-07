@@ -24,12 +24,12 @@
 
 package oap.application;
 
-import oap.application.module.Module;
 import oap.util.Result;
 
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -37,43 +37,52 @@ import static oap.application.ServiceStorage.ErrorStatus.MODULE_NOT_FOUND;
 import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 
 
-public class ServiceInitializationTree extends AbstractMap<String, ServiceInitializationTree.ModuleTree> implements ServiceStorage {
-    private final LinkedHashMap<String, ModuleTree> map = new LinkedHashMap<>();
+public class ServiceInitializationTree extends AbstractMap<ModuleItem.ServiceItem, ServiceInitialization> implements ServiceStorage {
+    private final LinkedHashMap<ModuleItem.ServiceItem, ServiceInitialization> map = new LinkedHashMap<>();
+    private final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> moduleMap = new LinkedHashMap<>();
 
-    public void put( Module module, String serviceName, ServiceInitialization serviceInitialization ) {
-        map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).put( serviceName, serviceInitialization );
+    @Override
+    public ServiceInitialization put( ModuleItem.ServiceItem key, ServiceInitialization value ) {
+        var services = moduleMap.computeIfAbsent( key.getModuleName(), n -> new LinkedHashMap<>() );
+        services.put( key.serviceName, value );
+        services.putIfAbsent( key.getName(), value );
+        return map.put( key, value );
     }
 
     @Override
-    public void forEach( BiConsumer<? super String, ? super ModuleTree> action ) {
+    public void forEach( BiConsumer<? super ModuleItem.ServiceItem, ? super ServiceInitialization> action ) {
         map.forEach( action );
     }
 
     @Override
-    public Collection<ModuleTree> values() {
-        return super.values();
+    public Collection<ServiceInitialization> values() {
+        return map.values();
     }
 
     @Override
-    public Set<Entry<String, ModuleTree>> entrySet() {
+    public Set<Entry<ModuleItem.ServiceItem, ServiceInitialization>> entrySet() {
         return map.entrySet();
     }
 
-    public ModuleTree get( String module ) {
-        return map.get( module );
+    public LinkedHashMap<String, ServiceInitialization> getServices( String moduleName ) {
+        return moduleMap.get( moduleName );
     }
 
-    public ServiceInitialization putIfAbsent( Module module, String serviceName, ServiceInitialization si ) {
-        return map.computeIfAbsent( module.name, mn -> new ModuleTree( module ) ).putIfAbsent( serviceName, si );
+    public ServiceInitialization putIfAbsent( ModuleItem.ServiceItem key, String serviceName, ServiceInitialization value ) {
+        var ret = moduleMap.computeIfAbsent( key.getModuleName(), n -> new LinkedHashMap<>() ).putIfAbsent( serviceName, value );
+        map.putIfAbsent( key, value );
+
+        return ret;
     }
 
     public void clear() {
         map.clear();
+        moduleMap.clear();
     }
 
     @Override
     public Result<Object, ErrorStatus> findByName( String moduleName, String serviceName ) {
-        var moduleServices = map.get( moduleName );
+        var moduleServices = moduleMap.get( moduleName );
         if( moduleServices == null ) return Result.failure( MODULE_NOT_FOUND );
 
         var service = moduleServices.get( serviceName );
@@ -82,51 +91,29 @@ public class ServiceInitializationTree extends AbstractMap<String, ServiceInitia
         return Result.success( service );
     }
 
-    public static class ModuleTree extends AbstractMap<String, ServiceInitialization> {
-        public final LinkedHashMap<String, ServiceInitialization> map = new LinkedHashMap<>();
-        public final Module module;
+    public ServiceInitialization get( String moduleName, String serviceName ) {
+        var services = getServices( moduleName );
+        if( services == null ) return null;
 
-        public ModuleTree( Module module ) {
-            this.module = module;
+        return services.get( serviceName );
+    }
+
+    public Optional<ServiceInitialization> findFirstServiceByName( String serviceName ) {
+        for( var s : moduleMap.values() ) {
+            var r = s.get( serviceName );
+            if( r != null ) return Optional.of( r );
         }
 
-        @Override
-        public ServiceInitialization put( String serviceName, ServiceInitialization serviceInitialization ) {
-            return map.put( serviceName, serviceInitialization );
-        }
+        return Optional.empty();
+    }
 
-        public ServiceInitialization get( String serviceName ) {
-            return map.get( serviceName );
-        }
+    public void removeService( String moduleName, String serviceName ) {
+        var mod = moduleMap.get( moduleName );
 
-        @Override
-        public ServiceInitialization putIfAbsent( String serviceName, ServiceInitialization si ) {
-            return map.putIfAbsent( serviceName, si );
-        }
+        if( mod == null ) return;
 
-        @Override
-        public void forEach( BiConsumer<? super String, ? super ServiceInitialization> action ) {
-            map.forEach( action );
-        }
+        mod.remove( serviceName );
 
-        @Override
-        public Collection<ServiceInitialization> values() {
-            return map.values();
-        }
-
-        @Override
-        public Set<Entry<String, ServiceInitialization>> entrySet() {
-            return map.entrySet();
-        }
-
-        @Override
-        public ServiceInitialization remove( Object key ) {
-            return map.remove( key );
-        }
-
-        @SuppressWarnings( "unchecked" )
-        public <T> T getExt( String ext ) {
-            return ( T ) this.module.ext.get( ext );
-        }
+        map.entrySet().removeIf( e -> e.getKey().getModuleName().equals( moduleName ) && e.getKey().serviceName.equals( serviceName ) );
     }
 }

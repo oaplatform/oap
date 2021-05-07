@@ -1,6 +1,0 @@
-name: d2
-services:
-  ServiceOne:
-    implementation: oap.application.ServiceOne
-    parameters:
-      i: 2

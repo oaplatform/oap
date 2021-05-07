@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 
 
 class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceStorage {
+    final LinkedHashSet<ModuleItem.ServiceItem> services = new LinkedHashSet<>();
     private final LinkedHashMap<String, ModuleItem> map = new LinkedHashMap<>();
 
     ModuleItemTree() {
@@ -45,6 +47,10 @@ class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceS
 
     ModuleItemTree( Map<String, ModuleItem> map ) {
         this.map.putAll( map );
+
+        for( var moduleItem : map.values() ) {
+            services.addAll( moduleItem.services.values() );
+        }
     }
 
     public ModuleItem remove( String moduleName ) {
@@ -73,7 +79,12 @@ class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceS
 
     public void set( LinkedHashMap<String, ModuleItem> newMap ) {
         map.clear();
+        services.clear();
         map.putAll( newMap );
+
+        for( var moduleItem : map.values() ) {
+            services.addAll( moduleItem.services.values() );
+        }
     }
 
     public @Nonnull
@@ -104,5 +115,10 @@ class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceS
         if( service == null ) return Result.failure( SERVICE_NOT_FOUND );
 
         return Result.success( service );
+    }
+
+    public void setServices( Collection<ModuleItem.ServiceItem> services ) {
+        this.services.clear();
+        this.services.addAll( services );
     }
 }
