@@ -24,15 +24,12 @@
 
 package oap.application.testng;
 
-import oap.testng.AbstractEnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
 import static oap.application.testng.KernelFixture.ANY;
-import static oap.testng.AbstractEnvFixture.Kind;
-import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,36 +38,36 @@ public class KernelFixtureTest extends Fixtures {
     private final TestFixture testFixture;
 
     {
+        testFixture = fixture( new TestFixture() );
         kernelFixture = fixture( new KernelFixture(
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
-            pathOfTestResource( KernelFixture.class, "confd" ),
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
-        ) ).withKind( Kind.MAP );
-
-        testFixture = kernelFixture.fixture( new TestFixture().withKind( Kind.MAP ) );
-
-        kernelFixture.define( "MY_TEST_PORT", testFixture.portFor( "TEST_PORT" ) );
+        ) ).definePort( "TEST_PORT" );
     }
 
     @Test
     public void value() {
         assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( "from fixture" + testFixture.portFor( "TEST_PORT" ) );
-    }
-
-    @Test( dependsOnMethods = "value" )
-    public void value2() {
-        assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( "from fixture" + testFixture.portFor( "TEST_PORT" ) );
+            .isEqualTo( kernelFixture.portFor( "TEST_PORT" ) );
+        assertThat( testFixture.service( ANY, Service.class ).value )
+            .isEqualTo( testFixture.portFor( "TEST_PORT" ) );
+        assertThat( kernelFixture.service( ANY, Service.class ) )
+            .isNotSameAs( testFixture.service( ANY, Service.class ) );
+        assertThat( kernelFixture.portFor( "TEST_PORT" ) )
+            .isNotSameAs( testFixture.portFor( "TEST_PORT" ) );
     }
 
     public static class Service {
-        public String value;
+        public int value;
     }
 
-    public static class TestFixture extends AbstractEnvFixture<TestFixture> {
+    public static class TestFixture extends AbstractKernelFixture<TestFixture> {
         public TestFixture() {
-            definePort( "TEST_PORT", "TEST_PORT" );
+            super( "PREFIXED_",
+                urlOfTestResource( KernelFixtureTest.class, "application.fixture.conf" ),
+                List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+            );
+            definePort( "TEST_PORT" );
         }
     }
 }

@@ -56,7 +56,7 @@ public class SslHttpListenerTest extends Fixtures {
     private SynchronizedThread listener;
 
     {
-        envFixture = fixture( new EnvFixture().definePort( PORT, PORT ) );
+        envFixture = fixture( new EnvFixture().definePort( PORT ) );
     }
 
     @BeforeClass

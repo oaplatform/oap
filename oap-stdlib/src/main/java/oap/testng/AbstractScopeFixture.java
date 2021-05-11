@@ -24,27 +24,12 @@
 
 package oap.testng;
 
-import oap.util.Lists;
-
-import java.util.ArrayList;
-
 public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Self>> implements Fixture {
-    protected final ArrayList<AbstractScopeFixture<?>> fixtures = new ArrayList<>();
-
     protected Scope scope = Scope.METHOD;
-
-    public <F extends AbstractScopeFixture<?>> F fixture( F fixture ) {
-        this.fixtures.add( fixture.withScope( scope ) );
-
-        return fixture;
-    }
 
     @SuppressWarnings( "unchecked" )
     public Self withScope( Scope scope ) {
         this.scope = scope;
-
-        fixtures.forEach( f -> f.withScope( scope ) );
-
         return ( Self ) this;
     }
 
@@ -54,47 +39,35 @@ public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Sel
 
     @Override
     public void beforeSuite() {
-        if( scope == Scope.SUITE ) beforeAll();
+        if( scope == Scope.SUITE ) before();
     }
 
     @Override
     public void afterSuite() {
-        if( scope == Scope.SUITE ) afterAll();
+        if( scope == Scope.SUITE ) after();
     }
 
     @Override
     public void beforeClass() {
-        if( scope == Scope.CLASS ) beforeAll();
+        if( scope == Scope.CLASS ) before();
     }
 
     @Override
     public void afterClass() {
-        if( scope == Scope.CLASS ) afterAll();
+        if( scope == Scope.CLASS ) after();
     }
 
     @Override
     public void beforeMethod() {
-        if( scope == Scope.METHOD ) beforeAll();
+        if( scope == Scope.METHOD ) before();
     }
 
     @Override
     public void afterMethod() {
-        if( scope == Scope.METHOD ) afterAll();
+        if( scope == Scope.METHOD ) after();
     }
 
-    protected void beforeAll() {
-        fixtures.forEach( AbstractScopeFixture::beforeAll );
+    protected void before() {}
 
-        before();
-    }
-
-    protected void afterAll() {
-        after();
-
-        Lists.reverse( fixtures ).forEach( AbstractScopeFixture::afterAll );
-    }
-
-    protected abstract void before();
-
-    protected abstract void after();
+    protected void after() {}
 }

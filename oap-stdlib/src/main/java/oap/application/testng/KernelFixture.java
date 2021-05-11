@@ -24,162 +24,29 @@
 
 package oap.application.testng;
 
-import com.google.common.base.Preconditions;
-import oap.application.ApplicationConfiguration;
-import oap.application.Kernel;
-import oap.application.module.Module;
-import oap.io.Resources;
-import oap.json.Binder;
-import oap.reflect.TypeRef;
-import oap.testng.AbstractEnvFixture;
-import oap.testng.TestDirectoryFixture;
-
-import javax.annotation.Nonnull;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
-import static oap.http.testng.HttpAsserts.httpPrefix;
-import static oap.testng.TestDirectoryFixture.testDirectory;
-
-public class KernelFixture extends AbstractEnvFixture<KernelFixture> {
-    public static final String ANY = "*";
-
-    public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
-    public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
-    public static final String TEST_DIRECTORY = "TEST_DIRECTORY";
-    public static final String TEST_RESOURCE_PATH = "TEST_RESOURCE_PATH";
-    public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
-    private static int kernelN = 0;
-    private final URL conf;
-    private final List<URL> additionalModules = new ArrayList<>();
-    private final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
-    public Kernel kernel;
-    private Path confd;
+public class KernelFixture extends AbstractKernelFixture<KernelFixture> {
 
     public KernelFixture( URL conf ) {
-        this( conf, null, List.of() );
+        super( NO_PREFIX, Scope.METHOD, conf, null, List.of() );
     }
 
     public KernelFixture( URL conf, Path confd ) {
-        this( conf, confd, List.of() );
+        super( NO_PREFIX, Scope.METHOD, conf, confd, List.of() );
     }
 
     public KernelFixture( URL conf, List<URL> additionalModules ) {
-        this( conf, null, additionalModules );
+        super( NO_PREFIX, Scope.METHOD, conf, null, additionalModules );
     }
 
     public KernelFixture( URL conf, Path confd, List<URL> additionalModules ) {
         this( Scope.METHOD, conf, confd, additionalModules );
     }
 
-    private KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
-        this.scope = scope;
-        this.conf = conf;
-        this.confd = confd;
-        this.additionalModules.addAll( additionalModules );
-
-        defineDefaults();
-    }
-
-    public KernelFixture withFileProperties( URL location ) {
-        var map = Binder.Format.of( location, true ).binder.unmarshal( new TypeRef<Map<String, Object>>() {}, location );
-        properties.putAll( map );
-
-        return this;
-    }
-
-    public int defaultHttpPort() {
-        return portFor( TEST_HTTP_PORT );
-    }
-
-    private void defineDefaults() {
-        define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
-//        deprecated
-        define( "TMP_REMOTE_PORT", portFor( TEST_REMOTING_PORT ) );
-        var testHttpPort = portFor( TEST_HTTP_PORT );
-        define( TEST_HTTP_PORT, testHttpPort );
-//        deprecated
-        define( "HTTP_PORT", testHttpPort );
-        define( TEST_DIRECTORY, testDirectory() );
-//        deprecated
-        define( "TMP_PATH", testDirectory() );
-        String resourcePath = Resources.path( getClass(), "/" ).orElseThrow();
-        define( TEST_RESOURCE_PATH, resourcePath );
-//        deprecated
-        define( "RESOURCE_PATH", resourcePath );
-        define( TEST_HTTP_PREFIX, httpPrefix( testHttpPort ) );
-//        deprecated
-        define( "HTTP_PREFIX", httpPrefix( testHttpPort ) );
-    }
-
-    public KernelFixture withConfdResources( Class<?> clazz, String confdResource ) {
-        this.confd = TestDirectoryFixture.testPath( "/test-application-conf.d" );
-
-        Resources.filePaths( clazz, confdResource )
-            .forEach( path -> oap.io.Files.copyDirectory( path, this.confd ) );
-
-        return this;
-    }
-
-    @Nonnull
-    public <T> T service( @Nonnull String moduleName, @Nonnull Class<T> klass ) {
-        return kernel.serviceOfClass( moduleName, klass )
-            .orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + klass ) );
-    }
-
-    @Nonnull
-    public <T> T service( @Nonnull String moduleName, @Nonnull String serviceName ) {
-        return kernel.<T>service( moduleName, serviceName )
-            .orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + serviceName ) );
-    }
-
-    @Nonnull
-    public <T> T service( @Nonnull String reference ) {
-        return kernel.<T>service( reference )
-            .orElseThrow( () -> new IllegalArgumentException( "unknown service " + reference ) );
-    }
-
-    public <T> List<T> ofClass( Class<T> clazz ) {
-        return kernel.ofClass( clazz );
-    }
-
-    public <T> List<T> ofClass( String moduleName, Class<T> clazz ) {
-        return kernel.ofClass( moduleName, clazz );
-    }
-
-    @Override
-    protected void before() {
-        defineDefaults();
-
-        Preconditions.checkArgument( this.kernel == null );
-        super.before();
-
-        for( var f : fixtures )
-            if( f instanceof AbstractEnvFixture<?> )
-                importEnv( ( AbstractEnvFixture<?> ) f );
-
-        var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
-        moduleConfigurations.addAll( additionalModules );
-        this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
-
-        var confds = ApplicationConfiguration.getConfdUrls( confd );
-
-        var aProperties = new LinkedHashMap<String, Object>();
-        aProperties.putAll( properties );
-        aProperties.putAll( getProperties() );
-
-        this.kernel.start( ApplicationConfiguration.load( conf, confds, aProperties ) );
-    }
-
-    @Override
-    protected void after() {
-        this.kernel.stop();
-        this.kernel = null;
-
-        super.after();
+    public KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
+        super( NO_PREFIX, scope, conf, confd, additionalModules );
     }
 }

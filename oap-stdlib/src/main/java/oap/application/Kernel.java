@@ -157,7 +157,7 @@ public class Kernel implements Closeable {
     }
 
     public void start( ApplicationConfiguration config ) throws ApplicationException {
-        log.debug( "initializing application kernel..." );
+        log.debug( "initializing application kernel  " + name + "..." );
         log.debug( "application config {}", config );
 
         log.debug( "new application config {}", config );
@@ -188,7 +188,7 @@ public class Kernel implements Closeable {
         supervisor.preStart();
         supervisor.start();
 
-        log.debug( "application kernel started" );
+        log.debug( "application kernel started " + name );
     }
 
     private void checkForUnknownServices( Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {

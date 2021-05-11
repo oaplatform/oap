@@ -25,60 +25,40 @@
 package oap.testng;
 
 
-import com.google.common.base.Preconditions;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
-import oap.system.Env;
 import oap.util.Strings;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
+    public static final String NO_PREFIX = "";
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
-    protected Kind kind = Kind.JAVA;
+    protected final String prefix;
 
     public AbstractEnvFixture() {
+        this( NO_PREFIX );
+    }
+
+    public AbstractEnvFixture( String prefix ) {
+        this.prefix = prefix;
     }
 
     @SuppressWarnings( "unchecked" )
     public Self define( String property, Object value ) {
-        properties.put( property, value );
+        properties.put( prefix + property, value );
 
         return ( Self ) this;
     }
 
-    public Optional<Object> getProperty( String property ) {
-        return Optional.ofNullable( properties.get( property ) );
-    }
-
-    public Self definePort( String property, String portKey ) {
-        return define( property, portFor( portKey ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public Self importEnv( AbstractEnvFixture<?> envFixture ) {
-        envFixture.ports.forEach( ports::putIfAbsent );
-        envFixture.properties.forEach( properties::putIfAbsent );
-
-        return ( Self ) this;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public Self withKind( Kind kind ) {
-        Preconditions.checkNotNull( kind );
-
-        this.kind = kind;
-
-        return ( Self ) this;
+    public Self definePort( String property ) {
+        return define( property, portFor( property ) );
     }
 
     @Override
@@ -86,34 +66,9 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         properties.forEach( ( variableName, v ) -> {
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-
-            switch( kind ) {
-                case JAVA -> {
-                    log.debug( "system property {} = {}", variableName, value );
-                    System.setProperty( variableName, value );
-                }
-                case ENV -> {
-                    log.debug( "env property {} = {}", variableName, value );
-                    Env.set( variableName, value );
-                }
-                case MAP -> log.debug( "map property {} = {}", variableName, value );
-                default -> throw new IllegalStateException( "Unknown kind " + kind );
-            }
+            System.setProperty( variableName, value );
+            ConfigImpl.reloadSystemPropertiesConfig();
         } );
-
-        switch( kind ) {
-            case ENV:
-                ConfigImpl.reloadEnvVariablesConfig();
-                break;
-            case JAVA:
-                ConfigImpl.reloadSystemPropertiesConfig();
-                break;
-            default:
-        }
-    }
-
-    @Override
-    protected void after() {
     }
 
     public int portFor( Class<?> clazz ) {
@@ -122,7 +77,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     public int portFor( String key ) {
         synchronized( ports ) {
-            return ports.computeIfAbsent( key, k -> {
+            return ports.computeIfAbsent( prefix + key, k -> {
                 try( var socket = new ServerSocket() ) {
                     socket.setReuseAddress( true );
                     socket.bind( new InetSocketAddress( 0 ) );
@@ -134,13 +89,5 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
                 }
             } );
         }
-    }
-
-    protected Map<String, Object> getProperties() {
-        return Collections.unmodifiableMap( properties );
-    }
-
-    public enum Kind {
-        JAVA, ENV, MAP
     }
 }
