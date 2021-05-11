@@ -46,7 +46,19 @@ public class KernelFixtureTest extends Fixtures {
     }
 
     @Test
-    public void value() {
+    public void isolation() {
+        assertThat( kernelFixture.service( ANY, Service.class ).value )
+            .isEqualTo( kernelFixture.portFor( "TEST_PORT" ) );
+        assertThat( testFixture.service( ANY, Service.class ).value )
+            .isEqualTo( testFixture.portFor( "TEST_PORT" ) );
+        assertThat( kernelFixture.service( ANY, Service.class ) )
+            .isNotSameAs( testFixture.service( ANY, Service.class ) );
+        assertThat( kernelFixture.portFor( "TEST_PORT" ) )
+            .isNotSameAs( testFixture.portFor( "TEST_PORT" ) );
+    }
+
+    @Test
+    public void isolationSecondRun() {
         assertThat( kernelFixture.service( ANY, Service.class ).value )
             .isEqualTo( kernelFixture.portFor( "TEST_PORT" ) );
         assertThat( testFixture.service( ANY, Service.class ).value )
