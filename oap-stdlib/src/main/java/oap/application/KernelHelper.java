@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -171,5 +172,25 @@ public class KernelHelper {
             thread.setName( name.substring( 0, index ) );
         }
 
+    }
+
+    public static void fixProfileName( LinkedHashSet<String> profiles ) {
+        var ret = new LinkedHashSet<String>( profiles.size() );
+
+        for( var profile : profiles ) {
+
+            if( profile.startsWith( "true" ) ) {
+                profile = profile.substring( "true".length() );
+            } else if( profile.startsWith( "false-" ) ) {
+                profile = profile.substring( "false-".length() );
+            } else if( profile.startsWith( "false" ) ) {
+                profile = "-" + profile.substring( "false".length() );
+            }
+
+            ret.add( profile );
+        }
+
+        profiles.clear();
+        profiles.addAll( ret );
     }
 }
