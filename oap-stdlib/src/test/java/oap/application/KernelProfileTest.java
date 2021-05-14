@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import com.typesafe.config.impl.ConfigImpl;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -133,23 +132,20 @@ public class KernelProfileTest {
 
     @Test
     public void testProfileNameWithVariableFix() {
-        System.setProperty( "VARIABLE", "true" );
-        System.setProperty( "VARIABLE2", "false" );
-        ConfigImpl.reloadSystemPropertiesConfig();
-
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-name-with-variable-fix.conf" ) ) ) ) {
             startWithProfile( kernel, "module-name-with-variable-fix", "truetest1" );
             assertThat( kernel.service( "*.module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
         }
 
 
-        System.setProperty( "VARIABLE", "true" );
-        System.setProperty( "VARIABLE2", "true" );
-        ConfigImpl.reloadSystemPropertiesConfig();
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-name-with-variable-fix.conf" ) ) ) ) {
+            startWithProfile( kernel, "module-name-with-variable-fix", "true-test1" );
+            assertThat( kernel.service( "*.module-profile" ) ).isEmpty();
+        }
 
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-name-with-variable-fix.conf" ) ) ) ) {
-            startWithProfile( kernel, "module-name-with-variable-fix", "truetest1" );
-            assertThat( kernel.service( "*.module-profile" ) ).isEmpty();
+            startWithProfile( kernel, "module-name-with-variable-fix", "false-test1" );
+            assertThat( kernel.service( "*.module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
         }
     }
 

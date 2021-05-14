@@ -65,7 +65,6 @@ import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
-import static oap.application.KernelHelper.fixProfileName;
 import static oap.util.function.Functions.raise;
 
 @Slf4j
@@ -179,13 +178,6 @@ public class Kernel implements Closeable {
 
         if( config.boot.profileNameFix ) {
             KernelHelper.fixProfileName( this.profiles );
-
-            for( var module : modules ) {
-                fixProfileName( module.module.profiles );
-                for( var service : module.module.services.values() ) {
-                    fixProfileName( service.profiles );
-                }
-            }
         }
 
         checkForUnknownServices( config.services );
