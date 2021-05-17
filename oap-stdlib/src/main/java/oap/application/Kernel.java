@@ -196,11 +196,10 @@ public class Kernel implements Closeable {
     }
 
     private void checkForUnknownServices( Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {
-
-        for( var moduleName : services.keySet() ) {
-            if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) )
+        services.forEach( ( moduleName, conf ) -> {
+            if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) && conf.enabled )
                 throw new ApplicationException( "unknown application configuration module: " + moduleName );
-        }
+        } );
 
         for( var module : this.modules ) {
             var moduleServices = services.get( module.module.name );

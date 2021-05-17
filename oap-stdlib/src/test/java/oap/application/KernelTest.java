@@ -317,6 +317,20 @@ public class KernelTest {
         }
     }
 
+    @Test
+    public void testDisabledConfiguration() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "configuration-module-disabled.conf" ) )
+        );
+        try {
+            assertThatCode( () ->
+                kernel.start( pathOfTestResource( getClass(), "configuration-application-disabled.conf" ) )
+            ).doesNotThrowAnyException();
+        } finally {
+            kernel.stop();
+        }
+    }
+
     public enum Enum {
         ONE, TWO
     }

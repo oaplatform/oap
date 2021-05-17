@@ -23,6 +23,9 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -39,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import static oap.io.Files.wildcard;
@@ -131,7 +135,28 @@ public final class ApplicationConfiguration {
         return res.toString();
     }
 
-    public static class ApplicationConfigurationModule extends LinkedHashMap<String, Object> {
+    public static class ApplicationConfigurationModule {
+        private final LinkedHashMap<String, Object> conf = new LinkedHashMap<>();
+        public boolean enabled = true;
+
+        @JsonAnySetter
+        public final void put( String key, Object val ) {
+            conf.put( key, val );
+        }
+
+        @JsonAnyGetter
+        public final LinkedHashMap<String, Object> getConf() {
+            return conf;
+        }
+
+        public final Object get( String serviceName ) {
+            return conf.get( serviceName );
+        }
+
+        @JsonIgnore
+        public Set<String> keySet() {
+            return conf.keySet();
+        }
     }
 
     @ToString
