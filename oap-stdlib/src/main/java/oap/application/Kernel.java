@@ -394,10 +394,10 @@ public class Kernel implements Closeable {
     }
 
     public void register( ModuleItem.ServiceItem serviceItem, String serviceName, ServiceInitialization si ) throws ApplicationException {
-        Object registered;
+        ServiceInitialization registered;
 
         if( ( registered = services.putIfAbsent( serviceItem, serviceName, si ) ) != null )
-            throw new ApplicationException( serviceItem.getModuleName() + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.getClass() + "]" );
+            throw new ApplicationException( serviceItem.getModuleName() + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.instance.getClass() + "]" );
     }
 
     public void stop() {
