@@ -162,7 +162,7 @@ public class Kernel implements Closeable {
 
         log.debug( "new application config {}", config );
 
-        this.profiles.addAll( config.profiles );
+        this.profiles.addAll( config.getProfiles() );
 
         if( config.boot.main.isEmpty() ) throw new ApplicationException( "boot.main must contain at least one module name" );
 
@@ -175,10 +175,6 @@ public class Kernel implements Closeable {
         }
         log.debug( "modules = {}", Sets.map( this.modules, m -> m.module.name ) );
         log.trace( "modules configs = {}", this.modules );
-
-        if( config.boot.profileNameFix ) {
-            KernelHelper.fixProfileName( this.profiles );
-        }
 
         checkForUnknownServices( config.services );
 

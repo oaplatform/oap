@@ -24,12 +24,14 @@
 
 package oap.application;
 
+import com.typesafe.config.impl.ConfigImpl;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
+import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -131,21 +133,31 @@ public class KernelProfileTest {
     }
 
     @Test
-    public void testProfileNameWithVariableFix() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-name-with-variable-fix.conf" ) ) ) ) {
-            startWithProfile( kernel, "module-name-with-variable-fix", "truetest1" );
-            assertThat( kernel.service( "*.module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
+    public void testDynamicProfile() {
+        ConfigImpl.reloadSystemPropertiesConfig();
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
+            kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
+
+            assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isPresent();
+            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
 
+        System.setProperty( "ENABLE_TEST_PROFILE", "true" );
+        ConfigImpl.reloadSystemPropertiesConfig();
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
+            kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
 
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-name-with-variable-fix.conf" ) ) ) ) {
-            startWithProfile( kernel, "module-name-with-variable-fix", "true-test1" );
-            assertThat( kernel.service( "*.module-profile" ) ).isEmpty();
+            assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isPresent();
+            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
 
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-name-with-variable-fix.conf" ) ) ) ) {
-            startWithProfile( kernel, "module-name-with-variable-fix", "false-test1" );
-            assertThat( kernel.service( "*.module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
+        System.setProperty( "ENABLE_TEST_PROFILE", "false" );
+        ConfigImpl.reloadSystemPropertiesConfig();
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
+            kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
+
+            assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isNotPresent();
+            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
     }
 

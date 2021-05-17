@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -49,7 +50,7 @@ import static oap.util.Lists.concat;
 public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
     public final LinkedHashMap<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
-    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    public final LinkedHashSet<Object> profiles = new LinkedHashSet<>();
     public final ModuleBoot boot = new ModuleBoot();
 
     private ApplicationConfiguration() {
@@ -131,6 +132,24 @@ public final class ApplicationConfiguration {
         return res.toString();
     }
 
+    @SuppressWarnings( "unchecked" )
+    public LinkedHashSet<String> getProfiles() {
+        var ret = new LinkedHashSet<String>();
+
+        for( var profile : this.profiles ) {
+            if( profile instanceof String ) ret.add( ( String ) profile );
+            else if( profile instanceof Map<?, ?> ) {
+
+                var conf = Binder.json.unmarshal( ProfileMap.class, Binder.json.marshal( profile ) );
+
+                if( conf.enabled )
+                    ret.add( conf.name );
+            }
+        }
+
+        return ret;
+    }
+
     public static class ApplicationConfigurationModule extends LinkedHashMap<String, Object> {
         public boolean isEnabled() {
             return !Boolean.FALSE.equals( get( "enabled" ) );
@@ -140,6 +159,15 @@ public final class ApplicationConfiguration {
     @ToString
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
-        public boolean profileNameFix = true;
+    }
+
+    public static class ProfileMap {
+        public final String name;
+        public boolean enabled = true;
+
+        @JsonCreator
+        public ProfileMap( String name ) {
+            this.name = name;
+        }
     }
 }
