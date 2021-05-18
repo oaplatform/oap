@@ -65,7 +65,7 @@ import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
-import static oap.util.function.Functions.raise;
+import static oap.util.function.Functions.exception;
 
 @Slf4j
 @ToString( of = "name" )
@@ -300,24 +300,21 @@ public class Kernel implements Closeable {
                         var linkMethod = reflect.method( "add" + methodSuffix ).orElse( null );
                         if( linkMethod == null ) linkMethod = reflect.method( "set" + methodSuffix ).orElse( null );
 
-                        if( linkMethod != null && linkMethod.parameters.size() == 1 ) {
+                        if( linkMethod != null && linkMethod.parameters.size() == 1 )
                             linkMethod.invoke( service.instance, initialization.instance );
-                        } else {
+                        else {
                             var linkField = reflect.field( fieldName ).orElse( null );
-                            if( linkField != null ) {
+                            if( linkField != null )
                                 if( linkField.type().assignableTo( Collection.class ) )
                                     ( ( Collection<Object> ) linkField.get( service.instance ) )
                                         .add( initialization.instance );
                                 else linkField.set( service.instance, initialization.instance );
-                            } else {
-                                raise( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
-                                    + " should have field " + fieldName
-                                    + " for " + initialization.implementationName + "/" + initialization.service.implementation ) );
-
-                            }
+                            else exception( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
+                                + " should have field " + fieldName
+                                + " for " + initialization.implementationName + "/" + initialization.service.implementation ) );
                         }
                     },
-                    raise( e -> new ApplicationException( "Unknown service link " + serviceRef ) ) ) );
+                    exception( e -> new ApplicationException( "Unknown service link " + serviceRef ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -329,9 +326,8 @@ public class Kernel implements Closeable {
             if( instance instanceof List<?> ) {
                 var instanceList = ( List<Object> ) instance;
                 var instanceIterator = instanceList.listIterator();
-                for( var parameter : parameterList ) {
+                for( var parameter : parameterList )
                     linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
-                }
             }
         } else if( parameterValue instanceof Map ) {
             var parameterMap = ( Map<Object, Object> ) parameterValue;
@@ -358,7 +354,6 @@ public class Kernel implements Closeable {
 
     private void startServices( ServiceInitializationTree moduleServices ) {
         moduleServices.forEach( ( serviceItem, si ) -> {
-
             log.debug( "starting {} as {}...", si.service.name, serviceItem.serviceName );
 
             startService( supervisor, si );

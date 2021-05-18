@@ -32,7 +32,7 @@ import org.joda.time.Period;
 import java.util.function.IntConsumer;
 import java.util.function.LongFunction;
 
-import static oap.util.function.Functions.empty.run;
+import static oap.util.function.Functions.empty.noop;
 
 @ToString( exclude = "code" )
 public final class Benchmark {
@@ -42,8 +42,8 @@ public final class Benchmark {
     int samples;
     IntConsumer code;
     AbstractRunner runner = SingleThreadRunner.INSTANCE;
-    Runnable beforeExperiment = run;
-    Runnable afterExperiment = run;
+    Runnable beforeExperiment = noop();
+    Runnable afterExperiment = noop();
     LongFunction<String> rateToString = rate -> rate + " action/${PERIOD}";
 
     private Benchmark( String name, int samples, Try.ThrowingIntConsumer code ) {

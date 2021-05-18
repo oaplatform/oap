@@ -39,42 +39,62 @@ public class Functions {
         return () -> Suppliers.memoize( delegate::get ).get();
     }
 
-    @SuppressWarnings( "unchecked" )
+    /**
+     * @see #ifInstance(Object, Class, Function)
+     */
+    @Deprecated
     public static <V, T extends V, R> Optional<R> applyIfInstanceOf( V value, Class<T> clazz, Function<T, R> f ) {
+        return ifInstance( value, clazz, f );
+
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <V, T extends V, R> Optional<R> ifInstance( V value, Class<T> clazz, Function<T, R> f ) {
         return clazz.isInstance( value )
             ? Optional.ofNullable( f.apply( ( T ) value ) )
             : Optional.empty();
-
     }
 
     public static Runnable once( Runnable runnable ) {
         return Once.once( runnable );
     }
 
-    public static Runnable raise( Exception exception ) {
+    public static Runnable exception( Exception exception ) {
         return Try.run( () -> {
             throw exception;
         } );
     }
 
-    public static <T> Consumer<T> raise( Function<T, Exception> exception ) {
+    public static <T> Consumer<T> exception( Function<T, Exception> exception ) {
         return Try.consume( a -> {
             throw exception.apply( a );
         } );
     }
 
+    public Supplier<IllegalArgumentException> illegalArgument( String message ) {
+        return () -> new IllegalArgumentException( message );
+    }
+
+    public Supplier<IllegalArgumentException> illegalArgument( String format, Object... args ) {
+        return illegalArgument( String.format( format, args ) );
+    }
+
     @SuppressWarnings( "unchecked" )
-//    CHECKSTYLE:OFF
+    //    CHECKSTYLE:OFF
     public static class empty {
-//    CHECKSTYLE:ON
+        //    CHECKSTYLE:ON
 
         private static final Consumer<?> CONSUMER = v -> {};
-
         private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {};
-        private static final Predicate<?> acceptAll = x -> true;
-        private static final Predicate<?> rejectAll = x -> false;
+        private static final Predicate<?> ACCEPT_ALL = x -> true;
+        private static final Predicate<?> REJECT_ALL = x -> false;
+        private static final Runnable NOOP = () -> {};
+        @Deprecated
+        public static final Runnable run = NOOP;
 
-        public static Runnable run = () -> {};
+        public static Runnable noop() {
+            return NOOP;
+        }
 
         public static <T> Consumer<T> consume() {
             return ( Consumer<T> ) CONSUMER;
@@ -89,11 +109,11 @@ public class Functions {
         }
 
         public static <T> Predicate<T> accept() {
-            return ( Predicate<T> ) acceptAll;
+            return ( Predicate<T> ) ACCEPT_ALL;
         }
 
         public static <T> Predicate<T> reject() {
-            return ( Predicate<T> ) rejectAll;
+            return ( Predicate<T> ) REJECT_ALL;
         }
     }
 

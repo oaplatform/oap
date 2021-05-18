@@ -31,15 +31,14 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import static oap.util.function.Functions.applyIfInstanceOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FunctionsTest {
     @Test
-    public void applyIfinstanceOf() {
+    public void ifInstance() {
         List<String> ll = new LinkedList<>( Lists.of( "a", "b" ) );
         List<String> al = new ArrayList<>( Lists.of( "a", "b" ) );
-        assertThat( applyIfInstanceOf( ll, LinkedList.class, LinkedList::getFirst ) ).contains( "a" );
-        assertThat( applyIfInstanceOf( al, LinkedList.class, LinkedList::getFirst ) ).isEmpty();
+        assertThat( Functions.ifInstance( ll, LinkedList.class, LinkedList::getFirst ) ).contains( "a" );
+        assertThat( Functions.ifInstance( al, LinkedList.class, LinkedList::getFirst ) ).isEmpty();
     }
 }
