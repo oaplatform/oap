@@ -71,11 +71,11 @@ public class Functions {
         } );
     }
 
-    public Supplier<IllegalArgumentException> illegalArgument( String message ) {
+    public static Supplier<IllegalArgumentException> illegalArgument( String message ) {
         return () -> new IllegalArgumentException( message );
     }
 
-    public Supplier<IllegalArgumentException> illegalArgument( String format, Object... args ) {
+    public static Supplier<IllegalArgumentException> illegalArgument( String format, Object... args ) {
         return illegalArgument( String.format( format, args ) );
     }
 
