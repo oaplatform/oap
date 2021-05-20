@@ -147,7 +147,7 @@ public interface ContentReader<R> {
     }
 
     static <R> ContentReader<R> ofJson( Class<R> clazz ) {
-        return new ContentReader<R>() {
+        return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
                 return Binder.json.unmarshal( clazz, is );
@@ -156,10 +156,28 @@ public interface ContentReader<R> {
     }
 
     static <R> ContentReader<R> ofJson( TypeRef<R> typeRef ) {
-        return new ContentReader<R>() {
+        return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
                 return Binder.json.unmarshal( typeRef, is );
+            }
+        };
+    }
+
+    static <R> ContentReader<R> ofHocon( Class<R> clazz ) {
+        return new ContentReader<>() {
+            @Override
+            public R read( InputStream is ) {
+                return Binder.hocon.unmarshal( clazz, is );
+            }
+        };
+    }
+
+    static <R> ContentReader<R> ofHocon( TypeRef<R> typeRef ) {
+        return new ContentReader<>() {
+            @Override
+            public R read( InputStream is ) {
+                return Binder.hocon.unmarshal( typeRef, is );
             }
         };
     }
