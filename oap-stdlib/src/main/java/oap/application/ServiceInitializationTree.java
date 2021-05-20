@@ -39,7 +39,8 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 
 public class ServiceInitializationTree extends AbstractMap<ModuleItem.ServiceItem, ServiceInitialization> implements ServiceStorage {
     private final LinkedHashMap<ModuleItem.ServiceItem, ServiceInitialization> map = new LinkedHashMap<>();
-    private final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> moduleMap = new LinkedHashMap<>();
+    // JPathWS
+    public final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> moduleMap = new LinkedHashMap<>();
 
     @Override
     public ServiceInitialization put( ModuleItem.ServiceItem key, ServiceInitialization value ) {
