@@ -137,6 +137,10 @@ public class Dates {
         DateTimeUtils.setCurrentMillisFixed( millis );
     }
 
+    public static void incFixed( long offsetMillis ) {
+        DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + offsetMillis );
+    }
+
     public static long s( int value ) {
         return value * 1000;
     }
