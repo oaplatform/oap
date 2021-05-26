@@ -24,21 +24,19 @@
 
 package oap.dictionary;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Maps;
-import oap.util.Stream;
-import oap.util.function.Try;
 
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.util.stream.Collectors.toList;
-import static oap.util.Pair.__;
 
 @Slf4j
 public class Dictionaries {
@@ -46,30 +44,35 @@ public class Dictionaries {
     private static final Map<String, URL> dictionaries = new HashMap<>();
     private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
 
-    private static synchronized void load() {
-        if( dictionaries.isEmpty() ) {
-            dictionaries.putAll( Stream.of( Files.fastWildcard( DEFAULT_PATH, "*.json" ).stream() )
-                .concat( Files.fastWildcard( DEFAULT_PATH, "*.conf" ).stream() )
-                .concat( Files.fastWildcard( DEFAULT_PATH, "*.yaml" ).stream() )
-                .map( Try.map( p -> p.toUri().toURL() ) )
-                .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
-                .toMap() );
+    static {
+        addAllPaths( Files.fastWildcard( DEFAULT_PATH, "*.json" ) );
+        addAllPaths( Files.fastWildcard( DEFAULT_PATH, "*.conf" ) );
+        addAllPaths( Files.fastWildcard( DEFAULT_PATH, "*.yaml" ) );
 
-            dictionaries.putAll( Stream.of( Stream.of( Resources.urls( "dictionary", "json" ) )
-                .concat( Resources.urls( "dictionary", "conf" ).stream() )
-                .concat( Resources.urls( "dictionary", "yaml" ).stream() )
-                .collect( toList() ) )
-                .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
-                .filter( p -> !dictionaries.containsKey( p._1 ) )
-                .toMap() );
+        addAllUrls( Resources.urls( "dictionary", "json" ) );
+        addAllUrls( Resources.urls( "dictionary", "conf" ) );
+        addAllUrls( Resources.urls( "dictionary", "yaml" ) );
 
-            log.info( "dictionaries: {}", dictionaries );
+        log.info( "dictionaries: {}", dictionaries );
+    }
+
+    @SneakyThrows
+    private static void addAllPaths( List<Path> dictionaries ) {
+        for( var dictionaryPath : dictionaries ) {
+            var dictionary = dictionaryPath.toUri().toURL();
+            var name = Files.nameWithoutExtention( dictionary );
+            Dictionaries.dictionaries.put( name, dictionary );
+        }
+    }
+
+    private static void addAllUrls( List<URL> dictionaries ) {
+        for( var dictionary : dictionaries ) {
+            var name = Files.nameWithoutExtention( dictionary );
+            Dictionaries.dictionaries.put( name, dictionary );
         }
     }
 
     public static Set<String> getDictionaryNames() {
-        load();
-
         return dictionaries.keySet();
     }
 
@@ -78,8 +81,6 @@ public class Dictionaries {
     }
 
     public static DictionaryRoot getDictionary( String name, DictionaryParser.IdStrategy idStrategy ) {
-        load();
-
         return Maps.get( dictionaries, name )
             .map( d -> DictionaryParser.parse( d, idStrategy ) )
             .orElseThrow( () -> new DictionaryNotFoundError( name ) );
