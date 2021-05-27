@@ -292,7 +292,7 @@ public final class Files {
         return IoStreams.lines( in, true );
     }
 
-    public static void copyDirectory( Path from, Path to ) {
+    public static void copyDirectory( Path from, Path to ) throws UncheckedIOException {
         try {
             FileUtils.copyDirectory( from.toFile(), to.toFile() );
         } catch( IOException e ) {
@@ -300,7 +300,7 @@ public final class Files {
         }
     }
 
-    public static void cleanDirectory( Path path ) {
+    public static void cleanDirectory( Path path ) throws UncheckedIOException {
         try {
             FileUtils.cleanDirectory( path.toFile() );
         } catch( IOException e ) {
@@ -316,7 +316,7 @@ public final class Files {
         }
     }
 
-    public static void delete( Path path ) {
+    public static void delete( Path path ) throws UncheckedIOException {
         var retryer = RetryerBuilder.<FileVisitResult>newBuilder()
             .retryIfException()
             .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
@@ -358,7 +358,7 @@ public final class Files {
         }
     }
 
-    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
+    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) throws UncheckedIOException {
         if( java.nio.file.Files.exists( path ) ) try {
             java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
                 @Override
@@ -389,7 +389,7 @@ public final class Files {
     }
 
     private static void copyOrAppend( Path sourcePath, Encoding sourceEncoding, Path destPath,
-                                      Encoding destEncoding, int bufferSize, boolean append ) {
+                                      Encoding destEncoding, int bufferSize, boolean append ) throws UncheckedIOException {
         ensureFile( destPath );
         try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
              OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
@@ -450,17 +450,20 @@ public final class Files {
         }
     }
 
-    public static void ensureFile( Path path ) {
+    public static void ensureFile( Path path ) throws UncheckedIOException {
         ensureDirectory( path.getParent() );
     }
 
-    @SneakyThrows
-    public static Path ensureDirectory( Path path ) {
-        java.nio.file.Files.createDirectories( path );
-        return path;
+    public static Path ensureDirectory( Path path ) throws UncheckedIOException {
+        try {
+            java.nio.file.Files.createDirectories( path );
+            return path;
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    public static void move( Path source, Path target, CopyOption... options ) {
+    public static void move( Path source, Path target, CopyOption... options ) throws UncheckedIOException {
         try {
             Files.ensureFile( target );
 
@@ -470,7 +473,7 @@ public final class Files {
         }
     }
 
-    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
+    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) throws UncheckedIOException {
         try {
             java.nio.file.Files.setPosixFilePermissions( path, permissions );
         } catch( IOException e ) {

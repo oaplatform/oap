@@ -119,109 +119,130 @@ public class IoStreams {
         return Stream.of( ustream );
     }
 
-    public static void write( Path path, Encoding encoding, String value ) {
+    public static void write( Path path, Encoding encoding, Stream<String> lines ) throws UncheckedIOException {
+        Files.ensureFile( path );
+
+        try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, false, false ) ) {
+            lines.forEach( line -> {
+                try {
+                    out.write( line.getBytes() );
+                    out.write( '\n' );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static void write( Path path, Encoding encoding, String value ) throws UncheckedIOException {
         write( path, encoding, value, false );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in ) {
+    public static void write( Path path, Encoding encoding, InputStream in ) throws UncheckedIOException {
         write( path, encoding, in, Progress.EMPTY );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) {
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) throws UncheckedIOException {
         write( path, encoding, in, false, false, progress );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) {
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) throws UncheckedIOException {
         write( path, encoding, in, append, false, progress );
     }
 
-    public static void write( Path path, Encoding encoding, String value, boolean append ) {
+    public static void write( Path path, Encoding encoding, String value, boolean append ) throws UncheckedIOException {
         write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ), append, false, Progress.EMPTY );
 
     }
 
-    @SneakyThrows
-    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) {
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) throws UncheckedIOException {
         Files.ensureFile( path );
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
             ByteStreams.copy( new ProgressInputStream( in, progress ), out );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
-    @SneakyThrows
-    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe ) {
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe ) throws UncheckedIOException {
         Files.ensureFile( path );
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
             ByteStreams.copy( in, out );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
-    public static OutputStream out( Path path ) {
+    public static OutputStream out( Path path ) throws UncheckedIOException {
         return out( path, Encoding.from( path ), DEFAULT_BUFFER );
     }
 
-    public static OutputStream out( Path path, Encoding encoding ) {
+    public static OutputStream out( Path path, Encoding encoding ) throws UncheckedIOException {
         return out( path, encoding, DEFAULT_BUFFER );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) throws UncheckedIOException {
         return out( path, encoding, bufferSize, false );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, boolean append ) {
+    public static OutputStream out( Path path, Encoding encoding, boolean append ) throws UncheckedIOException {
         return out( path, encoding, DEFAULT_BUFFER, append );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) throws UncheckedIOException {
         return out( path, encoding, bufferSize, append, false );
     }
 
-    @SneakyThrows
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
-        checkArgument( !append || encoding.appendable, encoding + " is not appendable" );
-        Files.ensureFile( path );
-        if( append ) Files.ensureFileEncodingValid( path );
-        OutputStream outputStream = safe
-            ? new SafeFileOutputStream( path, append, encoding )
-            : new FileOutputStream( path.toFile(), append );
-        OutputStream fos = bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
-        return switch( encoding ) {
-            case GZIP -> {
-                OutputStream gzout = Archiver.gzip( fos, bufferSize > 0 ? bufferSize : 512 );
-                yield bufferSize > 0 ? new BufferedOutputStream( gzout, bufferSize ) : gzout;
-            }
-            case ZIP -> {
-                var zip = new ZipOutputStream( fos );
-                zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
-                yield zip;
-            }
-            case LZ4_BLOCK -> new LZ4BlockOutputStream( fos );
-            case LZ4 -> new LZ4FrameOutputStream( fos, SIZE_64KB );
-            case ZSTD -> new ZstdCompressorOutputStream( fos );
-            case PLAIN -> fos;
-        };
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) throws UncheckedIOException {
+        try {
+            checkArgument( !append || encoding.appendable, encoding + " is not appendable" );
+            Files.ensureFile( path );
+            if( append ) Files.ensureFileEncodingValid( path );
+            OutputStream outputStream = safe
+                ? new SafeFileOutputStream( path, append, encoding )
+                : new FileOutputStream( path.toFile(), append );
+            OutputStream fos = bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
+            return switch( encoding ) {
+                case GZIP -> {
+                    OutputStream gzout = Archiver.gzip( fos, bufferSize > 0 ? bufferSize : 512 );
+                    yield bufferSize > 0 ? new BufferedOutputStream( gzout, bufferSize ) : gzout;
+                }
+                case ZIP -> {
+                    var zip = new ZipOutputStream( fos );
+                    zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
+                    yield zip;
+                }
+                case LZ4_BLOCK -> new LZ4BlockOutputStream( fos );
+                case LZ4 -> new LZ4FrameOutputStream( fos, SIZE_64KB );
+                case ZSTD -> new ZstdCompressorOutputStream( fos );
+                case PLAIN -> fos;
+            };
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    public static InputStream in( Path path, Encoding encoding ) {
+    public static InputStream in( Path path, Encoding encoding ) throws UncheckedIOException {
         return in( path, encoding, DEFAULT_BUFFER );
     }
 
-    public static InputStream in( Path path ) {
+    public static InputStream in( Path path ) throws UncheckedIOException {
         return in( path, DEFAULT_BUFFER );
     }
 
-    public static InputStream in( Path path, int bufferSIze ) {
+    public static InputStream in( Path path, int bufferSIze ) throws UncheckedIOException {
         return in( path, Encoding.from( path ), bufferSIze );
     }
 
-    @SneakyThrows
-    public static InputStream in( Path path, Encoding encoding, int bufferSize ) {
+    public static InputStream in( Path path, Encoding encoding, int bufferSize ) throws UncheckedIOException {
         try {
             FileInputStream fileInputStream = new FileInputStream( path.toFile() );
             return decoded(
                 bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
-            throw new IOException( "couldn't open file " + path.toString(), e );
+            throw new UncheckedIOException( "couldn't open file " + path.toString(), e );
         }
     }
 
