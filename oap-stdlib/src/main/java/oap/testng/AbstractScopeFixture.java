@@ -25,11 +25,24 @@
 package oap.testng;
 
 public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Self>> implements Fixture {
+    protected static AbstractScopeFixture<?> suiteScope;
     protected Scope scope = Scope.METHOD;
 
     @SuppressWarnings( "unchecked" )
     public Self withScope( Scope scope ) {
         this.scope = scope;
+
+        if( scope == Scope.SUITE ) {
+            if( suiteScope == null ) {
+                synchronized( AbstractScopeFixture.class ) {
+                    if( suiteScope == null ) {
+                        suiteScope = this;
+                    }
+                    return ( Self ) suiteScope;
+                }
+            }
+        }
+
         return ( Self ) this;
     }
 
