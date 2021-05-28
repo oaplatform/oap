@@ -119,7 +119,7 @@ public class IoStreams {
         return Stream.of( ustream );
     }
 
-    public static void write( Path path, Encoding encoding, Stream<String> lines ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, java.util.stream.Stream<String> lines ) throws UncheckedIOException {
         Files.ensureFile( path );
 
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, false, false ) ) {
