@@ -38,9 +38,9 @@ public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Sel
                     if( suiteScope == null ) {
                         suiteScope = this;
                     }
-                    return ( Self ) suiteScope;
                 }
             }
+            return ( Self ) suiteScope;
         }
 
         return ( Self ) this;
