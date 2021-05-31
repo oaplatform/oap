@@ -396,7 +396,7 @@ public class Binder {
         }
     }
 
-    public <T> T unmarshal( TypeRef<T> ref, URL url ) {
+    public <T> T unmarshal( TypeRef<T> ref, URL url ) throws JsonException {
         try( var in = url.openStream() ) {
             return unmarshal( ref, in );
         } catch( IOException e ) {

@@ -38,9 +38,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
     public static final String NO_PREFIX = "";
+    protected final String prefix;
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
-    protected final String prefix;
 
     public AbstractEnvFixture() {
         this( NO_PREFIX );
@@ -57,7 +57,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         return ( Self ) this;
     }
 
-    public Self definePort( String property ) {
+    public Self definePort( String property ) throws UncheckedIOException {
         return define( property, portFor( property ) );
     }
 
@@ -71,11 +71,11 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         } );
     }
 
-    public int portFor( Class<?> clazz ) {
+    public int portFor( Class<?> clazz ) throws UncheckedIOException {
         return portFor( clazz.getName() );
     }
 
-    public int portFor( String key ) {
+    public int portFor( String key ) throws UncheckedIOException {
         synchronized( ports ) {
             return ports.computeIfAbsent( prefix + key, k -> {
                 try( var socket = new ServerSocket() ) {

@@ -30,6 +30,7 @@ import oap.application.Kernel;
 import oap.application.module.Module;
 import oap.io.Resources;
 import oap.json.Binder;
+import oap.json.JsonException;
 import oap.reflect.TypeRef;
 import oap.testng.AbstractEnvFixture;
 import oap.testng.TestDirectoryFixture;
@@ -82,9 +83,16 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     @SuppressWarnings( "unchecked" )
-    public Self withFileProperties( URL location ) {
+    public Self withFileProperties( URL location ) throws JsonException {
         var map = Binder.Format.of( location, true ).binder.unmarshal( new TypeRef<Map<String, Object>>() {}, location );
         properties.putAll( map );
+
+        return ( Self ) this;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public Self withProperties( Map<String, Object> properties ) {
+        this.properties.putAll( properties );
 
         return ( Self ) this;
     }
