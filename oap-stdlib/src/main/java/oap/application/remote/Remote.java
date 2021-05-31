@@ -122,13 +122,15 @@ public class Remote implements HttpHandler {
                             // transport error - illegal setup
                             // wrapping into RIE to be handled at client's properly
                             log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
+                            log.debug( e.getMessage(), e );
                             status = HTTP_NOT_FOUND;
                             r = Result.failure( new RemoteInvocationException( e ) );
                         } catch( InvocationTargetException e ) {
                             errorMetrics.increment();
                             // application error
                             r = Result.failure( e.getCause() );
-                            log.trace( "exception occurred on call to method [{}]", invocation.method );
+                            log.debug( "exception occurred on call to method [{}]", invocation.method );
+                            log.trace( e.getMessage(), e );
                         }
                         exchange.setStatusCode( status );
                         exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
