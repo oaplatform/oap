@@ -24,8 +24,10 @@
 
 package oap.testng;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Self>> implements Fixture {
-    protected static AbstractScopeFixture<?> suiteScope;
+    protected static ConcurrentHashMap<Class<?>, AbstractScopeFixture<?>> suiteScope = new ConcurrentHashMap<>();
     protected Scope scope = Scope.METHOD;
 
     @SuppressWarnings( "unchecked" )
@@ -33,14 +35,7 @@ public abstract class AbstractScopeFixture<Self extends AbstractScopeFixture<Sel
         this.scope = scope;
 
         if( scope == Scope.SUITE ) {
-            if( suiteScope == null ) {
-                synchronized( AbstractScopeFixture.class ) {
-                    if( suiteScope == null ) {
-                        suiteScope = this;
-                    }
-                }
-            }
-            return ( Self ) suiteScope;
+            return ( Self ) suiteScope.computeIfAbsent( getClass(), c -> this );
         }
 
         return ( Self ) this;
