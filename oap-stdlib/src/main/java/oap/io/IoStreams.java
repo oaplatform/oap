@@ -285,7 +285,7 @@ public class IoStreams {
         PLAIN( "", false, true ),
         ZIP( ".zip", true, false ),
         GZIP( ".gz", true, true ),
-        ZSTD( ".zstd", true, true ),
+        ZSTD( ".zst", true, true ),
         LZ4( ".lz4", true, true ),
         LZ4_BLOCK( ".lz4b", true, false );
 
