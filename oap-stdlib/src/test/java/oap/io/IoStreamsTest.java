@@ -48,13 +48,14 @@ import java.util.Random;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.IoStreams.Encoding.ZSTD;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IoStreamsTest extends Fixtures {
-    {
+    public IoStreamsTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
@@ -109,6 +110,7 @@ public class IoStreamsTest extends Fixtures {
         assertThat( LZ4.resolve( Paths.get( "/x/a.txt.gz" ) ) ).isEqualTo( Paths.get( "/x/a.txt.lz4" ) );
         assertThat( PLAIN.resolve( Paths.get( "/x/a.txt.gz" ) ) ).isEqualTo( Paths.get( "/x/a.txt" ) );
         assertThat( GZIP.resolve( Paths.get( "/x/a.txt" ) ) ).isEqualTo( Paths.get( "/x/a.txt.gz" ) );
+        assertThat( ZSTD.resolve( Paths.get( "/x/a.txt.zst" ) ) ).isEqualTo( Paths.get( "/x/a.txt.zst" ) );
     }
 
     @Test

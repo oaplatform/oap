@@ -44,6 +44,7 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
     protected int timeout = 1000;
     protected long sleep = 60000;
     private ServerSocket serverSocket;
+    public int backlog = 50;
 
     AbstractHttpListener( HttpServer server ) {
         this.server = server;

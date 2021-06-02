@@ -83,7 +83,7 @@ public class GzipHttpTest extends Fixtures {
             Map.of(), Map.of( "Accept-encoding", "gzip,deflate" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( responseGzip.header( "Content-encoding" ).get() ).isEqualTo( "gzip" );
+        assertThat( responseGzip.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }
