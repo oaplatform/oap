@@ -53,7 +53,7 @@ public class Fixtures {
 
     @AfterSuite
     public void fixAfterSuite() {
-        fixtures.iterator().forEachRemaining( Fixture::afterSuite );
+        fixtures.descendingIterator().forEachRemaining( Fixture::afterSuite );
     }
 
     @BeforeClass
