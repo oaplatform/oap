@@ -49,6 +49,7 @@ import static oap.util.Lists.concat;
 @ToString
 public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
+    public static final String OAP_PROFILE_PREFIX = "OAP_PROFILE_";
     public final LinkedHashMap<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
     public final LinkedHashSet<Object> profiles = new LinkedHashSet<>();
     public final ModuleBoot boot = new ModuleBoot();
@@ -147,7 +148,54 @@ public final class ApplicationConfiguration {
             }
         }
 
+        addProfiles( ret, System.getenv() );
+        addProfiles( ret, System.getProperties() );
+
         return ret;
+    }
+
+    private void addProfiles( LinkedHashSet<String> ret, Map<? extends Object, ? extends Object> env ) {
+        env.forEach( ( nameObj, valueObj ) -> {
+            var name = ( String ) nameObj;
+            var value = ( String ) valueObj;
+            if( name.startsWith( OAP_PROFILE_PREFIX ) ) {
+                var profileName = name.substring( OAP_PROFILE_PREFIX.length() );
+                var profileValue = value.trim().toUpperCase();
+                profileName = profileEscape( profileName );
+                var enabled = "1".equals( profileValue ) || "ON".equals( profileValue ) || "TRUE".equals( profileValue );
+
+                ret.add( ( enabled ? "" : "-" ) + profileName );
+            }
+        } );
+    }
+
+    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
+    private String profileEscape( String profileName ) {
+        var ret = new StringBuilder();
+        var escapeMode = false;
+
+        for( var i = 0; i < profileName.length(); i++ ) {
+            var ch = profileName.charAt( i );
+            if( ch == '_' ) {
+                if( !escapeMode ) escapeMode = true;
+                else {
+                    escapeMode = false;
+                    ret.append( '_' );
+                }
+
+            } else if( escapeMode ) {
+                if( i < profileName.length() - 2 ) {
+                    var b = Byte.parseByte( profileName.substring( i, i + 2 ), 16 );
+                    ret.append( ( char ) b );
+                    escapeMode = false;
+                    i += 1;
+                } else throw new IllegalArgumentException( "invalid escape: " + i );
+            } else {
+                ret.append( ch );
+            }
+        }
+
+        return ret.toString();
     }
 
     public static class ApplicationConfigurationModule extends LinkedHashMap<String, Object> {

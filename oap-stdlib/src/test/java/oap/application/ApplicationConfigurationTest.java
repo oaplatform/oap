@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import oap.system.Env;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -60,5 +61,19 @@ public class ApplicationConfigurationTest {
             "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
             "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
         ) ) );
+    }
+
+    @Test
+    public void testProfiles() {
+        var ac = ApplicationConfiguration.load();
+
+        assertThat( ac.getProfiles() ).isEmpty();
+
+        System.setProperty( "OAP_PROFILE_with__file", "1" );
+        Env.set( "OAP_PROFILE_with_2Dfile", "on" );
+        Env.set( "OAP_PROFILE_test", "false" );
+
+        assertThat( ac.getProfiles() ).containsOnly( "with_file", "with-file", "-test" );
+
     }
 }
