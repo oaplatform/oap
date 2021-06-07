@@ -36,6 +36,7 @@ import io.undertow.util.Headers;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
+import oap.util.Lists;
 import oap.util.Result;
 import oap.util.function.Try;
 
@@ -45,6 +46,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -108,7 +110,21 @@ public class Remote implements HttpHandler {
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
             var invocation = getRemoteInvocation( fst, body );
 
-            var service = kernel.service( "*", invocation.service );
+            Optional<Object> service;
+            if( !invocation.service.contains( "." ) ) {
+                var services = kernel.services( "*", invocation.service );
+                if( services.size() > 1 ) {
+                    errorMetrics.increment();
+                    exchange.setStatusCode( HTTP_NOT_FOUND );
+                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
+                    exchange.getResponseSender().send( invocation.service + " found multiple services" );
+                    return;
+                }
+
+                service = Lists.headOf( services );
+            } else {
+                service = kernel.service( invocation.service );
+            }
 
             service.ifPresentOrElse( s -> {
                     try {

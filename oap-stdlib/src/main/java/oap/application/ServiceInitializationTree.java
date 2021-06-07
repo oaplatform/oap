@@ -27,8 +27,10 @@ package oap.application;
 import oap.util.Result;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -38,9 +40,9 @@ import static oap.application.ServiceStorage.ErrorStatus.SERVICE_NOT_FOUND;
 
 
 public class ServiceInitializationTree extends AbstractMap<ModuleItem.ServiceItem, ServiceInitialization> implements ServiceStorage {
-    private final LinkedHashMap<ModuleItem.ServiceItem, ServiceInitialization> map = new LinkedHashMap<>();
     // JPathWS
     public final LinkedHashMap<String, LinkedHashMap<String, ServiceInitialization>> moduleMap = new LinkedHashMap<>();
+    private final LinkedHashMap<ModuleItem.ServiceItem, ServiceInitialization> map = new LinkedHashMap<>();
 
     @Override
     public ServiceInitialization put( ModuleItem.ServiceItem key, ServiceInitialization value ) {
@@ -106,6 +108,16 @@ public class ServiceInitializationTree extends AbstractMap<ModuleItem.ServiceIte
         }
 
         return Optional.empty();
+    }
+
+    public List<ServiceInitialization> findAllServicesByName( String serviceName ) {
+        var ret = new ArrayList<ServiceInitialization>();
+        for( var s : moduleMap.values() ) {
+            var r = s.get( serviceName );
+            if( r != null ) ret.add( r );
+        }
+
+        return ret;
     }
 
     public void removeService( String moduleName, String serviceName ) {

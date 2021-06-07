@@ -424,6 +424,18 @@ public class Kernel implements Closeable {
         return service( ref );
     }
 
+    @SuppressWarnings( "unchecked" )
+    public <T> List<T> services( String moduleName, String serviceName ) {
+        if( ServiceStorage.ALL_MODULES.contains( moduleName ) ) {
+            return Lists.map( services.findAllServicesByName( serviceName ), si -> ( T ) si.instance );
+        }
+
+        var si = services.get( moduleName, serviceName );
+        if( si == null ) return List.of();
+
+        return List.of( ( T ) si.instance );
+    }
+
     public <T> List<T> ofClass( Class<T> clazz ) {
         return ofClass( "*", clazz );
     }
