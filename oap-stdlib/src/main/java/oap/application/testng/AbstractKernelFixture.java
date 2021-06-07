@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
+import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 
 public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractEnvFixture<Self> {
@@ -129,7 +130,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         initConfd();
 
         Resources.filePath( clazz, confdResource )
-            .ifPresent( path -> oap.io.Files.copyDirectory( path, this.confd ) );
+            .ifPresent( path -> oap.io.Files.copy( path, PLAIN, this.confd.resolve( path.getFileName() ), PLAIN ) );
 
         return ( Self ) this;
     }
