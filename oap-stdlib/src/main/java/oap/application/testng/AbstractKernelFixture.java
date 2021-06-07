@@ -36,6 +36,7 @@ import oap.testng.AbstractEnvFixture;
 import oap.testng.TestDirectoryFixture;
 
 import javax.annotation.Nonnull;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -114,8 +115,8 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     @SuppressWarnings( "unchecked" )
-    public Self withConfdResources( Class<?> clazz, String confdResource ) {
-        this.confd = TestDirectoryFixture.testPath( "/application.test.confd" );
+    public Self withConfdResources( Class<?> clazz, String confdResource ) throws UncheckedIOException {
+        initConfd();
 
         Resources.filePaths( clazz, confdResource )
             .forEach( path -> oap.io.Files.copyDirectory( path, this.confd ) );
@@ -123,20 +124,35 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return ( Self ) this;
     }
 
+    @SuppressWarnings( "unchecked" )
+    public Self withConfResource( Class<?> clazz, String confdResource ) throws UncheckedIOException {
+        initConfd();
+
+        Resources.filePath( clazz, confdResource )
+            .ifPresent( path -> oap.io.Files.copyDirectory( path, this.confd ) );
+
+        return ( Self ) this;
+    }
+
+    private void initConfd() {
+        if( this.confd != null )
+            this.confd = TestDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
+    }
+
     @Nonnull
-    public <T> T service( @Nonnull String moduleName, @Nonnull Class<T> clazz ) {
+    public <T> T service( @Nonnull String moduleName, @Nonnull Class<T> clazz ) throws IllegalArgumentException {
         return kernel.serviceOfClass( moduleName, clazz )
             .orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + clazz ) );
     }
 
     @Nonnull
-    public <T> T service( @Nonnull String moduleName, @Nonnull String serviceName ) {
+    public <T> T service( @Nonnull String moduleName, @Nonnull String serviceName ) throws IllegalArgumentException {
         return kernel.<T>service( moduleName, serviceName )
             .orElseThrow( () -> new IllegalArgumentException( "unknown service " + moduleName + ":" + serviceName ) );
     }
 
     @Nonnull
-    public <T> T service( @Nonnull String reference ) {
+    public <T> T service( @Nonnull String reference ) throws IllegalArgumentException {
         return kernel.<T>service( reference )
             .orElseThrow( () -> new IllegalArgumentException( "unknown service " + reference ) );
     }
