@@ -135,7 +135,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     private void initConfd() {
-        if( this.confd != null )
+        if( this.confd == null )
             this.confd = TestDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
     }
 
