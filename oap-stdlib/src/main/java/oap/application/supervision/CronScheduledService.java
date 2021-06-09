@@ -44,9 +44,7 @@ public class CronScheduledService extends AbstractScheduledService {
 
     private static CronInfo parse( String cron ) {
         var m = Pattern.compile( "(.+)\\s+jitter\s+(\\d+\\w*)$" ).matcher( cron );
-        if( m.matches() ) {
-            return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
-        }
+        if( m.matches() ) return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
 
         return new CronInfo( cron.trim(), 0L );
     }
@@ -58,12 +56,10 @@ public class CronScheduledService extends AbstractScheduledService {
 
     @Override
     public void run() {
-        if( jitter > 0 ) {
-            try {
-                Thread.sleep( RandomUtils.nextLong( 0, jitter + 1 ) );
-            } catch( InterruptedException e ) {
-                return;
-            }
+        if( jitter > 0 ) try {
+            Thread.sleep( RandomUtils.nextLong( 0, jitter + 1 ) );
+        } catch( InterruptedException e ) {
+            return;
         }
 
         super.run();
