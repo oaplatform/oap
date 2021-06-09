@@ -640,7 +640,11 @@ public final class Files {
     }
 
     public static Path format( Path base, String format, Map<String, Object> substitutions ) {
-        return base.resolve( Strings.substitute( format, v -> {
+        return base.resolve( format( format, substitutions ) );
+    }
+
+    public static String format( String format, Map<String, Object> substitutions ) {
+        return Strings.substitute( format, v -> {
             if( "HOST".equals( v ) ) return Inet.HOSTNAME;
             String[] parts = v.split( ":" );
             if( parts.length > 1 ) {
@@ -659,6 +663,6 @@ public final class Files {
                 }
                 throw new IllegalArgumentException( "unknown substitution " + v );
             } else return substitutions.get( v );
-        } ) );
+        } );
     }
 }
