@@ -23,13 +23,14 @@
  */
 package oap.io;
 
-import oap.net.Inet;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Sets;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -45,6 +46,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.IoStreams.Encoding.ZIP;
+import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -218,7 +220,13 @@ public class FilesTest extends Fixtures {
     @Test
     public void format() {
         Dates.setTimeFixed( 2020, 1, 1, 1, 1 );
-        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${DATE:yyyy-MM-dd}/${A}-${B}.txt", Map.of( "A", "AAA", "B", "BBB" ) ) )
-            .isEqualTo( Path.of( "a/b/c/" + Inet.HOSTNAME + "/2020-01-01/AAA-BBB.txt" ) );
+        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${NOW:yyyy-MM-dd}/${A}-${B}.txt", Map.of( "A", "AAA", "B", "BBB" ) ) )
+            .isEqualTo( Path.of( "a/b/c/" + HOSTNAME + "/2020-01-01/AAA-BBB.txt" ) );
+        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${A:DT:yyyy-MM-dd}-${B}.txt", Map.of( "A", new DateTime( 2021, 2, 2, 11, 0 ), "B", "BBB" ) ) )
+            .isEqualTo( Path.of( "a/b/c/" + HOSTNAME + "/2021-02-02-BBB.txt" ) );
+        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${A:DT:yyyy-MM-dd}-${B}.txt", Map.of( "A", new LocalDate( 2021, 2, 2 ), "B", "BBB" ) ) )
+            .isEqualTo( Path.of( "a/b/c/" + HOSTNAME + "/2021-02-02-BBB.txt" ) );
+        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${A:DT:yyyy-MM-dd}-${B}.txt", Map.of( "A", java.time.LocalDateTime.of( 2021, 2, 2, 11, 0 ), "B", "BBB" ) ) )
+            .isEqualTo( Path.of( "a/b/c/" + HOSTNAME + "/2021-02-02-BBB.txt" ) );
     }
 }

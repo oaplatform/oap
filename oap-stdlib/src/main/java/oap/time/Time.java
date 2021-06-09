@@ -26,6 +26,7 @@ package oap.time;
 
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableInstant;
+import org.joda.time.ReadablePartial;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -43,6 +44,10 @@ public final class Time {
 
     public static String format( String format, DateTimeZone zone, ReadableInstant instant ) {
         return formatter( format, zone ).print( instant );
+    }
+
+    public static String format( String format, DateTimeZone zone, ReadablePartial partial ) {
+        return formatter( format, zone ).print( partial );
     }
 
     public static String format( String format, TemporalAccessor temporal ) {

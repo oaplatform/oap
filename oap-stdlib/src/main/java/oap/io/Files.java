@@ -26,6 +26,7 @@ package oap.io;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
+import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.ReadableInstant;
+import org.joda.time.ReadablePartial;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -70,6 +73,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -637,8 +642,23 @@ public final class Files {
     public static Path format( Path base, String format, Map<String, Object> substitutions ) {
         return base.resolve( Strings.substitute( format, v -> {
             if( "HOST".equals( v ) ) return Inet.HOSTNAME;
-            if( v.startsWith( "DATE:" ) ) return Time.format( v.substring( "DATE:".length() ), DateTimeZone.UTC, Dates.nowUtc() );
-            return substitutions.get( v );
+            String[] parts = v.split( ":" );
+            if( parts.length > 1 ) {
+                //            DATE is deprecated, kept for backward compatibility
+                if( parts[0].equals( "NOW" ) || parts[0].equals( "DATE" ) ) {
+                    Preconditions.checkArgument( parts.length == 2, "erroneous substitution " + v );
+                    return Time.format( parts[1], DateTimeZone.UTC, Dates.nowUtc() );
+                }
+                if( parts[1].equals( "DT" ) ) {
+                    Object dt = substitutions.get( parts[0] );
+                    return dt instanceof ReadableInstant
+                        ? Time.format( parts[2], DateTimeZone.UTC, ( ReadableInstant ) dt )
+                        : dt instanceof ReadablePartial
+                            ? Time.format( parts[2], DateTimeZone.UTC, ( ReadablePartial ) dt )
+                            : Time.format( parts[2], ZoneOffset.UTC, ( TemporalAccessor ) dt );
+                }
+                throw new IllegalArgumentException( "unknown substitution " + v );
+            } else return substitutions.get( v );
         } ) );
     }
 }
