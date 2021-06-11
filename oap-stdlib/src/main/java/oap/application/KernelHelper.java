@@ -40,9 +40,9 @@ import java.util.Set;
 
 @Slf4j( topic = "oap.application.Kernel" )
 public class KernelHelper {
-    static final Set<String> THIS = Set.of( "this", "self" );
+    public static final Set<String> THIS = Set.of( "this", "self" );
 
-    static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
+    public static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
                                                                  ServiceStorage storage,
                                                                  LinkedHashMap<String, Object> parameters ) {
         fixLinks( kernel, thisModuleName, storage, parameters );
@@ -58,7 +58,7 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( "unchecked" )
-    static Object fixValue( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, Object value ) {
+    public static Object fixValue( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, Object value ) {
         Object newValue;
         if( value instanceof List<?> ) {
             var newList = new ArrayList<>();
@@ -94,7 +94,7 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
-    static Object fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, Object value ) {
+    public static Object fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, Object value ) {
         if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
@@ -128,7 +128,7 @@ public class KernelHelper {
         return value;
     }
 
-    static boolean profileEnabled( LinkedHashSet<String> profiles, LinkedHashSet<String> systemProfiles ) {
+    public static boolean profileEnabled( LinkedHashSet<String> profiles, LinkedHashSet<String> systemProfiles ) {
         for( var profile : profiles ) {
             if( profile.startsWith( "-" ) ) {
                 if( systemProfiles.contains( profile.substring( 1 ) ) ) return false;
@@ -141,11 +141,11 @@ public class KernelHelper {
         return true;
     }
 
-    static boolean isModuleEnabled( Module module, LinkedHashSet<String> systemProfiles ) {
+    public static boolean isModuleEnabled( Module module, LinkedHashSet<String> systemProfiles ) {
         return profileEnabled( module.profiles, systemProfiles );
     }
 
-    static boolean isServiceEnabled( Service service, LinkedHashSet<String> systemProfiles ) {
+    public static boolean isServiceEnabled( Service service, LinkedHashSet<String> systemProfiles ) {
         return profileEnabled( service.profiles, systemProfiles );
     }
 
