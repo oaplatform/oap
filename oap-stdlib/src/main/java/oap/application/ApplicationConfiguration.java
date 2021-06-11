@@ -164,6 +164,7 @@ public final class ApplicationConfiguration {
                 profileName = profileEscape( profileName );
                 var enabled = "1".equals( profileValue ) || "ON".equals( profileValue ) || "TRUE".equals( profileValue );
 
+                ret.remove( ( enabled ? "-" : "" ) + profileName );
                 ret.add( ( enabled ? "" : "-" ) + profileName );
             }
         } );

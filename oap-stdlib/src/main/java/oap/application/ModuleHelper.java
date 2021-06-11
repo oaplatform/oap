@@ -50,7 +50,7 @@ class ModuleHelper {
     private ModuleHelper() {
     }
 
-    private static ModuleItemTree init( Set<Kernel.ModuleWithLocation> modules, Set<String> profiles ) {
+    private static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
         var map = initModules( modules, profiles );
         initServices( map, profiles );
 
@@ -58,7 +58,7 @@ class ModuleHelper {
     }
 
     public static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
-                                       Set<String> profiles, Set<String> main, Kernel kernel ) throws ApplicationException {
+                                       LinkedHashSet<String> profiles, LinkedHashSet<String> main, Kernel kernel ) throws ApplicationException {
         var map = init( modules, profiles );
 
         loadOnlyMainModuleAndDependsOn( map, main, profiles );
@@ -119,7 +119,7 @@ class ModuleHelper {
         return Lists.head2( found );
     }
 
-    private static ModuleItemTree initModules( Set<Kernel.ModuleWithLocation> modules, Set<String> profiles ) {
+    private static ModuleItemTree initModules( LinkedHashSet<Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
         var map = new ModuleItemTree();
 
         for( var module : modules ) {
@@ -135,7 +135,7 @@ class ModuleHelper {
         return map;
     }
 
-    private static void initServices( ModuleItemTree map, Set<String> profiles ) {
+    private static void initServices( ModuleItemTree map, LinkedHashSet<String> profiles ) {
         for( var moduleInfo : map.values() ) {
             for( var serviceEntry : moduleInfo.module.services.entrySet() ) {
                 var serviceName = serviceEntry.getKey();
@@ -221,7 +221,7 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, Set<String> main, Set<String> profiles ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main, LinkedHashSet<String> profiles ) {
         var modules = map.clone();
         loadOnlyMainModuleAndDependsOn( modules, main, profiles, new LinkedHashSet<>() );
 
@@ -231,7 +231,7 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules, Set<String> main, Set<String> profiles, LinkedHashSet<String> loaded ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules, Set<String> main, LinkedHashSet<String> profiles, LinkedHashSet<String> loaded ) {
         for( var module : main ) {
             var moduleItem = modules.get( module );
 
@@ -449,12 +449,12 @@ class ModuleHelper {
         }
     }
 
-    private static void initDeps( ModuleItemTree map, Set<String> profiles, Kernel kernel ) {
+    private static void initDeps( ModuleItemTree map, LinkedHashSet<String> profiles, Kernel kernel ) {
         initModuleDeps( map, profiles );
         initServicesDeps( map, kernel );
     }
 
-    private static void initModuleDeps( ModuleItemTree map, Set<String> profiles ) {
+    private static void initModuleDeps( ModuleItemTree map, LinkedHashSet<String> profiles ) {
         for( var moduleItem : map.values() ) {
             for( var d : moduleItem.module.dependsOn ) {
                 ModuleItem dModule;

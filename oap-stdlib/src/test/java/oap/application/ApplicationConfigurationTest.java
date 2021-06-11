@@ -69,6 +69,9 @@ public class ApplicationConfigurationTest {
 
         assertThat( ac.getProfiles() ).isEmpty();
 
+        ac.profiles.add( "-with-file" );
+        ac.profiles.add( "test" );
+
         System.setProperty( "OAP_PROFILE_with__file", "1" );
         Env.set( "OAP_PROFILE_with_2Dfile", "on" );
         Env.set( "OAP_PROFILE_test", "false" );

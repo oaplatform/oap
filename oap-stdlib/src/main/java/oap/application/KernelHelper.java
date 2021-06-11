@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -39,7 +40,7 @@ import java.util.Set;
 
 @Slf4j( topic = "oap.application.Kernel" )
 public class KernelHelper {
-    public static final Set<String> THIS = Set.of( "this", "self" );
+    static final Set<String> THIS = Set.of( "this", "self" );
 
     static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
                                                                  ServiceStorage storage,
@@ -127,7 +128,7 @@ public class KernelHelper {
         return value;
     }
 
-    public static boolean profileEnabled( Set<String> profiles, Set<String> systemProfiles ) {
+    static boolean profileEnabled( LinkedHashSet<String> profiles, LinkedHashSet<String> systemProfiles ) {
         for( var profile : profiles ) {
             if( profile.startsWith( "-" ) ) {
                 if( systemProfiles.contains( profile.substring( 1 ) ) ) return false;
@@ -140,11 +141,11 @@ public class KernelHelper {
         return true;
     }
 
-    public static boolean isModuleEnabled( Module module, Set<String> systemProfiles ) {
+    static boolean isModuleEnabled( Module module, LinkedHashSet<String> systemProfiles ) {
         return profileEnabled( module.profiles, systemProfiles );
     }
 
-    public static boolean isServiceEnabled( Service service, Set<String> systemProfiles ) {
+    static boolean isServiceEnabled( Service service, LinkedHashSet<String> systemProfiles ) {
         return profileEnabled( service.profiles, systemProfiles );
     }
 

@@ -41,6 +41,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +60,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     protected final URL conf;
     protected final List<URL> additionalModules = new ArrayList<>();
     private final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
+    private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     public Kernel kernel;
     protected Path confd;
 
@@ -126,6 +128,12 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     @SuppressWarnings( "unchecked" )
+    public Self withProfile( String profile ) {
+        this.profiles.add( profile );
+        return ( Self ) this;
+    }
+
+    @SuppressWarnings( "unchecked" )
     public Self withConfResource( Class<?> clazz, String confdResource ) throws UncheckedIOException {
         initConfd();
 
@@ -179,7 +187,16 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
         var confds = ApplicationConfiguration.getConfdUrls( confd );
 
-        this.kernel.start( ApplicationConfiguration.load( conf, confds, properties ) );
+        var applicationConfiguration = ApplicationConfiguration.load( conf, confds, properties );
+
+        for( var newProfile : profiles ) {
+            var enabled = !newProfile.startsWith( "-" );
+            if( enabled ) applicationConfiguration.profiles.remove( "-" + newProfile );
+            else applicationConfiguration.profiles.remove( newProfile.substring( 1 ) );
+        }
+
+        applicationConfiguration.profiles.addAll( profiles );
+        this.kernel.start( applicationConfiguration );
     }
 
     @Override
