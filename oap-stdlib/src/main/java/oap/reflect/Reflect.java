@@ -78,6 +78,14 @@ public class Reflect {
             try {
                 return Class.forName( cn );
             } catch( ClassNotFoundException e ) {
+                var lastDot = cn.lastIndexOf( '.' );
+                if( lastDot > 1 ) {
+                    try {
+                        return Class.forName( cn.substring( 0, lastDot ) + "$" + cn.substring( lastDot + 1 ) );
+                    } catch( ClassNotFoundException ignored ) {
+                        throw new ReflectException( e );
+                    }
+                }
                 throw new ReflectException( e );
             }
         } ), coercions );
