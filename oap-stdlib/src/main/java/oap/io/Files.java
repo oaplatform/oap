@@ -77,6 +77,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -644,17 +645,19 @@ public final class Files {
     }
 
     public static String format( String format, Map<String, Object> substitutions ) {
+        Map<String, Object> enhanced = new HashMap<>( substitutions );
+        enhanced.put( "HOST", Inet.HOSTNAME );
+        enhanced.put( "NOW", Dates.nowUtc() );
         return Strings.substitute( format, v -> {
-            if( "HOST".equals( v ) ) return Inet.HOSTNAME;
             String[] parts = v.split( ":" );
             if( parts.length > 1 ) {
                 //            DATE is deprecated, kept for backward compatibility
-                if( parts[0].equals( "NOW" ) || parts[0].equals( "DATE" ) ) {
+                if( parts[0].equals( "DATE" ) ) {
                     Preconditions.checkArgument( parts.length == 2, "erroneous substitution " + v );
                     return Time.format( parts[1], DateTimeZone.UTC, Dates.nowUtc() );
                 }
                 if( parts[1].equals( "DT" ) ) {
-                    Object dt = substitutions.get( parts[0] );
+                    Object dt = enhanced.get( parts[0] );
                     return dt instanceof ReadableInstant
                         ? Time.format( parts[2], DateTimeZone.UTC, ( ReadableInstant ) dt )
                         : dt instanceof ReadablePartial
@@ -662,7 +665,7 @@ public final class Files {
                             : Time.format( parts[2], ZoneOffset.UTC, ( TemporalAccessor ) dt );
                 }
                 throw new IllegalArgumentException( "unknown substitution " + v );
-            } else return substitutions.get( v );
+            } else return enhanced.get( v );
         } );
     }
 }
