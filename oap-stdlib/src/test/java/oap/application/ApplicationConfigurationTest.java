@@ -68,6 +68,7 @@ public class ApplicationConfigurationTest {
         var ac = ApplicationConfiguration.load();
 
         assertThat( ac.getProfiles() ).isEmpty();
+        ac.reset();
 
         ac.profiles.add( "-with-file" );
         ac.profiles.add( "test" );
@@ -77,7 +78,6 @@ public class ApplicationConfigurationTest {
         Env.set( "OAP_PROFILE_test", "false" );
 
         assertThat( ac.getProfiles() ).containsOnly( "with_file", "with-file", "-test" );
-
     }
 
     @Test
