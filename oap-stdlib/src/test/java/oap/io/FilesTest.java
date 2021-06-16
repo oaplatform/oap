@@ -220,7 +220,7 @@ public class FilesTest extends Fixtures {
     @Test
     public void format() {
         Dates.setTimeFixed( 2020, 1, 1, 1, 1 );
-        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${NOW:yyyy-MM-dd}/${A}-${B}.txt", Map.of( "A", "AAA", "B", "BBB" ) ) )
+        assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${NOW:DT:yyyy-MM-dd}/${A}-${B}.txt", Map.of( "A", "AAA", "B", "BBB" ) ) )
             .isEqualTo( Path.of( "a/b/c/" + HOSTNAME + "/2020-01-01/AAA-BBB.txt" ) );
         assertThat( Files.format( Path.of( "a/b/c" ), "${HOST}/${A:DT:yyyy-MM-dd}-${B}.txt", Map.of( "A", new DateTime( 2021, 2, 2, 11, 0 ), "B", "BBB" ) ) )
             .isEqualTo( Path.of( "a/b/c/" + HOSTNAME + "/2021-02-02-BBB.txt" ) );
