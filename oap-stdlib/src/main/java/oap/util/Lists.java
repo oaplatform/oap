@@ -115,8 +115,24 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
+    public static <E, R> void map( Collection<? extends E> list, Function<? super E, R> mapper, ArrayList<R> toList ) {
+        for( var e : list ) {
+            toList.add( mapper.apply( e ) );
+        }
+    }
+
     public static <E, R> ArrayList<R> map( E[] array, Function<? super E, R> mapper ) {
-        return map( of( array ), mapper );
+        var result = new ArrayList<R>( array.length );
+        for( var e : array ) {
+            result.add( mapper.apply( e ) );
+        }
+        return result;
+    }
+
+    public static <E, R> void map( E[] array, Function<? super E, R> mapper, ArrayList<R> toList ) {
+        for( var e : array ) {
+            toList.add( mapper.apply( e ) );
+        }
     }
 
     public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
