@@ -263,6 +263,10 @@ public class Binder {
         return marshalWithDefaultPrettyPrinter( unmarshal( clazz, json ) );
     }
 
+    public String canonicalizeWithDefaultPrettyPrinter( TypeRef<?> typeRef, String json ) {
+        return marshalWithDefaultPrettyPrinter( unmarshal( typeRef, json ) );
+    }
+
     public String marshalWithDefaultPrettyPrinter( Object value ) {
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );

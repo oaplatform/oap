@@ -26,6 +26,7 @@ package oap.json.testng;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.Formatter;
+import oap.reflect.TypeRef;
 import oap.util.Pair;
 import oap.util.Strings;
 import org.assertj.core.api.AbstractAssert;
@@ -100,6 +101,11 @@ public class JsonAsserts {
             super( json, JsonAssertion.class );
         }
 
+        private static Object unmarshal( String content ) {
+            if( content.trim().startsWith( "[" ) ) return Binder.json.unmarshal( List.class, content );
+            else return Binder.json.unmarshal( Map.class, content );
+        }
+
         public JsonAssertion isEqualTo( String expected ) {
             isNotNull();
             assertThat( Formatter.format( actual ) )
@@ -126,14 +132,15 @@ public class JsonAsserts {
 
         }
 
-        private static Object unmarshal( String content ) {
-            if( content.trim().startsWith( "[" ) ) return Binder.json.unmarshal( List.class, content );
-            else return Binder.json.unmarshal( Map.class, content );
-        }
-
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
             assertThat( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
                 .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );
+            return this;
+        }
+
+        private JsonAssertion isEqualCanonically( TypeRef<?> typeRef, String actual, String expected ) {
+            assertThat( Binder.json.canonicalizeWithDefaultPrettyPrinter( typeRef, actual ) )
+                .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( typeRef, expected ) );
             return this;
         }
 
@@ -146,8 +153,17 @@ public class JsonAsserts {
             return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
         }
 
+        @SafeVarargs
+        public final JsonAssertion isEqualCanonically( TypeRef<?> typeRef, String expected, Pair<String, Object>... substitutions ) {
+            return isEqualCanonically( typeRef, Strings.substitute( expected, substitutions ) );
+        }
+
         public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Function<String, String> substitutions ) {
             return isEqualCanonically( clazz, substitutions.apply( actual ), expected );
+        }
+
+        public final JsonAssertion isEqualCanonically( TypeRef<?> typeRef, String expected, Function<String, String> substitutions ) {
+            return isEqualCanonically( typeRef, substitutions.apply( actual ), expected );
         }
     }
 }
