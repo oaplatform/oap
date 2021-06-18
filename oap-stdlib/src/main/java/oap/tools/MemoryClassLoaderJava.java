@@ -73,7 +73,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
                 oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
             } else {
-                log.trace( "not found: {}", classname );
+                log.trace( "not found: {} -> {}", classname, sourceFile );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             }
         } else {
