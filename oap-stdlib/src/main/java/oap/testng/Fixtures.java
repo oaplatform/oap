@@ -24,7 +24,6 @@
 
 package oap.testng;
 
-import com.mchange.util.AssertException;
 import oap.util.Lists;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -44,19 +43,19 @@ public abstract class Fixtures {
     private static final LinkedHashMap<Class<? extends Fixture>, Fixture> suiteFixtures = new LinkedHashMap<>();
     private final LinkedList<Fixture> fixtures = new LinkedList<>();
 
-    public static <F extends Fixture> F suiteFixture( F fixture ) {
+    public static <F extends Fixture> F suiteFixture( F fixture ) throws IllegalArgumentException {
         var ret = suiteFixtures.putIfAbsent( fixture.getClass(), fixture );
-        if( ret != null ) throw new AssertException( "fixture is already registered" );
+        if( ret != null ) throw new IllegalArgumentException( "fixture is already registered" );
         return fixture;
     }
 
-    public <F extends Fixture> F fixture( F fixture ) {
+    public <F extends Fixture> F fixture( F fixture ) throws IllegalCallerException {
         return fixture( Position.LAST, fixture );
     }
 
-    public <F extends Fixture> F fixture( Position position, F fixture ) {
+    public <F extends Fixture> F fixture( Position position, F fixture ) throws IllegalCallerException {
         if( fixture instanceof AbstractScopeFixture<?> && ( ( AbstractScopeFixture<?> ) fixture ).getScope() == SUITE )
-            throw new AssertException( "use static Fixtures#suiteFixture" );
+            throw new IllegalCallerException( "use static Fixtures#suiteFixture" );
         else {
             if( position == Position.FIRST ) fixtures.addFirst( fixture );
             else fixtures.addLast( fixture );
