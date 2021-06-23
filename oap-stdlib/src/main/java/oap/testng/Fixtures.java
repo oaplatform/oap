@@ -77,22 +77,26 @@ public abstract class Fixtures {
 
     @BeforeClass
     public void fixBeforeClass() {
+        suiteFixtures.values().forEach( Fixture::beforeClass );
         fixtures.forEach( Fixture::beforeClass );
     }
 
     @AfterClass
     public void fixAfterClass() {
         fixtures.descendingIterator().forEachRemaining( Fixture::afterClass );
+        Lists.reverse( suiteFixtures.values() ).forEach( Fixture::afterClass );
     }
 
     @BeforeMethod
     public void fixBeforeMethod() {
+        suiteFixtures.values().forEach( Fixture::beforeMethod );
         fixtures.forEach( Fixture::beforeMethod );
     }
 
     @AfterMethod
     public void fixAfterMethod() {
         fixtures.descendingIterator().forEachRemaining( Fixture::afterMethod );
+        Lists.reverse( suiteFixtures.values() ).forEach( Fixture::afterMethod );
     }
 
     public enum Position {
