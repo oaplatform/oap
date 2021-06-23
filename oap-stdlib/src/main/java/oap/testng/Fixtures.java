@@ -24,6 +24,8 @@
 
 package oap.testng;
 
+import com.mchange.util.AssertException;
+import oap.util.Lists;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
@@ -31,34 +33,51 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
-public class Fixtures {
+import static oap.testng.Fixture.Scope.SUITE;
+
+
+@SuppressWarnings( "checkstyle:AbstractClassName" )
+public abstract class Fixtures {
+    private static final LinkedHashMap<Class<? extends Fixture>, Fixture> suiteFixtures = new LinkedHashMap<>();
     private final LinkedList<Fixture> fixtures = new LinkedList<>();
+
+    public static <F extends Fixture> F suiteFixture( F fixture ) {
+        var ret = suiteFixtures.putIfAbsent( fixture.getClass(), fixture );
+        if( ret != null ) throw new AssertException( "fixture is already registered" );
+        return fixture;
+    }
 
     public <F extends Fixture> F fixture( F fixture ) {
         return fixture( Position.LAST, fixture );
     }
 
     public <F extends Fixture> F fixture( Position position, F fixture ) {
-        if( position == Position.FIRST ) fixtures.addFirst( fixture );
-        else fixtures.addLast( fixture );
-        return fixture;
+        if( fixture instanceof AbstractScopeFixture<?> && ( ( AbstractScopeFixture<?> ) fixture ).getScope() == SUITE )
+            throw new AssertException( "use static Fixtures#suiteFixture" );
+        else {
+            if( position == Position.FIRST ) fixtures.addFirst( fixture );
+            else fixtures.addLast( fixture );
+
+            return fixture;
+        }
     }
 
     @BeforeSuite
     public void fixBeforeSuite() {
-        fixtures.iterator().forEachRemaining( Fixture::beforeSuite );
+        suiteFixtures.values().forEach( Fixture::beforeSuite );
     }
 
     @AfterSuite
     public void fixAfterSuite() {
-        fixtures.descendingIterator().forEachRemaining( Fixture::afterSuite );
+        Lists.reverse( suiteFixtures.values() ).forEach( Fixture::afterSuite );
     }
 
     @BeforeClass
     public void fixBeforeClass() {
-        fixtures.iterator().forEachRemaining( Fixture::beforeClass );
+        fixtures.forEach( Fixture::beforeClass );
     }
 
     @AfterClass
@@ -68,7 +87,7 @@ public class Fixtures {
 
     @BeforeMethod
     public void fixBeforeMethod() {
-        fixtures.iterator().forEachRemaining( Fixture::beforeMethod );
+        fixtures.forEach( Fixture::beforeMethod );
     }
 
     @AfterMethod
