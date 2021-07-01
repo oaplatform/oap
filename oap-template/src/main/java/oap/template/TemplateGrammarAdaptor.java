@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.ToString;
 import oap.json.ext.Ext;
 import oap.json.ext.ExtDeserializer;
@@ -31,6 +32,7 @@ import oap.util.Lists;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,24 @@ abstract class TemplateGrammarAdaptor extends Parser {
 
     TemplateGrammarAdaptor( TokenStream input ) {
         super( input );
+    }
+
+    private static Field findField( Class<?> clazz, String fieldName ) throws NoSuchFieldException {
+        try {
+            return clazz.getField( fieldName );
+        } catch( NoSuchFieldException e ) {
+
+            var fields = clazz.getFields();
+            for( var field : fields ) {
+                var ann = field.getAnnotation( JsonProperty.class );
+                if( ann == null ) continue;
+
+                var jsonFieldName = ann.value();
+                if( fieldName.equals( jsonFieldName ) ) return field;
+            }
+
+            throw e;
+        }
     }
 
     String sStringToDString( String sstr ) {
@@ -81,7 +101,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 return new MaxMin( new AstMap( text, valueType ) );
             } else if( !isMethod ) {
                 var parentClass = parentType.getTypeClass();
-                var field = parentClass.getField( text );
+                var field = findField( parentClass, text );
 
                 var fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Template.Nullable.class ) );
                 boolean forceCast = false;
@@ -90,7 +110,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     fieldType = new TemplateType( extClass, fieldType.nullable );
                     forceCast = true;
                 }
-                return new MaxMin( new AstField( text, fieldType, forceCast ) );
+                return new MaxMin( new AstField( field.getName(), fieldType, forceCast ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = parentClass.getMethod( text );

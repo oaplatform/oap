@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
 
 import java.util.List;
@@ -50,6 +51,8 @@ public class TestTemplateClass {
     public ITestTemplateClassExt ext2;
     public List<Integer> list;
     public List<Integer> list2;
+    @JsonProperty( "jsonTestNew" )
+    public String jsonTest;
 
     public String fieldM() {
         return field;

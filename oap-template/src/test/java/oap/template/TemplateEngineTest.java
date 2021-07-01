@@ -106,6 +106,16 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testFieldWithJsonProperty() {
+        var c = new TestTemplateClass();
+        c.jsonTest = "val1";
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTest}", STRING, null ).render( c ) )
+            .isEqualTo( "val1" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestNew}", STRING, null ).render( c ) )
+            .isEqualTo( "val1" );
+    }
+
+    @Test
     public void testEnumField() {
         var c = new TestTemplateClass();
         c.enumField = TestTemplateEnum.VAL1;
