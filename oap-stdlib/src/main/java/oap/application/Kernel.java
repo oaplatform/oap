@@ -299,6 +299,7 @@ public class Kernel implements Closeable {
 
                         var linkMethod = reflect.method( "add" + methodSuffix ).orElse( null );
                         if( linkMethod == null ) linkMethod = reflect.method( "set" + methodSuffix ).orElse( null );
+                        if( linkMethod == null ) linkMethod = reflect.method( "add" + methodSuffix + "Listener" ).orElse( null );
 
                         if( linkMethod != null && linkMethod.parameters.size() == 1 )
                             linkMethod.invoke( service.instance, initialization.instance );

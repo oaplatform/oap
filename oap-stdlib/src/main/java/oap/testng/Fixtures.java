@@ -43,7 +43,10 @@ public abstract class Fixtures {
     private static final LinkedHashMap<Class<? extends Fixture>, Fixture> suiteFixtures = new LinkedHashMap<>();
     private final LinkedList<Fixture> fixtures = new LinkedList<>();
 
+    @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
     public static <F extends Fixture> F suiteFixture( F fixture ) throws IllegalArgumentException {
+        if( fixture instanceof AbstractScopeFixture<?> ) fixture = ( F ) ( ( AbstractScopeFixture<?> ) fixture ).withScope( SUITE );
+
         var ret = suiteFixtures.putIfAbsent( fixture.getClass(), fixture );
         if( ret != null ) throw new IllegalArgumentException( "fixture is already registered" );
         return fixture;

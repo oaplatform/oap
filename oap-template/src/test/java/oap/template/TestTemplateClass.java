@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
 
@@ -52,6 +53,7 @@ public class TestTemplateClass {
     public List<Integer> list;
     public List<Integer> list2;
     @JsonProperty( "jsonTestNew" )
+    @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
     public String jsonTest;
 
     public String fieldM() {

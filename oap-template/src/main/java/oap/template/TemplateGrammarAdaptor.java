@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.ToString;
 import oap.json.ext.Ext;
@@ -55,11 +56,19 @@ abstract class TemplateGrammarAdaptor extends Parser {
 
             var fields = clazz.getFields();
             for( var field : fields ) {
-                var ann = field.getAnnotation( JsonProperty.class );
-                if( ann == null ) continue;
+                var jsonPropertyAnnotation = field.getAnnotation( JsonProperty.class );
+                if( jsonPropertyAnnotation != null ) {
+                    var jsonFieldName = jsonPropertyAnnotation.value();
+                    if( fieldName.equals( jsonFieldName ) ) return field;
+                }
 
-                var jsonFieldName = ann.value();
-                if( fieldName.equals( jsonFieldName ) ) return field;
+                var jsonAliasAnnotation = field.getAnnotation( JsonAlias.class );
+                if( jsonAliasAnnotation != null ) {
+                    var jsonFieldNames = jsonAliasAnnotation.value();
+                    for( var jsonFieldName : jsonFieldNames ) {
+                        if( fieldName.equals( jsonFieldName ) ) return field;
+                    }
+                }
             }
 
             throw e;
