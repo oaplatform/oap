@@ -26,6 +26,7 @@ package oap.message;
 
 import cn.danielw.fop.ObjectFactory;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -177,7 +178,7 @@ public class MessageSender implements Closeable {
         log.info( "custom status = {}", statusMap );
 
         log.debug( "creating connection pool {}", poolSize );
-        connectionPool = new Pool<>( poolSize, new ObjectFactory<Connection>() {
+        connectionPool = new Pool<>( poolSize, new ObjectFactory<>() {
             @Override
             public Connection create() {
                 return new Connection();
@@ -288,7 +289,7 @@ public class MessageSender implements Closeable {
         if( closed ) return this;
 
         var sends = new ArrayList<CompletableFuture<?>>();
-        for( var message : messages ) {
+        for( var message : Iterables.limit( messages, poolSize - 1 ) ) {
             log.trace( "msg type = {}", message.messageType & 0xFF );
 
             if( closed ) break;
