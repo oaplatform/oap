@@ -193,6 +193,9 @@ public class MessageServerTest extends Fixtures {
                     .send( MESSAGE_TYPE, "124", ofJson() )
                     .send( MESSAGE_TYPE, "124", ofJson() )
                     .send( MESSAGE_TYPE, "123", ofJson() )
+                    .syncMemory()
+                    .syncMemory()
+                    .syncMemory()
                     .syncMemory();
 
                 assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );

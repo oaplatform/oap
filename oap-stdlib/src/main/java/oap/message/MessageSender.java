@@ -289,7 +289,7 @@ public class MessageSender implements Closeable {
         if( closed ) return this;
 
         var sends = new ArrayList<CompletableFuture<?>>();
-        for( var message : Iterables.limit( messages, poolSize - 1 ) ) {
+        for( var message : Iterables.limit( messages, poolSize ) ) {
             log.trace( "msg type = {}", message.messageType & 0xFF );
 
             if( closed ) break;
