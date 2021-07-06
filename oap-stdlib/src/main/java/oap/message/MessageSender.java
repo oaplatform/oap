@@ -367,6 +367,10 @@ public class MessageSender implements Closeable {
         return this;
     }
 
+    public void clear() {
+        messages.clear();
+    }
+
     private static final class Message {
         public final ByteSequence md5;
         public final byte messageType;
@@ -440,6 +444,10 @@ public class MessageSender implements Closeable {
                     throw new IllegalStateException();
                 }
             };
+        }
+
+        public void clear() {
+            map.clear();
         }
     }
 
