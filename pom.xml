@@ -42,7 +42,6 @@
         <module>oap-stdlib</module>
         <module>oap-template</module>
         <module>oap-alert-slack</module>
-        <module>oap-zabbix</module>
         <module>oap-fs</module>
         <module>oap-jpath</module>
         <module>maven</module>
@@ -60,7 +59,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>9.11.14</oap.project.version>
+        <oap.project.version>9.12.0</oap.project.version>
 
 
         <oap.deps.testng.version>7.4.0</oap.deps.testng.version>
