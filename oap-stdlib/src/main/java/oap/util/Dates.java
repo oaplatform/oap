@@ -23,6 +23,7 @@
  */
 package oap.util;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
@@ -32,6 +33,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.joda.time.format.ISODateTimeFormat;
+import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
 public class Dates {
@@ -47,16 +49,21 @@ public class Dates {
     public static final DateTimeFormatter FORMAT_DATE = DateTimeFormat
         .forPattern( "yyyy-MM-dd" )
         .withZoneUTC();
-
+    public static final PeriodFormatter DURATION_FORMATTER = new PeriodFormatterBuilder()
+        .appendWeeks().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "week", "weeks", "w" } ).appendSeparator( " " )
+        .appendDays().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "day", "days", "d" } ).appendSeparator( " " )
+        .appendHours().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "hour", "hours", "h" } ).appendSeparator( " " )
+        .appendMinutes().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "minute", "minutes", "m" } ).appendSeparator( " " )
+        .appendSeconds().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "second", "seconds", "s" } ).appendSeparator( " " )
+        .appendMillis().appendSuffix( "ms" )
+        .toFormatter();
     private static final DateTimeParser TIMEZONE_PARSER = DateTimeFormat.forPattern( "Z" ).getParser();
-
     private static final DateTimeParser FRACTION_PARSER =
         new DateTimeFormatterBuilder()
             .appendLiteral( '.' )
             .appendFractionOfSecond( 3, 9 )
             .appendOptional( TIMEZONE_PARSER )
             .toParser();
-
     public static final DateTimeFormatter PARSER_FULL = new DateTimeFormatterBuilder()
         .append( ISODateTimeFormat.date() )
         .appendLiteral( "T" )
@@ -163,14 +170,14 @@ public class Dates {
 
     public static String durationToString( long duration ) {
         var d = Duration.standardSeconds( duration / 1000 ).plus( duration % 1000 );
-        var formatter = new PeriodFormatterBuilder()
-            .appendWeeks().appendSuffix( "w" ).appendSeparator( " " )
-            .appendDays().appendSuffix( "d" ).appendSeparator( " " )
-            .appendHours().appendSuffix( "h" ).appendSeparator( " " )
-            .appendMinutes().appendSuffix( "m" ).appendSeparator( " " )
-            .appendSecondsWithOptionalMillis().appendSuffix( "s" )
-            .toFormatter();
-        return formatter.print( d.toPeriod().normalizedStandard() );
+        return DURATION_FORMATTER.print( d.toPeriod().normalizedStandard() );
+    }
+
+    public static long stringToDuration( String periodStr ) throws IllegalArgumentException {
+        if( NumberUtils.isDigits( periodStr ) ) return Long.parseLong( periodStr );
+
+        var period = DURATION_FORMATTER.parsePeriod( periodStr );
+        return period.toStandardDuration().getMillis();
     }
 
     public static double nanosToSeconds( long ns ) {

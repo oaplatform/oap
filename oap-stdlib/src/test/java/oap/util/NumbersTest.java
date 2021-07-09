@@ -39,4 +39,10 @@ public class NumbersTest {
             .isThrownBy( () -> Numbers.parseLongWithUnits( "1aaa" ) )
             .withMessage( "1aaa" );
     }
+
+    @Test
+    public void testParseDoubleWithPercent() {
+        assertThat( Numbers.parseDoubleWithUnits( "1%" ) ).isEqualTo( 0.01d );
+        assertThat( Numbers.parseDoubleWithUnits( "200%" ) ).isEqualTo( 2d );
+    }
 }

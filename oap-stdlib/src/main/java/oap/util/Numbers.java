@@ -27,71 +27,58 @@ public final class Numbers {
     private Numbers() {
     }
 
-    public static long parseLongWithUnits( String value ) {
+    public static long parseLongWithUnits( String value ) throws NumberFormatException {
+        try {
+            return Dates.stringToDuration( value );
+        } catch( IllegalArgumentException e ) {
+            if( value != null ) {
+                var v = value.trim();
+                var unit = new StringBuilder();
+                var number = new StringBuilder();
+                var negative = false;
+                var stillNumber = true;
+                for( var i = 0; i < v.length(); i++ ) {
+                    var c = value.charAt( i );
+                    if( c == '-' && i == 0 ) {
+                        negative = true;
+                        continue;
+                    }
+                    if( Character.isDigit( c ) && stillNumber ) number.append( c );
+                    else {
+                        stillNumber = false;
+                        unit.append( c );
+                    }
+                }
+                var strNumber = number.toString();
+                long res = switch( unit.toString().trim().toLowerCase() ) {
+                    case "kb" -> Long.parseLong( strNumber ) * 1024;
+                    case "mb" -> Long.parseLong( strNumber ) * 1024 * 1024;
+                    case "gb" -> Long.parseLong( strNumber ) * 1024 * 1024 * 1024;
+                    case "ms", "" -> Long.parseLong( strNumber );
+                    case "s", "second", "seconds" -> Long.parseLong( strNumber ) * 1000;
+                    case "m", "minute", "minutes" -> Long.parseLong( strNumber ) * 1000 * 60;
+                    case "h", "hour", "hours" -> Long.parseLong( strNumber ) * 1000 * 60 * 60;
+                    case "d", "day", "days" -> Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24;
+                    case "w", "week", "weeks" -> Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24 * 7;
+                    default -> throw new NumberFormatException( value );
+                };
+
+                return negative ? -res : res;
+            }
+        }
+
+        throw new NumberFormatException( "value is null" );
+    }
+
+    public static double parseDoubleWithUnits( String value ) throws NumberFormatException {
         if( value != null ) {
             var v = value.trim();
-            var unit = new StringBuilder();
-            var number = new StringBuilder();
-            var negative = false;
-            var stillNumber = true;
-            for( var i = 0; i < v.length(); i++ ) {
-                var c = value.charAt( i );
-                if( c == '-' && i == 0 ) {
-                    negative = true;
-                    continue;
-                }
-                if( Character.isDigit( c ) && stillNumber ) number.append( c );
-                else {
-                    stillNumber = false;
-                    unit.append( c );
-                }
-            }
-            var strNumber = number.toString();
-            long res;
-            switch( unit.toString().trim().toLowerCase() ) {
-                case "kb":
-                    res = Long.parseLong( strNumber ) * 1024;
-                    break;
-                case "mb":
-                    res = Long.parseLong( strNumber ) * 1024 * 1024;
-                    break;
-                case "gb":
-                    res = Long.parseLong( strNumber ) * 1024 * 1024 * 1024;
-                    break;
-                case "ms":
-                case "":
-                    res = Long.parseLong( strNumber );
-                    break;
-                case "s":
-                case "second":
-                case "seconds":
-                    res = Long.parseLong( strNumber ) * 1000;
-                    break;
-                case "m":
-                case "minute":
-                case "minutes":
-                    res = Long.parseLong( strNumber ) * 1000 * 60;
-                    break;
-                case "h":
-                case "hour":
-                case "hours":
-                    res = Long.parseLong( strNumber ) * 1000 * 60 * 60;
-                    break;
-                case "d":
-                case "day":
-                case "days":
-                    res = Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24;
-                    break;
-                case "w":
-                case "week":
-                case "weeks":
-                    res = Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24 * 7;
-                    break;
-                default:
-                    throw new NumberFormatException( value );
+
+            if( v.endsWith( "%" ) ) {
+                return Double.parseDouble( v.substring( 0, v.length() - 1 ) ) / 100.0;
             }
 
-            return negative ? -res : res;
+            return Double.parseDouble( v );
         }
         throw new NumberFormatException( "value is null" );
     }

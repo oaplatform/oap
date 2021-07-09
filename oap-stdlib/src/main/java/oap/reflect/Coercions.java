@@ -228,7 +228,7 @@ public final class Coercions {
         public Object apply( Object value ) {
             if( value instanceof Number ) return ( ( Number ) value ).doubleValue();
             else if( value instanceof String ) try {
-                return Double.parseDouble( ( String ) value );
+                return Numbers.parseDoubleWithUnits( ( String ) value );
             } catch( NumberFormatException e ) {
                 throw new ReflectException( "cannot cast " + value + " to Double.class" );
             }

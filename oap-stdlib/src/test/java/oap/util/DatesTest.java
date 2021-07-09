@@ -62,15 +62,23 @@ public class DatesTest extends Fixtures {
 
     @Test
     public void testDurationToString() {
-        assertThat( Dates.durationToString( 1 ) ).isEqualTo( "0.001s" );
+        assertThat( Dates.durationToString( 1 ) ).isEqualTo( "1ms" );
         assertThat( Dates.durationToString( 1000 ) ).isEqualTo( "1s" );
-        assertThat( Dates.durationToString( 1001 ) ).isEqualTo( "1.001s" );
-        assertThat( Dates.durationToString( m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "2m 4.567s" );
-        assertThat( Dates.durationToString( h( 4 ) + m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "4h 2m 4.567s" );
-        assertThat( Dates.durationToString( d( 6 ) + h( 4 ) + m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "6d 4h 2m 4.567s" );
+        assertThat( Dates.durationToString( 1001 ) ).isEqualTo( "1s 1ms" );
+        assertThat( Dates.durationToString( m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "2m 4s 567ms" );
+        assertThat( Dates.durationToString( h( 4 ) + m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "4h 2m 4s 567ms" );
+        assertThat( Dates.durationToString( d( 6 ) + h( 4 ) + m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "6d 4h 2m 4s 567ms" );
         assertThat( Dates.durationToString( w( 4 ) + d( 6 ) + h( 4 ) + m( 2 ) + s( 4 ) + 567 ) )
-            .isEqualTo( "4w 6d 4h 2m 4.567s" );
+            .isEqualTo( "4w 6d 4h 2m 4s 567ms" );
 
         assertThat( Dates.durationToString( w( 1 ) + m( 5 ) ) ).isEqualTo( "1w 5m" );
+    }
+
+    @Test
+    public void testStringToDuration() {
+        assertThat( Dates.stringToDuration( "1" ) ).isEqualTo( 1L );
+        assertThat( Dates.stringToDuration( "1m" ) ).isEqualTo( Dates.m( 1 ) );
+        assertThat( Dates.stringToDuration( "1m 10s" ) ).isEqualTo( Dates.m( 1 ) + Dates.s( 10 ) );
+
     }
 }
