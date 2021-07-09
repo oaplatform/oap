@@ -317,6 +317,38 @@ public class KernelTest {
         }
     }
 
+    @Test
+    public void testBeanFromString() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "beanFromString.conf" ) )
+        );
+        try {
+            kernel.start( Map.of( "boot.main", "beanFromString" ) );
+            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            assertThat( s3.name ).isEqualTo( "a" );
+            assertThat( s3.service3 ).isNotNull();
+            assertThat( s3.service3.name ).isEqualTo( "b" );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testBeanFromResourcePath() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "beanFromResourcePath.conf" ) )
+        );
+        try {
+            kernel.start( Map.of( "boot.main", "beanFromResourcePath" ) );
+            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            assertThat( s3.name ).isEqualTo( "a" );
+            assertThat( s3.service3 ).isNotNull();
+            assertThat( s3.service3.name ).isEqualTo( "from resource" );
+        } finally {
+            kernel.stop();
+        }
+    }
+
     public enum Enum {
         ONE, TWO
     }
@@ -336,6 +368,21 @@ public class KernelTest {
 
         public Service2( String val ) {
             this.val = val;
+        }
+    }
+
+    @ToString
+    public static class Service3 {
+        public Service3 service3;
+        public String name;
+
+        public Service3( String name ) {
+            this.name = name;
+        }
+
+        public Service3( String name, Service3 service3 ) {
+            this.name = name;
+            this.service3 = service3;
         }
     }
 

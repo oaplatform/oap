@@ -43,7 +43,8 @@ import java.util.Map;
 @ToString
 public class Module {
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
-    public static final Coercions coersions = Coercions.basic().withIdentity();
+    public static final Coercions coersions = Coercions.basic().withStringToObject().withIdentity();
+
     @JsonDeserialize( contentUsing = ModuleDependsDeserializer.class )
     public final LinkedHashSet<Depends> dependsOn = new LinkedHashSet<>();
     @JsonAlias( { "service", "services" } )

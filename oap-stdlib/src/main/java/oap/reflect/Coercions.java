@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import oap.json.Binder;
 import oap.util.BiStream;
 import oap.util.BitSet;
 import oap.util.Dates;
@@ -175,6 +176,10 @@ public final class Coercions {
         return with( ( r, v ) -> test.test( r ), coersion );
     }
 
+    public Coercions withStringToObject() {
+        return with( ( r, v ) -> v instanceof String, ( r, value ) -> Binder.hocon.unmarshalFromAny( r.underlying, value ) );
+    }
+
     public Coercions withIdentity() {
         return with( ( r, v ) -> true, ( r, value ) -> value );
     }
@@ -313,6 +318,7 @@ public final class Coercions {
             if( value instanceof URL ) return value;
             else if( value instanceof String ) {
                 try {
+
                     return new URL( ( String ) value );
                 } catch( MalformedURLException e ) {
                     var url = getClass().getResource( ( String ) value );
