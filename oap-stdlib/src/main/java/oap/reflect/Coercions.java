@@ -147,7 +147,7 @@ public final class Coercions {
         return new Coercions();
     }
 
-    public Object cast( Reflection target, Object value ) {
+    public Object cast( Reflection target, Object value ) throws ReflectException {
         if( value == null ) return null;
         try {
             if( target.assignableFrom( value.getClass() )

@@ -129,6 +129,14 @@ public class BinderTest extends Fixtures {
     }
 
     @Test
+    public void testUnmarshalFromAny() {
+        assertThat( Binder.hocon.unmarshalFromAny( Bean.class, "{l = 1s}" ) ).isEqualTo( new Bean( 1000L ) );
+        assertThat( Binder.hocon.unmarshalFromAny( Bean.class, "{\"l\": \"1s\"}" ) ).isEqualTo( new Bean( 1000L ) );
+        assertThat( Binder.hocon.unmarshalFromAny( Bean.class, Map.of( "l", 1000L ) ) ).isEqualTo( new Bean( 1000L ) );
+        assertThat( Binder.hocon.unmarshalFromAny( Bean.class, "/oap/json/BinderTest/bean.conf" ) ).isEqualTo( new Bean( 1000L ) );
+    }
+
+    @Test
     public void bindString() {
         assertBind( String.class, "test" );
         assertThat( Binder.json.unmarshal( String.class, "\"test\"" ) ).isEqualTo( "test" );
@@ -324,6 +332,10 @@ class Bean {
     public Bean2 sb2;
 
     Bean() {
+    }
+
+    Bean( long l ) {
+        this.l = l;
     }
 
     Bean( String str, int i, Bean2 sb2 ) {
