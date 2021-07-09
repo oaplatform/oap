@@ -74,6 +74,7 @@ public final class Numbers {
         if( value != null ) {
             var v = value.trim();
 
+            if( v.equals( "∞" ) ) return Double.POSITIVE_INFINITY;
             if( v.endsWith( "%" ) ) {
                 return Double.parseDouble( v.substring( 0, v.length() - 1 ) ) / 100.0;
             }

@@ -42,6 +42,7 @@ public class NumbersTest {
 
     @Test
     public void testParseDoubleWithPercent() {
+        assertThat( Numbers.parseDoubleWithUnits( "∞" ) ).isEqualTo( Double.POSITIVE_INFINITY );
         assertThat( Numbers.parseDoubleWithUnits( "1%" ) ).isEqualTo( 0.01d );
         assertThat( Numbers.parseDoubleWithUnits( "200%" ) ).isEqualTo( 2d );
     }
