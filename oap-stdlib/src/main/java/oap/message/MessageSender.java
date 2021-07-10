@@ -356,6 +356,8 @@ public class MessageSender implements Closeable {
                     } ) ) );
                 } catch( Exception e ) {
                     LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
+
+                    Files.delete( lockFile );
                 }
             }
         }
