@@ -76,9 +76,11 @@ import static oap.message.MessageProtocol.EOF_MESSAGE_TYPE;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
+import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR_NO_RETRY;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
 import static oap.message.MessageStatus.ALREADY_WRITTEN;
 import static oap.message.MessageStatus.ERROR;
+import static oap.message.MessageStatus.ERROR_NO_RETRY;
 import static oap.message.MessageStatus.OK;
 import static oap.util.Dates.durationToString;
 import static oap.util.Pair.__;
@@ -140,7 +142,7 @@ public class MessageSender implements Closeable {
     private static String getServerStatus( short status ) {
         return switch( status ) {
             case MessageProtocol.STATUS_OK -> "OK";
-            case STATUS_UNKNOWN_ERROR -> "UNKNOWN_ERROR";
+            case STATUS_UNKNOWN_ERROR, STATUS_UNKNOWN_ERROR_NO_RETRY -> "UNKNOWN_ERROR";
             case STATUS_ALREADY_WRITTEN -> "ALREADY_WRITTEN";
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
             default -> {
@@ -351,8 +353,11 @@ public class MessageSender implements Closeable {
                     var msg = new Message( clientId, messageType, md5, data );
 
                     sends.add( connectionPool.run( Try.consume( connection -> {
-                        if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
-                        Files.delete( lockFile );
+                        try {
+                            if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
+                        } finally {
+                            Files.delete( lockFile );
+                        }
                     } ) ) );
                 } catch( Exception e ) {
                     LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
@@ -511,11 +516,17 @@ public class MessageSender implements Closeable {
                             lastStatus.put( message.messageType, __( ERROR, status ) );
                             return ERROR;
                         }
+                        case STATUS_UNKNOWN_ERROR_NO_RETRY -> {
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error_no_retry" ).increment();
+                            log.error( "unknown error -> no retry" );
+                            lastStatus.put( message.messageType, __( ERROR, status ) );
+                            return ERROR_NO_RETRY;
+                        }
                         case STATUS_UNKNOWN_MESSAGE_TYPE -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
                             log.error( "unknown message type: {}", status );
                             lastStatus.put( message.messageType, __( ERROR, status ) );
-                            return ERROR;
+                            return ERROR_NO_RETRY;
                         }
                         default -> {
                             var clientStatus = statusMap.get( status );

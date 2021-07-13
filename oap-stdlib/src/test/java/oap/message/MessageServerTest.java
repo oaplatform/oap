@@ -177,7 +177,6 @@ public class MessageServerTest extends Fixtures {
         }
     }
 
-    @SneakyThrows
     @Test
     public void sendAndReceiveJsonOneThread() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -204,6 +203,32 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
+    public void unknownErrorNoRetry() {
+        var listener = new MessageListenerMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+            server.start();
+
+            MessageSender client;
+            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
+            try {
+                client.start();
+
+                listener.throwUnknownError( Integer.MAX_VALUE, true );
+                client.send( MESSAGE_TYPE, "123", ofString() );
+
+                assertEventually( 100, 10, () ->
+                    assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L )
+                );
+
+                assertThat( listener.getMessages() ).isEmpty();
+            } finally {
+                client.close();
+            }
+            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
+        }
+    }
+
+    @Test
     public void unknownError() {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
@@ -214,14 +239,14 @@ public class MessageServerTest extends Fixtures {
             try {
                 client.start();
 
-                listener.throwUnknownError( 200000000 );
+                listener.throwUnknownError( 200000000, false );
                 client.send( MESSAGE_TYPE, "123", ofString() );
 
                 while( listener.throwUnknownError > 200000000 - 10 )
                     Threads.sleepSafely( 10 );
                 assertThat( listener.getMessages() ).isEmpty();
 
-                listener.throwUnknownError( 2 );
+                listener.throwUnknownError( 2, false );
                 while( listener.throwUnknownError > 0 )
                     Threads.sleepSafely( 10 );
 
@@ -347,7 +372,7 @@ public class MessageServerTest extends Fixtures {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
-            listener.throwUnknownError( 1 );
+            listener.throwUnknownError( 1, false );
 
             MessageSender client;
 

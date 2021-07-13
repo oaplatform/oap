@@ -46,7 +46,7 @@ import static oap.message.MessageProtocol.MD5_LENGTH;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
 import static oap.message.MessageProtocol.STATUS_OK;
-import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
+import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR_NO_RETRY;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
 
 /**
@@ -142,21 +142,22 @@ public class MessageHandler implements Runnable, Closeable {
                         in.skipNBytes( size );
                         writeResponse( out, STATUS_UNKNOWN_MESSAGE_TYPE, clientId, md5 );
                     } else {
+                        var data = in.readNBytes( size );
+                        short status;
                         try {
-                            var data = in.readNBytes( size );
-                            var status = listener.run( messageVersion, hostName, size, data );
-                            writeResponse( out, status, clientId, md5 );
-                            if( status == STATUS_OK ) {
-                                Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
-                                control.add( messageType, clientId, md5 );
-                            } else
-                                log.trace( "WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
-                                hostName, clientId, Hex.encodeHexString( md5 ), MessageProtocol.statusToString( status ) );
+                            status = listener.run( messageVersion, hostName, size, data );
                         } catch( Exception e ) {
                             log.error( "[" + hostName + "] " + e.getMessage(), e );
-                            writeResponse( out, STATUS_UNKNOWN_ERROR, clientId, md5 );
+                            writeResponse( out, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                             break;
                         }
+                        writeResponse( out, status, clientId, md5 );
+                        if( status == STATUS_OK ) {
+                            Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
+                            control.add( messageType, clientId, md5 );
+                        } else
+                            log.trace( "WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
+                                hostName, clientId, Hex.encodeHexString( md5 ), MessageProtocol.statusToString( status ) );
                     }
                 } else {
                     log.warn( "[{}/{}] buffer ({}, {}) already written.)", hostName, clientId, Hex.encodeHexString( md5 ), size );

@@ -25,5 +25,5 @@
 package oap.message;
 
 public enum MessageStatus {
-    OK, ERROR, ALREADY_WRITTEN
+    OK, ERROR, ERROR_NO_RETRY, ALREADY_WRITTEN
 }

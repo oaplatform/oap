@@ -42,6 +42,7 @@ public class MessageListenerMock implements MessageListener {
     private final byte messageType;
     public int throwUnknownError = 0;
     public short status = MessageProtocol.STATUS_OK;
+    public boolean noRetry = false;
 
     public MessageListenerMock( byte messageType ) {
         this( "mock-message-listener-", messageType );
@@ -67,7 +68,10 @@ public class MessageListenerMock implements MessageListener {
         accessCount.incrementAndGet();
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
-            throw new RuntimeException( "unknown error" );
+            if( noRetry )
+                throw new RuntimeException( "unknown error" );
+            else
+                return MessageProtocol.STATUS_UNKNOWN_ERROR;
         }
 
         if( status == MessageProtocol.STATUS_OK )
@@ -80,8 +84,9 @@ public class MessageListenerMock implements MessageListener {
         return messages;
     }
 
-    public void throwUnknownError( int count ) {
+    public void throwUnknownError( int count, boolean noRetry ) {
         throwUnknownError = count;
+        this.noRetry = noRetry;
     }
 
     public void setStatusOk() {
