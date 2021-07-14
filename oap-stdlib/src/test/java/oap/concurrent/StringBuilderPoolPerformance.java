@@ -40,7 +40,7 @@ public class StringBuilderPoolPerformance {
             for( var i1 = 0; i1 < THREADS; i1++ ) {
                 threads[i1] = new Thread( () -> {
                     for( var i = 0; i < ITERATIONS; i++ ) {
-                        try( var sbp1 = StringBuilderPool.borrowObject() ) {
+                        try( var sbp1 = StringBuilderPool.borrowObject( true ) ) {
                             sbp1.getObject().append( "test" );
                         }
                     }

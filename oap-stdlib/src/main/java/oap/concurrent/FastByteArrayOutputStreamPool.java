@@ -29,7 +29,6 @@ import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
 import io.micrometer.core.instrument.Metrics;
-import lombok.SneakyThrows;
 import oap.util.FastByteArrayOutputStream;
 import org.apache.commons.configuration2.EnvironmentConfiguration;
 
@@ -84,7 +83,10 @@ public final class FastByteArrayOutputStreamPool {
     private FastByteArrayOutputStreamPool() {
     }
 
-    @SneakyThrows
+    public static Poolable<FastByteArrayOutputStream> borrowObject( boolean blocking ) {
+        return pool.borrowObject( blocking );
+    }
+
     public static Poolable<FastByteArrayOutputStream> borrowObject() {
         return pool.borrowObject();
     }

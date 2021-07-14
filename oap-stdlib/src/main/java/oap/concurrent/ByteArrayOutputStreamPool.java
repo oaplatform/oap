@@ -28,7 +28,6 @@ import cn.danielw.fop.DisruptorObjectPool;
 import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
-import lombok.SneakyThrows;
 import org.apache.commons.configuration2.EnvironmentConfiguration;
 
 import java.io.ByteArrayOutputStream;
@@ -76,7 +75,10 @@ public final class ByteArrayOutputStreamPool {
     private ByteArrayOutputStreamPool() {
     }
 
-    @SneakyThrows
+    public static Poolable<ByteArrayOutputStream> borrowObject( boolean blocking ) {
+        return pool.borrowObject( blocking );
+    }
+
     public static Poolable<ByteArrayOutputStream> borrowObject() {
         return pool.borrowObject();
     }

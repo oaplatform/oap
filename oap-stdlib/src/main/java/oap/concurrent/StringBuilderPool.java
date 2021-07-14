@@ -29,7 +29,6 @@ import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
 import io.micrometer.core.instrument.Metrics;
-import lombok.SneakyThrows;
 import org.apache.commons.configuration2.EnvironmentConfiguration;
 
 /**
@@ -83,7 +82,10 @@ public final class StringBuilderPool {
     private StringBuilderPool() {
     }
 
-    @SneakyThrows
+    public static Poolable<StringBuilder> borrowObject( boolean blocking ) {
+        return pool.borrowObject( blocking );
+    }
+
     public static Poolable<StringBuilder> borrowObject() {
         return pool.borrowObject();
     }
