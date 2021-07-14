@@ -96,9 +96,17 @@ public class MemoryClassLoaderJava extends ClassLoader {
             if( task.call() ) {
                 if( diskCache != null ) {
                     for( var source : list ) {
-                        oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
-                        var bytes = manager.map.get( source.originalName ).toByteArray();
-                        oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
+                        var javaFile = diskCache.resolve( source.originalName + ".java" );
+                        var classFile = diskCache.resolve( source.originalName + ".class" );
+
+                        try {
+                            oap.io.Files.writeString( javaFile, source.content );
+                            var bytes = manager.map.get( source.originalName ).toByteArray();
+                            oap.io.Files.write( classFile, bytes );
+                        } catch( Exception e ) {
+                            oap.io.Files.delete( javaFile );
+                            oap.io.Files.delete( classFile );
+                        }
                     }
                 }
                 if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
