@@ -110,6 +110,7 @@ public class MessageSender implements Closeable {
     private final String host;
     private final int port;
     private final Path directory;
+    private final MessageNoRetryStrategy messageNoRetryStrategy;
     private final long clientId = Cuid.UNIQUE.nextLong();
     private final Messages messages = new Messages();
     private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
@@ -129,10 +130,15 @@ public class MessageSender implements Closeable {
     private boolean networkAvailable = true;
 
     public MessageSender( TimeService timeService, String host, int port, Path directory ) {
+        this( timeService, host, port, directory, MessageNoRetryStrategy.DROP );
+    }
+
+    public MessageSender( TimeService timeService, String host, int port, Path directory, MessageNoRetryStrategy messageNoRetryStrategy ) {
         this.timeService = timeService;
         this.host = host;
         this.port = port;
         this.directory = directory;
+        this.messageNoRetryStrategy = messageNoRetryStrategy;
 
         Metrics.gauge( "message_memory_current_bytes", Tags.of( "host", host, "port", String.valueOf( port ) ), this, MessageSender::getMessagesMemorySize );
         Metrics.gauge( "message_memory_limit_bytes", Tags.of( "host", host, "port", String.valueOf( port ) ), this, ms -> ms.messagesLimitBytes );
@@ -304,7 +310,11 @@ public class MessageSender implements Closeable {
                     ex = null;
                     try {
                         var status = connection.write( message );
-                        if( status != ERROR ) messages.remove( message.md5 );
+                        if( status != ERROR ) {
+                            if( status == ERROR_NO_RETRY ) messageNoRetryStrategy.message( message.messageType, message.clientId, message.data );
+
+                            messages.remove( message.md5 );
+                        }
                     } catch( Exception e ) {
                         ex = e;
                         counter.incrementAndGet();
@@ -350,11 +360,16 @@ public class MessageSender implements Closeable {
 
                     log.debug( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
 
-                    var msg = new Message( clientId, messageType, md5, data );
+                    var message = new Message( clientId, messageType, md5, data );
 
                     sends.add( connectionPool.run( Try.consume( connection -> {
                         try {
-                            if( connection.write( msg ) != ERROR ) Files.delete( msgFile );
+                            MessageStatus status;
+                            if( ( status = connection.write( message ) ) != ERROR ) {
+                                if( status == ERROR_NO_RETRY ) messageNoRetryStrategy.message( message.messageType, message.clientId, message.data );
+
+                                Files.delete( msgFile );
+                            }
                         } finally {
                             Files.delete( lockFile );
                         }
