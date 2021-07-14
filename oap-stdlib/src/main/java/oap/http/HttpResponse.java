@@ -147,6 +147,11 @@ public final class HttpResponse {
             .withEntity( new ByteArrayEntity( bytes, contentType ) );
     }
 
+    public static Builder bytes( byte[] bytes, int off, int len, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new ByteArrayEntity( bytes, off, len, contentType ) );
+    }
+
     public static Builder status( int code, String reason ) {
         return status( code )
             .withReason( Strings.removeControl( reason ) );
