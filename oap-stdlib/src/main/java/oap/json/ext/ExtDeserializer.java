@@ -50,7 +50,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
 
     static {
         try {
-            for( var p : Resources.readStrings( "META-INF/json-ext.yaml" ) ) {
+            for( var p : Resources.readStrings( "META-INF/json-ext.conf" ) ) {
                 log.trace( "mapping ext {}", p );
 
                 var mapper = new ObjectMapper( new YAMLFactory() );
