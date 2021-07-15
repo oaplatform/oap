@@ -29,15 +29,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
+import oap.json.ClassDeserializer;
+import oap.json.JsonException;
 import oap.json.ext.ExtDeserializer.Configuration.ClassConfiguration;
-import oap.util.Throwables;
+import oap.util.Lists;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,13 +54,19 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
 
     static {
         try {
-            for( var p : Resources.readStrings( "META-INF/json-ext.conf" ) ) {
+            var list = Lists.concat(
+                Resources.urls( "META-INF/json-ext.conf" ),
+                Resources.urls( "META-INF/json-ext.yaml" ) );
+
+            for( var p : list ) {
                 log.trace( "mapping ext {}", p );
 
-                var mapper = new ObjectMapper( new YAMLFactory() );
+                var mapper = new ObjectMapper( p.toString().endsWith( "yaml" ) ? new YAMLFactory() : new HoconFactory() );
                 mapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
                 mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
+
                 var conf = mapper.readValue( p, Configuration.class );
+
                 for( var cc : conf.ext ) {
                     String key = extensionKey( cc.clazz, cc.field );
                     extmap.put( key, cc );
@@ -64,11 +74,10 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
                     log.debug( "add ext rule: {} = {}", key, cc.implementation );
                 }
             }
-            log.trace( "mapped extensions: {}", extmap );
         } catch( IOException e ) {
-            log.error( e.getMessage(), e );
-            throw Throwables.propagate( e );
+            throw new JsonException( e );
         }
+        log.trace( "mapped extensions: {}", extmap );
     }
 
     protected ExtDeserializer() {
@@ -121,16 +130,18 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
 
     @ToString
     public static class Configuration {
-
         public final ArrayList<ClassConfiguration> ext = new ArrayList<>();
 
         @ToString
         public static class ClassConfiguration {
             @JsonProperty( "class" )
+            @JsonDeserialize( using = ClassDeserializer.class )
             public Class<?> clazz;
             public String field;
+            @JsonDeserialize( using = ClassDeserializer.class )
             public Class<?> implementation;
             @JsonProperty( "abstract" )
+            @JsonDeserialize( using = ClassDeserializer.class )
             public Class<?> abstractClass = null;
         }
     }
