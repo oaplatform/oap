@@ -74,8 +74,8 @@ public final class Asserts {
     }
 
     @SneakyThrows
-    public static void assertEventually( long retryTimeout, int retries, oap.util.Try.ThrowingRunnable asserts ) {
-        eventually( retryTimeout, retries, asserts::run );
+    public static void assertEventually( long retryTimeout, int retries, oap.util.function.Try.ThrowingRunnable asserts ) {
+        eventually( retryTimeout, retries, asserts );
     }
 
     @Deprecated
