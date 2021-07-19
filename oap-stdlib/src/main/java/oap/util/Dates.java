@@ -149,7 +149,7 @@ public class Dates {
     }
 
     public static long s( int value ) {
-        return value * 1000;
+        return value * 1000L;
     }
 
     public static long m( int value ) {
@@ -169,6 +169,8 @@ public class Dates {
     }
 
     public static String durationToString( long duration ) {
+        if( duration == Long.MAX_VALUE ) return "infinity";
+
         var d = Duration.standardSeconds( duration / 1000 ).plus( duration % 1000 );
         return DURATION_FORMATTER.print( d.toPeriod().normalizedStandard() );
     }
