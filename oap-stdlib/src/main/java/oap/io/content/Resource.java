@@ -22,29 +22,31 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.io.content;
 
-import oap.io.content.Resource;
+import oap.io.Paths;
+import oap.io.Resources;
 
 import java.net.URL;
 import java.nio.file.Path;
 
-/**
- * use location directly
- *
- * @see Resource
- */
-@Deprecated
-public class Location extends Resource {
-    public Location( URL url ) {
-        super( url );
+public class Resource {
+    public final URL url;
+
+    public Resource( URL url ) {
+        this.url = url;
     }
 
-    public Location( Path path ) {
-        super( path );
+    public Resource( Path path ) {
+        this( Paths.toUrl( path ) );
     }
 
-    public Location( String resource ) {
-        super( resource );
+    public Resource( String resource ) {
+        this( Resources.url( Resource.class, resource )
+            .orElseThrow( () -> new IllegalArgumentException( "resource " + resource + " is not found" ) ) );
+    }
+
+    public <R> R read( ContentReader<R> reader ) {
+        return ContentReader.read( url, reader );
     }
 }
