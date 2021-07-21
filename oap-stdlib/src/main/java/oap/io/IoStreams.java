@@ -228,12 +228,24 @@ public class IoStreams {
         return in( path, encoding, DEFAULT_BUFFER );
     }
 
+    public static InputStream in( URL url, Encoding encoding ) throws UncheckedIOException {
+        return in( url, encoding, DEFAULT_BUFFER );
+    }
+
     public static InputStream in( Path path ) throws UncheckedIOException {
         return in( path, DEFAULT_BUFFER );
     }
 
+    public static InputStream in( URL url ) throws UncheckedIOException {
+        return in( url, DEFAULT_BUFFER );
+    }
+
     public static InputStream in( Path path, int bufferSIze ) throws UncheckedIOException {
         return in( path, Encoding.from( path ), bufferSIze );
+    }
+
+    public static InputStream in( URL url, int bufferSIze ) throws UncheckedIOException {
+        return in( url, Encoding.from( url ), bufferSIze );
     }
 
     public static InputStream in( Path path, Encoding encoding, int bufferSize ) throws UncheckedIOException {
@@ -242,7 +254,17 @@ public class IoStreams {
             return decoded(
                 bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
-            throw new UncheckedIOException( "couldn't open file " + path.toString(), e );
+            throw new UncheckedIOException( "couldn't open file " + path, e );
+        }
+    }
+
+    public static InputStream in( URL url, Encoding encoding, int bufferSize ) throws UncheckedIOException {
+        try {
+            var inputStream = url.openStream();
+            return decoded(
+                bufferSize > 0 ? new BufferedInputStream( inputStream, bufferSize ) : inputStream, encoding );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( "couldn't open file " + url, e );
         }
     }
 
