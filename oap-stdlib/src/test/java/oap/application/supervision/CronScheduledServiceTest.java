@@ -24,7 +24,7 @@
 
 package oap.application.supervision;
 
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
