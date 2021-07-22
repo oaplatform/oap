@@ -50,12 +50,12 @@ public class Pool<T> implements Closeable {
     private final DisruptorObjectPool<T> objectPool;
 
     public Pool( int size, ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
-        this( size, size, 1, MAX_WAIT_MILLISECONDS, MAX_IDLE_MILLISECONDS, 0, objectFactory, threadFactory );
+        this( size, size, 1, MAX_WAIT_MILLISECONDS, MAX_IDLE_MILLISECONDS, SCAVENGE_INTERVAL_MILLISECONDS, objectFactory, threadFactory );
     }
 
     public Pool( int minSize, int maxSize, int partitionSize, ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
         this( minSize, maxSize, partitionSize, MAX_WAIT_MILLISECONDS, MAX_IDLE_MILLISECONDS,
-            minSize == maxSize ? 0 : SCAVENGE_INTERVAL_MILLISECONDS, objectFactory, threadFactory );
+            SCAVENGE_INTERVAL_MILLISECONDS, objectFactory, threadFactory );
     }
 
     /**

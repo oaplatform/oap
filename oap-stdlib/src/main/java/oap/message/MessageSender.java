@@ -254,7 +254,7 @@ public class MessageSender implements Closeable {
         Closeables.close( memorySyncScheduler );
         Closeables.close( diskSyncScheduler );
 
-        connectionPool.shutdownNow();
+        if( connectionPool != null ) connectionPool.shutdownNow();
 
         saveMessagesToDirectory( directory );
     }
