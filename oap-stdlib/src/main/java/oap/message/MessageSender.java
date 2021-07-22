@@ -304,7 +304,7 @@ public class MessageSender implements Closeable {
 
             var counter = new AtomicInteger();
 
-            sends.add( connectionPool.run( connection -> {
+            CompletableFuture<Void> future = connectionPool.run( connection -> {
                 Exception ex;
                 do {
                     ex = null;
@@ -323,7 +323,11 @@ public class MessageSender implements Closeable {
                         LogConsolidated.log( log, Level.DEBUG, Dates.s( 5 ), e.getMessage(), e );
                     }
                 } while( ex instanceof SocketException && counter.get() < 10 );
-            } ) );
+            } );
+
+            if( future.isCompletedExceptionally() || future.isCancelled() ) continue;
+
+            sends.add( future );
         }
 
         CompletableFuture.allOf( sends.toArray( new CompletableFuture[0] ) ).get();
@@ -449,7 +453,7 @@ public class MessageSender implements Closeable {
         @Override
         @Nonnull
         public Iterator<Message> iterator() {
-            var it = map.values().iterator();
+            var it = new ArrayList<>( map.values() ).iterator();
             return new Iterator<>() {
                 @Override
                 public boolean hasNext() {

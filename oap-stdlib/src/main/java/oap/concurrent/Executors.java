@@ -94,7 +94,7 @@ public final class Executors {
             this.threadPoolExecutor = new ThreadPoolExecutor(
                 corePoolSize, maximumPoolSize,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
+                new SynchronousQueue<>(),
                 threadFactory );
         }
 
@@ -107,7 +107,7 @@ public final class Executors {
             this.threadPoolExecutor = new ThreadPoolExecutor(
                 corePoolSize, maximumPoolSize,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>() );
+                new SynchronousQueue<>() );
         }
 
         @Override

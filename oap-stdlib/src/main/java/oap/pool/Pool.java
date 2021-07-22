@@ -27,6 +27,7 @@ package oap.pool;
 import cn.danielw.fop.DisruptorObjectPool;
 import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
+import cn.danielw.fop.Poolable;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Executors;
 import oap.util.Dates;
@@ -82,26 +83,36 @@ public class Pool<T> implements Closeable {
     }
 
     public <R> CompletableFuture<R> supply( Function<T, R> func ) {
-        var obj = objectPool.borrowObject( true );
+        Poolable<T> obj;
+        try {
+            obj = objectPool.borrowObject( true );
+        } catch( Exception e ) {
+            return CompletableFuture.failedFuture( e );
+        }
         try {
             return CompletableFuture
                 .supplyAsync( () -> func.apply( obj.getObject() ), threadPool )
                 .whenComplete( ( r, e ) -> objectPool.returnObject( obj ) );
         } catch( Exception e ) {
             objectPool.returnObject( obj );
-            throw e;
+            return CompletableFuture.failedFuture( e );
         }
     }
 
     public CompletableFuture<Void> run( Consumer<T> func ) {
-        var obj = objectPool.borrowObject( true );
+        Poolable<T> obj;
+        try {
+            obj = objectPool.borrowObject( true );
+        } catch( Exception e ) {
+            return CompletableFuture.failedFuture( e );
+        }
         try {
             return CompletableFuture
                 .runAsync( () -> func.accept( obj.getObject() ), threadPool )
                 .whenComplete( ( r, e ) -> objectPool.returnObject( obj ) );
         } catch( Exception e ) {
             objectPool.returnObject( obj );
-            throw e;
+            return CompletableFuture.failedFuture( e );
         }
     }
 
