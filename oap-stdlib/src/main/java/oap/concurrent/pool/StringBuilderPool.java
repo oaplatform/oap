@@ -22,39 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.concurrent;
+package oap.concurrent.pool;
 
-import oap.benchmark.Benchmark;
-import org.testng.annotations.Test;
+import cn.danielw.fop.ObjectFactory;
 
-public class StringBuilderPoolPerformance {
-    private static final int THREADS = 64;
-    private static final int SAMPLES = 100;
-    private static final int ITERATIONS = 100;
+public final class StringBuilderPool extends AbstractObjectPool<StringBuilder, StringBuilderPool> {
+    private static final ObjectFactory<StringBuilder> OBJECT_FACTORY = new ObjectFactory<>() {
+        @Override
+        public StringBuilder create() {
+            return new StringBuilder();
+        }
 
-    @Test
-    public void test() {
-        var threads = new Thread[THREADS];
+        @Override
+        public void destroy( StringBuilder o ) {
+        }
 
-        Benchmark.benchmark( "FastObjectPool", SAMPLES, () -> {
-            for( var i1 = 0; i1 < THREADS; i1++ ) {
-                threads[i1] = new Thread( () -> {
-                    for( var i = 0; i < ITERATIONS; i++ ) {
-                        try( var sbp1 = StringBuilderPool.borrowObject( true ) ) {
-                            sbp1.getObject().append( "test" );
-                        }
-                    }
-                } );
-            }
-            for( var i1 = 0; i1 < THREADS; i1++ ) {
-                threads[i1].start();
-            }
-            for( var i1 = 0; i1 < THREADS; i1++ ) {
-                threads[i1].join();
-            }
-        } ).experiments( 5 ).run();
+        @Override
+        public boolean validate( StringBuilder o ) {
+            o.delete( 0, o.length() );
+            return true;
+        }
+    };
 
-        System.out.println( StringBuilderPool.getSize() );
+    public StringBuilderPool( int partitionSize, int poolMinSize, int poolMaxSize, long maxIdle, long maxWait ) {
+        super( OBJECT_FACTORY, partitionSize, poolMinSize, poolMaxSize, maxIdle, maxWait );
     }
-
 }
