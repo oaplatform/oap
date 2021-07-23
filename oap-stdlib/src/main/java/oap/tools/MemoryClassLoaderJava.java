@@ -24,6 +24,8 @@
 
 package oap.tools;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.content.ContentReader;
@@ -50,6 +52,10 @@ import java.util.Map;
 
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader {
+    private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
+    private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
+    private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
+
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final MemoryFileManager manager = new MemoryFileManager( compiler );
 
@@ -72,6 +78,8 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
                 oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
+
+                METRICS_DISK.increment();
             } else {
                 log.trace( "not found: {} -> {}", classname, sourceFile );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
@@ -94,6 +102,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
             var out = new StringWriter();
             var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
             if( task.call() ) {
+                METRICS_COMPILE.increment();
                 if( diskCache != null ) {
                     for( var source : list ) {
                         var javaFile = diskCache.resolve( source.originalName + ".java" );
@@ -111,6 +120,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 }
                 if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
             } else {
+                METRICS_ERROR.increment();
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
                         System.err.println( a );
