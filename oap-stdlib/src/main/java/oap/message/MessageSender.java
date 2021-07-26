@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
@@ -222,7 +223,7 @@ public class MessageSender implements Closeable {
     }
 
     @Deprecated
-    public synchronized MessageSender sendObject( byte messageType, byte[] data, int from, int length ) {
+    public MessageSender sendObject( byte messageType, byte[] data, int from, int length ) {
         return send( messageType, data, from, length );
     }
 
@@ -231,7 +232,7 @@ public class MessageSender implements Closeable {
         return send( messageType, bytes, 0, bytes.length );
     }
 
-    public synchronized MessageSender send( byte messageType, byte[] data, int offset, int length ) {
+    public MessageSender send( byte messageType, byte[] data, int offset, int length ) {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
@@ -292,7 +293,8 @@ public class MessageSender implements Closeable {
     }
 
     @SneakyThrows
-    public synchronized MessageSender syncMemory() {
+    @Synchronized( "SYNC_MEMORY_LOCK" )
+    public MessageSender syncMemory() {
         log.trace( "sync..." );
         if( closed ) return this;
 
@@ -336,6 +338,7 @@ public class MessageSender implements Closeable {
     }
 
     @SneakyThrows
+    @Synchronized( "SYNC_DISK_LOCK" )
     public synchronized MessageSender syncDisk() {
         if( closed ) return this;
 
