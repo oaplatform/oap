@@ -107,6 +107,8 @@ public class MessageSender implements Closeable {
         }
     }
 
+    private final Object syncMemoryLock = new Object();
+    private final Object syncDiskLock = new Object();
     private final TimeService timeService;
     private final String host;
     private final int port;
@@ -293,7 +295,7 @@ public class MessageSender implements Closeable {
     }
 
     @SneakyThrows
-    @Synchronized( "SYNC_MEMORY_LOCK" )
+    @Synchronized( "syncMemoryLock" )
     public MessageSender syncMemory() {
         log.trace( "sync..." );
         if( closed ) return this;
@@ -338,7 +340,7 @@ public class MessageSender implements Closeable {
     }
 
     @SneakyThrows
-    @Synchronized( "SYNC_DISK_LOCK" )
+    @Synchronized( "syncDiskLock" )
     public synchronized MessageSender syncDisk() {
         if( closed ) return this;
 
