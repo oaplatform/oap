@@ -88,7 +88,7 @@ public final class ApplicationConfiguration {
 
     public static ApplicationConfiguration load( URL appConfigPath, String confd ) {
         List<URL> confdUrls = getConfdUrls( Path.of( confd ) );
-        log.info( "global configurations: {}", confdUrls );
+        log.trace( "application configurations: {}, configs = {}", appConfigPath, confdUrls );
         return load( appConfigPath, confdUrls );
     }
 
