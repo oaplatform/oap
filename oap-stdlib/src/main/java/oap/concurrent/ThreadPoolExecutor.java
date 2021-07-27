@@ -67,4 +67,17 @@ public class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor 
         }
         if( throwable != null ) log.error( throwable.getMessage(), throwable );
     }
+
+    public static class AbortPolicy implements RejectedExecutionHandler {
+        @Override
+        public void rejectedExecution( Runnable r, java.util.concurrent.ThreadPoolExecutor executor ) {
+            throw new RejectedExecutionException();
+        }
+    }
+
+    public static class RejectedExecutionException extends RuntimeException {
+        public RejectedExecutionException() {
+            super( null, null, false, false );
+        }
+    }
 }
