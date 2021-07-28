@@ -68,7 +68,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -78,12 +77,19 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 @Slf4j
 public class ApacheHttpServer implements HttpServer, Closeable {
-    private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
+    private static final BasicHttpResponse TEMPORARY_OVERLOAD;
 
+    private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
     private static final Counter requestsCounter = Metrics.counter( "oap_http", "type", "requests" );
     private static final Counter handledCounter = Metrics.counter( "oap_http", "type", "handled" );
     private static final Counter rejectedCounter = Metrics.counter( "oap_http", "type", "rejected" );
     private static final Counter keepaliveTimeoutCounter = Metrics.counter( "oap_http", "type", "keepalive_timeout" );
+
+    static {
+        TEMPORARY_OVERLOAD = new BasicHttpResponse( HttpVersion.HTTP_1_1, HTTP_UNAVAILABLE, "temporary overload" );
+        TEMPORARY_OVERLOAD.setHeader( "Connection", "close" );
+
+    }
 
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
@@ -111,12 +117,12 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
-    private static ServerHttpContext createHttpContext( HttpServer httpServer, Socket socket, DefaultBHttpServerConnection connection ) {
+    private static ServerHttpContext createHttpContext( HttpServer httpServer, Socket socket, DefaultBHttpServerConnection connection, long timeNs ) {
         final Protocol protocol;
         if( !Inet.isLocalAddress( socket.getInetAddress() ) ) protocol = Protocol.LOCAL;
         else protocol = socket instanceof SSLSocket ? Protocol.HTTPS : Protocol.HTTP;
 
-        return new ServerHttpContext( httpServer, HttpCoreContext.create(), protocol, connection );
+        return new ServerHttpContext( httpServer, HttpCoreContext.create(), protocol, connection, timeNs );
     }
 
     public void start() {
@@ -143,10 +149,11 @@ public class ApacheHttpServer implements HttpServer, Closeable {
 
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS,
             workQueue,
-            new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
+            new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build(),
+            new ThreadPoolExecutor.AbortPolicy() );
 
         this.rejectedExecutor = new ThreadPoolExecutor( 0, workers,
-            10, TimeUnit.SECONDS, new SynchronousQueue<>(),
+            10, TimeUnit.SECONDS, new LinkedBlockingQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "http-rejected-%d" ).build() );
 
         if( registerStatic )
@@ -172,6 +179,8 @@ public class ApacheHttpServer implements HttpServer, Closeable {
 
     @SneakyThrows
     public void accepted( Socket socket ) {
+        var timeNs = System.nanoTime();
+
         socket.setSoTimeout( keepAliveTimeout );
         try {
             var connection = connectionFactory.createConnection( socket );
@@ -179,12 +188,13 @@ public class ApacheHttpServer implements HttpServer, Closeable {
 
             try {
                 executor.submit( () -> {
+                    boolean firstRequest = true;
                     try {
                         handledCounter.increment();
 
                         log.debug( "connection accepted: {}", connection );
 
-                        var httpContext = createHttpContext( this, socket, connection );
+                        var httpContext = createHttpContext( this, socket, connection, timeNs );
                         connections.put( connectionId, httpContext );
 
                         Thread.currentThread().setName( connection.toString() );
@@ -194,7 +204,12 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                             requestsCounter.increment();
                             activeCount.incrementAndGet();
                             try {
-                                httpService.handleRequest( connection, httpContext );
+                                ServerHttpContext httpContextWithStartTime;
+                                if( firstRequest ) {
+                                    httpContextWithStartTime = httpContext;
+                                    firstRequest = false;
+                                } else httpContextWithStartTime = httpContext.withCurrentTimeNs();
+                                httpService.handleRequest( connection, httpContextWithStartTime );
                             } finally {
                                 activeCount.decrementAndGet();
                             }
@@ -212,7 +227,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                         var info = connections.remove( connectionId );
 
                         log.trace( "closing connection: {}, requests: {}, duration: {}",
-                            info.connection, ( long ) requestsCounter.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
+                            info.connection, ( long ) requestsCounter.count(), Dates.durationToString( ( System.nanoTime() - timeNs ) / 1_000_000 ) );
                         try {
                             connection.close();
                         } catch( IOException e ) {
@@ -220,16 +235,14 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                         }
                     }
                 } );
-            } catch( RejectedExecutionException e ) {
+            } catch( oap.concurrent.ThreadPoolExecutor.RejectedExecutionException e ) {
                 rejectedCounter.increment();
                 log.warn( e.getMessage() );
 
                 try {
                     rejectedExecutor.execute( () -> {
                         try {
-                            var response = new BasicHttpResponse( HttpVersion.HTTP_1_1, HTTP_UNAVAILABLE, "temporary overload" );
-                            response.setHeader( "Connection", "close" );
-                            connection.sendResponseHeader( response );
+                            connection.sendResponseHeader( TEMPORARY_OVERLOAD );
                         } catch( Exception t ) {
                             log.trace( t.getMessage(), t );
                         } finally {

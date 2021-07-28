@@ -48,7 +48,7 @@ public class GenericCorsPolicyTest {
 
         var request = new Request( basicHttpRequest, new Context( "not important",
             InetAddress.getLocalHost(),
-            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) )
+            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null, System.nanoTime() ) )
         );
 
         final RequestCors requestCors = GenericCorsPolicy.DEFAULT.getCors( request );

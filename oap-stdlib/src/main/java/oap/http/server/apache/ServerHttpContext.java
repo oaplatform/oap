@@ -37,15 +37,16 @@ import java.io.IOException;
 public class ServerHttpContext implements HttpContext, Closeable {
     public final Protocol protocol;
     public final DefaultBHttpServerConnection connection;
-    private final HttpContext httpContext;
     public final HttpServer httpServer;
-    public long start = System.nanoTime();
+    public final long start;
+    private final HttpContext httpContext;
 
-    public ServerHttpContext( HttpServer httpServer, HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection ) {
+    public ServerHttpContext( HttpServer httpServer, HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection, long timeNs ) {
         this.httpServer = httpServer;
         this.httpContext = httpContext;
         this.protocol = protocol;
         this.connection = connection;
+        this.start = timeNs;
     }
 
     @Override
@@ -66,5 +67,9 @@ public class ServerHttpContext implements HttpContext, Closeable {
     @Override
     public void close() throws IOException {
         connection.close();
+    }
+
+    public ServerHttpContext withCurrentTimeNs() {
+        return new ServerHttpContext( httpServer, httpContext, protocol, connection, System.nanoTime() );
     }
 }

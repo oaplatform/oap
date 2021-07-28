@@ -51,7 +51,7 @@ public class PatternCorsPolicyTest {
         basicHttpRequest.addHeader( "Host", "some-host" );
 
         var context = new Context( "not important", InetAddress.getLocalHost(),
-            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null ) );
+            new ServerHttpContext( new MockHttpServer(), new BasicHttpContext(), Protocol.HTTP, null, System.nanoTime() ) );
 
         return new Request( basicHttpRequest, context );
     }
