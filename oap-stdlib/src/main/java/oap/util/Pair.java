@@ -64,8 +64,8 @@ public class Pair<K, V> implements Serializable {
         return _1;
     }
 
-    public K _2() {
-        return _1;
+    public V _2() {
+        return _2;
     }
     //CHECKSTYLE:ON
 
