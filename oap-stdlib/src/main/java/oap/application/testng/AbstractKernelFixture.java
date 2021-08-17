@@ -34,6 +34,7 @@ import oap.json.JsonException;
 import oap.reflect.TypeRef;
 import oap.testng.AbstractEnvFixture;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Pair;
 
 import javax.annotation.Nonnull;
 import java.io.UncheckedIOException;
@@ -48,6 +49,7 @@ import java.util.Map;
 import static oap.http.testng.HttpAsserts.httpPrefix;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.TestDirectoryFixture.testDirectory;
+import static oap.util.Pair.__;
 
 public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractEnvFixture<Self> {
     public static final String ANY = "*";
@@ -57,12 +59,14 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     public static final String TEST_RESOURCE_PATH = "TEST_RESOURCE_PATH";
     public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
     private static int kernelN = 0;
-    protected final URL conf;
+    protected final URL applicationConf;
     protected final List<URL> additionalModules = new ArrayList<>();
     private final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
     private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
+    private final ArrayList<Pair<Class<?>, String>> conf = new ArrayList<>();
     public Kernel kernel;
-    protected Path confd;
+    protected Path confdPath;
 
     public AbstractKernelFixture( String prefix, URL conf ) {
         this( prefix, Scope.METHOD, conf, null, List.of() );
@@ -76,11 +80,11 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         this( prefix, Scope.METHOD, conf, null, additionalModules );
     }
 
-    public AbstractKernelFixture( String prefix, Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
+    public AbstractKernelFixture( String prefix, Scope scope, URL conf, Path confdPath, List<URL> additionalModules ) {
         super( prefix );
         this.scope = scope;
-        this.conf = conf;
-        this.confd = confd;
+        this.applicationConf = conf;
+        this.confdPath = confdPath;
         this.additionalModules.addAll( additionalModules );
 
         defineDefaults();
@@ -121,10 +125,16 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     public Self withConfdResources( Class<?> clazz, String confdResource ) throws UncheckedIOException {
         initConfd();
 
-        Resources.filePaths( clazz, confdResource )
-            .forEach( path -> oap.io.Files.copyDirectory( path, this.confd ) );
+        confd.add( __( clazz, confdResource ) );
 
         return ( Self ) this;
+    }
+
+    public Self withLocalConfdResources( Class<?> clazz, String confdResource ) throws UncheckedIOException {
+        var cr = confdResource.startsWith( "/" ) ? confdResource : "/" + confdResource;
+        cr = clazz.getSimpleName() + cr;
+
+        return withConfdResources( clazz, cr );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -137,15 +147,21 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     public Self withConfResource( Class<?> clazz, String confdResource ) throws UncheckedIOException {
         initConfd();
 
-        Resources.filePath( clazz, confdResource )
-            .ifPresent( path -> oap.io.Files.copy( path, PLAIN, this.confd.resolve( path.getFileName() ), PLAIN ) );
+        conf.add( __( clazz, confdResource ) );
 
         return ( Self ) this;
     }
 
+    public Self withLocalConfResource( Class<?> clazz, String confdResource ) throws UncheckedIOException {
+        var cr = confdResource.startsWith( "/" ) ? confdResource : "/" + confdResource;
+        cr = clazz.getSimpleName() + cr;
+
+        return withConfResource( clazz, cr );
+    }
+
     private void initConfd() {
-        if( this.confd == null )
-            this.confd = TestDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
+        if( this.confdPath == null )
+            this.confdPath = TestDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
     }
 
     @Nonnull
@@ -181,13 +197,25 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         Preconditions.checkArgument( this.kernel == null );
         super.before();
 
+        for( var cd : confd ) {
+            Resources.filePaths( cd._1, cd._2 )
+                .forEach( path -> oap.io.Files.copyDirectory( path, this.confdPath ) );
+        }
+
+
+        for( var cd : conf ) {
+            Resources.filePath( cd._1, cd._2 )
+                .ifPresent( path -> oap.io.Files.copy( path, PLAIN, this.confdPath.resolve( path.getFileName() ), PLAIN ) );
+        }
+
+
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++ + "#" + prefix, moduleConfigurations );
 
-        var confds = ApplicationConfiguration.getConfdUrls( confd );
+        var confds = ApplicationConfiguration.getConfdUrls( confdPath );
 
-        var applicationConfiguration = ApplicationConfiguration.load( conf, confds, properties );
+        var applicationConfiguration = ApplicationConfiguration.load( applicationConf, confds, properties );
 
         for( var newProfile : profiles ) {
             var enabled = !newProfile.startsWith( "-" );
