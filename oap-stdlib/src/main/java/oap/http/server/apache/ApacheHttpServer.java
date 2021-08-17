@@ -217,6 +217,8 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                     } catch( SocketTimeoutException e ) {
                         keepaliveTimeoutCounter.increment();
                         log.trace( "{}: timeout", connection );
+                    } catch( IndexOutOfBoundsException e ) {
+                        log.debug( e.getMessage(), e );
                     } catch( SocketException | SSLException e ) {
                         log.debug( "{}: {}", connection, e.getMessage() );
                     } catch( ConnectionClosedException e ) {
