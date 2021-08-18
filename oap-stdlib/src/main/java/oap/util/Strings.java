@@ -387,7 +387,7 @@ public final class Strings {
     }
 
     public static String toAccessKey( String email, int length ) {
-        ArrayList<Integer> transitions = Lists.of( IntStream.range( 0, length ).toArray() );
+        var transitions = Lists.of( IntStream.range( 0, length ).toArray() );
         java.util.Collections.shuffle( transitions, new Random( transitions.size() ) );
         StringBuilder result = new StringBuilder();
         Function<Character, Boolean> isGoodLetter = c ->

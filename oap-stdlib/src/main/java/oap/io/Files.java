@@ -144,7 +144,7 @@ public final class Files {
     }
 
     public static ArrayList<Path> wildcard( Path basePath, String... wildcards ) {
-        ArrayList<PathMatcher> matchers = Lists.map( wildcards, wc -> FileSystems.getDefault()
+        List<PathMatcher> matchers = Lists.map( wildcards, wc -> FileSystems.getDefault()
             .getPathMatcher( ( "glob:" + basePath + File.separator + wc ).replace( "\\", "\\\\" ) ) );
         ArrayList<Path> result = new ArrayList<>();
         SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {

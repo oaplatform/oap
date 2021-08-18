@@ -48,7 +48,7 @@ public class Arrays {
 
     @SuppressWarnings( "unchecked" )
     public static <E> E[] filter( Predicate<E> predicate, E... array ) {
-        ArrayList<E> result = Lists.filter( List.of( array ), predicate );
+        var result = Lists.filter( List.of( array ), predicate );
         return result.toArray( ( E[] ) Array.newInstance( array.getClass().getComponentType(), result.size() ) );
     }
 

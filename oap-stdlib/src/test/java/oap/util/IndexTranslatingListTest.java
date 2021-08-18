@@ -26,14 +26,14 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IndexTranslatingListTest {
     @Test
     public void get() {
-        ArrayList<Integer> wrapped = Lists.of( 1, 2, 3 );
+        List<Integer> wrapped = Lists.of( 1, 2, 3 );
         IndexTranslatingList<Integer> list = new IndexTranslatingList<>( wrapped, 0, 2 );
         assertThat( list ).containsExactly( 1, 3 );
         assertThat( new IndexTranslatingList<>( wrapped ) ).isEmpty();

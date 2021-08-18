@@ -27,7 +27,6 @@ package oap.util;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -53,7 +52,7 @@ public class ListsTest {
 
     @Test
     public void partition() {
-        ArrayList<Integer> list = Lists.of( 1, 2, 1, 4 );
+        List<Integer> list = Lists.of( 1, 2, 1, 4 );
 
         Pair<List<Integer>, List<Integer>> partition = Lists.partition( list, v -> v > 2 );
 

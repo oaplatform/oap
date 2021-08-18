@@ -357,12 +357,12 @@ class Bean {
 class Bean2 {
     String s2;
     int i2;
-    ArrayList<Integer> list = new ArrayList<>();
+    List<Integer> list = new ArrayList<>();
 
     Bean2() {
     }
 
-    Bean2( String s2, int i2, ArrayList<Integer> list ) {
+    Bean2( String s2, int i2, List<Integer> list ) {
         this.s2 = s2;
         this.i2 = i2;
         this.list = list;
@@ -382,12 +382,12 @@ class Bean3 {
 @EqualsAndHashCode
 @ToString
 class ListBean {
-    public ArrayList<ArrayList<Integer>> l;
+    public List<List<Integer>> l;
 
     ListBean() {
     }
 
-    ListBean( ArrayList<ArrayList<Integer>> l ) {
+    ListBean( List<List<Integer>> l ) {
         this.l = l;
     }
 
@@ -409,13 +409,13 @@ class BeanGeneric<A> {
 @EqualsAndHashCode
 @ToString
 class BeanGB {
-    BeanGeneric<ArrayList<Integer>> bg;
+    BeanGeneric<List<Integer>> bg;
 
 
     BeanGB() {
     }
 
-    BeanGB( BeanGeneric<ArrayList<Integer>> bg ) {
+    BeanGB( BeanGeneric<List<Integer>> bg ) {
         this.bg = bg;
     }
 
@@ -425,14 +425,14 @@ class BeanGB {
 @EqualsAndHashCode
 @ToString
 class BeanGB2 {
-    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg;
-    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2;
+    BeanGeneric<List<BeanGeneric<List<Integer>>>> bg;
+    BeanGeneric<List<BeanGeneric<List<Integer>>>> bg2;
 
     BeanGB2() {
     }
 
-    BeanGB2( BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg,
-             BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
+    BeanGB2( BeanGeneric<List<BeanGeneric<List<Integer>>>> bg,
+             BeanGeneric<List<BeanGeneric<List<Integer>>>> bg2 ) {
         this.bg = bg;
         this.bg2 = bg2;
     }
