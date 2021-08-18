@@ -146,7 +146,7 @@ public class DictionaryParser {
         return parse( map, idStrategy );
     }
 
-    private static DictionaryRoot parse( Map<?, ?> map, IdStrategy idStrategy ) {
+    public static DictionaryRoot parse( Map<?, ?> map, IdStrategy idStrategy ) {
         var dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
         var invalid = new ArrayList<InvalidEntry>();
 

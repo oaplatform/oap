@@ -26,6 +26,7 @@ package oap.dictionary;
 
 import oap.io.Files;
 import oap.io.Resources;
+import oap.json.Binder;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
@@ -90,5 +91,14 @@ public class DictionaryParserTest extends Fixtures {
         assertThat( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
         assertThat( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
 
+    }
+
+
+    @Test
+    public void testJsonParse() {
+        var dictionary = Binder.hoconWithoutSystemProperties.unmarshal( Dictionary.class, getClass().getResource( "/dictionary/test-dictionary.conf" ) );
+
+        assertThat( dictionary.getId() ).isEqualTo( "test-dictionary" );
+        assertThat( dictionary.getValues() ).hasSize( 3 );
     }
 }

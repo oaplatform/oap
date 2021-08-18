@@ -25,6 +25,7 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -38,6 +39,7 @@ import static java.util.stream.Collectors.toList;
 
 @EqualsAndHashCode
 @ToString
+@JsonDeserialize( using = DictionaryDeserializer.class )
 public final class DictionaryRoot implements Dictionary {
     public final String name;
     private final List<? extends Dictionary> values;
