@@ -25,6 +25,7 @@ package oap.util;
 
 import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,8 +54,8 @@ public class Lists extends oap.util.Collections {
     }
 
     @SafeVarargs
-    public static <E> ArrayList<E> concat( List<? extends E>... lists ) {
-        ArrayList<E> result = new ArrayList<>();
+    public static <E> List<E> concat( List<? extends E>... lists ) {
+        List<E> result = new ArrayList<>();
 
         for( List<? extends E> list : lists ) result.addAll( list );
 
@@ -107,7 +108,7 @@ public class Lists extends oap.util.Collections {
         return __( match, nomatch );
     }
 
-    public static <E, R> ArrayList<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
+    public static <E, R> List<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
         var result = new ArrayList<R>( list.size() );
         for( var e : list ) {
             result.add( mapper.apply( e ) );
@@ -115,13 +116,13 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> void map( Collection<? extends E> list, Function<? super E, R> mapper, ArrayList<R> toList ) {
+    public static <E, R> void map( Collection<? extends E> list, Function<? super E, R> mapper, List<R> toList ) {
         for( var e : list ) {
             toList.add( mapper.apply( e ) );
         }
     }
 
-    public static <E, R> ArrayList<R> map( E[] array, Function<? super E, R> mapper ) {
+    public static <E, R> List<R> map( E[] array, Function<? super E, R> mapper ) {
         var result = new ArrayList<R>( array.length );
         for( var e : array ) {
             result.add( mapper.apply( e ) );
@@ -129,13 +130,13 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> void map( E[] array, Function<? super E, R> mapper, ArrayList<R> toList ) {
+    public static <E, R> void map( E[] array, Function<? super E, R> mapper, List<R> toList ) {
         for( var e : array ) {
             toList.add( mapper.apply( e ) );
         }
     }
 
-    public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
+    public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
         var result = new ArrayList<R>();
         while( enumeration.hasMoreElements() ) {
             result.add( mapper.apply( enumeration.nextElement() ) );
@@ -143,7 +144,7 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> ArrayList<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
+    public static <E, R> List<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
         var result = new ArrayList<R>();
         for( var e : list ) {
             if( !predicate.test( e ) ) continue;
@@ -153,7 +154,7 @@ public class Lists extends oap.util.Collections {
     }
 
 
-    public static <E> ArrayList<E> filter( Collection<E> list, Predicate<E> predicate ) {
+    public static <E> List<E> filter( Collection<E> list, Predicate<E> predicate ) {
         var result = new ArrayList<E>();
 
         for( E e : list ) if( predicate.test( e ) ) result.add( e );
@@ -179,13 +180,13 @@ public class Lists extends oap.util.Collections {
         return shuffle( list ).subList( 0, sublistSize );
     }
 
-    public static <E> ArrayList<E> shuffle( List<E> list ) {
+    public static <E> List<E> shuffle( List<E> list ) {
         var result = new ArrayList<E>( list );
         Collections.shuffle( result );
         return result;
     }
 
-    public static <E> ArrayList<E> distinct( List<E> list ) {
+    public static <E> List<E> distinct( List<E> list ) {
         return new ArrayList<>( new HashSet<>( list ) );
     }
 
@@ -199,25 +200,25 @@ public class Lists extends oap.util.Collections {
     }
 
     @SafeVarargs
-    public static <E> ArrayList<E> of( E... array ) {
+    public static <E> List<E> of( E... array ) {
         var result = new ArrayList<E>( array.length );
         Collections.addAll( result, array );
         return result;
     }
 
-    public static ArrayList<Long> of( long[] array ) {
+    public static List<Long> of( long[] array ) {
         var result = new ArrayList<Long>( array.length );
         for( long i : array ) result.add( i );
         return result;
     }
 
-    public static ArrayList<Integer> of( int[] array ) {
+    public static List<Integer> of( int[] array ) {
         var result = new ArrayList<Integer>( array.length );
         for( int i : array ) result.add( i );
         return result;
     }
 
-    public static <T> ArrayList<T> empty() {
+    public static <T> List<T> empty() {
         return of();
     }
 
@@ -256,8 +257,8 @@ public class Lists extends oap.util.Collections {
     }
 
     public static class Collectors {
-        public static <T> Collector<T, ?, ArrayList<T>> toArrayList() {
-            return new oap.util.Collectors.CollectorImpl<T, ArrayList<T>, ArrayList<T>>( ArrayList::new, ArrayList::add,
+        public static <T> Collector<T, ?, List<T>> toArrayList() {
+            return new oap.util.Collectors.CollectorImpl<T, List<T>, List<T>>( ArrayList::new, List::add,
                 ( left, right ) -> {
                     left.addAll( right );
                     return left;
@@ -266,7 +267,7 @@ public class Lists extends oap.util.Collections {
         }
 
         @SuppressWarnings( "deprecated" )
-        public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
+        public static Collector<Integer, ?, IntList> toIntArrayList() {
             return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new,
                 ( integers, key ) -> integers.add( ( int ) key ),
                 ( left, right ) -> {

@@ -18,3 +18,4 @@ kotlinc.xml
 .attach*
 .flattened-pom.xml
 /.idea/jarRepositories.xml
+/.idea/jsLibraryMappings.xml
