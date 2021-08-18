@@ -41,6 +41,7 @@ import org.testng.annotations.Test;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +55,7 @@ import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
@@ -351,6 +353,20 @@ public class KernelTest {
     }
 
     @Test
+    public void testMapFromClasspath() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "mapFromClasspath.conf" ) )
+        );
+        try {
+            kernel.start( Map.of( "boot.main", "mapFromClasspath" ) );
+            var s4 = kernel.serviceOfClass( Service4.class ).orElseThrow();
+            assertThat( s4.services ).containsOnly( entry( "a", new Service3( "a" ) ), entry( "b", new Service3( "b" ) ) );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
     public void testBeanFromPath() {
         var kernel = new Kernel(
             List.of( urlOfTestResource( getClass(), "beanFromPath.conf" ) )
@@ -394,6 +410,7 @@ public class KernelTest {
     }
 
     @ToString
+    @EqualsAndHashCode
     public static class Service3 {
         public Service3 service3;
         public String name;
@@ -406,6 +423,12 @@ public class KernelTest {
             this.name = name;
             this.service3 = service3;
         }
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class Service4 {
+        public final HashMap<String, Service3> services = new HashMap<>();
     }
 
     public static class TestLifecycle implements Runnable {

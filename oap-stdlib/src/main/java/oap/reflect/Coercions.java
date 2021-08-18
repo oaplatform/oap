@@ -136,6 +136,10 @@ public final class Coercions {
         with( ( r, v ) -> r.isEnum(), ( r, v ) -> v instanceof Enum ? v : r.enumValue( ( String ) v ) );
         with( ( r, v ) -> !r.assignableTo( Map.class ) && v instanceof Map<?, ?>, ( r, v ) -> r.newInstance( ( Map<String, Object> ) v ) );
         with( ( r, v ) -> r.assignableTo( Collection.class ), ( r, v ) -> {
+            if( v instanceof String ) {
+                return castFunction( r, v );
+            }
+
             Reflection componentType = r.getCollectionComponentType();
             return Stream.of( ( List<?> ) v )
                 .map( o -> cast( componentType, o ) )
@@ -147,6 +151,11 @@ public final class Coercions {
             Pair<Reflection, Reflection> componentType = r.getMapComponentsType();
             Objects.requireNonNull( componentType._1 );
             Objects.requireNonNull( componentType._2 );
+
+            if( v instanceof String ) {
+                return castFunction( r, v );
+            }
+
             return BiStream.of( ( Map<?, ?> ) v )
                 .map( ( k, o ) -> __( cast( componentType._1, k ), cast( componentType._2, o ) ) )
                 .collect( Maps.Collectors.toMap( () -> r.isInterface()
@@ -189,20 +198,24 @@ public final class Coercions {
 
     public Coercions withStringToObject() {
         return with( ( r, v ) -> v instanceof String, ( r, value ) -> {
-            var str = ( ( String ) value ).trim();
-            var sv = str.indexOf( '(' );
-            if( sv > 0 && str.endsWith( ")" ) ) {
-                var funcName = str.substring( 0, sv );
-                var func = functions.get( funcName );
-                var funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
-                if( func != null ) {
-                    return func.apply( funcValue, r );
-                }
-
-                throw new ReflectException( "Unknown function '" + funcName + "'" );
-            }
-            throw new ReflectException( "cannot cast " + value + " to " + r );
+            return castFunction( r, value );
         } );
+    }
+
+    private Object castFunction( Reflection r, Object value ) {
+        var str = ( ( String ) value ).trim();
+        var sv = str.indexOf( '(' );
+        if( sv > 0 && str.endsWith( ")" ) ) {
+            var funcName = str.substring( 0, sv );
+            var func = functions.get( funcName );
+            var funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
+            if( func != null ) {
+                return func.apply( funcValue, r );
+            }
+
+            throw new ReflectException( "Unknown function '" + funcName + "'" );
+        }
+        throw new ReflectException( "cannot cast " + value + " to " + r );
     }
 
     public Coercions withIdentity() {
