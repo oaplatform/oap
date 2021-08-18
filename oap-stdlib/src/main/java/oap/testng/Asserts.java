@@ -29,6 +29,7 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
+import oap.json.Binder;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -166,7 +167,7 @@ public final class Asserts {
 
     public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
         return Resources.filePath( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
-            : "/" + resource ) )
+                : "/" + resource ) )
             .orElseThrow( () -> new AssertionError( contextClass + ": resource " + resource + " not found" ) );
     }
 
@@ -174,15 +175,19 @@ public final class Asserts {
         return pathOfTestResource( contextClass, null );
     }
 
+    public static <T> T objectOfTestResource( Class<T> objectClass, Class<?> contextClass, String resource ) {
+        return Binder.hoconWithoutSystemProperties.unmarshal( objectClass, pathOfTestResource( contextClass, resource ) );
+    }
+
     public static Stream<String> linesOfTestResource( Class<?> contextClass, String resource ) {
         return Resources.read( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
-            : "/" + resource ), ContentReader.ofLinesStream() )
+                : "/" + resource ), ContentReader.ofLinesStream() )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
     public static URL urlOfTestResource( Class<?> contextClass, String resource ) {
         return Resources.url( contextClass, contextClass.getSimpleName()
-            + ( resource == null ? "" : "/" + resource ) )
+                + ( resource == null ? "" : "/" + resource ) )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
