@@ -33,7 +33,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static oap.testng.Asserts.locationOfTestResource;
 
 @Slf4j
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
@@ -59,6 +63,22 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     public Self definePort( String property ) throws UncheckedIOException {
         return define( property, portFor( property ) );
+    }
+
+    public Self defineLocalClasspath( String property, Class<?> clazz, String resourceName ) {
+        return define( property, "classpath(" + locationOfTestResource( clazz, resourceName ) + ")" );
+    }
+
+    public Self defineClasspath( String property, Class<?> clazz, String resourceLocation ) {
+        return define( property, "classpath(" + resourceLocation + ")" );
+    }
+
+    public Self definePath( String property, Path path ) {
+        return define( property, "path(" + path + ")" );
+    }
+
+    public Self defineURL( String property, URL url ) {
+        return define( property, "url(" + url + ")" );
     }
 
     @Override
