@@ -63,9 +63,20 @@ import static oap.util.Pair.__;
 
 public final class Coercions {
 
-    private static HashMap<Class<?>, Function<Object, Object>> convertors = new HashMap<>();
+    private static final HashMap<String, BiFunction<String, Reflection, Object>> functions = new HashMap<>();
+
+    private static final HashMap<Class<?>, Function<Object, Object>> convertors = new HashMap<>();
 
     static {
+        functions.put( "path", Try.biMap( ( path, reflection ) ->
+            Binder.hoconWithoutSystemProperties.unmarshal( reflection, Path.of( path ) ) ) );
+        functions.put( "url", Try.biMap( ( url, reflection ) ->
+            Binder.hoconWithoutSystemProperties.unmarshal( reflection, new URL( url ) ) ) );
+        functions.put( "classpath", Try.biMap( ( cp, reflection ) ->
+            Binder.hoconWithoutSystemProperties.unmarshal( reflection, Coercions.class.getResource( cp ) ) ) );
+        functions.put( "str", Try.biMap( ( str, reflection ) ->
+            Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ) );
+
         convertors.put( Object.class, value -> value );
 
         convertors.put( String.class,
@@ -177,7 +188,21 @@ public final class Coercions {
     }
 
     public Coercions withStringToObject() {
-        return with( ( r, v ) -> v instanceof String, ( r, value ) -> Binder.hocon.unmarshalFromAny( r.underlying, value ) );
+        return with( ( r, v ) -> v instanceof String, ( r, value ) -> {
+            var str = ( ( String ) value ).trim();
+            var sv = str.indexOf( '(' );
+            if( sv > 0 && str.endsWith( ")" ) ) {
+                var funcName = str.substring( 0, sv );
+                var func = functions.get( funcName );
+                var funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
+                if( func != null ) {
+                    return func.apply( funcValue, r );
+                }
+
+                throw new ReflectException( "Unknown function '" + funcName + "'" );
+            }
+            throw new ReflectException( "cannot cast " + value + " to " + r );
+        } );
     }
 
     public Coercions withIdentity() {

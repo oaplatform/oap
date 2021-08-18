@@ -94,7 +94,10 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     public static Path deployTestData( Class<?> contextClass, String name ) {
         Path to = testPath( name );
         Resources.filePaths( contextClass, contextClass.getSimpleName() )
-            .forEach( path -> Files.copyDirectory( path, to ) );
+            .forEach( path -> {
+                log.trace( "deployTestData {} -> {}", path, to );
+                Files.copyDirectory( path, to );
+            } );
         return to;
     }
 

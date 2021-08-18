@@ -378,7 +378,7 @@ public class Binder {
         try {
             return mapper.readValue( string, toTypeReference( ref ) );
         } catch( IOException e ) {
-            log.trace( "json: " + string );
+            log.trace( "json: {}", string );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
@@ -387,7 +387,25 @@ public class Binder {
         try {
             return mapper.readValue( string, mapper.getTypeFactory().constructType( type.getType() ) );
         } catch( IOException e ) {
-            log.trace( "json: " + string );
+            log.trace( "json: {}", string );
+            throw new JsonException( "json error: " + e.getMessage(), e );
+        }
+    }
+
+    public <T> T unmarshal( Reflection type, URL url ) throws JsonException {
+        try {
+            return mapper.readValue( url, mapper.getTypeFactory().constructType( type.getType() ) );
+        } catch( IOException e ) {
+            log.trace( "url: {}", url );
+            throw new JsonException( "json error: " + e.getMessage(), e );
+        }
+    }
+
+    public <T> T unmarshal( Reflection type, Path path ) throws JsonException {
+        try( var is = java.nio.file.Files.newInputStream( path ) ) {
+            return mapper.readValue( is, mapper.getTypeFactory().constructType( type.getType() ) );
+        } catch( IOException e ) {
+            log.trace( "path: {}", path );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }

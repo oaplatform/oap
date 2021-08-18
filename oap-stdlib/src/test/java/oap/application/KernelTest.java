@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import com.typesafe.config.impl.ConfigImpl;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ import oap.application.ServiceOne.Complex;
 import oap.application.module.Module;
 import oap.concurrent.Threads;
 import oap.system.Env;
+import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.slf4j.Logger;
@@ -55,7 +57,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
-
     @AfterMethod
     public void afterMethod() {
         new ArrayList<>( System.getenv().keySet() )
@@ -327,25 +328,46 @@ public class KernelTest {
             var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3 ).isNotNull();
-            assertThat( s3.service3.name ).isEqualTo( "b" );
+            assertThat( s3.service3.name ).isEqualTo( "b()" );
         } finally {
             kernel.stop();
         }
     }
 
     @Test
-    public void testBeanFromResourcePath() {
+    public void testBeanFromClasspath() {
         var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "beanFromResourcePath.conf" ) )
+            List.of( urlOfTestResource( getClass(), "beanFromClasspath.conf" ) )
         );
         try {
-            kernel.start( Map.of( "boot.main", "beanFromResourcePath" ) );
+            kernel.start( Map.of( "boot.main", "beanFromClasspath" ) );
             var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3 ).isNotNull();
             assertThat( s3.service3.name ).isEqualTo( "from resource" );
         } finally {
             kernel.stop();
+        }
+    }
+
+    @Test
+    public void testBeanFromPath() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "beanFromPath.conf" ) )
+        );
+        try {
+            TestDirectoryFixture.deployTestData( getClass() );
+            System.setProperty( "TEST_PATH", TestDirectoryFixture.testDirectory().toString() );
+            ConfigImpl.reloadSystemPropertiesConfig();
+
+            kernel.start( Map.of( "boot.main", "beanFromPath" ) );
+            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            assertThat( s3.name ).isEqualTo( "a" );
+            assertThat( s3.service3 ).isNotNull();
+            assertThat( s3.service3.name ).isEqualTo( "from path" );
+        } finally {
+            kernel.stop();
+            TestDirectoryFixture.deleteDirectory( TestDirectoryFixture.testDirectory() );
         }
     }
 
