@@ -27,11 +27,8 @@ package oap.concurrent;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 
-import javax.annotation.Nonnull;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -63,83 +60,24 @@ public final class Executors {
             threadFactory );
     }
 
-    public static BlockingExecutor newFixedBlockingThreadPool( int nThreads ) {
-        return new BlockingExecutor( nThreads );
+    public static ThreadPoolExecutor newFixedBlockingThreadPool( int nThreads ) {
+        return new ThreadPoolExecutor( nThreads, nThreads, 0, TimeUnit.SECONDS,
+            new SynchronousQueue<>(), new ThreadPoolExecutor.BlockingPolicy() );
     }
 
-    public static BlockingExecutor newFixedBlockingThreadPool( int corePoolSize, int maximumPoolSize, ThreadFactory threadFactory ) {
-        return new BlockingExecutor( corePoolSize, maximumPoolSize, threadFactory );
+    public static ThreadPoolExecutor newFixedBlockingThreadPool( int corePoolSize, int maximumPoolSize, ThreadFactory threadFactory ) {
+        return new ThreadPoolExecutor( corePoolSize, maximumPoolSize,
+            0, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory, new ThreadPoolExecutor.BlockingPolicy() );
     }
 
-    public static BlockingExecutor newFixedBlockingThreadPool( int nThreads, ThreadFactory threadFactory ) {
-        return new BlockingExecutor( nThreads, threadFactory );
+    public static ThreadPoolExecutor newFixedBlockingThreadPool( int nThreads, ThreadFactory threadFactory ) {
+        return new ThreadPoolExecutor( nThreads, nThreads,
+            0, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory, new ThreadPoolExecutor.BlockingPolicy() );
     }
 
     public static ScheduledExecutorService newScheduledThreadPool( int corePoolSize, String threadPrefix ) {
         return new ScheduledExecutorService( java.util.concurrent.Executors.newScheduledThreadPool(
             corePoolSize,
             new ThreadFactoryBuilder().setNameFormat( threadPrefix + "-%d" ).build() ) );
-    }
-
-    public static final class BlockingExecutor implements Executor {
-        private final Semaphore semaphore;
-        private final ThreadPoolExecutor threadPoolExecutor;
-
-        private BlockingExecutor( int concurrentTasksLimit, ThreadFactory threadFactory ) {
-            this( concurrentTasksLimit, concurrentTasksLimit, threadFactory );
-        }
-
-        private BlockingExecutor( int corePoolSize, int maximumPoolSize, ThreadFactory threadFactory ) {
-            semaphore = new Semaphore( maximumPoolSize );
-            this.threadPoolExecutor = new ThreadPoolExecutor(
-                corePoolSize, maximumPoolSize,
-                0L, TimeUnit.MILLISECONDS,
-                new SynchronousQueue<>(),
-                threadFactory );
-        }
-
-        private BlockingExecutor( int concurrentTasksLimit ) {
-            this( concurrentTasksLimit, concurrentTasksLimit );
-        }
-
-        private BlockingExecutor( int corePoolSize, int maximumPoolSize ) {
-            semaphore = new Semaphore( maximumPoolSize );
-            this.threadPoolExecutor = new ThreadPoolExecutor(
-                corePoolSize, maximumPoolSize,
-                0L, TimeUnit.MILLISECONDS,
-                new SynchronousQueue<>() );
-        }
-
-        @Override
-        public void execute( @Nonnull Runnable command ) {
-            try {
-                semaphore.acquire();
-            } catch( InterruptedException e ) {
-                e.printStackTrace();
-                return;
-            }
-
-            final Runnable wrapped = () -> {
-                try {
-                    command.run();
-                } finally {
-                    semaphore.release();
-                }
-            };
-
-            threadPoolExecutor.execute( wrapped );
-        }
-
-        public void shutdown() {
-            threadPoolExecutor.shutdown();
-        }
-
-        public void shutdownNow() {
-            threadPoolExecutor.shutdownNow();
-        }
-
-        public void awaitTermination( long temout, TimeUnit unit ) throws InterruptedException {
-            threadPoolExecutor.awaitTermination( temout, unit );
-        }
     }
 }

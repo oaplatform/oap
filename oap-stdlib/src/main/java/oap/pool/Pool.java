@@ -30,6 +30,7 @@ import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Executors;
+import oap.concurrent.ThreadPoolExecutor;
 import oap.util.Dates;
 
 import java.io.Closeable;
@@ -47,7 +48,7 @@ public class Pool<T> implements Closeable {
     public static final int MAX_WAIT_MILLISECONDS = ( int ) Dates.s( 5 );
     public static final int MAX_IDLE_MILLISECONDS = ( int ) Dates.m( 5 );
     public static final int SCAVENGE_INTERVAL_MILLISECONDS = ( int ) Dates.m( 2 );
-    private final Executors.BlockingExecutor threadPool;
+    private final ThreadPoolExecutor threadPool;
     private final DisruptorObjectPool<T> objectPool;
 
     public Pool( int size, ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {

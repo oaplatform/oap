@@ -56,7 +56,7 @@ public class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor 
     protected void afterExecute( Runnable r, Throwable t ) {
         super.afterExecute( r, t );
         Throwable throwable = t;
-        if( throwable == null && r instanceof Future<?> ) try {
+        if( throwable == null && r instanceof Future<?> && ( ( Future<?> ) r ).isDone() ) try {
             ( ( Future<?> ) r ).get();
         } catch( CancellationException e ) {
             throwable = e;
@@ -72,6 +72,18 @@ public class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor 
         @Override
         public void rejectedExecution( Runnable r, java.util.concurrent.ThreadPoolExecutor executor ) {
             throw new RejectedExecutionException();
+        }
+    }
+
+    public static class BlockingPolicy implements RejectedExecutionHandler {
+        @Override
+        public void rejectedExecution( Runnable r, java.util.concurrent.ThreadPoolExecutor executor ) {
+            try {
+                if( !executor.isShutdown() )
+                    executor.getQueue().put( r );
+            } catch( InterruptedException e ) {
+                throw new RejectedExecutionException();
+            }
         }
     }
 
