@@ -33,7 +33,7 @@ jobs:
   build:
     name: Main Build
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 30
     strategy:
       matrix:
         # Java versions to run unit tests
@@ -55,4 +55,4 @@ jobs:
         distribution: 'adopt'
         java-version: ${{ matrix.java }}
     - name: Build with Maven
-      run: mvn install -B -ntp # -X -V for debugging
+      run: mvn install -B -ntp -T 2C # -X -V for debugging
