@@ -23,6 +23,7 @@
  */
 package oap.testng;
 
+import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
 import oap.concurrent.Threads;
 import oap.io.Files;
@@ -39,6 +40,7 @@ import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.assertj.core.api.AbstractFileAssert;
 import org.testng.Assert;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -192,8 +194,10 @@ public final class Asserts {
     }
 
 
-    public static String locationOfTestResource( Class<?> contetClass, String resource ) {
-        return "/" + contetClass.getName().replace( ".", "/" ) + "/" + resource;
+    public static String locationOfTestResource( Class<?> contetClass, @Nonnull String resource ) {
+        Preconditions.checkNotNull( resource );
+
+        return "/" + contetClass.getName().replace( ".", "/" ) + ( resource.startsWith( "/" ) ? "" : "/" ) + resource;
     }
 
     /**
