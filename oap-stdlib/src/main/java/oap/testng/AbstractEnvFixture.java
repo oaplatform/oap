@@ -27,21 +27,22 @@ package oap.testng;
 
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
+import oap.io.Sockets;
 import oap.util.Strings;
 
-import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.testng.Asserts.locationOfTestResource;
 
 @Slf4j
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
     public static final String NO_PREFIX = "";
+    public static final AtomicInteger LAST_PORT = new AtomicInteger( 20000 );
     protected final String prefix;
     private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
@@ -96,18 +97,18 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     }
 
     public int portFor( String key ) throws UncheckedIOException {
-        synchronized( ports ) {
-            return ports.computeIfAbsent( prefix + key, k -> {
-                try( var socket = new ServerSocket() ) {
-                    socket.setReuseAddress( true );
-                    socket.bind( new InetSocketAddress( 0 ) );
-                    var localPort = socket.getLocalPort();
-                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, localPort );
-                    return localPort;
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
-                }
-            } );
-        }
+        return Threads.withThreadName( getUniqueName(), () -> {
+            synchronized( LAST_PORT ) {
+                return ports.computeIfAbsent( prefix + key, k -> {
+                    int port;
+                    do {
+                        port = LAST_PORT.incrementAndGet();
+                    } while( !Sockets.isTcpPortAvailable( port ) );
+
+                    log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, port );
+                    return port;
+                } );
+            }
+        } );
     }
 }

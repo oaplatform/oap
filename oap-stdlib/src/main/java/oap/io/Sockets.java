@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -76,5 +77,13 @@ public class Sockets {
 
     public static boolean connectionReset( SocketException e ) {
         return "Connection reset".equals( e.getMessage() );
+    }
+
+    public static boolean isTcpPortAvailable( int port ) {
+        try( ServerSocket serverSocket = new ServerSocket( port ) ) {
+            return true;
+        } catch( Exception ex ) {
+            return false;
+        }
     }
 }

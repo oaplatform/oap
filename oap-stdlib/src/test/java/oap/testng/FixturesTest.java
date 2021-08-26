@@ -24,6 +24,7 @@
 
 package oap.testng;
 
+import lombok.extern.slf4j.Slf4j;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 
@@ -49,26 +50,31 @@ public class FixturesTest extends Fixtures {
     }
 
 
+    @Slf4j
     static class F implements Fixture {
         String result = "";
 
         @Override
         public void beforeClass() {
+            log.info( "beforeClass" );
             result += "BC";
         }
 
         @Override
         public void afterClass() {
+            log.info( "afterClass" );
             result += "AC";
         }
 
         @Override
         public void beforeMethod() {
+            log.info( "beforeMethod" );
             result += "BM";
         }
 
         @Override
         public void afterMethod() {
+            log.info( "afterMethod" );
             result += "AM";
         }
     }

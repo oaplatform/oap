@@ -24,6 +24,7 @@
 
 package oap.testng;
 
+import oap.concurrent.Threads;
 import oap.util.Lists;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -69,36 +70,36 @@ public abstract class Fixtures {
 
     @BeforeSuite
     public void fixBeforeSuite() {
-        suiteFixtures.values().forEach( Fixture::beforeSuite );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeSuite ) );
     }
 
     @AfterSuite
     public void fixAfterSuite() {
-        Lists.reverse( suiteFixtures.values() ).forEach( Fixture::afterSuite );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterSuite ) );
     }
 
     @BeforeClass
     public void fixBeforeClass() {
-        suiteFixtures.values().forEach( Fixture::beforeClass );
-        fixtures.forEach( Fixture::beforeClass );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeClass ) );
+        fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeClass ) );
     }
 
     @AfterClass
     public void fixAfterClass() {
-        fixtures.descendingIterator().forEachRemaining( Fixture::afterClass );
-        Lists.reverse( suiteFixtures.values() ).forEach( Fixture::afterClass );
+        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterClass ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterClass ) );
     }
 
     @BeforeMethod
     public void fixBeforeMethod() {
-        suiteFixtures.values().forEach( Fixture::beforeMethod );
-        fixtures.forEach( Fixture::beforeMethod );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeMethod ) );
+        fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeMethod ) );
     }
 
     @AfterMethod
     public void fixAfterMethod() {
-        fixtures.descendingIterator().forEachRemaining( Fixture::afterMethod );
-        Lists.reverse( suiteFixtures.values() ).forEach( Fixture::afterMethod );
+        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
     }
 
     public enum Position {

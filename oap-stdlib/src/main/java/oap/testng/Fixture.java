@@ -37,6 +37,10 @@ public interface Fixture {
 
     default void afterMethod() {}
 
+    default String getUniqueName() {
+        return "fixture::" + getClass().getSimpleName();
+    }
+
     enum Scope {
         METHOD, CLASS, SUITE
     }
