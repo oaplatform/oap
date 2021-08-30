@@ -32,6 +32,11 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class NumbersTest {
 
     @Test
+    public void testParseLong() {
+        assertThat( Numbers.parseLongWithUnits( "1_000_000" ) ).isEqualTo( 1_000_000L );
+    }
+
+    @Test
     public void parseLongWithUnits() {
         assertThat( Numbers.parseLongWithUnits( "1s" ) ).isEqualTo( 1000L );
         assertThat( Numbers.parseLongWithUnits( "30 days" ) ).isEqualTo( 2592000000L );

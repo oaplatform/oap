@@ -43,6 +43,7 @@ public final class Numbers {
                         negative = true;
                         continue;
                     }
+                    if( c == '_' ) continue;
                     if( Character.isDigit( c ) && stillNumber ) number.append( c );
                     else {
                         stillNumber = false;
