@@ -24,12 +24,17 @@
 
 package oap.dictionary;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -96,9 +101,114 @@ public class DictionaryParserTest extends Fixtures {
 
     @Test
     public void testJsonParse() {
-        var dictionary = Binder.hoconWithoutSystemProperties.unmarshal( Dictionary.class, getClass().getResource( "/dictionary/test-dictionary.conf" ) );
+        var dictionary = Binder.hoconWithoutSystemProperties.unmarshal( DictionaryRoot.class, getClass().getResource( "/dictionary/test-dictionary.conf" ) );
 
         assertThat( dictionary.getId() ).isEqualTo( "test-dictionary" );
         assertThat( dictionary.getValues() ).hasSize( 3 );
+    }
+
+    @Test
+    public void testDictionaryEnum() {
+        var test1 = Binder.hoconWithoutSystemProperties.unmarshal( TestDictionaryContainer.class, "{value = TEST1}" );
+
+        assertThat( test1.value ).isEqualTo( TestDictionary.TEST1 );
+    }
+
+    public enum TestDictionary implements Dictionary {
+        TEST1, TEST2;
+
+        @Override
+        public int getOrDefault( String id, int defaultValue ) {
+            return 0;
+        }
+
+        @Override
+        public String getOrDefault( int externlId, String defaultValue ) {
+            return null;
+        }
+
+        @Override
+        public Integer get( String id ) {
+            return null;
+        }
+
+        @Override
+        public boolean containsValueWithId( String id ) {
+            return false;
+        }
+
+        @Override
+        public List<String> ids() {
+            return null;
+        }
+
+        @Override
+        public int[] externalIds() {
+            return new int[0];
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            return null;
+        }
+
+        @Override
+        public Optional<? extends Dictionary> getValueOpt( String name ) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Dictionary getValue( String name ) {
+            return null;
+        }
+
+        @Override
+        public Dictionary getValue( int externalId ) {
+            return null;
+        }
+
+        @Override
+        public List<? extends Dictionary> getValues() {
+            return null;
+        }
+
+        @Override
+        public String getId() {
+            return null;
+        }
+
+        @Override
+        public <T> Optional<T> getProperty( String name ) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return false;
+        }
+
+        @Override
+        public int getExternalId() {
+            return 0;
+        }
+
+        @Override
+        public boolean containsProperty( String name ) {
+            return false;
+        }
+
+        @Override
+        public Dictionary cloneDictionary() {
+            return null;
+        }
+    }
+
+    public static class TestDictionaryContainer {
+        public TestDictionary value;
+
+        @JsonCreator
+        public TestDictionaryContainer( TestDictionary value ) {
+            this.value = value;
+        }
     }
 }

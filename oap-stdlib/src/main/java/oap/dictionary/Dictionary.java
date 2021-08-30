@@ -24,8 +24,6 @@
 
 package oap.dictionary;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +32,6 @@ import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
-@JsonDeserialize( using = DictionaryDeserializer.class )
 public interface Dictionary {
     int getOrDefault( String id, int defaultValue );
 
