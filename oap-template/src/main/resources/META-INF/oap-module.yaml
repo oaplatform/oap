@@ -8,3 +8,6 @@ services:
     supervision:
       schedule: true
       cron: "10 20 */2 * * ? *"
+
+  template-accumulator-string:
+    implementation: oap.template.TemplateAccumulatorString
