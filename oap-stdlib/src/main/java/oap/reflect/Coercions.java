@@ -76,6 +76,12 @@ public final class Coercions {
             Binder.hoconWithoutSystemProperties.unmarshal( reflection, Coercions.class.getResource( cp ) ) ) );
         functions.put( "str", Try.biMap( ( str, reflection ) ->
             Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ) );
+        functions.put( "hocon", Try.biMap( ( str, reflection ) ->
+            Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ) );
+        functions.put( "json", Try.biMap( ( str, reflection ) ->
+            Binder.json.unmarshal( reflection, str ) ) );
+        functions.put( "yaml", Try.biMap( ( str, reflection ) ->
+            Binder.yaml.unmarshal( reflection, str ) ) );
 
         convertors.put( Object.class, value -> value );
 
