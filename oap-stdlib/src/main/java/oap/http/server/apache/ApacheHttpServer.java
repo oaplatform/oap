@@ -83,6 +83,8 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     private static final Counter requestsCounter = Metrics.counter( "oap_http", "type", "requests" );
     private static final Counter handledCounter = Metrics.counter( "oap_http", "type", "handled" );
     private static final Counter rejectedCounter = Metrics.counter( "oap_http", "type", "rejected" );
+    private static final Counter connectionClosedCounter = Metrics.counter( "oap_http", "type", "conn_closed" );
+    private static final Counter socketOrSslErrorCounter = Metrics.counter( "oap_http", "type", "socket_or_ssl_error" );
     private static final Counter keepaliveTimeoutCounter = Metrics.counter( "oap_http", "type", "keepalive_timeout" );
 
     static {
@@ -218,10 +220,13 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                         keepaliveTimeoutCounter.increment();
                         log.trace( "{}: timeout", connection );
                     } catch( IndexOutOfBoundsException e ) {
+                        socketOrSslErrorCounter.increment();
                         log.debug( e.getMessage(), e );
                     } catch( SocketException | SSLException e ) {
+                        socketOrSslErrorCounter.increment();
                         log.debug( "{}: {}", connection, e.getMessage() );
                     } catch( ConnectionClosedException e ) {
+                        connectionClosedCounter.increment();
                         log.debug( "connection closed: {}", connection );
                     } catch( Throwable e ) {
                         log.error( e.getMessage(), e );
