@@ -34,6 +34,7 @@ import oap.LogConsolidated;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.event.Level;
 
 import java.io.BufferedInputStream;
@@ -121,7 +122,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private RemoteInvocationException throwException( String methodName, Throwable throwable ) {
         if( throwable instanceof RemoteInvocationException ) return ( RemoteInvocationException ) throwable;
         else if( throwable instanceof ExecutionException ) return throwException( methodName, throwable.getCause() );
-        else return new RemoteInvocationException( "invocation failed " + this + "#" + methodName, throwable );
+        else return new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + methodName, throwable );
     }
 
     @Override
@@ -235,7 +236,10 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                         dis.close();
                         throw e;
                     }
-                } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
+                } else
+                    throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
+                        + " code " + response.statusCode()
+                        + " body '" + new String( IOUtils.toByteArray( response.body() ) ) + "'" );
             } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();

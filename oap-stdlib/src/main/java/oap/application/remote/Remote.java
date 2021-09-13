@@ -114,6 +114,7 @@ public class Remote implements HttpHandler {
             if( !invocation.service.contains( "." ) ) {
                 var services = kernel.services( "*", invocation.service );
                 if( services.size() > 1 ) {
+                    log.error( "{} found multiple services", invocation.service );
                     errorMetrics.increment();
                     exchange.setStatusCode( HTTP_NOT_FOUND );
                     exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
