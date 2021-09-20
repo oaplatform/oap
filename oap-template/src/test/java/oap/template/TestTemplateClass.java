@@ -60,6 +60,18 @@ public class TestTemplateClass {
         return field;
     }
 
+    public String fieldM( int value ) {
+        return field + "-" + value;
+    }
+
+    public String fieldM( double value ) {
+        return field + "-" + value;
+    }
+
+    public String fieldM( String value ) {
+        return field + "-" + value;
+    }
+
     public TestTemplateClass childM() {
         return child;
     }

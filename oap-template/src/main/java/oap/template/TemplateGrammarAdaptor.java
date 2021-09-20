@@ -84,10 +84,18 @@ abstract class TemplateGrammarAdaptor extends Parser {
     }
 
     MaxMin getAst( TemplateType parentType, String text, boolean isMethod ) {
-        return getAst( parentType, text, isMethod, null );
+        return getAst( parentType, text, isMethod, List.of() );
+    }
+
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, List<String> arguments ) {
+        return getAst( parentType, text, isMethod, null, arguments );
     }
 
     MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue ) {
+        return getAst( parentType, text, isMethod, defaultValue, List.of() );
+    }
+
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue, List<String> arguments ) {
         try {
             if( parentType.isInstanceOf( Optional.class ) ) {
                 var valueType = parentType.getActualTypeArguments0();
@@ -124,7 +132,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 var parentClass = parentType.getTypeClass();
                 var method = parentClass.getMethod( text );
 
-                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ) ) );
+                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments ) );
             }
         } catch( NoSuchFieldException | NoSuchMethodException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage() );

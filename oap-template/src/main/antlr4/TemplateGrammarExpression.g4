@@ -67,6 +67,9 @@ functionArgs returns [ArrayList<String> ret = new ArrayList<>()]
 
 functionArg returns [String ret]
     : DECDIGITS { $ret = $DECDIGITS.text; }
+    | MINUS DECDIGITS { $ret = "-" + $DECDIGITS.text; }
+    | FLOAT { $ret = $FLOAT.text; }
+    | MINUS FLOAT { $ret = "-" + $FLOAT.text; }
     | SSTRING { $ret = sStringToDString( $SSTRING.text ); }
     | DSTRING { $ret = $DSTRING.text; }
     ;
@@ -96,7 +99,7 @@ exps [TemplateType parentType] returns [MaxMin ast]
     ;
 
 exp[TemplateType parentType] returns [MaxMin ast]
-    : (ID LPAREN RPAREN) { $ast = getAst($parentType, $ID.text, true); }
+    : (ID LPAREN functionArgs? RPAREN) { $ast = getAst($parentType, $ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }
     | ID { $ast = getAst($parentType, $ID.text, false); }
     ;
 

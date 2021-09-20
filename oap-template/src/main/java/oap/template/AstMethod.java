@@ -26,21 +26,25 @@ package oap.template;
 
 import lombok.ToString;
 
+import java.util.List;
+
 @ToString( callSuper = true )
 public class AstMethod extends Ast {
     final String variableName;
     private final String methodName;
+    private final List<String> arguments;
 
-    public AstMethod( String methodName, TemplateType methodType ) {
+    public AstMethod( String methodName, TemplateType methodType, List<String> arguments ) {
         super( methodType );
 
         this.methodName = methodName;
+        this.arguments = arguments;
         variableName = newVariable();
     }
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "var %s = %s.%s();", variableName, render.field, methodName );
+        render.ntab().append( "var %s = %s.%s(%s);", variableName, render.field, methodName, String.join( ",", arguments ) );
 
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );

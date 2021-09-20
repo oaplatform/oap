@@ -144,14 +144,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testMethod() {
-        var c = new TestTemplateClass();
-        c.field = "val2";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM()}", STRING, null ).render( c ) )
-            .isEqualTo( "val2" );
-    }
-
-    @Test
     public void testChain() {
         var c1 = new TestTemplateClass();
         var c2 = new TestTemplateClass();
@@ -295,26 +287,6 @@ public class TemplateEngineTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING,
             Map.of( "child.field", "child2.field2" ), null ).render( c1 ) )
             .isEqualTo( "f2" );
-    }
-
-    @Test
-    public void testFunctionUrlencode() {
-        assertThat( engine.getTemplate( "testFunctionUrlencode0", new TypeRef<Map<String, String>>() {}, "id=${v; urlencode(0)}", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
-            .isEqualTo( "id=a i/d" );
-        assertThat( engine.getTemplate( "testFunctionUrlencode1", new TypeRef<Map<String, String>>() {}, "id=${v; urlencode( 1)}", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
-            .isEqualTo( "id=a+i%2Fd" );
-        assertThat( engine.getTemplate( "testFunctionUrlencode", new TypeRef<Map<String, String>>() {}, "id=${ v ; urlencode() }", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
-            .isEqualTo( "id=a+i%2Fd" );
-        assertThat( engine.getTemplate( "testFunctionUrlencode2", new TypeRef<Map<String, String>>() {}, "id=${v; urlencode ( 2 )}", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
-            .isEqualTo( "id=a%2Bi%252Fd" );
-        assertThat( engine.getTemplate( "testFunctionUrlencode", new TypeRef<Map<String, String>>() {}, "id=${ v ; urlencodePercent() }", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
-            .isEqualTo( "id=a%20i%2Fd" );
-    }
-
-    @Test
-    public void testFunctionToUpperCase() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()}", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
-            .isEqualTo( "id=A I/D" );
     }
 
     @Test
