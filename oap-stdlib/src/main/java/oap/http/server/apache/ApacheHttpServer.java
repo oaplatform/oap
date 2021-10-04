@@ -99,7 +99,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     private final int queueSize;
     private final boolean registerStatic;
     private final AtomicInteger activeCount = new AtomicInteger();
-    public int keepAliveTimeout = 1000 * 20;
+    public long keepAliveTimeout = Dates.s( 20 );
     public String originalServer = "OAP Server/1.0";
     public boolean responseDate = true;
     protected HealthHttpHandler healthHttpHandler;
@@ -183,7 +183,9 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     public void accepted( Socket socket ) {
         var timeNs = System.nanoTime();
 
-        socket.setSoTimeout( keepAliveTimeout );
+        if( keepAliveTimeout > 0 ) {
+            socket.setSoTimeout( ( int ) keepAliveTimeout );
+        }
         try {
             var connection = connectionFactory.createConnection( socket );
             var connectionId = connection.toString();
@@ -217,6 +219,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                             }
                         }
                     } catch( SocketTimeoutException e ) {
+                        Closeables.close( socket );
                         keepaliveTimeoutCounter.increment();
                         log.trace( "{}: timeout", connection );
                     } catch( IndexOutOfBoundsException e ) {
