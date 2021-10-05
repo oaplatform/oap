@@ -24,6 +24,7 @@
 package oap.http.server.apache;
 
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
@@ -99,7 +100,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     private final int queueSize;
     private final boolean registerStatic;
     private final AtomicInteger activeCount = new AtomicInteger();
-    public long keepAliveTimeout = Dates.s( 20 );
+    public long keepAliveTimeout = Dates.s( 2 );
     public String originalServer = "OAP Server/1.0";
     public boolean responseDate = true;
     protected HealthHttpHandler healthHttpHandler;
@@ -128,7 +129,9 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     }
 
     public void start() {
-        log.info( "workers = {}, queue size = {}", workers, queueSize );
+        log.info( "workers {} queue size {}", workers, queueSize );
+
+        Preconditions.checkState( keepAliveTimeout > 0 );
 
         var httpProcessorBuilder = HttpProcessorBuilder.create();
         if( originalServer != null )
@@ -183,9 +186,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     public void accepted( Socket socket ) {
         var timeNs = System.nanoTime();
 
-        if( keepAliveTimeout > 0 ) {
-            socket.setSoTimeout( ( int ) keepAliveTimeout );
-        }
+        socket.setSoTimeout( ( int ) keepAliveTimeout );
         try {
             var connection = connectionFactory.createConnection( socket );
             var connectionId = connection.toString();
@@ -205,23 +206,25 @@ public class ApacheHttpServer implements HttpServer, Closeable {
 
                         log.trace( "start handling {}", connection );
                         while( !Thread.interrupted() && connection.isOpen() ) {
-                            requestsCounter.increment();
-                            activeCount.incrementAndGet();
                             try {
                                 ServerHttpContext httpContextWithStartTime;
                                 if( firstRequest ) {
                                     httpContextWithStartTime = httpContext;
                                     firstRequest = false;
                                 } else httpContextWithStartTime = httpContext.withCurrentTimeNs();
+                                activeCount.incrementAndGet();
                                 httpService.handleRequest( connection, httpContextWithStartTime );
+                            } catch( SocketTimeoutException e ) {
+                                requestsCounter.increment();
+                                keepaliveTimeoutCounter.increment();
+                                log.trace( "{}: timeout", connection );
+                            } catch( Exception e ) {
+                                requestsCounter.increment();
+                                throw e;
                             } finally {
                                 activeCount.decrementAndGet();
                             }
                         }
-                    } catch( SocketTimeoutException e ) {
-                        Closeables.close( socket );
-                        keepaliveTimeoutCounter.increment();
-                        log.trace( "{}: timeout", connection );
                     } catch( IndexOutOfBoundsException e ) {
                         socketOrSslErrorCounter.increment();
                         log.debug( e.getMessage(), e );
