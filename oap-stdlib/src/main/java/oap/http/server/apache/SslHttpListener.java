@@ -85,7 +85,7 @@ public class SslHttpListener extends AbstractHttpListener {
 
     private void init( ServerSocket serverSocket ) throws IOException {
         serverSocket.setReuseAddress( true );
-        serverSocket.setSoTimeout( soTimeout );
+        serverSocket.setSoTimeout( ( int ) soTimeout );
         serverSocket.bind( new InetSocketAddress( port ), backlog );
     }
 }
