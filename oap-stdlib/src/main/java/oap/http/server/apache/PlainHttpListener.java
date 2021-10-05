@@ -56,7 +56,7 @@ public class PlainHttpListener extends AbstractHttpListener {
         try {
             ServerSocket serverSocket = new ServerSocket();
             serverSocket.setReuseAddress( true );
-            serverSocket.setSoTimeout( timeout );
+            serverSocket.setSoTimeout( ( int ) soTimeout );
             log.info( "binding to {}", address );
             serverSocket.bind( address, backlog );
             return serverSocket;

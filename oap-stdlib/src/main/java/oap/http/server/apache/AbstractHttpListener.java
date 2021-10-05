@@ -29,6 +29,7 @@ import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.Threads;
 import oap.http.server.HttpServer;
 import oap.io.Closeables;
+import oap.util.Dates;
 
 import java.io.Closeable;
 import java.net.ServerSocket;
@@ -41,10 +42,10 @@ import static oap.io.Sockets.socketClosed;
 @Slf4j
 public abstract class AbstractHttpListener extends SynchronizedRunnable implements Closeable {
     private final HttpServer server;
-    protected int timeout = 1000;
+    public int backlog = 50;
+    protected long soTimeout = Dates.s( 1 );
     protected long sleep = 60000;
     private ServerSocket serverSocket;
-    public int backlog = 50;
 
     AbstractHttpListener( HttpServer server ) {
         this.server = server;

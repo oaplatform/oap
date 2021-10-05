@@ -100,7 +100,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     private final int queueSize;
     private final boolean registerStatic;
     private final AtomicInteger activeCount = new AtomicInteger();
-    public long keepAliveTimeout = Dates.s( 2 );
+    public long soTimeout = Dates.s( 2 );
     public String originalServer = "OAP Server/1.0";
     public boolean responseDate = true;
     protected HealthHttpHandler healthHttpHandler;
@@ -131,7 +131,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     public void start() {
         log.info( "workers {} queue size {}", workers, queueSize );
 
-        Preconditions.checkState( keepAliveTimeout > 0 );
+        Preconditions.checkState( soTimeout > 0 );
 
         var httpProcessorBuilder = HttpProcessorBuilder.create();
         if( originalServer != null )
@@ -186,7 +186,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
     public void accepted( Socket socket ) {
         var timeNs = System.nanoTime();
 
-        socket.setSoTimeout( ( int ) keepAliveTimeout );
+        socket.setSoTimeout( ( int ) soTimeout );
         try {
             var connection = connectionFactory.createConnection( socket );
             var connectionId = connection.toString();
@@ -214,8 +214,8 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                                 } else httpContextWithStartTime = httpContext.withCurrentTimeNs();
                                 activeCount.incrementAndGet();
                                 httpService.handleRequest( connection, httpContextWithStartTime );
-                            } catch( SocketTimeoutException e ) {
                                 requestsCounter.increment();
+                            } catch( SocketTimeoutException e ) {
                                 keepaliveTimeoutCounter.increment();
                                 log.trace( "{}: timeout", connection );
                             } catch( Exception e ) {
