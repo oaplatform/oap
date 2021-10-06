@@ -240,7 +240,9 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                         var info = connections.remove( connectionId );
 
                         log.trace( "closing connection: {}, requests: {}, duration: {}",
-                            info.connection, ( long ) requestsCounter.count(), Dates.durationToString( ( System.nanoTime() - timeNs ) / 1_000_000 ) );
+                            info != null ? info.connection : "<unknown>",
+                            ( long ) requestsCounter.count(),
+                            Dates.durationToString( ( System.nanoTime() - timeNs ) / 1_000_000 ) );
                         try {
                             connection.close();
                         } catch( IOException e ) {
