@@ -68,7 +68,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testMethodWithIntParameter() {
         var c = new TestTemplateClass();
         c.field = "val2";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM(1  )}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMInt(1  )}", STRING, null ).render( c ) )
             .isEqualTo( "val2-1" );
     }
 
@@ -76,7 +76,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testMethodWithNegativeIntParameter() {
         var c = new TestTemplateClass();
         c.field = "val2";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM( -1)}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMInt( -1)}", STRING, null ).render( c ) )
             .isEqualTo( "val2--1" );
     }
 
@@ -84,7 +84,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testMethodWithFloatParameter() {
         var c = new TestTemplateClass();
         c.field = "val2";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM(1.2  )}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMDouble(1.2  )}", STRING, null ).render( c ) )
             .isEqualTo( "val2-1.2" );
     }
 
@@ -92,7 +92,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testMethodWithStringParameter() {
         var c = new TestTemplateClass();
         c.field = "val2";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM( 'str')}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMString( 'str')}", STRING, null ).render( c ) )
             .isEqualTo( "val2-str" );
     }
 

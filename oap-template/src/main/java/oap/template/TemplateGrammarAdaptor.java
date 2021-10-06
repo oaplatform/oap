@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.ToString;
 import oap.json.ext.Ext;
 import oap.json.ext.ExtDeserializer;
+import oap.util.Arrays;
 import oap.util.Lists;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
@@ -130,7 +131,11 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 return new MaxMin( new AstField( field.getName(), fieldType, forceCast ) );
             } else {
                 var parentClass = parentType.getTypeClass();
-                var method = parentClass.getMethod( text );
+                var method = Arrays
+                    .find( c -> c.getName().equals( text ), parentClass.getMethods() )
+                    .orElse( null );
+                if( method == null )
+                    method = parentClass.getMethod( text );
 
                 return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments ) );
             }

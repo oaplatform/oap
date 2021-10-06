@@ -60,15 +60,15 @@ public class TestTemplateClass {
         return field;
     }
 
-    public String fieldM( int value ) {
+    public String fieldMInt( int value ) {
         return field + "-" + value;
     }
 
-    public String fieldM( double value ) {
+    public String fieldMDouble( double value ) {
         return field + "-" + value;
     }
 
-    public String fieldM( String value ) {
+    public String fieldMString( String value ) {
         return field + "-" + value;
     }
 
