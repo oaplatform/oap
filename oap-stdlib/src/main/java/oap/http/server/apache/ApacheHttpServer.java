@@ -252,7 +252,6 @@ public class ApacheHttpServer implements HttpServer, Closeable {
                 } );
             } catch( oap.concurrent.ThreadPoolExecutor.RejectedExecutionException e ) {
                 rejectedCounter.increment();
-                log.warn( e.getMessage() );
 
                 try {
                     rejectedExecutor.execute( () -> {
