@@ -278,16 +278,28 @@ public class Binder {
     }
 
     public String marshal( Object value ) {
+        return marshal( value, false );
+    }
+
+    public String marshal( Object value, boolean prettyPrinter ) {
         try {
-            return mapper.writeValueAsString( value );
+            if( prettyPrinter )
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );
+            else return mapper.writeValueAsString( value );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
     }
 
     public void marshal( Object value, Writer writer ) {
+        marshal( value, writer, false );
+    }
+
+    public void marshal( Object value, Writer writer, boolean prettyPrinter ) {
         try {
-            mapper.writeValue( writer, value );
+            if( prettyPrinter ) mapper.writerWithDefaultPrettyPrinter().writeValue( writer, value );
+            else
+                mapper.writeValue( writer, value );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
