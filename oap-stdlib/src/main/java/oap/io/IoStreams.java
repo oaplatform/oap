@@ -175,6 +175,10 @@ public class IoStreams {
         }
     }
 
+    public static FixedLengthArrayOutputStream out( byte[] bytes ) {
+        return new FixedLengthArrayOutputStream( bytes );
+    }
+
     public static OutputStream out( Path path ) throws UncheckedIOException {
         return out( path, Encoding.from( path ), DEFAULT_BUFFER );
     }
