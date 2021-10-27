@@ -99,7 +99,7 @@ public final class Strings {
 
     /**
      * @see ContentReader#read(URL, ContentReader)
-     * */
+     */
     @Deprecated
     public static String readString( InputStream is ) {
         return ContentReader.read( is, ContentReader.ofString() );
@@ -107,7 +107,7 @@ public final class Strings {
 
     /**
      * @see ContentReader#read(URL, ContentReader)
-     * */
+     */
     @Deprecated
     public static String readString( URL url ) {
         return ContentReader.read( url, ContentReader.ofString() );
@@ -115,7 +115,7 @@ public final class Strings {
 
     /**
      * @see ContentReader#read(URL, ContentReader)
-     * */
+     */
     @Deprecated
     public static List<String> readLines( URL url ) {
         return ContentReader.read( url, ContentReader.ofLines() );
@@ -263,6 +263,7 @@ public final class Strings {
         }
     }
 
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public static boolean isGuid( String s ) {
         if( s == null || s.length() != 36 ) return false;
         for( int i = 0; i < s.length(); i++ ) {
@@ -376,11 +377,6 @@ public final class Strings {
         return s;
     }
 
-    public enum FriendlyIdOption {
-        NO_VOWELS,
-        FILL
-    }
-
     //eiminating most used letters in english from source
     public static String toAccessKey( String email ) {
         return toAccessKey( email, 12 );
@@ -405,6 +401,11 @@ public final class Strings {
                 result.append( ( char ) ( base + t <= 'Z' ? base + t : base - t ) );
             } else result.append( Character.toUpperCase( email.charAt( t ) ) );
         return result.toString();
+    }
+
+    public enum FriendlyIdOption {
+        NO_VOWELS,
+        FILL
     }
 
 }

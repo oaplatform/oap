@@ -529,6 +529,7 @@ public final class Files {
         return path.toFile().getUsableSpace();
     }
 
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public static boolean wildcardMatch( String filename, String wildcardMatcher ) {
         var wmPosition = 0;
         var fnPosition = 0;

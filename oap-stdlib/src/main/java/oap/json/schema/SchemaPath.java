@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 public final class SchemaPath {
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public static String resolve( String path, String... paths ) {
         if( paths.length == 0 ) return path;
 

@@ -175,6 +175,7 @@ public final class JsonDiff {
         return ( ( Map<?, ?> ) i ).get( idField );
     }
 
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     private static void diffObject( String prefix, ObjectSchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
 
         var toMap = ( Map<?, ?> ) to;

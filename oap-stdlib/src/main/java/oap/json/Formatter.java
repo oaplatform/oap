@@ -28,6 +28,7 @@ package oap.json;
 import java.util.Objects;
 
 public class Formatter {
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public static String format( String json ) {
         StringBuilder b = new StringBuilder();
         boolean string = false;
