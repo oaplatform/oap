@@ -29,7 +29,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>2.0.8</version>
+        <version>3.0.3</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -67,7 +67,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>9.17.5</oap.project.version>
+        <oap.project.version>9.18.0</oap.project.version>
 
 
         <oap.deps.testng.version>7.4.0</oap.deps.testng.version>
