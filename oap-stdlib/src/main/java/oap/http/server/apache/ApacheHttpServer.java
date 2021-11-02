@@ -152,7 +152,7 @@ public class ApacheHttpServer implements HttpServer, Closeable {
         if( queueSize > 0 )
             workQueueMetric = Gauge.builder( "oap_http_queue", workQueue, BlockingQueue::size ).register( Metrics.globalRegistry );
 
-        this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS,
+        this.executor = new ThreadPoolExecutor( workers, workers, 0, TimeUnit.SECONDS,
             workQueue,
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build(),
             new ThreadPoolExecutor.AbortPolicy() );
