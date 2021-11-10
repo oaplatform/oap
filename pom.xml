@@ -67,7 +67,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>17.9.18.5</oap.project.version>
+        <oap.project.version>17.9.18.6</oap.project.version>
 
 
         <oap.deps.testng.version>7.4.0</oap.deps.testng.version>

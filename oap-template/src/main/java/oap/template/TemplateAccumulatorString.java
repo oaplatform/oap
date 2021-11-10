@@ -29,7 +29,7 @@ import java.util.Collection;
 import static java.util.stream.Collectors.joining;
 
 public class TemplateAccumulatorString implements TemplateAccumulator<String, TemplateAccumulatorString> {
-    private final StringBuilder sb = new StringBuilder();
+    protected final StringBuilder sb = new StringBuilder();
 
     @Override
     public void acceptText( String text ) {
