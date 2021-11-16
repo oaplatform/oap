@@ -395,6 +395,11 @@
             <version>${oap.deps.undertow.version}</version>
         </dependency>
         <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>affinity</artifactId>
+            <version>${oap.deps.affinity}</version>
+        </dependency>
+        <dependency>
             <groupId>org.mock-server</groupId>
             <artifactId>mockserver-netty</artifactId>
             <version>${oap.deps.mockserver-netty.version}</version>
@@ -441,7 +446,7 @@
         <dependency>
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
-            <version>1.4.8-1</version>
+            <version>1.5.0-4</version>
         </dependency>
     </dependencies>
 

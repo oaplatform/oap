@@ -97,7 +97,7 @@ public final class Files {
         BiFunction<Integer, Integer, String> f = ( hash, bits ) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
         int bitPerDir = 8;
 
-        @SuppressWarnings( "UnstableApiUsage" ) int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
+        @SuppressWarnings( "UnstableApiUsage" ) int hash = Hashing.murmur3_32_fixed().hashBytes( name.getBytes() ).asInt();
         String f1 = f.apply( hash, bitPerDir );
         hash >>>= bitPerDir;
         String f2 = f.apply( hash, bitPerDir );

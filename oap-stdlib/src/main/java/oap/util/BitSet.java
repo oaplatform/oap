@@ -26,6 +26,7 @@ package oap.util;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.split;
 
@@ -49,6 +50,12 @@ public class BitSet extends java.util.BitSet implements Iterable<Integer> {
     public BitSet( int nbits ) {
         super( nbits );
         this.nbits = nbits;
+    }
+
+    public BitSet( List<Integer> bits ) {
+        this( Lists.max( bits ) );
+
+        for( var bit : bits ) set( bit, true );
     }
 
     public BitSet( String bitset ) {

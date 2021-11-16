@@ -25,22 +25,26 @@
 package oap.http.server.apache;
 
 import lombok.extern.slf4j.Slf4j;
+import net.openhft.affinity.Affinity;
 import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.Threads;
 import oap.http.server.HttpServer;
 import oap.io.Closeables;
+import oap.util.BitSet;
 import oap.util.Dates;
 
 import java.io.Closeable;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 
 import static oap.concurrent.Once.executeOnce;
 import static oap.io.Sockets.socketClosed;
 
 @Slf4j
 public abstract class AbstractHttpListener extends SynchronizedRunnable implements Closeable {
+    public final ArrayList<Integer> affinity = new ArrayList<>();
     private final HttpServer server;
     public int backlog = 50;
     protected long soTimeout = Dates.s( 1 );
@@ -55,6 +59,9 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
 
     @Override
     public void run() {
+        if( !affinity.isEmpty() )
+            Affinity.setAffinity( new BitSet( affinity ) );
+
         try {
             try {
                 while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
