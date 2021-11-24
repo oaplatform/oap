@@ -114,7 +114,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType, Map<String, Object> headers, boolean gzip ) {
-        return assertHttpResponse( client.post( uri, content, contentType, headers ) );
+        return assertHttpResponse( client.post( uri, content, contentType, headers, gzip ) );
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
