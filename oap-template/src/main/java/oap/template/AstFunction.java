@@ -44,7 +44,7 @@ class AstFunction extends Ast {
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "%S %s = %s.%s( %s",
+        render.ntab().append( "%s %s = %s.%s( %s",
             method.getGenericReturnType().getTypeName(), funcVariable,
             method.getDeclaringClass().getName(), method.getName(), render.field );
         if( !parameters.isEmpty() ) render.append( ", " );
