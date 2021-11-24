@@ -94,43 +94,23 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, String content, Map<String, Object> headers ) {
-        return assertPost( uri, content, headers, false );
-    }
-
-    public static HttpAssertion assertPost( String uri, String content, Map<String, Object> headers, boolean gzip ) {
-        return assertPost( uri, content, APPLICATION_JSON, headers, gzip );
+        return assertPost( uri, content, APPLICATION_JSON, headers );
     }
 
     public static HttpAssertion assertPost( String uri, String content ) {
-        return assertPost( uri, content, false );
-    }
-
-    public static HttpAssertion assertPost( String uri, String content, boolean gzip ) {
-        return assertPost( uri, content, Map.of(), gzip );
+        return assertPost( uri, content, Map.of() );
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
-        return assertPost( uri, content, contentType, headers, false );
-    }
-
-    public static HttpAssertion assertPost( String uri, String content, ContentType contentType, Map<String, Object> headers, boolean gzip ) {
-        return assertHttpResponse( client.post( uri, content, contentType, headers, gzip ) );
+        return assertHttpResponse( client.post( uri, content, contentType, headers ) );
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
-        return assertPost( uri, content, contentType, false );
-    }
-
-    public static HttpAssertion assertPost( String uri, String content, ContentType contentType, boolean gzip ) {
-        return assertPost( uri, content, contentType, Map.of(), gzip );
+        return assertPost( uri, content, contentType, Map.of() );
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
-        return assertPost( uri, content, contentType, false );
-    }
-
-    public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType, boolean gzip ) {
-        return assertHttpResponse( client.post( uri, content, contentType, gzip ) );
+        return assertHttpResponse( client.post( uri, content, contentType ) );
     }
 
 //    public static HttpAssertion assertUploadFile( String uri, String prefix, Path path ) {
