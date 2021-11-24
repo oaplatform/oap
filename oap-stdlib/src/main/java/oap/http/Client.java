@@ -44,10 +44,12 @@ import oap.util.Throwables;
 import oap.util.function.Try;
 import oap.util.function.Try.ThrowingRunnable;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -237,7 +239,11 @@ public final class Client implements Closeable {
     }
 
     public Response post( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
-        return post( uri, content, contentType, headers, builder.timeout )
+        return post( uri, content, contentType, headers, false );
+    }
+
+    public Response post( String uri, String content, ContentType contentType, Map<String, Object> headers, boolean gzip ) {
+        return post( uri, content, contentType, headers, builder.timeout, gzip )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
@@ -246,14 +252,26 @@ public final class Client implements Closeable {
     }
 
     public Optional<Response> post( String uri, String content, ContentType contentType, Map<String, Object> headers, long timeout ) {
+        return post( uri, content, contentType, headers, timeout, false );
+    }
+
+    public Optional<Response> post( String uri, String content, ContentType contentType, Map<String, Object> headers, long timeout, boolean gzip ) {
         var request = new HttpPost( uri );
-        request.setEntity( new StringEntity( content, contentType ) );
+        HttpEntity entity = new StringEntity( content, contentType );
+        if( gzip ) entity = new GzipCompressingEntity( entity );
+        request.setEntity( entity );
         return getResponse( request, timeout, execute( request, headers ) );
     }
 
     public Optional<Response> post( String uri, byte[] content, long timeout ) {
+        return post( uri, content, timeout, false );
+    }
+
+    public Optional<Response> post( String uri, byte[] content, long timeout, boolean gzip ) {
         var request = new HttpPost( uri );
-        request.setEntity( new ByteArrayEntity( content, APPLICATION_OCTET_STREAM ) );
+        HttpEntity entity = new ByteArrayEntity( content, APPLICATION_OCTET_STREAM );
+        if( gzip ) entity = new GzipCompressingEntity( entity );
+        request.setEntity( entity );
         return getResponse( request, timeout, execute( request, Map.of() ) );
     }
 
@@ -284,22 +302,40 @@ public final class Client implements Closeable {
     }
 
     public Response post( String uri, InputStream content, ContentType contentType ) {
+        return post( uri, content, contentType, false );
+    }
+
+    public Response post( String uri, InputStream content, ContentType contentType, boolean gzip ) {
         var request = new HttpPost( uri );
-        request.setEntity( new InputStreamEntity( content, contentType ) );
+        HttpEntity entity = new InputStreamEntity( content, contentType );
+        if( gzip ) entity = new GzipCompressingEntity( entity );
+        request.setEntity( entity );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response post( String uri, InputStream content, ContentType contentType, Map<String, Object> headers ) {
+        return post( uri, content, contentType, headers, false );
+    }
+
+    public Response post( String uri, InputStream content, ContentType contentType, Map<String, Object> headers, boolean gzip ) {
         var request = new HttpPost( uri );
-        request.setEntity( new InputStreamEntity( content, contentType ) );
+        HttpEntity entity = new InputStreamEntity( content, contentType );
+        if( gzip ) entity = new GzipCompressingEntity( entity );
+        request.setEntity( entity );
         return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response post( String uri, byte[] content, ContentType contentType, Map<String, Object> headers ) {
+        return post( uri, content, contentType, headers, false );
+    }
+
+    public Response post( String uri, byte[] content, ContentType contentType, Map<String, Object> headers, boolean gzip ) {
         var request = new HttpPost( uri );
-        request.setEntity( new ByteArrayEntity( content, contentType ) );
+        HttpEntity entity = new ByteArrayEntity( content, contentType );
+        if( gzip ) entity = new GzipCompressingEntity( entity );
+        request.setEntity( entity );
         return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
