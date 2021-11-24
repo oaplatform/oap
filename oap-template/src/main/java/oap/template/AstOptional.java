@@ -49,6 +49,6 @@ public class AstOptional extends AstIfElse {
 
     @Override
     protected String getInnerVariableSetter( Render render ) {
-        return "var %s = %s.get();".formatted( variableName, render.field );
+        return "%s %s = %s.get();".formatted( type.getTypeName(), variableName, render.field );
     }
 }

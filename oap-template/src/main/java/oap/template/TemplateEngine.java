@@ -146,7 +146,7 @@ public class TemplateEngine implements Runnable {
             + acc.getClass().hashCode()
             + ( postProcess != null ? "_" + postProcess.getClass().hashCode() : "" );
 
-        log.trace( "id = {}, acc = {}, template = {}, aliases = {}", id, acc.getClass(), template, aliases );
+        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
         try {
             TemplateFunction tFunc = templates.get( id, () -> {

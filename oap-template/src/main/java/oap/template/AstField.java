@@ -42,7 +42,8 @@ public class AstField extends Ast {
 
     @Override
     void render( Render render ) {
-        render.ntab().append( "var %s = ", variableName );
+        render.ntab()
+            .append( "%s %s = ", type.getTypeName(), variableName );
         if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
         render.append( "%s.%s;", render.field, fieldName );
 

@@ -39,7 +39,9 @@ public class AstMap extends Ast {
     @Override
     void render( Render render ) {
         var newVariable = newVariable();
-        render.ntab().append( "var %s = %s.get( \"%s\" );", newVariable, render.field, render.escapeJava( key ) );
+        render.ntab().append( "%s %s = %s.get( \"%s\" );",
+            type.getTypeName(), newVariable,
+            render.field, render.escapeJava( key ) );
 
         var newRender = render.withField( newVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
