@@ -31,4 +31,4 @@ To have a template engine that can generate java objects on a fly from dynamic u
 - Comments
 - Support primitive as objects 
 
-Please take a look at `TemplateEngineTest`. You will find a more detailed overview of how it can be used in code
+Please take a look at [TemplateEngineTest](src/test/java/oap/template/TemplateEngineTest.java). You will find a more detailed overview of how it can be used in code

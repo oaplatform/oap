@@ -287,8 +287,9 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				            grammarExp.addErrorListener( ThrowingErrorListener.INSTANCE );
 				        }
 				        
-					    try { 
+					    try {
 				            ((ElementContext)_localctx).ast =  new AstExpression(grammarExp.expression( _localctx.parentType ).ast.top, ((ElementContext)_localctx).expression.content);
+							System.out.println("here is methods calling");
 				        } catch ( Exception e ) {
 				            throw new TemplateException( ((ElementContext)_localctx).expression.content, e ); 
 				        }
