@@ -76,7 +76,6 @@ public class HttpServerExchange {
         for( String value : values ) if( value.contains( "gzip" ) ) return true;
 
         return false;
-
     }
 
     public static boolean isRequestGzipped( io.undertow.server.HttpServerExchange hsExchange ) {
@@ -96,6 +95,11 @@ public class HttpServerExchange {
     public static String getStringParameter( Map<String, Deque<String>> requestParameters, String name ) {
         var values = requestParameters.get( name );
         return values != null && !values.isEmpty() ? values.getFirst() : null;
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public boolean gzipSupported() {
+        return gzipSupported( exchange );
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
@@ -140,11 +144,24 @@ public class HttpServerExchange {
     }
 
     public void setStatusCodeReasonPhrase( int statusCode, String message ) {
-        exchange.setStatusCode( statusCode );
-        exchange.setReasonPhrase( message );
+        setStatusCode( statusCode );
+        setReasonPhrase( message );
     }
 
-    public void responseBodyJson( Object body ) {
+    public void responseJson( int statusCode, String reasonPhrase, Object body ) {
+        setStatusCode( statusCode );
+        setReasonPhrase( reasonPhrase );
+        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON.getMimeType() );
+        Binder.json.marshal( body, exchange.getOutputStream() );
+    }
+
+    public void responseJson( int statusCode, Object body ) {
+        setStatusCode( statusCode );
+        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON.getMimeType() );
+        Binder.json.marshal( body, exchange.getOutputStream() );
+    }
+
+    public void responseJson( Object body ) {
         setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON.getMimeType() );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
@@ -182,9 +199,17 @@ public class HttpServerExchange {
         exchange.getResponseHeaders().put( name, value );
     }
 
+    public void setResponseHeader( String name, String value ) {
+        exchange.getResponseHeaders().put( new HttpString( name ), value );
+    }
+
     public void ok( String body, String contentType ) {
         setStatusCode( StatusCodes.OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
         exchange.getResponseSender().send( body );
+    }
+
+    public void setReasonPhrase( String message ) {
+        exchange.setReasonPhrase( message );
     }
 }
