@@ -32,13 +32,26 @@ import io.undertow.util.HttpString;
 import io.undertow.util.StatusCodes;
 import oap.http.ContentTypes;
 import oap.json.Binder;
+import oap.util.HashMaps;
+import oap.util.function.Try;
+import org.apache.http.entity.ContentType;
 
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class HttpServerExchange {
+    private static final Map<String, Function<Object, String>> producers = HashMaps.of(
+        TEXT_PLAIN.getMimeType(), String::valueOf,
+        APPLICATION_JSON.getMimeType(), Binder.json::marshal
+    );
+
     public final io.undertow.server.HttpServerExchange exchange;
     public final String ua;
     public final String referrer;
@@ -97,6 +110,15 @@ public class HttpServerExchange {
     public static String getStringParameter( Map<String, Deque<String>> requestParameters, String name ) {
         var values = requestParameters.get( name );
         return values != null && !values.isEmpty() ? values.getFirst() : null;
+    }
+
+    public static void registerProducer( String mimeType, Function<Object, String> producer ) {
+        producers.put( mimeType, producer );
+    }
+
+    private static String contentToString( boolean raw, Object content, ContentType contentType ) {
+        return raw ? ( String ) content
+            : producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
@@ -180,6 +202,28 @@ public class HttpServerExchange {
     public void responseJson( Object body ) {
         setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON.getMimeType() );
         Binder.json.marshal( body, exchange.getOutputStream() );
+    }
+
+    public void responseOk( Object content, boolean raw, ContentType contentType ) {
+        setStatusCode( StatusCodes.OK );
+        setResponseHeader( Headers.CONTENT_TYPE, contentType.getMimeType() );
+        exchange.getResponseSender().send( contentToString( raw, content, contentType ) );
+    }
+
+    public void responseStream( Stream<Object> content, boolean raw, ContentType contentType ) {
+        setStatusCode( StatusCodes.OK );
+        setResponseHeader( Headers.CONTENT_TYPE, contentType.getMimeType() );
+
+        var out = exchange.getOutputStream();
+
+        content
+            .map( v -> contentToString( raw, v, contentType ) )
+            .forEach( Try.consume( v -> {
+                out.write( v.getBytes() );
+                out.write( '\n' );
+            } ) );
+
+        exchange.getResponseSender().send( contentToString( raw, content, contentType ) );
     }
 
     public HttpServerExchange addQueryParam( String name, String param ) {
