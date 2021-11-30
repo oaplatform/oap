@@ -25,6 +25,8 @@
 package oap.http.server.undertow;
 
 import io.undertow.server.handlers.Cookie;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.StatusCodes;
@@ -125,6 +127,16 @@ public class HttpServerExchange {
         Cookie requestCookie = exchange.getRequestCookie( name );
         if( requestCookie == null ) return null;
         return requestCookie.getValue();
+    }
+
+    public HeaderMap getRequestHeaders() {
+        return exchange.getRequestHeaders();
+    }
+
+    public String getRequestHeader( String name ) {
+        HeaderValues values = exchange.getRequestHeaders().get( name );
+        if( values == null || values.isEmpty() ) return null;
+        return values.getFirst();
     }
 
     public void responseNotFound() {
