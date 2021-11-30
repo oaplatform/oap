@@ -113,6 +113,10 @@ public class HttpServerExchange {
         exchange.getResponseHeaders().put( Headers.LOCATION, url );
     }
 
+    public String getRequestMethod() {
+        return exchange.getRequestMethod().toString();
+    }
+
     public void noContent() {
         exchange.setStatusCode( StatusCodes.NO_CONTENT );
     }
