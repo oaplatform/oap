@@ -26,7 +26,10 @@ package oap.http.server.undertow;
 
 import io.undertow.server.handlers.Cookie;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import io.undertow.util.StatusCodes;
+import oap.http.ContentTypes;
+import oap.json.Binder;
 
 import java.util.Deque;
 import java.util.List;
@@ -90,15 +93,17 @@ public class HttpServerExchange {
         return values != null && !values.isEmpty() && Boolean.parseBoolean( values.getFirst() );
     }
 
-    public boolean getBooleanParameter( String name ) {
-        return getBooleanParameter( exchange.getQueryParameters(), name );
-    }
-
     public static String getStringParameter( Map<String, Deque<String>> requestParameters, String name ) {
         var values = requestParameters.get( name );
         return values != null && !values.isEmpty() ? values.getFirst() : null;
     }
 
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public boolean getBooleanParameter( String name ) {
+        return getBooleanParameter( exchange.getQueryParameters(), name );
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public String getStringParameter( String name ) {
         return getStringParameter( exchange.getQueryParameters(), name );
     }
@@ -118,6 +123,20 @@ public class HttpServerExchange {
 
     public int getStatusCode() {
         return exchange.getStatusCode();
+    }
+
+    public void setStatusCode( int statusCode ) {
+        exchange.setStatusCode( statusCode );
+    }
+
+    public void setStatusCodeReasonPhrase( int statusCode, String message ) {
+        exchange.setStatusCode( statusCode );
+        exchange.setReasonPhrase( message );
+    }
+
+    public void responseBodyJson( Object body ) {
+        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON.getMimeType() );
+        Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
     public HttpServerExchange addQueryParam( String name, String param ) {
@@ -149,9 +168,13 @@ public class HttpServerExchange {
         exchange.setStatusCode( StatusCodes.NOT_FOUND );
     }
 
+    public void setResponseHeader( HttpString name, String value ) {
+        exchange.getResponseHeaders().put( name, value );
+    }
+
     public void ok( String body, String contentType ) {
-        exchange.setStatusCode( StatusCodes.OK );
-        exchange.getResponseHeaders().put( Headers.CONTENT_TYPE, contentType );
+        setStatusCode( StatusCodes.OK );
+        setResponseHeader( Headers.CONTENT_TYPE, contentType );
         exchange.getResponseSender().send( body );
     }
 }

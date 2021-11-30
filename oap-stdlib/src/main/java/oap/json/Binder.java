@@ -305,6 +305,20 @@ public class Binder {
         }
     }
 
+    public void marshal( Object value, OutputStream outputStream ) {
+        marshal( value, outputStream, false );
+    }
+
+    public void marshal( Object value, OutputStream outputStream, boolean prettyPrinter ) {
+        try {
+            if( prettyPrinter ) mapper.writerWithDefaultPrettyPrinter().writeValue( outputStream, value );
+            else
+                mapper.writeValue( outputStream, value );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
+    }
+
     public <T> String marshal( TypeRef<T> ref, Object value ) {
         try {
             return mapper.writerFor( toTypeReference( ref ) ).writeValueAsString( value );
