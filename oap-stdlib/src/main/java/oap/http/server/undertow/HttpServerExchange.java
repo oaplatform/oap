@@ -127,7 +127,11 @@ public class HttpServerExchange {
         return requestCookie.getValue();
     }
 
-    public void noContent() {
+    public void responseNotFound() {
+        exchange.setStatusCode( StatusCodes.NOT_FOUND );
+    }
+
+    public void responseNoContent() {
         exchange.setStatusCode( StatusCodes.NO_CONTENT );
     }
 
@@ -189,10 +193,6 @@ public class HttpServerExchange {
 
     public Iterable<Cookie> responseCookies() {
         return exchange.responseCookies();
-    }
-
-    public void notFound() {
-        exchange.setStatusCode( StatusCodes.NOT_FOUND );
     }
 
     public void setResponseHeader( HttpString name, String value ) {

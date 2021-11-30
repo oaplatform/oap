@@ -55,6 +55,6 @@ public class HealthHttpHandler implements HttpHandler {
         log.trace( "providers: {}", providers );
         if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
             exchange.ok( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON.getMimeType() );
-        else exchange.noContent();
+        else exchange.responseNoContent();
     }
 }
