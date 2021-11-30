@@ -117,6 +117,12 @@ public class HttpServerExchange {
         return exchange.getRequestMethod().toString();
     }
 
+    public String getRequestCookieValue( String name ) {
+        Cookie requestCookie = exchange.getRequestCookie( name );
+        if( requestCookie == null ) return null;
+        return requestCookie.getValue();
+    }
+
     public void noContent() {
         exchange.setStatusCode( StatusCodes.NO_CONTENT );
     }
