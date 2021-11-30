@@ -50,7 +50,7 @@ public class PrometheusExporter implements Closeable {
     public PrometheusExporter( int port, String path ) {
         log.info( "Prometheus metrics port/path {}/{}", port, path );
 
-        server = new UndertowHttpServer( "prometheus", port );
+        server = new UndertowHttpServer( port );
         server.ioThreads = 2;
         server.workerThreads = 4;
         server.bind( path, exchange -> {

@@ -39,7 +39,6 @@ import java.net.InetSocketAddress;
 @Slf4j
 public class UndertowHttpServer {
     public final int port;
-    public final String name;
     private final PathHandler pathHandler;
 
     public int backlog = -1;
@@ -55,11 +54,6 @@ public class UndertowHttpServer {
     public Undertow server;
 
     public UndertowHttpServer( int port ) {
-        this( null, port );
-    }
-
-    public UndertowHttpServer( String name, int port ) {
-        this.name = name;
         this.port = port;
 
         pathHandler = new PathHandler();
@@ -92,11 +86,17 @@ public class UndertowHttpServer {
 
                 ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
 
-                Metrics.gauge( withName( "nio_requests" ), Tags.of( "port", port, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-                Metrics.gauge( withName( "nio_requests" ), Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-                Metrics.gauge( withName( "nio_requests" ), Tags.of( "port", port, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
+                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
+                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
 
-                Metrics.gauge( withName( "nio_connections" ), Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+                Metrics.gauge( "nio_connections", Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "active" ), server, server -> server.getWorker().getMXBean().getWorkerPoolSize() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "core" ), server, server -> server.getWorker().getMXBean().getCoreWorkerPoolSize() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "max" ), server, server -> server.getWorker().getMXBean().getMaxWorkerPoolSize() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "busy" ), server, server -> server.getWorker().getMXBean().getBusyWorkerThreadCount() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "queue" ), server, server -> server.getWorker().getMXBean().getWorkerQueueSize() );
 
             }
         }
@@ -106,8 +106,8 @@ public class UndertowHttpServer {
         server = builder.build();
         server.start();
 
-        log.info( "name '{}' port {} statistics {} ioThreads {} workerThreads {}",
-            name != null ? name : "<NONE>", port, statistics,
+        log.info( "port {} statistics {} ioThreads {} workerThreads {}",
+            port, statistics,
             server.getWorker().getMXBean().getIoThreadCount(),
             server.getWorker().getMXBean().getMaxWorkerPoolSize()
         );
@@ -121,11 +121,6 @@ public class UndertowHttpServer {
 
     public void unbind( String prefix ) {
         pathHandler.removePrefixPath( prefix );
-    }
-
-    private String withName( String metric ) {
-        if( name == null ) return metric;
-        return name + "_" + metric;
     }
 
     public void preStop() {
