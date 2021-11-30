@@ -67,8 +67,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>17.9.19.3</oap.project.version>
-
+        <oap.project.version>17.9.20.0</oap.project.version>
 
         <oap.deps.testng.version>7.4.0</oap.deps.testng.version>
         <oap.deps.assertj.version>3.21.0</oap.deps.assertj.version>
@@ -78,6 +77,9 @@
 
         <oap.deps.logback.version>1.2.6</oap.deps.logback.version>
         <oap.deps.slf4j.version>1.7.32</oap.deps.slf4j.version>
+
+        <oap.deps.mockito.version>4.0.0</oap.deps.mockito.version>
+
 
         <oap.deps.apache.httpcomponents.version>4.4.14</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.13</oap.deps.apache.httpclient.version>
@@ -116,7 +118,7 @@
         <oap.deps.maven.version>3.0-alpha-2</oap.deps.maven.version>
         <oap.deps.maven.plugin-annotations.version>3.6.1</oap.deps.maven.plugin-annotations.version>
         <oap.deps.maven.plugin-plugin.version>3.6.1</oap.deps.maven.plugin-plugin.version>
-        <oap.deps.plugins.antlr4.version>4.9.2</oap.deps.plugins.antlr4.version>
+        <oap.deps.plugins.antlr4.version>4.9.3</oap.deps.plugins.antlr4.version>
 
         <oap.deps.aws-java-sdk.version>1.12.29</oap.deps.aws-java-sdk.version>
         <oap.deps.s3mock.version>0.2.6</oap.deps.s3mock.version>

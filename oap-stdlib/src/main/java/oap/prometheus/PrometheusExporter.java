@@ -27,17 +27,11 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.UndertowOptions;
-import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Dates;
+import oap.http.server.undertow.UndertowHttpServer;
+import org.apache.http.entity.ContentType;
 
 import java.io.Closeable;
-
-import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public class PrometheusExporter implements Closeable {
@@ -47,7 +41,7 @@ public class PrometheusExporter implements Closeable {
         Metrics.addRegistry( prometheusRegistry );
     }
 
-    private final Undertow server;
+    private final UndertowHttpServer server;
 
     public PrometheusExporter( int port ) {
         this( port, "/metrics" );
@@ -56,21 +50,13 @@ public class PrometheusExporter implements Closeable {
     public PrometheusExporter( int port, String path ) {
         log.info( "Prometheus metrics port/path {}/{}", port, path );
 
-        server = Undertow
-            .builder()
-            .addHttpListener( port, "0.0.0.0" )
-            .setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, false )
-            .setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) Dates.s( 30 ) )
-            .setHandler( Handlers.path().addPrefixPath( path, new BlockingHandler( exchange -> {
-                var response = prometheusRegistry.scrape();
-                exchange.setStatusCode( HTTP_OK );
-                exchange.getResponseHeaders().add( Headers.CONTENT_LENGTH, response.getBytes().length );
-                try( var os = exchange.getOutputStream() ) {
-                    os.write( response.getBytes() );
-                }
-
-            } ) ) )
-            .build();
+        server = new UndertowHttpServer( "prometheus", port );
+        server.ioThreads = 2;
+        server.workerThreads = 4;
+        server.bind( path, exchange -> {
+            var response = prometheusRegistry.scrape();
+            exchange.ok( response, ContentType.TEXT_PLAIN.getMimeType() );
+        } );
     }
 
     public void start() {
@@ -78,11 +64,11 @@ public class PrometheusExporter implements Closeable {
     }
 
     public void preStop() {
-        server.stop();
+        server.preStop();
     }
 
     @Override
     public void close() {
-        server.stop();
+        server.preStop();
     }
 }

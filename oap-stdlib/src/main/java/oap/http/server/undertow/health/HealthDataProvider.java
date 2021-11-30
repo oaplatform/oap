@@ -21,15 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-import org.apache.http.entity.ContentType;
+package oap.http.server.undertow.health;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+public interface HealthDataProvider<T> {
+    String name();
 
-public class ContentTypes {
-    public static final ContentType TEXT_TSV = ContentType.create( "text/tab-separated-values", UTF_8 );
-    public static final ContentType TEXT_CSV = ContentType.create( "text/csv", UTF_8 );
-    public static final ContentType TEXT_PLAIN = ContentType.TEXT_PLAIN.withCharset( UTF_8 );
-    public static final ContentType APPLICATION_JSON = ContentType.APPLICATION_JSON.withCharset( UTF_8 );
+    T data();
 }
