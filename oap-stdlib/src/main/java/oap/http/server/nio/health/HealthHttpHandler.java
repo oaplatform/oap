@@ -22,53 +22,39 @@
  * SOFTWARE.
  */
 
-package oap.prometheus;
+package oap.http.server.nio.health;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.server.nio.NioHttpServer;
-import org.apache.http.entity.ContentType;
+import oap.http.ContentTypes;
+import oap.http.server.nio.HttpHandler;
+import oap.http.server.nio.HttpServerExchange;
+import oap.json.Binder;
+import oap.util.Collections;
 
-import java.io.Closeable;
+import java.util.ArrayList;
 
 @Slf4j
-public class PrometheusExporter implements Closeable {
-    public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+public class HealthHttpHandler implements HttpHandler {
+    private final ArrayList<HealthDataProvider<?>> providers = new ArrayList<>();
+    private final String secret;
 
-    static {
-        Metrics.addRegistry( prometheusRegistry );
+    public HealthHttpHandler( String secret ) {
+        this.secret = secret;
     }
 
-    private final NioHttpServer server;
-
-    public PrometheusExporter( int port ) {
-        this( port, "/metrics" );
+    public HealthHttpHandler() {
+        this( null );
     }
 
-    public PrometheusExporter( int port, String path ) {
-        log.info( "Prometheus metrics port/path {}/{}", port, path );
-
-        server = new NioHttpServer( port );
-        server.ioThreads = 2;
-        server.workerThreads = 4;
-        server.bind( path, exchange -> {
-            var response = prometheusRegistry.scrape();
-            exchange.ok( response, ContentType.TEXT_PLAIN.getMimeType() );
-        } );
-    }
-
-    public void start() {
-        server.start();
-    }
-
-    public void preStop() {
-        server.preStop();
+    public void addProvider( HealthDataProvider<?> provider ) {
+        this.providers.add( provider );
     }
 
     @Override
-    public void close() {
-        server.preStop();
+    public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        log.trace( "providers: {}", providers );
+        if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
+            exchange.ok( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
+        else exchange.responseNoContent();
     }
 }

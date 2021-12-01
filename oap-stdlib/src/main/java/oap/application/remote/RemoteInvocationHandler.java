@@ -31,6 +31,7 @@ import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
+import oap.http.HttpStatusCodes;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
@@ -62,7 +63,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
-import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.util.Dates.s;
 
@@ -155,7 +155,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var responseFuture = client.sendAsync( request, HttpResponse.BodyHandlers.ofInputStream() );
                 var response = responseFuture.get( timeout, MILLISECONDS );
-                if( response.statusCode() == HTTP_OK && response.body() != null ) {
+                if( response.statusCode() == HttpStatusCodes.OK && response.body() != null ) {
                     var inputStream = response.body();
                     var bis = new BufferedInputStream( inputStream );
                     var dis = new DataInputStream( bis );

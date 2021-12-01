@@ -24,10 +24,8 @@
 
 package oap.http;
 
-import oap.concurrent.SynchronizedThread;
-import oap.http.cors.GenericCorsPolicy;
-import oap.http.server.apache.ApacheHttpServer;
-import oap.http.server.apache.PlainHttpListener;
+import oap.compression.CompressionUtils;
+import oap.http.server.nio.NioHttpServer;
 import oap.io.IoStreams;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -35,17 +33,17 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.Map;
 
-import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GzipHttpTest extends Fixtures {
     private final EnvFixture envFixture;
-    private ApacheHttpServer server;
-    private SynchronizedThread thread;
+    private NioHttpServer server;
 
     {
         envFixture = fixture( new EnvFixture() );
@@ -53,37 +51,46 @@ public class GzipHttpTest extends Fixtures {
 
     @BeforeMethod
     public void beforeMethod() {
-        server = new ApacheHttpServer( 1024, 0, false );
+        server = new NioHttpServer( envFixture.portFor( getClass() ) );
         server.start();
-        var listener = new PlainHttpListener( server, envFixture.portFor( getClass() ) );
-        thread = new SynchronizedThread( listener, 5000 );
-        listener.readyListener( thread );
     }
 
     @AfterMethod
     public void afterMethod() {
-        thread.stop();
-        server.stop();
+        server.preStop();
     }
 
     @Test
     public void gzipOutput() {
-        server.bind( "test", GenericCorsPolicy.DEFAULT,
-            ( request, response ) -> response.respond( HttpResponse.ok( "test", true, TEXT_PLAIN ).response() ), Protocol.HTTP );
-
-        thread.start();
+        server.bind( "test", exchange ->
+            exchange.responseOk( "test", true, TEXT_PLAIN )
+        );
 
         var response = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" );
 
-        assertThat( response.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
+        assertThat( response.code ).isEqualTo( HttpStatusCodes.OK );
+        assertThat( response.contentType ).isEqualTo( TEXT_PLAIN );
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
-            Map.of(), Map.of( "Accept-encoding", "gzip,deflate" ) );
+            Map.of(), Map.of( Headers.ACCEPT_ENCODING, "gzip,deflate" ) );
 
-        assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( responseGzip.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
+        assertThat( responseGzip.code ).isEqualTo( HttpStatusCodes.OK );
+        assertThat( responseGzip.contentType.toString() ).isEqualTo( TEXT_PLAIN );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
+    }
+
+    @Test
+    public void gzipInput() throws IOException {
+        server.bind( "test", exchange ->
+            exchange.responseOk( new String( exchange.readBody() ), true, TEXT_PLAIN )
+        );
+
+        var response = Client.DEFAULT.post( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
+            CompressionUtils.gzip( "test2" ), TEXT_PLAIN, Map.of( Headers.CONTENT_ENCODING, "gzip" ) );
+
+        assertThat( response.code ).isEqualTo( HttpStatusCodes.OK );
+        assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN );
+        assertThat( IoStreams.asString( response.getInputStream(), PLAIN ) ).isEqualTo( "test2" );
     }
 }

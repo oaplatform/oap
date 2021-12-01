@@ -21,12 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.http;
 
-public class ContentTypes {
-    public static final String TEXT_TSV = "text/tab-separated-values";
-    public static final String TEXT_CSV = "text/csv";
-    public static final String TEXT_PLAIN = "text/plain";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+public final class Headers {
+    public static final String CONTENT_ENCODING = io.undertow.util.Headers.CONTENT_ENCODING_STRING;
+    public static final String ACCEPT_ENCODING = io.undertow.util.Headers.ACCEPT_ENCODING_STRING;
+    public static final String CONTENT_TYPE = io.undertow.util.Headers.CONTENT_TYPE_STRING;
+
+    private Headers() {
+    }
 }

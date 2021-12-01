@@ -21,12 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public class ContentTypes {
-    public static final String TEXT_TSV = "text/tab-separated-values";
-    public static final String TEXT_CSV = "text/csv";
-    public static final String TEXT_PLAIN = "text/plain";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+package oap.compression;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.zip.GZIPOutputStream;
+
+public class CompressionUtils {
+    private CompressionUtils() {
+    }
+
+    public static byte[] gzip( String content ) throws IOException {
+        var baos = new ByteArrayOutputStream();
+        try( var gos = new GZIPOutputStream( baos ) ) {
+            gos.write( content.getBytes() );
+        }
+
+        return baos.toByteArray();
+    }
 }
