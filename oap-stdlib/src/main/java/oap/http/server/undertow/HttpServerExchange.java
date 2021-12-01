@@ -34,8 +34,12 @@ import oap.http.ContentTypes;
 import oap.json.Binder;
 import oap.util.HashMaps;
 import oap.util.function.Try;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -210,7 +214,14 @@ public class HttpServerExchange {
         exchange.getResponseSender().send( contentToString( raw, content, contentType ) );
     }
 
-    public void responseStream( Stream<Object> content, boolean raw, ContentType contentType ) {
+    public byte[] readBody() throws IOException {
+        var ret = new ByteArrayOutputStream();
+        IOUtils.copy( getInputStream(), ret );
+
+        return ret.toByteArray();
+    }
+
+    public void responseStream( Stream<?> content, boolean raw, ContentType contentType ) {
         setStatusCode( StatusCodes.OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType.getMimeType() );
 
@@ -230,6 +241,10 @@ public class HttpServerExchange {
         exchange.addQueryParam( name, param );
 
         return this;
+    }
+
+    public InputStream getInputStream() {
+        return exchange.getInputStream();
     }
 
     public String header( String headerName, String defaultValue ) {
