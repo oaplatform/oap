@@ -291,4 +291,14 @@ public class HttpServerExchange {
 
         return this;
     }
+
+    public enum HttpMethod {
+        GET,
+        POST,
+        PUT,
+        DELETE,
+        HEAD,
+        OPTIONS,
+        PATCH
+    }
 }
