@@ -181,8 +181,10 @@ public class HttpServerExchange {
         return exchange.getStatusCode();
     }
 
-    public void setStatusCode( int statusCode ) {
+    public HttpServerExchange setStatusCode( int statusCode ) {
         exchange.setStatusCode( statusCode );
+
+        return this;
     }
 
     public void setStatusCodeReasonPhrase( int statusCode, String message ) {
@@ -266,12 +268,16 @@ public class HttpServerExchange {
         return exchange.responseCookies();
     }
 
-    public void setResponseHeader( HttpString name, String value ) {
+    public HttpServerExchange setResponseHeader( HttpString name, String value ) {
         exchange.getResponseHeaders().put( name, value );
+
+        return this;
     }
 
-    public void setResponseHeader( String name, String value ) {
+    public HttpServerExchange setResponseHeader( String name, String value ) {
         exchange.getResponseHeaders().put( new HttpString( name ), value );
+
+        return this;
     }
 
     public void ok( String body, String contentType ) {
@@ -280,7 +286,9 @@ public class HttpServerExchange {
         exchange.getResponseSender().send( body );
     }
 
-    public void setReasonPhrase( String message ) {
+    public HttpServerExchange setReasonPhrase( String message ) {
         exchange.setReasonPhrase( message );
+
+        return this;
     }
 }
