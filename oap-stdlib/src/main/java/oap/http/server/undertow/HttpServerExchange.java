@@ -145,8 +145,8 @@ public class HttpServerExchange {
         exchange.getResponseHeaders().put( Headers.LOCATION, url );
     }
 
-    public String getRequestMethod() {
-        return exchange.getRequestMethod().toString();
+    public HttpMethod getRequestMethod() {
+        return HttpMethod.valueOf( exchange.getRequestMethod().toString() );
     }
 
     public String getRequestCookieValue( String name ) {
