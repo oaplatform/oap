@@ -247,7 +247,7 @@ public final class Client implements Closeable {
 
     public Optional<Response> post( String uri, String content, String contentType, Map<String, Object> headers, long timeout ) {
         var request = new HttpPost( uri );
-        request.setEntity( new StringEntity( content, contentType ) );
+        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, timeout, execute( request, headers ) );
     }
 
@@ -319,7 +319,7 @@ public final class Client implements Closeable {
 
     public Response put( String uri, String content, String contentType ) {
         var request = new HttpPut( uri );
-        request.setEntity( new StringEntity( content, contentType ) );
+        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
