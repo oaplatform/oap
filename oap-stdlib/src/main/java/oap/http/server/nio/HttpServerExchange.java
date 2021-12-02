@@ -359,6 +359,10 @@ public class HttpServerExchange {
         exchange.getResponseSender().send( ByteBuffer.wrap( bytes ) );
     }
 
+    public void send( byte[] bytes, int offset, int length ) {
+        exchange.getResponseSender().send( ByteBuffer.wrap( bytes, offset, length ) );
+    }
+
     public enum HttpMethod {
         GET,
         POST,
