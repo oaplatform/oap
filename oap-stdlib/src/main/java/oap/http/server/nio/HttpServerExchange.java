@@ -57,15 +57,9 @@ public class HttpServerExchange {
     );
 
     public final io.undertow.server.HttpServerExchange exchange;
-    public final String ua;
-    public final String referrer;
-    public final String ip;
 
     public HttpServerExchange( io.undertow.server.HttpServerExchange exchange ) {
         this.exchange = exchange;
-        this.ua = ua( exchange );
-        this.referrer = referrer( exchange );
-        this.ip = ip( exchange );
     }
 
     public static String ua( io.undertow.server.HttpServerExchange hsExchange ) {
@@ -123,6 +117,21 @@ public class HttpServerExchange {
     private static String contentToString( boolean raw, Object content, String contentType ) {
         return raw ? ( String ) content
             : producers.getOrDefault( contentType, String::valueOf ).apply( content );
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public String ip() {
+        return ip( exchange );
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public String referrer() {
+        return referrer( exchange );
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public String ua() {
+        return ua( exchange );
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
