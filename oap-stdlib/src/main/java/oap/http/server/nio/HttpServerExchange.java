@@ -325,6 +325,12 @@ public class HttpServerExchange {
         return exchange.isResponseStarted();
     }
 
+    public HttpServerExchange endExchange() {
+        exchange.endExchange();
+
+        return this;
+    }
+
     public enum HttpMethod {
         GET,
         POST,
