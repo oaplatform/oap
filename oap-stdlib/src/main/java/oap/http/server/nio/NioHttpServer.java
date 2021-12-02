@@ -140,6 +140,8 @@ public class NioHttpServer {
     }
 
     public void bind( String prefix, HttpHandler handler ) {
+        log.debug( "bind {}", prefix );
+
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
