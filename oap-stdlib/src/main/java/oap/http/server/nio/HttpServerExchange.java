@@ -186,6 +186,10 @@ public class HttpServerExchange {
         return exchange.getRequestURI();
     }
 
+    public String getResolvedPath() {
+        return exchange.getResolvedPath();
+    }
+
     public int getStatusCode() {
         return exchange.getStatusCode();
     }
