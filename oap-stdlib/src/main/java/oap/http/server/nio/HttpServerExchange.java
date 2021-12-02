@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -336,6 +337,22 @@ public class HttpServerExchange {
         exchange.endExchange();
 
         return this;
+    }
+
+    public long getRequestStartTime() {
+        return exchange.getRequestStartTime();
+    }
+
+    public void send( String data ) {
+        exchange.getResponseSender().send( data );
+    }
+
+    public void send( String data, Charset charset ) {
+        exchange.getResponseSender().send( data, charset );
+    }
+
+    public void send( ByteBuffer buffer ) {
+        exchange.getResponseSender().send( buffer );
     }
 
     public enum HttpMethod {
