@@ -33,6 +33,7 @@ import io.undertow.conduits.GzipStreamSourceConduit;
 import io.undertow.conduits.InflatingStreamSourceConduit;
 import io.undertow.server.ConnectorStatistics;
 import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.DeflateEncodingProvider;
@@ -124,6 +125,7 @@ public class NioHttpServer {
         }
 
         handler = new BlockingHandler( handler );
+        handler = new GracefulShutdownHandler( handler );
 
         builder.setHandler( handler );
         if( healthHttpHandler != null )
