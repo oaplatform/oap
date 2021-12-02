@@ -205,9 +205,11 @@ public class HttpServerExchange {
         return this;
     }
 
-    public void setStatusCodeReasonPhrase( int statusCode, String message ) {
+    public HttpServerExchange setStatusCodeReasonPhrase( int statusCode, String message ) {
         setStatusCode( statusCode );
         setReasonPhrase( message );
+
+        return this;
     }
 
     public void responseJson( int statusCode, String reasonPhrase, Object body ) {
