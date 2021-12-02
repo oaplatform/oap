@@ -190,6 +190,10 @@ public class HttpServerExchange {
         return exchange.getResolvedPath();
     }
 
+    public String getRelativePath() {
+        return exchange.getRelativePath();
+    }
+
     public int getStatusCode() {
         return exchange.getStatusCode();
     }
