@@ -24,6 +24,7 @@
 
 package oap.http.server.nio;
 
+import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.undertow.Undertow;
@@ -139,6 +140,9 @@ public class NioHttpServer {
     }
 
     public void bind( String prefix, HttpHandler handler ) {
+        Preconditions.checkNotNull( prefix );
+        Preconditions.checkArgument( !prefix.isEmpty() );
+
         pathHandler.addPrefixPath( prefix,
             exchange -> handler.handleRequest( new HttpServerExchange( exchange ) )
         );
