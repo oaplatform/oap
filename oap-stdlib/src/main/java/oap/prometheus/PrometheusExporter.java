@@ -55,7 +55,7 @@ public class PrometheusExporter implements Closeable {
         server.workerThreads = 4;
         server.bind( path, exchange -> {
             var response = prometheusRegistry.scrape();
-            exchange.ok( response, ContentType.TEXT_PLAIN.getMimeType() );
+            exchange.responseOk( response, ContentType.TEXT_PLAIN.getMimeType() );
         } );
     }
 

@@ -40,6 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -227,6 +228,12 @@ public class HttpServerExchange {
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
+    public void responseOk( byte[] content, String contentType ) {
+        setStatusCode( HttpStatusCodes.OK );
+        setResponseHeader( Headers.CONTENT_TYPE, contentType );
+        exchange.getResponseSender().send( ByteBuffer.wrap( content ) );
+    }
+
     public void responseOk( Object content, boolean raw, String contentType ) {
         setStatusCode( HttpStatusCodes.OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
@@ -301,7 +308,8 @@ public class HttpServerExchange {
         return this;
     }
 
-    public void ok( String body, String contentType ) {
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public void responseOk( String body, String contentType ) {
         setStatusCode( HttpStatusCodes.OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
         exchange.getResponseSender().send( body );

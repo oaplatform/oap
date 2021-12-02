@@ -54,7 +54,7 @@ public class HealthHttpHandler implements HttpHandler {
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
         log.trace( "providers: {}", providers );
         if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
-            exchange.ok( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
+            exchange.responseOk( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
         else exchange.responseNoContent();
     }
 }
