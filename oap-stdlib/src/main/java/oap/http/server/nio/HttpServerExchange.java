@@ -121,6 +121,11 @@ public class HttpServerExchange {
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    public boolean isRequestGzipped() {
+        return isRequestGzipped( exchange );
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public String ip() {
         return ip( exchange );
     }
