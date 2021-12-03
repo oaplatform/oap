@@ -294,8 +294,8 @@ public class HttpServerExchange {
         return Optional.ofNullable( exchange.getRequestCookie( "name" ) ).map( Cookie::getValue );
     }
 
-    public HttpServerExchange setResponseCookie( Cookie cookie ) {
-        exchange.setResponseCookie( cookie );
+    public HttpServerExchange setResponseCookie( oap.http.Cookie cookie ) {
+        exchange.setResponseCookie( cookie.cookie );
 
         return this;
     }
