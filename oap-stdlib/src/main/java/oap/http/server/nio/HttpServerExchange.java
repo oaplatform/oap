@@ -116,7 +116,7 @@ public class HttpServerExchange {
         producers.put( mimeType, producer );
     }
 
-    private static String contentToString( boolean raw, Object content, String contentType ) {
+    public static String contentToString( boolean raw, Object content, String contentType ) {
         return raw ? ( String ) content
             : producers.getOrDefault( contentType, String::valueOf ).apply( content );
     }
