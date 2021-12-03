@@ -44,10 +44,12 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.health.HealthHttpHandler;
 import org.xnio.Options;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 @Slf4j
-public class NioHttpServer {
+public class NioHttpServer implements Closeable {
     public final int port;
     private final PathHandler pathHandler;
 
@@ -158,5 +160,10 @@ public class NioHttpServer {
 
     public void preStop() {
         server.stop();
+    }
+
+    @Override
+    public void close() throws IOException {
+        preStop();
     }
 }

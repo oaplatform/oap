@@ -28,47 +28,26 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import oap.http.server.nio.HttpHandler;
+import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import org.apache.http.entity.ContentType;
 
-import java.io.Closeable;
-
 @Slf4j
-public class PrometheusExporter implements Closeable {
+public class PrometheusExporter implements HttpHandler {
     public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
 
     static {
         Metrics.addRegistry( prometheusRegistry );
     }
 
-    private final NioHttpServer server;
-
-    public PrometheusExporter( int port ) {
-        this( port, "/metrics" );
-    }
-
-    public PrometheusExporter( int port, String path ) {
-        log.info( "Prometheus metrics port/path {}/{}", port, path );
-
-        server = new NioHttpServer( port );
-        server.ioThreads = 2;
-        server.workerThreads = 4;
-        server.bind( path, exchange -> {
-            var response = prometheusRegistry.scrape();
-            exchange.responseOk( response, ContentType.TEXT_PLAIN.getMimeType() );
-        } );
-    }
-
-    public void start() {
-        server.start();
-    }
-
-    public void preStop() {
-        server.preStop();
+    public PrometheusExporter( NioHttpServer server ) {
+        server.bind( "/metrics", this );
     }
 
     @Override
-    public void close() {
-        server.preStop();
+    public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        var response = prometheusRegistry.scrape();
+        exchange.responseOk( response, ContentType.TEXT_PLAIN.getMimeType() );
     }
 }
