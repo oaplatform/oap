@@ -267,8 +267,6 @@ public class HttpServerExchange {
                 out.write( v.getBytes() );
                 out.write( '\n' );
             } ) );
-
-        exchange.getResponseSender().send( contentToString( raw, content, contentType ) );
     }
 
     public HttpServerExchange addQueryParam( String name, String param ) {
