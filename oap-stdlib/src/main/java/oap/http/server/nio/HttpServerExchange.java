@@ -157,8 +157,8 @@ public class HttpServerExchange {
     }
 
     public void redirect( String url ) {
-        exchange.setStatusCode( HttpStatusCodes.FOUND );
-        exchange.getResponseHeaders().put( Headers.LOCATION, url );
+        setStatusCode( HttpStatusCodes.FOUND );
+        setResponseHeader( Headers.LOCATION, url );
     }
 
     public HttpMethod getRequestMethod() {
