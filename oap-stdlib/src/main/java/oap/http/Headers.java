@@ -29,6 +29,7 @@ public final class Headers {
     public static final String ACCEPT_ENCODING = io.undertow.util.Headers.ACCEPT_ENCODING_STRING;
     public static final String CONTENT_TYPE = io.undertow.util.Headers.CONTENT_TYPE_STRING;
     public static final String LOCATION = io.undertow.util.Headers.LOCATION_STRING;
+    public static final String AUTHORIZATION = io.undertow.util.Headers.AUTHORIZATION_STRING;
 
     private Headers() {
     }
