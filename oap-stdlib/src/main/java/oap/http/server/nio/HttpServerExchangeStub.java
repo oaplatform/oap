@@ -32,6 +32,7 @@ import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import io.undertow.util.Protocols;
 import lombok.SneakyThrows;
+import okhttp3.HttpUrl;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.xnio.OptionMap;
@@ -49,6 +50,21 @@ import java.nio.ByteBuffer;
 public class HttpServerExchangeStub {
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2() {
         return new oap.http.server.nio.HttpServerExchange( createHttpExchange() );
+    }
+
+    public static oap.http.server.nio.HttpServerExchange createHttpExchange2( oap.http.server.nio.HttpServerExchange.HttpMethod method, String uri ) {
+        var exchange = createHttpExchange2();
+        exchange.setRequestMethod( method );
+        exchange.exchange.setQueryString( uri );
+
+        HttpUrl url = HttpUrl.parse( uri );
+        if( url != null ) {
+            for( var paramName : url.queryParameterNames() ) {
+                exchange.exchange.addQueryParam( paramName, url.queryParameter( paramName ) );
+            }
+        }
+
+        return exchange;
     }
 
     public static HttpServerExchange createHttpExchange() {

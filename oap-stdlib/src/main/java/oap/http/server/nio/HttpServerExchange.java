@@ -165,6 +165,12 @@ public class HttpServerExchange {
         return HttpMethod.valueOf( exchange.getRequestMethod().toString() );
     }
 
+    public HttpServerExchange setRequestMethod( HttpMethod method ) {
+        exchange.setRequestMethod( new HttpString( method.name() ) );
+
+        return this;
+    }
+
     public String getRequestCookieValue( String name ) {
         Cookie requestCookie = exchange.getRequestCookie( name );
         if( requestCookie == null ) return null;
