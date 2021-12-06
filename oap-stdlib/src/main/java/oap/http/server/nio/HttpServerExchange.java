@@ -181,6 +181,11 @@ public class HttpServerExchange {
         return values.getFirst();
     }
 
+    public String getRequestHeader( String name, String defaultValue ) {
+        var value = getRequestHeader( name );
+        return value != null ? value : defaultValue;
+    }
+
     public void responseNotFound() {
         exchange.setStatusCode( HttpStatusCodes.NOT_FOUND );
     }
