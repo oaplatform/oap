@@ -45,7 +45,6 @@ import java.nio.charset.Charset;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -297,10 +296,6 @@ public class HttpServerExchange {
     public String header( String headerName, String defaultValue ) {
         var values = exchange.getRequestHeaders().get( headerName );
         return values != null ? values.getFirst() : defaultValue;
-    }
-
-    public Optional<String> cookie( String name ) {
-        return Optional.ofNullable( exchange.getRequestCookie( "name" ) ).map( Cookie::getValue );
     }
 
     public HttpServerExchange setResponseCookie( oap.http.Cookie cookie ) {
