@@ -19,10 +19,10 @@ fi
 set +x
 
 #project name
-echo "##teamcity[setParameter name='oap.project.name' value='${PROJECT_NAME}']"
+echo "##teamcity[setParameter name='oap.project.name' value='${PROJECT_NAME,,}']"
 
 #maven master
-echo "##teamcity[setParameter name='${PROJECT_NAME}.project.version' value='${VERSION_XENOSS}']"
+echo "##teamcity[setParameter name='${PROJECT_NAME,,}.project.version' value='${VERSION_XENOSS}']"
 
 #maven branch
 echo "##teamcity[setParameter name='oap.project.version.branch' value='${VERSION_XENOSS}${VERSION_BRANCH}${MAVEN_BUILD_COUNTER}']"
