@@ -93,28 +93,6 @@ public class NioHttpServer implements Closeable {
         if( maxHeaderSize > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADER_SIZE, maxHeaderSize );
         if( statistics ) builder.setServerOption( UndertowOptions.ENABLE_STATISTICS, true );
 
-        if( statistics ) {
-            for( var listenerInfo : server.getListenerInfo() ) {
-                var sa = ( InetSocketAddress ) listenerInfo.getAddress();
-                var port = String.valueOf( sa.getPort() );
-
-                ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
-
-                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
-
-                Metrics.gauge( "nio_connections", Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
-
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "active" ), server, server -> server.getWorker().getMXBean().getWorkerPoolSize() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "core" ), server, server -> server.getWorker().getMXBean().getCoreWorkerPoolSize() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "max" ), server, server -> server.getWorker().getMXBean().getMaxWorkerPoolSize() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "busy" ), server, server -> server.getWorker().getMXBean().getBusyWorkerThreadCount() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "queue" ), server, server -> server.getWorker().getMXBean().getWorkerQueueSize() );
-
-            }
-        }
-
         io.undertow.server.HttpHandler handler = pathHandler;
         if( compressionSupport ) {
             ContentEncodingRepository contentEncodingRepository = new ContentEncodingRepository();
@@ -141,6 +119,28 @@ public class NioHttpServer implements Closeable {
             server.getWorker().getMXBean().getIoThreadCount(),
             server.getWorker().getMXBean().getMaxWorkerPoolSize()
         );
+
+        if( statistics ) {
+            for( var listenerInfo : server.getListenerInfo() ) {
+                var sa = ( InetSocketAddress ) listenerInfo.getAddress();
+                var port = String.valueOf( sa.getPort() );
+
+                ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
+
+                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
+                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
+                Metrics.gauge( "nio_requests", Tags.of( "port", port, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+
+                Metrics.gauge( "nio_connections", Tags.of( "port", port, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "active" ), server, server -> server.getWorker().getMXBean().getWorkerPoolSize() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "core" ), server, server -> server.getWorker().getMXBean().getCoreWorkerPoolSize() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "max" ), server, server -> server.getWorker().getMXBean().getMaxWorkerPoolSize() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "busy" ), server, server -> server.getWorker().getMXBean().getBusyWorkerThreadCount() );
+                Metrics.gauge( "nio_pool_size", Tags.of( "port", port, "name", "worker", "type", "queue" ), server, server -> server.getWorker().getMXBean().getWorkerQueueSize() );
+
+            }
+        }
     }
 
     public void bind( String prefix, HttpHandler handler ) {
