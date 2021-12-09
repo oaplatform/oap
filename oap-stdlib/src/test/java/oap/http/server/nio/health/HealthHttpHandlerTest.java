@@ -51,8 +51,8 @@ public class HealthHttpHandlerTest extends Fixtures {
 
     @Test
     public void health() {
-        assertGet( HttpAsserts.httpUrl( "/health" ) ).hasCode( HttpStatusCodes.NO_CONTENT );
-        assertGet( HttpAsserts.httpUrl( "/health?secret=secret" ) )
+        assertGet( HttpAsserts.httpUrl( "/healtz" ) ).hasCode( HttpStatusCodes.NO_CONTENT );
+        assertGet( HttpAsserts.httpUrl( "/healtz?secret=secret" ) )
             .respondedJson( "{\"test\":{\"k1\":1, \"k2\":2}}" );
     }
 

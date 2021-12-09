@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.SneakyThrows;
@@ -53,6 +54,7 @@ public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
     public static final String OAP_PROFILE_PREFIX = "OAP_PROFILE_";
     public final LinkedHashMap<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
+    @JsonAlias( "profile" )
     public final ArrayList<Object> profiles = new ArrayList<>();
     public final ModuleBoot boot = new ModuleBoot();
     private LinkedHashSet<String> profilesCache = null;
