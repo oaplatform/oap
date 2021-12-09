@@ -21,18 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.http;
 
-public class ContentTypes {
-    public static final String TEXT_TSV = "text/tab-separated-values";
-    public static final String TEXT_CSV = "text/csv";
-    public static final String TEXT_HTML = "text/html";
-    public static final String TEXT_PLAIN = "text/plain";
-    public static final String TEXT_XML = "text/xml";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String APPLICATION_XML = "application/xml";
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
-    public static final String MULTIPART_FORM_DATA = "multipart/form-data";
-    public static final String APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
-    public static final String APPLICATION_X_TAR = "application/x-tar";
+public final class Headers {
+    public static final String CONTENT_ENCODING = io.undertow.util.Headers.CONTENT_ENCODING_STRING;
+    public static final String ACCEPT_ENCODING = io.undertow.util.Headers.ACCEPT_ENCODING_STRING;
+    public static final String CONTENT_TYPE = io.undertow.util.Headers.CONTENT_TYPE_STRING;
+    public static final String LOCATION = io.undertow.util.Headers.LOCATION_STRING;
+    public static final String AUTHORIZATION = io.undertow.util.Headers.AUTHORIZATION_STRING;
+
+    private Headers() {
+    }
 }

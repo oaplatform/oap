@@ -22,32 +22,39 @@
  * SOFTWARE.
  */
 
-package oap.prometheus;
+package oap.http.server.nio.health;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import oap.http.ContentTypes;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
-import oap.http.server.nio.NioHttpServer;
-import org.apache.http.entity.ContentType;
+import oap.json.Binder;
+import oap.util.Collections;
+
+import java.util.ArrayList;
 
 @Slf4j
-public class PrometheusExporter implements HttpHandler {
-    public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+public class HealthHttpHandler implements HttpHandler {
+    private final ArrayList<HealthDataProvider<?>> providers = new ArrayList<>();
+    private final String secret;
 
-    static {
-        Metrics.addRegistry( prometheusRegistry );
+    public HealthHttpHandler( String secret ) {
+        this.secret = secret;
     }
 
-    public PrometheusExporter( NioHttpServer server ) {
-        server.bind( "/metrics", this );
+    public HealthHttpHandler() {
+        this( null );
+    }
+
+    public void addProvider( HealthDataProvider<?> provider ) {
+        this.providers.add( provider );
     }
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
-        var response = prometheusRegistry.scrape();
-        exchange.responseOk( response, ContentType.TEXT_PLAIN.getMimeType() );
+        log.trace( "providers: {}", providers );
+        if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
+            exchange.responseOk( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
+        else exchange.responseNoContent();
     }
 }

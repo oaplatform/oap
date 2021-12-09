@@ -53,7 +53,6 @@ import static oap.util.Pair.__;
 
 public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractEnvFixture<Self> {
     public static final String ANY = "*";
-    public static final String TEST_REMOTING_PORT = "TEST_REMOTING_PORT";
     public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
     public static final String TEST_DIRECTORY = "TEST_DIRECTORY";
     public static final String TEST_RESOURCE_PATH = "TEST_RESOURCE_PATH";
@@ -110,7 +109,6 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     protected void defineDefaults() {
-        define( TEST_REMOTING_PORT, portFor( TEST_REMOTING_PORT ) );
         var testHttpPort = portFor( TEST_HTTP_PORT );
         define( TEST_HTTP_PORT, testHttpPort );
         define( TEST_DIRECTORY, testDirectory() );

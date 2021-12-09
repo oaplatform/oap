@@ -27,6 +27,7 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
+import oap.http.server.nio.NioHttpServer;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
@@ -42,11 +43,13 @@ public class PrometheusExporterTest extends Fixtures {
     {
         envFixture = fixture( new EnvFixture() );
     }
+
     @Test
     public void server() throws IOException {
         var port = envFixture.portFor( "prometheus" );
-        try( var exporter = new PrometheusExporter( port ) ) {
-            exporter.start();
+        try( var server = new NioHttpServer( port ) ) {
+            var exporter = new PrometheusExporter( server );
+            server.start();
 
             TEST_1.increment( 2 );
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();

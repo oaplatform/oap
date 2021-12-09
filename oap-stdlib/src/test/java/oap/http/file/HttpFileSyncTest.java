@@ -24,6 +24,7 @@
 
 package oap.http.file;
 
+import oap.http.HttpStatusCodes;
 import oap.io.AbstractFileSync;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -42,16 +43,12 @@ import org.testng.annotations.Test;
 
 import java.util.Date;
 
-import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
-import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpFileSyncTest extends Fixtures {
     private static final String PORT = HttpFileSyncTest.class.toString();
-
-    private ClientAndServer mockServer;
-
     private final EnvFixture envFixture;
+    private ClientAndServer mockServer;
 
     {
         fixture( SystemTimerFixture.FIXTURE );
@@ -87,7 +84,7 @@ public class HttpFileSyncTest extends Fixtures {
             .when( HttpRequest.request().withMethod( "GET" ).withPath( "/file" ), Times.once() )
             .respond(
                 HttpResponse.response()
-                    .withStatusCode( HTTP_OK )
+                    .withStatusCode( HttpStatusCodes.OK )
                     .withBody( "test" )
                     .withHeader( Header.header( "Last-Modified", DateUtils.formatDate( date10 ) ) )
                     .withHeader( Header.header( "Content-Disposition", "inline; filename=\"test.file\"" ) )
@@ -105,7 +102,7 @@ public class HttpFileSyncTest extends Fixtures {
                 Times.once() )
             .respond(
                 HttpResponse.response()
-                    .withStatusCode( HTTP_NOT_MODIFIED )
+                    .withStatusCode( HttpStatusCodes.NOT_MODIFIED )
                     .withHeader( Header.header( "Last-Modified", DateUtils.formatDate( date10 ) ) )
             );
         fileSync.run();
@@ -119,7 +116,7 @@ public class HttpFileSyncTest extends Fixtures {
                 Times.once() )
             .respond(
                 HttpResponse.response()
-                    .withStatusCode( HTTP_OK )
+                    .withStatusCode( HttpStatusCodes.OK )
                     .withBody( "test2" )
                     .withHeader( Header.header( "Last-Modified", DateUtils.formatDate( date20 ) ) )
                     .withHeader( Header.header( "Content-Disposition", "inline; filename=\"test.file\"" ) )

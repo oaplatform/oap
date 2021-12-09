@@ -29,11 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.testng.KernelFixture;
 import oap.http.Client;
 import oap.http.Cookie;
+import oap.http.HttpStatusCodes;
 import oap.json.testng.JsonAsserts;
 import oap.util.BiStream;
 import oap.util.Pair;
 import oap.util.Stream;
-import org.apache.http.entity.ContentType;
 import org.joda.time.DateTime;
 
 import java.io.InputStream;
@@ -42,13 +42,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.http.ContentTypes.APPLICATION_JSON;
 import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;
 import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.testng.Asserts.contentOfTestResource;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -101,15 +100,15 @@ public class HttpAsserts {
         return assertPost( uri, content, Map.of() );
     }
 
-    public static HttpAssertion assertPost( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPost( String uri, String content, String contentType, Map<String, Object> headers ) {
         return assertHttpResponse( client.post( uri, content, contentType, headers ) );
     }
 
-    public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
+    public static HttpAssertion assertPost( String uri, String content, String contentType ) {
         return assertPost( uri, content, contentType, Map.of() );
     }
 
-    public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
+    public static HttpAssertion assertPost( String uri, InputStream content, String contentType ) {
         return assertHttpResponse( client.post( uri, content, contentType ) );
     }
 
@@ -117,11 +116,11 @@ public class HttpAsserts {
 //        return new HttpAssertion( client.uploadFile( uri, prefix, path ) );
 //    }
 
-    public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
+    public static HttpAssertion assertPut( String uri, String content, String contentType ) {
         return assertHttpResponse( client.put( uri, content, contentType ) );
     }
 
-    public static HttpAssertion assertPut( String uri, InputStream is, ContentType contentType ) {
+    public static HttpAssertion assertPut( String uri, InputStream is, String contentType ) {
         return assertHttpResponse( client.put( uri, is, contentType ) );
     }
 
@@ -143,7 +142,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion isOk() {
-            hasCode( HTTP_OK );
+            hasCode( HttpStatusCodes.OK );
             return this;
         }
 
@@ -172,8 +171,8 @@ public class HttpAsserts {
             return this;
         }
 
-        public HttpAssertion hasContentType( ContentType contentType ) {
-            assertThat( response.contentType.toString() ).isEqualTo( contentType.toString() );
+        public HttpAssertion hasContentType( String contentType ) {
+            assertThat( response.contentType.toString() ).isEqualTo( contentType );
             return this;
         }
 
@@ -188,7 +187,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion containsCookie( String name, Consumer<Cookie> assertion ) {
-            assertThat( Stream.of( cookies() ).filter( c -> c.name.equalsIgnoreCase( name ) ).findAny() )
+            assertThat( Stream.of( cookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny() )
                 .isNotEmpty()
                 .withFailMessage( "no such cookie: " + name )
                 .get()
@@ -202,13 +201,13 @@ public class HttpAsserts {
         }
 
         public HttpAssertion containsCookie( String cookie ) {
-            return containsCookie( Cookie.parse( cookie ) );
+            return containsCookie( Cookie.parseSetCookieHeader( cookie ) );
         }
 
         protected List<Cookie> cookies() {
             return BiStream.of( response.headers )
                 .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) )
-                .mapToObj( ( name, value ) -> Cookie.parse( value ) )
+                .mapToObj( ( name, value ) -> Cookie.parseSetCookieHeader( value ) )
                 .toList();
         }
 
@@ -217,7 +216,7 @@ public class HttpAsserts {
             return this;
         }
 
-        public HttpAssertion responded( int code, String reasonPhrase, ContentType contentType, String body ) {
+        public HttpAssertion responded( int code, String reasonPhrase, String contentType, String body ) {
             return this.hasCode( code )
                 .hasReason( reasonPhrase )
                 .hasContentType( contentType )
@@ -232,7 +231,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion respondedJson( String json ) {
-            return this.respondedJson( HTTP_OK, "OK", json );
+            return this.respondedJson( HttpStatusCodes.OK, "OK", json );
         }
 
         public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
@@ -261,7 +260,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasValue( String value ) {
-            assertThat( cookie.value ).isEqualTo( value );
+            assertThat( cookie.getValue() ).isEqualTo( value );
             return this;
         }
 
@@ -270,56 +269,56 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasDomain( String domain ) {
-            assertThat( cookie.domain ).isEqualTo( domain );
+            assertThat( cookie.getDomain() ).isEqualTo( domain );
             return this;
         }
 
         public CookieHttpAssertion expiresAt( DateTime expiration ) {
-            assertThat( cookie.expires ).isEqualTo( expiration );
+            assertThat( cookie.getExpires() ).isEqualTo( expiration.toDate() );
             return this;
         }
 
         public CookieHttpAssertion expiresAfter( DateTime expiration ) {
-            assertThat( cookie.expires ).isGreaterThanOrEqualTo( expiration );
+            assertThat( cookie.getExpires() ).isAfterOrEqualTo( expiration.toDate() );
             return this;
         }
 
         public CookieHttpAssertion hasPath( String path ) {
-            assertThat( cookie.path ).isEqualTo( path );
+            assertThat( cookie.getPath() ).isEqualTo( path );
             return this;
         }
 
         public CookieHttpAssertion hasNotMaxAge() {
-            return hasMaxAge( Cookie.NO_MAX_AGE );
+            return hasMaxAge( -1 );
         }
 
-        public CookieHttpAssertion hasMaxAge( long maxAge ) {
-            assertThat( cookie.maxAge ).isEqualTo( maxAge );
+        public CookieHttpAssertion hasMaxAge( int maxAge ) {
+            assertThat( cookie.getMaxAge() ).isEqualTo( maxAge );
             return this;
         }
 
-        public CookieHttpAssertion hasSameSite( Cookie.SameSite sameSite ) {
-            assertThat( cookie.sameSite ).isEqualTo( sameSite );
+        public CookieHttpAssertion hasSameSite( boolean sameSite ) {
+            assertThat( cookie.isSameSite() ).isEqualTo( sameSite );
             return this;
         }
 
         public CookieHttpAssertion isSecure() {
-            assertThat( cookie.secure ).isTrue();
+            assertThat( cookie.isSecure() ).isTrue();
             return this;
         }
 
         public CookieHttpAssertion isNotSecure() {
-            assertThat( cookie.secure ).isFalse();
+            assertThat( cookie.isSecure() ).isFalse();
             return this;
         }
 
         public CookieHttpAssertion isHttpOnly() {
-            assertThat( cookie.httpOnly ).isTrue();
+            assertThat( cookie.isHttpOnly() ).isTrue();
             return this;
         }
 
         public CookieHttpAssertion isNotHttpOnly() {
-            assertThat( cookie.httpOnly ).isFalse();
+            assertThat( cookie.isHttpOnly() ).isFalse();
             return this;
         }
 
@@ -345,7 +344,7 @@ public class HttpAsserts {
         }
 
         public JsonHttpAssertion isEqualTo( String json ) {
-            return this.isEqualTo( HTTP_OK, "OK", json );
+            return this.isEqualTo( HttpStatusCodes.OK, "OK", json );
         }
 
         public JsonHttpAssertion isEqualTo( Class<?> contextClass, String resource ) {

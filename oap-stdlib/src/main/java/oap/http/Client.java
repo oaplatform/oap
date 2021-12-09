@@ -106,17 +106,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
-import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
-import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static oap.http.ContentTypes.APPLICATION_OCTET_STREAM;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Dates.m;
 import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
-import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public final class Client implements Closeable {
@@ -232,28 +229,28 @@ public final class Client implements Closeable {
         }
     }
 
-    public Response post( String uri, String content, ContentType contentType ) {
+    public Response post( String uri, String content, String contentType ) {
         return post( uri, content, contentType, Maps.of() );
     }
 
-    public Response post( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
+    public Response post( String uri, String content, String contentType, Map<String, Object> headers ) {
         return post( uri, content, contentType, headers, builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
-    public Optional<Response> post( String uri, String content, ContentType contentType, long timeout ) {
+    public Optional<Response> post( String uri, String content, String contentType, long timeout ) {
         return post( uri, content, contentType, Map.of(), timeout );
     }
 
-    public Optional<Response> post( String uri, String content, ContentType contentType, Map<String, Object> headers, long timeout ) {
+    public Optional<Response> post( String uri, String content, String contentType, Map<String, Object> headers, long timeout ) {
         var request = new HttpPost( uri );
-        request.setEntity( new StringEntity( content, contentType ) );
+        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, timeout, execute( request, headers ) );
     }
 
     public Optional<Response> post( String uri, byte[] content, long timeout ) {
         var request = new HttpPost( uri );
-        request.setEntity( new ByteArrayEntity( content, APPLICATION_OCTET_STREAM ) );
+        request.setEntity( new ByteArrayEntity( content, ContentType.APPLICATION_OCTET_STREAM ) );
         return getResponse( request, timeout, execute( request, Map.of() ) );
     }
 
@@ -283,23 +280,23 @@ public final class Client implements Closeable {
         }
     }
 
-    public Response post( String uri, InputStream content, ContentType contentType ) {
+    public Response post( String uri, InputStream content, String contentType ) {
         var request = new HttpPost( uri );
-        request.setEntity( new InputStreamEntity( content, contentType ) );
+        request.setEntity( new InputStreamEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
-    public Response post( String uri, InputStream content, ContentType contentType, Map<String, Object> headers ) {
+    public Response post( String uri, InputStream content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPost( uri );
-        request.setEntity( new InputStreamEntity( content, contentType ) );
+        request.setEntity( new InputStreamEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
-    public Response post( String uri, byte[] content, ContentType contentType, Map<String, Object> headers ) {
+    public Response post( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPost( uri );
-        request.setEntity( new ByteArrayEntity( content, contentType ) );
+        request.setEntity( new ByteArrayEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
@@ -317,23 +314,23 @@ public final class Client implements Closeable {
         }
     }
 
-    public Response put( String uri, String content, ContentType contentType ) {
+    public Response put( String uri, String content, String contentType ) {
         var request = new HttpPut( uri );
-        request.setEntity( new StringEntity( content, contentType ) );
+        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
-    public Response put( String uri, byte[] content, ContentType contentType ) {
+    public Response put( String uri, byte[] content, String contentType ) {
         var request = new HttpPut( uri );
-        request.setEntity( new ByteArrayEntity( content, contentType ) );
+        request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
-    public Response put( String uri, InputStream is, ContentType contentType ) {
+    public Response put( String uri, InputStream is, String contentType ) {
         var request = new HttpPut( uri );
-        request.setEntity( new InputStreamEntity( is, contentType ) );
+        request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
@@ -388,7 +385,7 @@ public final class Client implements Closeable {
                             response.getStatusLine().getReasonPhrase(),
                             responseHeaders,
                             entity.getContentType() != null
-                                ? ContentType.parse( entity.getContentType().getValue() )
+                                ? entity.getContentType().getValue()
                                 : APPLICATION_OCTET_STREAM,
                             entity.getContent()
                         );
@@ -465,14 +462,14 @@ public final class Client implements Closeable {
         ifModifiedSince.ifPresent( ims -> request.addHeader( "If-Modified-Since", DateUtils.formatDate( new Date( ims ) ) ) );
         Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
         HttpResponse response = future.get();
-        if( response.getStatusLine().getStatusCode() == HTTP_OK && response.getEntity() != null )
+        if( response.getStatusLine().getStatusCode() == HttpStatusCodes.OK && response.getEntity() != null )
             return Optional.of( response );
-        else if( response.getStatusLine().getStatusCode() == HTTP_MOVED_TEMP ) {
+        else if( response.getStatusLine().getStatusCode() == HttpStatusCodes.FOUND ) {
             Header location = response.getFirstHeader( "Location" );
             if( location == null ) throw new IOException( "redirect w/o location!" );
             log.debug( "following {}", location.getValue() );
             return resolve( location.getValue(), Optional.empty() );
-        } else if( response.getStatusLine().getStatusCode() == HTTP_NOT_MODIFIED ) {
+        } else if( response.getStatusLine().getStatusCode() == HttpStatusCodes.NOT_MODIFIED ) {
             return Optional.empty();
         } else
             throw new IOException( response.getStatusLine().toString() );
@@ -526,12 +523,12 @@ public final class Client implements Closeable {
     public static class Response implements Closeable {
         public final int code;
         public final String reasonPhrase;
-        public final ContentType contentType;
+        public final String contentType;
         public final List<Pair<String, String>> headers;
         private InputStream inputStream;
         private byte[] content = null;
 
-        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull ContentType contentType, InputStream inputStream ) {
+        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull String contentType, InputStream inputStream ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
@@ -542,7 +539,7 @@ public final class Client implements Closeable {
         public Response( int code, String reasonPhrase, List<Pair<String, String>> headers ) {
             this( code, reasonPhrase, headers, BiStream.of( headers )
                 .filter( ( name, value ) -> "Content-type".equalsIgnoreCase( name ) )
-                .mapToObj( ( name, value ) -> ContentType.parse( value ) )
+                .mapToObj( ( name, value ) -> value )
                 .findAny()
                 .orElse( APPLICATION_OCTET_STREAM ), null );
         }
@@ -576,7 +573,7 @@ public final class Client implements Closeable {
 
             if( content == null ) return null;
 
-            return new String( content, contentType.getCharset() == null ? UTF_8 : contentType.getCharset() );
+            return new String( content, UTF_8 );
         }
 
         public <T> Optional<T> unmarshal( Class<T> clazz ) {

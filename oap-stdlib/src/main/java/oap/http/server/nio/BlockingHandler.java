@@ -21,18 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public class ContentTypes {
-    public static final String TEXT_TSV = "text/tab-separated-values";
-    public static final String TEXT_CSV = "text/csv";
-    public static final String TEXT_HTML = "text/html";
-    public static final String TEXT_PLAIN = "text/plain";
-    public static final String TEXT_XML = "text/xml";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String APPLICATION_XML = "application/xml";
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
-    public static final String MULTIPART_FORM_DATA = "multipart/form-data";
-    public static final String APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
-    public static final String APPLICATION_X_TAR = "application/x-tar";
+package oap.http.server.nio;
+
+import io.undertow.server.HttpServerExchange;
+
+public class BlockingHandler implements io.undertow.server.HttpHandler {
+    private final io.undertow.server.handlers.BlockingHandler blockingHandler;
+
+    public BlockingHandler( HttpHandler handler ) {
+        blockingHandler = new io.undertow.server.handlers.BlockingHandler(
+            exchange -> handler.handleRequest( new oap.http.server.nio.HttpServerExchange( exchange ) )
+        );
+    }
+
+    @Override
+    public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        blockingHandler.handleRequest( exchange );
+    }
 }
