@@ -43,7 +43,7 @@ public class HealthHttpHandlerTest extends Fixtures {
         fixture( new KernelFixture(
             urlOfTestResource( getClass(), "application.test.conf" ),
             Lists.concat(
-                List.of( urlOfTestResource( getClass(), "oap-module.yaml" ) ),
+                List.of( urlOfTestResource( getClass(), "oap-module.conf" ) ),
                 Module.CONFIGURATION.urlsFromClassPath()
             )
         ) );

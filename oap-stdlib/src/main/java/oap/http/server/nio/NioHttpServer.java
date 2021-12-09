@@ -41,7 +41,6 @@ import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.encoding.RequestEncodingHandler;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.server.nio.health.HealthHttpHandler;
 import org.xnio.Options;
 
 import java.io.Closeable;
@@ -65,7 +64,6 @@ public class NioHttpServer implements Closeable {
     public boolean statistics = false;
     public Undertow server;
     public boolean compressionSupport = true;
-    protected HealthHttpHandler healthHttpHandler;
 
     public NioHttpServer( int port ) {
         this.port = port;
@@ -108,8 +106,6 @@ public class NioHttpServer implements Closeable {
         handler = new GracefulShutdownHandler( handler );
 
         builder.setHandler( handler );
-        if( healthHttpHandler != null )
-            bind( "/health", healthHttpHandler );
 
         server = builder.build();
         server.start();

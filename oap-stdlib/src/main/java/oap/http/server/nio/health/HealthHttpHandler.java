@@ -28,8 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.ContentTypes;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
+import oap.http.server.nio.NioHttpServer;
 import oap.json.Binder;
 import oap.util.Collections;
+import oap.util.Lists;
 
 import java.util.ArrayList;
 
@@ -37,22 +39,28 @@ import java.util.ArrayList;
 public class HealthHttpHandler implements HttpHandler {
     private final ArrayList<HealthDataProvider<?>> providers = new ArrayList<>();
     private final String secret;
+    private final String prefix;
 
-    public HealthHttpHandler( String secret ) {
+    public HealthHttpHandler( NioHttpServer server, String prefix, String secret ) {
         this.secret = secret;
+        this.prefix = prefix;
+        server.bind( prefix, this );
     }
 
-    public HealthHttpHandler() {
-        this( null );
+    public HealthHttpHandler( NioHttpServer server, String prefix ) {
+        this( server, prefix, null );
     }
 
     public void addProvider( HealthDataProvider<?> provider ) {
         this.providers.add( provider );
     }
 
+    public void start() {
+        log.debug( "prefix '{}' providers {}", prefix, Lists.map( providers, HealthDataProvider::name ) );
+    }
+
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
-        log.trace( "providers: {}", providers );
         if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
             exchange.responseOk( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
         else exchange.responseNoContent();
