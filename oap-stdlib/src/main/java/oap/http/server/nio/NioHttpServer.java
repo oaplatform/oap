@@ -50,7 +50,9 @@ import java.net.InetSocketAddress;
 @Slf4j
 public class NioHttpServer implements Closeable {
     public final int port;
+
     private final PathHandler pathHandler;
+    private final ContentEncodingRepository contentEncodingRepository;
 
     public int backlog = -1;
     public long idleTimeout = -1;
@@ -63,12 +65,16 @@ public class NioHttpServer implements Closeable {
     public int maxHeaderSize = -1;
     public boolean statistics = false;
     public Undertow server;
-    public boolean compressionSupport = true;
+    public boolean forceCompressionSupport = false;
 
     public NioHttpServer( int port ) {
         this.port = port;
 
         pathHandler = new PathHandler();
+
+        contentEncodingRepository = new ContentEncodingRepository();
+        contentEncodingRepository.addEncodingHandler( "gzip", new GzipEncodingProvider(), 100 );
+        contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 100 );
     }
 
     public void start() {
@@ -92,10 +98,7 @@ public class NioHttpServer implements Closeable {
         if( statistics ) builder.setServerOption( UndertowOptions.ENABLE_STATISTICS, true );
 
         io.undertow.server.HttpHandler handler = pathHandler;
-        if( compressionSupport ) {
-            ContentEncodingRepository contentEncodingRepository = new ContentEncodingRepository();
-            contentEncodingRepository.addEncodingHandler( "gzip", new GzipEncodingProvider(), 100 );
-            contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 100 );
+        if( forceCompressionSupport ) {
             handler = new EncodingHandler( handler, contentEncodingRepository );
             handler = new RequestEncodingHandler( handler )
                 .addEncoding( "gzip", GzipStreamSourceConduit.WRAPPER )
@@ -139,15 +142,26 @@ public class NioHttpServer implements Closeable {
         }
     }
 
-    public void bind( String prefix, HttpHandler handler ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport ) {
         log.debug( "bind {}", prefix );
 
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
-        pathHandler.addPrefixPath( prefix,
-            exchange -> handler.handleRequest( new HttpServerExchange( exchange ) )
-        );
+        io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange ) );
+
+        if( !forceCompressionSupport && compressionSupport ) {
+            httpHandler = new EncodingHandler( httpHandler, contentEncodingRepository );
+            httpHandler = new RequestEncodingHandler( httpHandler )
+                .addEncoding( "gzip", GzipStreamSourceConduit.WRAPPER )
+                .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
+        }
+
+        pathHandler.addPrefixPath( prefix, httpHandler );
+    }
+
+    public void bind( String prefix, HttpHandler handler ) {
+        bind( prefix, handler, true );
     }
 
     public void unbind( String prefix ) {
