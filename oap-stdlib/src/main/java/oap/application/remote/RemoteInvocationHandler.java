@@ -32,10 +32,17 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.http.HttpStatusCodes;
+import oap.http.client.CallbackFuture;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
-import org.apache.commons.io.IOUtils;
+import okhttp3.Call;
+import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.slf4j.event.Level;
 
 import java.io.BufferedInputStream;
@@ -49,12 +56,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -69,7 +71,22 @@ import static oap.util.Dates.s;
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
     public static final ExecutorService NEW_SINGLE_THREAD_EXECUTOR = Executors.newSingleThreadExecutor();
+    private static final OkHttpClient client;
     private static final SimpleTimeLimiter SIMPLE_TIME_LIMITER = SimpleTimeLimiter.create( NEW_SINGLE_THREAD_EXECUTOR );
+
+    static {
+        ConnectionPool connectionPool = new ConnectionPool();
+        Dispatcher dispatcher = new Dispatcher();
+        dispatcher.setMaxRequestsPerHost( 1024 );
+        dispatcher.setMaxRequests( 1024 );
+
+        client = new OkHttpClient.Builder()
+            .retryOnConnectionFailure( true )
+            .connectionPool( connectionPool )
+            .dispatcher( dispatcher )
+            .build();
+    }
+
     private final Counter timeoutMetrics;
     private final Counter errorMetrics;
     private final Counter successMetrics;
@@ -77,13 +94,10 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final FST fst;
     private final int retry;
     private final String service;
-    private final HttpClient client;
     private final long timeout;
 
     private RemoteInvocationHandler( URI uri,
                                      String service,
-                                     Path certificateLocation,
-                                     String certificatePassword,
                                      long timeout,
                                      FST.SerializationMethod serialization,
                                      int retry ) {
@@ -97,26 +111,17 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         errorMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "error" ) );
         successMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "success" ) );
 
-        log.debug( "initialize {} with certs {}", this, certificateLocation );
-
-        var builder = HttpClient.newBuilder().connectTimeout( Duration.ofMillis( this.timeout ) );
-        if( certificateLocation != null ) {
-            var sslContext = oap.http.client.HttpClient.createSSLContext( certificateLocation, certificatePassword );
-            builder = builder.sslContext( sslContext );
-        }
-        this.client = builder.build();
+        log.debug( "initialize {}", this );
     }
 
     public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
-        return proxy( remote.url, remote.name, clazz, remote.certificateLocation,
-            remote.certificatePassword, remote.timeout, remote.serialization, remote.retry );
+        return proxy( remote.url, remote.name, clazz, remote.timeout, remote.serialization, remote.retry );
     }
 
     private static Object proxy( URI uri, String service, Class<?> clazz,
-                                 Path certificateLocation, String certificatePassword,
                                  long timeout, FST.SerializationMethod serialization, int retry ) {
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization, retry ) );
+            new RemoteInvocationHandler( uri, service, timeout, serialization, retry ) );
     }
 
     private RemoteInvocationException throwException( String methodName, Throwable throwable ) {
@@ -150,13 +155,29 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         Throwable lastException = null;
         for( int i = 0; i <= retry; i++ ) {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
+            Call call = null;
             try {
-                var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( invocationB );
-                var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
-                var responseFuture = client.sendAsync( request, HttpResponse.BodyHandlers.ofInputStream() );
-                var response = responseFuture.get( timeout, MILLISECONDS );
-                if( response.statusCode() == HttpStatusCodes.OK && response.body() != null ) {
-                    var inputStream = response.body();
+                OkHttpClient requestClient = client
+                    .newBuilder()
+                    .connectTimeout( timeout, MILLISECONDS )
+                    .readTimeout( timeout, MILLISECONDS )
+                    .writeTimeout( timeout, MILLISECONDS )
+                    .build();
+
+                RequestBody requestBody = RequestBody.create( invocationB );
+
+                Request request = new Request.Builder()
+                    .post( requestBody )
+                    .url( uri.toURL() )
+                    .build();
+                call = requestClient.newCall( request );
+                CallbackFuture callbackFuture = new CallbackFuture();
+                call.enqueue( callbackFuture );
+
+                Response response = callbackFuture.future.get( timeout, MILLISECONDS );
+
+                if( response.code() == HttpStatusCodes.OK && response.body() != null ) {
+                    var inputStream = response.body().byteStream();
                     var bis = new BufferedInputStream( inputStream );
                     var dis = new DataInputStream( bis );
                     var success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
@@ -238,16 +259,20 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     }
                 } else
                     throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
-                        + " code " + response.statusCode()
-                        + " body '" + new String( IOUtils.toByteArray( response.body() ) ) + "'" );
+                        + " code " + response.code()
+                        + " body '" + response.body().string() + "'" );
             } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();
                 lastException = e;
+
+                if( call != null ) call.cancel();
             } catch( Exception e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "error invoking " + this + "#" + method.getName() + ": " + e.getMessage(), null );
                 errorMetrics.increment();
                 lastException = e;
+
+                if( call != null ) call.cancel();
             }
         }
 

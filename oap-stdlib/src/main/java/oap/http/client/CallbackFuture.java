@@ -22,27 +22,39 @@
  * SOFTWARE.
  */
 
-package oap.application.remote;
+package oap.http.client;
 
-import java.net.URI;
+import oap.util.Throwables;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 
-public class RemoteLocation {
-    public static final long DEFAULT_TIMEOUT = 5000L;
-    public URI url;
-    public String name;
-    public long timeout = DEFAULT_TIMEOUT;
-    public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
-    public int retry = 0;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-    public RemoteLocation() {
+public class CallbackFuture implements Callback {
+    public final CompletableFuture<Response> future = new CompletableFuture<>();
+
+    @Override
+    public void onFailure( @NotNull Call call, @NotNull IOException e ) {
+        future.completeExceptionally( e );
     }
 
-    public RemoteLocation( URI url, String name,
-                           long timeout, FST.SerializationMethod serialization, int retry ) {
-        this.url = url;
-        this.name = name;
-        this.timeout = timeout;
-        this.serialization = serialization;
-        this.retry = retry;
+    @Override
+    public void onResponse( @NotNull Call call, @NotNull Response response ) throws IOException {
+        future.complete( response );
+    }
+
+    public Response get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException, IOException {
+        try {
+            return future.get( timeout, unit );
+        } catch( ExecutionException e ) {
+            if( e.getCause() instanceof IOException ) throw ( IOException ) e.getCause();
+            else throw Throwables.propagate( e );
+        }
     }
 }
