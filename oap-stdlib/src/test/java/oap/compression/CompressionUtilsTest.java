@@ -24,36 +24,19 @@
 
 package oap.compression;
 
-import org.apache.commons.io.IOUtils;
+import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class CompressionUtils {
-    private CompressionUtils() {
-    }
+public class CompressionUtilsTest {
+    @Test
+    public void testCompress() throws IOException {
+        var bytes = CompressionUtils.gzip( "test" );
+        var str = CompressionUtils.ungzip( bytes );
 
-    public static byte[] gzip( String content ) throws IOException {
-        var baos = new ByteArrayOutputStream();
-        try( var gos = new GZIPOutputStream( baos ) ) {
-            gos.write( content.getBytes() );
-        }
-
-        return baos.toByteArray();
-    }
-
-    public static String ungzip( byte[] content ) throws IOException {
-        var bais = new ByteArrayInputStream( content );
-        var baos = new ByteArrayOutputStream();
-        try( var gos = new GZIPInputStream( bais ) ) {
-            IOUtils.copy( gos, baos );
-        }
-
-        return baos.toString( UTF_8 );
+        assertThat( bytes ).hasSize( 24 );
+        assertThat( str ).isEqualTo( "test" );
     }
 }
