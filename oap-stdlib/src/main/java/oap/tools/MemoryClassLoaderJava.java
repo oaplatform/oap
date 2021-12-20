@@ -50,6 +50,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static oap.io.content.ContentWriter.ofString;
+
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
@@ -109,7 +111,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
                         var classFile = diskCache.resolve( source.originalName + ".class" );
 
                         try {
-                            oap.io.Files.writeString( javaFile, source.content );
+                            oap.io.Files.write( javaFile, source.content, ofString() );
                             var bytes = manager.map.get( source.originalName ).toByteArray();
                             oap.io.Files.write( classFile, bytes );
                         } catch( Exception e ) {

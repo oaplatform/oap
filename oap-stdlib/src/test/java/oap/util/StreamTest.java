@@ -42,7 +42,7 @@ public class StreamTest {
     @Test
     public void traverse() {
         assertEquals(
-            Stream.<Class>traverse( ArrayList.class, Class::getSuperclass ).toList(),
+            Stream.<Class<?>>traverse( ArrayList.class, Class::getSuperclass ).toList(),
             Lists.of( ArrayList.class, AbstractList.class, AbstractCollection.class, Object.class ) );
     }
 

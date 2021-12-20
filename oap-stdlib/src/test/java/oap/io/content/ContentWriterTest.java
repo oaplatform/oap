@@ -28,14 +28,16 @@ import oap.json.Binder;
 import org.testng.annotations.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static oap.io.content.ContentWriter.ofJson;
+import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ContentWriterTest {
     @Test
     public void write() {
-        assertThat( ContentWriter.write( "string", ContentWriter.ofString() ) )
+        assertThat( ContentWriter.write( "string", ofString() ) )
             .isEqualTo( "string".getBytes( UTF_8 ) );
-        assertThat( ContentWriter.write( new Bean(), ContentWriter.ofJson() ) )
+        assertThat( ContentWriter.write( new Bean(), ofJson() ) )
             .isEqualTo( Binder.json.marshal( new Bean() ).getBytes( UTF_8 ) );
     }
 

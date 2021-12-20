@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -24,10 +25,10 @@ public class FileWalkerTest extends Fixtures {
 
     @BeforeMethod
     public void init() {
-        Files.writeString( testPath( "/wildcard/1.txt" ), "1" );
-        Files.writeString( testPath( "/wildcard/w2/3.txt" ), "1" );
-        Files.writeString( testPath( "/wildcard/w2/33.txt" ), "1" );
-        Files.writeString( testPath( "/wildcard/w2/w1/4.txt" ), "1" );
+        Files.write( testPath( "/wildcard/1.txt" ), "1", ofString() );
+        Files.write( testPath( "/wildcard/w2/3.txt" ), "1", ofString() );
+        Files.write( testPath( "/wildcard/w2/33.txt" ), "1", ofString() );
+        Files.write( testPath( "/wildcard/w2/w1/4.txt" ), "1", ofString() );
     }
 
     @Test

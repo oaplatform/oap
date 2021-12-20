@@ -352,10 +352,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         underlying.forEachOrdered( action );
     }
 
-    public List<E> toList() {
-        return underlying.collect( Collectors.toList() );
-    }
-
     public Set<E> toSet() {
         return underlying.collect( Collectors.toSet() );
     }

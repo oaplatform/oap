@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
@@ -46,6 +47,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.IoStreams.Encoding.ZIP;
+import static oap.io.content.ContentWriter.ofString;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.TestDirectoryFixture.testPath;
@@ -64,13 +66,13 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void wildcard() {
-        Files.writeString( testPath( "/wildcard/1.txt" ), "1" );
+        Files.write( testPath( "/wildcard/1.txt" ), "1", ContentWriter.ofString() );
         assertThat( Files.wildcard( testPath( "/wildcard" ), "*.txt" ) )
             .containsOnly( testPath( "/wildcard/1.txt" ) );
         assertThat( Files.wildcard( "/aaa", "*.txt" ) ).isEmpty();
 
-        Files.writeString( testPath( "/wildcard/a/a/1.txt" ), "1" );
-        Files.writeString( testPath( "/wildcard/b/1.txt" ), "1" );
+        Files.write( testPath( "/wildcard/a/a/1.txt" ), "1", ContentWriter.ofString() );
+        Files.write( testPath( "/wildcard/b/1.txt" ), "1", ContentWriter.ofString() );
         assertThat( Files.wildcard( testPath( "/wildcard" ), "**/*.txt" ) )
             .containsOnly(
                 testPath( "/wildcard/a/a/1.txt" ),
@@ -85,9 +87,9 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void copy() {
-        Files.writeString( testPath( "src/a/1.txt" ), "1" );
-        Files.writeString( testPath( "src/a/2.txt" ), "1" );
-        Files.writeString( testPath( "src/2.txt" ), "${x}" );
+        Files.write( testPath( "src/a/1.txt" ), "1", ContentWriter.ofString() );
+        Files.write( testPath( "src/a/2.txt" ), "1", ContentWriter.ofString() );
+        Files.write( testPath( "src/2.txt" ), "${x}", ContentWriter.ofString() );
         if( !Resources.IS_WINDOWS )
             Files.setPosixPermissions( testPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
 
@@ -128,7 +130,7 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void isDirectoryEmpty() {
-        Files.writeString( testPath( "/wildcard/1.txt" ), "1" );
+        Files.write( testPath( "/wildcard/1.txt" ), "1", ContentWriter.ofString() );
 
         assertThat( Files.isDirectoryEmpty( testPath( "/wildcard" ) ) ).isFalse();
 
@@ -167,7 +169,7 @@ public class FilesTest extends Fixtures {
     public void ensureFileEncodingValid( String ext, IoStreams.Encoding encoding ) {
         try {
             Path path = testPath( "file" + ext );
-            Files.writeString( path, encoding, "value" );
+            Files.write( path, encoding, "value", ContentWriter.ofString() );
             Files.ensureFileEncodingValid( path );
             if( IoStreams.Encoding.from( ext ) != encoding ) fail( "should throw exception" );
         } catch( InvalidFileEncodingException e ) {
@@ -179,8 +181,8 @@ public class FilesTest extends Fixtures {
     public void move() {
         Path path = testPath( "oap/io/CompressionPerformance/file.txt" );
         Path newPath = testPath( "test/newFile.txt" );
-        Files.writeString( path, "test" );
-        Files.writeString( newPath, "test2" );
+        Files.write( path, "test", ofString() );
+        Files.write( newPath, "test2", ofString() );
         Files.move( path, newPath, REPLACE_EXISTING );
 
         assertThat( path ).doesNotExist();
@@ -190,8 +192,8 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void deleteEmptyDirectories() {
-        Files.writeString( testPath( "/dir1/1.txt" ), "1" );
-        Files.writeString( testPath( "/dir1/dir2/1.txt" ), "1" );
+        Files.write( testPath( "/dir1/1.txt" ), "1", ofString() );
+        Files.write( testPath( "/dir1/dir2/1.txt" ), "1", ofString() );
 
         var dir3 = testPath( "/dir1/dir3" );
         var dir4 = testPath( "/dir1/dir3/dir4" );

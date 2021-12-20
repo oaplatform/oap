@@ -35,6 +35,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +53,7 @@ public class DynamicConfigTest {
         config.addListener( updates::incrementAndGet );
         assertThat( config.value ).isEqualTo( new Cfg( "value1" ) );
 
-        Files.writeString( update, "{parameter=\"valueUpdated\"}" );
+        Files.write( update, "{parameter=\"valueUpdated\"}", ofString() );
         config.control.sync();
         config.control.sync();
         config.control.sync();

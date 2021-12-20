@@ -36,6 +36,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
+import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LogConfigurationTest extends Fixtures {
@@ -100,7 +101,7 @@ public class LogConfigurationTest extends Fixtures {
 
     @Test
     public void testCompact() {
-        Files.writeString( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
             {
               name = config.v1
               version = 1
@@ -161,7 +162,7 @@ public class LogConfigurationTest extends Fixtures {
                 }
               ]
             }
-            """ );
+            """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
         logConfiguration.compact = true;
@@ -191,7 +192,7 @@ public class LogConfigurationTest extends Fixtures {
 
     @Test
     public void testCompactOr() {
-        Files.writeString( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
             {
               name = config.v1
               version = 1
@@ -217,7 +218,7 @@ public class LogConfigurationTest extends Fixtures {
                 }
               ]
             }
-            """ );
+            """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
         logConfiguration.compact = true;

@@ -26,16 +26,15 @@ package oap.io.content;
 
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
+import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.io.input.AutoCloseInputStream;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -95,7 +94,7 @@ public interface ContentReader<R> {
         return new ContentReader<>() {
             @Override
             public Stream<String> read( InputStream is ) {
-                return Stream.of( new BufferedReader( new InputStreamReader( is, UTF_8 ) ).lines() );
+                return IoStreams.lines( is, true );
             }
         };
     }

@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Paths;
 
+import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileSystemFileSyncTest extends Fixtures {
@@ -46,7 +47,7 @@ public class FileSystemFileSyncTest extends Fixtures {
         var remoteFile = TestDirectoryFixture.testPath( "rtest.file" ).toUri();
         var localFile = TestDirectoryFixture.testPath( "ltest.file" );
 
-        Files.writeString( Paths.get( remoteFile ), "test" );
+        Files.write( Paths.get( remoteFile ), "test", ofString() );
 
         Files.setLastModifiedTime( Paths.get( remoteFile ), 10 );
 
@@ -58,7 +59,7 @@ public class FileSystemFileSyncTest extends Fixtures {
         assertThat( java.nio.file.Files.getLastModifiedTime( localFile ).toMillis() ).isEqualTo( 10L );
         assertThat( b ).contains( "f" );
 
-        Files.writeString( Paths.get( remoteFile ), "test2" );
+        Files.write( Paths.get( remoteFile ), "test2", ofString() );
         Files.setLastModifiedTime( Paths.get( remoteFile ), 10 );
 
         fileSync.run();

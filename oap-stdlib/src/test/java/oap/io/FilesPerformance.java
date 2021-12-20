@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import static oap.benchmark.Benchmark.benchmark;
+import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.TestDirectoryFixture.testPath;
 
 @Test( enabled = false )
@@ -49,8 +50,8 @@ public class FilesPerformance {
         path = testPath( "tt/test" );
         path2 = testPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
         pathNotExists = testPath( "tt/test2" );
-        Files.writeString( path, RandomStringUtils.random( 10 ) );
-        Files.writeString( path2, RandomStringUtils.random( 10 ) );
+        Files.write( path, RandomStringUtils.random( 10 ), ofString() );
+        Files.write( path2, RandomStringUtils.random( 10 ), ofString() );
     }
 
     @Test( enabled = false )

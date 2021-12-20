@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.assertFile;
 
 public class SafeFileOutputStreamTest extends Fixtures {
@@ -63,7 +64,7 @@ public class SafeFileOutputStreamTest extends Fixtures {
     @Test
     public void append() throws IOException {
         Path path = TestDirectoryFixture.testPath( "1" );
-        Files.writeString( path, "test" );
+        Files.write( path, "test", ofString() );
         try( SafeFileOutputStream stream = new SafeFileOutputStream( path, true, PLAIN ) ) {
             stream.write( "2".getBytes() );
         }

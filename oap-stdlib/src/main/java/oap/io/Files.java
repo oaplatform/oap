@@ -32,6 +32,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;
+import oap.io.content.ContentWriter;
 import oap.net.Inet;
 import oap.time.Time;
 import oap.util.Dates;
@@ -55,7 +56,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -89,6 +89,9 @@ import java.util.function.Predicate;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static oap.io.content.ContentWriter.ofBytes;
+import static oap.io.content.ContentWriter.ofObject;
+import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
 public final class Files {
@@ -143,6 +146,7 @@ public final class Files {
         return wildcard( Paths.get( basePath ), wildcards );
     }
 
+    @SneakyThrows
     public static ArrayList<Path> wildcard( Path basePath, String... wildcards ) {
         List<PathMatcher> matchers = Lists.map( wildcards, wc -> FileSystems.getDefault()
             .getPathMatcher( ( "glob:" + basePath + File.separator + wc ).replace( "\\", "\\\\" ) ) );
@@ -153,13 +157,8 @@ public final class Files {
                 return FileVisitResult.CONTINUE;
             }
         };
-        if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) ) {
-            try {
-                java.nio.file.Files.walkFileTree( basePath, visitor );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        }
+        if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+            java.nio.file.Files.walkFileTree( basePath, visitor );
         Collections.sort( result );
         return result;
     }
@@ -173,6 +172,7 @@ public final class Files {
         return path.toUri().toURL();
     }
 
+    @SneakyThrows
     public static List<Path> deepCollect( Path basePath, Predicate<Path> predicate ) {
         ArrayList<Path> result = new ArrayList<>();
         SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
@@ -182,13 +182,8 @@ public final class Files {
                 return FileVisitResult.CONTINUE;
             }
         };
-        if( exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) ) {
-            try {
-                java.nio.file.Files.walkFileTree( basePath, visitor );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        }
+        if( exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+            java.nio.file.Files.walkFileTree( basePath, visitor );
         return result;
     }
 
@@ -211,6 +206,10 @@ public final class Files {
         return read( Paths.get( path ), Encoding.from( path ), ContentReader.ofString() );
     }
 
+    /**
+     * @see #read(Path, ContentReader)
+     */
+    @Deprecated
     public static String readString( Path path ) {
         return read( path, Encoding.from( path ), ContentReader.ofString() );
     }
@@ -223,13 +222,13 @@ public final class Files {
         return read( path, encoding, ContentReader.ofString() );
     }
 
+    /**
+     * @see #read(Path, ContentReader)
+     */
     @Deprecated
+    @SneakyThrows
     public static byte[] read( Path path ) {
-        try {
-            return java.nio.file.Files.readAllBytes( path );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return java.nio.file.Files.readAllBytes( path );
     }
 
     @SneakyThrows
@@ -246,72 +245,103 @@ public final class Files {
         }
     }
 
-    public static void writeString( String path, String value ) {
-        writeString( Paths.get( path ), value );
+    public static <T> void write( Path path, T value, ContentWriter<T> writer ) {
+        write( path, Encoding.from( path ), value, writer );
     }
 
-    public static void writeString( Path path, String value ) {
-        writeString( path, value, false );
+    public static <T> void write( Path path, Encoding encoding, T value, ContentWriter<T> writer ) {
+        write( path, false, false, encoding, value, writer );
     }
 
-    public static void writeString( Path path, String value, boolean safe ) {
-        IoStreams.write( path, Encoding.from( path ), new ByteArrayInputStream( value.getBytes() ), false, safe );
+    public static <T> void write( Path path, boolean append, boolean safe, Encoding encoding, T value, ContentWriter<T> writer ) {
+        IoStreams.write( path, encoding, new ByteArrayInputStream( writer.write( value ) ), append, safe );
     }
 
-    public static void writeString( Path path, Encoding encoding, String value ) {
-        IoStreams.write( path, encoding, value );
-    }
-
-    public static void writeString( Path path, Encoding encoding, boolean append, String value ) {
-        IoStreams.write( path, encoding, value, append );
-    }
-
-    public static void writeBytes( Path path, byte[] value ) {
-        writeBytes( path, Encoding.from( path ), value );
-    }
-
-    public static void writeBytes( Path path, Encoding encoding, byte[] value ) {
-        IoStreams.write( path, encoding, new ByteArrayInputStream( value ), false, false );
-    }
-
+    /**
+     * @see #write(Path, Object, ContentWriter)
+     */
+    @Deprecated
     public static void write( Path path, byte[] value ) {
-        ensureFile( path );
-        try {
-            java.nio.file.Files.write( path, value );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        write( path, value, ofBytes() );
+    }
+
+    /**
+     * @see #write(Path, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeString( String path, String value ) {
+        write( Paths.get( path ), value, ofString() );
+    }
+
+    /**
+     * @see #write(Path, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeString( Path path, String value ) {
+        write( path, value, ofString() );
+    }
+
+    /**
+     * @see #write(Path, boolean, boolean, Encoding, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeString( Path path, String value, boolean safe ) {
+        write( path, false, safe, Encoding.from( path ), value, ofString() );
+    }
+
+    /**
+     * @see #write(Path, Encoding, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeString( Path path, Encoding encoding, String value ) {
+        write( path, encoding, value, ofString() );
+    }
+
+    /**
+     * @see #write(Path, boolean, boolean, Encoding, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeString( Path path, Encoding encoding, boolean append, String value ) {
+        write( path, append, false, encoding, value, ofString() );
+    }
+
+    /**
+     * @see #write(Path, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeBytes( Path path, byte[] value ) {
+        write( path, value, ofBytes() );
+    }
+
+    /**
+     * @see #write(Path, Encoding, Object, ContentWriter)
+     */
+    @Deprecated
+    public static void writeBytes( Path path, Encoding encoding, byte[] value ) {
+        write( path, encoding, value, ofBytes() );
     }
 
 
+    /**
+     * @see #write(Path, Object, ContentWriter)
+     */
+    @Deprecated
     public static void writeObject( Path path, Object value ) {
-        try( ObjectOutputStream os = new ObjectOutputStream( IoStreams.out( path, Encoding.PLAIN ) ) ) {
-            os.writeObject( value );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        write( path, value, ofObject() );
     }
 
     public static Stream<String> lines( Path path ) {
-        log.trace( "reading {}...", path );
-        final InputStream in = IoStreams.in( path );
-        return IoStreams.lines( in, true );
+        return read( path, ContentReader.ofLinesStream() );
     }
 
-    public static void copyDirectory( Path from, Path to ) throws UncheckedIOException {
-        try {
-            FileUtils.copyDirectory( from.toFile(), to.toFile() );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+    @SneakyThrows
+    public static void copyDirectory( Path from, Path to ) {
+        FileUtils.copyDirectory( from.toFile(), to.toFile() );
     }
 
-    public static void cleanDirectory( Path path ) throws UncheckedIOException {
-        try {
-            FileUtils.cleanDirectory( path.toFile() );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+    @SneakyThrows
+    public static void cleanDirectory( Path path ) {
+        FileUtils.cleanDirectory( path.toFile() );
     }
 
     public static void deleteSafely( Path path ) {
@@ -322,20 +352,20 @@ public final class Files {
         }
     }
 
-    public static void delete( Path path ) throws UncheckedIOException {
+    @SneakyThrows
+    public static void delete( Path path ) {
         var retryer = RetryerBuilder.<FileVisitResult>newBuilder()
             .retryIfException()
             .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
             .build();
 
-        if( java.nio.file.Files.exists( path ) ) try {
+        if( java.nio.file.Files.exists( path ) )
             java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
                     try {
                         return retryer.call( () -> {
-                            if( java.nio.file.Files.exists( path ) )
-                                java.nio.file.Files.delete( path );
+                            if( java.nio.file.Files.exists( path ) ) java.nio.file.Files.delete( path );
                             return FileVisitResult.CONTINUE;
                         } );
                     } catch( ExecutionException e ) {
@@ -347,25 +377,21 @@ public final class Files {
 
                 @Override
                 public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
-                    if( java.nio.file.Files.exists( path ) )
-                        java.nio.file.Files.delete( path );
+                    if( java.nio.file.Files.exists( path ) ) java.nio.file.Files.delete( path );
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFileFailed( Path file, IOException exc ) {
                     log.error( file.toString(), exc );
-
                     return FileVisitResult.CONTINUE;
                 }
             } );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
     }
 
-    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) throws UncheckedIOException {
-        if( java.nio.file.Files.exists( path ) ) try {
+    @SneakyThrows
+    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
+        if( java.nio.file.Files.exists( path ) )
             java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) {
@@ -389,19 +415,15 @@ public final class Files {
                 }
 
             } );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
     }
 
+    @SneakyThrows
     private static void copyOrAppend( Path sourcePath, Encoding sourceEncoding, Path destPath,
-                                      Encoding destEncoding, int bufferSize, boolean append ) throws UncheckedIOException {
+                                      Encoding destEncoding, int bufferSize, boolean append ) {
         ensureFile( destPath );
         try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
              OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
             IOUtils.copy( is, os );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
@@ -438,7 +460,7 @@ public final class Files {
         for( String included : scanner.getIncludedFiles() ) {
             Path src = basePath.resolve( included );
             Path dst = destPath.resolve( included );
-            if( filtering ) Files.writeString( dst, Strings.substitute( Files.readString( src ), mapper ) );
+            if( filtering ) write( dst, Strings.substitute( Files.readString( src ), mapper ), ofString() );
             else copy( src, Encoding.PLAIN, dst, Encoding.PLAIN );
 
             if( !Resources.IS_WINDOWS )
@@ -456,54 +478,40 @@ public final class Files {
         }
     }
 
-    public static void ensureFile( Path path ) throws UncheckedIOException {
+    public static void ensureFile( Path path ) {
         ensureDirectory( path.getParent() );
     }
 
-    public static Path ensureDirectory( Path path ) throws UncheckedIOException {
-        try {
-            java.nio.file.Files.createDirectories( path );
-            return path;
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+    @SneakyThrows
+    public static Path ensureDirectory( Path path ) {
+        java.nio.file.Files.createDirectories( path );
+        return path;
     }
 
-    public static void move( Path source, Path target, CopyOption... options ) throws UncheckedIOException {
-        try {
-            Files.ensureFile( target );
-
-            java.nio.file.Files.move( source, target, options );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+    @SneakyThrows
+    public static void move( Path source, Path target, CopyOption... options ) {
+        ensureFile( target );
+        java.nio.file.Files.move( source, target, options );
     }
 
-    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) throws UncheckedIOException {
-        try {
-            java.nio.file.Files.setPosixFilePermissions( path, permissions );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+    @SneakyThrows
+    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
+        java.nio.file.Files.setPosixFilePermissions( path, permissions );
     }
 
     public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) {
         setPosixPermissions( path, Sets.of( permissions ) );
     }
 
+    @SneakyThrows
     public static Set<PosixFilePermission> getPosixPermissions( Path path ) {
-        try {
-            return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
     }
 
+    @SneakyThrows
     public static boolean isDirectoryEmpty( Path directory ) {
         try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             return !dirStream.iterator().hasNext();
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
@@ -511,12 +519,9 @@ public final class Files {
         setLastModifiedTime( path, dateTime.getMillis() );
     }
 
+    @SneakyThrows
     public static void setLastModifiedTime( Path path, long ms ) {
-        try {
-            java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
     }
 
     public static String nameWithoutExtention( URL url ) {
@@ -598,6 +603,7 @@ public final class Files {
         return isFileNotEmpty( path );
     }
 
+    @SneakyThrows
     public static boolean isFileNotEmpty( final Path path ) {
         try( InputStream is = IoStreams.in( path );
              InputStreamReader isr = new InputStreamReader( is );
@@ -605,8 +611,6 @@ public final class Files {
             String line;
             while( ( line = reader.readLine() ) != null ) if( StringUtils.isNotEmpty( line ) ) return true;
             return false;
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 
@@ -614,22 +618,18 @@ public final class Files {
         return java.nio.file.Files.exists( path );
     }
 
+    @SneakyThrows
     public static long getLastModifiedTime( Path path ) {
-        try {
-            return java.nio.file.Files.getLastModifiedTime( path ).toMillis();
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return java.nio.file.Files.getLastModifiedTime( path ).toMillis();
     }
 
+    @SneakyThrows
     public static boolean createFile( Path file ) {
         try {
             java.nio.file.Files.createFile( file );
             return true;
         } catch( FileAlreadyExistsException e ) {
             return false;
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         }
     }
 

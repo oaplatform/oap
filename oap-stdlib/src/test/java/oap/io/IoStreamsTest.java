@@ -49,6 +49,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.IoStreams.Encoding.ZSTD;
+import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
@@ -139,14 +140,14 @@ public class IoStreamsTest extends Fixtures {
 //        String content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
         for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
-            Files.writeString( path, encoding, content );
+            Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
         System.out.println( "Low variance file" );
         content = Files.read( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP, ContentReader.ofString() );
         for( Encoding encoding : Arrays.filter( v -> v.compressed, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
-            Files.writeString( path, encoding, content );
+            Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
     }
