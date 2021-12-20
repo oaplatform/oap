@@ -24,30 +24,19 @@
 
 package oap.benchmark;
 
-import java.util.List;
+import org.testng.annotations.Test;
 
-class Result {
-    public final long total;
-    public final long rate;
-    public final long time;
-    public final String experiment;
+import static oap.benchmark.Benchmark.benchmark;
 
-    Result( String experiment, long total, long time, long rate ) {
-        this.experiment = experiment;
-        this.total = total;
-        this.time = time;
-        this.rate = rate;
-    }
-
-    public static Result average( List<Result> results ) {
-        int experiments = results.size();
-        return new Result( "average", 0,
-            results.stream()
-                .mapToLong( r -> r.time )
-                .sum() / ( experiments > 1 ? experiments - 1 : experiments ),
-            results.stream()
-                .mapToLong( r1 -> r1.rate )
-                .sum() / ( experiments > 1 ? experiments - 1 : experiments )
-        );
+public class BenchmarkTest {
+    @Test
+    public void graph() {
+        benchmark( "scale", 1000, ( x, s ) -> {
+            long r = 0;
+            for( int i = 0; i < 100000 * ( x + 1 ); i++ ) r += Math.sqrt( i );
+        } )
+            .formatExperiment( x -> ( x + 1 ) * 100 + "k" )
+            .threads( 10 )
+            .run();
     }
 }

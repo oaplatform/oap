@@ -24,6 +24,7 @@
 package oap.util;
 
 import com.google.common.base.CharMatcher;
+import oap.id.Identifier;
 import oap.io.content.ContentReader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
@@ -55,7 +56,9 @@ public final class Strings {
     public static final String DEFAULT = "DEFAULT";
     public static final String UNDEFINED = "UNDEFINED";
     public static final String UNKNOWN = "UNKNOWN";
+    @Deprecated
     private static final Pattern significantSymbolsNoVowels = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
+    @Deprecated
     private static final Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
 
     private Strings() {}
@@ -319,6 +322,10 @@ public final class Strings {
         return result.toString();
     }
 
+    /**
+     * @see oap.id.Identifier#generate(String, int, Predicate, Identifier.Option...)
+     */
+    @Deprecated
     public static String toUserFriendlyId( String source, int length, Predicate<String> conflict, FriendlyIdOption... opts ) {
         Objects.requireNonNull( source );
 
@@ -403,6 +410,7 @@ public final class Strings {
         return result.toString();
     }
 
+    @Deprecated
     public enum FriendlyIdOption {
         NO_VOWELS,
         FILL

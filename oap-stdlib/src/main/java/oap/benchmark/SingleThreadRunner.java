@@ -25,47 +25,17 @@
 package oap.benchmark;
 
 import lombok.ToString;
-import oap.testng.Teamcity;
-
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
 
 @ToString
 class SingleThreadRunner extends AbstractRunner {
     static final SingleThreadRunner INSTANCE = new SingleThreadRunner();
 
     @Override
-    public Result run( Benchmark benchmark ) {
-        return Teamcity.progress( benchmark.name + "...", () -> {
-            System.out.println( "warming up..." );
-            for( int i = 0; i < benchmark.samples; i++ )
-                benchmark.code.accept( i );
+    public Result runExperiment( int experiment, Benchmark benchmark ) {
+        long start = System.nanoTime();
 
-            List<Result> results = IntStream.range( 0, benchmark.experiments )
-                .mapToObj( x -> Teamcity.progress( benchmark.name + " e=" + x + "...", () -> {
-                    benchmark.beforeExperiment.run();
-                    long total = 0;
-                    for( int i = 0; i < benchmark.samples; i++ ) {
-                        long start = System.nanoTime();
-                        benchmark.code.accept( i );
-                        total += System.nanoTime() - start;
+        for( int i = 0; i < benchmark.samples; i++ ) benchmark.code.accept( experiment, i );
 
-                    }
-                    Result r = benchmark.toResult( total );
-                    benchmark.printResult( total, r );
-                    benchmark.afterExperiment.run();
-                    return r;
-                } ) )
-                .collect( toList() );
-            Result avg = Result.average( results, benchmark.experiments );
-            benchmark.printAverageResult( avg );
-
-            Teamcity.performance( benchmark.name, avg.rate );
-
-            return avg;
-        } );
+        return benchmark.toResult( experiment, System.nanoTime() - start );
     }
-
 }

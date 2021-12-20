@@ -34,7 +34,7 @@ public class CuidPerformance {
         Cuid.UNIQUE.next();
 
         benchmark( "cuid", 20000000, Cuid.UNIQUE::next )
-            .inThreads( 100 )
+            .threads( 100 )
             .run();
     }
 }

@@ -27,17 +27,16 @@ package oap.id;
 import com.google.common.base.Preconditions;
 import oap.reflect.Reflect;
 import oap.util.Cuid;
-import oap.util.Strings;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
-import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
+import static oap.id.Identifier.Option.COMPACT;
 
 public final class StringIdentifierBuilder<T> extends AbstractBuilder<T, String> {
     public static final int DEFAULT_ID_SIZE = 10;
-    protected Strings.FriendlyIdOption[] options = new Strings.FriendlyIdOption[] { NO_VOWELS };
+    protected Identifier.Option[] options = new Identifier.Option[] { COMPACT };
     protected Function<T, String> suggestion = obj -> Cuid.UNIQUE.next();
     protected int length = DEFAULT_ID_SIZE;
 
@@ -86,8 +85,8 @@ public final class StringIdentifierBuilder<T> extends AbstractBuilder<T, String>
         return this;
     }
 
-    public StringIdentifierBuilder<T> options( Strings.FriendlyIdOption... idOptions ) {
-        this.options = idOptions;
+    public StringIdentifierBuilder<T> options( Identifier.Option... options ) {
+        this.options = options;
         return this;
     }
 

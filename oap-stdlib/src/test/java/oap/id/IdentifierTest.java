@@ -22,32 +22,8 @@
  * SOFTWARE.
  */
 
-package oap.benchmark;
+package oap.id;
 
-import java.util.List;
+public class IdentifierTest {
 
-class Result {
-    public final long total;
-    public final long rate;
-    public final long time;
-    public final String experiment;
-
-    Result( String experiment, long total, long time, long rate ) {
-        this.experiment = experiment;
-        this.total = total;
-        this.time = time;
-        this.rate = rate;
-    }
-
-    public static Result average( List<Result> results ) {
-        int experiments = results.size();
-        return new Result( "average", 0,
-            results.stream()
-                .mapToLong( r -> r.time )
-                .sum() / ( experiments > 1 ? experiments - 1 : experiments ),
-            results.stream()
-                .mapToLong( r1 -> r1.rate )
-                .sum() / ( experiments > 1 ? experiments - 1 : experiments )
-        );
-    }
 }

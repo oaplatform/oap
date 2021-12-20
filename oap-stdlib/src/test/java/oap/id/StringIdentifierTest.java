@@ -32,8 +32,8 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static oap.util.Strings.FriendlyIdOption.FILL;
-import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
+import static oap.id.Identifier.Option.COMPACT;
+import static oap.id.Identifier.Option.FILL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -69,7 +69,7 @@ public class StringIdentifierTest {
         var identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
-            .options( NO_VOWELS, FILL )
+            .options( COMPACT, FILL )
             .build();
         var a = new Bean( null, "some text" );
         var b = new Bean( null, "another text" );
@@ -86,7 +86,7 @@ public class StringIdentifierTest {
         var identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
-            .options( NO_VOWELS, FILL )
+            .options( COMPACT, FILL )
             .build();
 
         String[] results = { "SMTXTXX", "SMTXTX0", "SMTXTX1", "SMTXTX2", "SMTXTX3", "SMTXTX4", "SMTXTX5" };

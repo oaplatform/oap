@@ -24,47 +24,23 @@
 
 package oap.util;
 
+import oap.benchmark.Benchmark;
+import org.testng.annotations.Test;
+
 import java.util.HashSet;
+import java.util.stream.IntStream;
 
-public class HashSets {
-    public static <T> HashSet<T> of() {
-        return new HashSet<>();
-    }
-
-    public static <T> HashSet<T> of( T value1 ) {
-        HashSet<T> set = new HashSet<>();
-        set.add( value1 );
-        return set;
-    }
-
-    public static <T> HashSet<T> of( T value1, T value2 ) {
-        HashSet<T> set = of( value1 );
-        set.add( value2 );
-        return set;
-    }
-
-    public static <T> HashSet<T> of( T value1, T value2, T value3 ) {
-        HashSet<T> set = of( value1, value2 );
-        set.add( value3 );
-        return set;
-    }
-
-    public static <T> HashSet<T> of( T value1, T value2, T value3, T value4 ) {
-        HashSet<T> set = of( value1, value2, value3 );
-        set.add( value4 );
-        return set;
-    }
-
-    public static <T> HashSet<T> of( T value1, T value2, T value3, T value4, T value5 ) {
-        HashSet<T> set = of( value1, value2, value3, value4 );
-        set.add( value5 );
-        return set;
-    }
-
-    @SafeVarargs
-    public static <T> HashSet<T> of( T... values ) {
-        HashSet<T> set = of();
-        for( var v : values ) set.add( v );
-        return set;
+public class HashSetsPerformance {
+    @Test
+    public void ofPerformance() {
+        Object[] values = IntStream.range( 1, 10000 ).boxed().toArray();
+        HashSet<Object> set1 = HashSets.of();
+        Benchmark.benchmark( "iteration", 10000, () -> {
+            for( var v : values ) set1.add( v );
+        } ).run();
+        HashSet<Object> set2 = HashSets.of();
+        Benchmark.benchmark( "addAll", 10000, () -> {
+            set2.addAll( java.util.Arrays.asList( values ) );
+        } ).run();
     }
 }

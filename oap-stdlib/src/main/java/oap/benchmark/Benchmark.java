@@ -29,47 +29,69 @@ import oap.reflect.Reflect;
 import oap.util.function.Try;
 import org.joda.time.Period;
 
-import java.util.function.IntConsumer;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import static oap.util.function.Functions.empty.noop;
 
 @ToString( exclude = "code" )
 public final class Benchmark {
+    public static final int DEFAULT_WARMING = 1000;
+    public static final int WARMING_EXPERIMENT = -1;
+    public static final Function<Integer, String> DEFAULT_EXPERIMENT_FORMAT = x -> "" + x;
     public int experiments = 5;
     public Period period = Period.seconds( 1 );
     String name;
+    int warming = DEFAULT_WARMING;
     int samples;
-    IntConsumer code;
+    BiConsumer<Integer, Integer> code;
     AbstractRunner runner = SingleThreadRunner.INSTANCE;
     Runnable beforeExperiment = noop();
     Runnable afterExperiment = noop();
     LongFunction<String> rateToString = rate -> rate + " action/${PERIOD}";
+    Function<Integer, String> formatExperiment = DEFAULT_EXPERIMENT_FORMAT;
 
-    private Benchmark( String name, int samples, Try.ThrowingIntConsumer code ) {
+    private Benchmark( String name, int samples, Try.ThrowingBiConsumer<Integer, Integer> code ) {
         this.name = name;
         this.samples = samples;
         this.code = code.asConsumer();
     }
 
     public static Benchmark benchmark( String name, int samples, Try.ThrowingIntConsumer code ) {
+        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, ( x, s ) -> code.accept( s ) );
+    }
+
+    public static Benchmark benchmark( String name, int samples, Try.ThrowingBiConsumer<Integer, Integer> code ) {
         return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, code );
     }
 
     public static Benchmark benchmark( String name, int samples, Try.ThrowingRunnable code ) {
-        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, i -> code.run() );
+        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, ( x, s ) -> code.run() );
     }
 
     private static long getRate( int samples, Period period, long total ) {
         return ( long ) ( samples / ( total / period.toStandardDuration().getMillis() / 1000000f ) );
     }
 
+    @Deprecated
     public Benchmark inThreads( int threads ) {
-        return inThreads( threads, 1000 );
+        return threads( threads );
     }
 
+    @Deprecated
     public Benchmark inThreads( int threads, int warming ) {
-        this.runner = threads > 1 ? new MultiThreadRunner( threads, warming ) : SingleThreadRunner.INSTANCE;
+        return threads( threads ).warming( warming );
+    }
+
+    public Benchmark threads( int threads ) {
+        this.runner = threads > 1 ? new MultiThreadRunner( threads ) : SingleThreadRunner.INSTANCE;
+        return this.formatExperiment == DEFAULT_EXPERIMENT_FORMAT
+            ? this.formatExperiment( x -> x + "(" + threads + "thds)" ) : this;
+    }
+
+    public Benchmark warming( int warming ) {
+        this.warming = warming;
         return this;
     }
 
@@ -85,6 +107,11 @@ public final class Benchmark {
 
     public Benchmark afterExperiment( Try.CatchingRunnable after ) {
         this.afterExperiment = after;
+        return this;
+    }
+
+    public Benchmark formatExperiment( Function<Integer, String> formatter ) {
+        this.formatExperiment = formatter;
         return this;
     }
 
@@ -106,10 +133,9 @@ public final class Benchmark {
         return rateToString.apply( avgRate ).replace( "${PERIOD}", getPeriod() );
     }
 
-    void printResult( long totalTime, Result result ) {
-        System.out.format(
-            "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %s\n",
-            name, samples, totalTime / 1000, result.time, rateToString( result.rate ) );
+    void printResult( Result result ) {
+        System.out.format( "benchmarking %s: experiment %s, %d samples, %d usec, avg time %d usec, rate %s\n",
+            name, result.experiment, samples, result.total / 1000, result.time, rateToString( result.rate ) );
     }
 
     void printAverageResult( Result result ) {
@@ -118,11 +144,11 @@ public final class Benchmark {
 
     }
 
-    Result toResult( long total ) {
-        return new Result( total / samples / 1000, getRate( samples, period, total ) );
+    Result toResult( int experiment, long total ) {
+        return new Result( formatExperiment.apply( experiment ), total, total / samples / 1000, getRate( samples, period, total ) );
     }
 
-    public void run() {
-        runner.run( this );
+    public Result run() {
+        return runner.run( this );
     }
 }

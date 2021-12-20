@@ -25,80 +25,37 @@
 package oap.benchmark;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.SneakyThrows;
 import lombok.ToString;
-import oap.testng.Teamcity;
-import oap.util.function.Try;
+import oap.concurrent.Executors;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 @ToString
 class MultiThreadRunner extends AbstractRunner {
     private final int threads;
-    private final int warming;
 
-    MultiThreadRunner( int threads, int warming ) {
+    MultiThreadRunner( int threads ) {
         this.threads = threads;
-        this.warming = warming;
     }
 
+    @SneakyThrows
     @Override
-    public Result run( Benchmark benchmark ) {
-        return Teamcity.progress( benchmark.name + "...", Try.supply( () -> {
-            System.out.println( "pool threads = " + threads );
-            if( warming > 0 ) {
-                System.out.println( "warming up..." );
-                var pool = oap.concurrent.Executors.newFixedThreadPool( threads, new ThreadFactoryBuilder().setNameFormat( "name-%d" ).build() );
-                for( var i = 0; i < warming; i++ ) {
-                    pool.execute( () -> benchmark.code.accept( 0 ) );
-                }
+    public Result runExperiment( int experiment, Benchmark benchmark ) {
+        var pool = Executors.newFixedThreadPool( threads, new ThreadFactoryBuilder().setNameFormat( "name-%d" ).build() );
 
-                pool.shutdown();
-                pool.awaitTermination( 5, TimeUnit.HOURS );
-            }
-            System.out.println( "starting test..." );
+        int range = benchmark.samples / threads;
 
-            List<Result> results = IntStream
-                .range( 0, benchmark.experiments )
-                .mapToObj( x -> Teamcity.progress( benchmark.name + " e=" + x + "...", Try.supply( () -> {
+        long start = System.nanoTime();
+        for( var t = 0; t < threads; t++ ) {
+            int finalT = t;
+            pool.execute( () -> {
+                for( int i = 0; i < range; i++ ) benchmark.code.accept( experiment, i + range * finalT );
+            } );
+        }
+        pool.shutdown();
+        pool.awaitTermination( 5, HOURS );
 
-                        benchmark.beforeExperiment.run();
-
-                        int samplesPerThread = benchmark.samples / threads;
-
-                        var rpool = oap.concurrent.Executors.newFixedThreadPool( threads, new ThreadFactoryBuilder().setNameFormat( "name-%d" ).build() );
-
-                        long start = System.nanoTime();
-                        for( var t = 0; t < threads; t++ ) {
-                            int finalT = t;
-                            rpool.execute( () -> IntStream
-                                .range( finalT * samplesPerThread, ( finalT + 1 ) * samplesPerThread )
-                                .forEach( benchmark.code ) );
-
-                        }
-                        rpool.shutdown();
-                        rpool.awaitTermination( 5, TimeUnit.HOURS );
-
-                        long total = System.nanoTime() - start;
-                        Result result = benchmark.toResult( total );
-                        benchmark.printResult( total, result );
-                        benchmark.afterExperiment.run();
-
-                        return result;
-                    } )
-                ) )
-                .collect( toList() );
-
-            Result avg = Result.average( results, benchmark.experiments );
-            benchmark.printAverageResult( avg );
-
-            Teamcity.performance( benchmark.name, avg.rate );
-
-            return avg;
-        } ) );
-
+        return benchmark.toResult( experiment, System.nanoTime() - start );
     }
 }

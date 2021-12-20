@@ -63,7 +63,7 @@ public final class Result<S, F> implements Serializable {
 
     }
 
-    @Deprecated
+    @Deprecated( forRemoval = true )
     public static <S> Result<S, Throwable> trying( oap.util.Try.ThrowingSupplier<S> supplier ) {
         return catching( supplier::get );
     }

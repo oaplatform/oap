@@ -35,21 +35,17 @@ public class LimitedTimeExecutorPerformance {
     @Test
     public void testPerf() {
 
-        final int SAMPLES = 100000;
-        final int THREADS = 5000;
+        final int samples = 100000;
+        final int threads = 5000;
 
-        benchmark( "without-LimitedTime", SAMPLES, () -> Thread.sleep( 10 ) ).inThreads( THREADS ).run();
+        benchmark( "without-LimitedTime", samples, () -> Thread.sleep( 10 ) )
+            .threads( threads )
+            .run();
 
         LimitedTimeExecutor lt = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS );
 
-        benchmark( "LimitedTime", SAMPLES, () -> {
-            lt.execute( () -> {
-                try {
-                    Thread.sleep( 10 );
-                } catch( InterruptedException e ) {
-                    e.printStackTrace();
-                }
-            } );
-        } ).inThreads( THREADS ).run();
+        benchmark( "LimitedTime", samples, () -> lt.execute( () -> Threads.sleepSafely( 10 ) ) )
+            .threads( threads )
+            .run();
     }
 }

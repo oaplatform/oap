@@ -24,8 +24,6 @@
 
 package oap.id;
 
-import oap.util.Strings;
-
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -35,10 +33,10 @@ import static java.util.Objects.requireNonNull;
 public final class StringIdentifier<T> extends AbstractIdentifier<String, T> {
 
     private final Function<T, String> suggestion;
-    private final Strings.FriendlyIdOption[] options;
+    private final Option[] options;
     private final int length;
 
-    StringIdentifier( Function<T, String> getter, BiConsumer<T, String> setter, Function<T, String> suggestion, Strings.FriendlyIdOption[] options, int length ) {
+    StringIdentifier( Function<T, String> getter, BiConsumer<T, String> setter, Function<T, String> suggestion, Option[] options, int length ) {
         super( getter, setter );
         this.length = length;
         this.suggestion = suggestion;
@@ -53,7 +51,7 @@ public final class StringIdentifier<T> extends AbstractIdentifier<String, T> {
             requireNonNull( suggestion, "null id, suggestion required" );
             requireNonNull( setter, "null id, setter required " );
 
-            id = Strings.toUserFriendlyId( suggestion.apply( object ), length, conflict, options );
+            id = Identifier.generate( suggestion.apply( object ), length, conflict, options );
 
             setter.accept( object, id );
         }

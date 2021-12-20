@@ -23,6 +23,7 @@
  */
 package oap.util;
 
+import oap.id.Identifier;
 import oap.reflect.Reflect;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
@@ -30,9 +31,9 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.Set;
 
+import static oap.id.Identifier.Option.COMPACT;
+import static oap.id.Identifier.Option.FILL;
 import static oap.util.Pair.__;
-import static oap.util.Strings.FriendlyIdOption.FILL;
-import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 import static oap.util.function.Functions.empty.reject;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -147,23 +148,23 @@ public class StringsTest {
     }
 
     @Test
-    public void toUserFriendlyId() {
-        assertThat( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
+    public static void toUserFriendlyId() {
+        assertThat( Identifier.generate( "some text", 7, reject(), COMPACT, FILL ) )
             .isEqualTo( "SMTXTXX" );
-        assertThat( Strings.toUserFriendlyId( "another text", 7, reject(), NO_VOWELS, FILL ) )
+        assertThat( Identifier.generate( "another text", 7, reject(), COMPACT, FILL ) )
             .isEqualTo( "NTHRTXT" );
 
-        assertThat( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), COMPACT ) )
             .isEqualTo( "SMTXT" );
 
-        assertThat( Strings.toUserFriendlyId( "some text", 7, reject() ) )
+        assertThat( Identifier.generate( "some text", 7, reject() ) )
             .isEqualTo( "SOMETEX" );
-        assertThat( Strings.toUserFriendlyId( "another text", 7, reject() ) )
+        assertThat( Identifier.generate( "another text", 7, reject() ) )
             .isEqualTo( "ANOTHER" );
 
         Set<String> items = Sets.empty();
         for( int i = 0; i < 39; i++ )
-            items.add( Strings.toUserFriendlyId( "some text", 7, items::contains, NO_VOWELS, FILL ) );
+            items.add( Identifier.generate( "some text", 7, items::contains, COMPACT, FILL ) );
 
         assertThat( items ).containsExactly(
             "SMTXTXX",

@@ -51,19 +51,19 @@ public class AtomicPerformance {
 
         benchmark( "atomic-long-one-thread", samples, al::incrementAndGet ).run();
 
-        benchmark( "atomic-long", samples, al::incrementAndGet ).inThreads( threads ).run();
+        benchmark( "atomic-long", samples, al::incrementAndGet ).threads( threads ).run();
 
-        benchmark( "long-adder", samples, la::increment ).inThreads( threads ).run();
+        benchmark( "long-adder", samples, la::increment ).threads( threads ).run();
 
-        benchmark( "atomic-integer", samples, ai::incrementAndGet ).inThreads( threads ).run();
+        benchmark( "atomic-integer", samples, ai::incrementAndGet ).threads( threads ).run();
 
-        benchmark( "long", samples, () -> l++ ).inThreads( threads ).run();
+        benchmark( "long", samples, () -> l++ ).threads( threads ).run();
 
         benchmark( "long-synchronized", samples, () -> {
             synchronized( AtomicPerformance.class ) {
                 l2++;
             }
-        } ).inThreads( threads ).run();
+        } ).threads( threads ).run();
 
         System.out.println( "al:" + al.get() + " vs l:" + l + " vs ls:" + l2 );
     }

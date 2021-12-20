@@ -24,7 +24,58 @@
 
 package oap.benchmark;
 
-abstract class AbstractRunner {
-    public abstract Result run( Benchmark benchmark );
+import oap.testng.Teamcity;
+import oap.util.Lists;
+import oap.util.function.Try;
 
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
+import static oap.benchmark.Benchmark.WARMING_EXPERIMENT;
+
+abstract class AbstractRunner {
+    abstract Result runExperiment( int experiment, Benchmark benchmark );
+
+    Result run( Benchmark benchmark ) {
+        return Teamcity.progress( benchmark.name + "...", Try.supply( () -> {
+            if( benchmark.warming > 0 ) {
+                System.out.println( "warming up..." );
+                for( var i = 0; i < benchmark.warming; i++ ) benchmark.code.accept( WARMING_EXPERIMENT, i );
+            }
+            System.out.println( "starting test..." );
+
+            List<Result> results = IntStream
+                .range( 0, benchmark.experiments )
+                .mapToObj( x -> Teamcity.progress( benchmark.name + " e=" + x + "...", Try.supply( () -> {
+
+                        benchmark.beforeExperiment.run();
+
+                        Result result = runExperiment( x, benchmark );
+
+                        benchmark.printResult( result );
+                        benchmark.afterExperiment.run();
+
+                        return result;
+                    } )
+                ) )
+                .collect( toList() );
+
+            if( results.size() > 1 ) {
+                System.out.println( "Experiment △" );
+                long max = results.stream().mapToLong( r -> r.rate ).max().orElseThrow();
+                for( Result avgResult : Lists.reverse( results ) )
+                    System.out.format( "%10s │" + " ".repeat( ( int ) ( avgResult.rate * results.size() / max ) ) + "○ %d\n", avgResult.experiment, avgResult.rate );
+                System.out.println( "           └" + "─".repeat( results.size() + 10 ) + "▷ Ops" );
+            }
+
+            Result avg = Result.average( results );
+            benchmark.printAverageResult( avg );
+
+            Teamcity.performance( benchmark.name, avg.rate );
+
+            return avg;
+        } ) );
+
+    }
 }
