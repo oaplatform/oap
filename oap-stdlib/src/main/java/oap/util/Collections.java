@@ -25,7 +25,6 @@
 package oap.util;
 
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -65,14 +64,7 @@ public class Collections {
     }
 
     public static <G, E> Map<G, List<E>> groupBy( Collection<E> list, Function<E, G> classifier ) {
-        final HashMap<G, List<E>> result = new HashMap<>();
-
-        for( E e : list ) {
-            final G key = classifier.apply( e );
-            result.computeIfAbsent( key, k -> new ArrayList<>() ).add( e );
-        }
-
-        return result;
+        return Stream.of( list ).grouped( classifier ).toMap();
     }
 
     /**
@@ -100,8 +92,8 @@ public class Collections {
     }
 
     public static <T, K, U> LinkedHashMap<K, U> toLinkedHashMap( Collection<T> collection,
-                                                          Function<? super T, ? extends K> keyMapper,
-                                                          Function<? super T, ? extends U> valueMapper ) {
+                                                                 Function<? super T, ? extends K> keyMapper,
+                                                                 Function<? super T, ? extends U> valueMapper ) {
         var map = new LinkedHashMap<K, U>();
         for( var item : collection ) {
             map.put( keyMapper.apply( item ), valueMapper.apply( item ) );
@@ -111,8 +103,8 @@ public class Collections {
     }
 
     public static <T, K, U> HashMap<K, U> toHashMap( Collection<T> collection,
-                                              Function<? super T, ? extends K> keyMapper,
-                                              Function<? super T, ? extends U> valueMapper ) {
+                                                     Function<? super T, ? extends K> keyMapper,
+                                                     Function<? super T, ? extends U> valueMapper ) {
         var map = new HashMap<K, U>();
         for( var item : collection ) {
             map.put( keyMapper.apply( item ), valueMapper.apply( item ) );

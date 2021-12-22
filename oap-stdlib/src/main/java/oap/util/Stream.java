@@ -145,6 +145,22 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( StreamSupport.stream( new BatchSpliterator<>( underlying.spliterator(), batchSize ), underlying.isParallel() ) );
     }
 
+    /**
+     * heavy operation
+     * make use of SortedOps/StatefulOps
+     */
+    public <K> BiStream<K, List<E>> grouped( Function<E, K> classifier ) {
+        HashMap<K, List<E>> result = new HashMap<>();
+
+        Iterator<E> iterator = iterator();
+        while( iterator.hasNext() ) {
+            E e = iterator.next();
+            K key = classifier.apply( e );
+            result.computeIfAbsent( key, k -> new ArrayList<>() ).add( e );
+        }
+        return BiStream.of( result );
+    }
+
     public <B, C> Stream<C> zip( java.util.stream.Stream<? extends B> b,
                                  BiFunction<? super E, ? super B, ? extends C> zipper ) {
         Objects.requireNonNull( zipper );

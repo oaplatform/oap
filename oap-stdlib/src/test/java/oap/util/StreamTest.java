@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -87,4 +89,11 @@ public class StreamTest {
         assertTrue( distinctCities.contains( odessa ) );
         assertTrue( distinctCities.contains( kharkiv ) );
     }
+
+    @Test
+    public void grouped() {
+        assertThat( Stream.of( 1, 2, 1, 4 ).grouped( i -> i + 1 ).toMap() )
+            .containsOnly( entry( 2, List.of( 1, 1 ) ), entry( 3, List.of( 2 ) ), entry( 5, List.of( 4 ) ) );
+    }
+
 }
