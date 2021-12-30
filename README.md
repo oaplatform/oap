@@ -1,7 +1,9 @@
-# Open Application Platform
+# <img src="oap_logo.png" width="80" height="80"> Open application platform
 
-Helper tools to build Java High Load systems.<br>
-Java 17
+A light-weight application framework inspired by [Erlang/OTP](https://github.com/erlang/otp) to build high performant and distributed java application.
+
+
+## Modules
 
 * [OAP Alert Slack](oap-alert-slack/README.md#OAP-Alert-Slack)
 * [OAP FS](oap-fs/README.md#OAP-FS)
