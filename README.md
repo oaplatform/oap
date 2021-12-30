@@ -1,6 +1,6 @@
-# <img src="oap_logo.png" width="155" height="90"> Open application platform
+# <img src="oap_logo.png" width="155" height="90"> Open Application Platform
 
-A light-weight application framework inspired by [Erlang/OTP](https://github.com/erlang/otp) to build high performant and distributed java application.
+A light-weight application framework inspired by [Erlang/OTP](https://github.com/erlang/otp) to build high performant and distributed java applications.
 
 
 ## Modules
