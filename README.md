@@ -6,8 +6,14 @@ A light-weight application framework inspired by [Erlang/OTP](https://github.com
 
 * Fast start-up time
 * Small memory footprint
-* Loosely coupling between application code and framework
+* Java object life-cycle support
+* Loosely coupling between application code and framework configuration
 * Native support of RPC
+* Modular architecture
+
+## Documentation
+
+See Github [wiki pages](https://github.com/oaplatform/oap/wiki).
 
 ## Modules
 
