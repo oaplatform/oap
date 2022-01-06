@@ -30,6 +30,8 @@ public final class Headers {
     public static final String CONTENT_TYPE = io.undertow.util.Headers.CONTENT_TYPE_STRING;
     public static final String LOCATION = io.undertow.util.Headers.LOCATION_STRING;
     public static final String AUTHORIZATION = io.undertow.util.Headers.AUTHORIZATION_STRING;
+    public static final String DATE = io.undertow.util.Headers.DATE_STRING;
+    public static final String CONNECTION = io.undertow.util.Headers.CONNECTION_STRING;
 
     private Headers() {
     }

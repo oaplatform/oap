@@ -66,6 +66,8 @@ public class NioHttpServer implements Closeable {
     public boolean statistics = false;
     public Undertow server;
     public boolean forceCompressionSupport = false;
+    public boolean alwaysSetDate = true;
+    public boolean alwaysSetKeepAlive = true;
 
     public NioHttpServer( int port ) {
         this.port = port;
@@ -84,7 +86,6 @@ public class NioHttpServer implements Closeable {
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
 
-            .setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, true )
             .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
 
         if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
@@ -96,6 +97,9 @@ public class NioHttpServer implements Closeable {
         if( maxHeaders > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADERS, maxHeaders );
         if( maxHeaderSize > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADER_SIZE, maxHeaderSize );
         if( statistics ) builder.setServerOption( UndertowOptions.ENABLE_STATISTICS, true );
+
+        builder.setServerOption( UndertowOptions.ALWAYS_SET_DATE, alwaysSetDate );
+        builder.setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, alwaysSetKeepAlive );
 
         io.undertow.server.HttpHandler handler = pathHandler;
         if( forceCompressionSupport ) {

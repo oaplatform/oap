@@ -105,6 +105,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -645,6 +646,10 @@ public final class Client implements Closeable {
         public void close() {
             Closeables.close( inputStream );
             inputStream = null;
+        }
+
+        public Map<String, String> getHeaders() {
+            return headers.stream().collect( Collectors.toMap( p -> p._1, p -> p._2 ) );
         }
     }
 
