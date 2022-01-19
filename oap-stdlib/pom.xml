@@ -223,7 +223,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.typesafe</groupId>
+            <groupId>oap</groupId>
             <artifactId>config</artifactId>
             <version>${oap.deps.typesafe-config.version}</version>
         </dependency>
