@@ -202,7 +202,6 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			        if( ((ExpressionContext)_localctx).function != null ) {
 			          _localctx.ast.addToBottomChildrenAndSet( ((ExpressionContext)_localctx).function.func );
 			        }
-					System.out.println("astMethod");
 			        _localctx.ast.addLeafs( () -> getAst(_localctx.ast.bottom.type, null, false, ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null) );
 
 			        if( _localctx.comment != null ) {
