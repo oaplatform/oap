@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 
 public class TemplateMacros {
     public static String urlencode( String src, long depth ) {
+        if( src == null ) return null;
         String res = src;
         for( long curr = 0; curr < depth; curr++ ) {
             res = urlencode( res );
@@ -40,6 +41,7 @@ public class TemplateMacros {
 
     @SneakyThrows
     public static String urlencode( String src ) {
+        if( src == null ) return null;
         return URLEncoder.encode( src, StandardCharsets.UTF_8.name() );
     }
 
@@ -48,6 +50,7 @@ public class TemplateMacros {
     }
 
     public static String urlencodePercent( String src, long depth ) {
+        if( src == null ) return null;
         String res = src;
         for( long curr = 0; curr < depth; curr++ ) {
             res = urlencodePercent( res );
