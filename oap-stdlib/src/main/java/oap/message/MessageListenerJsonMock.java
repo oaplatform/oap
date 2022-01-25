@@ -24,10 +24,12 @@
 
 package oap.message;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
 
 import java.util.ArrayList;
 
+@Slf4j
 public class MessageListenerJsonMock extends MessageListenerJson<String> {
     public final ArrayList<MessageListenerMock.TestMessage> messages = new ArrayList<>();
     private int throwUnknownError = 0;
@@ -42,6 +44,8 @@ public class MessageListenerJsonMock extends MessageListenerJson<String> {
 
     @Override
     protected short run( int version, String hostName, String data, String md5 ) {
+        log.trace( "run version {} hostName {} data '{}' md5 {}", version, hostName, data, md5 );
+
         messages.add( new MessageListenerMock.TestMessage( version, md5, data ) );
 
         if( throwUnknownError > 0 ) {

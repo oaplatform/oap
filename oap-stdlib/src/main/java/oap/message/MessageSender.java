@@ -307,20 +307,20 @@ public class MessageSender implements Closeable, Runnable {
 
                 return callbackFuture.future
                     .thenApply( response -> onOkRespone( messageInfo, response, now ) )
-                    .exceptionally( throwable -> errorResponse( messageInfo, throwable ) );
+                    .exceptionally( throwable -> errorResponse( messageInfo, throwable, now ) );
             }
         } catch( IOException e ) {
             if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
             LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
-            messages.retry( messageInfo, now );
+            messages.retry( messageInfo, now + retryTimeout );
 
             return CompletableFuture.completedFuture( messageInfo );
         }
     }
 
-    private Messages.MessageInfo errorResponse( Messages.MessageInfo messageInfo, Throwable throwable ) {
+    private Messages.MessageInfo errorResponse( Messages.MessageInfo messageInfo, Throwable throwable, long now ) {
         LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), throwable.getMessage(), throwable );
-        messages.retry( messageInfo, retryTimeout );
+        messages.retry( messageInfo, now + retryTimeout );
         return messageInfo;
     }
 
@@ -332,7 +332,7 @@ public class MessageSender implements Closeable, Runnable {
             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "io_error" ).increment();
             log.error( "unknown error (BODY == null)" );
             lastStatus.put( message.messageType, __( ERROR, ( short ) -1 ) );
-            messages.retry( messageInfo, retryTimeout );
+            messages.retry( messageInfo, now + retryTimeout );
             return messageInfo;
         }
 

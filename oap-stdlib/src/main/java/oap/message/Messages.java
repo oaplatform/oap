@@ -25,7 +25,9 @@
 package oap.message;
 
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.util.ByteSequence;
+import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
 import java.util.Iterator;
@@ -35,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 class Messages {
     final LinkedBlockingQueue<MessageInfo> ready = new LinkedBlockingQueue<>();
     final LinkedBlockingQueue<RetryInfo> retry = new LinkedBlockingQueue<>();
@@ -49,8 +52,11 @@ class Messages {
     }
 
     public void retry( MessageInfo messageInfo, long time ) {
-        retry.add( new RetryInfo( messageInfo, DateTimeUtils.currentTimeMillis() + time ) );
-
+        log.trace( "retry messageType {} md5 {} retryCount {} wait until {}",
+            messageInfo.message.messageType,
+            messageInfo.message.md5,
+            messageInfo.retryCount, Dates.formatDateWithMillis( time ) );
+        retry.add( new RetryInfo( messageInfo, time ) );
     }
 
     public MessageInfo poll( long timeoutMs ) throws InterruptedException {
@@ -66,6 +72,9 @@ class Messages {
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public void retry() {
         var now = DateTimeUtils.currentTimeMillis();
+
+        log.trace( "ready {} retry {} now {}",
+            getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
 
         var it = retry.iterator();
         while( it.hasNext() ) {

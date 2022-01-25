@@ -26,6 +26,7 @@ package oap.message;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@Slf4j
 public class MessageListenerMock implements MessageListener {
     public static final byte MESSAGE_TYPE = ( byte ) 0x7F;
     public static final byte MESSAGE_TYPE2 = ( byte ) 0x7E;
@@ -67,6 +69,9 @@ public class MessageListenerMock implements MessageListener {
 
     @Override
     public short run( int version, String hostName, int size, byte[] data, String md5 ) {
+        log.trace( "run version {} hostName {} data '{}' md5 {} ret status {}",
+            version, hostName, data, md5, status );
+
         accessCount.incrementAndGet();
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
