@@ -26,15 +26,19 @@ package oap.util;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import org.apache.commons.codec.binary.Hex;
 
 import java.io.Serializable;
 
-@ToString
 @EqualsAndHashCode
 @Data( staticConstructor = "of" )
 public class ByteSequence implements Serializable {
     private static final long serialVersionUID = -7525710405210067693L;
 
     public final byte[] bytes;
+
+    @Override
+    public String toString() {
+        return Hex.encodeHexString( bytes );
+    }
 }

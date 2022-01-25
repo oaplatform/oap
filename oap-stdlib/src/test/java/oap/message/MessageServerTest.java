@@ -24,21 +24,24 @@
 
 package oap.message;
 
-import lombok.SneakyThrows;
-import oap.concurrent.Threads;
-import oap.io.Closeables;
+import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
+import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
-import oap.time.JavaTimeService;
-import oap.time.JodaTimeService;
 import oap.util.Dates;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentWriter.ofJson;
 import static oap.io.content.ContentWriter.ofString;
 import static oap.message.MessageAvailabilityReport.State.FAILED;
@@ -53,465 +56,527 @@ import static org.testng.Assert.assertNotNull;
 
 public class MessageServerTest extends Fixtures {
 
-    {
+    private final EnvFixture envFixture;
+
+    public MessageServerTest() {
         fixture( TestDirectoryFixture.FIXTURE );
         fixture( SystemTimerFixture.FIXTURE );
+        envFixture = fixture( new EnvFixture() );
     }
 
     @Test
-    public void uniqueMessageTypeListener() {
+    public void uniqueMessageTypeListener() throws IOException {
+        int port = envFixture.portFor( getClass() );
+
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
-            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
-                client.start();
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( testPath( "controlStatePath.st" ), List.of( listener1, listener2 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
 
-                assertThatCode( server::start )
-                    .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessage( "duplicate [l2-127, l1-127]" );
-            }
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            server.start();
+
+            assertThatCode( messageHttpHandler::start )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessage( "duplicate [l2-127, l1-127]" );
         }
     }
 
-    @SneakyThrows
     @Test
-    public void rejectedException() {
-        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
-            server.maximumPoolSize = 1;
-            server.start();
+    public void rejectedException() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
 
-            MessageSender client1, client2;
-            client1 = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            client2 = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
-                client1.memorySyncPeriod = -1;
+        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+
+            try( var client1 = new MessageSender( "localhost", port, testPath( "tmp" ) );
+                 var client2 = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+
                 client1.poolSize = 1;
-                client2.memorySyncPeriod = -1;
                 client2.poolSize = 1;
 
+                server.bind( "/messages", messageHttpHandler );
                 client1.start();
                 client2.start();
+                server.start();
+                messageHttpHandler.start();
 
-                client1.send( MESSAGE_TYPE, "123", ofJson() ).syncMemory();
-                client2.send( MESSAGE_TYPE, "123", ofJson() );
+                client1.send( MESSAGE_TYPE, "123", ofString() ).run();
+                client2.send( MESSAGE_TYPE, "123", ofString() );
 
                 assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ) );
-            } finally {
-                client2.close();
-                client1.close();
             }
-            assertThat( client1.getMessagesMemorySize() ).isEqualTo( 0L );
-            assertThat( client2.getMessagesMemorySize() ).isEqualTo( 0L );
 
-            MessageSender client;
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
+            try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
                 client.poolSize = 1;
 
                 client.start();
 
-                client.send( MESSAGE_TYPE, "1234", ofJson() ).syncMemory().syncDisk();
+                client.send( MESSAGE_TYPE, "1234", ofString() ).syncDisk().run();
 
-                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) );
-            } finally {
-                client.close();
+                assertEventually( 50, 100, () -> {
+                    assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) );
+                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+                } );
             }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
-    @SneakyThrows
     @Test
-    public void sendAndReceive() {
+    public void sendAndReceive() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1, listener2 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
             server.start();
+            messageHttpHandler.start();
 
-            var dir = testPath( "dir" );
-            MessageSender client;
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), dir );
-            try {
-                client.start();
+            client
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .send( MESSAGE_TYPE, "124", ofString() )
+                .send( MESSAGE_TYPE, "124", ofString() )
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .send( MESSAGE_TYPE2, "555", ofString() )
+                .run();
 
-                client
-                    .send( MESSAGE_TYPE, "123", ofString() )
-                    .send( MESSAGE_TYPE, "124", ofString() )
-                    .send( MESSAGE_TYPE, "124", ofString() )
-                    .send( MESSAGE_TYPE, "123", ofString() )
-                    .send( MESSAGE_TYPE2, "555", ofString() )
-                    .syncMemory();
-
+            assertEventually( 100, 50, () -> {
                 assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
                 assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 1, "555" ) );
-            } finally {
-                client.close();
-            }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
+            } );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+            assertThat( client.getRetryMessages() ).isEqualTo( 0L );
 
-            assertThat( dir ).doesNotExist();
+            assertThat( controlStatePath ).doesNotExist();
         }
     }
 
-    @SneakyThrows
     @Test
-    public void sendAndReceiveJson() {
+    public void sendAndReceiveJson() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
-            server.start();
 
-            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
-                client.start();
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
 
-                client
-                    .send( MESSAGE_TYPE, "123", ofJson() )
-                    .send( MESSAGE_TYPE, "124", ofJson() )
-                    .send( MESSAGE_TYPE, "124", ofJson() )
-                    .send( MESSAGE_TYPE, "123", ofJson() )
-                    .syncMemory();
-
-                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
-            }
-        }
-    }
-
-    @Test
-    public void sendAndReceiveJsonOneThread() {
-        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
-            server.start();
-
-            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
-                client.poolSize = 1;
-                client.start();
-
-                client
-                    .send( MESSAGE_TYPE, "123", ofJson() )
-                    .send( MESSAGE_TYPE, "124", ofJson() )
-                    .send( MESSAGE_TYPE, "124", ofJson() )
-                    .send( MESSAGE_TYPE, "123", ofJson() )
-                    .syncMemory()
-                    .syncMemory()
-                    .syncMemory()
-                    .syncMemory();
-
-                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
-            }
-        }
-    }
-
-    @Test
-    public void unknownErrorNoRetry() {
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
-            server.start();
-
-            MessageSender client;
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
-                client.start();
-
-                listener.throwUnknownError( Integer.MAX_VALUE, true );
-                client.send( MESSAGE_TYPE, "123", ofString() );
-
-                assertEventually( 100, 10, () ->
-                    assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L )
-                );
-
-                assertThat( listener.getMessages() ).isEmpty();
-            } finally {
-                client.close();
-            }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
-        }
-    }
-
-    @Test
-    public void unknownError() {
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
-            server.start();
-
-            MessageSender client;
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
-                client.start();
-
-                listener.throwUnknownError( 200000000, false );
-                client.send( MESSAGE_TYPE, "123", ofString() );
-
-                while( listener.throwUnknownError > 200000000 - 10 )
-                    Threads.sleepSafely( 10 );
-                assertThat( listener.getMessages() ).isEmpty();
-
-                listener.throwUnknownError( 2, false );
-                while( listener.throwUnknownError > 0 )
-                    Threads.sleepSafely( 10 );
-
-                assertEventually( 100, 10, () ->
-                    assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) ) );
-            } finally {
-                client.close();
-            }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
-        }
-    }
-
-    @Test
-    public void statusError() {
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
-            server.start();
-
-            try( var client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) ) ) {
-                client.start();
-
-                listener.setStatus( 567 );
-                client.send( MESSAGE_TYPE, "123", ofString() );
-
-                while( listener.accessCount.get() > 4 )
-                    Threads.sleepSafely( 10 );
-
-                assertThat( listener.getMessages() ).isEmpty();
-
-                listener.setStatusOk();
-                assertEventually( 10, 100, () ->
-                    assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) ) );
-            }
-        }
-    }
-
-    @SneakyThrows
-    @Test
-    public void ttl() {
-        var hashTtl = 1000;
-
-        JavaTimeService.INSTANCE.setCurrentMillisFixed( 100 );
-
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
-            server.start();
-
-            MessageSender client;
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
-                client.start();
-
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-
-                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
-                assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
-
-                JavaTimeService.INSTANCE.setCurrentMillisFixed( JavaTimeService.INSTANCE.currentTimeMillis() + hashTtl + 1 );
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-
-                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) );
-            } finally {
-                client.close();
-            }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
-        }
-    }
-
-    @SneakyThrows
-    @Test
-    public void persistence() {
-        var hashTtl = 1000;
-
-        JavaTimeService.INSTANCE.setCurrentMillisFixed( 100 );
-
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-
-        MessageServer server = null;
-        MessageSender client = null;
-        try {
-            server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl );
-            server.soTimeout = 2000;
-            server.start();
-
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
+            server.bind( "/messages", messageHttpHandler );
             client.start();
+            server.start();
+            messageHttpHandler.start();
+
+            client
+                .send( MESSAGE_TYPE, "123", ofJson() )
+                .send( MESSAGE_TYPE, "124", ofJson() )
+                .send( MESSAGE_TYPE, "124", ofJson() )
+                .send( MESSAGE_TYPE, "123", ofJson() )
+                .run();
+
+            assertEventually( 100, 50, () ->
+                assertThat( listener1.messages ).containsOnly(
+                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"123\"".getBytes( UTF_8 ) ) ), "123" ),
+                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"124\"".getBytes( UTF_8 ) ) ), "124" )
+                )
+            );
+        }
+    }
+
+    @Test
+    public void sendAndReceiveJsonOneThread() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            client.poolSize = 1;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            server.start();
+            messageHttpHandler.start();
+
+            client
+                .send( MESSAGE_TYPE, "123", ofJson() )
+                .send( MESSAGE_TYPE, "124", ofJson() )
+                .send( MESSAGE_TYPE, "124", ofJson() )
+                .send( MESSAGE_TYPE, "123", ofJson() )
+                .run();
+
+            assertThat( listener1.messages ).containsOnly(
+                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"123\"".getBytes( UTF_8 ) ) ), "123" ),
+                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"124\"".getBytes( UTF_8 ) ) ), "124" )
+            );
+        }
+    }
+
+    @Test
+    public void unknownErrorNoRetry() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            server.start();
+            messageHttpHandler.start();
+
+            listener1.throwUnknownError( Integer.MAX_VALUE, true );
+            client.send( MESSAGE_TYPE, "123", ofString() ).run();
+
+            assertEventually( 100, 50, () -> {
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+            } );
+
+            assertThat( listener1.getMessages() ).isEmpty();
+        }
+    }
+
+    @Test
+    public void unknownError() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+
+            client.retryTimeout = 100;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            server.start();
+            messageHttpHandler.start();
+
+            listener1.throwUnknownError( 4, false );
+            client.send( MESSAGE_TYPE, "123", ofString() );
+
+            assertEventually( 100, 50, () -> {
+                client.run();
+                assertThat( listener1.throwUnknownError ).isLessThanOrEqualTo( 0 );
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+            } );
+
+            assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+            assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+        }
+    }
+
+    @Test
+    public void statusError() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+
+            client.retryTimeout = 100;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            server.start();
+            messageHttpHandler.start();
+
+            listener1.setStatus( 567 );
+            client.send( MESSAGE_TYPE, "123", ofString() ).run();
+
+            assertEventually( 100, 50, () -> {
+                assertThat( client.getRetryMessages() ).isEqualTo( 1 );
+                assertThat( listener1.getMessages() ).isEmpty();
+            } );
+
+            listener1.setStatusOk();
+
+            assertEventually( 10, 50, () -> {
+                client.run();
+
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+            } );
+        }
+    }
+
+    @Test
+    public void ttl() throws IOException {
+        var hashTtl = 1000;
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        DateTimeUtils.setCurrentMillisFixed( 100 );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), hashTtl );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+
+            client.retryTimeout = 100;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
+            server.start();
+            messageHttpHandler.start();
 
             client
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
-                .syncMemory();
+                .run();
 
-            assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+            assertEventually( 100, 50, () -> {
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+            } );
 
-            server.close();
+            DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
+            messageHttpHandler.updateHash();
 
-            try( var server2 = new MessageServer( testPath( "controlStatePath.st" ), server.getPort(), List.of( listener ), hashTtl ) ) {
-                server2.soTimeout = 2000;
-                server2.start();
+            client
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .send( MESSAGE_TYPE, "123", ofString() )
+                .run();
+
+            assertEventually( 100, 50, () -> {
+                assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+            } );
+        }
+    }
+
+    @Test
+    public void persistence() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        DateTimeUtils.setCurrentMillisFixed( 100 );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            client.retryTimeout = 100;
+            client.start();
+
+            try( var server = new NioHttpServer( port );
+                 var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+
+                server.bind( "/messages", messageHttpHandler );
+                server.start();
+                messageHttpHandler.start();
 
                 client
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "123", ofString() )
-                    .syncMemory();
+                    .run();
 
-                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+                assertEventually( 100, 50, () -> {
+                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+
+                    assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+                } );
+
             }
-        } finally {
-            Closeables.close( server );
-            Closeables.close( client );
+
+            listener1.reset();
+
+            try( var server = new NioHttpServer( port );
+                 var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+
+                server.bind( "/messages", messageHttpHandler );
+                server.start();
+                messageHttpHandler.start();
+
+                client
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .send( MESSAGE_TYPE, "123", ofString() )
+                    .run();
+
+                assertEventually( 100, 50, () -> {
+                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+
+                    assertThat( listener1.getMessages() ).isEmpty();
+                } );
+            }
         }
-        assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
     }
 
     @Test
-    public void clientPersistence() {
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+    public void clientPersistence() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+        var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1, listener2 ), -1 ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
             server.start();
-            listener.throwUnknownError( 1, false );
+            messageHttpHandler.start();
 
-            MessageSender client;
+            listener1.throwUnknownError( 1, false );
 
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
+            try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+                client.retryTimeout = 100;
                 client.start();
 
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
-                while( listener.throwUnknownError > 0 )
-                    Threads.sleepSafely( 10 );
-            } finally {
-                client.close();
+                client.send( MESSAGE_TYPE, "123", ofString() ).run();
+                client.send( MESSAGE_TYPE2, "1234", ofString() );
+
+                assertEventually( 100, 50, () -> {
+                    assertThat( listener1.getMessages() ).isEmpty();
+                    assertThat( client.getReadyMessages() ).isEqualTo( 1L );
+                    assertThat( client.getRetryMessages() ).isEqualTo( 1L );
+                } );
+
             }
 
-            assertThat( listener.getMessages() ).isEmpty();
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
-
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "tmp" ) );
-            try {
+            try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+                client.retryTimeout = 100;
                 client.start();
 
-                assertThat( listener.getMessages() ).isEmpty();
+                assertThat( listener1.getMessages() ).isEmpty();
 
                 client.syncDisk();
+                client.run();
 
-                assertThat( listener.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
-            } finally {
-                client.close();
+                assertEventually( 100, 50, () -> {
+                    assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
+                    assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 1, "1234" ) );
+                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+                } );
             }
-
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
         }
     }
 
     @Test
-    public void clientPersistenceLockExpiration() {
-        var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+    public void clientPersistenceLockExpiration() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+
+            server.bind( "/messages", messageHttpHandler );
             server.start();
+            messageHttpHandler.start();
 
             var msgDirectory = testPath( "tmp" );
-            MessageSender client;
-            client = new MessageSender( JodaTimeService.INSTANCE, "localhost", server.getPort(), msgDirectory );
-            try {
+            try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
+                client.retryTimeout = 100;
                 client.poolSize = 2;
                 client.start();
 
-                listener.throwUnknownError = 2;
+                listener1.throwUnknownError = 2;
                 client
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "124", ofString() )
-                    .syncMemory();
-
-                while( listener.throwUnknownError > 0 )
-                    Threads.sleepSafely( 1 );
-            } finally {
-                client.close();
+                    .run();
             }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
 
-            assertEventually( 100, 30, () -> assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 ) );
+            assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 );
             var files = Files.wildcard( msgDirectory, "**/*.bin" );
 
             // lock
-            assertNotNull( MessageSender.lock( JavaTimeService.INSTANCE, files.get( 0 ), -1 ) );
+            assertNotNull( MessageSender.lock( files.get( 0 ), -1 ) );
 
             // lock expired
-            var lockFile2 = MessageSender.lock( JavaTimeService.INSTANCE, files.get( 1 ), -1 );
+            var lockFile2 = MessageSender.lock( files.get( 1 ), -1 );
             assertNotNull( lockFile2 );
-            Files.setLastModifiedTime( lockFile2, JavaTimeService.INSTANCE.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
 
+            Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
 
-            client = new MessageSender( JavaTimeService.INSTANCE, "localhost", server.getPort(), msgDirectory );
-            try {
+            try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
                 client.storageLockExpiration = Dates.m( 5 );
                 client.start();
 
-                assertThat( listener.getMessages() ).isEmpty();
+                assertThat( listener1.getMessages() ).isEmpty();
 
-                client.syncDisk();
-                assertThat( listener.getMessages() ).containsExactly( new TestMessage( 1, "124" ) );
-            } finally {
-                client.close();
-            }
-            assertThat( client.getMessagesMemorySize() ).isEqualTo( 0L );
-        }
-    }
+                client
+                    .syncDisk()
+                    .run();
 
-    @Test
-    public void memoryLimit() {
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( new MessageListenerMock( MESSAGE_TYPE ) ), -1 ) ) {
-            server.start();
-
-            MessageSender client;
-            client = new MessageSender( JavaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
-            try {
-                client.messagesLimitBytes = 161;
-                client.memorySyncPeriod = -1;
-                client.start();
-
-                client.send( MESSAGE_TYPE, "123", ofString() );
-                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
-
-                client.send( MESSAGE_TYPE, "124", ofString() );
-                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
-
-                client.syncMemory();
-
-                assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
-            } finally {
-                client.close();
+                assertEventually( 50, 100, () -> {
+                    assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "124" ) );
+                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+                } );
             }
         }
     }
 
     @Test
-    public void availabilityReport() {
-        var messageListenerMock = new MessageListenerMock( MESSAGE_TYPE );
-        try( var server = new MessageServer( testPath( "controlStatePath.st" ), 0, List.of( messageListenerMock ), -1 ) ) {
+    public void availabilityReport() throws IOException {
+        int port = envFixture.portFor( getClass() );
+        Path controlStatePath = testPath( "controlStatePath.st" );
+
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new NioHttpServer( port );
+             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            client.retryTimeout = 100;
+
+            server.bind( "/messages", messageHttpHandler );
+            client.start();
             server.start();
+            messageHttpHandler.start();
 
-            MessageSender client;
-            client = new MessageSender( JavaTimeService.INSTANCE, "localhost", server.getPort(), testPath( "testMemoryLimit" ) );
-            try {
-                client.memorySyncPeriod = -1;
-                client.start();
+            listener1.setStatus( 300 );
 
-                messageListenerMock.status = 300;
-                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
+            client.send( MESSAGE_TYPE, "123", ofString() ).run();
+
+            assertEventually( 50, 100, () -> {
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
                 assertThat( client.availabilityReport( MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
+            } );
 
-                messageListenerMock.status = MessageProtocol.STATUS_OK;
-                client.syncMemory();
+            listener1.setStatus( MessageProtocol.STATUS_OK );
+
+            assertEventually( 50, 100, () -> {
+                client.run();
+
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
                 assertThat( client.availabilityReport( MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
-            } finally {
-                client.close();
-            }
+            } );
         }
     }
 }

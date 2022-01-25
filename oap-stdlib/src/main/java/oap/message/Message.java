@@ -24,10 +24,35 @@
 
 package oap.message;
 
-public interface MessageListener {
-    byte getId();
+import lombok.ToString;
+import oap.util.ByteSequence;
+import org.apache.commons.codec.binary.Hex;
 
-    String getInfo();
+import java.util.Arrays;
 
-    short run( int version, String hostName, int size, byte[] data, String md5 );
+@ToString( exclude = { "data" } )
+final class Message {
+    public final ByteSequence md5;
+    public final byte messageType;
+    public final long clientId;
+    public final byte[] data;
+
+    Message( long clientId, byte messageType, ByteSequence md5, byte[] data, int from, int length ) {
+        this( clientId, messageType, md5, Arrays.copyOfRange( data, from, from + length ) );
+    }
+
+    Message( long clientId, byte messageType, ByteSequence md5, byte[] data ) {
+        this.clientId = clientId;
+        this.md5 = md5;
+        this.messageType = messageType;
+        this.data = data;
+    }
+
+    public String getHexMd5() {
+        return Hex.encodeHexString( md5.bytes );
+    }
+
+    public String getHexData() {
+        return Hex.encodeHexString( data );
+    }
 }

@@ -26,6 +26,8 @@ package oap.message;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,7 +66,7 @@ public class MessageListenerMock implements MessageListener {
     }
 
     @Override
-    public short run( int version, String hostName, int size, byte[] data ) {
+    public short run( int version, String hostName, int size, byte[] data, String md5 ) {
         accessCount.incrementAndGet();
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
@@ -75,7 +77,7 @@ public class MessageListenerMock implements MessageListener {
         }
 
         if( status == MessageProtocol.STATUS_OK )
-            messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
+            messages.add( new TestMessage( version, md5, new String( data, UTF_8 ) ) );
 
         return status;
     }
@@ -97,15 +99,28 @@ public class MessageListenerMock implements MessageListener {
         this.status = ( short ) status;
     }
 
+    public void reset() {
+        messages.clear();
+        throwUnknownError = 0;
+        status = MessageProtocol.STATUS_OK;
+        noRetry = false;
+    }
+
     @ToString
     @EqualsAndHashCode
     public static class TestMessage {
         public final int version;
+        public final String md5;
         public final String data;
 
-        public TestMessage( int version, String data ) {
+        public TestMessage( int version, String md5, String data ) {
             this.version = version;
+            this.md5 = md5;
             this.data = data;
+        }
+
+        public TestMessage( int version, String data ) {
+            this( version, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( data.getBytes( UTF_8 ) ) ), data );
         }
     }
 }

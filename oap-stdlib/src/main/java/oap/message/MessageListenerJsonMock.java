@@ -41,8 +41,8 @@ public class MessageListenerJsonMock extends MessageListenerJson<String> {
     }
 
     @Override
-    protected short run( int version, String hostName, String data ) {
-        messages.add( new MessageListenerMock.TestMessage( version, data ) );
+    protected short run( int version, String hostName, String data, String md5 ) {
+        messages.add( new MessageListenerMock.TestMessage( version, md5, data ) );
 
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;

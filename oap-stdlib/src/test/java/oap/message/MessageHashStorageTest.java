@@ -27,6 +27,7 @@ package oap.message;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
@@ -46,29 +47,29 @@ public class MessageHashStorageTest extends Fixtures {
     @Test
     public void testPersistence() throws IOException, DecoderException {
         var md5 = DigestUtils.getMd5Digest();
-        var md51 = md5.digest( "test".getBytes() );
-        var md52 = md5.digest( "test1".getBytes() );
+        var md51 = Hex.encodeHexString( md5.digest( "test".getBytes() ) );
+        var md52 = Hex.encodeHexString( md5.digest( "test1".getBytes() ) );
 
         var mhs = new MessageHashStorage( 1024 );
         DateTimeUtils.setCurrentMillisFixed( 12 );
-        mhs.add( 1, 11, md51 );
+        mhs.add( ( byte ) 1, 11, md51 );
         DateTimeUtils.setCurrentMillisFixed( 456 );
-        mhs.add( 1, 11, md52 );
+        mhs.add( ( byte ) 1, 11, md52 );
 
         DateTimeUtils.setCurrentMillisFixed( 124 );
-        mhs.add( 2, 12, md51 );
+        mhs.add( ( byte ) 2, 12, md51 );
 
         var path = TestDirectoryFixture.testPath( "test" );
         mhs.store( path );
 
         assertFile( path ).hasContent( """
             ---
-            2 - 12
-            098f6bcd4621d373cade4e832627b4f6 - 124
-            ---
             1 - 11
             098f6bcd4621d373cade4e832627b4f6 - 12
             5a105e8b9d40e1329780d62ea2265d8a - 456
+            ---
+            2 - 12
+            098f6bcd4621d373cade4e832627b4f6 - 124
             """.stripIndent() );
 
         var path2 = TestDirectoryFixture.testPath( "test2" );
@@ -78,30 +79,30 @@ public class MessageHashStorageTest extends Fixtures {
 
         assertFile( path2 ).hasContent( """
             ---
-            2 - 12
-            098f6bcd4621d373cade4e832627b4f6 - 124
-            ---
             1 - 11
             098f6bcd4621d373cade4e832627b4f6 - 12
             5a105e8b9d40e1329780d62ea2265d8a - 456
+            ---
+            2 - 12
+            098f6bcd4621d373cade4e832627b4f6 - 124
             """.stripIndent() );
     }
 
     @Test
     public void testFifo() {
         var md5 = DigestUtils.getMd5Digest();
-        var md51 = md5.digest( "test".getBytes() );
-        var md52 = md5.digest( "test1".getBytes() );
-        var md53 = md5.digest( "test3".getBytes() );
+        var md51 = Hex.encodeHexString( md5.digest( "test".getBytes() ) );
+        var md52 = Hex.encodeHexString( md5.digest( "test1".getBytes() ) );
+        var md53 = Hex.encodeHexString( md5.digest( "test3".getBytes() ) );
 
         var mhs = new MessageHashStorage( 2 );
-        mhs.add( 1, 1, md51 );
-        mhs.add( 1, 1, md52 );
-        mhs.add( 1, 1, md53 );
+        mhs.add( ( byte ) 1, 1, md51 );
+        mhs.add( ( byte ) 1, 1, md52 );
+        mhs.add( ( byte ) 1, 1, md53 );
 
         assertThat( mhs.size() ).isEqualTo( 2 );
-        assertFalse( mhs.contains( 1, 1, md51 ) );
-        assertTrue( mhs.contains( 1, 1, md52 ) );
-        assertTrue( mhs.contains( 1, 1, md53 ) );
+        assertFalse( mhs.contains( ( byte ) 1, md51 ) );
+        assertTrue( mhs.contains( ( byte ) 1, md52 ) );
+        assertTrue( mhs.contains( ( byte ) 1, md53 ) );
     }
 }

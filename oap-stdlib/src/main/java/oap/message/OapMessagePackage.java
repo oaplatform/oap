@@ -24,10 +24,11 @@
 
 package oap.message;
 
-public interface MessageListener {
-    byte getId();
+import org.github.jamm.MemoryMeter;
 
-    String getInfo();
-
-    short run( int version, String hostName, int size, byte[] data, String md5 );
+class OapMessagePackage {
+    static final MemoryMeter MEMORY_METER = new MemoryMeter()
+        .withGuessing( MemoryMeter.Guess.ALWAYS_SPEC )
+        .omitSharedBufferOverhead()
+        .ignoreOuterClassReference();
 }

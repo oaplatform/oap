@@ -50,10 +50,10 @@ public abstract class MessageListenerJson<T> implements MessageListener {
     }
 
     @Override
-    public short run( int version, String hostName, int size, byte[] data ) {
+    public short run( int version, String hostName, int size, byte[] data, String md5 ) {
         var obj = Binder.json.unmarshal( typeRef, data );
-        return run( version, hostName, obj );
+        return run( version, hostName, obj, md5 );
     }
 
-    protected abstract short run( int version, String hostName, T data );
+    protected abstract short run( int version, String hostName, T data, String md5 );
 }
