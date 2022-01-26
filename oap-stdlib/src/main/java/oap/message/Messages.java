@@ -107,6 +107,10 @@ class Messages {
         return retry.size();
     }
 
+    public int getInProgressMessages() {
+        return inProgress.size();
+    }
+
     public MessageInfo pollInProgress() {
         try {
             Iterator<Map.Entry<ByteSequence, MessageInfo>> iterator = inProgress.entrySet().iterator();

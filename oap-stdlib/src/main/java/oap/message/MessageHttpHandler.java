@@ -34,6 +34,7 @@ import oap.http.Headers;
 import oap.http.HttpStatusCodes;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
+import oap.http.server.nio.NioHttpServer;
 import oap.util.Dates;
 import oap.util.Lists;
 import org.apache.commons.codec.DecoderException;
@@ -97,11 +98,13 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     private final Path controlStatePath;
     private final Scheduled scheduled;
 
-    public MessageHttpHandler( Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
+    public MessageHttpHandler( NioHttpServer server, String context, Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
         this.controlStatePath = controlStatePath;
         this.listeners = listeners;
         this.hashTtl = hashTtl;
         hashes = new MessageHashStorage( clientHashCacheSize );
+
+        server.bind( context, this );
 
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
 

@@ -84,7 +84,7 @@ import static oap.util.Pair.__;
 
 @Slf4j
 @ToString
-public class MessageSender implements Closeable, Runnable {
+public class MessageSender implements Closeable {
     private static final HashMap<Short, String> statusMap = new HashMap<>();
     private static final Pair<MessageStatus, Short> STATUS_OK = __( OK, MessageProtocol.STATUS_OK );
 
@@ -108,10 +108,10 @@ public class MessageSender implements Closeable, Runnable {
     private final Messages messages = new Messages();
     private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
     private final String messageUrl;
+    private final long memorySyncPeriod;
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
-    public String httpPrefix = "/messages";
     public long retryTimeout = Dates.s( 1 );
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
@@ -120,19 +120,21 @@ public class MessageSender implements Closeable, Runnable {
     private boolean networkAvailable = true;
     private OkHttpClient httpClient;
 
-    public MessageSender( String host, int port, Path directory ) {
-        this( host, port, directory, MessageNoRetryStrategy.DROP );
+    public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
+        this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
     }
 
-    public MessageSender( String host, int port, Path directory, MessageNoRetryStrategy messageNoRetryStrategy ) {
+    public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod, MessageNoRetryStrategy messageNoRetryStrategy ) {
         this.host = host;
         this.port = port;
+        this.memorySyncPeriod = memorySyncPeriod;
         messageUrl = "http://" + host + ":" + port + httpPrefix;
-        this.directory = directory;
+        this.directory = persistenceDirectory;
         this.messageNoRetryStrategy = messageNoRetryStrategy;
 
-        Metrics.gaugeCollectionSize( "message_memory_count", Tags.of( "host", host, "port", String.valueOf( port ) ), messages.ready );
-        Metrics.gaugeCollectionSize( "message_memory_retry_count", Tags.of( "host", host, "port", String.valueOf( port ) ), messages.retry );
+        Metrics.gaugeCollectionSize( "message_count", Tags.of( "host", host, "type", "ready", "port", String.valueOf( port ) ), messages.ready );
+        Metrics.gaugeCollectionSize( "message_count", Tags.of( "host", host, "type", "retry", "port", String.valueOf( port ) ), messages.retry );
+        Metrics.gaugeMapSize( "message_count", Tags.of( "host", host, "type", "inprogress", "port", String.valueOf( port ) ), messages.inProgress );
     }
 
     private static String getServerStatus( short status ) {
@@ -169,12 +171,13 @@ public class MessageSender implements Closeable, Runnable {
             messageUrl, directory, durationToString( storageLockExpiration ) );
         log.info( " connection timeout {} rw timeout {} pool size {}",
             Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize );
-        log.info( "retry timeout {} disk sync period {}",
-            durationToString( retryTimeout ), durationToString( diskSyncPeriod ) );
+        log.info( "retry timeout {} disk sync period '{}' memory sync period '{}'",
+            durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", statusMap );
 
         Dispatcher dispatcher = new Dispatcher();
-        dispatcher.setMaxRequestsPerHost( poolSize );
+        if( poolSize > 0 )
+            dispatcher.setMaxRequestsPerHost( poolSize );
 
         httpClient = new OkHttpClient.Builder()
             .connectTimeout( connectionTimeout, TimeUnit.MILLISECONDS )
@@ -185,16 +188,9 @@ public class MessageSender implements Closeable, Runnable {
 
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
-    }
 
-    @Deprecated
-    public MessageSender sendJson( byte messageType, Object data ) {
-        return send( messageType, data, ContentWriter.ofJson() );
-    }
-
-    @Deprecated
-    public MessageSender sendObject( byte messageType, byte[] data, int from, int length ) {
-        return send( messageType, data, from, length );
+        if( memorySyncPeriod > 0 )
+            diskSyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
     }
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
@@ -395,7 +391,7 @@ public class MessageSender implements Closeable, Runnable {
         return messageInfo;
     }
 
-    public void run() {
+    public void syncMemory() {
         log.trace( "sync..." );
 
         long now = DateTimeUtils.currentTimeMillis();
@@ -503,5 +499,9 @@ public class MessageSender implements Closeable, Runnable {
 
     public int getRetryMessages() {
         return messages.getRetryMessages();
+    }
+
+    public int getInProgressMessages() {
+        return messages.getInProgressMessages();
     }
 }

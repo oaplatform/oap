@@ -24,6 +24,7 @@
 
 package oap.message;
 
+import oap.application.testng.KernelFixture;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
@@ -49,6 +50,7 @@ import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Asserts.urlOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -72,10 +74,9 @@ public class MessageServerTest extends Fixtures {
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( testPath( "controlStatePath.st" ), List.of( listener1, listener2 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", testPath( "controlStatePath.st" ), List.of( listener1, listener2 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
-            server.bind( "/messages", messageHttpHandler );
             client.start();
             server.start();
 
@@ -93,32 +94,31 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
-            try( var client1 = new MessageSender( "localhost", port, testPath( "tmp" ) );
-                 var client2 = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            try( var client1 = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 );
+                 var client2 = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
                 client1.poolSize = 1;
                 client2.poolSize = 1;
 
-                server.bind( "/messages", messageHttpHandler );
                 client1.start();
                 client2.start();
                 server.start();
                 messageHttpHandler.start();
 
-                client1.send( MESSAGE_TYPE, "123", ofString() ).run();
+                client1.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client2.send( MESSAGE_TYPE, "123", ofString() );
 
                 assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ) );
             }
 
-            try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
                 client.poolSize = 1;
 
                 client.start();
 
-                client.send( MESSAGE_TYPE, "1234", ofString() ).syncDisk().run();
+                client.send( MESSAGE_TYPE, "1234", ofString() ).syncDisk().syncMemory();
 
                 assertEventually( 50, 100, () -> {
                     assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "1234" ) );
@@ -138,8 +138,8 @@ public class MessageServerTest extends Fixtures {
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1, listener2 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
@@ -152,7 +152,7 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "124", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE2, "555", ofString() )
-                .run();
+                .syncMemory();
 
             assertEventually( 100, 50, () -> {
                 assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
@@ -173,8 +173,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
@@ -186,7 +186,7 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "124", ofJson() )
                 .send( MESSAGE_TYPE, "124", ofJson() )
                 .send( MESSAGE_TYPE, "123", ofJson() )
-                .run();
+                .syncMemory();
 
             assertEventually( 100, 50, () ->
                 assertThat( listener1.messages ).containsOnly(
@@ -205,8 +205,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.poolSize = 1;
 
             server.bind( "/messages", messageHttpHandler );
@@ -219,7 +219,7 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "124", ofJson() )
                 .send( MESSAGE_TYPE, "124", ofJson() )
                 .send( MESSAGE_TYPE, "123", ofJson() )
-                .run();
+                .syncMemory();
 
             assertThat( listener1.messages ).containsOnly(
                 new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"123\"".getBytes( UTF_8 ) ) ), "123" ),
@@ -236,8 +236,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
@@ -245,7 +245,7 @@ public class MessageServerTest extends Fixtures {
             messageHttpHandler.start();
 
             listener1.throwUnknownError( Integer.MAX_VALUE, true );
-            client.send( MESSAGE_TYPE, "123", ofString() ).run();
+            client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
             assertEventually( 100, 50, () -> {
                 assertThat( client.getReadyMessages() ).isEqualTo( 0L );
@@ -264,8 +264,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             client.retryTimeout = 100;
 
@@ -278,7 +278,7 @@ public class MessageServerTest extends Fixtures {
             client.send( MESSAGE_TYPE, "123", ofString() );
 
             assertEventually( 100, 50, () -> {
-                client.run();
+                client.syncMemory();
                 assertThat( listener1.throwUnknownError ).isLessThanOrEqualTo( 0 );
                 assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
             } );
@@ -296,8 +296,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             client.retryTimeout = 100;
 
@@ -307,7 +307,7 @@ public class MessageServerTest extends Fixtures {
             messageHttpHandler.start();
 
             listener1.setStatus( 567 );
-            client.send( MESSAGE_TYPE, "123", ofString() ).run();
+            client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
             assertEventually( 100, 50, () -> {
                 assertThat( client.getRetryMessages() ).isEqualTo( 1 );
@@ -317,7 +317,7 @@ public class MessageServerTest extends Fixtures {
             listener1.setStatusOk();
 
             assertEventually( 10, 50, () -> {
-                client.run();
+                client.syncMemory();
 
                 assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
             } );
@@ -335,8 +335,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), hashTtl );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), hashTtl );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             client.retryTimeout = 100;
 
@@ -349,7 +349,7 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
-                .run();
+                .syncMemory();
 
             assertEventually( 100, 50, () -> {
                 assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
@@ -364,7 +364,7 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
-                .run();
+                .syncMemory();
 
             assertEventually( 100, 50, () -> {
                 assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) );
@@ -383,12 +383,12 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+        try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.retryTimeout = 100;
             client.start();
 
             try( var server = new NioHttpServer( port );
-                 var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+                 var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
                 server.bind( "/messages", messageHttpHandler );
                 server.start();
@@ -398,7 +398,7 @@ public class MessageServerTest extends Fixtures {
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "123", ofString() )
-                    .run();
+                    .syncMemory();
 
                 assertEventually( 100, 50, () -> {
                     assertThat( client.getReadyMessages() ).isEqualTo( 0L );
@@ -412,7 +412,7 @@ public class MessageServerTest extends Fixtures {
             listener1.reset();
 
             try( var server = new NioHttpServer( port );
-                 var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+                 var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
                 server.bind( "/messages", messageHttpHandler );
                 server.start();
@@ -422,7 +422,7 @@ public class MessageServerTest extends Fixtures {
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "123", ofString() )
-                    .run();
+                    .syncMemory();
 
                 assertEventually( 100, 50, () -> {
                     assertThat( client.getReadyMessages() ).isEqualTo( 0L );
@@ -443,7 +443,7 @@ public class MessageServerTest extends Fixtures {
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1, listener2 ), -1 ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
             server.start();
@@ -451,11 +451,11 @@ public class MessageServerTest extends Fixtures {
 
             listener1.throwUnknownError( 1, false );
 
-            try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
                 client.retryTimeout = 100;
                 client.start();
 
-                client.send( MESSAGE_TYPE, "123", ofString() ).run();
+                client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client.send( MESSAGE_TYPE2, "1234", ofString() );
 
                 assertEventually( 100, 50, () -> {
@@ -466,14 +466,14 @@ public class MessageServerTest extends Fixtures {
 
             }
 
-            try( var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+            try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
                 client.retryTimeout = 100;
                 client.start();
 
                 assertThat( listener1.getMessages() ).isEmpty();
 
                 client.syncDisk();
-                client.run();
+                client.syncMemory();
 
                 assertEventually( 100, 50, () -> {
                     assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
@@ -493,14 +493,14 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
             server.start();
             messageHttpHandler.start();
 
             var msgDirectory = testPath( "tmp" );
-            try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
+            try( var client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
                 client.retryTimeout = 100;
                 client.poolSize = 2;
                 client.start();
@@ -509,7 +509,7 @@ public class MessageServerTest extends Fixtures {
                 client
                     .send( MESSAGE_TYPE, "123", ofString() )
                     .send( MESSAGE_TYPE, "124", ofString() )
-                    .run();
+                    .syncMemory();
             }
 
             assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 );
@@ -524,7 +524,7 @@ public class MessageServerTest extends Fixtures {
 
             Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
 
-            try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
+            try( var client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
                 client.storageLockExpiration = Dates.m( 5 );
                 client.start();
 
@@ -532,7 +532,7 @@ public class MessageServerTest extends Fixtures {
 
                 client
                     .syncDisk()
-                    .run();
+                    .syncMemory();
 
                 assertEventually( 50, 100, () -> {
                     assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "124" ) );
@@ -551,8 +551,8 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, testPath( "tmp" ) ) ) {
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.retryTimeout = 100;
 
             server.bind( "/messages", messageHttpHandler );
@@ -562,7 +562,7 @@ public class MessageServerTest extends Fixtures {
 
             listener1.setStatus( 300 );
 
-            client.send( MESSAGE_TYPE, "123", ofString() ).run();
+            client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
 
             assertEventually( 50, 100, () -> {
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( FAILED );
@@ -572,11 +572,32 @@ public class MessageServerTest extends Fixtures {
             listener1.setStatus( MessageProtocol.STATUS_OK );
 
             assertEventually( 50, 100, () -> {
-                client.run();
+                client.syncMemory();
 
                 assertThat( client.availabilityReport( MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
                 assertThat( client.availabilityReport( MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
             } );
+        }
+    }
+
+    @Test
+    public void testKernel() {
+        var kernelFixture = new KernelFixture(
+            urlOfTestResource( getClass(), "application.test.conf" ),
+            List.of( urlOfTestResource( getClass(), "oap-module.conf" ) )
+        );
+        try {
+            kernelFixture.beforeMethod();
+
+            kernelFixture.service( "oap", MessageSender.class ).send( ( byte ) 12, "123", ofString() );
+
+            assertEventually( 50, 100, () -> {
+                assertThat( kernelFixture.service( "oap-message-test", MessageListenerMock.class ).getMessages() )
+                    .containsExactly( new TestMessage( 1, "123" ) );
+            } );
+
+        } finally {
+            kernelFixture.afterMethod();
         }
     }
 }
