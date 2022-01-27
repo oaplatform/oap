@@ -315,6 +315,7 @@ public class MessageSender implements Closeable {
     }
 
     private Messages.MessageInfo errorResponse( Messages.MessageInfo messageInfo, Throwable throwable, long now ) {
+        log.trace( throwable.getMessage(), throwable );
         LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), throwable.getMessage(), throwable );
         messages.retry( messageInfo, now + retryTimeout );
         return messageInfo;
@@ -376,6 +377,7 @@ public class MessageSender implements Closeable {
                 default -> {
                     var clientStatus = statusMap.get( status );
                     if( clientStatus != null ) {
+                        log.trace( "retry: {}", clientStatus );
                         Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
                     } else {
                         Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
