@@ -236,7 +236,7 @@ public class MessageSender implements Closeable {
 
     private void saveMessagesToDirectory( Path directory ) {
         while( true ) {
-            var messageInfo = messages.poll();
+            var messageInfo = messages.poll( false );
             if( messageInfo == null ) {
                 messageInfo = messages.pollInProgress();
             }
@@ -402,27 +402,23 @@ public class MessageSender implements Closeable {
         messages.retry();
 
         do {
-            try {
-                now = DateTimeUtils.currentTimeMillis();
+            now = DateTimeUtils.currentTimeMillis();
 
-                if( messageInfo != null ) {
-                    var future = send( messageInfo, now );
-                    future.handle( ( mi, e ) -> {
-                        messages.removeInProgress( mi );
-                        return null;
-                    } );
-                }
-
-                var currentPeriod = currentPeriod( now );
-                if( currentPeriod != period ) {
-                    messages.retry();
-                    period = currentPeriod;
-                }
-
-                messageInfo = messages.poll( diff( now, nextPeriod( now ) ) );
-            } catch( InterruptedException e ) {
-                log.trace( e.getMessage() );
+            if( messageInfo != null ) {
+                var future = send( messageInfo, now );
+                future.handle( ( mi, e ) -> {
+                    messages.removeInProgress( mi );
+                    return null;
+                } );
             }
+
+            var currentPeriod = currentPeriod( now );
+            if( currentPeriod != period ) {
+                messages.retry();
+                period = currentPeriod;
+            }
+
+            messageInfo = messages.poll( true );
         } while( messageInfo != null );
     }
 

@@ -110,7 +110,9 @@ public class MessageServerTest extends Fixtures {
                 client1.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client2.send( MESSAGE_TYPE, "123", ofString() );
 
-                assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ) );
+                assertEventually( 50, 100, () -> {
+                    assertThat( listener1.messages ).containsOnly( new TestMessage( 1, "123" ) );
+                } );
             }
 
             try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
@@ -221,10 +223,12 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "123", ofJson() )
                 .syncMemory();
 
-            assertThat( listener1.messages ).containsOnly(
-                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"123\"".getBytes( UTF_8 ) ) ), "123" ),
-                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"124\"".getBytes( UTF_8 ) ) ), "124" )
-            );
+            assertEventually( 50, 100, () -> {
+                assertThat( listener1.messages ).containsOnly(
+                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"123\"".getBytes( UTF_8 ) ) ), "123" ),
+                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"124\"".getBytes( UTF_8 ) ) ), "124" )
+                );
+            } );
         }
     }
 

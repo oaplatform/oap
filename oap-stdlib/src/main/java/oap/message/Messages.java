@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 class Messages {
@@ -59,14 +58,10 @@ class Messages {
         retry.add( new RetryInfo( messageInfo, time ) );
     }
 
-    public MessageInfo poll( long timeoutMs ) throws InterruptedException {
-        MessageInfo messageInfo = ready.poll( timeoutMs, TimeUnit.MILLISECONDS );
-        if( messageInfo != null ) inProgress.put( messageInfo.message.md5, messageInfo );
+    public MessageInfo poll( boolean inProgress ) {
+        MessageInfo messageInfo = ready.poll();
+        if( messageInfo != null && inProgress ) this.inProgress.put( messageInfo.message.md5, messageInfo );
         return messageInfo;
-    }
-
-    public MessageInfo poll() {
-        return ready.poll();
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
