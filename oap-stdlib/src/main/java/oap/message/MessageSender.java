@@ -394,7 +394,8 @@ public class MessageSender implements Closeable {
     }
 
     public void syncMemory() {
-        log.trace( "sync..." );
+        log.trace( "sync ready {} retry {} inprogress {} ...",
+            getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
         long period = currentPeriod( now );
