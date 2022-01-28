@@ -24,17 +24,23 @@
 
 package oap.message;
 
+import oap.util.Throwables;
+
 import java.util.concurrent.TimeoutException;
 
 public class MessageSenderUtils {
-    public static void waitSendAll( MessageSender messageSender, long timeout, long retryTimeout ) throws TimeoutException, InterruptedException {
-        long now = System.currentTimeMillis();
+    public static void waitSendAll( MessageSender messageSender, long timeout, long retryTimeout ) {
+        try {
+            long now = System.currentTimeMillis();
 
-        while( messageSender.getReadyMessages() != 0 && messageSender.getRetryMessages() != 0 && messageSender.getInProgressMessages() != 0 ) {
-            if( System.currentTimeMillis() > now + timeout )
-                throw new TimeoutException();
+            while( messageSender.getReadyMessages() != 0 && messageSender.getRetryMessages() != 0 && messageSender.getInProgressMessages() != 0 ) {
+                if( System.currentTimeMillis() > now + timeout )
+                    throw new TimeoutException();
 
-            Thread.sleep( retryTimeout );
+                Thread.sleep( retryTimeout );
+            }
+        } catch( TimeoutException | InterruptedException e ) {
+            throw Throwables.propagate( e );
         }
 
     }
