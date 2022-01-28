@@ -502,4 +502,8 @@ public class MessageSender implements Closeable {
     public int getInProgressMessages() {
         return messages.getInProgressMessages();
     }
+
+    public void reset() {
+        messages.reset();
+    }
 }

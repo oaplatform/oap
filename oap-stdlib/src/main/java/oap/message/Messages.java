@@ -124,6 +124,12 @@ class Messages {
         inProgress.remove( messageInfo.message.md5 );
     }
 
+    public void reset() {
+        retry.clear();
+        inProgress.clear();
+        retry.clear();
+    }
+
     @ToString
     static class MessageInfo {
         public final Message message;
