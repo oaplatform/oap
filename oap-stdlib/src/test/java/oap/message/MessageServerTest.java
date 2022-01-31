@@ -355,11 +355,8 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .syncMemory();
 
-            assertEventually( 100, 50, () -> {
-                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
-                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
-            } );
+            MessageSenderUtils.waitSendAll( client, Dates.s( 10 ), 10 );
+            assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );
 
             DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
             messageHttpHandler.updateHash();
@@ -370,11 +367,11 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .syncMemory();
 
-            assertEventually( 100, 50, () -> {
-                assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) );
-                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
-            } );
+            MessageSenderUtils.waitSendAll( client, Dates.s( 10 ), 10 );
+            assertThat( listener1.getMessages() ).containsExactly(
+                new TestMessage( 1, "123" ),
+                new TestMessage( 1, "123" )
+            );
         }
     }
 
