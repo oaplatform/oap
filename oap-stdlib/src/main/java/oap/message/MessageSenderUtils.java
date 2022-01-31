@@ -39,6 +39,8 @@ public class MessageSenderUtils {
                 if( System.currentTimeMillis() > now + timeout )
                     throw new TimeoutException();
 
+                messageSender.syncMemory();
+
                 Thread.sleep( retryTimeout );
             }
         } catch( TimeoutException | InterruptedException e ) {

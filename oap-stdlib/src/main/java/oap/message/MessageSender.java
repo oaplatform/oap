@@ -31,6 +31,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
+import oap.application.ServiceName;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.client.CallbackFuture;
@@ -109,6 +110,8 @@ public class MessageSender implements Closeable {
     private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
     private final String messageUrl;
     private final long memorySyncPeriod;
+    @ServiceName
+    public String name = "oap-http-message-sender";
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
@@ -167,12 +170,12 @@ public class MessageSender implements Closeable {
     }
 
     public void start() {
-        log.info( "message server messageUrl {} storage {} storageLockExpiration {}",
-            messageUrl, directory, durationToString( storageLockExpiration ) );
-        log.info( " connection timeout {} rw timeout {} pool size {}",
-            Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize );
-        log.info( "retry timeout {} disk sync period '{}' memory sync period '{}'",
-            durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
+        log.info( "[{}] message server messageUrl {} storage {} storageLockExpiration {}",
+            name, messageUrl, directory, durationToString( storageLockExpiration ) );
+        log.info( "[{}] connection timeout {} rw timeout {} pool size {}",
+            name, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize );
+        log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
+            name, durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", statusMap );
 
         Dispatcher dispatcher = new Dispatcher();
@@ -252,14 +255,14 @@ public class MessageSender implements Closeable {
                 .resolve( Long.toHexString( clientId ) )
                 .resolve( String.valueOf( Byte.toUnsignedInt( message.messageType ) ) );
             var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + ".bin.tmp" );
-            log.debug( "writing unsent message to {}", tmpMsgPath );
+            log.debug( "[{}] writing unsent message to {}", name, tmpMsgPath );
             try {
                 Files.write( tmpMsgPath, message.data, ContentWriter.ofBytes() );
                 var msgPath = parentDirectory.resolve( message.getHexMd5() + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
-                log.error( "type: {}, md5: {}, data: {}",
-                    message.messageType, message.getHexMd5(), message.getHexData() );
+                log.error( "[{}] type: {}, md5: {}, data: {}",
+                    name, message.messageType, message.getHexMd5(), message.getHexData() );
             }
         }
     }
@@ -277,7 +280,7 @@ public class MessageSender implements Closeable {
         try {
             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
 
-            log.debug( "sending data [type = {}] to server...", message.messageType );
+            log.debug( "[{}] sending data [type = {}] to server...", name, message.messageType );
 
             try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
                  DataOutputStream out = new DataOutputStream( buf ) ) {
@@ -327,7 +330,7 @@ public class MessageSender implements Closeable {
         ResponseBody body = response.body();
         if( body == null ) {
             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "io_error" ).increment();
-            log.error( "unknown error (BODY == null)" );
+            log.error( "[{}] unknown error (BODY == null)", name );
             lastStatus.put( message.messageType, __( ERROR, ( short ) -1 ) );
             messages.retry( messageInfo, now + retryTimeout );
             return messageInfo;
@@ -336,7 +339,7 @@ public class MessageSender implements Closeable {
         try( var in = new DataInputStream( body.byteStream() ) ) {
             var version = in.readByte();
             if( version != PROTOCOL_VERSION_1 ) {
-                log.error( "Version mismatch, expected: {}, received: {}", PROTOCOL_VERSION_1, version );
+                log.error( "[{}] Version mismatch, expected: {}, received: {}", name, PROTOCOL_VERSION_1, version );
                 throw new MessageException( "Version mismatch" );
             }
             in.readLong(); // clientId
@@ -344,13 +347,13 @@ public class MessageSender implements Closeable {
             in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
             var status = in.readShort();
 
-            log.trace( "sending done, server status: {}", getServerStatus( status ) );
+            log.trace( "[{}] sending done, server status: {}", name, getServerStatus( status ) );
 
             MessageSender.this.networkAvailable = true;
 
             switch( status ) {
                 case STATUS_ALREADY_WRITTEN -> {
-                    log.trace( "already written {}", message.getHexMd5() );
+                    log.trace( "[{}] already written {}", name, message.getHexMd5() );
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "already_written" ).increment();
                     lastStatus.put( message.messageType, __( ALREADY_WRITTEN, status ) );
                 }
@@ -360,28 +363,28 @@ public class MessageSender implements Closeable {
                 }
                 case STATUS_UNKNOWN_ERROR -> {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
-                    log.error( "unknown error" );
+                    log.error( "[{}] unknown error", name );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                     messages.retry( messageInfo, retryTimeout );
                 }
                 case STATUS_UNKNOWN_ERROR_NO_RETRY -> {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error_no_retry" ).increment();
-                    log.error( "unknown error -> no retry" );
+                    log.error( "[{}] unknown error -> no retry", name );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 case STATUS_UNKNOWN_MESSAGE_TYPE -> {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
-                    log.error( "unknown message type: {}", status );
+                    log.error( "[{}] unknown message type: {}", name, status );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 default -> {
                     var clientStatus = statusMap.get( status );
                     if( clientStatus != null ) {
-                        log.trace( "retry: {}", clientStatus );
+                        log.trace( "[{}] retry: {}", name, clientStatus );
                         Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
                     } else {
                         Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
-                        log.error( "unknown status: {}", status );
+                        log.error( "[{}] unknown status: {}", name, status );
                     }
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                     messages.retry( messageInfo, retryTimeout );
@@ -394,8 +397,8 @@ public class MessageSender implements Closeable {
     }
 
     public void syncMemory() {
-        log.trace( "sync ready {} retry {} inprogress {} ...",
-            getReadyMessages(), getRetryMessages(), getInProgressMessages() );
+        log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
+            name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
         long period = currentPeriod( now );
@@ -408,9 +411,11 @@ public class MessageSender implements Closeable {
             now = DateTimeUtils.currentTimeMillis();
 
             if( messageInfo != null ) {
+                log.trace( "[{}] message {}...", name, messageInfo.message.md5 );
                 var future = send( messageInfo, now );
                 future.handle( ( mi, e ) -> {
                     messages.removeInProgress( mi );
+                    log.trace( "[{}] message {}... done", name, mi.message.md5 );
                     return null;
                 } );
             }
@@ -447,7 +452,7 @@ public class MessageSender implements Closeable {
                 if( closed ) return this;
 
                 if( ( lockFile = lock( msgFile, storageLockExpiration ) ) != null ) {
-                    log.debug( "reading unsent message {}", msgFile );
+                    log.debug( "[{}] reading unsent message {}", name, msgFile );
                     try {
                         var fileName = FilenameUtils.getName( msgFile.toString() );
                         var md5Hex = FilenameUtils.removeExtension( fileName );
@@ -462,12 +467,13 @@ public class MessageSender implements Closeable {
 
                         var data = Files.read( msgFile, ContentReader.ofBytes() );
 
-                        log.debug( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
+                        log.debug( "[{}] client id = {}, message type = {}, md5 = {}",
+                            name, msgClientId, messageType, md5Hex );
 
                         var message = new Message( clientId, messageType, md5, data );
                         messages.add( message );
                     } catch( Exception e ) {
-                        LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), msgFile + ": " + e.getMessage(), e );
+                        LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), "[" + name + "] " + msgFile + ": " + e.getMessage(), e );
 
                         Files.delete( lockFile );
                     }
@@ -478,10 +484,6 @@ public class MessageSender implements Closeable {
         Files.deleteEmptyDirectories( directory, false );
 
         return this;
-    }
-
-    public void clear() {
-        messages.clear();
     }
 
     private long diff( long now, long next ) {
