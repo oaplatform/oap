@@ -25,6 +25,7 @@
 package oap.message;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
@@ -32,9 +33,9 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.application.ServiceName;
+import oap.concurrent.Executors;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.http.client.CallbackFuture;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Resources;
@@ -45,6 +46,7 @@ import oap.util.Cuid;
 import oap.util.Dates;
 import oap.util.FastByteArrayOutputStream;
 import oap.util.Pair;
+import oap.util.Throwables;
 import okhttp3.Call;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
@@ -68,6 +70,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
@@ -122,6 +125,7 @@ public class MessageSender implements Closeable {
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
     private OkHttpClient httpClient;
+    private ExecutorService executor;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
         this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
@@ -177,6 +181,10 @@ public class MessageSender implements Closeable {
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             name, durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", statusMap );
+
+        executor = Executors.newFixedBlockingThreadPool(
+            poolSize > 0 ? poolSize : Runtime.getRuntime().availableProcessors(),
+            new ThreadFactoryBuilder().setNameFormat( name + "-%d" ).build() );
 
         Dispatcher dispatcher = new Dispatcher();
         if( poolSize > 0 )
@@ -277,10 +285,11 @@ public class MessageSender implements Closeable {
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public CompletableFuture<Messages.MessageInfo> send( Messages.MessageInfo messageInfo, long now ) {
         Message message = messageInfo.message;
-        try {
-            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
 
-            log.debug( "[{}] sending data [type = {}] to server...", name, message.messageType );
+        log.debug( "[{}] sending data [type = {}] to server...", name, message.messageType );
+
+        return CompletableFuture.supplyAsync( () -> {
+            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
 
             try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
                  DataOutputStream out = new DataOutputStream( buf ) ) {
@@ -301,27 +310,17 @@ public class MessageSender implements Closeable {
                     .post( requestBody )
                     .build();
                 Call call = httpClient.newCall( request );
-                CallbackFuture callbackFuture = new CallbackFuture();
-                call.enqueue( callbackFuture );
+                var response = call.execute();
+                return onOkRespone( messageInfo, response, now );
 
-                return callbackFuture.future
-                    .thenApply( response -> onOkRespone( messageInfo, response, now ) )
-                    .exceptionally( throwable -> errorResponse( messageInfo, throwable, now ) );
+            } catch( Throwable e ) {
+                if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
+                LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
+                messages.retry( messageInfo, now + retryTimeout );
+
+                throw Throwables.propagate( e );
             }
-        } catch( IOException e ) {
-            if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
-            LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
-            messages.retry( messageInfo, now + retryTimeout );
-
-            return CompletableFuture.completedFuture( messageInfo );
-        }
-    }
-
-    private Messages.MessageInfo errorResponse( Messages.MessageInfo messageInfo, Throwable throwable, long now ) {
-        log.trace( throwable.getMessage(), throwable );
-        LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), throwable.getMessage(), throwable );
-        messages.retry( messageInfo, now + retryTimeout );
-        return messageInfo;
+        }, executor );
     }
 
     private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Response response, long now ) {

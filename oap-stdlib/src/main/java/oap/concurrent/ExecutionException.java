@@ -22,27 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.concurrent;
 
-import lombok.Lombok;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.concurrent.ExecutionException;
-
-public final class Throwables {
-    private Throwables() {
-    }
-
-    public static RuntimeException propagate( Throwable throwable ) {
-        if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
-        else if( throwable instanceof java.util.concurrent.ExecutionException ) throw new oap.concurrent.ExecutionException( ( ExecutionException ) throwable );
-        else if( throwable instanceof java.util.concurrent.TimeoutException ) throw new oap.concurrent.TimeoutException( throwable );
-
-        throw Lombok.sneakyThrow( throwable );
-    }
-
-    public static Throwable getRootCause( Throwable throwable ) {
-        return com.google.common.base.Throwables.getRootCause( throwable );
+public class ExecutionException extends RuntimeException {
+    public ExecutionException( java.util.concurrent.ExecutionException cause ) {
+        super( cause.getCause() );
     }
 }
