@@ -48,6 +48,7 @@ import oap.util.FastByteArrayOutputStream;
 import oap.util.Pair;
 import oap.util.Throwables;
 import okhttp3.Call;
+import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -119,6 +120,7 @@ public class MessageSender implements Closeable {
     public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
     public long retryTimeout = Dates.s( 1 );
+    public long keepAliveDuration = Dates.d( 30 );
     protected long timeout = 5000;
     protected long connectionTimeout = Dates.s( 30 );
     private boolean closed = false;
@@ -176,8 +178,9 @@ public class MessageSender implements Closeable {
     public void start() {
         log.info( "[{}] message server messageUrl {} storage {} storageLockExpiration {}",
             name, messageUrl, directory, durationToString( storageLockExpiration ) );
-        log.info( "[{}] connection timeout {} rw timeout {} pool size {}",
-            name, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize );
+        log.info( "[{}] connection timeout {} rw timeout {} pool size {} keepAliveDuration {}",
+            name, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize,
+            Dates.durationToString( keepAliveDuration ) );
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             name, durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", statusMap );
@@ -190,11 +193,16 @@ public class MessageSender implements Closeable {
         if( poolSize > 0 )
             dispatcher.setMaxRequestsPerHost( poolSize );
 
+        ConnectionPool connectionPool = poolSize > 0
+            ? new ConnectionPool( poolSize, keepAliveDuration, TimeUnit.MILLISECONDS )
+            : new ConnectionPool();
+
         httpClient = new OkHttpClient.Builder()
             .connectTimeout( connectionTimeout, TimeUnit.MILLISECONDS )
             .readTimeout( timeout, TimeUnit.MILLISECONDS )
             .writeTimeout( timeout, TimeUnit.MILLISECONDS )
             .dispatcher( dispatcher )
+            .connectionPool( connectionPool )
             .build();
 
         if( diskSyncPeriod > 0 )

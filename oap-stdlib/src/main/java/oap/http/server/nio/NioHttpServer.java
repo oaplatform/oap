@@ -57,12 +57,12 @@ public class NioHttpServer implements Closeable {
     public int backlog = -1;
     public long idleTimeout = -1;
     public boolean tcpNodelay = true;
-    public int ioThreads = -1; // min(2, Runtime.getRuntime().availableProcessors())
-    public int workerThreads = -1; // Runtime.getRuntime().availableProcessors() * 2
-    public long maxEntitySize = -1;
-    public int maxParameters = -1;
-    public int maxHeaders = -1;
-    public int maxHeaderSize = -1;
+    public int ioThreads = -1; // default = max(2, Runtime.getRuntime().availableProcessors())
+    public int workerThreads = -1; // default = Runtime.getRuntime().availableProcessors() * 8
+    public long maxEntitySize = -1; // default = unlimited
+    public int maxParameters = -1; // default = 1000
+    public int maxHeaders = -1; // default = 200
+    public int maxHeaderSize = -1; // default = 1024 * 1024
     public boolean statistics = false;
     public Undertow server;
     public boolean forceCompressionSupport = false;
