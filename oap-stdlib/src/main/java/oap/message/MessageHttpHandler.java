@@ -93,22 +93,19 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     public final HashMap<Byte, MessageListener> map = new HashMap<>();
     public final int clientHashCacheSize = 1024;
     private final List<MessageListener> listeners;
-    private final MessageHashStorage hashes;
     private final long hashTtl;
     private final Path controlStatePath;
-    private final Scheduled scheduled;
+    private final NioHttpServer server;
+    private final String context;
+    private MessageHashStorage hashes;
+    private Scheduled scheduled;
 
     public MessageHttpHandler( NioHttpServer server, String context, Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
+        this.server = server;
+        this.context = context;
         this.controlStatePath = controlStatePath;
         this.listeners = listeners;
         this.hashTtl = hashTtl;
-        hashes = new MessageHashStorage( clientHashCacheSize );
-
-        server.bind( context, this );
-
-        Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
-
-        scheduled = Scheduler.scheduleWithFixedDelay( 1, TimeUnit.SECONDS, this::updateHash );
     }
 
     public void updateHash() {
@@ -116,8 +113,17 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     }
 
     public void start() {
-        log.info( "controlStatePath '{}' listeners {} hashTtl {}",
-            controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ) );
+        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}'",
+            controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
+            clientHashCacheSize, context );
+
+        hashes = new MessageHashStorage( clientHashCacheSize );
+        Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
+
+        server.bind( context, this );
+
+        scheduled = Scheduler.scheduleWithFixedDelay( 1, TimeUnit.SECONDS, this::updateHash );
+
         try {
             if( controlStatePath.toFile().exists() ) hashes.load( controlStatePath );
         } catch( Exception e ) {

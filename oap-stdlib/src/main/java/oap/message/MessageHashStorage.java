@@ -24,6 +24,7 @@
 
 package oap.message;
 
+import oap.util.Longs;
 import org.apache.commons.codec.DecoderException;
 import org.joda.time.DateTimeUtils;
 
@@ -128,7 +129,7 @@ public class MessageHashStorage {
     }
 
     public long size() {
-        return map.values().stream().mapToLong( MessageHashStorage.ClientInfo::size ).sum();
+        return Longs.sum( map.values(), MessageHashStorage.ClientInfo::size );
     }
 
     public static final class ClientInfo {
