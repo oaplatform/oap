@@ -56,7 +56,7 @@ public final class MessageProtocol {
             if( key.startsWith( "type." ) ) {
                 key = key.substring( 5 );
 
-                MessageProtocol.typeMap.put( Byte.parseByte( properties.getProperty( propertyName ), 16 ), key );
+                MessageProtocol.typeMap.put( Byte.decode( properties.getProperty( propertyName ) ), key );
                 continue;
             } else if( key.startsWith( "map." ) ) {
                 key = key.substring( 4 );
