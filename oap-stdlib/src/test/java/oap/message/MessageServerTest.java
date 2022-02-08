@@ -30,12 +30,12 @@ import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
-import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeUtils;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -61,8 +61,12 @@ public class MessageServerTest extends Fixtures {
 
     public MessageServerTest() {
         fixture( TestDirectoryFixture.FIXTURE );
-        fixture( SystemTimerFixture.FIXTURE );
         envFixture = fixture( new EnvFixture() );
+    }
+
+    @BeforeMethod
+    public void beforeMethod() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test

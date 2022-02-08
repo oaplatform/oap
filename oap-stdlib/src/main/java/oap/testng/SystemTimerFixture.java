@@ -26,7 +26,6 @@ package oap.testng;
 
 import oap.time.JavaTimeService;
 import oap.time.JodaTimeService;
-import org.joda.time.DateTimeUtils;
 
 public class SystemTimerFixture implements Fixture {
     public static final SystemTimerFixture FIXTURE = new SystemTimerFixture();
@@ -35,6 +34,5 @@ public class SystemTimerFixture implements Fixture {
     public void afterMethod() {
         JodaTimeService.INSTANCE.setCurrentMillisSystem();
         JavaTimeService.INSTANCE.setCurrentMillisSystem();
-        DateTimeUtils.setCurrentMillisSystem();
     }
 }
