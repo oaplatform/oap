@@ -428,7 +428,7 @@ public class MessageSender implements Closeable {
         try( DirectoryStream<Path> clientIdStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             for( var clientIdPath : clientIdStream ) {
                 if( !isValidClientId( clientIdPath ) ) {
-                    log.error( "invalid client id {}", clientIdPath );
+                    log.warn( "invalid client id {}", clientIdPath );
                     Files.deleteSafely( clientIdPath );
                     continue;
                 }
@@ -437,7 +437,7 @@ public class MessageSender implements Closeable {
                 try( DirectoryStream<Path> messageTypeStream = java.nio.file.Files.newDirectoryStream( clientIdPath ) ) {
                     for( var messageTypePath : messageTypeStream ) {
                         if( !isValidMessageType( messageTypePath ) ) {
-                            log.error( "invalid message type {}", messageTypePath );
+                            log.warn( "invalid message type {}", messageTypePath );
                             Files.deleteSafely( messageTypePath );
                             continue;
                         }
@@ -447,7 +447,7 @@ public class MessageSender implements Closeable {
                         try( DirectoryStream<Path> messageStream = java.nio.file.Files.newDirectoryStream( messageTypePath ) ) {
                             for( var messagePath : messageStream ) {
                                 if( !isValidMessage( messagePath ) ) {
-                                    log.error( "invalid message {}", messagePath );
+                                    log.warn( "invalid message {}", messagePath );
                                     Files.deleteSafely( messagePath );
                                     continue;
                                 }
@@ -455,7 +455,7 @@ public class MessageSender implements Closeable {
                                 if( messagePath.toString().endsWith( ".lock" ) ) {
                                     var binFile = Paths.get( FilenameUtils.removeExtension( messagePath.toString() ) + ".bin" );
                                     if( !java.nio.file.Files.exists( binFile ) ) {
-                                        log.error( "invalid lock file {}", messagePath );
+                                        log.warn( "invalid lock file {}", messagePath );
                                         Files.deleteSafely( messagePath );
                                     }
 
