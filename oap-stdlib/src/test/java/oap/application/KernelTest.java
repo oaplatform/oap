@@ -387,6 +387,24 @@ public class KernelTest {
         }
     }
 
+    @Test
+    public void testFinalParameter() {
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "testFinalParameter.conf" ) )
+        );
+
+        try {
+            TestDirectoryFixture.deployTestData( getClass() );
+
+            assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testFinalParameter" ) ) )
+                .isInstanceOf( ApplicationException.class )
+                .hasMessageContaining( "al=[val1], a=new value" );
+        } finally {
+            kernel.stop();
+            TestDirectoryFixture.deleteDirectory( TestDirectoryFixture.testDirectory() );
+        }
+    }
+
     public enum Enum {
         ONE, TWO
     }
@@ -468,5 +486,10 @@ public class KernelTest {
         public TestEnum( List<Enum> enums ) {
             this.enums.addAll( enums );
         }
+    }
+
+    public static class ServiceFinalParameter {
+        public final String a = "test";
+        public final ArrayList<String> al = new ArrayList<>();
     }
 }

@@ -37,7 +37,9 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -74,13 +76,21 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     }
 
     static <A> List<A> declared( Class<?> clazz, Function<Class<?>, A[]> collector ) {
-        Stream<A> interfaceDeclaredObjects = Stream.<Class<?>>traverse( clazz, Class::getSuperclass )
-            .flatMap( s -> Stream.of( s.getInterfaces() ) )
-            .flatMap( c -> Stream.of( collector.apply( c ) ) );
-        return Stream.<Class<?>>traverse( clazz, Class::getSuperclass )
-            .flatMap( c -> Stream.of( collector.apply( c ) ) )
-            .concat( interfaceDeclaredObjects )
-            .toList();
+        var classes = Stream.<Class<?>>traverse( clazz, Class::getSuperclass ).toList();
+
+        var declaredObjects = new ArrayList<A>();
+
+        for( var c : classes ) {
+            for( var i : c.getInterfaces() ) {
+                Collections.addAll( declaredObjects, collector.apply( i ) );
+            }
+        }
+
+        for( var c : classes ) {
+            Collections.addAll( declaredObjects, collector.apply( c ) );
+        }
+
+        return declaredObjects;
     }
 
     private static void trySetAccessible( AccessibleObject ao ) {
@@ -320,6 +330,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
         public void set( Object instance, Object value ) {
             try {
+                if( isFinal() && ( this.underlying.getType().isPrimitive() || this.underlying.getType().isAssignableFrom( String.class ) ) ) {
+                    throw new IllegalAccessException( this + ": Constant Expressions. See: https://stackoverflow.com/questions/17506329/java-final-field-compile-time-constant-expression" );
+                }
                 this.underlying.set( instance, value );
             } catch( IllegalAccessException e ) {
                 throw new ReflectException( e );
@@ -346,6 +359,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
         public boolean isStatic() {
             return Modifier.isStatic( underlying.getModifiers() );
+        }
+
+        public boolean isFinal() {
+            return Modifier.isFinal( underlying.getModifiers() );
         }
 
         public boolean isSynthetic() {
