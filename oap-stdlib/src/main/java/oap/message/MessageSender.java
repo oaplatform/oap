@@ -38,7 +38,6 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.io.Files;
-import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
 import oap.util.ByteSequence;
@@ -55,6 +54,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -66,9 +66,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -76,6 +76,8 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
+import static oap.message.MessageProtocol.messageStatusToString;
+import static oap.message.MessageProtocol.messageTypeToString;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
@@ -90,18 +92,7 @@ import static oap.util.Pair.__;
 @Slf4j
 @ToString
 public class MessageSender implements Closeable {
-    private static final HashMap<Short, String> statusMap = new HashMap<>();
     private static final Pair<MessageStatus, Short> STATUS_OK = __( OK, MessageProtocol.STATUS_OK );
-
-    static {
-        var properties = Resources.readAllProperties( "META-INF/oap-messages.properties" );
-        for( var propertyName : properties.stringPropertyNames() ) {
-            var key = propertyName.trim();
-            if( key.startsWith( "map." ) ) key = key.substring( 4 );
-
-            statusMap.put( Short.parseShort( properties.getProperty( propertyName ) ), key );
-        }
-    }
 
     private final Object syncMemoryLock = new Object();
     private final Object syncDiskLock = new Object();
@@ -146,19 +137,6 @@ public class MessageSender implements Closeable {
         Metrics.gaugeMapSize( "message_count", Tags.of( "host", host, "type", "inprogress", "port", String.valueOf( port ) ), messages.inProgress );
     }
 
-    private static String getServerStatus( short status ) {
-        return switch( status ) {
-            case MessageProtocol.STATUS_OK -> "OK";
-            case STATUS_UNKNOWN_ERROR, STATUS_UNKNOWN_ERROR_NO_RETRY -> "UNKNOWN_ERROR";
-            case STATUS_ALREADY_WRITTEN -> "ALREADY_WRITTEN";
-            case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
-            default -> {
-                var str = statusMap.get( status );
-                yield str != null ? str : "Unknown status: " + status;
-            }
-        };
-    }
-
     public static Path lock( Path file, long storageLockExpiration ) {
         var lockFile = Paths.get( FilenameUtils.removeExtension( file.toString() ) + ".lock" );
 
@@ -183,7 +161,7 @@ public class MessageSender implements Closeable {
             Dates.durationToString( keepAliveDuration ) );
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             name, durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
-        log.info( "custom status = {}", statusMap );
+        log.info( "custom status = {}", MessageProtocol.printMapping() );
 
         executor = Executors.newFixedBlockingThreadPool(
             poolSize > 0 ? poolSize : Runtime.getRuntime().availableProcessors(),
@@ -279,6 +257,7 @@ public class MessageSender implements Closeable {
             } catch( Exception e ) {
                 log.error( "[{}] type: {}, md5: {}, data: {}",
                     name, message.messageType, message.getHexMd5(), message.getHexData() );
+                log.error( e.getMessage(), e );
             }
         }
     }
@@ -294,10 +273,10 @@ public class MessageSender implements Closeable {
     public CompletableFuture<Messages.MessageInfo> send( Messages.MessageInfo messageInfo, long now ) {
         Message message = messageInfo.message;
 
-        log.debug( "[{}] sending data [type = {}] to server...", name, message.messageType );
+        log.debug( "[{}] sending data [type = {}] to server...", name, messageTypeToString( message.messageType ) );
 
         return CompletableFuture.supplyAsync( () -> {
-            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
+            Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "trysend" ).increment();
 
             try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
                  DataOutputStream out = new DataOutputStream( buf ) ) {
@@ -322,7 +301,8 @@ public class MessageSender implements Closeable {
                 return onOkRespone( messageInfo, response, now );
 
             } catch( Throwable e ) {
-                if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
+                Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "send_io_error" ).increment();
+
                 LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
                 messages.retry( messageInfo, now + retryTimeout );
 
@@ -336,7 +316,7 @@ public class MessageSender implements Closeable {
 
         ResponseBody body = response.body();
         if( body == null ) {
-            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "io_error" ).increment();
+            Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "io_error" ).increment();
             log.error( "[{}] unknown error (BODY == null)", name );
             lastStatus.put( message.messageType, __( ERROR, ( short ) -1 ) );
             messages.retry( messageInfo, now + retryTimeout );
@@ -354,47 +334,47 @@ public class MessageSender implements Closeable {
             in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
             var status = in.readShort();
 
-            log.trace( "[{}] sending done, server status: {}", name, getServerStatus( status ) );
+            log.trace( "[{}] sending done, server status: {}", name, messageStatusToString( status ) );
 
             MessageSender.this.networkAvailable = true;
 
             switch( status ) {
                 case STATUS_ALREADY_WRITTEN -> {
                     log.trace( "[{}] already written {}", name, message.getHexMd5() );
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "already_written" ).increment();
+                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "already_written" ).increment();
                     lastStatus.put( message.messageType, __( ALREADY_WRITTEN, status ) );
                 }
                 case MessageProtocol.STATUS_OK -> {
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "success" ).increment();
+                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "success" ).increment();
                     lastStatus.put( message.messageType, __( OK, status ) );
                 }
                 case STATUS_UNKNOWN_ERROR -> {
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
+                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "error" ).increment();
                     log.error( "[{}] unknown error", name );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
-                    messages.retry( messageInfo, retryTimeout );
+                    messages.retry( messageInfo, now + retryTimeout );
                 }
                 case STATUS_UNKNOWN_ERROR_NO_RETRY -> {
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error_no_retry" ).increment();
+                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "error_no_retry" ).increment();
                     log.error( "[{}] unknown error -> no retry", name );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 case STATUS_UNKNOWN_MESSAGE_TYPE -> {
-                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
+                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "unknown_message_type" ).increment();
                     log.error( "[{}] unknown message type: {}", name, status );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 default -> {
-                    var clientStatus = statusMap.get( status );
+                    var clientStatus = MessageProtocol.getStatus( status );
                     if( clientStatus != null ) {
                         log.trace( "[{}] retry: {}", name, clientStatus );
-                        Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
+                        Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
                     } else {
-                        Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
+                        Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "unknown_status" ).increment();
                         log.error( "[{}] unknown status: {}", name, status );
                     }
                     lastStatus.put( message.messageType, __( ERROR, status ) );
-                    messages.retry( messageInfo, retryTimeout );
+                    messages.retry( messageInfo, now + retryTimeout );
                 }
             }
         } catch( IOException e ) {
@@ -441,48 +421,76 @@ public class MessageSender implements Closeable {
         return time / retryTimeout;
     }
 
-    private long nextPeriod( long now ) {
-        var currentPeriod = currentPeriod( now );
-        return ( currentPeriod + 1 ) * retryTimeout;
-    }
-
     @SneakyThrows
     public MessageSender syncDisk() {
         if( closed ) return this;
 
-        var messageFiles = Files.fastWildcard( directory, "*/*/*.bin" );
+        try( DirectoryStream<Path> clientIdStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
+            for( var clientIdPath : clientIdStream ) {
+                if( !isValidClientId( clientIdPath ) ) {
+                    log.error( "invalid client id {}", clientIdPath );
+                    Files.deleteSafely( clientIdPath );
+                    continue;
+                }
 
-        for( var msgFile : messageFiles ) {
-            Path lockFile;
+                var msgClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
+                try( DirectoryStream<Path> messageTypeStream = java.nio.file.Files.newDirectoryStream( clientIdPath ) ) {
+                    for( var messageTypePath : messageTypeStream ) {
+                        if( !isValidMessageType( messageTypePath ) ) {
+                            log.error( "invalid message type {}", messageTypePath );
+                            Files.deleteSafely( messageTypePath );
+                            continue;
+                        }
 
-            synchronized( syncDiskLock ) {
-                if( closed ) return this;
+                        var messageType = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
 
-                if( ( lockFile = lock( msgFile, storageLockExpiration ) ) != null ) {
-                    log.debug( "[{}] reading unsent message {}", name, msgFile );
-                    try {
-                        var fileName = FilenameUtils.getName( msgFile.toString() );
-                        var md5Hex = FilenameUtils.removeExtension( fileName );
-                        var md5 = ByteSequence.of( Hex.decodeHex( md5Hex.toCharArray() ) );
-                        var typePath = FilenameUtils.getFullPathNoEndSeparator( msgFile.toString() );
-                        var messageTypeStr = FilenameUtils.getName( typePath );
-                        var messageType = ( byte ) Integer.parseInt( messageTypeStr );
+                        try( DirectoryStream<Path> messageStream = java.nio.file.Files.newDirectoryStream( messageTypePath ) ) {
+                            for( var messagePath : messageStream ) {
+                                if( !isValidMessage( messagePath ) ) {
+                                    log.error( "invalid message {}", messagePath );
+                                    Files.deleteSafely( messagePath );
+                                    continue;
+                                }
 
-                        var clientIdPath = FilenameUtils.getFullPathNoEndSeparator( typePath );
-                        var clientIdStr = FilenameUtils.getName( clientIdPath );
-                        var msgClientId = Long.parseLong( clientIdStr, 16 );
+                                if( messagePath.toString().endsWith( ".lock" ) ) {
+                                    var binFile = Paths.get( FilenameUtils.removeExtension( messagePath.toString() ) + ".bin" );
+                                    if( !java.nio.file.Files.exists( binFile ) ) {
+                                        log.error( "invalid lock file {}", messagePath );
+                                        Files.deleteSafely( messagePath );
+                                    }
 
-                        var data = Files.read( msgFile, ContentReader.ofBytes() );
+                                    continue;
+                                }
 
-                        log.debug( "[{}] client id = {}, message type = {}, md5 = {}",
-                            name, msgClientId, messageType, md5Hex );
+                                String md5Hex = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+                                var md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
 
-                        var message = new Message( clientId, messageType, md5, data );
-                        messages.add( message );
-                    } catch( Exception e ) {
-                        LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), "[" + name + "] " + msgFile + ": " + e.getMessage(), e );
+                                Path lockFile;
 
-                        Files.delete( lockFile );
+                                synchronized( syncDiskLock ) {
+                                    if( closed ) return this;
+
+                                    if( ( lockFile = lock( messagePath, storageLockExpiration ) ) != null ) {
+                                        log.info( "[{}] reading unsent message {}", name, messagePath );
+                                        try {
+                                            var data = Files.read( messagePath, ContentReader.ofBytes() );
+
+                                            log.info( "[{}] client id {} message type {} md5 {}",
+                                                name, msgClientId, messageTypeToString( messageType ), md5Hex );
+
+                                            var message = new Message( clientId, messageType, md5, data );
+                                            messages.add( message );
+
+                                            Files.delete( messagePath );
+                                        } catch( Exception e ) {
+                                            LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), "[" + name + "] " + messagePath + ": " + e.getMessage(), e );
+                                        } finally {
+                                            Files.delete( lockFile );
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -493,8 +501,30 @@ public class MessageSender implements Closeable {
         return this;
     }
 
-    private long diff( long now, long next ) {
-        return next - now;
+    private boolean isValidMessage( Path messagePath ) {
+        try {
+            return !java.nio.file.Files.isDirectory( messagePath )
+                && ( messagePath.toString().endsWith( ".bin" ) || messagePath.toString().endsWith( ".lock" ) )
+                && ByteSequence.of( Hex.decodeHex( FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) ) ) ) != null;
+        } catch( DecoderException e ) {
+            return false;
+        }
+    }
+
+    private boolean isValidMessageType( Path messageTypePath ) {
+        try {
+            return java.nio.file.Files.isDirectory( messageTypePath ) && ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) ) > 0;
+        } catch( NumberFormatException e ) {
+            return false;
+        }
+    }
+
+    private boolean isValidClientId( Path clientIdPath ) {
+        try {
+            return java.nio.file.Files.isDirectory( clientIdPath ) && Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 ) > 0;
+        } catch( NumberFormatException e ) {
+            return false;
+        }
     }
 
     public boolean isEmpty() {

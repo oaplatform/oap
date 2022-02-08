@@ -57,7 +57,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
 public class MessageServerTest extends Fixtures {
-
     private final EnvFixture envFixture;
 
     public MessageServerTest() {
@@ -452,7 +451,9 @@ public class MessageServerTest extends Fixtures {
 
             listener1.throwUnknownError( 1, false );
 
-            try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
+            Path persistenceDirectory = testPath( "tmp" );
+
+            try( var client = new MessageSender( "localhost", port, "/messages", persistenceDirectory, -1 ) ) {
                 client.retryTimeout = 100;
                 client.start();
 
@@ -464,10 +465,24 @@ public class MessageServerTest extends Fixtures {
                     assertThat( client.getReadyMessages() ).isEqualTo( 1L );
                     assertThat( client.getRetryMessages() ).isEqualTo( 1L );
                 } );
-
             }
 
-            try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
+            assertThat( persistenceDirectory ).isNotEmptyDirectory();
+
+            Files.write( persistenceDirectory.resolve( "a" ), "test", ofString() );
+            Files.write( persistenceDirectory.resolve( "a1/b" ), "test", ofString() );
+            persistenceDirectory.resolve( "f" ).toFile().mkdirs();
+            persistenceDirectory.resolve( "f1/f2" ).toFile().mkdirs();
+            persistenceDirectory.resolve( "f1/f2" ).toFile().mkdirs();
+
+            var lockFile = persistenceDirectory
+                .resolve( Long.toHexString( 1 ) )
+                .resolve( String.valueOf( Byte.toUnsignedInt( MESSAGE_TYPE ) ) )
+                .resolve( Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"123\"".getBytes( UTF_8 ) ) ) + ".lock" );
+
+            Files.write( lockFile, "1", ofString() );
+
+            try( var client = new MessageSender( "localhost", port, "/messages", persistenceDirectory, -1 ) ) {
                 client.retryTimeout = 100;
                 client.start();
 
@@ -475,6 +490,8 @@ public class MessageServerTest extends Fixtures {
 
                 client.syncDisk();
                 client.syncMemory();
+
+                assertThat( persistenceDirectory ).isEmptyDirectory();
 
                 assertEventually( 100, 50, () -> {
                     assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ) );

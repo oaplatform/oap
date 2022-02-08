@@ -36,6 +36,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static oap.message.MessageProtocol.messageTypeToString;
+
 @Slf4j
 class Messages {
     final LinkedBlockingQueue<MessageInfo> ready = new LinkedBlockingQueue<>();
@@ -51,10 +53,13 @@ class Messages {
     }
 
     public void retry( MessageInfo messageInfo, long time ) {
+        messageInfo.retryCount++;
+
         log.trace( "retry messageType {} md5 {} retryCount {} wait until {}",
-            messageInfo.message.messageType,
+            messageTypeToString( messageInfo.message.messageType ),
             messageInfo.message.md5,
             messageInfo.retryCount, Dates.formatDateWithMillis( time ) );
+        inProgress.remove( messageInfo.message.md5 );
         retry.add( new RetryInfo( messageInfo, time ) );
     }
 

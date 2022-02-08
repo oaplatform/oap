@@ -51,6 +51,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static oap.message.MessageProtocol.messageStatusToString;
+import static oap.message.MessageProtocol.messageTypeToString;
 import static oap.message.MessageProtocol.MD5_LENGTH;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
@@ -156,7 +158,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             var size = in.readInt();
 
             log.trace( "[{}] type {} version {} clientId {} md5 {} size '{}'",
-                clientHostPort, messageType, messageVersion, clientId, md5, FileUtils.byteCountToDisplaySize( size ) );
+                clientHostPort, messageTypeToString( messageType ), messageVersion, clientId, md5, FileUtils.byteCountToDisplaySize( size ) );
 
             synchronized( md5 ) {
                 if( !hashes.contains( messageType, md5 ) ) {
@@ -174,19 +176,20 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                             writeResponse( exchange, status, clientId, md5 );
                             if( status == STATUS_OK ) {
                                 hashes.add( messageType, clientId, md5 );
-                                Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
+                                Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
                             } else {
                                 log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
-                                    clientHostPort, hostName, clientId, md5, MessageProtocol.statusToString( status ) );
+                                    clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
                             }
                         } catch( Exception e ) {
                             log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
+                            Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
                             writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                         }
                     }
                 } else {
                     log.warn( "[{}/{}] buffer ({}, {}) already written.)", clientHostPort, clientId, md5, size );
-                    Metrics.counter( "oap.message.server.already_written", "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ).increment();
+                    Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_ALREADY_WRITTEN ) ) ).increment();
 
                     in.skipNBytes( size );
 
