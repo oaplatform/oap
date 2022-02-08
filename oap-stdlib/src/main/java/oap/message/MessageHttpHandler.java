@@ -93,7 +93,7 @@ import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
 @Slf4j
 public class MessageHttpHandler implements HttpHandler, Closeable {
     public final HashMap<Byte, MessageListener> map = new HashMap<>();
-    public final int clientHashCacheSize = 1024;
+    public int clientHashCacheSize = 1024;
     private final List<MessageListener> listeners;
     private final long hashTtl;
     private final Path controlStatePath;
