@@ -27,8 +27,10 @@ package oap.template;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-public interface Template<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> {
+public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
     TOut render( TIn obj );
+
+    void render( TIn obj, TOutMutable out );
 
     @Retention( RetentionPolicy.RUNTIME )
     @interface Nullable {

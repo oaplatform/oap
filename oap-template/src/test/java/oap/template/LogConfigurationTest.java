@@ -25,6 +25,7 @@
 package oap.template;
 
 import oap.io.Files;
+import oap.lang.ThreadLocalStringBuilder;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -40,6 +41,7 @@ import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LogConfigurationTest extends Fixtures {
+    private final ThreadLocalStringBuilder threadLocalStringBuilder = new ThreadLocalStringBuilder();
     private TemplateEngine engine;
     private String testMethodName;
 
@@ -236,8 +238,9 @@ public class LogConfigurationTest extends Fixtures {
         cp.childOpt = Optional.of( cOpt );
         cp.childNullable = cNull;
 
-        var res = dictionaryTemplate.templateFunction.render( cp );
+        StringBuilder out = threadLocalStringBuilder.get();
+        dictionaryTemplate.templateFunction.render( cp, out );
 
-        assertThat( res ).isEqualTo( "1\t10" );
+        assertThat( out.toString() ).isEqualTo( "1\t10" );
     }
 }

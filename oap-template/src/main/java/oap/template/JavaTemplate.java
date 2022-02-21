@@ -39,8 +39,8 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.joining;
 
 @Slf4j
-public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> implements Template<TIn, TOut, TA> {
-    private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> cons;
+public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
+    private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
@@ -59,7 +59,7 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
             var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
-            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?>> ) mcl
+            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
                 .loadClass( fullTemplateName )
                 .getDeclaredConstructor()
                 .newInstance();
@@ -73,5 +73,11 @@ public class JavaTemplate<TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> i
         cons.accept( obj, Map.of(), newAcc );
 
         return newAcc.get();
+    }
+
+    @Override
+    public void render( TIn obj, TOutMutable tOut ) {
+        var newAcc = acc.newInstance( tOut );
+        cons.accept( obj, Map.of(), newAcc );
     }
 }

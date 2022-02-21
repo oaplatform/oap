@@ -28,8 +28,16 @@ import java.util.Collection;
 
 import static java.util.stream.Collectors.joining;
 
-public class TemplateAccumulatorString implements TemplateAccumulator<String, TemplateAccumulatorString> {
-    protected final StringBuilder sb = new StringBuilder();
+public class TemplateAccumulatorString implements TemplateAccumulator<String, StringBuilder, TemplateAccumulatorString> {
+    protected final StringBuilder sb;
+
+    public TemplateAccumulatorString( StringBuilder sb ) {
+        this.sb = sb;
+    }
+
+    public TemplateAccumulatorString() {
+        this( new StringBuilder() );
+    }
 
     @Override
     public void acceptText( String text ) {
@@ -113,6 +121,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, Te
     @Override
     public TemplateAccumulatorString newInstance() {
         return new TemplateAccumulatorString();
+    }
+
+    @Override
+    public TemplateAccumulatorString newInstance( StringBuilder mutable ) {
+        return new TemplateAccumulatorString( mutable );
     }
 
     @Override

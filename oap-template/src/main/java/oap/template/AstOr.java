@@ -26,7 +26,6 @@ package oap.template;
 
 import lombok.ToString;
 import oap.template.TemplateGrammarAdaptor.MaxMin;
-import oap.util.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +56,7 @@ public class AstOr extends Ast {
         buffer.append( '\n' );
 
         for( var i = 0; i < or.size(); i++ ) {
-            var cp = Strings.fill( "│", or.size() - i );
+            var cp = "│".repeat( or.size() - i );
             or.get( i ).top.print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
         }
 

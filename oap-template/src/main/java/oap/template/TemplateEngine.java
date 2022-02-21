@@ -116,23 +116,23 @@ public class TemplateEngine implements Runnable {
         }
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TA extends TemplateAccumulator<TOut, TA>> Template<TIn, TOut, TA>
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         assert template != null;
         assert acc != null;
@@ -169,7 +169,7 @@ public class TemplateEngine implements Runnable {
 
             } );
 
-            return ( Template<TIn, TOut, TA> ) tFunc.template;
+            return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
         } catch( UncheckedExecutionException | ExecutionException e ) {
             if( e.getCause() instanceof TemplateException ) {
                 throw ( TemplateException ) e.getCause();
@@ -206,10 +206,10 @@ public class TemplateEngine implements Runnable {
 
     public static class TemplateFunction {
         @JsonIgnore
-        public final Template<?, ?, ?> template;
+        public final Template<?, ?, ?, ?> template;
         public final StackTraceElement[] stackTrace;
 
-        public TemplateFunction( Template<?, ?, ?> template, StackTraceElement[] stackTrace ) {
+        public TemplateFunction( Template<?, ?, ?, ?> template, StackTraceElement[] stackTrace ) {
             this.template = template;
             this.stackTrace = stackTrace;
         }

@@ -34,18 +34,18 @@ import java.lang.reflect.Type;
 class Render {
     final String templateName;
     final TemplateType parentType;
-    final TemplateAccumulator<?, ?> templateAccumulator;
+    final TemplateAccumulator<?, ?, ?> templateAccumulator;
     final String field;
     final String templateAccumulatorName;
     final int tab;
     private final StringBuilder sb;
 
-    private Render( String templateName, TemplateType parentType, TemplateAccumulator<?, ?> templateAccumulator,
+    private Render( String templateName, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
                     String field, String templateAccumulatorName, int tab ) {
         this( new StringBuilder(), templateName, parentType, templateAccumulator, field, templateAccumulatorName, tab );
     }
 
-    Render( StringBuilder sb, String templateName, TemplateType parentType, TemplateAccumulator<?, ?> templateAccumulator,
+    Render( StringBuilder sb, String templateName, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
             String field, String templateAccumulatorName, int tab ) {
         this.sb = sb;
         this.templateName = templateName;
@@ -56,7 +56,7 @@ class Render {
         this.tab = tab;
     }
 
-    public static Render init( String templateName, TemplateType type, TemplateAccumulator<?, ?> acc ) {
+    public static Render init( String templateName, TemplateType type, TemplateAccumulator<?, ?, ?> acc ) {
         return new Render( templateName, type, acc, null, null, 0 );
     }
 

@@ -24,10 +24,20 @@
 
 package oap.template;
 
+import org.apache.commons.lang3.mutable.MutableObject;
+
 import java.util.Collection;
 
-public class TemplateAccumulatorObject implements TemplateAccumulator<Object, TemplateAccumulatorObject> {
-    private Object obj;
+public class TemplateAccumulatorObject implements TemplateAccumulator<Object, MutableObject<Object>, TemplateAccumulatorObject> {
+    private final MutableObject<Object> obj;
+
+    public TemplateAccumulatorObject() {
+        this( new MutableObject<>() );
+    }
+
+    public TemplateAccumulatorObject( MutableObject<Object> obj ) {
+        this.obj = obj;
+    }
 
     @Override
     public void acceptText( String text ) {
@@ -96,7 +106,7 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Te
 
     @Override
     public void accept( Object obj ) {
-        this.obj = obj;
+        this.obj.setValue( obj );
     }
 
     @Override
@@ -110,12 +120,17 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Te
     }
 
     @Override
+    public TemplateAccumulatorObject newInstance( MutableObject<Object> mutable ) {
+        return new TemplateAccumulatorObject( mutable );
+    }
+
+    @Override
     public String getTypeName() {
         return "Object";
     }
 
     @Override
     public Object get() {
-        return obj;
+        return obj.getValue();
     }
 }

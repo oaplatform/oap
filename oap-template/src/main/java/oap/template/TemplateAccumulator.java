@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  *
  * @todo refactor this to factory!
  */
-public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAccumulator<T, TTemplateAccumulator>> extends Supplier<T> {
+public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends TemplateAccumulator<T, TMutable, TTemplateAccumulator>> extends Supplier<T> {
     void acceptText( String text );
 
     void accept( String text );
@@ -104,6 +104,8 @@ public interface TemplateAccumulator<T, TTemplateAccumulator extends TemplateAcc
     boolean isEmpty();
 
     TTemplateAccumulator newInstance();
+
+    TTemplateAccumulator newInstance( TMutable mutable );
 
     String getTypeName();
 }

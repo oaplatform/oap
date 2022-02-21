@@ -22,21 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.lang;
 
-/**
- * Created by igor.petrenko on 2020-07-15.
- * No longer needed, see the latest logstream
- */
-@Deprecated
-public class DictionaryTemplate<F> {
-    public final Template<F, String, StringBuilder, TemplateAccumulatorString> templateFunction;
-    public final String template;
-    public final String headers;
+public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
+    @Override
+    protected StringBuilder initialValue() {
+        return new StringBuilder();
+    }
 
-    public DictionaryTemplate( Template<F, String, StringBuilder, TemplateAccumulatorString> templateFunction, String template, String headers ) {
-        this.templateFunction = templateFunction;
-        this.template = template;
-        this.headers = headers;
+    @Override
+    public StringBuilder get() {
+        StringBuilder sb = super.get();
+        sb.replace( 0, sb.length(), "" );
+        return sb;
     }
 }
