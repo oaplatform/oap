@@ -24,7 +24,21 @@
 
 package oap.lang;
 
+import java.util.function.Consumer;
+
 public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
+    public static String wrap( StringBuilder sb, Runnable runnable ) {
+        sb.setLength( 0 );
+        runnable.run();
+        return sb.toString();
+    }
+
+    public String wrap( Consumer<StringBuilder> cons ) {
+        StringBuilder sb = get();
+        cons.accept( sb );
+        return sb.toString();
+    }
+
     @Override
     protected StringBuilder initialValue() {
         return new StringBuilder();
