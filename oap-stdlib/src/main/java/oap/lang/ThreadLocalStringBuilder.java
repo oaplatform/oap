@@ -33,7 +33,7 @@ public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
     @Override
     public StringBuilder get() {
         StringBuilder sb = super.get();
-        sb.replace( 0, sb.length(), "" );
+        sb.setLength( 0 );
         return sb;
     }
 }
