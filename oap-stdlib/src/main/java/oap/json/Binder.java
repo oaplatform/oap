@@ -291,6 +291,18 @@ public class Binder {
         }
     }
 
+    public void marshal( Object value, StringBuilder sb ) {
+        try( var writer = new StringBuilderWriter( sb ) ) {
+            marshal( value, writer, false );
+        }
+    }
+
+    public void marshal( Object value, StringBuilder sb, boolean prettyPrinter ) {
+        try( var writer = new StringBuilderWriter( sb ) ) {
+            marshal( value, writer, prettyPrinter );
+        }
+    }
+
     public void marshal( Object value, Writer writer ) {
         marshal( value, writer, false );
     }
