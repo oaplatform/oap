@@ -71,8 +71,8 @@ public final class Benchmark {
         return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, ( x, s ) -> code.run() );
     }
 
-    private static long getRate( int samples, Period period, long total ) {
-        return ( long ) ( samples / ( total / period.toStandardDuration().getMillis() / 1000000f ) );
+    private static double getRate( int samples, Period period, long total ) {
+        return samples / ( ( double ) total / period.toStandardDuration().getMillis() / 1000000d );
     }
 
     @Deprecated
