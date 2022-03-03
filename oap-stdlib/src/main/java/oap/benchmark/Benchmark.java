@@ -30,8 +30,8 @@ import oap.util.function.Try;
 import org.joda.time.Period;
 
 import java.util.function.BiConsumer;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
-import java.util.function.LongFunction;
 
 import static oap.util.function.Functions.empty.noop;
 
@@ -45,11 +45,12 @@ public final class Benchmark {
     String name;
     int warming = DEFAULT_WARMING;
     int samples;
+    int precision = 4;
     BiConsumer<Integer, Integer> code;
     AbstractRunner runner = SingleThreadRunner.INSTANCE;
     Runnable beforeExperiment = noop();
     Runnable afterExperiment = noop();
-    LongFunction<String> rateToString = rate -> rate + " action/${PERIOD}";
+    DoubleFunction<String> rateToString = rate -> String.format( "%." + precision + "f action/${PERIOD}", rate );
     Function<Integer, String> formatExperiment = DEFAULT_EXPERIMENT_FORMAT;
 
     private Benchmark( String name, int samples, Try.ThrowingBiConsumer<Integer, Integer> code ) {
@@ -100,6 +101,12 @@ public final class Benchmark {
         return this;
     }
 
+    public Benchmark precision( int precision ) {
+        this.precision = precision;
+
+        return this;
+    }
+
     public Benchmark beforeExpetriment( Try.CatchingRunnable before ) {
         this.beforeExperiment = before;
         return this;
@@ -129,7 +136,7 @@ public final class Benchmark {
         else return period.toString();
     }
 
-    private String rateToString( long avgRate ) {
+    private String rateToString( double avgRate ) {
         return rateToString.apply( avgRate ).replace( "${PERIOD}", getPeriod() );
     }
 

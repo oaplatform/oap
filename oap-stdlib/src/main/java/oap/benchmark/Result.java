@@ -28,11 +28,11 @@ import java.util.List;
 
 class Result {
     public final long total;
-    public final long rate;
+    public final double rate;
     public final long time;
     public final String experiment;
 
-    Result( String experiment, long total, long time, long rate ) {
+    Result( String experiment, long total, long time, double rate ) {
         this.experiment = experiment;
         this.total = total;
         this.time = time;
@@ -46,7 +46,7 @@ class Result {
                 .mapToLong( r -> r.time )
                 .sum() / ( experiments > 1 ? experiments - 1 : experiments ),
             results.stream()
-                .mapToLong( r1 -> r1.rate )
+                .mapToDouble( r1 -> r1.rate )
                 .sum() / ( experiments > 1 ? experiments - 1 : experiments )
         );
     }

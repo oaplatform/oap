@@ -63,9 +63,10 @@ abstract class AbstractRunner {
 
             if( results.size() > 1 ) {
                 System.out.println( "Experiment △" );
-                long max = results.stream().mapToLong( r -> r.rate ).max().orElseThrow();
+                double max = results.stream().mapToDouble( r -> r.rate ).max().orElseThrow();
                 for( Result avgResult : Lists.reverse( results ) )
-                    System.out.format( "%10s │" + " ".repeat( ( int ) ( avgResult.rate * results.size() / max ) ) + "○ %d\n", avgResult.experiment, avgResult.rate );
+                    System.out.format( "%10s │" + " ".repeat(
+                        max > 0 ? ( int ) ( avgResult.rate * results.size() / max ) : 0 ) + "○ %." + benchmark.precision + "f\n", avgResult.experiment, avgResult.rate );
                 System.out.println( "           └" + "─".repeat( results.size() + 10 ) + "▷ Ops" );
             }
 
