@@ -669,4 +669,8 @@ public final class Files {
             } else return enhanced.get( v );
         } );
     }
+
+    public static String byteCountToDisplaySize( long size ) {
+        return FileUtils.byteCountToDisplaySize( size );
+    }
 }
