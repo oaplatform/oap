@@ -221,6 +221,7 @@ public class IoStreams {
                 case LZ4_BLOCK -> new LZ4BlockOutputStream( fos );
                 case LZ4 -> new LZ4FrameOutputStream( fos, SIZE_64KB );
                 case ZSTD -> new ZstdCompressorOutputStream( fos );
+                case ORC, PARQUET, AVRO -> throw new IllegalArgumentException( "Unsupported encoding " + encoding );
                 case PLAIN -> fos;
             };
         } catch( IOException e ) {
@@ -323,6 +324,10 @@ public class IoStreams {
                     stream.close();
                     throw e;
                 }
+            case ORC:
+            case PARQUET:
+            case AVRO:
+                throw new IllegalArgumentException( "Unsupported encoding " + encoding );
             default:
                 throw new IllegalArgumentException( "Unknown encoding " + encoding );
         }
@@ -334,7 +339,10 @@ public class IoStreams {
         GZIP( ".gz", true, true ),
         ZSTD( ".zst", true, true ),
         LZ4( ".lz4", true, true ),
-        LZ4_BLOCK( ".lz4b", true, false );
+        LZ4_BLOCK( ".lz4b", true, false ),
+        ORC( ".orc", true, false ),
+        PARQUET( ".parquet", true, false ),
+        AVRO( ".avsc", true, false );
 
         public String extension;
         public boolean compressed;
