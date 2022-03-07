@@ -334,24 +334,26 @@ public class IoStreams {
     }
 
     public enum Encoding {
-        PLAIN( "", false, true ),
-        ZIP( ".zip", true, false ),
-        GZIP( ".gz", true, true ),
-        ZSTD( ".zst", true, true ),
-        LZ4( ".lz4", true, true ),
-        LZ4_BLOCK( ".lz4b", true, false ),
-        ORC( ".orc", true, false ),
-        PARQUET( ".parquet", true, false ),
-        AVRO( ".avsc", true, false );
+        PLAIN( "", false, true, true ),
+        ZIP( ".zip", true, false, true ),
+        GZIP( ".gz", true, true, true ),
+        ZSTD( ".zst", true, true, true ),
+        LZ4( ".lz4", true, true, true ),
+        LZ4_BLOCK( ".lz4b", true, false, true ),
+        ORC( ".orc", true, false, false ),
+        PARQUET( ".parquet", true, false, false ),
+        AVRO( ".avsc", true, false, false );
 
-        public String extension;
-        public boolean compressed;
-        public boolean appendable;
+        public final String extension;
+        public final boolean compressed;
+        public final boolean appendable;
+        public final boolean streamSupport;
 
-        Encoding( String extension, boolean compressed, boolean appendable ) {
+        Encoding( String extension, boolean compressed, boolean appendable, boolean streamSupport ) {
             this.extension = extension;
             this.compressed = compressed;
             this.appendable = appendable;
+            this.streamSupport = streamSupport;
         }
 
         public static Encoding from( Path path ) {
