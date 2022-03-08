@@ -46,7 +46,10 @@ import static oap.template.TemplateAccumulators.STRING;
 @Slf4j
 @Deprecated
 public class LogConfiguration extends Configuration {
+    private static final String LOG_TAG = "LOG";
+
     public static final Predicate<Dictionary> FILTER_TAG_NE_SYSTEM = dictionary -> !dictionary.getTags().contains( "system" );
+    public static final Predicate<Dictionary> FILTER_LOG_TAG = d -> d.getTags().contains( LOG_TAG );
 
     private static final String STANDARD_DELIMITER = "\t";
     private final TemplateEngine engine;
