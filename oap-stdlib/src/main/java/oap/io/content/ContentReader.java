@@ -54,9 +54,16 @@ public interface ContentReader<R> {
         return read( ByteStreams.toByteArray( is ) );
     }
 
+    static <R> R read( String data, ContentReader<R> reader ) {
+        return reader.read( data.getBytes( UTF_8 ) );
+    }
 
     static <R> R read( byte[] bytes, ContentReader<R> reader ) {
         return reader.read( bytes );
+    }
+
+    static <R> R read( byte[] bytes, int offset, int length, ContentReader<R> reader ) {
+        return reader.read( new ByteArrayInputStream( bytes, offset, length ) );
     }
 
     static <R> R read( InputStream is, ContentReader<R> reader ) {
