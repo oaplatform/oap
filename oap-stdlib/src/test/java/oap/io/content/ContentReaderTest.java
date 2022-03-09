@@ -60,10 +60,16 @@ public class ContentReaderTest {
             .isEqualTo( new Bean() );
     }
 
+    @Test
+    public void andThen() {
+        assertThat( ContentReader.<String>read( "{\"s\":\"aaa\"}".getBytes( UTF_8 ),
+            ofJson( Bean.class ).andThen( b -> b.s ) ) )
+            .isEqualTo( "aaa" );
+    }
+
     @EqualsAndHashCode
     @ToString
     public static class Bean {
         String s = "aaa";
     }
-
 }

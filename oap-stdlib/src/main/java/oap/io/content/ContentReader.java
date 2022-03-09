@@ -40,6 +40,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -73,6 +74,20 @@ public interface ContentReader<R> {
     @SneakyThrows
     static <R> R read( URL url, ContentReader<R> reader ) {
         return read( new AutoCloseInputStream( url.openStream() ), reader );
+    }
+
+    default <T> ContentReader<T> andThen( Function<R, T> then ) {
+        return new ContentReader<T>() {
+            @Override
+            public T read( byte[] bytes ) {
+                return then.apply( ContentReader.this.read( bytes ) );
+            }
+
+            @Override
+            public T read( InputStream is ) {
+                return then.apply( ContentReader.this.read( is ) );
+            }
+        };
     }
 
     static ContentReader<String> ofString() {
