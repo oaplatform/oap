@@ -28,7 +28,6 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;
@@ -40,6 +39,7 @@ import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Throwables;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
@@ -58,6 +58,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
@@ -143,58 +144,72 @@ public final class Files {
     }
 
     public static ArrayList<Path> wildcard( String basePath, String... wildcards ) {
-        return wildcard( Paths.get( basePath ), wildcards );
+        return wildcard( Paths.get( basePath ), List.of( wildcards ) );
     }
 
-    @SneakyThrows
     public static ArrayList<Path> wildcard( Path basePath, String... wildcards ) {
-        List<PathMatcher> matchers = Lists.map( wildcards, wc -> FileSystems.getDefault()
-            .getPathMatcher( ( "glob:" + basePath + File.separator + wc ).replace( "\\", "\\\\" ) ) );
-        ArrayList<Path> result = new ArrayList<>();
-        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
-                if( matchers.stream().anyMatch( m -> m.matches( file ) ) ) result.add( file );
-                return FileVisitResult.CONTINUE;
-            }
-        };
-        if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
-            java.nio.file.Files.walkFileTree( basePath, visitor );
-        Collections.sort( result );
-        return result;
+        return wildcard( basePath, List.of( wildcards ) );
+    }
+
+    public static ArrayList<Path> wildcard( Path basePath, List<String> wildcards ) {
+        try {
+            List<PathMatcher> matchers = Lists.map( wildcards, wc -> FileSystems.getDefault()
+                .getPathMatcher( ( "glob:" + basePath + File.separator + wc ).replace( "\\", "\\\\" ) ) );
+            ArrayList<Path> result = new ArrayList<>();
+            SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
+                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
+                    if( matchers.stream().anyMatch( m -> m.matches( file ) ) ) result.add( file );
+                    return FileVisitResult.CONTINUE;
+                }
+            };
+            if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+                java.nio.file.Files.walkFileTree( basePath, visitor );
+            Collections.sort( result );
+            return result;
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     public static ArrayList<Path> wildcard( Path basePath, String wildcard ) {
-        return wildcard( basePath, new String[] { wildcard } );
+        return wildcard( basePath, List.of( wildcard ) );
     }
 
-    @SneakyThrows
     public static URL toUrl( Path path ) {
-        return path.toUri().toURL();
+        try {
+            return path.toUri().toURL();
+        } catch( MalformedURLException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
     public static List<Path> deepCollect( Path basePath, Predicate<Path> predicate ) {
-        ArrayList<Path> result = new ArrayList<>();
-        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
-                if( predicate.test( file ) ) result.add( file );
-                return FileVisitResult.CONTINUE;
-            }
-        };
-        if( exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
-            java.nio.file.Files.walkFileTree( basePath, visitor );
-        return result;
+        try {
+            ArrayList<Path> result = new ArrayList<>();
+            SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
+                    if( predicate.test( file ) ) result.add( file );
+                    return FileVisitResult.CONTINUE;
+                }
+            };
+            if( exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+                java.nio.file.Files.walkFileTree( basePath, visitor );
+            return result;
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     /**
      * @see #read(Path, ContentReader)
      */
     @Deprecated
-    @SneakyThrows
     public static <T> T readObject( Path path ) {
         try( var is = IoStreams.in( path, Encoding.PLAIN ) ) {
             return ContentReader.read( is, ContentReader.ofObject() );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
@@ -226,22 +241,27 @@ public final class Files {
      * @see #read(Path, ContentReader)
      */
     @Deprecated
-    @SneakyThrows
     public static byte[] read( Path path ) {
-        return java.nio.file.Files.readAllBytes( path );
-    }
-
-    @SneakyThrows
-    public static <R> R read( Path path, Encoding encoding, ContentReader<R> reader ) {
-        try( InputStream in = IoStreams.in( path, encoding ) ) {
-            return ContentReader.read( in, reader );
+        try {
+            return java.nio.file.Files.readAllBytes( path );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
-    @SneakyThrows
+    public static <R> R read( Path path, Encoding encoding, ContentReader<R> reader ) {
+        try( InputStream in = IoStreams.in( path, encoding ) ) {
+            return ContentReader.read( in, reader );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
+    }
+
     public static <R> R read( Path path, ContentReader<R> reader ) {
         try( InputStream in = IoStreams.in( path ) ) {
             return ContentReader.read( in, reader );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
@@ -334,14 +354,20 @@ public final class Files {
         return read( path, ContentReader.ofLinesStream() );
     }
 
-    @SneakyThrows
     public static void copyDirectory( Path from, Path to ) {
-        FileUtils.copyDirectory( from.toFile(), to.toFile() );
+        try {
+            FileUtils.copyDirectory( from.toFile(), to.toFile() );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
     public static void cleanDirectory( Path path ) {
-        FileUtils.cleanDirectory( path.toFile() );
+        try {
+            FileUtils.cleanDirectory( path.toFile() );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     public static void deleteSafely( Path path ) {
@@ -352,78 +378,87 @@ public final class Files {
         }
     }
 
-    @SneakyThrows
     public static void delete( Path path ) {
-        var retryer = RetryerBuilder.<FileVisitResult>newBuilder()
-            .retryIfException()
-            .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
-            .build();
+        try {
+            var retryer = RetryerBuilder.<FileVisitResult>newBuilder()
+                .retryIfException()
+                .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
+                .build();
 
-        if( java.nio.file.Files.exists( path ) )
-            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
-                    try {
-                        return retryer.call( () -> {
-                            if( java.nio.file.Files.exists( path ) ) java.nio.file.Files.delete( path );
-                            return FileVisitResult.CONTINUE;
-                        } );
-                    } catch( ExecutionException e ) {
-                        throw new IOException( e.getCause() );
-                    } catch( RetryException e ) {
-                        throw new IOException( e.getLastFailedAttempt().getExceptionCause() );
-                    }
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
-                    if( java.nio.file.Files.exists( path ) ) java.nio.file.Files.delete( path );
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed( Path file, IOException exc ) {
-                    log.error( file.toString(), exc );
-                    return FileVisitResult.CONTINUE;
-                }
-            } );
-    }
-
-    @SneakyThrows
-    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
-        if( java.nio.file.Files.exists( path ) )
-            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) {
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
-                    return super.preVisitDirectory( dir, attrs );
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
-                    try {
-                        if( !path.equals( dir ) || deleteRoot ) {
-                            java.nio.file.Files.delete( dir );
+            if( java.nio.file.Files.exists( path ) )
+                java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
+                    @Override
+                    public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
+                        try {
+                            return retryer.call( () -> {
+                                if( java.nio.file.Files.exists( path ) ) java.nio.file.Files.delete( path );
+                                return FileVisitResult.CONTINUE;
+                            } );
+                        } catch( ExecutionException e ) {
+                            throw new IOException( e.getCause() );
+                        } catch( RetryException e ) {
+                            throw new IOException( e.getLastFailedAttempt().getExceptionCause() );
                         }
-                    } catch( DirectoryNotEmptyException ignore ) {
                     }
-                    return FileVisitResult.CONTINUE;
-                }
 
-            } );
+                    @Override
+                    public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
+                        if( java.nio.file.Files.exists( path ) ) java.nio.file.Files.delete( path );
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed( Path file, IOException exc ) {
+                        log.error( file.toString(), exc );
+                        return FileVisitResult.CONTINUE;
+                    }
+                } );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
+    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
+        try {
+            if( java.nio.file.Files.exists( path ) )
+                java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
+                    @Override
+                    public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
+                        return super.preVisitDirectory( dir, attrs );
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
+                        try {
+                            if( !path.equals( dir ) || deleteRoot ) {
+                                java.nio.file.Files.delete( dir );
+                            }
+                        } catch( DirectoryNotEmptyException ignore ) {
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                } );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
+    }
+
     private static void copyOrAppend( Path sourcePath, Encoding sourceEncoding, Path destPath,
                                       Encoding destEncoding, int bufferSize, boolean append ) {
-        ensureFile( destPath );
-        try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
-             OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
-            IOUtils.copy( is, os );
+        try {
+            ensureFile( destPath );
+            try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
+                 OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
+                IOUtils.copy( is, os );
+            }
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
@@ -482,36 +517,49 @@ public final class Files {
         ensureDirectory( path.getParent() );
     }
 
-    @SneakyThrows
     public static Path ensureDirectory( Path path ) {
-        java.nio.file.Files.createDirectories( path );
-        return path;
+        try {
+            java.nio.file.Files.createDirectories( path );
+            return path;
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
     public static void move( Path source, Path target, CopyOption... options ) {
-        ensureFile( target );
-        java.nio.file.Files.move( source, target, options );
+        try {
+            ensureFile( target );
+            java.nio.file.Files.move( source, target, options );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
     public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
-        java.nio.file.Files.setPosixFilePermissions( path, permissions );
+        try {
+            java.nio.file.Files.setPosixFilePermissions( path, permissions );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) {
         setPosixPermissions( path, Sets.of( permissions ) );
     }
 
-    @SneakyThrows
     public static Set<PosixFilePermission> getPosixPermissions( Path path ) {
-        return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
+        try {
+            return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
     public static boolean isDirectoryEmpty( Path directory ) {
         try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             return !dirStream.iterator().hasNext();
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
@@ -519,9 +567,12 @@ public final class Files {
         setLastModifiedTime( path, dateTime.getMillis() );
     }
 
-    @SneakyThrows
     public static void setLastModifiedTime( Path path, long ms ) {
-        java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
+        try {
+            java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     public static String nameWithoutExtention( URL url ) {
@@ -603,7 +654,6 @@ public final class Files {
         return isFileNotEmpty( path );
     }
 
-    @SneakyThrows
     public static boolean isFileNotEmpty( final Path path ) {
         try( InputStream is = IoStreams.in( path );
              InputStreamReader isr = new InputStreamReader( is );
@@ -611,6 +661,8 @@ public final class Files {
             String line;
             while( ( line = reader.readLine() ) != null ) if( StringUtils.isNotEmpty( line ) ) return true;
             return false;
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
@@ -618,18 +670,22 @@ public final class Files {
         return java.nio.file.Files.exists( path );
     }
 
-    @SneakyThrows
     public static long getLastModifiedTime( Path path ) {
-        return java.nio.file.Files.getLastModifiedTime( path ).toMillis();
+        try {
+            return java.nio.file.Files.getLastModifiedTime( path ).toMillis();
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
     public static boolean createFile( Path file ) {
         try {
             java.nio.file.Files.createFile( file );
             return true;
         } catch( FileAlreadyExistsException e ) {
             return false;
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
