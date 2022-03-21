@@ -30,7 +30,6 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import oap.http.ContentTypes;
-import oap.http.HttpStatusCodes;
 import oap.json.Binder;
 import oap.util.HashMaps;
 import oap.util.function.Try;
@@ -48,6 +47,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
@@ -156,7 +159,7 @@ public class HttpServerExchange {
     }
 
     public void redirect( String url ) {
-        setStatusCode( HttpStatusCodes.FOUND );
+        setStatusCode( HTTP_MOVED_TEMP );
         setResponseHeader( Headers.LOCATION, url );
     }
 
@@ -192,11 +195,11 @@ public class HttpServerExchange {
     }
 
     public void responseNotFound() {
-        exchange.setStatusCode( HttpStatusCodes.NOT_FOUND );
+        exchange.setStatusCode( HTTP_NOT_FOUND );
     }
 
     public void responseNoContent() {
-        exchange.setStatusCode( HttpStatusCodes.NO_CONTENT );
+        exchange.setStatusCode( HTTP_NO_CONTENT );
     }
 
     public String getRequestURI() {
@@ -247,13 +250,13 @@ public class HttpServerExchange {
     }
 
     public void responseOk( byte[] content, String contentType ) {
-        setStatusCode( HttpStatusCodes.OK );
+        setStatusCode( HTTP_OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
         exchange.getResponseSender().send( ByteBuffer.wrap( content ) );
     }
 
     public void responseOk( Object content, boolean raw, String contentType ) {
-        setStatusCode( HttpStatusCodes.OK );
+        setStatusCode( HTTP_OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
         exchange.getResponseSender().send( contentToString( raw, content, contentType ) );
     }
@@ -266,7 +269,7 @@ public class HttpServerExchange {
     }
 
     public void responseStream( Stream<?> content, boolean raw, String contentType ) {
-        setStatusCode( HttpStatusCodes.OK );
+        setStatusCode( HTTP_OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
 
         var out = exchange.getOutputStream();
@@ -322,7 +325,7 @@ public class HttpServerExchange {
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public void responseOk( String body, String contentType ) {
-        setStatusCode( HttpStatusCodes.OK );
+        setStatusCode( HTTP_OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
         exchange.getResponseSender().send( body );
     }

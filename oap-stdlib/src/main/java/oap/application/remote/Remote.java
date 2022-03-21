@@ -31,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.ContentTypes;
 import oap.http.Headers;
-import oap.http.HttpStatusCodes;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -46,6 +45,10 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.stream.Stream;
+
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.http.ContentTypes.TEXT_PLAIN;
 
 
 @Slf4j
@@ -90,8 +93,8 @@ public class Remote implements HttpHandler {
             if( services.size() > 1 ) {
                 log.error( "{} found multiple services", invocation.service );
                 errorMetrics.increment();
-                exchange.setStatusCode( HttpStatusCodes.NOT_FOUND );
-                exchange.setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.TEXT_PLAIN );
+                exchange.setStatusCode( HTTP_NOT_FOUND );
+                exchange.setResponseHeader( Headers.CONTENT_TYPE, TEXT_PLAIN );
                 exchange.setReasonPhrase( invocation.service + " found multiple services" );
                 return;
             }
@@ -104,7 +107,7 @@ public class Remote implements HttpHandler {
         if( service != null ) {
             try {
                 Result<Object, Throwable> r;
-                int status = HttpStatusCodes.OK;
+                int status = HTTP_OK;
                 try {
                     r = Result.success( service.getClass()
                         .getMethod( invocation.method, invocation.types() )
@@ -116,7 +119,7 @@ public class Remote implements HttpHandler {
                     log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
                     log.debug( "method '{}' types {} parameters {}", invocation.method, List.of( invocation.types() ), List.of( invocation.values() ) );
                     log.debug( e.getMessage(), e );
-                    status = HttpStatusCodes.NOT_FOUND;
+                    status = HTTP_NOT_FOUND;
                     r = Result.failure( new RemoteInvocationException( e ) );
                 } catch( InvocationTargetException e ) {
                     errorMetrics.increment();
@@ -154,8 +157,8 @@ public class Remote implements HttpHandler {
             }
         } else {
             errorMetrics.increment();
-            exchange.setStatusCode( HttpStatusCodes.NOT_FOUND );
-            exchange.setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.TEXT_PLAIN );
+            exchange.setStatusCode( HTTP_NOT_FOUND );
+            exchange.setResponseHeader( Headers.CONTENT_TYPE, TEXT_PLAIN );
             exchange.setReasonPhrase( invocation.service + " not found" );
         }
 

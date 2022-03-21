@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,7 +77,7 @@ public class ClientTest extends Fixtures {
             )
             .respond(
                 org.mockserver.model.HttpResponse.response()
-                    .withStatusCode( HttpStatusCodes.OK )
+                    .withStatusCode( HTTP_OK )
                     .withBody( "test1" )
             );
 
@@ -102,7 +103,7 @@ public class ClientTest extends Fixtures {
             )
             .respond(
                 org.mockserver.model.HttpResponse.response()
-                    .withStatusCode( HttpStatusCodes.OK )
+                    .withStatusCode( HTTP_OK )
                     .withBody( "test1" )
             );
 
@@ -122,7 +123,7 @@ public class ClientTest extends Fixtures {
                 .withPath( "/test" )
                 .withBody( "test\ntest1" ),
             Times.once()
-        ).respond( HttpResponse.response().withStatusCode( HttpStatusCodes.OK ).withBody( "ok" ) );
+        ).respond( HttpResponse.response().withStatusCode( HTTP_OK ).withBody( "ok" ) );
 
         try( var os = Client.DEFAULT.post( "http://localhost:" + port + "/test", ContentType.TEXT_PLAIN ) ) {
             os.write( "test".getBytes() );

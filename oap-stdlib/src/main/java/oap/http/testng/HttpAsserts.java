@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.testng.KernelFixture;
 import oap.http.Client;
 import oap.http.Cookie;
-import oap.http.HttpStatusCodes;
 import oap.json.testng.JsonAsserts;
 import oap.util.BiStream;
 import oap.util.Pair;
@@ -42,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.ContentTypes.APPLICATION_JSON;
 import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
@@ -142,7 +142,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion isOk() {
-            hasCode( HttpStatusCodes.OK );
+            hasCode( HTTP_OK );
             return this;
         }
 
@@ -231,7 +231,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion respondedJson( String json ) {
-            return this.respondedJson( HttpStatusCodes.OK, "OK", json );
+            return this.respondedJson( HTTP_OK, "OK", json );
         }
 
         public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
@@ -344,7 +344,7 @@ public class HttpAsserts {
         }
 
         public JsonHttpAssertion isEqualTo( String json ) {
-            return this.isEqualTo( HttpStatusCodes.OK, "OK", json );
+            return this.isEqualTo( HTTP_OK, "OK", json );
         }
 
         public JsonHttpAssertion isEqualTo( Class<?> contextClass, String resource ) {

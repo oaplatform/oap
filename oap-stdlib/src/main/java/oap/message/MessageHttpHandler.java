@@ -31,7 +31,6 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.ContentTypes;
 import oap.http.Headers;
-import oap.http.HttpStatusCodes;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -51,14 +50,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static oap.message.MessageProtocol.messageStatusToString;
-import static oap.message.MessageProtocol.messageTypeToString;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.message.MessageProtocol.MD5_LENGTH;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
 import static oap.message.MessageProtocol.STATUS_OK;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR_NO_RETRY;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
+import static oap.message.MessageProtocol.messageStatusToString;
+import static oap.message.MessageProtocol.messageTypeToString;
 
 /**
  * Input protocol:
@@ -201,7 +201,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
 
     public void writeResponse( HttpServerExchange exchange, short status, long clientId, String md5 ) throws IOException, DecoderException {
         exchange.setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_OCTET_STREAM );
-        exchange.setStatusCode( HttpStatusCodes.OK );
+        exchange.setStatusCode( HTTP_OK );
 
         try( var out = new DataOutputStream( exchange.getOutputStream() ) ) {
             out.writeByte( PROTOCOL_VERSION_1 );

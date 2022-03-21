@@ -24,7 +24,6 @@
 
 package oap.http.file;
 
-import oap.http.HttpStatusCodes;
 import oap.io.AbstractFileSync;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
@@ -43,6 +42,8 @@ import org.testng.annotations.Test;
 
 import java.util.Date;
 
+import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpFileSyncTest extends Fixtures {
@@ -84,7 +85,7 @@ public class HttpFileSyncTest extends Fixtures {
             .when( HttpRequest.request().withMethod( "GET" ).withPath( "/file" ), Times.once() )
             .respond(
                 HttpResponse.response()
-                    .withStatusCode( HttpStatusCodes.OK )
+                    .withStatusCode( HTTP_OK )
                     .withBody( "test" )
                     .withHeader( Header.header( "Last-Modified", DateUtils.formatDate( date10 ) ) )
                     .withHeader( Header.header( "Content-Disposition", "inline; filename=\"test.file\"" ) )
@@ -102,7 +103,7 @@ public class HttpFileSyncTest extends Fixtures {
                 Times.once() )
             .respond(
                 HttpResponse.response()
-                    .withStatusCode( HttpStatusCodes.NOT_MODIFIED )
+                    .withStatusCode( HTTP_NOT_MODIFIED )
                     .withHeader( Header.header( "Last-Modified", DateUtils.formatDate( date10 ) ) )
             );
         fileSync.run();
@@ -116,7 +117,7 @@ public class HttpFileSyncTest extends Fixtures {
                 Times.once() )
             .respond(
                 HttpResponse.response()
-                    .withStatusCode( HttpStatusCodes.OK )
+                    .withStatusCode( HTTP_OK )
                     .withBody( "test2" )
                     .withHeader( Header.header( "Last-Modified", DateUtils.formatDate( date20 ) ) )
                     .withHeader( Header.header( "Content-Disposition", "inline; filename=\"test.file\"" ) )

@@ -24,6 +24,10 @@
 
 package oap.http;
 
+/**
+ * @see java.net.HttpURLConnection
+ */
+@Deprecated
 public final class HttpStatusCodes {
     public static final int CONTINUE = io.undertow.util.StatusCodes.CONTINUE;
     public static final int SWITCHING_PROTOCOLS = io.undertow.util.StatusCodes.SWITCHING_PROTOCOLS;

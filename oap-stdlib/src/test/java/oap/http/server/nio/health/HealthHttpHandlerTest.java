@@ -26,7 +26,6 @@ package oap.http.server.nio.health;
 
 import oap.application.module.Module;
 import oap.application.testng.KernelFixture;
-import oap.http.HttpStatusCodes;
 import oap.http.testng.HttpAsserts;
 import oap.testng.Fixtures;
 import oap.util.Lists;
@@ -35,6 +34,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.testng.Asserts.urlOfTestResource;
 
@@ -51,7 +51,7 @@ public class HealthHttpHandlerTest extends Fixtures {
 
     @Test
     public void health() {
-        assertGet( HttpAsserts.httpUrl( "/healtz" ) ).hasCode( HttpStatusCodes.NO_CONTENT );
+        assertGet( HttpAsserts.httpUrl( "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
         assertGet( HttpAsserts.httpUrl( "/healtz?secret=secret" ) )
             .respondedJson( "{\"test\":{\"k1\":1, \"k2\":2}}" );
     }

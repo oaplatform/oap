@@ -107,6 +107,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.http.ContentTypes.APPLICATION_OCTET_STREAM;
@@ -463,14 +466,14 @@ public final class Client implements Closeable {
         ifModifiedSince.ifPresent( ims -> request.addHeader( "If-Modified-Since", DateUtils.formatDate( new Date( ims ) ) ) );
         Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
         HttpResponse response = future.get();
-        if( response.getStatusLine().getStatusCode() == HttpStatusCodes.OK && response.getEntity() != null )
+        if( response.getStatusLine().getStatusCode() == HTTP_OK && response.getEntity() != null )
             return Optional.of( response );
-        else if( response.getStatusLine().getStatusCode() == HttpStatusCodes.FOUND ) {
+        else if( response.getStatusLine().getStatusCode() == HTTP_MOVED_TEMP ) {
             Header location = response.getFirstHeader( "Location" );
             if( location == null ) throw new IOException( "redirect w/o location!" );
             log.debug( "following {}", location.getValue() );
             return resolve( location.getValue(), Optional.empty() );
-        } else if( response.getStatusLine().getStatusCode() == HttpStatusCodes.NOT_MODIFIED ) {
+        } else if( response.getStatusLine().getStatusCode() == HTTP_NOT_MODIFIED ) {
             return Optional.empty();
         } else
             throw new IOException( response.getStatusLine().toString() );

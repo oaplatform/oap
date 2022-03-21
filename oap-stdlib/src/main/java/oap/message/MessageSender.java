@@ -76,13 +76,13 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
-import static oap.message.MessageProtocol.messageStatusToString;
-import static oap.message.MessageProtocol.messageTypeToString;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR_NO_RETRY;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
+import static oap.message.MessageProtocol.messageStatusToString;
+import static oap.message.MessageProtocol.messageTypeToString;
 import static oap.message.MessageStatus.ALREADY_WRITTEN;
 import static oap.message.MessageStatus.ERROR;
 import static oap.message.MessageStatus.OK;
