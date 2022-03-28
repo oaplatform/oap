@@ -111,6 +111,7 @@ public class MessageSender implements Closeable {
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
+    public long globalIoRetryTimeout = Dates.s( 1 );
     public long retryTimeout = Dates.s( 1 );
     public long keepAliveDuration = Dates.d( 30 );
     protected long timeout = 5000;
@@ -402,7 +403,7 @@ public class MessageSender implements Closeable {
 
         long now = DateTimeUtils.currentTimeMillis();
 
-        if( ioExceptionStartRetryTimeout + retryTimeout > now ) return;
+        if( isGlobalIoRetryTimeout( now ) ) return;
 
         long period = currentPeriod( now );
 
@@ -423,7 +424,7 @@ public class MessageSender implements Closeable {
                 } );
             }
 
-            if( ioExceptionStartRetryTimeout + retryTimeout > now ) {
+            if( isGlobalIoRetryTimeout( now ) ) {
                 break;
             }
 
@@ -435,6 +436,10 @@ public class MessageSender implements Closeable {
 
             messageInfo = messages.poll( true );
         } while( messageInfo != null );
+    }
+
+    private boolean isGlobalIoRetryTimeout( long now ) {
+        return globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
     }
 
     private long currentPeriod( long time ) {
