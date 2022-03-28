@@ -61,9 +61,11 @@ public class HttpServerExchange {
     );
 
     public final io.undertow.server.HttpServerExchange exchange;
+    public final long id;
 
-    public HttpServerExchange( io.undertow.server.HttpServerExchange exchange ) {
+    public HttpServerExchange( io.undertow.server.HttpServerExchange exchange, long id ) {
         this.exchange = exchange;
+        this.id = id;
     }
 
     public static String ua( io.undertow.server.HttpServerExchange hsExchange ) {

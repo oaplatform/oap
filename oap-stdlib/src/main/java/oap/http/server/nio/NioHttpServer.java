@@ -33,6 +33,7 @@ import io.undertow.conduits.GzipStreamSourceConduit;
 import io.undertow.conduits.InflatingStreamSourceConduit;
 import io.undertow.server.ConnectorStatistics;
 import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.BlockingReadTimeoutHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -41,11 +42,14 @@ import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.encoding.RequestEncodingHandler;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Dates;
 import org.xnio.Options;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class NioHttpServer implements Closeable {
@@ -53,7 +57,7 @@ public class NioHttpServer implements Closeable {
 
     private final PathHandler pathHandler;
     private final ContentEncodingRepository contentEncodingRepository;
-
+    private final AtomicLong requestId = new AtomicLong();
     public int backlog = -1;
     public long idleTimeout = -1;
     public boolean tcpNodelay = true;
@@ -68,6 +72,7 @@ public class NioHttpServer implements Closeable {
     public boolean forceCompressionSupport = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
+    public long readTimeout = Dates.s( 60 );
 
     public NioHttpServer( int port ) {
         this.port = port;
@@ -109,7 +114,9 @@ public class NioHttpServer implements Closeable {
                 .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
-        handler = new BlockingHandler( handler );
+        handler = readTimeout > 0
+            ? BlockingReadTimeoutHandler.builder().readTimeout( Duration.ofMillis( readTimeout ) ).nextHandler( handler ).build()
+            : new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
         builder.setHandler( handler );
@@ -152,7 +159,7 @@ public class NioHttpServer implements Closeable {
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
-        io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange ) );
+        io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange, requestId.incrementAndGet() ) );
 
         if( !forceCompressionSupport && compressionSupport ) {
             httpHandler = new EncodingHandler( httpHandler, contentEncodingRepository );

@@ -46,10 +46,13 @@ import org.xnio.conduits.StreamSourceConduit;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class HttpServerExchangeStub {
+    private static final AtomicLong requestId = new AtomicLong();
+
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2() {
-        return new oap.http.server.nio.HttpServerExchange( createHttpExchange() );
+        return new oap.http.server.nio.HttpServerExchange( createHttpExchange(), requestId.incrementAndGet() );
     }
 
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2( oap.http.server.nio.HttpServerExchange.HttpMethod method, String uri ) {
