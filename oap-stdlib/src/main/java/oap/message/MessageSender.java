@@ -66,6 +66,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -119,6 +120,7 @@ public class MessageSender implements Closeable {
     private boolean networkAvailable = true;
     private OkHttpClient httpClient;
     private ExecutorService executor;
+    private long ioExceptionStartRetryTimeout = -1;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
         this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
@@ -300,15 +302,26 @@ public class MessageSender implements Closeable {
                 var response = call.execute();
                 return onOkRespone( messageInfo, response, now );
 
-            } catch( Throwable e ) {
-                Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "send_io_error" ).increment();
+            } catch( UnknownHostException e ) {
+                processException( messageInfo, now, message, e, true );
 
-                LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
-                messages.retry( messageInfo, now + retryTimeout );
+                ioExceptionStartRetryTimeout = now;
+
+                throw Throwables.propagate( e );
+            } catch( Throwable e ) {
+                processException( messageInfo, now, message, e, false );
 
                 throw Throwables.propagate( e );
             }
         }, executor );
+    }
+
+    private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {
+        Metrics.counter( "oap.messages",
+            "type", messageTypeToString( message.messageType ),
+            "status", "send_io_error" + ( globalRetryTimeout ? "_gr" : "" ) ).increment();
+        LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
+        messages.retry( messageInfo, now + retryTimeout );
     }
 
     private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Response response, long now ) {
@@ -388,6 +401,9 @@ public class MessageSender implements Closeable {
             name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
+
+        if( ioExceptionStartRetryTimeout + retryTimeout > now ) return;
+
         long period = currentPeriod( now );
 
         Messages.MessageInfo messageInfo = null;
@@ -405,6 +421,10 @@ public class MessageSender implements Closeable {
                     log.trace( "[{}] message {}... done", name, mi.message.md5 );
                     return null;
                 } );
+            }
+
+            if( ioExceptionStartRetryTimeout + retryTimeout > now ) {
+                break;
             }
 
             var currentPeriod = currentPeriod( now );
