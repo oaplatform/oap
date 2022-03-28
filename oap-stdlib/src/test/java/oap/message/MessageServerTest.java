@@ -346,6 +346,7 @@ public class MessageServerTest extends Fixtures {
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             client.retryTimeout = 100;
+            client.globalIoRetryTimeout = 100;
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
@@ -389,6 +390,7 @@ public class MessageServerTest extends Fixtures {
 
         try( var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.retryTimeout = 100;
+            client.globalIoRetryTimeout = 100;
             client.start();
 
             try( var server = new NioHttpServer( port );
