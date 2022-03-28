@@ -114,9 +114,9 @@ public class NioHttpServer implements Closeable {
                 .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
-        handler = readTimeout > 0
-            ? BlockingReadTimeoutHandler.builder().readTimeout( Duration.ofMillis( readTimeout ) ).nextHandler( handler ).build()
-            : new BlockingHandler( handler );
+        if( readTimeout > 0 )
+            handler = BlockingReadTimeoutHandler.builder().readTimeout( Duration.ofMillis( readTimeout ) ).nextHandler( handler ).build();
+        handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
         builder.setHandler( handler );
