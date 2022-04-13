@@ -24,6 +24,10 @@
 
 package oap.http;
 
+/**
+ * @see Http.Headers
+ */
+@Deprecated
 public final class Headers {
     public static final String CONTENT_ENCODING = io.undertow.util.Headers.CONTENT_ENCODING_STRING;
     public static final String ACCEPT_ENCODING = io.undertow.util.Headers.ACCEPT_ENCODING_STRING;

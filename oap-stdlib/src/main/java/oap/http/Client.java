@@ -112,7 +112,7 @@ import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static oap.http.ContentTypes.APPLICATION_OCTET_STREAM;
+import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Dates.m;

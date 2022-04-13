@@ -25,13 +25,14 @@
 package oap.http.server.nio;
 
 import oap.http.Client;
-import oap.http.Headers;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
+import static oap.http.Http.Headers.CONNECTION;
+import static oap.http.Http.Headers.DATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
@@ -53,8 +54,8 @@ public class NioHttpServerTest extends Fixtures {
 
             assertThat( response.getHeaders() )
                 .hasSize( 3 )
-                .containsKey( Headers.DATE )
-                .containsKey( Headers.CONNECTION );
+                .containsKey( DATE )
+                .containsKey( CONNECTION );
 
         }
 
@@ -67,8 +68,8 @@ public class NioHttpServerTest extends Fixtures {
 
             assertThat( response.getHeaders() )
                 .hasSize( 1 )
-                .doesNotContainKey( Headers.DATE )
-                .doesNotContainKey( Headers.CONNECTION );
+                .doesNotContainKey( DATE )
+                .doesNotContainKey( CONNECTION );
 
         }
     }

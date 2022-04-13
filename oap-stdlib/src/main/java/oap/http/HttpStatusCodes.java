@@ -25,7 +25,7 @@
 package oap.http;
 
 /**
- * @see java.net.HttpURLConnection
+ * @see Http.StatusCode
  */
 @Deprecated
 public final class HttpStatusCodes {

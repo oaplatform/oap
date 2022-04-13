@@ -23,6 +23,10 @@
  */
 package oap.http;
 
+/**
+ * @see Http.ContentType
+ */
+@Deprecated
 public class ContentTypes {
     public static final String TEXT_TSV = "text/tab-separated-values";
     public static final String TEXT_CSV = "text/csv";

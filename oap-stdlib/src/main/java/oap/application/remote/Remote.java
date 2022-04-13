@@ -29,8 +29,6 @@ import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
-import oap.http.ContentTypes;
-import oap.http.Headers;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -48,7 +46,10 @@ import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.http.ContentTypes.TEXT_PLAIN;
+import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
+import static oap.http.Http.ContentType.TEXT_PLAIN;
+import static oap.http.Http.Headers.CONTENT_TYPE;
+import static oap.http.Http.StatusCode.NOT_FOUND;
 
 
 @Slf4j
@@ -93,8 +94,8 @@ public class Remote implements HttpHandler {
             if( services.size() > 1 ) {
                 log.error( "{} found multiple services", invocation.service );
                 errorMetrics.increment();
-                exchange.setStatusCode( HTTP_NOT_FOUND );
-                exchange.setResponseHeader( Headers.CONTENT_TYPE, TEXT_PLAIN );
+                exchange.setStatusCode( NOT_FOUND );
+                exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
                 exchange.setReasonPhrase( invocation.service + " found multiple services" );
                 return;
             }
@@ -130,7 +131,7 @@ public class Remote implements HttpHandler {
                     log.trace( e.getMessage(), e );
                 }
                 exchange.setStatusCode( status );
-                exchange.setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_OCTET_STREAM );
+                exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
                 var result = r;
 
                 try( var outputStream = exchange.getOutputStream();
@@ -158,7 +159,7 @@ public class Remote implements HttpHandler {
         } else {
             errorMetrics.increment();
             exchange.setStatusCode( HTTP_NOT_FOUND );
-            exchange.setResponseHeader( Headers.CONTENT_TYPE, TEXT_PLAIN );
+            exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
             exchange.setReasonPhrase( invocation.service + " not found" );
         }
 

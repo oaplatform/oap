@@ -37,7 +37,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.http.ContentTypes.TEXT_PLAIN;
+import static oap.http.Http.ContentType.TEXT_PLAIN;
+import static oap.http.Http.Headers.ACCEPT_ENCODING;
+import static oap.http.Http.Headers.CONTENT_ENCODING;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,10 +76,10 @@ public class GzipHttpTest extends Fixtures {
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
-            Map.of(), Map.of( Headers.ACCEPT_ENCODING, "gzip,deflate" ) );
+            Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( responseGzip.contentType.toString() ).isEqualTo( TEXT_PLAIN );
+        assertThat( responseGzip.contentType ).isEqualTo( TEXT_PLAIN );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 
@@ -88,7 +90,7 @@ public class GzipHttpTest extends Fixtures {
         );
 
         var response = Client.DEFAULT.post( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
-            CompressionUtils.gzip( "test2" ), TEXT_PLAIN, Map.of( Headers.CONTENT_ENCODING, "gzip" ) );
+            CompressionUtils.gzip( "test2" ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
         assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN );

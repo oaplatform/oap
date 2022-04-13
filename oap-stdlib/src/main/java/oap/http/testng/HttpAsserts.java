@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.http.ContentTypes.APPLICATION_JSON;
+import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;

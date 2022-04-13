@@ -29,8 +29,6 @@ import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.http.ContentTypes;
-import oap.http.Headers;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -51,6 +49,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
+import static oap.http.Http.Headers.CONTENT_TYPE;
 import static oap.message.MessageProtocol.MD5_LENGTH;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
@@ -160,6 +160,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             log.trace( "[{}] type {} version {} clientId {} md5 {} size '{}'",
                 clientHostPort, messageTypeToString( messageType ), messageVersion, clientId, md5, FileUtils.byteCountToDisplaySize( size ) );
 
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized( md5 ) {
                 if( !hashes.contains( messageType, md5 ) ) {
                     var listener = map.get( messageType );
@@ -200,7 +201,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     }
 
     public void writeResponse( HttpServerExchange exchange, short status, long clientId, String md5 ) throws IOException, DecoderException {
-        exchange.setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_OCTET_STREAM );
+        exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
         exchange.setStatusCode( HTTP_OK );
 
         try( var out = new DataOutputStream( exchange.getOutputStream() ) ) {
@@ -216,9 +217,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     @Override
     public void close() {
         try {
-            if( scheduled != null ) {
-                scheduled.close();
-            }
+            if( scheduled != null ) scheduled.close();
             hashes.store( controlStatePath );
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
