@@ -221,8 +221,7 @@ public class IoStreams {
                 case LZ4_BLOCK -> new LZ4BlockOutputStream( fos );
                 case LZ4 -> new LZ4FrameOutputStream( fos, SIZE_64KB );
                 case ZSTD -> new ZstdCompressorOutputStream( fos );
-                case ORC, PARQUET, AVRO -> throw new IllegalArgumentException( "Unsupported encoding " + encoding );
-                case PLAIN -> fos;
+                case PLAIN, ORC, PARQUET, AVRO -> fos;
             };
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
