@@ -301,7 +301,7 @@ public class IoStreams {
                 } catch( Exception e ) {
                     stream.close();
                 }
-            case PLAIN:
+            case PLAIN, ORC, PARQUET, AVRO:
                 return stream;
             case LZ4_BLOCK:
                 try {
@@ -324,10 +324,6 @@ public class IoStreams {
                     stream.close();
                     throw e;
                 }
-            case ORC:
-            case PARQUET:
-            case AVRO:
-                throw new IllegalArgumentException( "Unsupported encoding " + encoding );
             default:
                 throw new IllegalArgumentException( "Unknown encoding " + encoding );
         }
