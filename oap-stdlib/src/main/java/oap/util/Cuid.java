@@ -82,7 +82,7 @@ public interface Cuid {
             var timeStr = cuid.substring( 0, cuid.length() - 8 );
             var timeL = Long.parseLong( timeStr, 16 );
             var time = new DateTime( timeL >> 16, DateTimeZone.UTC );
-            var count = timeL & 0xFF;
+            var count = timeL & 0xFFFF;
 
             return new Info( ipInts, time, count );
         }
