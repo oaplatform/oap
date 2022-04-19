@@ -28,11 +28,14 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofBytes;
 import static oap.io.content.ContentReader.ofInputStream;
 import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofLines;
+import static oap.io.content.ContentReader.ofLinesConsumer;
 import static oap.io.content.ContentReader.ofLinesStream;
 import static oap.io.content.ContentReader.ofProperties;
 import static oap.io.content.ContentReader.ofString;
@@ -58,6 +61,17 @@ public class ContentReaderTest {
             .contains( entry( "a", "b" ), entry( "c", "d" ) );
         assertThat( ContentReader.read( "{\"s\":\"aaa\"}".getBytes( UTF_8 ), ofJson( Bean.class ) ) )
             .isEqualTo( new Bean() );
+    }
+
+    @Test
+    public void testOfLinesConsumer() {
+        byte[] content = "test1\ntest2\n".getBytes( UTF_8 );
+
+        var arr = new ArrayList<String>();
+
+        ContentReader.read( content, ofLinesConsumer( arr::add ) );
+
+        assertThat( arr ).containsExactly( "test1", "test2" );
     }
 
     @Test

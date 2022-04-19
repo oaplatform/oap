@@ -40,20 +40,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public interface ContentReader<R> {
-
-    default R read( byte[] bytes ) {
-        return read( new ByteArrayInputStream( bytes ) );
-    }
-
-    @SneakyThrows
-    default R read( InputStream is ) {
-        return read( ByteStreams.toByteArray( is ) );
-    }
 
     static <R> R read( String data, ContentReader<R> reader ) {
         return reader.read( data.getBytes( UTF_8 ) );
@@ -74,20 +66,6 @@ public interface ContentReader<R> {
     @SneakyThrows
     static <R> R read( URL url, ContentReader<R> reader ) {
         return read( new AutoCloseInputStream( url.openStream() ), reader );
-    }
-
-    default <T> ContentReader<T> andThen( Function<R, T> then ) {
-        return new ContentReader<T>() {
-            @Override
-            public T read( byte[] bytes ) {
-                return then.apply( ContentReader.this.read( bytes ) );
-            }
-
-            @Override
-            public T read( InputStream is ) {
-                return then.apply( ContentReader.this.read( is ) );
-            }
-        };
     }
 
     static ContentReader<String> ofString() {
@@ -117,6 +95,17 @@ public interface ContentReader<R> {
             @Override
             public Stream<String> read( InputStream is ) {
                 return IoStreams.lines( is, true );
+            }
+        };
+    }
+
+    static ContentReader<Consumer<String>> ofLinesConsumer( Consumer<String> consumer ) {
+        return new ContentReader<>() {
+            @Override
+            public Consumer<String> read( InputStream is ) {
+                IoStreams.lines( is, true ).forEach( consumer::accept );
+
+                return consumer;
             }
         };
     }
@@ -199,6 +188,30 @@ public interface ContentReader<R> {
             @Override
             public R read( InputStream is ) {
                 return Binder.hocon.unmarshal( typeRef, is );
+            }
+        };
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    default R read( byte[] bytes ) {
+        return read( new ByteArrayInputStream( bytes ) );
+    }
+
+    @SneakyThrows
+    default R read( InputStream is ) {
+        return read( ByteStreams.toByteArray( is ) );
+    }
+
+    default <T> ContentReader<T> andThen( Function<R, T> then ) {
+        return new ContentReader<T>() {
+            @Override
+            public T read( byte[] bytes ) {
+                return then.apply( ContentReader.this.read( bytes ) );
+            }
+
+            @Override
+            public T read( InputStream is ) {
+                return then.apply( ContentReader.this.read( is ) );
             }
         };
     }
