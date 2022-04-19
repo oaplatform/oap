@@ -31,17 +31,21 @@ import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Lists;
 import oap.util.Stream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.AutoCloseInputStream;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -124,6 +128,25 @@ public interface ContentReader<R> {
             @Override
             public byte[] read( byte[] bytes ) {
                 return bytes;
+            }
+        };
+    }
+
+    static ContentReader<IntConsumer> ofBytes( byte[] buffer, IntConsumer consumer ) {
+        return new ContentReader<>() {
+            @Override
+            public IntConsumer read( InputStream inputStream ) {
+                try {
+                    int size;
+                    do {
+                        size = IOUtils.read( inputStream, buffer );
+                        consumer.accept( size );
+                    } while( size > 0 );
+
+                    return consumer;
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
             }
         };
     }

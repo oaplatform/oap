@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -72,6 +73,18 @@ public class ContentReaderTest {
         ContentReader.read( content, ofLinesConsumer( arr::add ) );
 
         assertThat( arr ).containsExactly( "test1", "test2" );
+    }
+
+    @Test
+    public void testOfBytesConsumer() {
+        byte[] content = "test1\ntest2\n".getBytes( UTF_8 );
+
+        var out = new ByteArrayOutputStream();
+
+        byte[] buffer = new byte[2];
+        ContentReader.read( content, ofBytes( buffer, size -> out.write( buffer, 0, size ) ) );
+
+        assertThat( out.toByteArray() ).isEqualTo( content );
     }
 
     @Test
