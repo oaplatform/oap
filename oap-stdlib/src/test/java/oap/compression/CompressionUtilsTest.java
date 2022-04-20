@@ -32,11 +32,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CompressionUtilsTest {
     @Test
-    public void testCompress() throws IOException {
+    public void testCompressBytes() throws IOException {
         var bytes = CompressionUtils.gzip( "test" );
         var str = CompressionUtils.ungzip( bytes );
 
         assertThat( bytes ).hasSize( 24 );
+        assertThat( str ).isEqualTo( "test" );
+    }
+
+    @Test
+    public void testDecompressBuffer() throws IOException {
+        var buffer = CompressionUtils.gzip( "test" );
+        var str = CompressionUtils.ungzip( buffer, 0, buffer.length );
+
         assertThat( str ).isEqualTo( "test" );
     }
 }

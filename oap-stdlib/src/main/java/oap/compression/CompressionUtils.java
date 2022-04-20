@@ -56,4 +56,14 @@ public class CompressionUtils {
 
         return baos.toString( UTF_8 );
     }
+
+    public static String ungzip( byte[] data, int offset, int dataLength ) throws IOException {
+        var bais = new ByteArrayInputStream( data, offset, dataLength );
+        var baos = new ByteArrayOutputStream();
+        try( var gos = new GZIPInputStream( bais ) ) {
+            IOUtils.copy( gos, baos );
+        }
+
+        return baos.toString( UTF_8 );
+    }
 }
