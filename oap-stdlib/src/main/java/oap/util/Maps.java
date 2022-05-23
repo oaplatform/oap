@@ -29,12 +29,15 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
@@ -142,6 +145,16 @@ public class Maps {
     @SafeVarargs
     public static <K, V> ListMultimap<K, V> listmmap( Pair<K, V>... pairs ) {
         return Stream.of( pairs ).collect( toListMultimap() );
+    }
+
+    public static <K, V, R> List<R> toList( Map<K, V> map, BiFunction<K, V, R> func ) {
+        return toList( map, func, new ArrayList<>( map.size() ) );
+    }
+
+    public static <K, V, R> List<R> toList( Map<K, V> map, BiFunction<K, V, R> func, List<R> list ) {
+        map.forEach( ( k, v ) -> list.add( func.apply( k, v ) ) );
+
+        return list;
     }
 
     public static <K, V, M1 extends Multimap<K, V>,
