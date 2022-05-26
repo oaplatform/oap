@@ -124,8 +124,7 @@ public final class Result<S, F> implements Serializable {
     }
 
     public void ifSuccessOrElse( Consumer<S> onSuccess, Consumer<F> onFailure ) {
-        if( success ) onSuccess.accept( successValue );
-        else onFailure.accept( failureValue );
+        ifSuccess( onSuccess ).ifFailure( onFailure );
     }
 
     public S getSuccessValue() {
