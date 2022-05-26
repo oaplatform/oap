@@ -79,11 +79,8 @@ public class Functions {
         return illegalArgument( String.format( format, args ) );
     }
 
-    @SuppressWarnings( "unchecked" )
-    //    CHECKSTYLE:OFF
+    @SuppressWarnings( { "unchecked", "checkstyle:TypeName" } )
     public static class empty {
-        //    CHECKSTYLE:ON
-
         private static final Consumer<?> CONSUMER = v -> {};
         private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {};
         private static final Predicate<?> ACCEPT_ALL = x -> true;

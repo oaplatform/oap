@@ -87,15 +87,15 @@ public final class Option<V> {
         return "--" + name + ( withArgument ? "=<value>" : "" ) + ( description != null ? " - " + description : "" );
     }
 
-    //CHECKSTYLE:OFF
+    @SuppressWarnings( "checkstyle:MethodName" )
     public static Pair<String, String> __( String key, String value ) {
         return Pair.__( key, value );
     }
 
+    @SuppressWarnings( "checkstyle:MethodName" )
     public static Pair<String, String> __( String key ) {
         return Pair.__( key, null );
     }
-    //CHECKSTYLE:ON
 
     public Result<V, String> parse( String value ) {
         return ( parser != null ? parser.parse( value ) : Result.<V, String>success( null ) )

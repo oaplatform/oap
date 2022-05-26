@@ -70,6 +70,30 @@ public interface ContentReader<R> {
         return read( new AutoCloseInputStream( url.openStream() ), reader );
     }
 
+    default R read( byte[] bytes ) {
+        return read( new ByteArrayInputStream( bytes ) );
+    }
+
+    @SneakyThrows
+    default R read( InputStream is ) {
+        return read( ByteStreams.toByteArray( is ) );
+    }
+
+    default <T> ContentReader<T> andThen( Function<R, T> then ) {
+        return new ContentReader<T>() {
+            @Override
+            public T read( byte[] bytes ) {
+                return then.apply( ContentReader.this.read( bytes ) );
+            }
+
+            @Override
+            public T read( InputStream is ) {
+                return then.apply( ContentReader.this.read( is ) );
+            }
+        };
+    }
+
+
     static ContentReader<String> ofString() {
         return new ContentReader<>() {
             @Override
@@ -213,27 +237,4 @@ public interface ContentReader<R> {
         };
     }
 
-    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
-    default R read( byte[] bytes ) {
-        return read( new ByteArrayInputStream( bytes ) );
-    }
-
-    @SneakyThrows
-    default R read( InputStream is ) {
-        return read( ByteStreams.toByteArray( is ) );
-    }
-
-    default <T> ContentReader<T> andThen( Function<R, T> then ) {
-        return new ContentReader<T>() {
-            @Override
-            public T read( byte[] bytes ) {
-                return then.apply( ContentReader.this.read( bytes ) );
-            }
-
-            @Override
-            public T read( InputStream is ) {
-                return then.apply( ContentReader.this.read( is ) );
-            }
-        };
-    }
 }

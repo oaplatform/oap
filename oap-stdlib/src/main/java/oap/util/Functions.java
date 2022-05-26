@@ -78,10 +78,8 @@ public class Functions {
         void accept( T t, U u, S s );
     }
 
-    @SuppressWarnings( "unchecked" )
-//    CHECKSTYLE:OFF
+    @SuppressWarnings( { "unchecked", "checkstyle:TypeName" } )
     public static class empty {
-//    CHECKSTYLE:ON
 
         private static final Consumer<?> CONSUMER = v -> {};
 

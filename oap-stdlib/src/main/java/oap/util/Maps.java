@@ -147,13 +147,12 @@ public class Maps {
         return Stream.of( pairs ).collect( toListMultimap() );
     }
 
-    public static <K, V, R> List<R> toList( Map<K, V> map, BiFunction<K, V, R> func ) {
-        return toList( map, func, new ArrayList<>( map.size() ) );
+    public static <K, V, R> List<R> toList( Map<K, V> map, BiFunction<K, V, R> mapper ) {
+        return toList( map, mapper, new ArrayList<>( map.size() ) );
     }
 
-    public static <K, V, R> List<R> toList( Map<K, V> map, BiFunction<K, V, R> func, List<R> list ) {
-        map.forEach( ( k, v ) -> list.add( func.apply( k, v ) ) );
-
+    public static <K, V, R> List<R> toList( Map<K, V> map, BiFunction<K, V, R> mapper, List<R> list ) {
+        map.forEach( ( k, v ) -> list.add( mapper.apply( k, v ) ) );
         return list;
     }
 
@@ -163,6 +162,9 @@ public class Maps {
         return base;
     }
 
+    /**
+     * This is highly controversial implementation, type-wise
+     */
     @SuppressWarnings( "unchecked" )
     public static <K, V> Map<K, V> deepMerge( Map original, Map newMap ) {
         for( Object key : newMap.keySet() ) {

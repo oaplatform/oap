@@ -24,19 +24,19 @@
 
 package oap.http;
 
-import oap.compression.CompressionUtils;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.IoStreams;
+import oap.io.content.ContentWriter;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.compression.Compression.ContentWriter.ofGzip;
 import static oap.http.Http.ContentType.TEXT_PLAIN;
 import static oap.http.Http.Headers.ACCEPT_ENCODING;
 import static oap.http.Http.Headers.CONTENT_ENCODING;
@@ -84,16 +84,16 @@ public class GzipHttpTest extends Fixtures {
     }
 
     @Test
-    public void gzipInput() throws IOException {
+    public void gzipInput() {
         server.bind( "test", exchange ->
             exchange.responseOk( new String( exchange.readBody() ), true, TEXT_PLAIN )
         );
 
         var response = Client.DEFAULT.post( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
-            CompressionUtils.gzip( "test2" ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) );
+            ContentWriter.write( "test2", ofGzip() ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN );
+        assertThat( response.contentType ).isEqualTo( TEXT_PLAIN );
         assertThat( IoStreams.asString( response.getInputStream(), PLAIN ) ).isEqualTo( "test2" );
     }
 }

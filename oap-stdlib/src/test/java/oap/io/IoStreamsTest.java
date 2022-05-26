@@ -138,14 +138,14 @@ public class IoStreamsTest extends Fixtures {
         }
         String content = sb.toString();
 //        String content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
-        for( Encoding encoding : Arrays.filter( v -> v.compressed && v.streamSupport, Encoding.values() ) ) {
+        for( Encoding encoding : Arrays.filter( v -> v.compressed && v.streamable, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
             Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
         System.out.println( "Low variance file" );
         content = Files.read( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP, ContentReader.ofString() );
-        for( Encoding encoding : Arrays.filter( v -> v.compressed && v.streamSupport, Encoding.values() ) ) {
+        for( Encoding encoding : Arrays.filter( v -> v.compressed && v.streamable, Encoding.values() ) ) {
             Path path = testPath( "compressed.tsv" + encoding.extension );
             Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );

@@ -24,46 +24,17 @@
 package oap.archive;
 
 import lombok.SneakyThrows;
+import oap.io.Files;
 import oap.io.IoStreams;
-import oap.util.function.Try;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 public class Archiver {
-    private static final Function<InputStream, InputStream> gzipInputStreamSupplyer;
-    private static final BiFunction<OutputStream, Integer, OutputStream> gzipOutputStreamSupplier;
-
-    static {
-        CompressorStreamFactory factory = new CompressorStreamFactory( true );
-        if( "apache".equals( System.getProperty( "oap.io.gzip", "apache" ) ) ) {
-            gzipInputStreamSupplyer = Try.map( is -> factory.createCompressorInputStream( CompressorStreamFactory.GZIP, is ) );
-            gzipOutputStreamSupplier = Try.biMap( ( os, bufferSize ) -> factory.createCompressorOutputStream( CompressorStreamFactory.GZIP, os ) );
-        } else {
-            gzipInputStreamSupplyer = Try.map( GZIPInputStream::new );
-            gzipOutputStreamSupplier = Try.biMap( GZIPOutputStream::new );
-        }
-    }
-
-    public static OutputStream gzip( OutputStream os, int bufferSize ) {
-        return gzipOutputStreamSupplier.apply( os, bufferSize );
-    }
-
-    public static InputStream ungzip( InputStream is ) {
-        return gzipInputStreamSupplyer.apply( is );
-    }
-
     @SneakyThrows
     public void unpack( Path archive, Path dest, ArchiveType type ) {
         if( type == ArchiveType.TAR_GZ ) {
@@ -71,7 +42,7 @@ public class Archiver {
                 ArchiveEntry entry;
                 while( ( entry = tar.getNextEntry() ) != null ) {
                     Path path = dest.resolve( entry.getName() );
-                    if( entry.isDirectory() ) path.toFile().mkdirs();
+                    if( entry.isDirectory() ) Files.ensureDirectory( path );
                     else IoStreams.write( path, PLAIN, tar );
                 }
             }

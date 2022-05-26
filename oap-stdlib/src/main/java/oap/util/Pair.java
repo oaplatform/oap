@@ -32,19 +32,21 @@ import static java.util.Objects.deepEquals;
 import static oap.util.Strings.deepToString;
 
 public class Pair<K, V> implements Serializable {
-    //CHECKSTYLE:OFF
+    @SuppressWarnings( "checkstyle:MemberName" )
     public final K _1;
+    @SuppressWarnings( "checkstyle:MemberName" )
     public final V _2;
 
+    @SuppressWarnings( "checkstyle:ParameterName" )
     public Pair( K _1, V _2 ) {
         this._1 = _1;
         this._2 = _2;
     }
 
+    @SuppressWarnings( { "checkstyle:MethodName", "checkstyle:ParameterName" } )
     public static <K, V> Pair<K, V> __( K _1, V _2 ) {
         return new Pair<>( _1, _2 );
     }
-    //CHECKSTYLE:ON
 
     @Override
     public boolean equals( Object o ) {
@@ -59,15 +61,15 @@ public class Pair<K, V> implements Serializable {
         return true;
     }
 
-    //CHECKSTYLE:OFF
+    @SuppressWarnings( "checkstyle:MethodName" )
     public K _1() {
         return _1;
     }
 
+    @SuppressWarnings( "checkstyle:MethodName" )
     public V _2() {
         return _2;
     }
-    //CHECKSTYLE:ON
 
     @SuppressWarnings( "unchecked" )
     public <CK extends Comparable<CK>, CV extends Comparable<CV>> ComparablePair<CK, CV> toComparable() {
@@ -100,15 +102,15 @@ public class Pair<K, V> implements Serializable {
     }
 
     public static class ComparablePair<CK extends Comparable<CK>, CV extends Comparable<CV>> extends Pair<CK, CV> implements Comparable<ComparablePair<CK, CV>> {
-        //CHECKSTYLE:OFF
+        @SuppressWarnings( "checkstyle:ParameterName" )
         public ComparablePair( CK _1, CV _2 ) {
             super( _1, _2 );
         }
 
+        @SuppressWarnings( "checkstyle:MethodName" )
         public static <CK extends Comparable<CK>, CV extends Comparable<CV>> ComparablePair<CK, CV> ___( CK k, CV v ) {
             return new ComparablePair<>( k, v );
         }
-        //CHECKSTYLE:ON
 
         @Override
         public int compareTo( @Nonnull ComparablePair<CK, CV> other ) {
@@ -118,15 +120,15 @@ public class Pair<K, V> implements Serializable {
     }
 
     public static class KeyComparablePair<K extends Comparable<K>, V> extends Pair<K, V> implements Comparable<KeyComparablePair<K, V>> {
-        //CHECKSTYLE:OFF
+        @SuppressWarnings( "checkstyle:ParameterName" )
         public KeyComparablePair( K _1, V _2 ) {
             super( _1, _2 );
         }
 
+        @SuppressWarnings( "checkstyle:MethodName" )
         public static <K extends Comparable<K>, V> KeyComparablePair<K, V> ___( K k, V v ) {
             return new KeyComparablePair<>( k, v );
         }
-        //CHECKSTYLE:OFF
 
         @Override
         public int compareTo( KeyComparablePair<K, V> other ) {

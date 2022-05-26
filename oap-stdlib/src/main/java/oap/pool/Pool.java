@@ -83,7 +83,7 @@ public class Pool<T> implements Closeable {
         threadPool = Executors.newFixedBlockingThreadPool( minSize, maxSize, threadFactory );
     }
 
-    public <R> CompletableFuture<R> supply( Function<T, R> func ) {
+    public <R> CompletableFuture<R> supply( Function<T, R> function ) {
         Poolable<T> obj;
         try {
             obj = objectPool.borrowObject( true );
@@ -92,7 +92,7 @@ public class Pool<T> implements Closeable {
         }
         try {
             return CompletableFuture
-                .supplyAsync( () -> func.apply( obj.getObject() ), threadPool )
+                .supplyAsync( () -> function.apply( obj.getObject() ), threadPool )
                 .whenComplete( ( r, e ) -> objectPool.returnObject( obj ) );
         } catch( Exception e ) {
             objectPool.returnObject( obj );
@@ -100,7 +100,7 @@ public class Pool<T> implements Closeable {
         }
     }
 
-    public CompletableFuture<Void> run( Consumer<T> func ) {
+    public CompletableFuture<Void> run( Consumer<T> consumer ) {
         Poolable<T> obj;
         try {
             obj = objectPool.borrowObject( true );
@@ -109,7 +109,7 @@ public class Pool<T> implements Closeable {
         }
         try {
             return CompletableFuture
-                .runAsync( () -> func.accept( obj.getObject() ), threadPool )
+                .runAsync( () -> consumer.accept( obj.getObject() ), threadPool )
                 .whenComplete( ( r, e ) -> objectPool.returnObject( obj ) );
         } catch( Exception e ) {
             objectPool.returnObject( obj );

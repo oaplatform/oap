@@ -34,6 +34,10 @@ import java.util.zip.GZIPOutputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * @see Compression
+ */
+@Deprecated
 public class CompressionUtils {
     private CompressionUtils() {
     }

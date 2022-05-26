@@ -24,27 +24,19 @@
 
 package oap.compression;
 
+import oap.io.content.ContentReader;
+import oap.io.content.ContentWriter;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CompressionUtilsTest {
+public class CompressionTest {
     @Test
-    public void testCompressBytes() throws IOException {
-        var bytes = CompressionUtils.gzip( "test" );
-        var str = CompressionUtils.ungzip( bytes );
+    public void readWrite() {
+        byte[] compressed = ContentWriter.write( "test", Compression.ContentWriter.ofGzip() );
+        assertThat( compressed ).hasSize( 24 );
 
-        assertThat( bytes ).hasSize( 24 );
-        assertThat( str ).isEqualTo( "test" );
-    }
-
-    @Test
-    public void testDecompressBuffer() throws IOException {
-        var buffer = CompressionUtils.gzip( "test" );
-        var str = CompressionUtils.ungzip( buffer, 0, buffer.length );
-
-        assertThat( str ).isEqualTo( "test" );
+        String string = ContentReader.read( compressed, Compression.ContentReader.ofBytes().andThen( String::new ) );
+        assertThat( string ).isEqualTo( "test" );
     }
 }
