@@ -67,7 +67,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>17.10.11.0</oap.project.version>
+        <oap.project.version>17.11.0.0</oap.project.version>
 
         <oap.deps.testng.version>7.5</oap.deps.testng.version>
         <oap.deps.assertj.version>3.21.0</oap.deps.assertj.version>
@@ -129,4 +129,55 @@
         <oap.deps.undertow.version>2.2.14.Final</oap.deps.undertow.version>
         <oap.deps.affinity>3.21ea82</oap.deps.affinity>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <minimizeJar>true</minimizeJar>
+                    <artifactSet>
+                        <includes>
+                            <include>com.squareup.okhttp3:okhttp</include>
+                            <include>com.squareup.okio:okio</include>
+                        </includes>
+                    </artifactSet>
+                    <relocations>
+                        <relocation>
+                            <pattern>okhttp</pattern>
+                            <shadedPattern>oap.okhttp</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>okio</pattern>
+                            <shadedPattern>oap.okio</shadedPattern>
+                        </relocation>
+                    </relocations>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/license/**</exclude>
+                                <exclude>META-INF/*</exclude>
+                                <exclude>META-INF/maven/**</exclude>
+                                <exclude>LICENSE</exclude>
+                                <exclude>NOTICE</exclude>
+                                <exclude>/*.txt</exclude>
+                                <exclude>build.properties</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
