@@ -85,7 +85,7 @@
                     <artifactSet>
                         <includes>
                             <include>com.squareup.okhttp3:okhttp</include>
-                            <include>com.squareup.okio:okio</include>
+<!--                            <include>com.squareup.okio:okio</include>-->
                         </includes>
                     </artifactSet>
                     <relocations>
@@ -93,10 +93,10 @@
                             <pattern>okhttp</pattern>
                             <shadedPattern>oap.okhttp</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>okio</pattern>
-                            <shadedPattern>oap.okio</shadedPattern>
-                        </relocation>
+<!--                        <relocation>-->
+<!--                            <pattern>okio</pattern>-->
+<!--                            <shadedPattern>oap.okio</shadedPattern>-->
+<!--                        </relocation>-->
                     </relocations>
                     <filters>
                         <filter>
