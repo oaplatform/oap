@@ -150,7 +150,7 @@
                         <includes>
                             <include>com.squareup.okhttp3:okhttp</include>
                             <include>com.squareup.okio:okio</include>
-                            <include>org.jetbrains.kotlin:kotlin-runtime</include>
+                            <include>org.jetbrains.kotlin:kotlin-stdlib</include>
                         </includes>
                     </artifactSet>
                     <relocations>
