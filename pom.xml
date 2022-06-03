@@ -148,12 +148,17 @@
                     <minimizeJar>true</minimizeJar>
                     <artifactSet>
                         <includes>
+                            <include>com.google.guava:guava</include>
                             <include>com.squareup.okhttp3:okhttp</include>
                             <include>com.squareup.okio:okio</include>
                             <include>org.jetbrains.kotlin:kotlin-stdlib</include>
                         </includes>
                     </artifactSet>
                     <relocations>
+                        <relocation>
+                            <pattern>guava</pattern>
+                            <shadedPattern>oap.guava</shadedPattern>
+                        </relocation>
                         <relocation>
                             <pattern>okhttp</pattern>
                             <shadedPattern>oap.okhttp</shadedPattern>
