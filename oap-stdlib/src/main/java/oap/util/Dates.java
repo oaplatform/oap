@@ -53,7 +53,8 @@ public class Dates {
 
     public static final DateTimeFormatter PARSER_MULTIPLE_DATETIME = new DateTimeFormatterBuilder()
         .append( null, new DateTimeParser[] { FORMAT_SIMPLE.getParser(), FORMAT_SIMPLE_CLEAN.getParser(), FORMAT_MILLIS.getParser() } )
-        .toFormatter();
+        .toFormatter()
+        .withZoneUTC();
 
     public static final PeriodFormatter DURATION_FORMATTER = new PeriodFormatterBuilder()
         .appendWeeks().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "week", "weeks", "w" } ).appendSeparator( " " )
