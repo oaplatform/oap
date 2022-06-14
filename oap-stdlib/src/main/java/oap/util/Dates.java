@@ -52,7 +52,11 @@ public class Dates {
         .withZoneUTC();
 
     public static final DateTimeFormatter PARSER_MULTIPLE_DATETIME = new DateTimeFormatterBuilder()
-        .append( null, new DateTimeParser[] { FORMAT_SIMPLE.getParser(), FORMAT_SIMPLE_CLEAN.getParser(), FORMAT_MILLIS.getParser() } )
+        .append( null, new DateTimeParser[] {
+            FORMAT_SIMPLE.getParser(),
+            FORMAT_SIMPLE_CLEAN.getParser(),
+            FORMAT_MILLIS.getParser(),
+            FORMAT_DATE.getParser() } )
         .toFormatter()
         .withZoneUTC();
 
