@@ -84,8 +84,9 @@ public class DatesTest extends Fixtures {
 
     @Test
     public void testMultipleFormats() {
-        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11T15:16:12" ) ).isEqualTo( new DateTime( 2022, 3, 11, 15, 16, 12, 0 ) );
-        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11 15:16:12" ) ).isEqualTo( new DateTime( 2022, 3, 11, 15, 16, 12, 0 ) );
-        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11T15:16:12.234" ) ).isEqualTo( new DateTime( 2022, 3, 11, 15, 16, 12, 234 ) );
+        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11T15:16:12" ) ).isEqualTo( new DateTime( 2022, 3, 11, 15, 16, 12, 0, UTC ) );
+        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11 15:16:12" ) ).isEqualTo( new DateTime( 2022, 3, 11, 15, 16, 12, 0, UTC ) );
+        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11T15:16:12.234" ) ).isEqualTo( new DateTime( 2022, 3, 11, 15, 16, 12, 234, UTC ) );
+        assertThat( Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( "2022-03-11" ) ).isEqualTo( new DateTime( 2022, 3, 11, 0, 0, 0, 0, UTC ) );
     }
 }
