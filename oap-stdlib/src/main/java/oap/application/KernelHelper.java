@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -41,8 +42,9 @@ import java.util.Set;
 public class KernelHelper {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
-    public static LinkedHashMap<String, Object> fixLinksForConstructor(
-        Kernel kernel, ModuleItem thisModuleName, ServiceStorage storage, Map<String, Object> parameters ) {
+    public static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
+                                                                 ServiceStorage storage,
+                                                                 LinkedHashMap<String, Object> parameters ) {
         fixLinks( kernel, thisModuleName, storage, parameters );
 
         var ret = new LinkedHashMap<String, Object>();
@@ -126,22 +128,24 @@ public class KernelHelper {
         return value;
     }
 
-    public static boolean profileEnabled( Set<String> profiles, Set<String> systemProfiles ) {
+    public static boolean profileEnabled( LinkedHashSet<String> profiles, LinkedHashSet<String> systemProfiles ) {
         for( var profile : profiles ) {
             if( profile.startsWith( "-" ) ) {
                 if( systemProfiles.contains( profile.substring( 1 ) ) ) return false;
             } else {
                 if( !systemProfiles.contains( profile ) ) return false;
             }
+
         }
+
         return true;
     }
 
-    public static boolean isModuleEnabled( Module module, Set<String> systemProfiles ) {
+    public static boolean isModuleEnabled( Module module, LinkedHashSet<String> systemProfiles ) {
         return profileEnabled( module.profiles, systemProfiles );
     }
 
-    public static boolean isServiceEnabled( Service service, Set<String> systemProfiles ) {
+    public static boolean isServiceEnabled( Service service, LinkedHashSet<String> systemProfiles ) {
         return profileEnabled( service.profiles, systemProfiles );
     }
 
