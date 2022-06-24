@@ -124,6 +124,14 @@ public class HttpAsserts {
         return assertHttpResponse( client.put( uri, is, contentType ) );
     }
 
+    public static HttpAssertion assertPatch( String uri, String content, String contentType ) {
+        return assertHttpResponse( client.patch( uri, content, contentType ) );
+    }
+
+    public static HttpAssertion assertPatch( String uri, InputStream is, String contentType ) {
+        return assertHttpResponse( client.patch( uri, is, contentType ) );
+    }
+
     public static HttpAssertion assertDelete( String uri ) {
         return assertHttpResponse( client.delete( uri ) );
     }

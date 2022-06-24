@@ -51,6 +51,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -334,6 +335,27 @@ public final class Client implements Closeable {
 
     public Response put( String uri, InputStream is, String contentType ) {
         var request = new HttpPut( uri );
+        request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response patch( String uri, String content, String contentType ) {
+        var request = new HttpPatch( uri );
+        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response patch( String uri, byte[] content, String contentType ) {
+        var request = new HttpPatch( uri );
+        request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response patch( String uri, InputStream is, String contentType ) {
+        var request = new HttpPatch( uri );
         request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
