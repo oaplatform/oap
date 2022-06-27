@@ -25,39 +25,34 @@
 package oap.testng.casesuite;
 
 import com.google.common.reflect.ClassPath;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
 import oap.util.Stream;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 
 @Slf4j
 public class CaseSuite {
 
+    @SneakyThrows
     @SuppressWarnings( "UnstableApiUsage" )
     public static Object[][] casesOf( Object self, Class<?> masterclass ) {
-        if( self.getClass().equals( masterclass ) ) try {
-            return ClassPath.from( Thread.currentThread().getContextClassLoader() )
-                .getAllClasses()
-                .stream()
-                .<Optional<Class<?>>>map( ci -> {
-                    try {
-                        return Optional.of( ci.load() );
-                    } catch( Error e ) {
-                        return Optional.empty();
-                    }
-                } )
-                .filter( Optional::isPresent )
-                .map( Optional::get )
-                .filter( c -> masterclass.isAssignableFrom( c ) && masterclass != c )
-                .flatMap( c -> Stream.of( casesOf( c, Reflect.reflect( c ).<Object>newInstance() ) ) )
-                .toArray( size -> new Object[size][0] );
-
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        if( self.getClass().equals( masterclass ) ) return ClassPath.from( Thread.currentThread().getContextClassLoader() )
+            .getAllClasses()
+            .stream()
+            .<Optional<Class<?>>>map( ci -> {
+                try {
+                    return Optional.of( ci.load() );
+                } catch( Throwable e ) {
+                    return Optional.empty();
+                }
+            } )
+            .filter( Optional::isPresent )
+            .map( Optional::get )
+            .filter( c -> masterclass.isAssignableFrom( c ) && masterclass != c )
+            .flatMap( c -> Stream.of( casesOf( c, Reflect.reflect( c ).<Object>newInstance() ) ) )
+            .toArray( size -> new Object[size][0] );
         else {
             return casesOf( self.getClass(), self );
         }

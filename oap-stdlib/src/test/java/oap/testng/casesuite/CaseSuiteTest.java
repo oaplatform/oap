@@ -36,7 +36,9 @@ public class CaseSuiteTest {
 
     @DataProvider
     public Object[][] collectCases() {
-        return casesOf( this, CaseSuiteTest.class );
+        Object[][] objects = casesOf( this, CaseSuiteTest.class );
+        System.out.println( objects );
+        return objects;
     }
 
     public static Object[] thecase( String param ) {
