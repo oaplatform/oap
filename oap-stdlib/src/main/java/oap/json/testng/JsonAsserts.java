@@ -149,11 +149,10 @@ public class JsonAsserts {
         @SuppressWarnings( "unchecked" )
         private static <R> R deepSort( Object o ) {
             if( o == null ) return null;
-            if( o instanceof List<?> list ) return ( R ) list.stream().map( JsonAssertion::deepSort ).sorted().toList();
+            if( o instanceof List<?> list ) return ( R ) list.stream().map( JsonAssertion::deepSort ).toList();
             if( o instanceof Map<?, ?> map ) return ( R ) BiStream.of( map ).map( ( k, v ) -> __( k, deepSort( v ) ) ).collect( Maps.Collectors.toTreeMap() );
             return ( R ) o;
         }
-
 
         /**
          * @see #isEqualTo(Object)

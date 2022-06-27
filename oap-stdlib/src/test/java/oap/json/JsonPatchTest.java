@@ -82,7 +82,7 @@ public class JsonPatchTest {
 
         var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Map::of ), patch );
         assertJson( patched )
-            .isStructurallyEqualToResource( getClass(), "patched.json" );
+            .isEqualTo( getClass(), "patched.json" );
     }
 
     @Test
@@ -95,7 +95,7 @@ public class JsonPatchTest {
 
         var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> Objects.equals( p.get( "id" ), "i3" ) ).orElseGet( Map::of ), patch );
         assertJson( patched )
-            .isStructurallyEqualToResource( getClass(), "added.json" );
+            .isEqualTo( getClass(), "added.json" );
     }
 
     @Test
@@ -108,6 +108,6 @@ public class JsonPatchTest {
 
         var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> Objects.equals( p.get( "id" ), "i2" ) ).orElseGet( Map::of ), patch );
         assertJson( patched )
-            .isStructurallyEqualToResource( getClass(), "added_no_list.json" );
+            .isEqualTo( getClass(), "added_no_list.json" );
     }
 }
