@@ -26,7 +26,11 @@ package oap.json.testng;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.Formatter;
+import oap.reflect.Reflect;
 import oap.reflect.TypeRef;
+import oap.util.BiStream;
+import oap.util.Either;
+import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Strings;
 import org.assertj.core.api.AbstractAssert;
@@ -38,7 +42,10 @@ import java.util.function.Function;
 
 import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofString;
+import static oap.json.Binder.json;
+import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonAsserts {
@@ -52,13 +59,13 @@ public class JsonAsserts {
     public static void assertEqualsCanonical( Class<?> context, Class<?> clazz,
                                               String actual, String expectedResourcePath,
                                               Pair<String, Object>... substitutions ) {
-        assertEquals( Binder.json.canonicalize( clazz, actual ),
+        assertEquals( json.canonicalize( clazz, actual ),
             readCanonical( context, clazz, expectedResourcePath, substitutions ) );
     }
 
     @Deprecated
     public static void assertEqualsCanonical( Class<?> clazz, String actual, String expected ) {
-        assertEquals( Binder.json.canonicalize( clazz, actual ), Binder.json.canonicalize( clazz, expected ) );
+        assertEquals( json.canonicalize( clazz, actual ), json.canonicalize( clazz, expected ) );
     }
 
     @SafeVarargs
@@ -74,7 +81,7 @@ public class JsonAsserts {
      */
     @Deprecated
     public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
-        return Binder.json.unmarshalResource( context, clazz, resourcePath );
+        return json.unmarshalResource( context, clazz, resourcePath );
 
     }
 
@@ -101,17 +108,31 @@ public class JsonAsserts {
             super( json, JsonAssertion.class );
         }
 
-        private static Object unmarshal( String content ) {
-            if( content.trim().startsWith( "[" ) ) return Binder.json.unmarshal( List.class, content );
-            else return Binder.json.unmarshal( Map.class, content );
+        private static Either<List<?>, Map<String, ?>> unmarshal( String content ) {
+            return content.trim().startsWith( "[" )
+                ? Either.left( json.unmarshal( new TypeRef<>() {}, content ) )
+                : Either.right( json.unmarshal( new TypeRef<>() {}, content ) );
         }
 
         public JsonAssertion isEqualTo( String expected ) {
-            isNotNull();
-            assertThat( Formatter.format( actual ) )
-                .isEqualTo( Formatter.format( expected ) );
-            return this;
+            return isEqualTo( expected, Map.of() );
+        }
 
+        public JsonAssertion isEqualTo( String expected, Map<String, Object> substitutions ) {
+            isNotNull();
+            String actualJson = unmarshal( actual )
+                .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
+                .map( l -> substitute( l, substitutions ), r -> substitute( r, substitutions ) )
+                .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue ) );
+            String expectedJson = unmarshal( expected )
+                .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
+                .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue ) );
+            assertString( actualJson ).isEqualTo( expectedJson );
+            return this;
+        }
+
+        public JsonAssertion isEqualTo( Class<?> contextClass, String resource ) {
+            return isEqualTo( contentOfTestResource( contextClass, resource, ofString() ) );
         }
 
         @Override
@@ -119,28 +140,46 @@ public class JsonAsserts {
             return isEqualTo( String.valueOf( expected ) );
         }
 
-        public JsonAssertion isStructurallyEqualTo( String expected ) {
-            isNotNull();
-            assertThat( unmarshal( actual ) )
-                .isEqualTo( unmarshal( expected ) );
-            return this;
+        @SuppressWarnings( "unchecked" )
+        private static <R> R substitute( Object o, Map<String, Object> substitutions ) {
+            substitutions.forEach( ( k, v ) -> Reflect.set( o, k, v, true ) );
+            return ( R ) o;
         }
 
-        public JsonAssertion isStructurallyEqualToResource( Class<?> contextClass, String resource ) {
-            isNotNull();
-            return isStructurallyEqualTo( contentOfTestResource( contextClass, resource, ofString() ) );
+        @SuppressWarnings( "unchecked" )
+        private static <R> R deepSort( Object o ) {
+            if( o == null ) return null;
+            if( o instanceof List<?> list ) return ( R ) list.stream().map( JsonAssertion::deepSort ).sorted().toList();
+            if( o instanceof Map<?, ?> map ) return ( R ) BiStream.of( map ).map( ( k, v ) -> __( k, deepSort( v ) ) ).collect( Maps.Collectors.toTreeMap() );
+            return ( R ) o;
+        }
 
+
+        /**
+         * @see #isEqualTo(Object)
+         */
+        @Deprecated
+        public JsonAssertion isStructurallyEqualTo( String expected ) {
+            return isEqualTo( expected );
+        }
+
+        /**
+         * @see #isEqualTo(Object)
+         */
+        @Deprecated
+        public JsonAssertion isStructurallyEqualToResource( Class<?> contextClass, String resource ) {
+            return isEqualTo( contextClass, resource );
         }
 
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
-            assertThat( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
-                .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );
+            assertThat( json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
+                .isEqualTo( json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );
             return this;
         }
 
         private JsonAssertion isEqualCanonically( TypeRef<?> typeRef, String actual, String expected ) {
-            assertThat( Binder.json.canonicalizeWithDefaultPrettyPrinter( typeRef, actual ) )
-                .isEqualTo( Binder.json.canonicalizeWithDefaultPrettyPrinter( typeRef, expected ) );
+            assertThat( json.canonicalizeWithDefaultPrettyPrinter( typeRef, actual ) )
+                .isEqualTo( json.canonicalizeWithDefaultPrettyPrinter( typeRef, expected ) );
             return this;
         }
 
@@ -151,6 +190,10 @@ public class JsonAsserts {
         @SafeVarargs
         public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
             return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
+        }
+
+        public JsonAssertion isEqualCanonically( TypeRef<?> typeRef, String expected ) {
+            return isEqualCanonically( typeRef, this.actual, expected );
         }
 
         @SafeVarargs

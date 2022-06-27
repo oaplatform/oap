@@ -26,6 +26,7 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
+import static oap.testng.Asserts.assertString;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -33,22 +34,22 @@ import static org.testng.Assert.assertTrue;
 public class ResultTest {
 
     @Test( expectedExceptions = InterruptedException.class )
-    public void blockingTryingInterrupted() throws Exception {
-        Result.tryingInterruptible( () -> {
+    public void catchingInterruptible() throws InterruptedException {
+        Result.catchingInterruptible( () -> {
             throw new InterruptedException( "Somebody interrupted me" );
         } );
     }
 
-    @Test()
-    public void blockingTryingSuccess() throws Exception {
-        Result<String, Throwable> result = Result.tryingInterruptible( () -> "im ok" );
+    @Test
+    public void catchingInterruptibleSuccess() throws InterruptedException {
+        Result<String, Throwable> result = Result.catchingInterruptible( () -> "im ok" );
         assertTrue( result.isSuccess() );
         assertEquals( result.successValue, "im ok" );
     }
 
-    @Test()
-    public void blockingTryingNormalException() throws Exception {
-        Result<String, Throwable> result = Result.tryingInterruptible( () -> {
+    @Test
+    public void catchingInterruptibleException() throws InterruptedException {
+        Result<String, Throwable> result = Result.catchingInterruptible( () -> {
             throw new IllegalArgumentException( "some reason" );
         } );
 
@@ -56,5 +57,9 @@ public class ResultTest {
         assertEquals( result.failureValue.getClass(), IllegalArgumentException.class );
     }
 
-
+    @Test
+    public void resultToString() {
+        assertString( Result.success( "aaaa" ).toString() ).isEqualTo( "Result.success(aaaa)" );
+        assertString( Result.failure( "aaaa" ).toString() ).isEqualTo( "Result.failure(aaaa)" );
+    }
 }

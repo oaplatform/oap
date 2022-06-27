@@ -29,17 +29,21 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.IntStream;
 
 import static oap.util.Maps.Collectors.toListMultimap;
 import static oap.util.Maps.Collectors.toSetMultimap;
@@ -182,12 +186,33 @@ public class Maps {
     public static <K, V> Optional<K> byValue( Map<K, ? extends V> map, V value ) {
         return Stream.of( map.entrySet() )
             .filter( e -> value.equals( e.getValue() ) )
-            .map( Map.Entry::getKey )
+            .map( Entry::getKey )
             .findFirst();
     }
 
-    public static <K, V> Map.Entry<K, V> head( Map<K, V> map ) {
+    public static <K, V> Entry<K, V> head( Map<K, V> map ) {
         return map.entrySet().iterator().next();
+    }
+
+    public static Map<String, ?> flatten( Map<String, ?> map ) {
+        return map.entrySet()
+            .stream()
+            .flatMap( Maps::flatten )
+            .collect( LinkedHashMap::new, ( m, e ) -> m.put( "/" + e.getKey(), e.getValue() ), LinkedHashMap::putAll );
+    }
+
+    private static Stream<Entry<String, ?>> flatten( Entry<String, ?> entry ) {
+
+        if( entry == null ) return Stream.empty();
+
+        if( entry.getValue() instanceof Map<?, ?> properties ) return Stream.of( properties.entrySet() )
+            .flatMap( e -> flatten( new SimpleEntry<>( entry.getKey() + "/" + e.getKey(), e.getValue() ) ) );
+
+        if( entry.getValue() instanceof List<?> list ) return Stream.of( IntStream.range( 0, list.size() )
+            .mapToObj( i -> new SimpleEntry<>( entry.getKey() + "/" + i, list.get( i ) ) )
+            .flatMap( Maps::flatten ) );
+
+        return Stream.of( entry );
     }
 
     public static class Collectors {
@@ -227,6 +252,10 @@ public class Maps {
 
         public static <K, V> Collector<? super Pair<K, V>, Map<K, V>, Map<K, V>> toMap() {
             return toMap( LinkedHashMap::new );
+        }
+
+        public static <K, V> Collector<? super Pair<K, V>, Map<K, V>, Map<K, V>> toTreeMap() {
+            return toMap( TreeMap::new );
         }
 
         public static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap() {

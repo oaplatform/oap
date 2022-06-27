@@ -46,7 +46,7 @@ import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;
-import static oap.json.testng.JsonAsserts.assertJson;
+import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -172,33 +172,34 @@ public class HttpAsserts {
         @Deprecated
         public JsonAsserts.JsonAssertion isJson() {
             assertJsonResponse( response );
-            return assertJson( response.contentString() );
+            return JsonAsserts.assertJson( response.contentString() );
         }
 
+        @Deprecated
         public HttpAssertion isJson( String json ) {
             assertJsonResponse( response )
-                .isJson()
-                .isStructurallyEqualTo( json );
+                .assertJson()
+                .isEqualTo( json );
             return this;
         }
 
         public HttpAssertion hasReason( String reasonPhrase ) {
-            assertThat( response.reasonPhrase ).isEqualTo( reasonPhrase );
+            assertString( response.reasonPhrase ).isEqualTo( reasonPhrase );
             return this;
         }
 
         public HttpAssertion hasContentType( String contentType ) {
-            assertThat( response.contentType.toString() ).isEqualTo( contentType );
+            assertString( response.contentType ).isEqualTo( contentType );
             return this;
         }
 
         public HttpAssertion hasBody( String body ) {
-            assertThat( response.contentString() ).isEqualTo( body );
+            assertString( response.contentString() ).isEqualTo( body );
             return this;
         }
 
         public HttpAssertion containsHeader( String name, String value ) {
-            assertThat( response.header( name ).orElse( null ) ).isEqualTo( value );
+            assertString( response.header( name ).orElse( null ) ).isEqualTo( value );
             return this;
         }
 
@@ -220,7 +221,7 @@ public class HttpAsserts {
             return containsCookie( Cookie.parseSetCookieHeader( cookie ) );
         }
 
-        protected List<Cookie> cookies() {
+        private List<Cookie> cookies() {
             return BiStream.of( response.headers )
                 .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) )
                 .mapToObj( ( name, value ) -> Cookie.parseSetCookieHeader( value ) )
@@ -240,22 +241,30 @@ public class HttpAsserts {
         }
 
         public HttpAssertion respondedJson( int code, String reasonPhrase, String body ) {
+            return respondedJson( code, reasonPhrase, body, Map.of() );
+        }
+
+        public HttpAssertion respondedJson( int code, String reasonPhrase, String body, Map<String, Object> substitutions ) {
             assertJsonResponse( response )
-                .isEqualTo( code, reasonPhrase, body )
+                .isEqualTo( code, reasonPhrase, body, substitutions )
                 .hasJsonContentType();
             return this;
         }
 
         public HttpAssertion respondedJson( String json ) {
-            return this.respondedJson( HTTP_OK, "OK", json );
+            return respondedJson( json, Map.of() );
+        }
+
+        public HttpAssertion respondedJson( String json, Map<String, Object> substitutions ) {
+            return respondedJson( HTTP_OK, "OK", json, substitutions );
         }
 
         public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
-            return this.respondedJson( contentOfTestResource( contextClass, resource, ofString() ) );
+            return respondedJson( contentOfTestResource( contextClass, resource, ofString() ) );
         }
 
         public HttpAssertion respondedJson( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
-            return this.respondedJson( contentOfTestResource( contextClass, resource, substitutions ) );
+            return respondedJson( contentOfTestResource( contextClass, resource, ofString() ), substitutions );
         }
 
         public HttpAssertion satisfies( Consumer<Client.Response> assertion ) {
@@ -352,10 +361,14 @@ public class HttpAsserts {
         }
 
         public JsonHttpAssertion isEqualTo( int code, String reasonPhrase, String body ) {
+            return isEqualTo( code, reasonPhrase, body, Map.of() );
+        }
+
+        public JsonHttpAssertion isEqualTo( int code, String reasonPhrase, String body, Map<String, Object> substitutions ) {
             assertHttpResponse( response )
                 .hasCode( code )
                 .hasReason( reasonPhrase );
-            isJson().isStructurallyEqualTo( body );
+            assertJson().isEqualTo( body, substitutions );
             return this;
         }
 
@@ -367,8 +380,8 @@ public class HttpAsserts {
             return this.isEqualTo( contentOfTestResource( contextClass, resource, ofString() ) );
         }
 
-        public JsonAsserts.JsonAssertion isJson() {
-            return assertJson( response.contentString() );
+        public JsonAsserts.JsonAssertion assertJson() {
+            return JsonAsserts.assertJson( response.contentString() );
         }
 
         public JsonHttpAssertion hasJsonContentType() {

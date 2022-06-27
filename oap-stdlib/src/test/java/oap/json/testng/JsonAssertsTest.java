@@ -26,14 +26,27 @@ package oap.json.testng;
 
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 import static oap.json.testng.JsonAsserts.assertJson;
+import static oap.testng.Asserts.assertString;
 
 public class JsonAssertsTest {
 
     @Test
-    public void structuralEquality() {
-        assertJson( "{\"a\":\"b\", \"c\":{\"a\":\"b\"}}" ).isStructurallyEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
-        assertJson( "[{\"a\":\"b\", \"c\":{\"a\":\"b\"}}]" ).isStructurallyEqualTo( "[{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}]" );
+    public void isEqualTo() {
+        assertJson( "{\"a\":\"b\", \"c\":{\"a\":\"b\"}}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
+        assertJson( "[{\"a\":\"b\", \"c\":{\"a\":\"b\"}}]" ).isEqualTo( "[{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}]" );
+        try {
+            assertJson( "{\"a\":\"b\", \"c\":null}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
+        } catch( AssertionError e ) {
+            assertString( e.getMessage() ).isEqualTo( "expected [{\"a\":\"b\",\"c\":{\"a\":\"b\"}}] but found [{\"a\":\"b\"}]" );
+        }
     }
 
+    @Test
+    public void isEqaulToWithSubstitutes() {
+        assertJson( "{\"a\":\"b\", \"c\":{\"a\":\"b\"}}" )
+            .isEqualTo( "{\"c\":{\"a\":\"d\"}, \"a\":\"b\"}", Map.of( "[c].[a]", "d" ) );
+    }
 }

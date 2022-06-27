@@ -24,7 +24,6 @@
 package oap.util;
 
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import oap.util.function.Try;
 
 import java.io.Serializable;
@@ -33,8 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-@EqualsAndHashCode
-@ToString
+@EqualsAndHashCode( doNotUseGetters = true )
 public final class Result<S, F> implements Serializable {
     public final S successValue;
     public final F failureValue;
@@ -146,5 +144,12 @@ public final class Result<S, F> implements Serializable {
 
     public S orElse( S value ) {
         return success ? successValue : value;
+    }
+
+    @Override
+    public String toString() {
+        return success
+            ? "Result.success(" + Strings.deepToString( successValue ) + ")"
+            : "Result.failure(" + Strings.deepToString( failureValue ) + ")";
     }
 }
