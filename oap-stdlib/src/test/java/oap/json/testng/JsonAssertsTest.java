@@ -40,7 +40,15 @@ public class JsonAssertsTest {
         try {
             assertJson( "{\"a\":\"b\", \"c\":null}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
         } catch( AssertionError e ) {
-            assertString( e.getMessage() ).isEqualTo( "expected [{\"a\":\"b\",\"c\":{\"a\":\"b\"}}] but found [{\"a\":\"b\"}]" );
+            assertString( e.getMessage() ).isEqualTo( """
+                expected [{
+                  "a" : "b",
+                  "c" : {
+                    "a" : "b"
+                  }
+                }] but found [{
+                  "a" : "b"
+                }]""" );
         }
     }
 

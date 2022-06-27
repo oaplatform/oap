@@ -123,10 +123,10 @@ public class JsonAsserts {
             String actualJson = unmarshal( actual )
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
                 .map( l -> substitute( l, substitutions ), r -> substitute( r, substitutions ) )
-                .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue ) );
+                .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
             String expectedJson = unmarshal( expected )
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
-                .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue ) );
+                .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
             assertString( actualJson ).isEqualTo( expectedJson );
             return this;
         }
