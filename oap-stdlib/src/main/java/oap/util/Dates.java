@@ -37,6 +37,7 @@ import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
 public class Dates {
+
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
         .withZoneUTC();
@@ -49,6 +50,16 @@ public class Dates {
     public static final DateTimeFormatter FORMAT_DATE = DateTimeFormat
         .forPattern( "yyyy-MM-dd" )
         .withZoneUTC();
+
+    public static final DateTimeFormatter PARSER_MULTIPLE_DATETIME = new DateTimeFormatterBuilder()
+        .append( null, new DateTimeParser[] {
+            FORMAT_SIMPLE.getParser(),
+            FORMAT_SIMPLE_CLEAN.getParser(),
+            FORMAT_MILLIS.getParser(),
+            FORMAT_DATE.getParser() } )
+        .toFormatter()
+        .withZoneUTC();
+
     public static final PeriodFormatter DURATION_FORMATTER = new PeriodFormatterBuilder()
         .appendWeeks().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "week", "weeks", "w" } ).appendSeparator( " " )
         .appendDays().appendSuffix( new String[] { "ˆ1$", "ˆ1$", ".*" }, new String[] { "day", "days", "d" } ).appendSeparator( " " )

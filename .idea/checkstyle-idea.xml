@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="CheckStyle-IDEA">
-    <option name="configuration">
-      <map>
-        <entry key="active-configuration-0" value="HTTP_URL:https://raw.githubusercontent.com/oaplatform/oap-maven/master/.idea/checkstyle.xml:OAP" />
-        <entry key="checkstyle-version" value="8.39" />
-        <entry key="copy-libs" value="false" />
-        <entry key="location-0" value="BUNDLED:(bundled):Sun Checks;All" />
-        <entry key="location-1" value="BUNDLED:(bundled):Google Checks;All" />
-        <entry key="location-2" value="HTTP_URL:https://raw.githubusercontent.com/oaplatform/oap-maven/master/.idea/checkstyle.xml:OAP;All" />
-        <entry key="scan-before-checkin" value="true" />
-        <entry key="scanscope" value="JavaOnlyWithTests" />
-        <entry key="suppress-errors" value="true" />
-        <entry key="thirdparty-classpath" value="$PROJECT_DIR$/../oap-maven/.idea/checkstyle-8.39-all.jar" />
-      </map>
+  <component name="CheckStyle-IDEA" serialisationVersion="2">
+    <checkstyleVersion>8.39</checkstyleVersion>
+    <scanScope>JavaOnlyWithTests</scanScope>
+    <suppressErrors>true</suppressErrors>
+    <scanBeforeCheckin>true</scanBeforeCheckin>
+    <option name="thirdPartyClasspath">
+      <option value="C:\workspace\projects\oap\oap-maven\.idea\checkstyle-8.39-all.jar" />
+    </option>
+    <option name="activeLocationIds">
+      <option value="36d9205e-65ef-4ceb-b566-0840ca08070a" />
+    </option>
+    <option name="locations">
+      <list>
+        <ConfigurationLocation id="bundled-sun-checks" type="BUNDLED" scope="All" description="Sun Checks">(bundled)</ConfigurationLocation>
+        <ConfigurationLocation id="bundled-google-checks" type="BUNDLED" scope="All" description="Google Checks">(bundled)</ConfigurationLocation>
+        <ConfigurationLocation id="36d9205e-65ef-4ceb-b566-0840ca08070a" type="HTTP_URL" scope="All" description="OAP">https://raw.githubusercontent.com/oaplatform/oap-maven/master/.idea/checkstyle.xml</ConfigurationLocation>
+      </list>
     </option>
   </component>
 </project>
