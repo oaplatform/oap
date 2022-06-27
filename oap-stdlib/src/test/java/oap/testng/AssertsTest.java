@@ -55,4 +55,12 @@ public class AssertsTest {
             .isEqualTo( "/oap/testng/AssertsTest/a.txt" );
     }
 
+    @Test
+    public void assertString() {
+        try {
+            Asserts.assertString( "aaaa" ).isEqualTo( "bbbb" );
+        } catch( AssertionError e ) {
+            assertThat( e.getMessage() ).isEqualTo( "expected [bbbb] but found [aaaa]" );
+        }
+    }
 }

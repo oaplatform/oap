@@ -200,20 +200,18 @@ public final class Asserts {
         return "/" + contetClass.getName().replace( ".", "/" ) + ( resource.startsWith( "/" ) ? "" : "/" ) + resource;
     }
 
-    /**
-     * AssertJ has come with proper exception already
-     *
-     * @see {@link org.assertj.core.api.Assertions#assertThat(CharSequence)}
-     */
-    @Deprecated
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
         protected StringAssertion( CharSequence value ) {
             super( value, StringAssertion.class );
         }
 
+        /**
+         * This assertion is implemented to get IntelliJ Idea to bring up string comparison dialog on error.
+         * AssertJ's error ain't gona cut it.
+         */
         @Override
         public StringAssertion isEqualTo( Object expected ) {
-            assertThat( this.actual ).isEqualTo( expected );
+            Assert.assertEquals( this.actual, expected );
             return this;
         }
 
