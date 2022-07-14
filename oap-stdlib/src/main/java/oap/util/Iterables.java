@@ -23,11 +23,18 @@
  */
 package oap.util;
 
+import org.apache.commons.collections4.iterators.ReverseListIterator;
+
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public class Iterables {
-    public static <T> Iterable<T> of( T initialState, Predicate<T> hasNext, UnaryOperator<T> next ) {
+    public static <E> Iterable<E> of( E initialState, Predicate<E> hasNext, UnaryOperator<E> next ) {
         return () -> Iterators.of( initialState, hasNext, next );
+    }
+
+    public static <E> Iterable<E> reversed( List<E> list ) {
+        return () -> new ReverseListIterator<>( list );
     }
 }

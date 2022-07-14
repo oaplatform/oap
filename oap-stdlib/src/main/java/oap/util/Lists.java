@@ -65,7 +65,7 @@ public class Lists extends oap.util.Collections {
      * @see #tailOf(List)
      */
     @Deprecated
-    public static <T> List<T> tail( List<T> list ) {
+    public static <E> List<E> tail( List<E> list ) {
         if( list.isEmpty() ) throw new NoSuchElementException();
 
         return list.subList( 1, list.size() );
@@ -75,7 +75,7 @@ public class Lists extends oap.util.Collections {
      * @see #headOf(List)
      */
     @Deprecated
-    public static <T> T head( List<T> list ) {
+    public static <E> E head( List<E> list ) {
         return headOf( list ).orElseThrow( NoSuchElementException::new );
     }
 
@@ -83,24 +83,24 @@ public class Lists extends oap.util.Collections {
      * @see #headOf(List)
      */
     @Deprecated
-    public static <T> Optional<T> headOpt( List<T> list ) {
+    public static <E> Optional<E> headOpt( List<E> list ) {
         return headOf( list );
     }
 
-    public static <T> Optional<T> headOf( List<T> list ) {
+    public static <E> Optional<E> headOf( List<E> list ) {
         return list.isEmpty() ? Optional.empty() : Optional.of( list.get( 0 ) );
     }
 
-    public static <T> List<T> tailOf( List<T> list ) {
+    public static <E> List<E> tailOf( List<E> list ) {
         if( list.isEmpty() ) throw new NoSuchElementException();
         return list.subList( 1, list.size() );
     }
 
-    public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
-        var match = new ArrayList<T>();
-        var nomatch = new ArrayList<T>();
+    public static <E> Pair<List<E>, List<E>> partition( List<E> list, Predicate<E> p ) {
+        var match = new ArrayList<E>();
+        var nomatch = new ArrayList<E>();
 
-        for( T item : list )
+        for( E item : list )
             if( p.test( item ) ) match.add( item );
             else nomatch.add( item );
 
@@ -217,11 +217,11 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <T> List<T> empty() {
+    public static <E> List<E> empty() {
         return of();
     }
 
-    public static <T> T last( List<T> list ) {
+    public static <E> E last( List<E> list ) {
         return list.get( list.size() - 1 );
     }
 
@@ -230,34 +230,29 @@ public class Lists extends oap.util.Collections {
         return false;
     }
 
-    public static <T> int[] mapToIntArray( List<T> list, ToIntFunction<T> func ) {
+    public static <E> int[] mapToIntArray( List<E> list, ToIntFunction<E> mapper ) {
         var size = list.size();
         var result = new int[size];
 
-        for( int i = 0; i < size; i++ ) result[i] = func.applyAsInt( list.get( i ) );
+        for( int i = 0; i < size; i++ ) result[i] = mapper.applyAsInt( list.get( i ) );
 
         return result;
     }
 
-    public static <T> List<T> reverse( Collection<T> values ) {
+    public static <E> List<E> reverse( Collection<E> values ) {
         var ret = new ArrayList<>( values );
-
         Collections.reverse( ret );
-
         return ret;
     }
 
     public <E> void moveItem( List<E> list, int sourceIndex, int targetIndex ) {
-        if( sourceIndex <= targetIndex ) {
-            Collections.rotate( list.subList( sourceIndex, targetIndex + 1 ), -1 );
-        } else {
-            Collections.rotate( list.subList( targetIndex, sourceIndex + 1 ), 1 );
-        }
+        if( sourceIndex <= targetIndex ) Collections.rotate( list.subList( sourceIndex, targetIndex + 1 ), -1 );
+        else Collections.rotate( list.subList( targetIndex, sourceIndex + 1 ), 1 );
     }
 
     public static class Collectors {
-        public static <T> Collector<T, ?, List<T>> toArrayList() {
-            return new oap.util.Collectors.CollectorImpl<T, List<T>, List<T>>( ArrayList::new, List::add,
+        public static <E> Collector<E, ?, List<E>> toArrayList() {
+            return new oap.util.Collectors.CollectorImpl<E, List<E>, List<E>>( ArrayList::new, List::add,
                 ( left, right ) -> {
                     left.addAll( right );
                     return left;
