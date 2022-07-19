@@ -45,6 +45,10 @@ public class Pair<K, V> implements Serializable {
 
     @SuppressWarnings( { "checkstyle:MethodName", "checkstyle:ParameterName" } )
     public static <K, V> Pair<K, V> __( K _1, V _2 ) {
+        return of( _1, _2 );
+    }
+
+    public static <K, V> Pair<K, V> of( K _1, V _2 ) {
         return new Pair<>( _1, _2 );
     }
 
