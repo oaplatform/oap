@@ -28,22 +28,31 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FuturesTest {
 
     @Test
     public void allOf() {
-        assertThat( Futures.allOf(
+        CompletableFuture<List<String>> future = Futures.allOf(
             CompletableFuture.supplyAsync( () -> "a" ),
-            CompletableFuture.supplyAsync( () -> "b" ) ) )
+            CompletableFuture.supplyAsync( () -> "b" ) );
+        future.join();
+        assertThat( future )
             .isCompletedWithValue( List.of( "a", "b" ) );
 
-        assertThat( Futures.allOf(
+        CompletableFuture<List<String>> failed = Futures.allOf(
             CompletableFuture.supplyAsync( () -> "a" ),
-            CompletableFuture.failedFuture( new RuntimeException( "fail" ) ) ) )
-            .isCompletedExceptionally();
+            CompletableFuture.failedFuture( new RuntimeException( "fail" ) ) );
+        try {
+            assertThat( failed.join() ).isNotEqualTo( List.of( "a" ) );
+        } catch( CompletionException e ) {
+            assertThat( failed ).isCompletedExceptionally();
+            assertString( e.getCause().getMessage() ).isEqualTo( "fail" );
+        }
     }
 
 }
