@@ -30,6 +30,8 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,5 +42,14 @@ public class FunctionsTest {
         List<String> al = new ArrayList<>( Lists.of( "a", "b" ) );
         assertThat( Functions.ifInstance( ll, LinkedList.class, LinkedList::getFirst ) ).contains( "a" );
         assertThat( Functions.ifInstance( al, LinkedList.class, LinkedList::getFirst ) ).isEmpty();
+    }
+
+    @Test
+    public void memoize() {
+        AtomicInteger count = new AtomicInteger( 0 );
+        Supplier<Integer> memoize = Functions.memoize( count::incrementAndGet );
+        memoize.get();
+        memoize.get();
+        assertThat( count.get() ).isEqualTo( 1 );
     }
 }

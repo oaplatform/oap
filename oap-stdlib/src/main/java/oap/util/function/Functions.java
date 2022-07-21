@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 public class Functions {
 
     public static <T> Supplier<T> memoize( Supplier<T> delegate ) {
-        return () -> Suppliers.memoize( delegate::get ).get();
+        return Suppliers.memoize( delegate::get );
     }
 
     /**
