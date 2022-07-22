@@ -63,7 +63,7 @@ public class LogConfiguration extends Configuration {
         types.put( "INTEGER", "Integer" );
         types.put( "SHORT", "Short" );
         types.put( "FLOAT", "Float" );
-        types.put( "DECIMAL", "Decimal" );
+        types.put( "DOUBLE", "Double" );
     }
 
     private static final String LOG_TAG = "LOG";
