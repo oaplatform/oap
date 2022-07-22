@@ -28,6 +28,7 @@ import lombok.ToString;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Optional;
 
 @ToString
 class TemplateType {
@@ -74,5 +75,9 @@ class TemplateType {
 
     public boolean isPrimitiveType() {
         return getTypeClass().isPrimitive();
+    }
+
+    public boolean isOptional() {
+        return getTypeClass().isAssignableFrom( Optional.class );
     }
 }

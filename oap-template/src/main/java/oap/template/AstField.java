@@ -31,12 +31,14 @@ public class AstField extends Ast {
     final String variableName;
     final String fieldName;
     final boolean forceCast;
+    final String castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, String castType ) {
         super( fieldType );
 
         this.fieldName = fieldName;
         this.forceCast = forceCast;
+        this.castType = castType;
         variableName = newVariable();
     }
 
@@ -44,11 +46,15 @@ public class AstField extends Ast {
     void render( Render render ) {
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );
-        if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
+        if( forceCast || castType != null ) render.append( "( %s ) ", castType != null ? castTypeToString( type ) : type.getTypeName() );
         render.append( "%s.%s;", render.field, fieldName );
 
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    private String castTypeToString( TemplateType type ) {
+        return type.isOptional() ? "Optional<" + castType + ">" : castType;
     }
 
     @Override

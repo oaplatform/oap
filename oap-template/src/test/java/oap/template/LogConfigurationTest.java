@@ -45,7 +45,7 @@ public class LogConfigurationTest extends Fixtures {
     private TemplateEngine engine;
     private String testMethodName;
 
-    {
+    public LogConfigurationTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
@@ -58,7 +58,7 @@ public class LogConfigurationTest extends Fixtures {
     }
 
     private static AstField af( String fieldName, Ast ast ) {
-        var astField = new AstField( fieldName, new TemplateType( String.class, false ), false );
+        var astField = new AstField( fieldName, new TemplateType( String.class, false ), false, null );
         astField.children.add( ast );
         return astField;
     }

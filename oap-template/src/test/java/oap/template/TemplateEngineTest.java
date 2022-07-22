@@ -43,11 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TemplateEngineTest extends Fixtures {
-
     private TemplateEngine engine;
     private String testMethodName;
 
-    {
+    public TemplateEngineTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
@@ -386,6 +385,28 @@ public class TemplateEngineTest extends Fixtures {
 
 
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
+    }
+
+    @Test
+    public void testTypes() {
+        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        var templateClass = new TestTemplateClass();
+        templateClass.booleanField = true;
+        templateClass.booleanObjectField = true;
+        templateClass.intField = 1;
+        templateClass.intObjectField = 2;
+
+        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "booleanField:${<boolean>booleanField},booleanObjectField:${<Boolean>booleanObjectField},intField:${<int>intField},intObjectField:${<Integer>intObjectField}",
+            templateAccumulator, ERROR, null ).render( templateClass );
+
+        assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
+
+        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "booleanField:${<int>booleanField}",
+            templateAccumulator, ERROR, null ).render( templateClass ) )
+            .isInstanceOf( TemplateException.class )
+            .hasCauseInstanceOf( ClassNotFoundException.class );
     }
 
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
