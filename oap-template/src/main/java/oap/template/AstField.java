@@ -46,15 +46,18 @@ public class AstField extends Ast {
     void render( Render render ) {
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );
-        if( forceCast || castType != null ) render.append( "( %s ) ", castType != null ? castTypeToString( type ) : type.getTypeName() );
+
+        if( forceCast || castType != null ) render.append( "( %s ) ", castType != null ? castTypeToString( type, type.getTypeName() ) : type.getTypeName() );
+
         render.append( "%s.%s;", render.field, fieldName );
 
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 
-    private String castTypeToString( TemplateType type ) {
-        return type.isOptional() ? "Optional<" + castType + ">" : castType;
+    private String castTypeToString( TemplateType type, String typeName ) {
+        var thisCastType = typeName.endsWith( castType ) ? typeName : castType;
+        return type.isOptional() ? "Optional<" + thisCastType + ">" : thisCastType;
     }
 
     @Override

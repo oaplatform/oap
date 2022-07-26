@@ -116,6 +116,9 @@ public class LogConfiguration extends Configuration {
             var path = ( String ) field.getProperty( "path" ).orElseThrow();
             var idType = ( String ) field.getProperty( "type" ).orElseThrow();
             var javaType = types.get( idType );
+            if( idType.equals( "ENUM" ) ) {
+                javaType = ( String ) field.getProperty( "dictionary" ).orElseThrow();
+            }
             Preconditions.checkNotNull( javaType, "unknown type " + idType );
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
