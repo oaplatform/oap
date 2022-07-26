@@ -27,7 +27,9 @@ package oap.template;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Configuration;
+import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
+import oap.dictionary.DictionaryRoot;
 import oap.reflect.TypeRef;
 import oap.util.Lists;
 import oap.util.Pair;
@@ -118,6 +120,8 @@ public class LogConfiguration extends Configuration {
             var javaType = types.get( idType );
             if( idType.equals( "ENUM" ) ) {
                 javaType = ( String ) field.getProperty( "dictionary" ).orElseThrow();
+                DictionaryRoot dictionary = Dictionaries.getDictionary( javaType );
+                javaType = dictionary.getId();
             }
             Preconditions.checkNotNull( javaType, "unknown type " + idType );
             var defaultValue = field.getProperty( "default" )
