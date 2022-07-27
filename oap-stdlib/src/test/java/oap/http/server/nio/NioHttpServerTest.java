@@ -36,7 +36,6 @@ import static oap.http.Http.Headers.DATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
-
     private final EnvFixture fixture;
 
     public NioHttpServerTest() {
