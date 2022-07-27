@@ -46,7 +46,10 @@ public class AstField extends Ast {
     @Override
     void render( Render render ) {
         if( castType != null ) {
-            if( !castType.isAssignableFrom( Primitives.wrap( type.getTypeClass() ) ) ) {
+            var targetType = type;
+            if( type.isOptional() ) targetType = type.getActualTypeArguments0();
+
+            if( !castType.isAssignableFrom( Primitives.wrap( targetType.getTypeClass() ) ) ) {
                 throw new ClassCastException( "current '" + type + "' required '" + castType + "'" );
             }
         }
