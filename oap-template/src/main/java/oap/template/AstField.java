@@ -31,9 +31,9 @@ public class AstField extends Ast {
     final String variableName;
     final String fieldName;
     final boolean forceCast;
-    final String castType;
+    final Class<?> castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, String castType ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, Class<?> castType ) {
         super( fieldType );
 
         this.fieldName = fieldName;
@@ -44,20 +44,22 @@ public class AstField extends Ast {
 
     @Override
     void render( Render render ) {
+
+        if( castType != null ) {
+            if( !castType.isAssignableFrom( castType ) ) {
+                throw new ClassCastException( "current '" + type + "' required '" + castType + "'" );
+            }
+        }
+
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );
 
-        if( forceCast || castType != null ) render.append( "( %s ) ", castType != null ? castTypeToString( type, type.getTypeName() ) : type.getTypeName() );
+        if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
 
         render.append( "%s.%s;", render.field, fieldName );
 
         var newRender = render.withField( variableName ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
-    }
-
-    private String castTypeToString( TemplateType type, String typeName ) {
-        var thisCastType = typeName.endsWith( castType ) ? typeName : castType;
-        return type.isOptional() ? "Optional<" + thisCastType + ">" : thisCastType;
     }
 
     @Override

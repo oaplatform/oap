@@ -128,7 +128,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     fieldType = new TemplateType( extClass, fieldType.nullable );
                     forceCast = true;
                 }
-                return new MaxMin( new AstField( field.getName(), fieldType, forceCast, castType ) );
+                return new MaxMin( new AstField( field.getName(), fieldType, forceCast, castType != null ? Class.forName( castType ) : null ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = Arrays
@@ -139,7 +139,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
 
                 return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments ) );
             }
-        } catch( NoSuchFieldException | NoSuchMethodException e ) {
+        } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage() );
             return new MaxMin( new AstPathNotFound( e.getMessage() ) );
         }

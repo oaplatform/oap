@@ -27,9 +27,7 @@ package oap.template;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Configuration;
-import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
-import oap.dictionary.DictionaryRoot;
 import oap.reflect.TypeRef;
 import oap.util.Lists;
 import oap.util.Pair;
@@ -57,15 +55,15 @@ public class LogConfiguration extends Configuration {
     public static final HashMap<String, String> types = new HashMap<>();
 
     static {
-        types.put( "DATETIME", "DateTime" );
-        types.put( "BOOLEAN", "Boolean" );
-        types.put( "ENUM", "Enum" );
-        types.put( "STRING", "String" );
-        types.put( "LONG", "Long" );
-        types.put( "INTEGER", "Integer" );
-        types.put( "SHORT", "Short" );
-        types.put( "FLOAT", "Float" );
-        types.put( "DOUBLE", "Double" );
+        types.put( "DATETIME", "org.joda.time.DateTime" );
+        types.put( "BOOLEAN", "java.lang.Boolean" );
+        types.put( "ENUM", "java.lang.Enum" );
+        types.put( "STRING", "java.lang.String" );
+        types.put( "LONG", "java.lang.Long" );
+        types.put( "INTEGER", "java.lang.Integer" );
+        types.put( "SHORT", "java.lang.Short" );
+        types.put( "FLOAT", "java.lang.Float" );
+        types.put( "DOUBLE", "java.lang.Double" );
     }
 
     private static final String LOG_TAG = "LOG";
@@ -118,11 +116,6 @@ public class LogConfiguration extends Configuration {
             var path = ( String ) field.getProperty( "path" ).orElseThrow();
             var idType = ( String ) field.getProperty( "type" ).orElseThrow();
             var javaType = types.get( idType );
-            if( idType.equals( "ENUM" ) ) {
-                javaType = ( String ) field.getProperty( "dictionary" ).orElseThrow();
-                DictionaryRoot dictionary = Dictionaries.getDictionary( javaType );
-                javaType = dictionary.getId();
-            }
             Preconditions.checkNotNull( javaType, "unknown type " + idType );
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );

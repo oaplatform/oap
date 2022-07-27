@@ -109,7 +109,7 @@ DECDIGITS   : DecDigits                             ;
 FLOAT       : Float                                 ;
 BOOLEAN     : BoolLiteral                           ;
 ID			: NameChar (NameChar|DecDigit)*			;
-CAST_TYPE   : LT (NameChar)+ GT                     ;
+CAST_TYPE   : LT (NameChar|DOT)+ GT                 ;
 
 
 ERR_CHAR	: (' '|'\t')	-> skip		            ;
