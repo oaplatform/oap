@@ -290,9 +290,13 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 					    try { 
 				            ((ElementContext)_localctx).ast =  new AstExpression(grammarExp.expression( _localctx.parentType ).ast.top, ((ElementContext)_localctx).expression.content);
 				        } catch ( TemplateException e ) {
-				            throw e;
+				            var newException = new TemplateException( ((ElementContext)_localctx).expression.content, e.getCause() );
+				            newException.setStackTrace( e.getStackTrace() );
+				            throw newException;
 				        } catch ( Exception e ) {
-				            throw new TemplateException( ((ElementContext)_localctx).expression.content, e );
+				            var newException = new TemplateException( ((ElementContext)_localctx).expression.content, e );
+				            newException.setStackTrace( e.getStackTrace() );
+				            throw newException;
 				        }
 					 
 				}

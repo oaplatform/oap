@@ -47,9 +47,13 @@ element[TemplateType parentType, Map<String,String> aliases] returns [Ast ast]
 	    try { 
             $ast = new AstExpression(grammarExp.expression( $parentType ).ast.top, $expression.content);
         } catch ( TemplateException e ) {
-            throw e;
+            var newException = new TemplateException( $expression.content, e.getCause() );
+            newException.setStackTrace( e.getStackTrace() );
+            throw newException;
         } catch ( Exception e ) {
-            throw new TemplateException( $expression.content, e );
+            var newException = new TemplateException( $expression.content, e );
+            newException.setStackTrace( e.getStackTrace() );
+            throw newException;
         }
 	 }
 	;
