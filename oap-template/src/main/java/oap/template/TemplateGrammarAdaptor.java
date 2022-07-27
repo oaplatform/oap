@@ -140,7 +140,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments ) );
             }
         } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
-            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage() );
+            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
             return new MaxMin( new AstPathNotFound( e.getMessage() ) );
         }
     }

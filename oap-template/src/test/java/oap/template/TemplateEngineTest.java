@@ -397,16 +397,16 @@ public class TemplateEngineTest extends Fixtures {
         templateClass.intObjectField = 2;
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "booleanField:${<boolean>booleanField},booleanObjectField:${<Boolean>booleanObjectField},intField:${<int>intField},intObjectField:${<Integer>intObjectField}",
+            "booleanField:${<java.lang.Boolean>booleanField},booleanObjectField:${<java.lang.Boolean>booleanObjectField},intField:${<java.lang.Integer>intField},intObjectField:${<java.lang.Integer>intObjectField}",
             templateAccumulator, ERROR, null ).render( templateClass );
 
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
 
         assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "booleanField:${<int>booleanField}",
+            "booleanField:${<java.lang.Integer>booleanField}",
             templateAccumulator, ERROR, null ).render( templateClass ) )
             .isInstanceOf( TemplateException.class )
-            .hasCauseInstanceOf( ClassNotFoundException.class );
+            .hasCauseInstanceOf( ClassCastException.class );
     }
 
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {

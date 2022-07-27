@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.google.common.primitives.Primitives;
 import lombok.ToString;
 
 @ToString( callSuper = true )
@@ -44,9 +45,8 @@ public class AstField extends Ast {
 
     @Override
     void render( Render render ) {
-
         if( castType != null ) {
-            if( !castType.isAssignableFrom( castType ) ) {
+            if( !castType.isAssignableFrom( Primitives.wrap( type.getTypeClass() ) ) ) {
                 throw new ClassCastException( "current '" + type + "' required '" + castType + "'" );
             }
         }
