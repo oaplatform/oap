@@ -45,6 +45,10 @@ public class PrometheusExporter implements HttpHandler {
         server.bind( "/metrics", this );
     }
 
+    public PrometheusExporter( NioHttpServer server, int port ) {
+        server.bind( "/metrics", this, port );
+    }
+
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
         var response = prometheusRegistry.scrape();

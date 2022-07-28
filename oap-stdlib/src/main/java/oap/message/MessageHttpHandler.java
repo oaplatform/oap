@@ -102,6 +102,8 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     private MessageHashStorage hashes;
     private Scheduled scheduled;
 
+    public int port = -1;
+
     public MessageHttpHandler( NioHttpServer server, String context, Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
         this.server = server;
         this.context = context;
@@ -122,7 +124,10 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         hashes = new MessageHashStorage( clientHashCacheSize );
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
 
-        server.bind( context, this );
+        if( port == -1 )
+            server.bind( context, this );
+        else
+            server.bind( context, this, port );
 
         scheduled = Scheduler.scheduleWithFixedDelay( 1, TimeUnit.SECONDS, this::updateHash );
 
