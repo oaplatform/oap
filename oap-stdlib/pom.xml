@@ -322,7 +322,11 @@
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>${oap.deps.jackson.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.github.java-json-tools</groupId>
+            <artifactId>jackson-coreutils</artifactId>
+            <version>${oap.deps.jackson-coreutils.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
