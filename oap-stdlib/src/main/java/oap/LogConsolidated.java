@@ -25,6 +25,7 @@
 package oap;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Pair;
 import org.apache.commons.logging.LogFactory;
 import org.assertj.core.internal.Integers;
 import org.slf4j.Logger;
@@ -33,7 +34,10 @@ import org.slf4j.event.Level;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+
+import static oap.util.Dates.s;
 
 @Slf4j
 public class LogConsolidated {
@@ -48,17 +52,10 @@ public class LogConsolidated {
                 log( logger, level, message, t );
                 return;
             }
-            int count = 0;
-            synchronized( lastTimeAndCountOldValue ) {
-                long now = System.currentTimeMillis();
-                if( now - lastTimeAndCountOldValue.time < timeBetweenLogs ) {
-                    lastTimeAndCountOldValue.count++;
-                    return;
-                } else {
-                    count = lastTimeAndCountOldValue.count;
-                }
+            Pair<Boolean, Integer> count = lastTimeAndCountOldValue.tick( timeBetweenLogs );
+            if ( count._1 ) {
+                log( logger, level, "|x" + count._2 + "| " + message, t );
             }
-            log( logger, level, "|x" + count + "| " + message, t );
         }
     }
 
@@ -114,12 +111,27 @@ public class LogConsolidated {
             this.time = System.currentTimeMillis();
             this.count = 0;
         }
+
+        synchronized Pair<Boolean, Integer> tick( long timeBetweenLogs ) {
+            count++;
+            long now = System.currentTimeMillis();
+            if( now - time < timeBetweenLogs ) {
+                return Pair.__( false, count );
+            }
+            time = now;
+            return Pair.__( true, count );
+        }
     }
 
     public static void main( String[] args ) {
         Exception iae = new IllegalArgumentException();
-        IntStream.range( 0, 10).forEach( i-> {
-            LogConsolidated.log( log, Level.INFO, "Some message here", iae );
+        IntStream.range( 0, 5).forEach( i-> {
+            LogConsolidated.log( log, Level.INFO, s( 3 ), "Some message here", iae );
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch( InterruptedException e ) {
+                throw new RuntimeException( e );
+            }
         } );
 
     }
