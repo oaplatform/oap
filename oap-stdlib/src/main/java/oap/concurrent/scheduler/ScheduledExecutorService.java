@@ -47,6 +47,7 @@ public class ScheduledExecutorService implements Closeable {
             scheduledExecutorService.shutdown();
             scheduledExecutorService.awaitTermination( timeout, unit );
         } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
         }
         close();
     }

@@ -26,18 +26,11 @@ package oap;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Pair;
-import org.apache.commons.logging.LogFactory;
-import org.assertj.core.internal.Integers;
 import org.slf4j.Logger;
-import org.slf4j.Marker;
 import org.slf4j.event.Level;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
-import static oap.util.Dates.s;
 
 @Slf4j
 public class LogConsolidated {
@@ -121,18 +114,5 @@ public class LogConsolidated {
             time = now;
             return Pair.__( true, count );
         }
-    }
-
-    public static void main( String[] args ) {
-        Exception iae = new IllegalArgumentException();
-        IntStream.range( 0, 5).forEach( i-> {
-            LogConsolidated.log( log, Level.INFO, s( 3 ), "Some message here", iae );
-            try {
-                TimeUnit.SECONDS.sleep( 1 );
-            } catch( InterruptedException e ) {
-                throw new RuntimeException( e );
-            }
-        } );
-
     }
 }
