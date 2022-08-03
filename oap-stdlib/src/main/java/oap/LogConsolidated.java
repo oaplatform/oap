@@ -25,31 +25,40 @@
 package oap;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.logging.LogFactory;
+import org.assertj.core.internal.Integers;
 import org.slf4j.Logger;
+import org.slf4j.Marker;
 import org.slf4j.event.Level;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class LogConsolidated {
-    private static final ConcurrentHashMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();
 
     public static void log( Logger logger, Level level, long timeBetweenLogs, String message, Throwable t ) {
         if( isEnabledFor( logger, level ) ) {
             String uniqueIdentifier = getFileAndLine();
-            var lastTimeAndCount = lastLoggedTime.get( uniqueIdentifier );
-            if( lastTimeAndCount != null ) {
-                synchronized( lastTimeAndCount ) {
-                    long now = System.currentTimeMillis();
-                    if( now - lastTimeAndCount.time < timeBetweenLogs ) {
-                        lastTimeAndCount.count++;
-                        return;
-                    } else log( logger, level, "|x" + lastTimeAndCount.count + "| " + message, t );
-                }
-            } else {
+            var lastTimeAndCountNewValue = new TimeAndCount();
+            var lastTimeAndCountOldValue= lastLoggedTime.putIfAbsent( uniqueIdentifier, lastTimeAndCountNewValue );
+            if ( lastTimeAndCountOldValue == null ) {
                 log( logger, level, message, t );
+                return;
             }
-            lastLoggedTime.put( uniqueIdentifier, new TimeAndCount() );
+            int count = 0;
+            synchronized( lastTimeAndCountOldValue ) {
+                long now = System.currentTimeMillis();
+                if( now - lastTimeAndCountOldValue.time < timeBetweenLogs ) {
+                    lastTimeAndCountOldValue.count++;
+                    return;
+                } else {
+                    count = lastTimeAndCountOldValue.count;
+                }
+            }
+            log( logger, level, "|x" + count + "| " + message, t );
         }
     }
 
@@ -105,5 +114,13 @@ public class LogConsolidated {
             this.time = System.currentTimeMillis();
             this.count = 0;
         }
+    }
+
+    public static void main( String[] args ) {
+        Exception iae = new IllegalArgumentException();
+        IntStream.range( 0, 10).forEach( i-> {
+            LogConsolidated.log( log, Level.INFO, "Some message here", iae );
+        } );
+
     }
 }
