@@ -49,13 +49,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class NioHttpServer implements Closeable {
     public final int port;
 
-    private final PathHandler pathHandler;
+    private final HashMap<Integer, PathHandler> pathHandler = new HashMap<>();
     private final ContentEncodingRepository contentEncodingRepository;
     private final AtomicLong requestId = new AtomicLong();
     public int backlog = -1;
@@ -77,7 +78,7 @@ public class NioHttpServer implements Closeable {
     public NioHttpServer( int port ) {
         this.port = port;
 
-        pathHandler = new PathHandler();
+        pathHandler.put( port, new PathHandler() );
 
         contentEncodingRepository = new ContentEncodingRepository();
         contentEncodingRepository.addEncodingHandler( "gzip", new GzipEncodingProvider(), 100 );
@@ -86,7 +87,6 @@ public class NioHttpServer implements Closeable {
 
     public void start() {
         Undertow.Builder builder = Undertow.builder()
-            .addHttpListener( port, "0.0.0.0" )
 
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
@@ -106,26 +106,28 @@ public class NioHttpServer implements Closeable {
         builder.setServerOption( UndertowOptions.ALWAYS_SET_DATE, alwaysSetDate );
         builder.setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, alwaysSetKeepAlive );
 
-        io.undertow.server.HttpHandler handler = pathHandler;
-        if( forceCompressionSupport ) {
-            handler = new EncodingHandler( handler, contentEncodingRepository );
-            handler = new RequestEncodingHandler( handler )
-                .addEncoding( "gzip", GzipStreamSourceConduit.WRAPPER )
-                .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
-        }
+        pathHandler.forEach( ( port, ph ) -> {
+            io.undertow.server.HttpHandler handler = ph;
+            if( forceCompressionSupport ) {
+                handler = new EncodingHandler( handler, contentEncodingRepository );
+                handler = new RequestEncodingHandler( handler )
+                    .addEncoding( "gzip", GzipStreamSourceConduit.WRAPPER )
+                    .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
+            }
 
-        if( readTimeout > 0 )
-            handler = BlockingReadTimeoutHandler.builder().readTimeout( Duration.ofMillis( readTimeout ) ).nextHandler( handler ).build();
-        handler = new BlockingHandler( handler );
-        handler = new GracefulShutdownHandler( handler );
+            if( readTimeout > 0 )
+                handler = BlockingReadTimeoutHandler.builder().readTimeout( Duration.ofMillis( readTimeout ) ).nextHandler( handler ).build();
+            handler = new BlockingHandler( handler );
+            handler = new GracefulShutdownHandler( handler );
 
-        builder.setHandler( handler );
+            builder.addHttpListener( port, "0.0.0.0", handler );
+        } );
 
         server = builder.build();
         server.start();
 
-        log.info( "port {} statistics {} ioThreads {} workerThreads {}",
-            port, statistics,
+        log.info( "ports {} statistics {} ioThreads {} workerThreads {}",
+            pathHandler.keySet(), statistics,
             server.getWorker().getMXBean().getIoThreadCount(),
             server.getWorker().getMXBean().getMaxWorkerPoolSize()
         );
@@ -154,6 +156,10 @@ public class NioHttpServer implements Closeable {
     }
 
     public void bind( String prefix, HttpHandler handler, boolean compressionSupport ) {
+        bind( prefix, handler, compressionSupport, this.port );
+    }
+
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, int port ) {
         log.debug( "bind {}", prefix );
 
         Preconditions.checkNotNull( prefix );
@@ -168,15 +174,23 @@ public class NioHttpServer implements Closeable {
                 .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
-        pathHandler.addPrefixPath( prefix, httpHandler );
+        pathHandler.computeIfAbsent( port, p -> new PathHandler() ).addPrefixPath( prefix, httpHandler );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
-        bind( prefix, handler, true );
+        bind( prefix, handler, this.port );
+    }
+
+    public void bind( String prefix, HttpHandler handler, int port ) {
+        bind( prefix, handler, true, port );
     }
 
     public void unbind( String prefix ) {
-        pathHandler.removePrefixPath( prefix );
+        unbind( prefix, this.port );
+    }
+
+    public void unbind( String prefix, int port ) {
+        pathHandler.get( port ).removePrefixPath( prefix );
     }
 
     public void preStop() {
