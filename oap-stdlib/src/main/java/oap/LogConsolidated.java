@@ -40,7 +40,7 @@ public class LogConsolidated {
         if( isEnabledFor( logger, level ) ) {
             String uniqueIdentifier = getFileAndLine();
             var lastTimeAndCountNewValue = new TimeAndCount();
-            var lastTimeAndCountOldValue= lastLoggedTime.putIfAbsent( uniqueIdentifier, lastTimeAndCountNewValue );
+            var lastTimeAndCountOldValue = lastLoggedTime.putIfAbsent( uniqueIdentifier, lastTimeAndCountNewValue );
             if ( lastTimeAndCountOldValue == null ) {
                 log( logger, level, message, t );
                 return;
