@@ -43,9 +43,8 @@ public class KernelExtConfiguration extends Configuration<KernelExt> {
         var urls = urlsFromClassPath();
 
         for( var url : urls ) {
-            log.debug( "found {}", url );
             var config = fromUrl( url );
-            log.debug( "config = {}", config );
+            log.debug( "kernel: url {} found and config {} loading", url, config );
 
             config.modules.forEach( ( name, item ) -> {
                 if( modules.putIfAbsent( name, item ) != null ) {
@@ -55,7 +54,10 @@ public class KernelExtConfiguration extends Configuration<KernelExt> {
 
             config.services.forEach( ( name, item ) -> {
                 if( services.putIfAbsent( name, item ) != null ) {
-                    throw new ApplicationException( "Duplicate ext service configuration " + url + "#" + name );
+                    log.warn( "Duplicate ext service configuration " + url + "#" + name
+                        + ". Loaded services: " + config.services );
+//                    throw new ApplicationException( "Duplicate ext service configuration " + url + "#" + name
+//                        + ". Loaded services: " + config.services );
                 }
             } );
         }
