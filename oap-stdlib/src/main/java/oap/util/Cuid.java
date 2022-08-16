@@ -80,10 +80,7 @@ public interface Cuid {
             }
 
             var timeStr = cuid.substring( 0, cuid.length() - 8 );
-            System.out.println(timeStr);
             var timeL = Long.parseLong( timeStr, 16 );
-            System.out.println(timeL);
-            System.out.println(timeL >> 16);
             var time = new DateTime( timeL >> 16, DateTimeZone.UTC );
             var count = timeL & 0xFFFF;
 
