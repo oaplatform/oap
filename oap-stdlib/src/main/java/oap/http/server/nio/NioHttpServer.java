@@ -47,6 +47,8 @@ import org.xnio.Options;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.HashMap;
@@ -164,6 +166,8 @@ public class NioHttpServer implements Closeable {
 
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
+        if( server != null )
+            throw new UncheckedIOException( new BindException( "Bind failed: Server is already running" ) );
 
         io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange, requestId.incrementAndGet() ) );
 
@@ -183,14 +187,6 @@ public class NioHttpServer implements Closeable {
 
     public void bind( String prefix, HttpHandler handler, int port ) {
         bind( prefix, handler, true, port );
-    }
-
-    public void unbind( String prefix ) {
-        unbind( prefix, this.port );
-    }
-
-    public void unbind( String prefix, int port ) {
-        pathHandler.get( port ).removePrefixPath( prefix );
     }
 
     public void preStop() {
