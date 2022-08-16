@@ -48,14 +48,13 @@ public class GzipHttpTest extends Fixtures {
     private final EnvFixture envFixture;
     private NioHttpServer server;
 
-    {
+    public GzipHttpTest() {
         envFixture = fixture( new EnvFixture() );
     }
 
     @BeforeMethod
     public void beforeMethod() {
         server = new NioHttpServer( envFixture.portFor( getClass() ) );
-        server.start();
     }
 
     @AfterMethod
@@ -68,6 +67,7 @@ public class GzipHttpTest extends Fixtures {
         server.bind( "test", exchange ->
             exchange.responseOk( "test", true, TEXT_PLAIN )
         );
+        server.start();
 
         var response = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" );
 
@@ -88,6 +88,7 @@ public class GzipHttpTest extends Fixtures {
         server.bind( "test", exchange ->
             exchange.responseOk( new String( exchange.readBody() ), true, TEXT_PLAIN )
         );
+        server.start();
 
         var response = Client.DEFAULT.post( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
             ContentWriter.write( "test2", ofGzip() ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) );

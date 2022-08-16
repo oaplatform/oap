@@ -190,7 +190,8 @@ public class NioHttpServer implements Closeable {
     }
 
     public void preStop() {
-        server.stop();
+        if( server != null )
+            server.stop();
     }
 
     @Override
