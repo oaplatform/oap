@@ -25,15 +25,18 @@
 package oap.http.server.nio;
 
 import oap.http.Client;
+import oap.http.Http;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class NioHttpServerTest extends Fixtures {
     private final EnvFixture fixture;
@@ -71,5 +74,35 @@ public class NioHttpServerTest extends Fixtures {
                 .doesNotContainKey( CONNECTION );
 
         }
+    }
+
+    @Test
+    public void testBindToSpecificPort() throws IOException {
+        int port = fixture.portFor( getClass() );
+        int testPort = fixture.portFor( getClass() + "test" );
+
+        try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
+            httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort );
+
+            httpServer.start();
+
+            Client.Response response = Client.DEFAULT.get( "http://localhost:" + testPort + "/test" );
+
+            assertThat( response.contentString() ).isEqualTo( "test" );
+        }
+    }
+
+    @Test
+    public void testDenyBindAfterStart() throws IOException {
+        int port = fixture.portFor( getClass() );
+        int testPort = fixture.portFor( getClass() + "test" );
+
+        assertThatThrownBy( () -> {
+            try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
+                httpServer.start();
+
+                httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort );
+            }
+        } ).isInstanceOf( UncheckedIOException.class ).getCause().hasMessage( "Bind failed: Server is already running" );
     }
 }

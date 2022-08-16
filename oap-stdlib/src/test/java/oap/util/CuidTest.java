@@ -85,5 +85,8 @@ public class CuidTest {
         System.out.println( "--" );
         System.out.println( Cuid.UniqueCuid.parse( "17621CDBBFB001A0AF4E303" ) );
         System.out.println( Cuid.UniqueCuid.parse( "17621D24FDC00340AF4D20C" ) );
+
+        System.out.println( "--" );
+        System.out.println( Cuid.UniqueCuid.parse( "182864BB01800220AF4FE03" ) );
     }
 }
