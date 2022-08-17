@@ -31,12 +31,10 @@ import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class NioHttpServerTest extends Fixtures {
     private final EnvFixture fixture;
