@@ -125,6 +125,8 @@ public class NioHttpServer implements Closeable {
             builder.addHttpListener( port, "0.0.0.0", handler );
         } );
 
+        log.info( "bind {}", pathHandler );
+
         server = builder.build();
         server.start();
 
