@@ -80,29 +80,17 @@ public class NioHttpServerTest extends Fixtures {
     public void testBindToSpecificPort() throws IOException {
         int port = fixture.portFor( getClass() );
         int testPort = fixture.portFor( getClass() + "test" );
+        int testPort2 = fixture.portFor( getClass() + "test2" );
 
         try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
             httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort );
-
             httpServer.start();
+            httpServer.bind( "/test2", exchange -> exchange.responseOk( "test2", Http.ContentType.TEXT_PLAIN ), testPort2 );
+            httpServer.bind( "/test3", exchange -> exchange.responseOk( "test3", Http.ContentType.TEXT_PLAIN ), testPort2 );
 
-            Client.Response response = Client.DEFAULT.get( "http://localhost:" + testPort + "/test" );
-
-            assertThat( response.contentString() ).isEqualTo( "test" );
+            assertThat( Client.DEFAULT.get( "http://localhost:" + testPort + "/test" ).contentString() ).isEqualTo( "test" );
+            assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test2" ).contentString() ).isEqualTo( "test2" );
+            assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test3" ).contentString() ).isEqualTo( "test3" );
         }
-    }
-
-    @Test
-    public void testDenyBindAfterStart() throws IOException {
-        int port = fixture.portFor( getClass() );
-        int testPort = fixture.portFor( getClass() + "test" );
-
-        assertThatThrownBy( () -> {
-            try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
-                httpServer.start();
-
-                httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort );
-            }
-        } ).isInstanceOf( UncheckedIOException.class ).getCause().hasMessage( "Bind failed: Server is already running" );
     }
 }
