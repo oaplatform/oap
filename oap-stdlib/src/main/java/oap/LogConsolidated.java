@@ -25,31 +25,30 @@
 package oap;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 public class LogConsolidated {
-    private static final ConcurrentHashMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, TimeAndCount> lastLoggedTime = new ConcurrentHashMap<>();
 
     public static void log( Logger logger, Level level, long timeBetweenLogs, String message, Throwable t ) {
         if( isEnabledFor( logger, level ) ) {
             String uniqueIdentifier = getFileAndLine();
-            var lastTimeAndCount = lastLoggedTime.get( uniqueIdentifier );
-            if( lastTimeAndCount != null ) {
-                synchronized( lastTimeAndCount ) {
-                    long now = System.currentTimeMillis();
-                    if( now - lastTimeAndCount.time < timeBetweenLogs ) {
-                        lastTimeAndCount.count++;
-                        return;
-                    } else log( logger, level, "|x" + lastTimeAndCount.count + "| " + message, t );
-                }
-            } else {
+            var lastTimeAndCountNewValue = new TimeAndCount();
+            var lastTimeAndCountOldValue = lastLoggedTime.putIfAbsent( uniqueIdentifier, lastTimeAndCountNewValue );
+            if ( lastTimeAndCountOldValue == null ) {
                 log( logger, level, message, t );
+                return;
             }
-            lastLoggedTime.put( uniqueIdentifier, new TimeAndCount() );
+            Pair<Boolean, Integer> count = lastTimeAndCountOldValue.tick( timeBetweenLogs );
+            if ( count._1 ) {
+                log( logger, level, "|x" + count._2 + "| " + message, t );
+            }
         }
     }
 
@@ -104,6 +103,16 @@ public class LogConsolidated {
         TimeAndCount() {
             this.time = System.currentTimeMillis();
             this.count = 0;
+        }
+
+        synchronized Pair<Boolean, Integer> tick( long timeBetweenLogs ) {
+            count++;
+            long now = System.currentTimeMillis();
+            if( now - time < timeBetweenLogs ) {
+                return Pair.__( false, count );
+            }
+            time = now;
+            return Pair.__( true, count );
         }
     }
 }

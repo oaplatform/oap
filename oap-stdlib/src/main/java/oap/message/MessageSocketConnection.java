@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class MessageSocketConnection implements Closeable {
+public class MessageSocketConnection implements Closeable, AutoCloseable {
     public final DataOutputStream out;
     public final DataInputStream in;
     private final Socket socket;

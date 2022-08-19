@@ -37,12 +37,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 public class Dictionaries {
     public static final String DEFAULT_PATH = "/opt/oap-dictionary";
     private static final Map<String, URL> dictionaries = new HashMap<>();
-    private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
 
     static {
         addAllPaths( Files.fastWildcard( DEFAULT_PATH, "*.json" ) );
