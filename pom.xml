@@ -84,7 +84,7 @@
         <oap.deps.okhttp.version>4.9.3</oap.deps.okhttp.version>
         <oap.deps.apache.httpcomponents.version>4.4.14</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.13</oap.deps.apache.httpclient.version>
-        <oap.deps.apache.httpasyncclient.version>4.1.4</oap.deps.apache.httpasyncclient.version>
+        <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
         <oap.deps.apache.httpmime.version>4.5.13</oap.deps.apache.httpmime.version>
         <oap.deps.apache.configuration.version>2.7</oap.deps.apache.configuration.version>
 
