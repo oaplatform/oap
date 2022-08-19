@@ -81,9 +81,7 @@ public class MessageServerTest extends Fixtures {
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             client.start();
-            server.start();
-
-            assertThatCode( messageHttpHandler::start )
+            assertThatCode( messageHttpHandler::preStart )
                 .isInstanceOf( IllegalArgumentException.class )
                 .hasMessage( "duplicate [l2-127, l1-127]" );
         }
@@ -107,8 +105,8 @@ public class MessageServerTest extends Fixtures {
 
                 client1.start();
                 client2.start();
+                messageHttpHandler.preStart();
                 server.start();
-                messageHttpHandler.start();
 
                 client1.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
                 client2.send( MESSAGE_TYPE, "123", ofString() );
@@ -148,8 +146,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             client
                 .send( MESSAGE_TYPE, "123", ofString() )
@@ -183,8 +181,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             client
                 .send( MESSAGE_TYPE, "123", ofJson() )
@@ -216,8 +214,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             client
                 .send( MESSAGE_TYPE, "123", ofJson() )
@@ -248,8 +246,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             listener1.throwUnknownError( Integer.MAX_VALUE, true );
             client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
@@ -278,8 +276,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             listener1.throwUnknownError( 4, false );
             client.send( MESSAGE_TYPE, "123", ofString() );
@@ -310,8 +308,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             listener1.setStatus( 567 );
             client.send( MESSAGE_TYPE, "123", ofString() ).syncMemory();
@@ -350,8 +348,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             client
                 .send( MESSAGE_TYPE, "123", ofString() )
@@ -397,8 +395,8 @@ public class MessageServerTest extends Fixtures {
                  var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
                 server.bind( "/messages", messageHttpHandler );
+                messageHttpHandler.preStart();
                 server.start();
-                messageHttpHandler.start();
 
                 client
                     .send( MESSAGE_TYPE, "123", ofString() )
@@ -421,8 +419,8 @@ public class MessageServerTest extends Fixtures {
                  var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
                 server.bind( "/messages", messageHttpHandler );
+                messageHttpHandler.preStart();
                 server.start();
-                messageHttpHandler.start();
 
                 client
                     .send( MESSAGE_TYPE, "123", ofString() )
@@ -452,8 +450,8 @@ public class MessageServerTest extends Fixtures {
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             listener1.throwUnknownError( 1, false );
 
@@ -520,8 +518,8 @@ public class MessageServerTest extends Fixtures {
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             var msgDirectory = testPath( "tmp" );
             try( var client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
@@ -581,8 +579,8 @@ public class MessageServerTest extends Fixtures {
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
+            messageHttpHandler.preStart();
             server.start();
-            messageHttpHandler.start();
 
             listener1.setStatus( 300 );
 
