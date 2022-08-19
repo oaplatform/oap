@@ -78,7 +78,7 @@
         <oap.deps.logback.version>1.2.6</oap.deps.logback.version>
         <oap.deps.slf4j.version>1.7.32</oap.deps.slf4j.version>
 
-        <oap.deps.mockito.version>4.0.0</oap.deps.mockito.version>
+        <oap.deps.mockito.version>4.7.0</oap.deps.mockito.version>
 
 
         <oap.deps.okhttp.version>4.9.3</oap.deps.okhttp.version>
