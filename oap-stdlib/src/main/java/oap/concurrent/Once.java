@@ -30,15 +30,21 @@ public class Once {
     private static final Set<Object> done = new HashSet<>();
 
     public static void executeOnce( Runnable action ) {
-        if( !done.contains( action.getClass() ) ) {
+        boolean needRun = false;
+        synchronized( Once.class ) {
+            needRun = !done.contains( action.getClass() );
+        }
+        if( needRun ) {
             action.run();
-            done.add( action.getClass() );
+            synchronized( Once.class ) {
+                done.add( action.getClass() );
+            }
         }
     }
 
     public static Runnable once( Runnable action ) {
         return new Runnable() {
-            boolean done = false;
+            volatile boolean done = false;
 
             @Override
             public void run() {
