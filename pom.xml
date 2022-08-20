@@ -96,7 +96,7 @@
 
         <oap.deps.joda.version>2.10.13</oap.deps.joda.version>
 
-        <oap.deps.jackson.version>2.13.0</oap.deps.jackson.version>
+        <oap.deps.jackson.version>2.13.3</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
         <oap.deps.jackson-coreutils.version>2.0</oap.deps.jackson-coreutils.version>
         <oap.deps.typesafe-config.version>1.4.3</oap.deps.typesafe-config.version>
