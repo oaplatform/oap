@@ -107,7 +107,7 @@
         <oap.deps.micrometer.version>1.9.3</oap.deps.micrometer.version>
         <oap.deps.fastutil.version>8.5.6</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
-        <oap.deps.fop.version>2.2.0</oap.deps.fop.version>
+        <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
         <oap.deps.lz4.version>1.8.0</oap.deps.lz4.version>
         <oap.deps.fst.version>3.0.3-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
