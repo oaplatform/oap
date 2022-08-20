@@ -94,7 +94,7 @@
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.11.0</oap.deps.apache.io.version>
 
-        <oap.deps.joda.version>2.10.13</oap.deps.joda.version>
+        <oap.deps.joda.version>2.11.0</oap.deps.joda.version>
 
         <oap.deps.jackson.version>2.13.3</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
