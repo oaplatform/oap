@@ -122,7 +122,7 @@
         <oap.deps.maven.plugin-plugin.version>3.6.4</oap.deps.maven.plugin-plugin.version>
         <oap.deps.plugins.antlr4.version>4.10.1</oap.deps.plugins.antlr4.version>
 
-        <oap.deps.aws-java-sdk.version>1.12.29</oap.deps.aws-java-sdk.version>
+        <oap.deps.aws-java-sdk.version>1.12.286</oap.deps.aws-java-sdk.version>
         <oap.deps.s3mock.version>0.2.6</oap.deps.s3mock.version>
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
