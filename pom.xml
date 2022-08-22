@@ -101,7 +101,7 @@
         <oap.deps.jackson-coreutils.version>2.0</oap.deps.jackson-coreutils.version>
         <oap.deps.typesafe-config.version>1.4.3</oap.deps.typesafe-config.version>
 
-        <oap.deps.lombok.version>1.18.22</oap.deps.lombok.version>
+        <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
 
         <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
         <oap.deps.micrometer.version>1.9.3</oap.deps.micrometer.version>
