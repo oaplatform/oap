@@ -71,7 +71,7 @@
 
         <oap.deps.testng.version>7.5</oap.deps.testng.version>
         <oap.deps.assertj.version>3.21.0</oap.deps.assertj.version>
-        <oap.deps.mockserver-netty.version>5.11.2</oap.deps.mockserver-netty.version>
+        <oap.deps.mockserver-netty.version>5.13.2</oap.deps.mockserver-netty.version>
 
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
 
