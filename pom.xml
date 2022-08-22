@@ -116,7 +116,7 @@
 
         <oap.deps.maven.plexus-utils.version>3.4.1</oap.deps.maven.plexus-utils.version>
         <oap.deps.maven.plugin-build-helper.version>1.10</oap.deps.maven.plugin-build-helper.version>
-        <oap.deps.maven.plugin-api.version>3.8.1</oap.deps.maven.plugin-api.version>
+        <oap.deps.maven.plugin-api.version>3.8.6</oap.deps.maven.plugin-api.version>
         <oap.deps.maven.version>3.0-alpha-2</oap.deps.maven.version>
         <oap.deps.maven.plugin-annotations.version>3.6.4</oap.deps.maven.plugin-annotations.version>
         <oap.deps.maven.plugin-plugin.version>3.6.4</oap.deps.maven.plugin-plugin.version>
