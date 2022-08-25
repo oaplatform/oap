@@ -24,13 +24,14 @@
 
 package oap.concurrent;
 
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+
+import static java.util.Objects.requireNonNull;
 
 
 @Slf4j
@@ -42,27 +43,28 @@ public class ThreadLocalMap<T extends Closeable> implements Closeable {
         this( null );
     }
 
-    private ThreadLocalMap( Supplier<T> init ) {
+    public ThreadLocalMap( Supplier<T> init ) {
         this.init = init;
     }
 
+    /**
+     * @see ThreadLocalMap#ThreadLocalMap(Supplier)
+     */
+    @Deprecated
     public static <T extends Closeable> ThreadLocalMap<T> withInitial( Supplier<T> init ) {
-        Preconditions.checkNotNull( init );
-
-        return new ThreadLocalMap<>( init );
+        return new ThreadLocalMap<>( requireNonNull( init ) );
     }
 
     @Override
     public void close() throws IOException {
         IOException lastE = null;
-        for( var v : map.values() ) {
+        for( var v : map.values() )
             try {
                 v.close();
             } catch( IOException e ) {
                 log.trace( e.getMessage(), e );
                 lastE = e;
             }
-        }
 
         if( lastE != null ) throw lastE;
     }
