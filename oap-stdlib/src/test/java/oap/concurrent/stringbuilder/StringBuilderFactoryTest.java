@@ -64,7 +64,7 @@ public class StringBuilderFactoryTest {
         );
     }
 
-    static class Action {
+    public static class Action {
         private final StringBuilderFactory factory;
         private final AtomicReference<String> callSequence = new AtomicReference<>( "" );
 
