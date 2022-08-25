@@ -116,7 +116,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         hashes.update( hashTtl );
     }
 
-    public void start() {
+    public void preStart() {
         log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}'",
             controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
             clientHashCacheSize, context );

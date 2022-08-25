@@ -160,8 +160,6 @@ public class Kernel implements Closeable {
         log.debug( "initializing application kernel  " + name + "..." );
         log.debug( "application config {}", config );
 
-        log.debug( "new application config {}", config );
-
         this.profiles.addAll( config.getProfiles() );
 
         if( config.boot.main.isEmpty() ) throw new ApplicationException( "boot.main must contain at least one module name" );
