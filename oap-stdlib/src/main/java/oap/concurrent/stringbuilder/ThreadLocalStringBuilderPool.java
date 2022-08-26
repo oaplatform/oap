@@ -22,32 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.lang;
+package oap.concurrent.stringbuilder;
 
-import java.util.function.Consumer;
-@Deprecated
-public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
-    public static String wrap( StringBuilder sb, Runnable runnable ) {
-        sb.setLength( 0 );
-        runnable.run();
-        return sb.toString();
+import cn.danielw.fop.Poolable;
+import oap.concurrent.pool.StringBuilderPool;
+
+public class ThreadLocalStringBuilderPool {
+    private final ThreadLocal<StringBuilderPool> pool;
+    private String prefix = null;
+
+    public ThreadLocalStringBuilderPool( int partitionSize, int poolMinSize, int poolMaxSize, long maxIdle, long maxWait ) {
+        pool = ThreadLocal.withInitial( () -> new StringBuilderPool( partitionSize, poolMinSize, poolMaxSize, maxIdle, maxWait ).withMethrics( prefix + ":" + Thread.currentThread().getName() ) );
     }
 
-    public String wrap( Consumer<StringBuilder> cons ) {
-        StringBuilder sb = get();
-        cons.accept( sb );
-        return sb.toString();
+
+    public Poolable<StringBuilder> borrowObject( boolean blocking ) {
+        return pool.get().borrowObject( blocking );
     }
 
-    @Override
-    protected StringBuilder initialValue() {
-        return new StringBuilder();
+    public Poolable<StringBuilder> borrowObject() {
+        return pool.get().borrowObject();
     }
 
-    @Override
-    public StringBuilder get() {
-        StringBuilder sb = super.get();
-        sb.setLength( 0 );
-        return sb;
+    public int getSize() {
+        return pool.get().getSize();
     }
+
+    public ThreadLocalStringBuilderPool withMethrics( String prefix ) {
+        this.prefix = prefix;
+        return this;
+    }
+
 }
