@@ -22,32 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.lang;
+package oap.concurrent.stringbuilder;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-@Deprecated
-public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
-    public static String wrap( StringBuilder sb, Runnable runnable ) {
-        sb.setLength( 0 );
-        runnable.run();
-        return sb.toString();
-    }
 
-    public String wrap( Consumer<StringBuilder> cons ) {
-        StringBuilder sb = get();
-        cons.accept( sb );
-        return sb.toString();
+public class ThreadLocalStringBuilderFactory implements StringBuilderFactory {
+    private final Map<Object, ThreadLocal<StringBuilder>> builders = new ConcurrentHashMap<>();
+
+    @Override
+    public StringBuilder create( Object key ) {
+        StringBuilder stringBuilder = builders.computeIfAbsent( key,
+            k -> ThreadLocal.withInitial( StringBuilder::new ) ).get();
+        stringBuilder.setLength( 0 );
+        return stringBuilder;
     }
 
     @Override
-    protected StringBuilder initialValue() {
-        return new StringBuilder();
-    }
-
-    @Override
-    public StringBuilder get() {
-        StringBuilder sb = super.get();
-        sb.setLength( 0 );
-        return sb;
+    public String stringOf( Object key, Consumer<StringBuilder> consumer ) {
+        StringBuilder stringBuilder = create( key );
+        consumer.accept( stringBuilder );
+        return stringBuilder.toString();
     }
 }

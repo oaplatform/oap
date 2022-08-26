@@ -22,32 +22,20 @@
  * SOFTWARE.
  */
 
-package oap.lang;
+package oap.concurrent.stringbuilder;
 
 import java.util.function.Consumer;
-@Deprecated
-public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
-    public static String wrap( StringBuilder sb, Runnable runnable ) {
-        sb.setLength( 0 );
-        runnable.run();
-        return sb.toString();
-    }
 
-    public String wrap( Consumer<StringBuilder> cons ) {
-        StringBuilder sb = get();
-        cons.accept( sb );
-        return sb.toString();
-    }
-
+public class ConcurrentStringBuilderFactory implements StringBuilderFactory {
     @Override
-    protected StringBuilder initialValue() {
+    public StringBuilder create( Object key ) {
         return new StringBuilder();
     }
 
-    @Override
-    public StringBuilder get() {
-        StringBuilder sb = super.get();
-        sb.setLength( 0 );
-        return sb;
+    public String stringOf( Object key, Consumer<StringBuilder> consumer ) {
+        StringBuilder stringBuilder = new StringBuilder();
+        consumer.accept( stringBuilder );
+        return stringBuilder.toString();
     }
+
 }
