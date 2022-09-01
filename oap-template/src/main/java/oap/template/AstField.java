@@ -50,7 +50,7 @@ public class AstField extends Ast {
             if( type.isOptional() ) targetType = type.getActualTypeArguments0();
 
             if( !castType.isAssignableFrom( Primitives.wrap( targetType.getTypeClass() ) ) ) {
-                throw new ClassCastException( "current '" + type + "' required '" + castType + "'" );
+                throw new ClassCastException( "variableName " + variableName + " fieldName " + fieldName + ": current '" + type + "' required '" + castType + "'" );
             }
         }
 
