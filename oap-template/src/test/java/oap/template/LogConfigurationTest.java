@@ -26,7 +26,9 @@ package oap.template;
 
 import oap.io.Files;
 import oap.lang.ThreadLocalStringBuilder;
+import oap.reflect.Reflect;
 import oap.reflect.TypeRef;
+import oap.template.LogConfiguration.FieldType;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.BeforeClass;
@@ -34,7 +36,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static oap.io.content.ContentWriter.ofString;
@@ -99,6 +105,41 @@ public class LogConfigurationTest extends Fixtures {
         assertThat( ar.children.get( 0 ).children ).hasSize( 1 );
         assertThat( ar.children.get( 0 ).children.get( 0 ).children ).hasSize( 1 );
         assertThat( ar.children.get( 0 ).children.get( 0 ).children.get( 0 ) ).isInstanceOf( AstOptional.class );
+    }
+
+    @Test
+    public void testTypeListInteger() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = LIST_FIELD
+                      type = INTEGER_ARRAY
+                      default = []
+                      path = list
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        logConfiguration.compact = true;
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+        c.list = List.of( 1, 2 );
+
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "[1,2]" );
     }
 
     @Test
@@ -242,5 +283,32 @@ public class LogConfigurationTest extends Fixtures {
         dictionaryTemplate.templateFunction.render( cp, out );
 
         assertThat( out.toString() ).isEqualTo( "1\t10" );
+    }
+
+    @Test
+    public void testFieldTypeParse() throws ClassNotFoundException {
+        assertThat( FieldType.parse( "java.lang.Integer" ) ).isEqualTo( new FieldType( Integer.class ) );
+        assertThat( FieldType.parse( "java.util.Collection<java.lang.Integer>" ) )
+            .isEqualTo( new FieldType( Collection.class, List.of( new FieldType( Integer.class ) ) ) );
+        assertThat( FieldType.parse( "java.util.Collection<java.util.List<java.lang.Integer>>" ) )
+            .isEqualTo( new FieldType( Collection.class, List.of( new FieldType( List.class, List.of( new FieldType( Integer.class ) ) ) ) ) );
+        assertThat( FieldType.parse( "java.util.Map<java.lang.String,java.lang.Integer>" ) )
+            .isEqualTo( new FieldType( Map.class, List.of( new FieldType( String.class ), new FieldType( Integer.class ) ) ) );
+    }
+
+    @Test
+    public void testFieldTypeIsAssignableFrom() {
+        assertThat( new FieldType( Integer.class ).isAssignableFrom( new TemplateType( Reflect.reflect( Integer.class ).getType() ) ) ).isTrue();
+        assertThat( new FieldType( Integer.class ).isAssignableFrom( new TemplateType( Reflect.reflect( int.class ).getType() ) ) ).isTrue();
+
+        assertThat( new FieldType( Integer.class ).isAssignableFrom( new TemplateType( Reflect.reflect( Long.class ).getType() ) ) ).isFalse();
+        assertThat( new FieldType( Integer.class ).isAssignableFrom( new TemplateType( Reflect.reflect( long.class ).getType() ) ) ).isFalse();
+
+        assertThat( new FieldType( Collection.class ).isAssignableFrom( new TemplateType( Reflect.reflect( List.class ).getType() ) ) ).isTrue();
+
+        assertThat( new FieldType( Collection.class, List.of( new FieldType( String.class ) ) )
+            .isAssignableFrom( new TemplateType( Reflect.reflect( new TypeRef<HashSet<String>>() {} ).getType() ) ) ).isTrue();
+        assertThat( new FieldType( Collection.class, List.of( new FieldType( String.class ) ) )
+            .isAssignableFrom( new TemplateType( Reflect.reflect( new TypeRef<HashSet<Integer>>() {} ).getType() ) ) ).isFalse();
     }
 }

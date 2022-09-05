@@ -25,6 +25,9 @@
 package oap.template;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Primitives;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Configuration;
 import oap.dictionary.Dictionary;
@@ -33,10 +36,13 @@ import oap.util.Lists;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.ParameterizedType;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
 
@@ -53,6 +59,7 @@ import static oap.util.Pair.__;
 @Deprecated
 public class LogConfiguration extends Configuration {
     public static final HashMap<String, String> types = new HashMap<>();
+    public static final String COLLECTION_SUFFIX = "_ARRAY";
 
     static {
         types.put( "DATETIME", "org.joda.time.DateTime" );
@@ -115,6 +122,13 @@ public class LogConfiguration extends Configuration {
             var id = field.getId();
             var path = ( String ) field.getProperty( "path" ).orElseThrow();
             var idType = ( String ) field.getProperty( "type" ).orElseThrow();
+
+            boolean collection = false;
+            if( idType.endsWith( COLLECTION_SUFFIX ) ) {
+                collection = true;
+                idType = idType.substring( 0, idType.length() - COLLECTION_SUFFIX.length() );
+            }
+
             var javaType = types.get( idType );
             Preconditions.checkNotNull( javaType, "unknown type " + idType );
             var defaultValue = field.getProperty( "default" )
@@ -125,7 +139,7 @@ public class LogConfiguration extends Configuration {
             var endPath = lastFieldIndex > 0 ? path.substring( lastFieldIndex + 1 ) : path;
 
             var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
-            cols.add( __( path, "${" + startPath + "<" + javaType + ">" + endPath + " ?? " + pDefaultValue + "}" ) );
+            cols.add( __( path, "${" + startPath + toJavaType( javaType, collection ) + endPath + " ?? " + pDefaultValue + "}" ) );
             headers.add( id );
         }
 
@@ -142,8 +156,75 @@ public class LogConfiguration extends Configuration {
         return new DictionaryTemplate<>( templateFunc, template, headers.toString() );
     }
 
+    private static String toJavaType( String javaType, boolean collection ) {
+        StringBuilder sb = new StringBuilder( "<" );
+        if( collection ) sb.append( "java.util.Collection<" );
+        sb.append( javaType );
+        if( collection ) sb.append( ">" );
+        sb.append( ">" );
+        return sb.toString();
+    }
+
     public TemplateEngine getEngine() {
         return engine;
     }
 
+    @ToString
+    @EqualsAndHashCode
+    public static class FieldType {
+        public final Class<?> type;
+        public final ArrayList<FieldType> parameters = new ArrayList<>();
+
+        public FieldType( Class<?> type ) {
+            this.type = type;
+        }
+
+        public FieldType( Class<?> type, Collection<FieldType> parameters ) {
+            this.type = type;
+            this.parameters.addAll( parameters );
+        }
+
+        public static FieldType parse( String type ) throws ClassNotFoundException {
+            var generics = new ArrayList<FieldType>();
+            String baseType = type;
+
+            var genericIndex = type.indexOf( '<' );
+            if( genericIndex > 0 ) {
+                baseType = type.substring( 0, genericIndex );
+                var endGenericIndex = type.lastIndexOf( '>' );
+                var genericString = type.substring( genericIndex + 1, endGenericIndex );
+
+                int lastIndex = 0;
+                while( true ) {
+                    int ch = genericString.indexOf( ',', lastIndex );
+                    if( ch < 0 ) break;
+
+                    String g = genericString.substring( lastIndex, ch );
+                    lastIndex = ch + 1;
+
+                    generics.add( parse( g ) );
+                }
+
+                generics.add( parse( genericString.substring( lastIndex ) ) );
+            }
+            return new FieldType( Class.forName( baseType ), generics );
+        }
+
+        public boolean isAssignableFrom( TemplateType templateType ) {
+            if( !type.isAssignableFrom( Primitives.wrap( templateType.getTypeClass() ) ) ) return false;
+
+            if( !parameters.isEmpty() || templateType.type instanceof ParameterizedType ) {
+                if( !parameters.isEmpty() && !( templateType.type instanceof ParameterizedType ) ) return false;
+
+                List<TemplateType> actualArguments = templateType.getActualArguments();
+                if( actualArguments.size() != parameters.size() ) return false;
+
+                for( int i = 0; i < parameters.size(); i++ ) {
+                    if( !parameters.get( 0 ).isAssignableFrom( actualArguments.get( i ) ) ) return false;
+                }
+            }
+
+            return true;
+        }
+    }
 }

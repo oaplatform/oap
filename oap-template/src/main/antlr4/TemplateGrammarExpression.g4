@@ -51,6 +51,7 @@ defaultValueType returns [String v]
     | longRule { $v = $longRule.text; }
     | FLOAT { $v = $FLOAT.text; }
     | BOOLEAN { $v = $BOOLEAN.text; }
+    | LBRACK RBRACK { $v = "java.util.List.of()"; }
     ; 
 
 longRule

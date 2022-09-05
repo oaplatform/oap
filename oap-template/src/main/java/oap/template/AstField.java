@@ -24,17 +24,17 @@
 
 package oap.template;
 
-import com.google.common.primitives.Primitives;
 import lombok.ToString;
+import oap.template.LogConfiguration.FieldType;
 
 @ToString( callSuper = true )
 public class AstField extends Ast {
     final String variableName;
     final String fieldName;
     final boolean forceCast;
-    final Class<?> castType;
+    final FieldType castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, Class<?> castType ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
         super( fieldType );
 
         this.fieldName = fieldName;
@@ -49,7 +49,7 @@ public class AstField extends Ast {
             var targetType = type;
             if( type.isOptional() ) targetType = type.getActualTypeArguments0();
 
-            if( !castType.isAssignableFrom( Primitives.wrap( targetType.getTypeClass() ) ) ) {
+            if( !castType.isAssignableFrom( targetType ) ) {
                 throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
             }
         }
