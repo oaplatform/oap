@@ -105,7 +105,14 @@ exp[TemplateType parentType] returns [MaxMin ast]
     ;
 
 concatenation[TemplateType parentType] returns [AstConcatenation ast]
-    : LBRACE citems[parentType] { $ast = new AstConcatenation(parentType, $citems.list); } RBRACE
+    : CAST_TYPE? LBRACE citems[parentType] {
+        try {
+        com.google.common.base.Preconditions.checkArgument(  $CAST_TYPE == null || oap.template.LogConfiguration.FieldType.parse( $CAST_TYPE.text.substring(1, $CAST_TYPE.text.length() - 1) ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
+        $ast = new AstConcatenation(parentType, $citems.list);
+        } catch ( java.lang.ClassNotFoundException e) {
+          throw new TemplateException( e.getMessage(), e );
+        }
+      } RBRACE
     ;
 
 citems[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<Ast>()]

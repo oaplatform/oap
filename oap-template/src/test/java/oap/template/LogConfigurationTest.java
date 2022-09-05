@@ -132,7 +132,6 @@ public class LogConfigurationTest extends Fixtures {
             """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
-        logConfiguration.compact = true;
         var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
 
         var c = new TestTemplateClass();
@@ -140,6 +139,41 @@ public class LogConfigurationTest extends Fixtures {
 
         var res = dictionaryTemplate.templateFunction.render( c );
         assertThat( res ).isEqualTo( "[1,2]" );
+    }
+
+    @Test
+    public void testConcatenation() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = CFIELD
+                      type = STRING
+                      default = ""
+                      path = "{booleanField, \\"x\\", fieldNullable}"
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+        c.booleanField = true;
+        c.fieldNullable = "test";
+
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "truextest" );
     }
 
     @Test
