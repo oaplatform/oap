@@ -44,10 +44,10 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
         this.acc = acc;
         try {
-            var render = Render.init( name, new TemplateType( type.type() ), acc );
+            var render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
 
             var line = new AtomicInteger( 0 );

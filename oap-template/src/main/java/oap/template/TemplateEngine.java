@@ -164,7 +164,7 @@ public class TemplateEngine implements Runnable {
                 if( postProcess != null )
                     postProcess.accept( ast );
 
-                var tf = new JavaTemplate<>( name, type, tmpPath, acc, ast );
+                var tf = new JavaTemplate<>( name, template, type, tmpPath, acc, ast );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
 
             } );
