@@ -41,10 +41,18 @@ public class Threads {
     public static void interruptAndJoin( Thread thread ) {
         if( thread != null ) {
             thread.interrupt();
-            try {
-                thread.join();
-            } catch( InterruptedException ignored ) {
-            }
+            joinSafely( thread );
+        }
+    }
+
+    public static void joinSafely( Thread... threads ) {
+        for( Thread thread : threads ) joinSafely( thread );
+    }
+
+    public static void joinSafely( Thread thread ) {
+        if( thread != null ) try {
+            thread.join();
+        } catch( InterruptedException ignored ) {
         }
     }
 

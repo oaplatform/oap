@@ -29,9 +29,10 @@ import oap.reflect.Reflection;
 import oap.util.Lists;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class IdAccessor {
-    private static final ConcurrentHashMap<Class<?>, Accessor<?>> ids = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Class<?>, Accessor<?>> ids = new ConcurrentHashMap<>();
 
     public static <I> I get( Object value ) {
         return IdAccessor.<I>accessor( value.getClass() ).get( value );

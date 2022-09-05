@@ -22,38 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.scheduler;
+package oap.concurrent.stringbuilder;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.util.function.Try;
+import cn.danielw.fop.Poolable;
+import oap.concurrent.pool.StringBuilderPool;
 
-import java.io.Closeable;
-import java.util.concurrent.TimeUnit;
+public class ThreadLocalStringBuilderPool {
+    private final ThreadLocal<StringBuilderPool> pool;
+    private String prefix = null;
 
-@Slf4j
-public class ScheduledExecutorService implements Closeable {
-    public final java.util.concurrent.ScheduledExecutorService scheduledExecutorService;
-
-    public ScheduledExecutorService( java.util.concurrent.ScheduledExecutorService scheduledExecutorService ) {
-        this.scheduledExecutorService = scheduledExecutorService;
+    public ThreadLocalStringBuilderPool( int partitionSize, int poolMinSize, int poolMaxSize, long maxIdle, long maxWait ) {
+        pool = ThreadLocal.withInitial( () -> new StringBuilderPool( partitionSize, poolMinSize, poolMaxSize, maxIdle, maxWait ).withMethrics( prefix + ":" + Thread.currentThread().getName() ) );
     }
 
-    public void scheduleWithFixedDelay( Runnable command, long initialDelay, long delay, TimeUnit unit ) {
-        scheduledExecutorService.scheduleWithFixedDelay( Try.catching( command ).logOnException( log ), initialDelay, delay, unit );
+
+    public Poolable<StringBuilder> borrowObject( boolean blocking ) {
+        return pool.get().borrowObject( blocking );
     }
 
-    public void shutdown( long timeout, TimeUnit unit ) {
-        try {
-            scheduledExecutorService.shutdown();
-            scheduledExecutorService.awaitTermination( timeout, unit );
-        } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-        }
-        close();
+    public Poolable<StringBuilder> borrowObject() {
+        return pool.get().borrowObject();
     }
 
-    @Override
-    public void close() {
-        scheduledExecutorService.shutdownNow();
+    public int getSize() {
+        return pool.get().getSize();
     }
+
+    public ThreadLocalStringBuilderPool withMethrics( String prefix ) {
+        this.prefix = prefix;
+        return this;
+    }
+
 }

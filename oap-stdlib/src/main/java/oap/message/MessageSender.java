@@ -72,6 +72,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -95,7 +96,6 @@ import static oap.util.Pair.__;
 public class MessageSender implements Closeable {
     private static final Pair<MessageStatus, Short> STATUS_OK = __( OK, MessageProtocol.STATUS_OK );
 
-    private final Object syncMemoryLock = new Object();
     private final Object syncDiskLock = new Object();
     private final String host;
     private final int port;
@@ -103,7 +103,7 @@ public class MessageSender implements Closeable {
     private final MessageNoRetryStrategy messageNoRetryStrategy;
     private final long clientId = Cuid.UNIQUE.nextLong();
     private final Messages messages = new Messages();
-    private final ConcurrentHashMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
     private final String messageUrl;
     private final long memorySyncPeriod;
     @ServiceName
@@ -114,9 +114,9 @@ public class MessageSender implements Closeable {
     public long globalIoRetryTimeout = Dates.s( 1 );
     public long retryTimeout = Dates.s( 1 );
     public long keepAliveDuration = Dates.d( 30 );
-    protected long timeout = 5000;
+    protected long timeout = Dates.s( 5 );
     protected long connectionTimeout = Dates.s( 30 );
-    private boolean closed = false;
+    private volatile boolean closed = false;
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
     private OkHttpClient httpClient;
@@ -191,6 +191,7 @@ public class MessageSender implements Closeable {
 
         if( memorySyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
+        log.info( "[{}] message server started", name );
     }
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
@@ -224,6 +225,7 @@ public class MessageSender implements Closeable {
                 Thread.sleep( 100 );
                 count++;
             } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
                 break;
             }
         }
@@ -259,8 +261,7 @@ public class MessageSender implements Closeable {
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
                 log.error( "[{}] type: {}, md5: {}, data: {}",
-                    name, message.messageType, message.getHexMd5(), message.getHexData() );
-                log.error( e.getMessage(), e );
+                    name, message.messageType, message.getHexMd5(), message.getHexData(), e );
             }
         }
     }
@@ -301,6 +302,9 @@ public class MessageSender implements Closeable {
                     .build();
                 Call call = httpClient.newCall( request );
                 var response = call.execute();
+                if ( response.code() >= 300 || response.code() < 200 ) {
+                    throw new IOException( "Not OK (" + response.code() + ") response code returned for url: " + messageUrl );
+                }
                 return onOkRespone( messageInfo, response, now );
 
             } catch( UnknownHostException e ) {

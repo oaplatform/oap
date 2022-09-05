@@ -22,38 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.scheduler;
+package oap.concurrent.stringbuilder;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.util.function.Try;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
-import java.io.Closeable;
-import java.util.concurrent.TimeUnit;
+public class ThreadLocalStringBuilderFactory implements StringBuilderFactory {
+    private final Map<Object, ThreadLocal<StringBuilder>> builders = new ConcurrentHashMap<>();
 
-@Slf4j
-public class ScheduledExecutorService implements Closeable {
-    public final java.util.concurrent.ScheduledExecutorService scheduledExecutorService;
-
-    public ScheduledExecutorService( java.util.concurrent.ScheduledExecutorService scheduledExecutorService ) {
-        this.scheduledExecutorService = scheduledExecutorService;
-    }
-
-    public void scheduleWithFixedDelay( Runnable command, long initialDelay, long delay, TimeUnit unit ) {
-        scheduledExecutorService.scheduleWithFixedDelay( Try.catching( command ).logOnException( log ), initialDelay, delay, unit );
-    }
-
-    public void shutdown( long timeout, TimeUnit unit ) {
-        try {
-            scheduledExecutorService.shutdown();
-            scheduledExecutorService.awaitTermination( timeout, unit );
-        } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-        }
-        close();
+    @Override
+    public StringBuilder create( Object key ) {
+        StringBuilder stringBuilder = builders.computeIfAbsent( key,
+            k -> ThreadLocal.withInitial( StringBuilder::new ) ).get();
+        stringBuilder.setLength( 0 );
+        return stringBuilder;
     }
 
     @Override
-    public void close() {
-        scheduledExecutorService.shutdownNow();
+    public String stringOf( Object key, Consumer<StringBuilder> consumer ) {
+        StringBuilder stringBuilder = create( key );
+        consumer.accept( stringBuilder );
+        return stringBuilder.toString();
     }
 }

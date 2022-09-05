@@ -22,38 +22,24 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.scheduler;
+package oap.concurrent.stringbuilder;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.util.function.Try;
+import oap.util.Strings;
 
-import java.io.Closeable;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-@Slf4j
-public class ScheduledExecutorService implements Closeable {
-    public final java.util.concurrent.ScheduledExecutorService scheduledExecutorService;
+public interface StringBuilderFactory {
+    String DEFAULT = Strings.DEFAULT;
 
-    public ScheduledExecutorService( java.util.concurrent.ScheduledExecutorService scheduledExecutorService ) {
-        this.scheduledExecutorService = scheduledExecutorService;
+    default StringBuilder create() {
+        return create( DEFAULT );
     }
 
-    public void scheduleWithFixedDelay( Runnable command, long initialDelay, long delay, TimeUnit unit ) {
-        scheduledExecutorService.scheduleWithFixedDelay( Try.catching( command ).logOnException( log ), initialDelay, delay, unit );
-    }
+    StringBuilder create( Object key );
 
-    public void shutdown( long timeout, TimeUnit unit ) {
-        try {
-            scheduledExecutorService.shutdown();
-            scheduledExecutorService.awaitTermination( timeout, unit );
-        } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-        }
-        close();
-    }
+    String stringOf( Object key, Consumer<StringBuilder> consumer );
 
-    @Override
-    public void close() {
-        scheduledExecutorService.shutdownNow();
+    default String stringOf( Consumer<StringBuilder> consumer ) {
+        return stringOf( DEFAULT, consumer );
     }
 }

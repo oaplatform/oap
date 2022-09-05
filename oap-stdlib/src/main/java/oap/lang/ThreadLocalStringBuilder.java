@@ -25,7 +25,7 @@
 package oap.lang;
 
 import java.util.function.Consumer;
-
+@Deprecated
 public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
     public static String wrap( StringBuilder sb, Runnable runnable ) {
         sb.setLength( 0 );

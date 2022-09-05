@@ -43,7 +43,10 @@ public class MessageSenderUtils {
 
                 Thread.sleep( retryTimeout );
             }
-        } catch( TimeoutException | InterruptedException e ) {
+        } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            throw Throwables.propagate( e );
+        } catch( TimeoutException e ) {
             throw Throwables.propagate( e );
         }
 
