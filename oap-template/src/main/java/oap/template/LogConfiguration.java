@@ -81,6 +81,7 @@ public class LogConfiguration extends Configuration {
     private static final String STANDARD_DELIMITER = "\t";
     private final TemplateEngine engine;
     public boolean compact = false;
+    public boolean typeValidation = true;
 
     public LogConfiguration( TemplateEngine engine ) {
         this( engine, null );
@@ -156,7 +157,9 @@ public class LogConfiguration extends Configuration {
         return new DictionaryTemplate<>( templateFunc, template, headers.toString() );
     }
 
-    private static String toJavaType( String javaType, boolean collection ) {
+    private String toJavaType( String javaType, boolean collection ) {
+        if( !typeValidation ) return "";
+
         StringBuilder sb = new StringBuilder( "<" );
         if( collection ) sb.append( "java.util.Collection<" );
         sb.append( javaType );
