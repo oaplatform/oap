@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class InetTest {
     @Test
     public void toLong() {
+        assertThat( Inet.toLong( "13.72.124.0" ) ).isEqualTo( 222854144L );
         assertThat( Inet.toLong( "10.0.0.111" ) ).isEqualTo( 167772271L );
         assertThat( Inet.toLong( "10.0.0.11" ) ).isEqualTo( 167772171L );
         assertThat( Inet.toLong( "10.0.0.1" ) ).isEqualTo( 167772161L );
