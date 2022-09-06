@@ -71,7 +71,7 @@ public class Inet {
         for( char c : ip.toCharArray() )
             if( c != '.' ) stringBuilder.append( c );
             else {
-                result |= Long.parseLong( stringBuilder.toString() ) << ( i * 8 );
+                result |= Long.parseLong( stringBuilder.toString() ) << ( i-- * 8 );
                 stringBuilder.setLength( 0 );
             }
 
