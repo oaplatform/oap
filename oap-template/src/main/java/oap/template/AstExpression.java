@@ -41,9 +41,9 @@ public class AstExpression extends Ast {
 
     @Override
     void render( Render render ) {
-        for( var c : content ) {
+        for( String c : content ) {
             render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
         }
-        children.forEach( a -> a.render( render ) );
+        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
     }
 }

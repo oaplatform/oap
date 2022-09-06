@@ -25,9 +25,12 @@
 package oap.template;
 
 import lombok.ToString;
+import oap.util.Lists;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Optional;
 
 @ToString
 class TemplateType {
@@ -72,7 +75,15 @@ class TemplateType {
         return new TemplateType( ( ( ParameterizedType ) type ).getActualTypeArguments()[1] );
     }
 
+    public List<TemplateType> getActualArguments() {
+        return Lists.map( ( ( ParameterizedType ) type ).getActualTypeArguments(), TemplateType::new );
+    }
+
     public boolean isPrimitiveType() {
         return getTypeClass().isPrimitive();
+    }
+
+    public boolean isOptional() {
+        return getTypeClass().isAssignableFrom( Optional.class );
     }
 }

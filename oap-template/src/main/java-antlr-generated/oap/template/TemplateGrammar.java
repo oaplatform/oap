@@ -1,4 +1,4 @@
-// Generated from TemplateGrammar.g4 by ANTLR 4.8
+// Generated from TemplateGrammar.g4 by ANTLR 4.9.3
 
 package oap.template;
 
@@ -18,7 +18,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class TemplateGrammar extends TemplateGrammarAdaptor {
-	static { RuntimeMetaData.checkVersion("4.8", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.9.3", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -287,10 +287,16 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				            grammarExp.addErrorListener( ThrowingErrorListener.INSTANCE );
 				        }
 				        
-					    try {
+					    try { 
 				            ((ElementContext)_localctx).ast =  new AstExpression(grammarExp.expression( _localctx.parentType ).ast.top, ((ElementContext)_localctx).expression.content);
+				        } catch ( TemplateException e ) {
+				            var newException = new TemplateException( ((ElementContext)_localctx).expression.content, e.getCause() );
+				            newException.setStackTrace( e.getStackTrace() );
+				            throw newException;
 				        } catch ( Exception e ) {
-				            throw new TemplateException( ((ElementContext)_localctx).expression.content, e ); 
+				            var newException = new TemplateException( ((ElementContext)_localctx).expression.content, e );
+				            newException.setStackTrace( e.getStackTrace() );
+				            throw newException;
 				        }
 					 
 				}

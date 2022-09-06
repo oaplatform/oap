@@ -84,30 +84,30 @@ abstract class TemplateGrammarAdaptor extends Parser {
         return sstr.substring( 1, sstr.length() - 1 );
     }
 
-    MaxMin getAst( TemplateType parentType, String text, boolean isMethod ) {
-        return getAst( parentType, text, isMethod, List.of() );
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String castType ) {
+        return getAst( parentType, text, isMethod, List.of(), castType );
     }
 
-    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, List<String> arguments ) {
-        return getAst( parentType, text, isMethod, null, arguments );
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, List<String> arguments, String castType ) {
+        return getAst( parentType, text, isMethod, null, arguments, castType );
     }
 
-    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue ) {
-        return getAst( parentType, text, isMethod, defaultValue, List.of() );
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue, String castType ) {
+        return getAst( parentType, text, isMethod, defaultValue, List.of(), castType );
     }
 
-    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue, List<String> arguments ) {
+    MaxMin getAst( TemplateType parentType, String text, boolean isMethod, String defaultValue, List<String> arguments, String castType ) {
         try {
             if( parentType.isInstanceOf( Optional.class ) ) {
                 var valueType = parentType.getActualTypeArguments0();
-                var child = getAst( valueType, text, isMethod );
+                var child = getAst( valueType, text, isMethod, castType );
                 var top = new AstOptional( valueType );
                 top.addChild( child.top );
 
                 return new MaxMin( top, child.bottom );
             } else if( parentType.nullable ) {
                 var newType = new TemplateType( parentType.type, false );
-                var child = getAst( newType, text, isMethod );
+                var child = getAst( newType, text, isMethod, castType );
                 var top = new AstNullable( newType );
                 top.addChild( child.top );
 
@@ -128,7 +128,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     fieldType = new TemplateType( extClass, fieldType.nullable );
                     forceCast = true;
                 }
-                return new MaxMin( new AstField( field.getName(), fieldType, forceCast ) );
+                return new MaxMin( new AstField( field.getName(), fieldType, forceCast, castType != null ? LogConfiguration.FieldType.parse( castType ) : null ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = Arrays
@@ -139,8 +139,8 @@ abstract class TemplateGrammarAdaptor extends Parser {
 
                 return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments ) );
             }
-        } catch( NoSuchFieldException | NoSuchMethodException e ) {
-            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage() );
+        } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
+            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
             return new MaxMin( new AstPathNotFound( e.getMessage() ) );
         }
     }
@@ -203,6 +203,12 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     addLeafs( child, sup );
                 }
         }
+    }
+
+    public String getCastType( String castType ) {
+        if( castType == null ) return null;
+
+        return castType.substring( 1, castType.length() - 1 );
     }
 
     @ToString

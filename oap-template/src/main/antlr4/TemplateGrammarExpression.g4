@@ -32,7 +32,7 @@ expression[TemplateType parentType] returns [MaxMin ast]
           $ast.addToBottomChildrenAndSet( $function.func );
         }
 
-        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null) );
+        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null, null ) );
 
         if( $comment != null ) {
             $ast.setTop( new AstComment( parentType, $comment ) );
@@ -51,6 +51,7 @@ defaultValueType returns [String v]
     | longRule { $v = $longRule.text; }
     | FLOAT { $v = $FLOAT.text; }
     | BOOLEAN { $v = $BOOLEAN.text; }
+    | LBRACK RBRACK { $v = "java.util.List.of()"; }
     ; 
 
 longRule
@@ -81,7 +82,7 @@ orExps [TemplateType parentType, MaxMin firstAst] returns [MaxMin ast]
         else {
             var or = new AstOr(parentType);
             for( var item : $list) {
-              item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false));
+              item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false, null));
             }
             or.addTry($list);
             $ast = new MaxMin(or);
@@ -99,21 +100,28 @@ exps [TemplateType parentType] returns [MaxMin ast]
     ;
 
 exp[TemplateType parentType] returns [MaxMin ast]
-    : (ID LPAREN functionArgs? RPAREN) { $ast = getAst($parentType, $ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }
-    | ID { $ast = getAst($parentType, $ID.text, false); }
+    : (CAST_TYPE? ID LPAREN functionArgs? RPAREN) { $ast = getAst($parentType, $ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of(), $CAST_TYPE != null ? getCastType($CAST_TYPE.text) : null ); }
+    | CAST_TYPE? ID { $ast = getAst($parentType, $ID.text, false, $CAST_TYPE != null ? getCastType($CAST_TYPE.text) : null ); }
     ;
 
 concatenation[TemplateType parentType] returns [AstConcatenation ast]
-    : LBRACE citems[parentType] { $ast = new AstConcatenation(parentType, $citems.list); } RBRACE
+    : CAST_TYPE? LBRACE citems[parentType] {
+        try {
+        com.google.common.base.Preconditions.checkArgument(  $CAST_TYPE == null || oap.template.LogConfiguration.FieldType.parse( $CAST_TYPE.text.substring(1, $CAST_TYPE.text.length() - 1) ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
+        $ast = new AstConcatenation(parentType, $citems.list);
+        } catch ( java.lang.ClassNotFoundException e) {
+          throw new TemplateException( e.getMessage(), e );
+        }
+      } RBRACE
     ;
 
 citems[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<Ast>()]
-    : citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } 
-        ( COMMA citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false)); } )*
+    : citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false, null)); }
+        ( COMMA citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false, null)); } )*
     ;
     
 citem[TemplateType parentType] returns [MaxMin ast]
-    : ID { $ast = getAst($parentType, $ID.text, false); }
+    : ID { $ast = getAst($parentType, $ID.text, false, null); }
     | DSTRING  { $ast = new MaxMin(new AstText(sdStringToString($DSTRING.text))); }
     | SSTRING { $ast = new MaxMin(new AstText(sdStringToString($SSTRING.text))); }
     | DECDIGITS { $ast = new MaxMin(new AstText(String.valueOf($DECDIGITS.text))); }

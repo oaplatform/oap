@@ -27,6 +27,8 @@ fragment Percent		: '%'	;
 fragment Plus			: '+'	;
 fragment Minus			: '-'	;
 fragment DQuestion		: '??'	;
+fragment LT             : '<'   ;
+fragment GT             : '>'   ;
 
 fragment NameChar
 	:	[A-Z]
@@ -107,6 +109,7 @@ DECDIGITS   : DecDigits                             ;
 FLOAT       : Float                                 ;
 BOOLEAN     : BoolLiteral                           ;
 ID			: NameChar (NameChar|DecDigit)*			;
+CAST_TYPE   : LT (NameChar|DOT)+ CAST_TYPE? GT                 ;
 
 
 ERR_CHAR	: (' '|'\t')	-> skip		            ;
