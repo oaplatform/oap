@@ -31,6 +31,7 @@ import org.joda.time.DateTime;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class TestTemplateClass {
     public String field;
@@ -52,6 +53,7 @@ public class TestTemplateClass {
     public Ext ext;
     public ITestTemplateClassExt ext2;
     public List<Integer> list;
+    public Set<Integer> set;
     public List<Integer> list2;
     public DateTime dateTime;
     @JsonProperty( "jsonTestNew" )

@@ -28,7 +28,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
 import oap.util.Pair;
-import org.joda.time.DateTime;
 
 @Slf4j
 @ToString( callSuper = true )
@@ -49,11 +48,7 @@ public class AstPrint extends Ast {
         var r = render.ntab();
         var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
         if( checkNull ) {
-            if( render.parentType.getTypeClass().isAssignableFrom( DateTime.class ) ) {
-                if( !checkDateTime() ) {
-                    throw new ClassCastException( render.content + ": " + render.parentType.getTypeName() + " instanceOf " + defaultValue._1 );
-                }
-            } else if( !render.parentType.isInstanceOf( defaultValue._2 ) ) {
+            if( !Utils.canConvert( defaultValue._1, render.parentType.getTypeClass(), defaultValue._2 ) ) {
                 throw new ClassCastException( render.content + ": " + render.parentType.getTypeName() + " instanceOf " + defaultValue._2.getTypeName() );
             }
 
