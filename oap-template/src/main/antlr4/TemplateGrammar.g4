@@ -44,8 +44,9 @@ element[TemplateType parentType, Map<String,String> aliases] returns [Ast ast]
             grammarExp.addErrorListener( ThrowingErrorListener.INSTANCE );
         }
         
-	    try { 
-            $ast = new AstExpression(grammarExp.expression( $parentType ).ast.top, $expression.content);
+	    try {
+	        MaxMin ast = grammarExp.expression( $parentType ).ast;
+            $ast = new AstExpression(ast.top, $expression.content, ast.castType != null ? FieldType.parse( ast.castType ) : null );
         } catch ( TemplateException e ) {
             var newException = new TemplateException( $expression.content, e.getCause() );
             newException.setStackTrace( e.getStackTrace() );

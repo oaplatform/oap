@@ -40,17 +40,19 @@ class Render {
     final int tab;
     private final StringBuilder sb;
     public final String content;
+    public final FieldType castType;
 
-    private Render( String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
+    private Render( String templateName, String content, FieldType castType, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
                     String field, String templateAccumulatorName, int tab ) {
-        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab );
+        this( new StringBuilder(), templateName, content, castType, parentType, templateAccumulator, field, templateAccumulatorName, tab );
     }
 
-    Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
+    Render( StringBuilder sb, String templateName, String content, FieldType castType, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
             String field, String templateAccumulatorName, int tab ) {
         this.sb = sb;
         this.templateName = templateName;
         this.content = content;
+        this.castType = castType;
         this.parentType = parentType;
         this.templateAccumulator = templateAccumulator;
         this.field = field;
@@ -59,31 +61,35 @@ class Render {
     }
 
     public static Render init( String templateName, String content, TemplateType type, TemplateAccumulator<?, ?, ?> acc ) {
-        return new Render( templateName, content, type, acc, null, null, 0 );
+        return new Render( templateName, content, null, type, acc, null, null, 0 );
     }
 
     public Render withField( String field ) {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.content, this.castType, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab );
     }
 
     public Render withContent( String content ) {
-        return new Render( this.sb, this.templateName, content, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, content, this.castType, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab );
+    }
+
+    public Render withCastType( FieldType castType ) {
+        return new Render( this.sb, this.templateName, this.content, castType, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab );
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.content, this.castType, this.parentType, this.templateAccumulator, this.field, templateAccumulatorName, this.tab );
     }
 
     public Render tabInc() {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab + 1 );
+        return new Render( this.sb, this.templateName, this.content, this.castType, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab + 1 );
     }
 
     public Render tabDec() {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab - 1 );
+        return new Render( this.sb, this.templateName, this.content, this.castType, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab - 1 );
     }
 
     public Render withParentType( TemplateType parentType ) {
-        return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.content, this.castType, parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab );
     }
 
     public Render n() {

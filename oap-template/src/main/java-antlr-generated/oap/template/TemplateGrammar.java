@@ -287,8 +287,9 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				            grammarExp.addErrorListener( ThrowingErrorListener.INSTANCE );
 				        }
 				        
-					    try { 
-				            ((ElementContext)_localctx).ast =  new AstExpression(grammarExp.expression( _localctx.parentType ).ast.top, ((ElementContext)_localctx).expression.content);
+					    try {
+					        MaxMin ast = grammarExp.expression( _localctx.parentType ).ast;
+				            ((ElementContext)_localctx).ast =  new AstExpression(ast.top, ((ElementContext)_localctx).expression.content, ast.castType != null ? FieldType.parse( ast.castType ) : null );
 				        } catch ( TemplateException e ) {
 				            var newException = new TemplateException( ((ElementContext)_localctx).expression.content, e.getCause() );
 				            newException.setStackTrace( e.getStackTrace() );

@@ -27,6 +27,7 @@ package oap.template;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
+import org.joda.time.DateTime;
 
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +53,7 @@ public class TestTemplateClass {
     public ITestTemplateClassExt ext2;
     public List<Integer> list;
     public List<Integer> list2;
+    public DateTime dateTime;
     @JsonProperty( "jsonTestNew" )
     @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
     public String jsonTest;

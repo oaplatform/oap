@@ -200,19 +200,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testCompact() {
-        var c = new TestTemplateClass();
-        var cp = new TestTemplateClass();
-        c.fieldOpt = Optional.of( "o" );
-        c.intField = 10;
-
-        cp.childOpt = Optional.of( c );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING,
-            CompactAstPostProcessor.INSTANCE ).render( cp ) )
-            .isEqualTo( "10-o" );
-    }
-
-    @Test
     public void testNullable() {
         var c = new TestTemplateClass();
 

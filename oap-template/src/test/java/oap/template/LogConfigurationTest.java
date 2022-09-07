@@ -28,7 +28,6 @@ import oap.io.Files;
 import oap.lang.ThreadLocalStringBuilder;
 import oap.reflect.Reflect;
 import oap.reflect.TypeRef;
-import oap.template.LogConfiguration.FieldType;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.BeforeClass;
@@ -41,10 +40,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class LogConfigurationTest extends Fixtures {
     private final ThreadLocalStringBuilder threadLocalStringBuilder = new ThreadLocalStringBuilder();
@@ -56,15 +55,15 @@ public class LogConfigurationTest extends Fixtures {
     }
 
     private static AstExpression aexp( String content, Ast ast ) {
-        return new AstExpression( ast, content );
+        return new AstExpression( ast, content, null );
     }
 
     private static AstPrint aps() {
-        return new AstPrint( new TemplateType( String.class ), "" );
+        return new AstPrint( new TemplateType( String.class ), null );
     }
 
     private static AstField af( String fieldName, Ast ast ) {
-        var astField = new AstField( fieldName, new TemplateType( String.class, false ), false, null );
+        var astField = new AstField( fieldName, new TemplateType( String.class, false ), false );
         astField.children.add( ast );
         return astField;
     }
@@ -87,24 +86,6 @@ public class LogConfigurationTest extends Fixtures {
     @BeforeMethod
     public void nameBefore( Method method ) {
         testMethodName = method.getName();
-    }
-
-    @Test
-    public void testConsumerCompact() {
-        var exp1 = aexp( "a.b", af( "a", aopt( af( "b", aps() ) ) ) );
-        var exp2 = aexp( "a.c", af( "a", aopt( af( "c", aps() ) ) ) );
-
-        var ar = new AstRoot( new TemplateType( getClass() ) );
-        ar.children.addAll( List.of( exp1, new AstText( "123" ), exp2 ) );
-
-        CompactAstPostProcessor.INSTANCE.accept( ar );
-
-        System.out.println( ar.print() );
-
-        assertThat( ar.children ).hasSize( 1 );
-        assertThat( ar.children.get( 0 ).children ).hasSize( 1 );
-        assertThat( ar.children.get( 0 ).children.get( 0 ).children ).hasSize( 1 );
-        assertThat( ar.children.get( 0 ).children.get( 0 ).children.get( 0 ) ).isInstanceOf( AstOptional.class );
     }
 
     @Test
@@ -177,7 +158,8 @@ public class LogConfigurationTest extends Fixtures {
     }
 
     @Test
-    public void testCompact() {
+    public void testDefaultValueTypeCastException() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
         Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
             {
               name = config.v1
@@ -187,52 +169,10 @@ public class LogConfigurationTest extends Fixtures {
                   id = TEST
                   values = [
                     {
-                      id = c_n_str
-                      type = STRING
-                      default = ""
-                      path = childOpt.fieldOpt
-                      tags = [LOG]
-                    }
-                    {
-                      id = i_int
-                      type = INTEGER
+                      id = CFIELD
+                      type = BOOLEAN
                       default = 0
-                      path = intField
-                      tags = [LOG]
-                    }
-                    {
-                      id = c_i_int
-                      type = INTEGER
-                      default = 0
-                      path = childOpt.intField
-                      tags = [LOG]
-                    }
-                    {
-                      id = f_str
-                      type = STRING
-                      default = ""
-                      path = fieldNullable
-                      tags = [LOG]
-                    }
-                    {
-                      id = c_f_str
-                      type = STRING
-                      default = ""
-                      path = childOpt.fieldNullable
-                      tags = [LOG]
-                    }
-                    {
-                      id = c_c_i_int
-                      type = INTEGER
-                      default = 0
-                      path = childOpt.childNullable.intField
-                      tags = [LOG]
-                    }
-                    {
-                      id = c_c_n_str
-                      type = STRING
-                      default = ""
-                      path = childOpt.childNullable.fieldOpt
+                      path = booleanObjectField
                       tags = [LOG]
                     }
                   ]
@@ -242,33 +182,13 @@ public class LogConfigurationTest extends Fixtures {
             """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
-        logConfiguration.compact = true;
-        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
-
-        var c = new TestTemplateClass();
-        var cp = new TestTemplateClass();
-        var cp2 = new TestTemplateClass();
-        c.fieldOpt = Optional.of( "o" );
-        c.intField = 10;
-        c.fieldNullable = "a";
-
-        cp2.fieldOpt = Optional.of( "o2" );
-        cp2.intField = 20;
-        cp2.fieldNullable = "a2";
-
-        cp.intField = 5;
-        cp.fieldNullable = "b";
-
-        cp.childOpt = Optional.of( c );
-        c.childNullable = cp2;
-
-        var res = dictionaryTemplate.templateFunction.render( cp );
-
-        assertThat( res ).isEqualTo( "10\to\ta\t20\to2\tb\t5" );
+        assertThatThrownBy( () -> logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" ) )
+            .isInstanceOf( TemplateException.class );
     }
 
     @Test
-    public void testCompactOr() {
+    public void testFieldTypeCastException() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
         Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
             {
               name = config.v1
@@ -278,17 +198,10 @@ public class LogConfigurationTest extends Fixtures {
                   id = TEST
                   values = [
                     {
-                      id = c_n_str
+                      id = CFIELD
                       type = STRING
-                      default = ""
-                      path = childOpt.fieldOpt|childNullable.fieldOpt
-                      tags = [LOG]
-                    }
-                    {
-                      id = c_i_int
-                      type = INTEGER
-                      default = 0
-                      path = childOpt.intField
+                      default = false
+                      path = childOpt.booleanObjectField
                       tags = [LOG]
                     }
                   ]
@@ -298,25 +211,69 @@ public class LogConfigurationTest extends Fixtures {
             """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
-        logConfiguration.compact = true;
+        assertThatThrownBy( () -> logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" ) )
+            .isInstanceOf( TemplateException.class );
+    }
+
+    @Test
+    public void testFieldTypeDateTimeDefault() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = DATETIME
+                      type = DATETIME
+                      default = "2022-09-07 14:32:12"
+                      path = dateTime
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
         var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
 
-        var cOpt = new TestTemplateClass();
-        var cNull = new TestTemplateClass();
-        var cp = new TestTemplateClass();
+        var c = new TestTemplateClass();
 
-        cOpt.fieldOpt = Optional.empty();
-        cOpt.intField = 10;
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "2022-09-07 14:32:12" );
+    }
 
-        cNull.fieldOpt = Optional.of( "1" );
+    public void testFieldTypeDateTimeInvalid() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = DATETIME
+                      type = DATETIME
+                      default = "2022-09-07T14:32:12"
+                      path = dateTime
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
 
-        cp.childOpt = Optional.of( cOpt );
-        cp.childNullable = cNull;
-
-        StringBuilder out = threadLocalStringBuilder.get();
-        dictionaryTemplate.templateFunction.render( cp, out );
-
-        assertThat( out.toString() ).isEqualTo( "1\t10" );
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        assertThatThrownBy( () -> logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" ) )
+            .isInstanceOf( TemplateException.class );
     }
 
     @Test

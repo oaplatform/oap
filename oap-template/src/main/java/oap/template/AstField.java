@@ -25,34 +25,31 @@
 package oap.template;
 
 import lombok.ToString;
-import oap.template.LogConfiguration.FieldType;
 
 @ToString( callSuper = true )
 public class AstField extends Ast {
     final String variableName;
     final String fieldName;
     final boolean forceCast;
-    final FieldType castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast ) {
         super( fieldType );
 
         this.fieldName = fieldName;
         this.forceCast = forceCast;
-        this.castType = castType;
         variableName = newVariable();
     }
 
     @Override
     void render( Render render ) {
-        if( castType != null ) {
-            var targetType = type;
-            if( type.isOptional() ) targetType = type.getActualTypeArguments0();
-
-            if( !castType.isAssignableFrom( targetType ) ) {
-                throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
-            }
-        }
+//        if( castType != null ) {
+//            var targetType = type;
+//            if( type.isOptional() ) targetType = type.getActualTypeArguments0();
+//
+//            if( !castType.isAssignableFrom( targetType ) ) {
+//                throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
+//            }
+//        }
 
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );

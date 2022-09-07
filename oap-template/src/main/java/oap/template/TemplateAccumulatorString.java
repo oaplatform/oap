@@ -129,8 +129,8 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
-    public String getTypeName() {
-        return "String";
+    public Class<?> getType() {
+        return String.class;
     }
 
     @Override

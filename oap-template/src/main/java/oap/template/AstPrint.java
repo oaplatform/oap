@@ -25,27 +25,58 @@
 package oap.template;
 
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import oap.util.Dates;
+import oap.util.Pair;
+import org.joda.time.DateTime;
 
+@Slf4j
 @ToString( callSuper = true )
 public class AstPrint extends Ast {
-    final String defaultValue;
+    final Pair<String, Class<?>> defaultValue;
 
-    AstPrint( TemplateType type, String defaultValue ) {
+    AstPrint( TemplateType type, Pair<String, Class<?>> defaultValue ) {
         super( type );
         this.defaultValue = defaultValue;
     }
 
     @Override
     void render( Render render ) {
+        if( render.castType != null && !render.castType.isAssignableFrom( render.parentType ) ) {
+            throw new ClassCastException( render.content + ": " + render.castType + " isAssignableFrom " + render.parentType.getTypeName() );
+        }
+
         var r = render.ntab();
         var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
-        if( checkNull ) r = r
-            .append( "if( %s == null ) {", r.field )
-            .tabInc().ntab().append( "%s.accept( %s );", r.templateAccumulatorName, defaultValue )
-            .tabDec().ntab().append( "} else {" ).tabInc();
+        if( checkNull ) {
+            if( render.parentType.getTypeClass().isAssignableFrom( DateTime.class ) ) {
+                if( !checkDateTime() ) {
+                    throw new ClassCastException( render.content + ": " + render.parentType.getTypeName() + " instanceOf " + defaultValue._1 );
+                }
+            } else if( !render.parentType.isInstanceOf( defaultValue._2 ) ) {
+                throw new ClassCastException( render.content + ": " + render.parentType.getTypeName() + " instanceOf " + defaultValue._2.getTypeName() );
+            }
 
+            r = r
+                .append( "if( %s == null ) {", r.field )
+                .tabInc().ntab().append( "%s.accept( %s );", r.templateAccumulatorName, defaultValue._1 )
+                .tabDec().ntab().append( "} else {" ).tabInc();
+        }
         r.ntab().append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
 
         if( checkNull ) r.tabDec().ntab().append( "}" );
+    }
+
+    private boolean checkDateTime() {
+        try {
+            if( defaultValue._2.equals( String.class ) ) {
+                Dates.FORMAT_SIMPLE_CLEAN.parseDateTime( defaultValue._1.substring( 1, defaultValue._1.length() - 1 ) );
+                return true;
+            }
+
+        } catch( IllegalArgumentException e ) {
+            log.trace( e.getMessage(), e );
+        }
+        return false;
     }
 }

@@ -25,9 +25,6 @@
 package oap.template;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Primitives;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Configuration;
 import oap.dictionary.Dictionary;
@@ -36,13 +33,9 @@ import oap.util.Lists;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 
-import java.lang.reflect.ParameterizedType;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
 
@@ -80,7 +73,6 @@ public class LogConfiguration extends Configuration {
 
     private static final String STANDARD_DELIMITER = "\t";
     private final TemplateEngine engine;
-    public boolean compact = false;
     public boolean typeValidation = true;
 
     public LogConfiguration( TemplateEngine engine ) {
@@ -121,8 +113,8 @@ public class LogConfiguration extends Configuration {
             if( !field.containsProperty( "path" ) ) continue;
 
             var id = field.getId();
-            var path = ( String ) field.getProperty( "path" ).orElseThrow();
-            var idType = ( String ) field.getProperty( "type" ).orElseThrow();
+            var path = checkStringAndGet( field, "path" );
+            var idType = checkStringAndGet( field, "type" );
 
             boolean collection = false;
             if( idType.endsWith( COLLECTION_SUFFIX ) ) {
@@ -135,16 +127,10 @@ public class LogConfiguration extends Configuration {
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
 
-            var lastFieldIndex = path.lastIndexOf( '.' );
-            var startPath = lastFieldIndex > 0 ? path.substring( 0, lastFieldIndex + 1 ) : "";
-            var endPath = lastFieldIndex > 0 ? path.substring( lastFieldIndex + 1 ) : path;
-
             var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
-            cols.add( __( path, "${" + startPath + toJavaType( javaType, collection ) + endPath + " ?? " + pDefaultValue + "}" ) );
+            cols.add( __( path, "${" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + "}" ) );
             headers.add( id );
         }
-
-        if( compact ) cols.sort( Comparator.comparing( p -> p._1 ) );
 
         var template = String.join( "\t", Lists.map( cols, p -> p._2 ) );
         var templateFunc = engine.getTemplate(
@@ -153,8 +139,14 @@ public class LogConfiguration extends Configuration {
             template,
             templateAccumulator,
             ERROR,
-            compact ? CompactAstPostProcessor.INSTANCE : null );
+            null );
         return new DictionaryTemplate<>( templateFunc, template, headers.toString() );
+    }
+
+    private static String checkStringAndGet( Dictionary dictionary, String fieldName ) {
+        Object fieldObject = dictionary.getProperty( fieldName ).orElseThrow( () -> new TemplateException( dictionary.getId() + ": type is required" ) );
+        Preconditions.checkArgument( fieldObject instanceof String, dictionary.getId() + ": type must be String, but is " + fieldObject.getClass() );
+        return ( String ) fieldObject;
     }
 
     private String toJavaType( String javaType, boolean collection ) {
@@ -170,64 +162,5 @@ public class LogConfiguration extends Configuration {
 
     public TemplateEngine getEngine() {
         return engine;
-    }
-
-    @ToString
-    @EqualsAndHashCode
-    public static class FieldType {
-        public final Class<?> type;
-        public final ArrayList<FieldType> parameters = new ArrayList<>();
-
-        public FieldType( Class<?> type ) {
-            this.type = type;
-        }
-
-        public FieldType( Class<?> type, Collection<FieldType> parameters ) {
-            this.type = type;
-            this.parameters.addAll( parameters );
-        }
-
-        public static FieldType parse( String type ) throws ClassNotFoundException {
-            var generics = new ArrayList<FieldType>();
-            String baseType = type;
-
-            var genericIndex = type.indexOf( '<' );
-            if( genericIndex > 0 ) {
-                baseType = type.substring( 0, genericIndex );
-                var endGenericIndex = type.lastIndexOf( '>' );
-                var genericString = type.substring( genericIndex + 1, endGenericIndex );
-
-                int lastIndex = 0;
-                while( true ) {
-                    int ch = genericString.indexOf( ',', lastIndex );
-                    if( ch < 0 ) break;
-
-                    String g = genericString.substring( lastIndex, ch );
-                    lastIndex = ch + 1;
-
-                    generics.add( parse( g ) );
-                }
-
-                generics.add( parse( genericString.substring( lastIndex ) ) );
-            }
-            return new FieldType( Class.forName( baseType ), generics );
-        }
-
-        public boolean isAssignableFrom( TemplateType templateType ) {
-            if( !type.isAssignableFrom( Primitives.wrap( templateType.getTypeClass() ) ) ) return false;
-
-            if( !parameters.isEmpty() || templateType.type instanceof ParameterizedType ) {
-                if( !parameters.isEmpty() && !( templateType.type instanceof ParameterizedType ) ) return false;
-
-                List<TemplateType> actualArguments = templateType.getActualArguments();
-                if( actualArguments.size() != parameters.size() ) return false;
-
-                for( int i = 0; i < parameters.size(); i++ ) {
-                    if( !parameters.get( 0 ).isAssignableFrom( actualArguments.get( i ) ) ) return false;
-                }
-            }
-
-            return true;
-        }
     }
 }

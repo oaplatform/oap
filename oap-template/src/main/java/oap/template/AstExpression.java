@@ -32,9 +32,11 @@ import java.util.ArrayList;
 @ToString( callSuper = true )
 public class AstExpression extends Ast {
     final ArrayList<String> content = new ArrayList<>();
+    final ArrayList<FieldType> castType = new ArrayList<>();
 
-    AstExpression( Ast ast, String content ) {
+    AstExpression( Ast ast, String content, FieldType castType ) {
         super( ast.type );
+        this.castType.add( castType );
         this.children.add( ast );
         this.content.add( content );
     }
@@ -44,6 +46,17 @@ public class AstExpression extends Ast {
         for( String c : content ) {
             render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
         }
-        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
+
+        for( var i = 0; i < content.size(); i++ ) {
+            Render newRender = render
+                .withContent( content.get( i ) )
+                .withCastType( castType.get( i ) );
+            children.get( 0 ).render( newRender );
+        }
+    }
+
+    public void addContent( ArrayList<String> content, ArrayList<FieldType> castType ) {
+        this.content.addAll( content );
+        this.castType.addAll( castType );
     }
 }

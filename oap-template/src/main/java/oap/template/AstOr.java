@@ -68,7 +68,7 @@ public class AstOr extends Ast {
         var minMax = or.get( 0 );
 
         var r = render;
-        r.ntab().append( render.templateAccumulator.getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
+        r.ntab().append( render.templateAccumulator.getType().getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
         for( var i = 0; i < or.size(); i++ ) {
             minMax = or.get( i );
             var astRunnable = ( AstRunnable ) minMax.top;
@@ -85,7 +85,7 @@ public class AstOr extends Ast {
 
         for( var i = 0; i < or.size(); i++ ) r = r.tabDec().ntab().append( "}" );
 
-        var newRender = r.withField( orVariable ).withParentType( new TemplateType( Object.class ) );
+        var newRender = r.withField( orVariable ).withParentType( new TemplateType( render.templateAccumulator.getType() ) );
         children.forEach( a -> a.render( newRender ) );
     }
 }

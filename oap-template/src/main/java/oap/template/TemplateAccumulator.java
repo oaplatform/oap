@@ -107,5 +107,5 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
 
     TTemplateAccumulator newInstance( TMutable mutable );
 
-    String getTypeName();
+    Class<?> getType();
 }

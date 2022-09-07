@@ -125,8 +125,8 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
-    public String getTypeName() {
-        return "Object";
+    public Class<?> getType() {
+        return Object.class;
     }
 
     @Override
