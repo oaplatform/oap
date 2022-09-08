@@ -290,6 +290,39 @@ public class LogConfigurationTest extends Fixtures {
     }
 
     @Test
+    public void testDefaultValueTypeBoolean() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = CFIELD
+                      type = BOOLEAN
+                      default = true
+                      path = booleanObjectField
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "true" );
+    }
+
+    @Test
     public void testFieldTypeCastException() {
         java.util.Collection<java.lang.Integer> a = new ArrayList<>();
         Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """

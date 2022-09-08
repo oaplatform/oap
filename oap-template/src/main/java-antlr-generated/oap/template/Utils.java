@@ -54,6 +54,8 @@ public class Utils {
             return Floats.tryParse( value ) != null;
         } else if( to.equals( Double.class ) ) {
             return Doubles.tryParse( value ) != null;
+        } else if( to.equals( Boolean.class ) ) {
+            return "false".equalsIgnoreCase( value ) || "true".equalsIgnoreCase( value );
         } else if( to.equals( String.class ) ) {
             return true;
         } else if( to.equals( DateTime.class ) ) {

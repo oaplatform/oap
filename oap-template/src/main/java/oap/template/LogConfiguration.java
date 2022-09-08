@@ -131,7 +131,7 @@ public class LogConfiguration extends Configuration {
 
             var templateFunction = format != null ? "; format(\"" + format + "\")" : "";
 
-            var comment = "model '" + type + "' id '" + id + "' type '" + fieldType + "' defaultValue " + defaultValue;
+            var comment = "model '" + type + "' id '" + id + "' type '" + fieldType + "' defaultValue '" + defaultValue + "'";
 
             var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
             cols.add( __( path, "${/* " + comment + " */" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" ) );
