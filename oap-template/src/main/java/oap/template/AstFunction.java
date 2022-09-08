@@ -50,7 +50,13 @@ class AstFunction extends Ast {
         if( !parameters.isEmpty() ) render.append( ", " );
         render.append( String.join( ", ", parameters ) ).append( " );" );
 
-        var newRender = render.withField( funcVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+        try {
+            var newRender = render.withField( funcVariable )
+                .withParentType( type )
+                .withCastType( FieldType.parse( type.getTypeName() ) );
+            children.forEach( a -> a.render( newRender ) );
+        } catch( ClassNotFoundException e ) {
+            throw new TemplateException( e );
+        }
     }
 }

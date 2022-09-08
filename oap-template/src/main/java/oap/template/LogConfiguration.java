@@ -115,6 +115,7 @@ public class LogConfiguration extends Configuration {
             var id = field.getId();
             var path = checkStringAndGet( field, "path" );
             var idType = checkStringAndGet( field, "type" );
+            var format = field.getProperty( "format" ).orElse( null );
 
             boolean collection = false;
             if( idType.endsWith( COLLECTION_SUFFIX ) ) {
@@ -127,8 +128,10 @@ public class LogConfiguration extends Configuration {
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
 
+            var templateFunction = format != null ? "; format('" + format + "')" : "";
+
             var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
-            cols.add( __( path, "${" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + "}" ) );
+            cols.add( __( path, "${" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" ) );
             headers.add( id );
         }
 

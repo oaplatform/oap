@@ -24,7 +24,6 @@
 
 package oap.template;
 
-import oap.util.Dates;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
@@ -77,7 +76,7 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
 
     @Override
     public void accept( DateTime dateTime ) {
-        sb.append( Dates.FORMAT_SIMPLE_CLEAN.print( dateTime ) );
+        sb.append( dateTime );
     }
 
     @Override

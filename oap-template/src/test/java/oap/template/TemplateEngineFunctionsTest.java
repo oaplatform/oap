@@ -27,6 +27,7 @@ package oap.template;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.joda.time.DateTime;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -36,6 +37,7 @@ import java.util.Map;
 
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateEngineFunctionsTest extends Fixtures {
 
@@ -114,5 +116,13 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testFunctionToUpperCase() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()}", STRING, null ).render( Map.of( "v", "a i/d" ) ) )
             .isEqualTo( "id=A I/D" );
+    }
+
+    @Test
+    public void testFunctionDateTimeFormat() {
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, DateTime>>() {}, "id=${v; format('YYYY-MM-dd HH')}", STRING, null ).render( Map.of( "v", new DateTime( 2022, 9, 8, 11, 44, 1, UTC ) ) ) )
+            .isEqualTo( "id=2022-09-08 11" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, DateTime>>() {}, "id=${v; format('SIMPLE')}", STRING, null ).render( Map.of( "v", new DateTime( 2022, 9, 8, 11, 44, 1, UTC ) ) ) )
+            .isEqualTo( "id=2022-09-08T11:44:01" );
     }
 }

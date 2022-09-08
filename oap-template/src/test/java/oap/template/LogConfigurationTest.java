@@ -298,6 +298,7 @@ public class LogConfigurationTest extends Fixtures {
                       id = DATETIME
                       type = DATETIME
                       default = "2022-09-07 14:32:12"
+                      format = "YYYY-MM-dd HH:mm:ss"
                       path = dateTime
                       tags = [LOG]
                     }
@@ -330,7 +331,8 @@ public class LogConfigurationTest extends Fixtures {
                     {
                       id = DATETIME
                       type = DATETIME
-                      default = "2022-09-07 14:32:12"
+                      default = "2022-09-07 14:32"
+                      format = "YYYY-MM-dd HH:mm"
                       path = dateTime()
                       tags = [LOG]
                     }
@@ -347,7 +349,7 @@ public class LogConfigurationTest extends Fixtures {
         c.dateTime = new DateTime( 2022, 9, 7, 18, 59, 1, UTC );
 
         var res = dictionaryTemplate.templateFunction.render( c );
-        assertThat( res ).isEqualTo( "2022-09-07 18:59:01" );
+        assertThat( res ).isEqualTo( "2022-09-07 18:59" );
     }
 
     @Test
