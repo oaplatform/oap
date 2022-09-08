@@ -45,6 +45,7 @@ import java.util.Map;
 import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class LogConfigurationTest extends Fixtures {
     private final ThreadLocalStringBuilder threadLocalStringBuilder = new ThreadLocalStringBuilder();
@@ -343,10 +344,10 @@ public class LogConfigurationTest extends Fixtures {
         var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
 
         var c = new TestTemplateClass();
-        c.dateTime = new DateTime( 2022, 9, 7, 18, 59, 1 );
+        c.dateTime = new DateTime( 2022, 9, 7, 18, 59, 1, UTC );
 
         var res = dictionaryTemplate.templateFunction.render( c );
-        assertThat( res ).isEqualTo( "2022-09-07 15:59:01" );
+        assertThat( res ).isEqualTo( "2022-09-07 18:59:01" );
     }
 
     @Test
