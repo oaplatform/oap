@@ -225,7 +225,9 @@ public final class Client implements Closeable {
             var request = new HttpPost( uri );
             request.setEntity( new UrlEncodedFormEntity( Stream.of( params.entrySet() )
                 .<NameValuePair>map( e -> new BasicNameValuePair( e.getKey(),
-                    e.getValue() == null ? "" : e.getValue().toString() ) ).toList() ) );
+                    e.getValue() == null ? "" : e.getValue().toString() ) )
+                .toList()
+            ) );
             return getResponse( request, builder.timeout, execute( request, headers ) );
         } catch( UnsupportedEncodingException e ) {
             throw new UncheckedIOException( e );
@@ -438,12 +440,11 @@ public final class Client implements Closeable {
                                 : APPLICATION_OCTET_STREAM,
                             entity.getContent()
                         );
-                    } else
-                        result = new Response(
-                            response.getStatusLine().getStatusCode(),
-                            response.getStatusLine().getReasonPhrase(),
-                            responseHeaders
-                        );
+                    } else result = new Response(
+                        response.getStatusLine().getStatusCode(),
+                        response.getStatusLine().getReasonPhrase(),
+                        responseHeaders
+                    );
                     builder.onSuccess.accept( Client.this );
 
                     completableFuture.complete( result );
@@ -507,8 +508,7 @@ public final class Client implements Closeable {
         }
     }
 
-    private Optional<HttpResponse> resolve( String url, Optional<Long> ifModifiedSince )
-        throws InterruptedException, ExecutionException, IOException {
+    private Optional<HttpResponse> resolve( String url, Optional<Long> ifModifiedSince ) throws InterruptedException, ExecutionException, IOException {
         HttpGet request = new HttpGet( url );
         ifModifiedSince.ifPresent( ims -> request.addHeader( "If-Modified-Since", DateUtils.formatDate( new Date( ims ) ) ) );
         Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
@@ -640,15 +640,13 @@ public final class Client implements Closeable {
         }
 
         public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
-            if( inputStream != null )
-                synchronized( this ) {
-                    if( inputStream != null )
-                        return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
-                }
+            if( inputStream != null ) synchronized( this ) {
+                if( inputStream != null )
+                    return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
+            }
 
             var contentString = contentString();
-            if( contentString == null )
-                return Optional.empty();
+            if( contentString == null ) return Optional.empty();
 
             return Optional.of( Binder.json.unmarshal( ref, contentString ) );
         }
