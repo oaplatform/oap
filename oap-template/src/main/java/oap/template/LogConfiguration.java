@@ -114,10 +114,11 @@ public class LogConfiguration extends Configuration {
 
             var id = field.getId();
             var path = checkStringAndGet( field, "path" );
-            var idType = checkStringAndGet( field, "type" );
+            var fieldType = checkStringAndGet( field, "type" );
             var format = field.getProperty( "format" ).orElse( null );
 
             boolean collection = false;
+            var idType = fieldType;
             if( idType.endsWith( COLLECTION_SUFFIX ) ) {
                 collection = true;
                 idType = idType.substring( 0, idType.length() - COLLECTION_SUFFIX.length() );
@@ -130,8 +131,10 @@ public class LogConfiguration extends Configuration {
 
             var templateFunction = format != null ? "; format('" + format + "')" : "";
 
+            var comment = "model '" + type + "' id '" + id + "' type '" + fieldType + "' tags " + field.getTags();
+
             var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
-            cols.add( __( path, "${" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" ) );
+            cols.add( __( path, "${/* " + comment + " */" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" ) );
             headers.add( id );
         }
 
