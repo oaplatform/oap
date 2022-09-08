@@ -59,6 +59,11 @@ public class TestTemplateClass {
     @JsonProperty( "jsonTestNew" )
     @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
     public String jsonTest;
+    public TestEnum testEnum;
+
+    public DateTime dateTime() {
+        return dateTime;
+    }
 
     public String fieldM() {
         return field;
@@ -82,5 +87,11 @@ public class TestTemplateClass {
 
     public static class ITestTemplateClassExt extends Ext {
 
+    }
+
+    public enum TestEnum {
+        TEST,
+        TEST1,
+        UNKNOWN
     }
 }

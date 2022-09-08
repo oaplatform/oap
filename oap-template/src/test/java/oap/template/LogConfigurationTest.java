@@ -30,6 +30,7 @@ import oap.reflect.Reflect;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.joda.time.DateTime;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -312,6 +313,72 @@ public class LogConfigurationTest extends Fixtures {
 
         var res = dictionaryTemplate.templateFunction.render( c );
         assertThat( res ).isEqualTo( "2022-09-07 14:32:12" );
+    }
+
+    @Test
+    public void testFieldTypeDateTimeMethod() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = DATETIME
+                      type = DATETIME
+                      default = "2022-09-07 14:32:12"
+                      path = dateTime()
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+        c.dateTime = new DateTime( 2022, 9, 7, 18, 59, 1 );
+
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "2022-09-07 15:59:01" );
+    }
+
+    @Test
+    public void testFieldTypeEnumDefault() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = TEST_ENUM
+                      type = ENUM
+                      default = ""
+                      path = testEnum
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "" );
     }
 
     public void testFieldTypeDateTimeInvalid() {

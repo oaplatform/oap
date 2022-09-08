@@ -24,6 +24,8 @@
 
 package oap.template;
 
+import org.joda.time.DateTime;
+
 import java.util.Collection;
 import java.util.function.Supplier;
 
@@ -64,6 +66,8 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     }
 
     void accept( short s );
+
+    void accept( DateTime dateTime );
 
     default void accept( Integer i ) {
         if( i == null ) accept( ( int ) 0 );

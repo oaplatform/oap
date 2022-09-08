@@ -28,13 +28,17 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
+import oap.util.Strings;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
 import java.util.List;
 
+@Slf4j
 public class Utils {
+    @SuppressWarnings( "unchecked" )
     public static boolean canConvert( String value, Class<?> to, Class<?> from ) {
         if( to.equals( Long.class ) )
             return Longs.tryParse( value ) != null;
@@ -59,6 +63,26 @@ public class Utils {
                 Dates.FORMAT_SIMPLE_CLEAN.parseDateTime( value.substring( 1, value.length() - 1 ) );
                 return true;
             } catch( IllegalArgumentException e ) {
+                return false;
+            }
+        } else if( Enum.class.isAssignableFrom( to ) ) {
+            if( value.length() < 2 ) return false;
+
+            String enumValue = value.substring( 1, value.length() - 1 );
+            try {
+                Enum.valueOf( ( Class<Enum> ) to, enumValue );
+                return true;
+            } catch( IllegalArgumentException e ) {
+                if( "".equals( enumValue ) ) {
+                    try {
+                        Enum.valueOf( ( Class<Enum> ) to, Strings.UNKNOWN );
+                        return true;
+                    } catch( IllegalArgumentException ignored ) {
+                        log.error( e.getMessage(), e );
+                        return false;
+                    }
+                }
+                log.error( e.getMessage(), e );
                 return false;
             }
         } else if( Collection.class.isAssignableFrom( to ) ) {

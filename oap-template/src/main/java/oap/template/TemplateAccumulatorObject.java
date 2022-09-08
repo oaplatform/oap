@@ -25,6 +25,7 @@
 package oap.template;
 
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.joda.time.DateTime;
 
 import java.util.Collection;
 
@@ -67,6 +68,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public void accept( short s ) {
         accept( ( Object ) s );
+    }
+
+    @Override
+    public void accept( DateTime dateTime ) {
+        accept( ( Object ) dateTime );
     }
 
     @Override
