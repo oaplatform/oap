@@ -129,7 +129,7 @@ public class LogConfiguration extends Configuration {
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
 
-            var templateFunction = format != null ? "; format('" + format + "')" : "";
+            var templateFunction = format != null ? "; format(\"" + format + "\")" : "";
 
             var comment = "model '" + type + "' id '" + id + "' type '" + fieldType + "' tags " + field.getTags();
 
