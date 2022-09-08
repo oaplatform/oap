@@ -172,7 +172,7 @@ public class LogConfigurationTest extends Fixtures {
                       id = CFIELD
                       type = STRING
                       default = ""
-                      path = "{booleanField, \\"x\\", fieldNullable}"
+                      path = "childNullable.{booleanField, \\"x\\", fieldNullable}"
                       tags = [LOG]
                     }
                   ]
@@ -185,8 +185,9 @@ public class LogConfigurationTest extends Fixtures {
         var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
 
         var c = new TestTemplateClass();
-        c.booleanField = true;
-        c.fieldNullable = "test";
+        c.childNullable = new TestTemplateClass();
+        c.childNullable.booleanField = true;
+        c.childNullable.fieldNullable = "test";
 
         var res = dictionaryTemplate.templateFunction.render( c );
         assertThat( res ).isEqualTo( "truextest" );

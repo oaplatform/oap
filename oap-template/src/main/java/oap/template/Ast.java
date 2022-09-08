@@ -94,4 +94,8 @@ public abstract class Ast {
     protected boolean equalsAst( Ast ast ) {
         return false;
     }
+
+    public TemplateType getResultType() {
+        return type;
+    }
 }

@@ -47,12 +47,33 @@ public class AstConcatenation extends Ast {
         render
             .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName );
 
-        Render concatRender = render.withTemplateAccumulatorName( templateAccumulatorName ).withCastType( null );
+        Render concatRender = render
+            .withTemplateAccumulatorName( templateAccumulatorName )
+            .withCastType( null );
         for( var item : items ) {
             item.render( concatRender );
         }
 
-        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( String.class ) );
+        var newRender = render.withField( templateAccumulatorName ).withParentType( getResultType() );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+        printTop( buffer, prefix );
+        buffer.append( childrenPrefix ).append( "│+" );
+        buffer.append( '\n' );
+
+        for( var i = 0; i < items.size(); i++ ) {
+            var cp = "│".repeat( items.size() - i );
+            items.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
+        }
+
+        printChildren( buffer, childrenPrefix, children );
+    }
+
+    @Override
+    public TemplateType getResultType() {
+        return new TemplateType( String.class );
     }
 }

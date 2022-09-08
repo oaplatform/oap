@@ -42,15 +42,6 @@ public class AstField extends Ast {
 
     @Override
     void render( Render render ) {
-//        if( castType != null ) {
-//            var targetType = type;
-//            if( type.isOptional() ) targetType = type.getActualTypeArguments0();
-//
-//            if( !castType.isAssignableFrom( targetType ) ) {
-//                throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
-//            }
-//        }
-
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );
 
