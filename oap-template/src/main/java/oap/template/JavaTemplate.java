@@ -46,8 +46,9 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     @SuppressWarnings( "unchecked" )
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
         this.acc = acc;
+        Render render = null;
         try {
-            var render = Render.init( name, template, new TemplateType( type.type() ), acc );
+            render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
 
             var line = new AtomicInteger( 0 );
@@ -64,6 +65,8 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
                 .getDeclaredConstructor()
                 .newInstance();
         } catch( Exception e ) {
+            if( render != null )
+                log.debug( render.sb.toString() );
             throw new TemplateException( e );
         }
     }

@@ -85,7 +85,10 @@ public class AstOr extends Ast {
 
         for( var i = 0; i < or.size(); i++ ) r = r.tabDec().ntab().append( "}" );
 
-        var newRender = r.withField( orVariable ).withParentType( new TemplateType( render.templateAccumulator.getType() ) );
+        var newRender = r
+            .withField( orVariable )
+            .withParentType( new TemplateType( render.templateAccumulator.getType() ) )
+            .withCastType( null );
         children.forEach( a -> a.render( newRender ) );
     }
 }

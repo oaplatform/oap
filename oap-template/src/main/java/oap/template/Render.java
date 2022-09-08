@@ -38,7 +38,7 @@ class Render {
     final String field;
     final String templateAccumulatorName;
     final int tab;
-    private final StringBuilder sb;
+    final StringBuilder sb;
     public final String content;
     public final FieldType castType;
 

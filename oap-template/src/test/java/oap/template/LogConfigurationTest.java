@@ -193,6 +193,40 @@ public class LogConfigurationTest extends Fixtures {
     }
 
     @Test
+    public void testOr() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = OR
+                      type = INTEGER_ARRAY
+                      default = ""
+                      path = "list|list2"
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+        c.list2 = List.of( 1, 2, 3 );
+
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "[1,2,3]" );
+    }
+
+    @Test
     public void testDefaultValueTypeCastException() {
         java.util.Collection<java.lang.Integer> a = new ArrayList<>();
         Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
