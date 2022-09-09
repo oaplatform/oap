@@ -459,12 +459,14 @@ public class Kernel implements Closeable {
         return Lists.headOf( ofClass( moduleName, clazz ) );
     }
 
+    @Deprecated
     public <T> T serviceOfClass2( Class<T> clazz ) {
         return serviceOfClass2( "*", clazz );
     }
 
+    @Deprecated
     public <T> T serviceOfClass2( String moduleName, Class<T> clazz ) {
-        return Lists.head2( ofClass( moduleName, clazz ) );
+        return Lists.headOf( ofClass( moduleName, clazz ) ).orElseThrow();
     }
 
     public <T> List<ServiceExt<T>> servicesByExt( String ext, Class<T> clazz ) {

@@ -31,7 +31,7 @@ import oap.dictionary.DictionaryParser;
 import oap.dictionary.DictionaryRoot;
 import oap.dictionary.ExternalIdType;
 import oap.io.Files;
-import oap.io.IoStreams;
+import oap.io.content.ContentWriter;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Stream;
@@ -54,6 +54,8 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
+import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.content.ContentReader.ofString;
 import static oap.util.Pair.__;
 import static org.apache.commons.io.FilenameUtils.separatorsToUnix;
 import static org.apache.commons.lang3.StringUtils.split;
@@ -289,8 +291,8 @@ public class DictionaryMojo extends AbstractMojo {
 
                 var outPath = Paths.get( outputDirectory, dictionaryPackage.replace( ".", "/" ), dict.name + ".java" );
 
-                if( !java.nio.file.Files.exists( outPath ) || !Files.readString( outPath ).equals( out.toString() ) ) {
-                    Files.writeString( outPath, IoStreams.Encoding.PLAIN, out.toString() );
+                if( !java.nio.file.Files.exists( outPath ) || !Files.read( outPath, ofString() ).equals( out.toString() ) ) {
+                    Files.write( outPath, PLAIN, out.toString(), ContentWriter.ofString() );
                 } else {
                     getLog().debug( outPath + " is not modified." );
                 }
@@ -426,7 +428,7 @@ public class DictionaryMojo extends AbstractMojo {
             }
 
             public boolean containsValueWithId( String id ) {
-                return Lists.find2( values, v -> v.getId().equals( id ) ) != null;
+                return Lists.find( values, v -> v.getId().equals( id ) ).isPresent();
             }
         }
     }

@@ -26,68 +26,63 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 public class CollectionsTest {
     @Test
     public void count() {
-        assertThat( Collections.count( asList( "a", "b", "ab" ), str -> str.startsWith( "a" ) ) ).isEqualTo( 2 );
+        assertThat( Collections.count( List.of( "a", "b", "ab" ), str -> str.startsWith( "a" ) ) ).isEqualTo( 2 );
     }
 
     @Test
     public void find() {
-        var list = asList( "a", "b", "ab" );
+        var list = List.of( "a", "b", "ab" );
         assertThat( Collections.find( list, str -> str.startsWith( "a" ) ) ).contains( "a" );
         assertThat( Collections.find( list, str -> str.startsWith( "z" ) ) ).isEmpty();
     }
 
     @Test
+    @Deprecated
     public void find2() {
-        var list = asList( "a", "b", "ab" );
+        var list = List.of( "a", "b", "ab" );
         assertThat( Collections.find2( list, str -> str.startsWith( "a" ) ) ).isEqualTo( "a" );
         assertThat( Collections.find2( list, str -> str.startsWith( "z" ) ) ).isNull();
     }
 
     @Test
     public void allMatch() {
-        var list = asList( 1, 2, 4, 5 );
-
+        var list = List.of( 1, 2, 4, 5 );
         assertThat( Collections.allMatch( list, i -> i <= 5 ) ).isTrue();
         assertThat( Collections.allMatch( list, i -> i >= 5 ) ).isFalse();
     }
 
     @Test
     public void anyMatch() {
-        var list = asList( 1, 2, 4, 5 );
-
+        var list = List.of( 1, 2, 4, 5 );
         assertThat( Collections.anyMatch( list, i -> i == 1 ) ).isTrue();
         assertThat( Collections.anyMatch( list, i -> i == 6 ) ).isFalse();
     }
 
     @Test
     public void groupBy() {
-        var list = asList( 1, 2, 1, 4 );
-
-        assertThat( Collections.groupBy( list, i -> i + 1 ) )
-            .containsOnly( entry( 2, asList( 1, 1 ) ), entry( 3, List.of( 2 ) ), entry( 5, List.of( 4 ) ) );
+        assertThat( Collections.groupBy( List.of( 1, 2, 1, 4 ), i -> i + 1 ) )
+            .containsOnly( entry( 2, List.of( 1, 1 ) ), entry( 3, List.of( 2 ) ), entry( 5, List.of( 4 ) ) );
 
     }
 
     @Test
     public void max() {
-        var list = asList( 1, 2, 1, 4 );
-
-        assertThat( Collections.max( list ) ).isEqualTo( 4 );
+        assertThat( Collections.max( List.of( 1, 2, 1, 4 ) ) ).isEqualTo( 4 );
     }
 
     @Test
+    @Deprecated
     public void head2() {
-        assertThat( Collections.head2( new LinkedHashSet<>( asList( 3, 6, 8 ) ) ) ).isEqualTo( 3 );
-        assertThat( Collections.head2( new LinkedHashSet<Integer>() ) ).isNull();
+        assertThat( Collections.head2( Set.of( 3, 6, 8 ) ) ).isEqualTo( 3 );
+        assertThat( Collections.head2( Set.<Integer>of() ) ).isNull();
     }
 }

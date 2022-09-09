@@ -41,6 +41,7 @@ import java.io.ByteArrayInputStream;
 import java.util.Base64;
 import java.util.Map;
 
+import static oap.io.content.ContentReader.ofString;
 import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -92,6 +93,6 @@ public class S3FileManagerTest extends Fixtures {
         fileManager.download( TEST_BUCKET, upload.getKey(), resultFile ).waitForCompletion();
 
         assertThat( resultFile.exists() ).isTrue();
-        assertThat( Files.readString( resultFile.toPath() ) ).isEqualTo( "test" );
+        assertThat( Files.read( resultFile.toPath(), ofString() ) ).isEqualTo( "test" );
     }
 }

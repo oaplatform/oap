@@ -167,9 +167,9 @@ class ModuleItem {
         }
 
         public void addDependsOn( ServiceReference serviceReference ) {
-            var found = Lists.find2( dependsOn, d -> d.equals( serviceReference ) );
-            if( found == null || found.required ) {
-                if( found != null ) dependsOn.remove( found );
+            var service = Lists.find( dependsOn, d -> d.equals( serviceReference ) );
+            if( service.isEmpty() || service.get().required ) {
+                service.ifPresent( dependsOn::remove );
                 dependsOn.add( serviceReference );
             }
         }

@@ -32,6 +32,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.io.content.ContentWriter.ofBytes;
+
 @Slf4j
 public class LocalFileManager extends AbstractFileManager implements FileManager<Data> {
 
@@ -43,7 +45,7 @@ public class LocalFileManager extends AbstractFileManager implements FileManager
     public String write( String bucket, Data data ) {
         var name = data.nameOrConstruct( cuid.next() );
         var path = getBucket( bucket ).resolve( name );
-        Files.write( path, data.decoded() );
+        Files.write( path, data.decoded(), ofBytes() );
         return name;
     }
 

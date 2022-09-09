@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryParserTest extends Fixtures {
@@ -48,7 +49,7 @@ public class DictionaryParserTest extends Fixtures {
         var path = TestDirectoryFixture.testPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
-        assertThat( Files.readString( path ) ).isEqualTo( """
+        assertThat( Files.read( path, ofString() ) ).isEqualTo( """
             {
               "name" : "test-dictionary",
               "version" : 1,

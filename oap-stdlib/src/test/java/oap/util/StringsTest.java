@@ -126,11 +126,6 @@ public class StringsTest {
     }
 
     @Test
-    public void fill() {
-        assertThat( Strings.fill( "12", 2 ) ).isEqualTo( "1212" );
-    }
-
-    @Test
     public void deepToString() {
         assertThat( Strings.deepToString( null ) ).isEqualTo( "null" );
         assertThat( Strings.deepToString( new Object[] { "x", "y" } ) ).isEqualTo( "[x, y]" );

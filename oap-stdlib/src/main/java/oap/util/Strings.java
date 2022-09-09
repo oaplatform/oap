@@ -339,7 +339,7 @@ public final class Strings {
         String base = id.length() > length
             ? id.substring( 0, length )
             : Arrays.contains( FILL, opts )
-                ? id + fill( "X", length - id.length() )
+                ? id + "X".repeat( length - id.length() )
                 : id;
 
         StringBuilder sb = new StringBuilder( base );
