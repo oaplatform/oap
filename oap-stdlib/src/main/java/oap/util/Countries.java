@@ -30,6 +30,8 @@ import java.util.Locale;
 
 import static java.util.stream.Collectors.toList;
 
+@Deprecated
+// use xenoss-geo/Countries instead
 public final class Countries {
     public static final String[] iso3Countries;
     private static final HashMap<String, Integer> bitMap = new HashMap<>();
