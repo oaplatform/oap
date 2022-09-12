@@ -40,14 +40,14 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
 
     public PNioHttpHandler( int requestSize, int responseSize,
                             double queueTimeoutPercent,
-                            int threads, boolean cpuQueueFair, int cpuAffinityFirstCpu,
+                            int cpuThreads, boolean cpuQueueFair, int cpuAffinityFirstCpu,
                             RequestWorkflow<WorkflowState> workflow,
                             ResponseModifier<WorkflowState> responseModifier ) {
         this.requestSize = requestSize;
         this.responseSize = responseSize;
         this.queueTimeoutPercent = queueTimeoutPercent;
 
-        this.threads = threads > 0 ? threads : Runtime.getRuntime().availableProcessors();
+        this.threads = cpuThreads > 0 ? cpuThreads : Runtime.getRuntime().availableProcessors();
         this.cpuAffinityFirstCpu = cpuAffinityFirstCpu;
         this.workflow = workflow;
         this.responseModifier = responseModifier;
@@ -60,7 +60,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
             new ThreadFactoryBuilder().setNameFormat( "cpu-http-%d" ).build(),
             new oap.concurrent.ThreadPoolExecutor.BlockingPolicy() );
 
-        for( var i = 0; i < threads; i++ ) {
+        for( var i = 0; i < cpuThreads; i++ ) {
             RequestTaskCpuRunner<WorkflowState> requestTaskCpuRunner = new RequestTaskCpuRunner<>( queue, cpuAffinityFirstCpu >= 0 ? cpuAffinityFirstCpu + i : -1 );
             pool.submit( requestTaskCpuRunner );
             tasks.add( requestTaskCpuRunner );
