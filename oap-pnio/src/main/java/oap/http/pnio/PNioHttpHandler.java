@@ -29,7 +29,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     public final int responseSize;
     public final int threads;
     private final RequestWorkflow<WorkflowState> workflow;
-    private final ResponseModifier<WorkflowState> responseModifier;
+    private final ErrorResponse<WorkflowState> errorResponse;
     private final ThreadPoolExecutor pool;
     private final SynchronousQueue<RequestTaskState<WorkflowState>> queue;
 
@@ -42,7 +42,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
                             double queueTimeoutPercent,
                             int cpuThreads, boolean cpuQueueFair, int cpuAffinityFirstCpu,
                             RequestWorkflow<WorkflowState> workflow,
-                            ResponseModifier<WorkflowState> responseModifier ) {
+                            ErrorResponse<WorkflowState> errorResponse ) {
         this.requestSize = requestSize;
         this.responseSize = responseSize;
         this.queueTimeoutPercent = queueTimeoutPercent;
@@ -50,7 +50,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
         this.threads = cpuThreads > 0 ? cpuThreads : Runtime.getRuntime().availableProcessors();
         this.cpuAffinityFirstCpu = cpuAffinityFirstCpu;
         this.workflow = workflow;
-        this.responseModifier = responseModifier;
+        this.errorResponse = errorResponse;
 
         Preconditions.checkArgument( this.threads <= Runtime.getRuntime().availableProcessors() );
 
@@ -104,14 +104,16 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     }
 
     private void response( RequestTaskState<WorkflowState> requestState, WorkflowState workflowState ) {
-        responseModifier.accept( requestState, workflowState, requestState.httpResponse );
+        if( requestState.currentTaskNode != null ) {
+            requestState.httpResponse = errorResponse.get( requestState, workflowState );
+        }
 
         if( requestState.processState == CONNECTION_CLOSED ) {
             requestState.exchange.closeConnection();
             return;
         }
 
-        requestState.httpResponse.send( requestState.exchange );
+        requestState.send();
     }
 
     @Override
@@ -131,7 +133,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
         }
     }
 
-    public interface ResponseModifier<WorkflowState> {
-        void accept( RequestTaskState<WorkflowState> requestState, WorkflowState workflowState, RequestTaskState.HttpResponse httpResponse );
+    public interface ErrorResponse<WorkflowState> {
+        RequestTaskState.HttpResponse get( RequestTaskState<WorkflowState> requestState, WorkflowState workflowState );
     }
 }

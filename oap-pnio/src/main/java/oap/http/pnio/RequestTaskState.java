@@ -43,9 +43,9 @@ public class RequestTaskState<WorkflowState> {
     public int responseLength;
 
     private final RequestWorkflow<WorkflowState> workflow;
-    public RequestWorkflow.Node<WorkflowState> currentTaskNode;
+    RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
-    final HttpResponse httpResponse = new HttpResponse( this );
+    HttpResponse httpResponse = new HttpResponse();
     private WorkflowState workflowState;
 
     public Ext ext;
@@ -153,7 +153,7 @@ public class RequestTaskState<WorkflowState> {
         return exchange.isRequestGzipped();
     }
 
-    public boolean register( SynchronousQueue<RequestTaskState<WorkflowState>> queue, double timeoutPercent ) {
+    boolean register( SynchronousQueue<RequestTaskState<WorkflowState>> queue, double timeoutPercent ) {
         try {
             long timeoutCpuQueue = getTimeLeft( timeoutPercent );
             if( timeoutCpuQueue < 1 ) {
@@ -176,7 +176,7 @@ public class RequestTaskState<WorkflowState> {
         }
     }
 
-    public boolean waitForCompletion() {
+    boolean waitForCompletion() {
         try {
             if( isDone() ) return false;
             long tMs = getTimeLeft();
@@ -212,7 +212,7 @@ public class RequestTaskState<WorkflowState> {
         return timeout - duration;
     }
 
-    public void runTasks( boolean isCpu ) {
+    void runTasks( boolean isCpu ) {
         try {
             while( currentTaskNode != null && currentTaskNode.task.isCpu() == isCpu ) {
                 if( getTimeLeft() <= 0 ) {
@@ -222,6 +222,7 @@ public class RequestTaskState<WorkflowState> {
                 if( isDone() ) return;
                 AbstractRequestTask<WorkflowState> task = currentTaskNode.task;
                 task.accept( this, workflowState );
+                if( isDone() ) return;
                 currentTaskNode = currentTaskNode.next;
             }
         } catch( Throwable e ) {
@@ -229,33 +230,28 @@ public class RequestTaskState<WorkflowState> {
         }
     }
 
+    void send() {
+        exchange.setStatusCode( httpResponse.status );
+
+        String contentType = httpResponse.contentType;
+        if( contentType != null ) exchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
+
+        String body = httpResponse.body;
+        if( body != null )
+            exchange.send( body );
+        else if( responseLength > 0 )
+            exchange.send( responseBuffer, 0, responseLength );
+        else
+            exchange.endExchange();
+    }
+
     public static class HttpResponse {
-        private final RequestTaskState<?> requestTaskState;
         public int status = StatusCodes.NO_CONTENT;
         public String contentType;
         private String body;
 
-        private HttpResponse( RequestTaskState<?> requestTaskState ) {
-            this.requestTaskState = requestTaskState;
-        }
-
-        public void send( HttpServerExchange hsExchange ) {
-            hsExchange.setStatusCode( status );
-            if( contentType != null ) hsExchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
-            if( body != null )
-                hsExchange.send( body );
-            else if( requestTaskState.responseLength > 0 )
-                hsExchange.send( requestTaskState.responseBuffer, 0, requestTaskState.responseLength );
-            else
-                hsExchange.endExchange();
-        }
-
         public void setBody( String body ) {
             this.body = body;
-        }
-
-        public String getBody() {
-            return this.body != null ? this.body : new String( requestTaskState.responseBuffer, 0, requestTaskState.responseLength );
         }
     }
 

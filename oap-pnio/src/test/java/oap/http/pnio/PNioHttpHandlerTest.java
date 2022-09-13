@@ -124,7 +124,8 @@ public class PNioHttpHandlerTest extends Fixtures {
         } );
     }
 
-    private void getResponse( RequestTaskState<TestState> requestTaskState, TestState workflowState, RequestTaskState.HttpResponse httpResponse ) {
+    private RequestTaskState.HttpResponse getErrorResponse( RequestTaskState<TestState> requestTaskState, TestState workflowState ) {
+        var httpResponse = new RequestTaskState.HttpResponse();
         switch( requestTaskState.processState ) {
             case EXCEPTION -> {
                 httpResponse.status = Http.StatusCode.BAD_GATEWAY;
@@ -137,6 +138,7 @@ public class PNioHttpHandlerTest extends Fixtures {
                 httpResponse.setBody( requestTaskState.processState.name() );
             }
         }
+        return httpResponse;
     }
 
     private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
@@ -146,7 +148,7 @@ public class PNioHttpHandlerTest extends Fixtures {
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = envFixture.portFor( "pnio" );
         try( PNioHttpHandler<TestState> httpHandler = new PNioHttpHandler<>( requestSize, responseSize, 0.99, cpuThreads,
-            true, -1, workflow, this::getResponse );
+            true, -1, workflow, this::getErrorResponse );
              NioHttpServer httpServer = new NioHttpServer( port ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
