@@ -104,16 +104,19 @@ class ModuleHelper {
 
             if( !moduleInfo.getName().equals( moduleName ) ) continue;
 
-            for( var entry : moduleInfo.services.entrySet() )
-                if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().service.name ) )
+            for( var entry : moduleInfo.services.entrySet() ) {
+                if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().service.name ) ) {
                     found.add( __( moduleInfo, entry.getValue() ) );
+                }
+            }
         }
 
         if( found.isEmpty() ) return null;
 
-        return Lists.find( found, f -> f._1.isEnabled() && f._2.enabled )
-            .orElseGet( () -> Lists.headOf( found )
-                .orElse( null ) );
+        var enabled = Lists.find2( found, f -> f._1.isEnabled() && f._2.enabled );
+        if( enabled != null ) return enabled;
+
+        return Lists.head2( found );
     }
 
     private static ModuleItemTree initModules( LinkedHashSet<Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {

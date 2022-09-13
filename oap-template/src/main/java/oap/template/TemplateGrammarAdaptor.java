@@ -152,12 +152,13 @@ abstract class TemplateGrammarAdaptor extends Parser {
             return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
         }
 
-        return Lists.find( list, m1 -> m1.getParameters().length == args.size() + 1 )
-            .<Ast>map( m -> new AstFunction( new TemplateType( m.getGenericReturnType(), m.isAnnotationPresent( Template.Nullable.class ) ), m, args ) )
-            .orElseGet( () -> {
-                if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
-                return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
-            } );
+        var method = Lists.find2( list, m -> m.getParameters().length == args.size() + 1 );
+        if( method == null ) {
+            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
+            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
+        }
+
+        return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), method, args );
     }
 
     static class MaxMin {

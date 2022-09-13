@@ -26,7 +26,6 @@ package oap.application.maven;
 
 import oap.io.Files;
 import oap.io.Resources;
-import oap.io.content.ContentWriter;
 import oap.util.Strings;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -65,7 +64,7 @@ public class StartupScriptsMojo extends AbstractMojo {
         String serviceBin = properties.getOrDefault( "oap.service.home", "/opt/oap-service" ) + "/bin";
         Path functions = Paths.get( destinationDirectory, serviceBin, "functions.sh" );
         Resources.read( getClass(), "/bin/functions.sh", ofString() )
-            .ifPresent( value -> Files.write( functions, value, ContentWriter.ofString() ) );
+            .ifPresent( value -> Files.writeString( functions, value ) );
         PosixFilePermission[] permissions = {
             OWNER_EXECUTE, OWNER_READ, OWNER_WRITE,
             GROUP_EXECUTE, GROUP_READ,
@@ -79,9 +78,8 @@ public class StartupScriptsMojo extends AbstractMojo {
         Properties properties = project.getProperties();
         Path path = Paths.get( destinationDirectory, preffix, properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix );
         Resources.read( getClass(), script, ofString() )
-            .ifPresent( value -> Files.write( path,
-                Strings.substitute( value, properties::getProperty ),
-                ContentWriter.ofString() ) );
+            .ifPresent( value -> Files.writeString( path,
+                Strings.substitute( value, properties::getProperty ) ) );
         if( permissions.length > 0 ) {
             try {
                 Files.setPosixPermissions( path, permissions );

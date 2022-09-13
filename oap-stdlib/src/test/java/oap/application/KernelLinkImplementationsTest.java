@@ -116,7 +116,7 @@ public class KernelLinkImplementationsTest {
         try {
             kernel.start( Map.of( "boot.main", "creference" ) );
 
-            assertThat( kernel.serviceOfClass( TestCLinks.class ).orElseThrow().links ).hasSize( 2 );
+            assertThat( kernel.serviceOfClass2( TestCLinks.class ).links ).hasSize( 2 );
             assertThat( kernel.<TestCLink>service( "creference.link1" ).orElseThrow().link ).isNull();
             assertThat( kernel.<TestCLink>service( "creference.link2" ).orElseThrow().link ).isNotNull();
         } finally {

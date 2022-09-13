@@ -233,8 +233,8 @@ public final class Asserts {
         }
 
         public FileAssertion hasSameContentAs( Path expected ) {
-            String actual = Files.read( this.actual.toPath(), ofString() );
-            assertThat( actual ).isEqualTo( Files.read( expected, ofString() ) );
+            String actual = Files.readString( this.actual.toPath() );
+            assertThat( actual ).isEqualTo( Files.readString( expected ) );
             return this;
         }
 

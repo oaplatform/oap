@@ -48,10 +48,6 @@ public class Collections {
         return Optional.empty();
     }
 
-    /**
-     * @see #find(Collection, Predicate)
-     */
-    @Deprecated
     public static <E, L extends Collection<E>> E find2( L list, Predicate<E> predicate ) {
         for( E e : list ) if( predicate.test( e ) ) return e;
         return null;
@@ -91,16 +87,8 @@ public class Collections {
         return max;
     }
 
-    /**
-     * @see #headOf(Collection)
-     */
-    @Deprecated
     public static <E> E head2( Collection<E> collection ) {
         return collection.isEmpty() ? null : collection.iterator().next();
-    }
-
-    public static <E> Optional<E> headOf( Collection<E> collection ) {
-        return collection.stream().findAny();
     }
 
     public static <T, K, U> LinkedHashMap<K, U> toLinkedHashMap( Collection<T> collection,
