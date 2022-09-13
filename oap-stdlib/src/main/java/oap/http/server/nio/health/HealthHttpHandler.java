@@ -25,7 +25,7 @@
 package oap.http.server.nio.health;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.http.Http;
+import oap.http.ContentTypes;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -68,7 +68,7 @@ public class HealthHttpHandler implements HttpHandler {
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
         if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
-            exchange.responseOk( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), Http.ContentType.APPLICATION_JSON );
+            exchange.responseOk( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
         else exchange.responseNoContent();
     }
 }

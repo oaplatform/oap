@@ -45,7 +45,7 @@ public class KernelSupervisionTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "thread" ) );
 
-            var srv = kernel.serviceOfClass( TestThread.class ).orElseThrow();
+            var srv = kernel.serviceOfClass2( TestThread.class );
 
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
@@ -62,7 +62,7 @@ public class KernelSupervisionTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "cron" ) );
 
-            var srv = kernel.serviceOfClass( TestCron.class ).orElseThrow();
+            var srv = kernel.serviceOfClass2( TestCron.class );
 
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
@@ -80,7 +80,7 @@ public class KernelSupervisionTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "cron" ) );
 
-            var srv = kernel.serviceOfClass( TestCron.class ).orElseThrow();
+            var srv = kernel.serviceOfClass2( TestCron.class );
 
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )

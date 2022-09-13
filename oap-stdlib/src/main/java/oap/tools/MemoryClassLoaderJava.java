@@ -29,7 +29,6 @@ import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.content.ContentReader;
-import oap.io.content.ContentWriter;
 import org.joda.time.DateTimeUtils;
 
 import javax.tools.Diagnostic;
@@ -51,6 +50,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static oap.io.content.ContentWriter.ofString;
+
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
@@ -69,7 +70,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
             var classFile = diskCache.resolve( classname + ".class" );
             if(
                 Files.exists( sourceFile )
-                    && filecontent.equals( oap.io.Files.read( sourceFile, ContentReader.ofString() ) )
+                    && filecontent.equals( oap.io.Files.readString( sourceFile ) )
                     && Files.exists( classFile ) ) {
 
                 log.trace( "found: {}", classname );
@@ -110,9 +111,9 @@ public class MemoryClassLoaderJava extends ClassLoader {
                         var classFile = diskCache.resolve( source.originalName + ".class" );
 
                         try {
-                            oap.io.Files.write( javaFile, source.content, ContentWriter.ofString() );
+                            oap.io.Files.write( javaFile, source.content, ofString() );
                             var bytes = manager.map.get( source.originalName ).toByteArray();
-                            oap.io.Files.write( classFile, bytes, ContentWriter.ofBytes() );
+                            oap.io.Files.write( classFile, bytes );
                         } catch( Exception e ) {
                             oap.io.Files.delete( javaFile );
                             oap.io.Files.delete( classFile );

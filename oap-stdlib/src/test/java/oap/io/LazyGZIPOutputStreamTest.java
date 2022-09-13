@@ -29,7 +29,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LazyGZIPOutputStreamTest extends Fixtures {
@@ -51,6 +50,6 @@ public class LazyGZIPOutputStreamTest extends Fixtures {
         }
 
         assertThat( path ).exists();
-        assertThat( Files.read( path, ofString() ) ).isEqualTo( "1" );
+        assertThat( Files.readString( path ) ).isEqualTo( "1" );
     }
 }

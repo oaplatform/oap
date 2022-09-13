@@ -391,7 +391,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public Parameter getParameter( String name ) {
-            return Lists.find( parameters, p -> p.name().equals( name ) ).orElse( null );
+            return Lists.find2( parameters, p -> p.name().equals( name ) );
         }
 
         public String name() {
@@ -438,7 +438,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public Parameter getParameter( String name ) {
-            return Lists.find( parameters, p -> p.name().equals( name ) ).orElse( null );
+            return Lists.find2( parameters, p -> p.name().equals( name ) );
         }
 
         public String name() {

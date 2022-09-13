@@ -29,7 +29,7 @@ import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
-import oap.http.Http.ContentType;
+import oap.http.ContentTypes;
 import oap.json.Binder;
 import oap.util.HashMaps;
 import oap.util.function.Try;
@@ -236,18 +236,18 @@ public class HttpServerExchange {
     public void responseJson( int statusCode, String reasonPhrase, Object body ) {
         setStatusCode( statusCode );
         setReasonPhrase( reasonPhrase );
-        setResponseHeader( Headers.CONTENT_TYPE, ContentType.APPLICATION_JSON );
+        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
     public void responseJson( int statusCode, Object body ) {
         setStatusCode( statusCode );
-        setResponseHeader( Headers.CONTENT_TYPE, ContentType.APPLICATION_JSON );
+        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
     public void responseJson( Object body ) {
-        setResponseHeader( Headers.CONTENT_TYPE, ContentType.APPLICATION_JSON );
+        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 

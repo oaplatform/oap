@@ -43,8 +43,8 @@ public class KernelHelper {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
     public static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
-                                                                        ServiceStorage storage,
-                                                                        LinkedHashMap<String, Object> parameters ) {
+                                                                 ServiceStorage storage,
+                                                                 LinkedHashMap<String, Object> parameters ) {
         fixLinks( kernel, thisModuleName, storage, parameters );
 
         var ret = new LinkedHashMap<String, Object>();
@@ -76,37 +76,56 @@ public class KernelHelper {
             } );
 
             newValue = newMap;
-        } else
-            newValue = Lists.find( Kernel.commands, c -> c.matches( value ) )
-                .flatMap( c -> c.getInstance( value, kernel, thisModuleItem, storage )
-                    .ifFailure( error -> log.trace( "{} not found", value ) )
-                    .toOptional() )
-                .orElse( null );
+        } else {
+            var command = Lists.find2( Kernel.commands, c -> c.matches( value ) );
+            if( command != null ) {
+                var result = command.getInstance( value, kernel, thisModuleItem, storage );
+                if( result.isSuccess() ) {
+                    newValue = result.successValue;
+                } else {
+                    log.trace( "{} not found", value );
+                    newValue = null;
+                }
+            } else {
+                newValue = value;
+            }
+        }
         return newValue;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
     public static Object fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, Object value ) {
-        Object newValue = value;
         if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
                 var oldValue = it.next();
                 var v = fixLinks( kernel, thisModuleItem, storage, oldValue );
-                if( v != null ) it.set( v );
+                if( v != null ) {
+                    it.set( v );
+                }
             }
-        } else if( value instanceof Map<?, ?> )
+        } else if( value instanceof Map<?, ?> ) {
             for( var entry : ( ( Map<?, Object> ) value ).entrySet() ) {
                 var v = fixLinks( kernel, thisModuleItem, storage, entry.getValue() );
-                if( v != null ) entry.setValue( v );
+                if( v != null ) {
+                    entry.setValue( v );
+                }
             }
-        else if( value instanceof String )
-            newValue = Lists.find( Kernel.commands, c -> c.matches( value ) )
-                .flatMap( c -> c.getInstance( value, kernel, thisModuleItem, storage )
-                    .ifFailure( error -> log.trace( "{} not found", value ) )
-                    .toOptional() )
-                .orElse( null );
-        return newValue;
+        } else if( value instanceof String ) {
+            var finalValue = value;
+            var command = Lists.find2( Kernel.commands, c -> c.matches( finalValue ) );
+            if( command != null ) {
+                var result = command.getInstance( value, kernel, thisModuleItem, storage );
+                if( !result.isSuccess() ) {
+                    log.trace( "{} not found", value );
+                    value = null;
+                } else {
+                    value = result.successValue;
+                }
+            }
+        }
+
+        return value;
     }
 
     public static boolean profileEnabled( LinkedHashSet<String> profiles, LinkedHashSet<String> systemProfiles ) {
