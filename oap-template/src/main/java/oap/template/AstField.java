@@ -52,6 +52,8 @@ public class AstField extends Ast {
             }
         }
 
+        var variableName = render.newVariable();
+
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );
 
