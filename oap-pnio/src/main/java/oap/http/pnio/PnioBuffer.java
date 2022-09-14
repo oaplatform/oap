@@ -53,7 +53,7 @@ public class PnioBuffer {
         return new String( buffer, 0, length );
     }
 
-    public final byte[] array() {
+    final byte[] array() {
         return buffer;
     }
 
