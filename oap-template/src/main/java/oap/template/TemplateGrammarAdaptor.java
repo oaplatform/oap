@@ -128,7 +128,8 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     fieldType = new TemplateType( extClass, fieldType.nullable );
                     forceCast = true;
                 }
-                return new MaxMin( new AstField( field.getName(), fieldType, forceCast, castType != null ? LogConfiguration.FieldType.parse( castType ) : null ) );
+                return new MaxMin( new AstField( field.getName(), fieldType, forceCast,
+                    castType != null ? LogConfiguration.FieldType.parse( castType ) : null ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = Arrays

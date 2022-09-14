@@ -26,15 +26,15 @@ package oap.template;
 
 import lombok.ToString;
 
+import java.util.function.Supplier;
+
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @ToString( callSuper = true )
 public abstract class AstIfElse extends Ast {
-    final String variableName;
     public AstText printIfOptEmpty = null;
 
     AstIfElse( TemplateType type ) {
         super( type );
-        variableName = newVariable();
     }
 
     @Override
@@ -47,13 +47,13 @@ public abstract class AstIfElse extends Ast {
         render
             .ntab().append( "if ( %s%s ) {", render.field, getTrue() );
 
-        var iv = getInnerVariable();
+        var iv = getInnerVariable( render::newVariable );
         if( iv != null ) {
-            render.tabInc().ntab().append( getInnerVariableSetter( render ) );
+            render.tabInc().ntab().append( getInnerVariableSetter( iv, render ) );
         }
 
         var newRender = render.withParentType( type ).tabInc();
-        if( iv != null ) newRender = newRender.withField( variableName );
+        if( iv != null ) newRender = newRender.withField( iv );
         for( var c : children ) {
             c.render( newRender );
         }
@@ -87,7 +87,7 @@ public abstract class AstIfElse extends Ast {
 
     protected abstract String getFalseToString();
 
-    protected abstract String getInnerVariable();
+    protected abstract String getInnerVariable( Supplier<String> newVariable );
 
-    protected abstract String getInnerVariableSetter( Render render );
+    protected abstract String getInnerVariableSetter( String variableName, Render render );
 }

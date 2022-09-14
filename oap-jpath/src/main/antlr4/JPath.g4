@@ -14,7 +14,7 @@ expr returns [Expression expression]
     : '${' {$expression = new Expression(IdentifierType.VARIABLE);} f=variableDeclaratorId {$expression.path.add(new PathNodeField($f.text));} ( '.' n=path {$expression.path.add($n.pathNode);} )* '}'
     ; 
 
-path returns [PathNode pathNode]
+path returns [AbstractPathNode pathNode]
     : v=variableDeclaratorId {$pathNode = new PathNodeField($v.text); }
     | m=method {$pathNode = new PathNodeMethod($m.nameWithParams._1, $m.nameWithParams._2); }
     | a=array {$pathNode = new PathNodeArray($a.arrayValue._1, $a.arrayValue._2); }

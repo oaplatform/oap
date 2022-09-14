@@ -1,4 +1,4 @@
-// Generated from TemplateGrammar.g4 by ANTLR 4.9.3
+// Generated from java-escape by ANTLR 4.11.1
 
 package oap.template;
 
@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Iterator;
 import java.util.ArrayList;
 
-@SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
+@SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class TemplateGrammar extends TemplateGrammarAdaptor {
-	static { RuntimeMetaData.checkVersion("4.9.3", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.11.1", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -80,7 +80,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	@Override
-	public String getGrammarFileName() { return "TemplateGrammar.g4"; }
+	public String getGrammarFileName() { return "java-escape"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }
@@ -105,6 +105,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class TemplateContext extends ParserRuleContext {
 		public TemplateType parentType;
 		public Map<String,String> aliases;
@@ -155,6 +156,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class ElementsContext extends ParserRuleContext {
 		public TemplateType parentType;
 		public Map<String,String> aliases;
@@ -193,7 +195,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			setState(23);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << STARTESCEXPR) | (1L << STARTEXPR) | (1L << TEXT))) != 0)) {
+			while (((_la) & ~0x3f) == 0 && ((1L << _la) & 14L) != 0) {
 				{
 				{
 				setState(18);
@@ -218,6 +220,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class ElementContext extends ParserRuleContext {
 		public TemplateType parentType;
 		public Map<String,String> aliases;
@@ -316,6 +319,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class TextContext extends ParserRuleContext {
 		public List<TerminalNode> TEXT() { return getTokens(TemplateGrammar.TEXT); }
 		public TerminalNode TEXT(int i) {
@@ -375,6 +379,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class CommentContext extends ParserRuleContext {
 		public TerminalNode STARTESCEXPR() { return getToken(TemplateGrammar.STARTESCEXPR, 0); }
 		public ExpressionContentContext expressionContent() {
@@ -420,6 +425,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class ExpressionContext extends ParserRuleContext {
 		public Map<String,String> aliases;
 		public String content;
@@ -475,6 +481,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		return _localctx;
 	}
 
+	@SuppressWarnings("CheckReturnValue")
 	public static class ExpressionContentContext extends ParserRuleContext {
 		public List<TerminalNode> EXPRESSION() { return getTokens(TemplateGrammar.EXPRESSION); }
 		public TerminalNode EXPRESSION(int i) {
@@ -520,7 +527,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 					{
 					setState(51);
 					_la = _input.LA(1);
-					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LBRACE) | (1L << RBRACE) | (1L << EXPRESSION))) != 0)) ) {
+					if ( !(((_la) & ~0x3f) == 0 && ((1L << _la) & 112L) != 0) ) {
 					_errHandler.recoverInline(this);
 					}
 					else {
@@ -552,21 +559,41 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\b;\4\2\t\2\4\3\t"+
-		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\3\2\3\2\3\2\3\2\3\3\3\3\3\3"+
-		"\7\3\30\n\3\f\3\16\3\33\13\3\3\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4\5\4&"+
-		"\n\4\3\5\6\5)\n\5\r\5\16\5*\3\6\3\6\3\6\3\6\3\7\3\7\3\7\3\7\3\7\3\b\6"+
-		"\b\67\n\b\r\b\16\b8\3\b\2\2\t\2\4\6\b\n\f\16\2\3\3\2\6\b\28\2\20\3\2\2"+
-		"\2\4\31\3\2\2\2\6%\3\2\2\2\b(\3\2\2\2\n,\3\2\2\2\f\60\3\2\2\2\16\66\3"+
-		"\2\2\2\20\21\5\4\3\2\21\22\b\2\1\2\22\23\7\2\2\3\23\3\3\2\2\2\24\25\5"+
-		"\6\4\2\25\26\b\3\1\2\26\30\3\2\2\2\27\24\3\2\2\2\30\33\3\2\2\2\31\27\3"+
-		"\2\2\2\31\32\3\2\2\2\32\5\3\2\2\2\33\31\3\2\2\2\34\35\5\b\5\2\35\36\b"+
-		"\4\1\2\36&\3\2\2\2\37 \5\n\6\2 !\b\4\1\2!&\3\2\2\2\"#\5\f\7\2#$\b\4\1"+
-		"\2$&\3\2\2\2%\34\3\2\2\2%\37\3\2\2\2%\"\3\2\2\2&\7\3\2\2\2\')\7\5\2\2"+
-		"(\'\3\2\2\2)*\3\2\2\2*(\3\2\2\2*+\3\2\2\2+\t\3\2\2\2,-\7\3\2\2-.\5\16"+
-		"\b\2./\7\7\2\2/\13\3\2\2\2\60\61\7\4\2\2\61\62\5\16\b\2\62\63\7\7\2\2"+
-		"\63\64\b\7\1\2\64\r\3\2\2\2\65\67\t\2\2\2\66\65\3\2\2\2\678\3\2\2\28\66"+
-		"\3\2\2\289\3\2\2\29\17\3\2\2\2\6\31%*8";
+		"\u0004\u0001\u00069\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
+		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0001\u0000\u0001\u0000\u0001"+
+		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0005\u0001\u0016"+
+		"\b\u0001\n\u0001\f\u0001\u0019\t\u0001\u0001\u0002\u0001\u0002\u0001\u0002"+
+		"\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002"+
+		"\u0003\u0002$\b\u0002\u0001\u0003\u0004\u0003\'\b\u0003\u000b\u0003\f"+
+		"\u0003(\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001"+
+		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0004\u00065\b"+
+		"\u0006\u000b\u0006\f\u00066\u0001\u0006\u0000\u0000\u0007\u0000\u0002"+
+		"\u0004\u0006\b\n\f\u0000\u0001\u0001\u0000\u0004\u00066\u0000\u000e\u0001"+
+		"\u0000\u0000\u0000\u0002\u0017\u0001\u0000\u0000\u0000\u0004#\u0001\u0000"+
+		"\u0000\u0000\u0006&\u0001\u0000\u0000\u0000\b*\u0001\u0000\u0000\u0000"+
+		"\n.\u0001\u0000\u0000\u0000\f4\u0001\u0000\u0000\u0000\u000e\u000f\u0003"+
+		"\u0002\u0001\u0000\u000f\u0010\u0006\u0000\uffff\uffff\u0000\u0010\u0011"+
+		"\u0005\u0000\u0000\u0001\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013"+
+		"\u0003\u0004\u0002\u0000\u0013\u0014\u0006\u0001\uffff\uffff\u0000\u0014"+
+		"\u0016\u0001\u0000\u0000\u0000\u0015\u0012\u0001\u0000\u0000\u0000\u0016"+
+		"\u0019\u0001\u0000\u0000\u0000\u0017\u0015\u0001\u0000\u0000\u0000\u0017"+
+		"\u0018\u0001\u0000\u0000\u0000\u0018\u0003\u0001\u0000\u0000\u0000\u0019"+
+		"\u0017\u0001\u0000\u0000\u0000\u001a\u001b\u0003\u0006\u0003\u0000\u001b"+
+		"\u001c\u0006\u0002\uffff\uffff\u0000\u001c$\u0001\u0000\u0000\u0000\u001d"+
+		"\u001e\u0003\b\u0004\u0000\u001e\u001f\u0006\u0002\uffff\uffff\u0000\u001f"+
+		"$\u0001\u0000\u0000\u0000 !\u0003\n\u0005\u0000!\"\u0006\u0002\uffff\uffff"+
+		"\u0000\"$\u0001\u0000\u0000\u0000#\u001a\u0001\u0000\u0000\u0000#\u001d"+
+		"\u0001\u0000\u0000\u0000# \u0001\u0000\u0000\u0000$\u0005\u0001\u0000"+
+		"\u0000\u0000%\'\u0005\u0003\u0000\u0000&%\u0001\u0000\u0000\u0000\'(\u0001"+
+		"\u0000\u0000\u0000(&\u0001\u0000\u0000\u0000()\u0001\u0000\u0000\u0000"+
+		")\u0007\u0001\u0000\u0000\u0000*+\u0005\u0001\u0000\u0000+,\u0003\f\u0006"+
+		"\u0000,-\u0005\u0005\u0000\u0000-\t\u0001\u0000\u0000\u0000./\u0005\u0002"+
+		"\u0000\u0000/0\u0003\f\u0006\u000001\u0005\u0005\u0000\u000012\u0006\u0005"+
+		"\uffff\uffff\u00002\u000b\u0001\u0000\u0000\u000035\u0007\u0000\u0000"+
+		"\u000043\u0001\u0000\u0000\u000056\u0001\u0000\u0000\u000064\u0001\u0000"+
+		"\u0000\u000067\u0001\u0000\u0000\u00007\r\u0001\u0000\u0000\u0000\u0004"+
+		"\u0017#(6";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

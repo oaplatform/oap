@@ -32,13 +32,10 @@ import java.util.List;
 
 @ToString( callSuper = true )
 public class AstOr extends Ast {
-    final String orVariable;
     private final ArrayList<MaxMin> or = new ArrayList<>();
 
     AstOr( TemplateType type ) {
         super( type );
-
-        orVariable = newVariable();
     }
 
     public void addTry( List<MaxMin> asts ) {
@@ -65,6 +62,8 @@ public class AstOr extends Ast {
 
     @Override
     void render( Render render ) {
+        var orVariable = render.newVariable();
+
         var minMax = or.get( 0 );
 
         var r = render;
@@ -73,11 +72,14 @@ public class AstOr extends Ast {
             minMax = or.get( i );
             var astRunnable = ( AstRunnable ) minMax.top;
 
-            astRunnable.render( r );
+            var newFunctionId = render.newVariable();
+            var templateAccumulatorName = "acc_" + newFunctionId;
+
+            astRunnable.render( newFunctionId, templateAccumulatorName, render );
             r = r
-                .ntab().append( "%s.run();", astRunnable.newFunctionId )
-                .ntab().append( "if( !%s.isEmpty() ) { ", astRunnable.templateAccumulatorName )
-                .tabInc().ntab().append( "%s = %s.get();", orVariable, astRunnable.templateAccumulatorName )
+                .ntab().append( "%s.run();", newFunctionId )
+                .ntab().append( "if( !%s.isEmpty() ) { ", templateAccumulatorName )
+                .tabInc().ntab().append( "%s = %s.get();", orVariable, templateAccumulatorName )
                 .tabDec();
 
             if( i < or.size() - 1 ) r = r.ntab().append( "} else {" ).tabInc();
