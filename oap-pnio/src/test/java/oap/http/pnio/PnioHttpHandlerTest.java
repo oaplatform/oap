@@ -38,10 +38,10 @@ import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
 import static oap.http.pnio.PnioRequestHandler.Type.IO;
 import static oap.http.testng.HttpAsserts.assertPost;
 
-public class PNioHttpHandlerTest extends Fixtures {
+public class PnioHttpHandlerTest extends Fixtures {
     private final EnvFixture envFixture;
 
-    public PNioHttpHandlerTest() {
+    public PnioHttpHandlerTest() {
         envFixture = fixture( new EnvFixture() );
     }
 
