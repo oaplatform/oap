@@ -1,4 +1,4 @@
-// Generated from TemplateLexerBasic.g4 by ANTLR 4.8
+// Generated from java-escape by ANTLR 4.11.1
 
 package oap.template;
 
@@ -11,9 +11,9 @@ import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.*;
 
-@SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
+@SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class TemplateLexerBasic extends Lexer {
-	static { RuntimeMetaData.checkVersion("4.8", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.11.1", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -101,9 +101,12 @@ public class TemplateLexerBasic extends Lexer {
 	public ATN getATN() { return _ATN; }
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\2\2\13\b\1\4\2\t\2"+
-		"\4\3\t\3\3\2\3\2\3\3\3\3\2\2\4\3\2\5\2\3\2\2\2\b\3\7\3\2\2\2\5\t\3\2\2"+
-		"\2\7\b\7}\2\2\b\4\3\2\2\2\t\n\7\177\2\2\n\6\3\2\2\2\3\2\2";
+		"\u0004\u0000\u0000\t\u0006\uffff\uffff\u0002\u0000\u0007\u0000\u0002\u0001"+
+		"\u0007\u0001\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0000\u0000"+
+		"\u0002\u0001\u0000\u0003\u0000\u0001\u0000\u0000\u0006\u0001\u0005\u0001"+
+		"\u0000\u0000\u0000\u0003\u0007\u0001\u0000\u0000\u0000\u0005\u0006\u0005"+
+		"{\u0000\u0000\u0006\u0002\u0001\u0000\u0000\u0000\u0007\b\u0005}\u0000"+
+		"\u0000\b\u0004\u0001\u0000\u0000\u0000\u0001\u0000\u0000";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

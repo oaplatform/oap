@@ -37,7 +37,8 @@ class AstPathNotFound extends Ast {
 
     @Override
     void render( Render render ) {
-        var newVariable = newVariable();
+        var newVariable = render.newVariable();
+
         render
             .ntab().append( "// %s", description )
             .ntab().append( "var %s = \"\";", newVariable );

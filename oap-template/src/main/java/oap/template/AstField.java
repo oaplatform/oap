@@ -29,7 +29,6 @@ import oap.template.LogConfiguration.FieldType;
 
 @ToString( callSuper = true )
 public class AstField extends Ast {
-    final String variableName;
     final String fieldName;
     final boolean forceCast;
     final FieldType castType;
@@ -40,7 +39,6 @@ public class AstField extends Ast {
         this.fieldName = fieldName;
         this.forceCast = forceCast;
         this.castType = castType;
-        variableName = newVariable();
     }
 
     @Override

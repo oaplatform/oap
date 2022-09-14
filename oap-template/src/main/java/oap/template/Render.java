@@ -29,9 +29,11 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ToString
 class Render {
+    private final AtomicInteger ids;
     final String templateName;
     final TemplateType parentType;
     final TemplateAccumulator<?, ?, ?> templateAccumulator;
@@ -42,12 +44,12 @@ class Render {
     public final String content;
 
     private Render( String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
-                    String field, String templateAccumulatorName, int tab ) {
-        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab );
+                    String field, String templateAccumulatorName, int tab, AtomicInteger ids ) {
+        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab, ids );
     }
 
     Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
-            String field, String templateAccumulatorName, int tab ) {
+            String field, String templateAccumulatorName, int tab, AtomicInteger ids ) {
         this.sb = sb;
         this.templateName = templateName;
         this.content = content;
@@ -56,10 +58,11 @@ class Render {
         this.field = field;
         this.templateAccumulatorName = templateAccumulatorName;
         this.tab = tab;
+        this.ids = ids;
     }
 
     public static Render init( String templateName, String content, TemplateType type, TemplateAccumulator<?, ?, ?> acc ) {
-        return new Render( templateName, content, type, acc, null, null, 0 );
+        return new Render( templateName, content, type, acc, null, null, 0, new AtomicInteger() );
     }
 
     public Render withField( String field ) {
@@ -71,19 +74,19 @@ class Render {
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, templateAccumulatorName, this.tab, ids );
     }
 
     public Render tabInc() {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab + 1 );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab + 1, ids );
     }
 
     public Render tabDec() {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab - 1 );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab - 1, ids );
     }
 
     public Render withParentType( TemplateType parentType ) {
-        return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab );
+        return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab, ids );
     }
 
     public Render n() {
@@ -137,4 +140,10 @@ class Render {
     public String escapeJava( String text ) {
         return StringEscapeUtils.escapeJava( text );
     }
+
+    public String newVariable() {
+        var id = ids.incrementAndGet();
+        return "v" + id;
+    }
+
 }

@@ -319,46 +319,71 @@ public final class Client implements Closeable {
         }
     }
 
-    public Response put( String uri, String content, String contentType ) {
+    public Response put( String uri, String content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
-        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+        return getResponse( request, builder.timeout, execute( request, headers ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response put( String uri, String content, String contentType ) {
+        return put( uri, content, contentType, Map.of() );
+    }
+
+    public Response put( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
+        var request = new HttpPut( uri );
+        request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, byte[] content, String contentType ) {
+        return put( uri, content, contentType, Map.of() );
+    }
+
+    public Response put( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
         var request = new HttpPut( uri );
-        request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
-        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+        request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, InputStream is, String contentType ) {
-        var request = new HttpPut( uri );
-        request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
-        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+        return put( uri, is, contentType, Map.of() );
+    }
+
+    public Response patch( String uri, String content, String contentType, Map<String, Object> headers ) {
+        var request = new HttpPatch( uri );
+        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response patch( String uri, String content, String contentType ) {
+        return patch( uri, content, contentType, Map.of() );
+    }
+
+    public Response patch( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPatch( uri );
-        request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
-        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+        request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
+
     public Response patch( String uri, byte[] content, String contentType ) {
+        return patch( uri, content, contentType, Map.of() );
+    }
+
+    public Response patch( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
         var request = new HttpPatch( uri );
-        request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
-        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
+        request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response patch( String uri, InputStream is, String contentType ) {
-        var request = new HttpPatch( uri );
-        request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
-        return getResponse( request, builder.timeout, execute( request, Map.of() ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+        return patch( uri, is, contentType, Map.of() );
     }
 
     public Response delete( String uri ) {
@@ -623,7 +648,6 @@ public final class Client implements Closeable {
             var contentString = contentString();
             if( contentString == null ) return Optional.empty();
 
-
             return Optional.of( Binder.json.unmarshal( ref, contentString ) );
         }
 
@@ -641,8 +665,8 @@ public final class Client implements Closeable {
 
             if( objectMappingIterator == null ) {
                 var contentString = contentString();
-                if( contentString == null ) return Stream.empty();
-
+                if( contentString == null )
+                    return Stream.empty();
 
                 objectMappingIterator = Binder.json.readerFor( ref ).readValues( contentString );
             }

@@ -38,12 +38,13 @@ public class AstMap extends Ast {
 
     @Override
     void render( Render render ) {
-        var newVariable = newVariable();
+        var mapVariable = render.newVariable();
+
         render.ntab().append( "%s %s = %s.get( \"%s\" );",
-            type.getTypeName(), newVariable,
+            type.getTypeName(), mapVariable,
             render.field, render.escapeJava( key ) );
 
-        var newRender = render.withField( newVariable ).withParentType( type );
+        var newRender = render.withField( mapVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }

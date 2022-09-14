@@ -27,14 +27,11 @@ package oap.template;
 import lombok.ToString;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @ToString( of = { "type" } )
 public abstract class Ast {
-    private static final HashMap<Class<?>, AtomicInteger> ids = new HashMap<>();
     public final TemplateType type;
     final ArrayList<Ast> children = new ArrayList<>();
 
@@ -52,11 +49,6 @@ public abstract class Ast {
         children.add( ast );
 
         return this;
-    }
-
-    String newVariable() {
-        var id = ids.computeIfAbsent( getClass(), c -> new AtomicInteger() ).incrementAndGet();
-        return getClass().getSimpleName().toLowerCase() + id;
     }
 
     public String print() {

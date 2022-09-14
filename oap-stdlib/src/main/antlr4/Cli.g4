@@ -28,7 +28,7 @@ VALUE
     :   '=' (~('"'|' '|'\t' | '\n' | '\r'))+ {setText(getText().substring(1));}
     ;
 STRVALUE
-    :   '=' '"' (ESC | ~('"' | '\\'| '\n' | '\r'))* '\"' {
+    :   '=' '"' (ESC | ~('"' | '\\'| '\n' | '\r'))* '"' {
         String s = getText();
         s = s.substring(2, s.length() - 1);
         s = s.replace("\\\"", "\"");
