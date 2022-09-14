@@ -39,14 +39,20 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
 
     @Override
     public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
-        OutputStream outputStream = pnioExchange.responseBuffer.getOutputStream();
-        if( pnioExchange.gzipSupported() ) {
-            outputStream = new GZIPOutputStream( outputStream );
-            pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
-        }
-        outputStream.write( testState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+        OutputStream outputStream = null;
+        try {
+            outputStream = pnioExchange.responseBuffer.getOutputStream();
 
-        pnioExchange.httpResponse.status = Http.StatusCode.OK;
-        pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+            if( pnioExchange.gzipSupported() ) {
+                outputStream = new GZIPOutputStream( outputStream );
+                pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
+            }
+            outputStream.write( testState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+
+            pnioExchange.httpResponse.status = Http.StatusCode.OK;
+            pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+        } finally {
+            if( outputStream != null ) outputStream.close();
+        }
     }
 }
