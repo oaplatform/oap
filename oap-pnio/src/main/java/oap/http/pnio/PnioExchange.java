@@ -215,6 +215,9 @@ public class PnioExchange<WorkflowState> {
     void send() {
         exchange.setStatusCode( httpResponse.status );
 
+        httpResponse.headers.forEach( exchange::setResponseHeader );
+        httpResponse.cookies.forEach( exchange::setResponseCookie );
+
         String contentType = httpResponse.contentType;
         if( contentType != null ) exchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
 

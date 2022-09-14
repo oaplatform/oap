@@ -25,7 +25,6 @@
 package oap.http.pnio;
 
 import oap.http.Http;
-import oap.http.server.nio.HttpServerExchange;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,11 +43,8 @@ public abstract class PnioResponseBuilder<State> extends PnioRequestHandler<Stat
             accept( pnioExchange, state, httpResponse, out );
             out.close();
 
-            HttpServerExchange exchange = pnioExchange.exchange;
-            httpResponse.headers.forEach( exchange::setResponseHeader );
-            httpResponse.cookies.forEach( exchange::setResponseCookie );
             if( gzipSupported ) {
-                exchange.setResponseHeader( Http.Headers.CONTENT_ENCODING, "gzip" );
+                httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
             }
 
         } catch( BufferOverflowException e ) {
