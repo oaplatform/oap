@@ -39,6 +39,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -139,6 +140,40 @@ public class LogConfigurationTest extends Fixtures {
 
         var res = dictionaryTemplate.templateFunction.render( c );
         assertThat( res ).isEqualTo( "[1,2]" );
+    }
+
+    @Test
+    public void testTypeSetString() {
+        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
+        Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
+            {
+              name = config.v1
+              version = 1
+              values = [
+                {
+                  id = TEST
+                  values = [
+                    {
+                      id = LIST_FIELD
+                      type = STRING_ARRAY
+                      default = []
+                      path = setString
+                      tags = [LOG]
+                    }
+                  ]
+                }
+              ]
+            }
+            """, ofString() );
+
+        var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+
+        var c = new TestTemplateClass();
+        c.setString = new LinkedHashSet<>( List.of( "s'1", "s2" ) );
+
+        var res = dictionaryTemplate.templateFunction.render( c );
+        assertThat( res ).isEqualTo( "['s\\'1','s2']" );
     }
 
     @Test

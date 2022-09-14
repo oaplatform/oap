@@ -30,6 +30,7 @@ import oap.json.ext.Ext;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class TestTemplateClass {
     public String field;
@@ -52,6 +53,7 @@ public class TestTemplateClass {
     public ITestTemplateClassExt ext2;
     public List<Integer> list;
     public List<Integer> list2;
+    public Set<String> setString;
     @JsonProperty( "jsonTestNew" )
     @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
     public String jsonTest;
