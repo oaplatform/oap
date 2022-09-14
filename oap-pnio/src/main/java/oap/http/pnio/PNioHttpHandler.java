@@ -10,12 +10,16 @@
 package oap.http.pnio;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
+import oap.LogConsolidated;
+import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
+import oap.util.Dates;
+import org.slf4j.event.Level;
 
 import java.io.Closeable;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -80,11 +84,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     }
 
     public void handleRequest( HttpServerExchange exchange, long startTimeNano, long timeout, WorkflowState workflowState ) {
-        InputStream inputStream = exchange.getInputStream();
-
         var requestState = new PnioExchange<>( requestSize, responseSize, workflow, workflowState, exchange, startTimeNano, timeout );
-
-        requestState.readFully( inputStream );
 
         while( !requestState.isDone() ) {
             PnioRequestHandler<WorkflowState> task = requestState.currentTaskNode.task;
@@ -104,7 +104,18 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
 
     private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
         if( pnioExchange.currentTaskNode != null ) {
-            errorResponse.handle( pnioExchange, workflowState );
+            try {
+                errorResponse.handle( pnioExchange, workflowState );
+            } catch( Throwable e ) {
+                LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), e.getMessage(), e );
+
+                PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+                httpResponse.cookies.clear();
+                httpResponse.headers.clear();
+                httpResponse.status = Http.StatusCode.BAD_GATEWAY;
+                httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+                pnioExchange.responseBuffer.set( Throwables.getStackTraceAsString( e ) );
+            }
         }
 
         if( pnioExchange.processState == CONNECTION_CLOSED ) {

@@ -58,6 +58,9 @@ public class PnioExchange<WorkflowState> {
         this.exchange = exchange;
         this.startTimeNano = startTimeNano;
         this.timeout = timeout;
+
+        InputStream inputStream = exchange.getInputStream();
+        readFully( inputStream );
     }
 
     public boolean gzipSupported() {
@@ -70,7 +73,7 @@ public class PnioExchange<WorkflowState> {
         return currentTaskNode.task.getClass().getSimpleName();
     }
 
-    public void readFully( InputStream body ) {
+    private void readFully( InputStream body ) {
         try {
             requestBuffer.copyFrom( body );
         } catch( BufferOverflowException e ) {
@@ -153,7 +156,6 @@ public class PnioExchange<WorkflowState> {
                 }
             }
         } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
             completeWithInterrupted();
         }
     }
