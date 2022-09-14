@@ -177,7 +177,7 @@ public class JPathParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class PathContext extends ParserRuleContext {
-		public PathNode pathNode;
+		public AbstractPathNode pathNode;
 		public VariableDeclaratorIdContext v;
 		public MethodContext m;
 		public ArrayContext a;
