@@ -62,7 +62,7 @@ public class PnioBuffer {
     }
 
     public OutputStream getOutputStream() {
-        return new PniOutputStream();
+        return new PnioOutputStream();
     }
 
     public void set( String data ) {
@@ -71,8 +71,8 @@ public class PnioBuffer {
         length = bytes.length;
     }
 
-    public class PniOutputStream extends FixedLengthArrayOutputStream {
-        public PniOutputStream() {
+    class PnioOutputStream extends FixedLengthArrayOutputStream {
+        PnioOutputStream() {
             super( buffer );
         }
 
