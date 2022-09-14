@@ -9,66 +9,55 @@
 
 package oap.http.pnio;
 
-import com.google.common.io.ByteStreams;
 import io.undertow.util.StatusCodes;
+import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
-import oap.io.FixedLengthArrayOutputStream;
 import oap.json.ext.Ext;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
 import java.nio.BufferOverflowException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class RequestTaskState<WorkflowState> {
-    public HttpServerExchange exchange;
+public class PnioExchange<WorkflowState> {
+    public final HttpServerExchange exchange;
 
-    public final byte[] requestBuffer;
-    public final byte[] responseBuffer;
+    public final PnioBuffer requestBuffer;
+    public final PnioBuffer responseBuffer;
 
     public CompletableFuture<Void> future;
     public Throwable throwable;
-    public volatile ProcessState processState;
+    public volatile ProcessState processState = ProcessState.RUNNING;
 
-    public long startTime;
-    public long timeout;
+    public final long startTimeNano;
+    public final long timeout;
 
-    public int requestLength;
-    public int responseLength;
-
-    private final RequestWorkflow<WorkflowState> workflow;
     RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
     HttpResponse httpResponse = new HttpResponse();
-    private WorkflowState workflowState;
+    private final WorkflowState workflowState;
 
     public Ext ext;
 
-    public RequestTaskState( int requestSize, int responseSize, RequestWorkflow<WorkflowState> workflow ) {
-        requestBuffer = new byte[requestSize];
-        responseBuffer = new byte[responseSize];
-
-        this.workflow = workflow;
-    }
-
-    public void reset( HttpServerExchange exchange, long startTime, long timeout, WorkflowState inputState ) {
-        processState = ProcessState.RUNNING;
-
-        requestLength = 0;
-        responseLength = 0;
-
-        this.exchange = exchange;
-        this.currentTaskNode = workflow.root;
-        this.startTime = startTime;
-        this.timeout = timeout;
+    public PnioExchange( int requestSize, int responseSize, RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
+                         HttpServerExchange exchange, long startTimeNano, long timeout ) {
+        requestBuffer = new PnioBuffer( requestSize );
+        responseBuffer = new PnioBuffer( responseSize );
 
         this.workflowState = inputState;
+        this.currentTaskNode = workflow.root;
+
+        this.exchange = exchange;
+        this.startTimeNano = startTimeNano;
+        this.timeout = timeout;
     }
 
     public boolean gzipSupported() {
@@ -83,9 +72,7 @@ public class RequestTaskState<WorkflowState> {
 
     public void readFully( InputStream body ) {
         try {
-            FixedLengthArrayOutputStream to = new FixedLengthArrayOutputStream( requestBuffer );
-            ByteStreams.copy( body, to );
-            requestLength = to.size();
+            requestBuffer.copyFrom( body );
         } catch( BufferOverflowException e ) {
             completeWithBufferOverflow( true );
         } catch( SocketException e ) {
@@ -96,7 +83,7 @@ public class RequestTaskState<WorkflowState> {
     }
 
     public String getRequestAsString() {
-        return new String( requestBuffer, 0, requestLength );
+        return requestBuffer.string();
     }
 
     public void completeWithBufferOverflow( boolean request ) {
@@ -153,26 +140,21 @@ public class RequestTaskState<WorkflowState> {
         return exchange.isRequestGzipped();
     }
 
-    boolean register( SynchronousQueue<RequestTaskState<WorkflowState>> queue, double timeoutPercent ) {
+    void register( SynchronousQueue<PnioExchange<WorkflowState>> queue, double timeoutPercent ) {
         try {
             long timeoutCpuQueue = getTimeLeft( timeoutPercent );
             if( timeoutCpuQueue < 1 ) {
                 completeWithRejected();
-                return false;
             } else {
                 future = new CompletableFuture<>();
 
                 if( !queue.offer( this, timeoutCpuQueue, TimeUnit.MILLISECONDS ) ) {
                     completeWithRejected();
-                    return false;
-                } else {
-                    return true;
                 }
             }
         } catch( InterruptedException e ) {
             Thread.currentThread().interrupt();
             completeWithInterrupted();
-            return false;
         }
     }
 
@@ -207,7 +189,7 @@ public class RequestTaskState<WorkflowState> {
 
     public long getTimeLeft() {
         long now = System.nanoTime();
-        long duration = ( now - startTime ) / 1000000;
+        long duration = ( now - startTimeNano ) / 1000000;
 
         return timeout - duration;
     }
@@ -220,8 +202,8 @@ public class RequestTaskState<WorkflowState> {
                     return;
                 }
                 if( isDone() ) return;
-                AbstractRequestTask<WorkflowState> task = currentTaskNode.task;
-                task.accept( this, workflowState );
+                PnioRequestHandler<WorkflowState> task = currentTaskNode.task;
+                task.handle( this, workflowState );
                 if( isDone() ) return;
                 currentTaskNode = currentTaskNode.next;
             }
@@ -236,23 +218,17 @@ public class RequestTaskState<WorkflowState> {
         String contentType = httpResponse.contentType;
         if( contentType != null ) exchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
 
-        String body = httpResponse.body;
-        if( body != null )
-            exchange.send( body );
-        else if( responseLength > 0 )
-            exchange.send( responseBuffer, 0, responseLength );
+        if( !responseBuffer.isEmpty() )
+            exchange.send( responseBuffer.array(), 0, responseBuffer.length );
         else
             exchange.endExchange();
     }
 
-    public static class HttpResponse {
+    static class HttpResponse {
         public int status = StatusCodes.NO_CONTENT;
         public String contentType;
-        private String body;
-
-        public void setBody( String body ) {
-            this.body = body;
-        }
+        public final HashMap<String, String> headers = new HashMap<>();
+        public final ArrayList<Cookie> cookies = new ArrayList<>();
     }
 
     public enum ProcessState {

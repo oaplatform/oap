@@ -24,14 +24,14 @@
 
 package oap.http.pnio;
 
-public class TestTask extends AbstractRequestTask<TestState> {
+public class TestHandler extends PnioRequestHandler<TestState> {
     private final String name;
     private final boolean cpu;
 
     public RuntimeException runtimeException;
     public long sleepTime = -1;
 
-    public TestTask( String name, boolean cpu ) {
+    public TestHandler( String name, boolean cpu ) {
         this.name = name;
         this.cpu = cpu;
     }
@@ -42,7 +42,7 @@ public class TestTask extends AbstractRequestTask<TestState> {
     }
 
     @Override
-    public void accept( RequestTaskState<TestState> requestState, TestState testState ) throws InterruptedException {
+    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
         if( runtimeException != null ) throw new RuntimeException( runtimeException );
         if( sleepTime > 0 ) Thread.sleep( sleepTime );
 
@@ -61,12 +61,12 @@ public class TestTask extends AbstractRequestTask<TestState> {
         return "name '" + name + "' cpu " + cpu + " thread '" + Thread.currentThread().getName() + "'";
     }
 
-    public TestTask withException( RuntimeException testException ) {
+    public TestHandler withException( RuntimeException testException ) {
         this.runtimeException = testException;
         return this;
     }
 
-    public TestTask withSleepTime( long duration ) {
+    public TestHandler withSleepTime( long duration ) {
         this.sleepTime = duration;
         return this;
     }

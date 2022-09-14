@@ -16,12 +16,12 @@ import java.util.concurrent.BlockingQueue;
 
 @Slf4j
 class RequestTaskCpuRunner<WorkflowState> implements Runnable {
-    private final BlockingQueue<RequestTaskState<WorkflowState>> queue;
+    private final BlockingQueue<PnioExchange<WorkflowState>> queue;
     private final int cpu;
     volatile boolean done = false;
-    Thread thread;
+    private Thread thread;
 
-    RequestTaskCpuRunner( BlockingQueue<RequestTaskState<WorkflowState>> queue, int cpu ) {
+    RequestTaskCpuRunner( BlockingQueue<PnioExchange<WorkflowState>> queue, int cpu ) {
         this.queue = queue;
         this.cpu = cpu;
     }
@@ -35,7 +35,7 @@ class RequestTaskCpuRunner<WorkflowState> implements Runnable {
 
         while( !done ) {
             try {
-                RequestTaskState<WorkflowState> taskState = queue.take();
+                PnioExchange<WorkflowState> taskState = queue.take();
                 try {
                     taskState.runTasks( true );
 
@@ -44,9 +44,13 @@ class RequestTaskCpuRunner<WorkflowState> implements Runnable {
                     taskState.completeWithFail( e );
                 }
             } catch( InterruptedException e ) {
-                Thread.currentThread().interrupt();
                 done = true;
             }
         }
+    }
+
+    public void interrupt() {
+        done = true;
+        thread.interrupt();
     }
 }

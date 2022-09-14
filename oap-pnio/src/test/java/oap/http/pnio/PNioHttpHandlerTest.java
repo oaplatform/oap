@@ -45,13 +45,13 @@ public class PNioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testProcess() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestTask( "cpu-1", true ) )
-            .next( new TestTask( "cpu-2", true ) )
-            .next( new TestTask( "io-1", false ) )
-            .next( new TestTask( "io-2", false ) )
-            .next( new TestTask( "cpu-3", true ) )
-            .next( new TestTask( "cpu-4", true ) )
-            .build( new TestResponseTask() );
+        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu-1", true ) )
+            .next( new TestHandler( "cpu-2", true ) )
+            .next( new TestHandler( "io-1", false ) )
+            .next( new TestHandler( "io-2", false ) )
+            .next( new TestHandler( "cpu-3", true ) )
+            .next( new TestHandler( "cpu-4", true ) )
+            .build( new TestResponseBuilder() );
 
         runWithWorkflow( workflow, port -> {
 
@@ -70,8 +70,8 @@ public class PNioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testProcessWithException() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestTask( "cpu-2", true ).withException( new RuntimeException( "test exception" ) ) )
-            .build( new TestResponseTask() );
+        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu-2", true ).withException( new RuntimeException( "test exception" ) ) )
+            .build( new TestResponseBuilder() );
 
         runWithWorkflow( workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "{}" )
@@ -83,8 +83,8 @@ public class PNioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testRequestBufferOverflow() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestTask( "cpu-2", true ) )
-            .build( new TestResponseTask() );
+        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu-2", true ) )
+            .build( new TestResponseBuilder() );
 
         runWithWorkflow( 2, 1024, 5, 4, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
@@ -96,21 +96,21 @@ public class PNioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testResponseBufferOverflow() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestTask( "cpu-2", true ) )
-            .build( new TestResponseTask() );
+        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu-2", true ) )
+            .build( new TestResponseBuilder() );
 
         runWithWorkflow( 1024, 2, 5, 4, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
-                .hasBody( "RESPONSE_BUFFER_OVERFLOW" );
+                .hasBody( "BO" );
         } );
     }
 
     @Test
     public void testTimeout() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestTask( "cpu", true ).withSleepTime( Dates.s( 20 ) ) )
-            .build( new TestResponseTask() );
+        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu", true ).withSleepTime( Dates.s( 20 ) ) )
+            .build( new TestResponseBuilder() );
 
         runWithWorkflow( 1024, 1024, 5, 1, 200, workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
@@ -124,21 +124,30 @@ public class PNioHttpHandlerTest extends Fixtures {
         } );
     }
 
-    private RequestTaskState.HttpResponse getErrorResponse( RequestTaskState<TestState> requestTaskState, TestState workflowState ) {
-        var httpResponse = new RequestTaskState.HttpResponse();
-        switch( requestTaskState.processState ) {
+    private void errorResponse( PnioExchange<TestState> pnioExchange, TestState workflowState ) {
+        var httpResponse = pnioExchange.httpResponse;
+        switch( pnioExchange.processState ) {
             case EXCEPTION -> {
                 httpResponse.status = Http.StatusCode.BAD_GATEWAY;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                httpResponse.setBody( requestTaskState.throwable.getMessage() );
+                pnioExchange.responseBuffer.set( pnioExchange.throwable.getMessage() );
             }
-            case REQUEST_BUFFER_OVERFLOW, RESPONSE_BUFFER_OVERFLOW, TIMEOUT, REJECTED -> {
+            case RESPONSE_BUFFER_OVERFLOW -> {
                 httpResponse.status = Http.StatusCode.BAD_REQUEST;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                httpResponse.setBody( requestTaskState.processState.name() );
+                pnioExchange.responseBuffer.set( "BO" );
+            }
+            case REQUEST_BUFFER_OVERFLOW, TIMEOUT, REJECTED -> {
+                httpResponse.status = Http.StatusCode.BAD_REQUEST;
+                httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+                pnioExchange.responseBuffer.set( pnioExchange.processState.name() );
+            }
+            default -> {
+                httpResponse.status = Http.StatusCode.NO_CONTENT;
+                httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+                pnioExchange.responseBuffer.set( "DEFAULT" );
             }
         }
-        return httpResponse;
     }
 
     private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
@@ -148,7 +157,7 @@ public class PNioHttpHandlerTest extends Fixtures {
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = envFixture.portFor( "pnio" );
         try( PNioHttpHandler<TestState> httpHandler = new PNioHttpHandler<>( requestSize, responseSize, 0.99, cpuThreads,
-            true, -1, workflow, this::getErrorResponse );
+            true, -1, workflow, this::errorResponse );
              NioHttpServer httpServer = new NioHttpServer( port ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();

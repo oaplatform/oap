@@ -21,7 +21,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static oap.http.pnio.RequestTaskState.ProcessState.CONNECTION_CLOSED;
+import static oap.http.pnio.PnioExchange.ProcessState.CONNECTION_CLOSED;
 
 @Slf4j
 public class PNioHttpHandler<WorkflowState> implements Closeable {
@@ -31,7 +31,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     private final RequestWorkflow<WorkflowState> workflow;
     private final ErrorResponse<WorkflowState> errorResponse;
     private final ThreadPoolExecutor pool;
-    private final SynchronousQueue<RequestTaskState<WorkflowState>> queue;
+    private final SynchronousQueue<PnioExchange<WorkflowState>> queue;
 
     public final double queueTimeoutPercent;
     public final int cpuAffinityFirstCpu;
@@ -82,13 +82,12 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     public void handleRequest( HttpServerExchange exchange, long startTimeNano, long timeout, WorkflowState workflowState ) {
         InputStream inputStream = exchange.getInputStream();
 
-        var requestState = new RequestTaskState<>( requestSize, responseSize, workflow );
+        var requestState = new PnioExchange<>( requestSize, responseSize, workflow, workflowState, exchange, startTimeNano, timeout );
 
-        requestState.reset( exchange, startTimeNano, timeout, workflowState );
         requestState.readFully( inputStream );
 
         while( !requestState.isDone() ) {
-            AbstractRequestTask<WorkflowState> task = requestState.currentTaskNode.task;
+            PnioRequestHandler<WorkflowState> task = requestState.currentTaskNode.task;
             if( task.isCpu() ) {
                 requestState.register( queue, queueTimeoutPercent );
             } else {
@@ -103,17 +102,17 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
         response( requestState, workflowState );
     }
 
-    private void response( RequestTaskState<WorkflowState> requestState, WorkflowState workflowState ) {
-        if( requestState.currentTaskNode != null ) {
-            requestState.httpResponse = errorResponse.get( requestState, workflowState );
+    private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
+        if( pnioExchange.currentTaskNode != null ) {
+            errorResponse.handle( pnioExchange, workflowState );
         }
 
-        if( requestState.processState == CONNECTION_CLOSED ) {
-            requestState.exchange.closeConnection();
+        if( pnioExchange.processState == CONNECTION_CLOSED ) {
+            pnioExchange.exchange.closeConnection();
             return;
         }
 
-        requestState.send();
+        pnioExchange.send();
     }
 
     @Override
@@ -122,7 +121,7 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
         try {
 
             for( var task : tasks ) {
-                task.thread.interrupt();
+                task.interrupt();
             }
 
             if( !pool.awaitTermination( 60, TimeUnit.SECONDS ) ) {
@@ -134,6 +133,6 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     }
 
     public interface ErrorResponse<WorkflowState> {
-        RequestTaskState.HttpResponse get( RequestTaskState<WorkflowState> requestState, WorkflowState workflowState );
+        void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState );
     }
 }

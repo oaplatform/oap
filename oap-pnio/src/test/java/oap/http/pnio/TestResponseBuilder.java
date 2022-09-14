@@ -30,9 +30,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-public class TestResponseTask extends AbstractResponseTask<TestState> {
+public class TestResponseBuilder extends PnioResponseBuilder<TestState> {
     @Override
-    public void accept( RequestTaskState<TestState> requestState, TestState testState, RequestTaskState.HttpResponse httpResponse, OutputStream outputStream ) throws IOException {
+    public void accept( PnioExchange<TestState> pnioExchange, TestState testState, PnioExchange.HttpResponse httpResponse, OutputStream outputStream ) throws IOException {
         outputStream.write( testState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
 
         httpResponse.status = Http.StatusCode.OK;

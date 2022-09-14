@@ -9,7 +9,8 @@
 
 package oap.http.pnio;
 
-public abstract class AbstractRequestTask<State> {
+@SuppressWarnings( "checkstyle:AbstractClassName" )
+public abstract class PnioRequestHandler<State> {
     public String description() {
         return getClass().getName();
     }
@@ -21,5 +22,5 @@ public abstract class AbstractRequestTask<State> {
 
     public abstract boolean isCpu();
 
-    public abstract void accept( RequestTaskState<State> stateRequestTaskState, State state ) throws InterruptedException;
+    public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException;
 }

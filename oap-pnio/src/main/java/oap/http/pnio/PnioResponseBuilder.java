@@ -25,37 +25,40 @@
 package oap.http.pnio;
 
 import oap.http.Http;
-import oap.io.FixedLengthArrayOutputStream;
-import oap.io.IoStreams;
+import oap.http.server.nio.HttpServerExchange;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.BufferOverflowException;
 import java.util.zip.GZIPOutputStream;
 
-public abstract class AbstractResponseTask<State> extends AbstractRequestTask<State> {
+@SuppressWarnings( "checkstyle:AbstractClassName" )
+public abstract class PnioResponseBuilder<State> extends PnioRequestHandler<State> {
     @Override
-    public void accept( RequestTaskState<State> requestState, State state ) {
+    public void handle( PnioExchange<State> pnioExchange, State state ) {
         try {
-            FixedLengthArrayOutputStream fixedLengthArrayOutputStream = IoStreams.out( requestState.responseBuffer );
-            OutputStream out = fixedLengthArrayOutputStream;
-            boolean gzipSupported = requestState.gzipSupported();
+            OutputStream out = pnioExchange.responseBuffer.getOutputStream();
+            boolean gzipSupported = pnioExchange.gzipSupported();
             if( gzipSupported ) out = new GZIPOutputStream( out );
-            accept( requestState, state, requestState.httpResponse, out );
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+            accept( pnioExchange, state, httpResponse, out );
             out.close();
-            requestState.responseLength = fixedLengthArrayOutputStream.size();
 
+            HttpServerExchange exchange = pnioExchange.exchange;
+            httpResponse.headers.forEach( exchange::setResponseHeader );
+            httpResponse.cookies.forEach( exchange::setResponseCookie );
             if( gzipSupported ) {
-                requestState.exchange.setResponseHeader( Http.Headers.CONTENT_ENCODING, "gzip" );
+                exchange.setResponseHeader( Http.Headers.CONTENT_ENCODING, "gzip" );
             }
+
         } catch( BufferOverflowException e ) {
-            requestState.completeWithBufferOverflow( false );
+            pnioExchange.completeWithBufferOverflow( false );
         } catch( Throwable e ) {
-            requestState.completeWithFail( e );
+            pnioExchange.completeWithFail( e );
         }
     }
 
-    public abstract void accept( RequestTaskState<State> requestState, State state, RequestTaskState.HttpResponse httpResponse, OutputStream outputStream ) throws IOException;
+    public abstract void accept( PnioExchange<State> requestState, State state, PnioExchange.HttpResponse httpResponse, OutputStream outputStream ) throws IOException;
 
     @Override
     public boolean isCpu() {
