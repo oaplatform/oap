@@ -28,18 +28,19 @@ import lombok.ToString;
 
 @ToString( callSuper = true )
 public class AstRunnable extends Ast {
-    String newFunctionId;
-    String templateAccumulatorName;
-
-    AstRunnable( TemplateType type, String runnableVariable ) {
+    AstRunnable( TemplateType type ) {
         super( type );
-
-        newFunctionId = runnableVariable;
-        templateAccumulatorName = "acc_" + newFunctionId;
     }
 
     @Override
     void render( Render render ) {
+        var newFunctionId = render.newVariable();
+        var templateAccumulatorName = "acc_" + newFunctionId;
+
+        render( newFunctionId, templateAccumulatorName, render );
+    }
+
+    void render( String newFunctionId, String templateAccumulatorName, Render render ) {
         render
             .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
             .ntab().append( "Runnable %s = () -> {", newFunctionId );

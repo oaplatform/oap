@@ -31,19 +31,16 @@ import java.util.List;
 @ToString( callSuper = true )
 public class AstConcatenation extends Ast {
     final List<Ast> items;
-    final String newAndId;
-    final String templateAccumulatorName;
 
-    AstConcatenation( TemplateType type, List<Ast> items, String newAndId ) {
+    AstConcatenation( TemplateType type, List<Ast> items ) {
         super( type );
-        this.items = items;
 
-        this.newAndId = newAndId;
-        templateAccumulatorName = "acc_" + newAndId;
+        this.items = items;
     }
 
     @Override
     void render( Render render ) {
+        var templateAccumulatorName = "acc_" + render.newVariable();
         render
             .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName );
 

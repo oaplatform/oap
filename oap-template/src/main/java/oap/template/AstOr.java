@@ -29,24 +29,18 @@ import oap.template.TemplateGrammarAdaptor.MaxMin;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 @ToString( callSuper = true )
 public class AstOr extends Ast {
-    final String orVariable;
     private final ArrayList<MaxMin> or = new ArrayList<>();
-    private final Supplier<String> newVariableSupp;
 
-    AstOr( TemplateType type, Supplier<String> newVariable ) {
+    AstOr( TemplateType type ) {
         super( type );
-
-        orVariable = newVariable.get();
-        this.newVariableSupp = newVariable;
     }
 
     public void addTry( List<MaxMin> asts ) {
         for( var ast : asts ) {
-            var astRunnable = new AstRunnable( type, newVariableSupp.get() );
+            var astRunnable = new AstRunnable( type );
             astRunnable.addChild( ast.top );
             or.add( new MaxMin( astRunnable, ast.bottom ) );
         }
@@ -68,6 +62,8 @@ public class AstOr extends Ast {
 
     @Override
     void render( Render render ) {
+        var orVariable = render.newVariable();
+
         var minMax = or.get( 0 );
 
         var r = render;
@@ -76,11 +72,14 @@ public class AstOr extends Ast {
             minMax = or.get( i );
             var astRunnable = ( AstRunnable ) minMax.top;
 
-            astRunnable.render( r );
+            var newFunctionId = render.newVariable();
+            var templateAccumulatorName = "acc_" + newFunctionId;
+
+            astRunnable.render( newFunctionId, templateAccumulatorName, render );
             r = r
-                .ntab().append( "%s.run();", astRunnable.newFunctionId )
-                .ntab().append( "if( !%s.isEmpty() ) { ", astRunnable.templateAccumulatorName )
-                .tabInc().ntab().append( "%s = %s.get();", orVariable, astRunnable.templateAccumulatorName )
+                .ntab().append( "%s.run();", newFunctionId )
+                .ntab().append( "if( !%s.isEmpty() ) { ", templateAccumulatorName )
+                .tabInc().ntab().append( "%s = %s.get();", orVariable, templateAccumulatorName )
                 .tabDec();
 
             if( i < or.size() - 1 ) r = r.ntab().append( "} else {" ).tabInc();

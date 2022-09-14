@@ -29,16 +29,16 @@ import lombok.ToString;
 @ToString( callSuper = true )
 class AstPathNotFound extends Ast {
     final String description;
-    private final String newVariable;
 
-    AstPathNotFound( String description, String newVariable ) {
+    AstPathNotFound( String description ) {
         super( new TemplateType( String.class ) );
         this.description = description;
-        this.newVariable = newVariable;
     }
 
     @Override
     void render( Render render ) {
+        var newVariable = render.newVariable();
+
         render
             .ntab().append( "// %s", description )
             .ntab().append( "var %s = \"\";", newVariable );

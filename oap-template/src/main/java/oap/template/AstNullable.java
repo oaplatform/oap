@@ -26,10 +26,12 @@ package oap.template;
 
 import lombok.ToString;
 
+import java.util.function.Supplier;
+
 @ToString( callSuper = true )
 public class AstNullable extends AstIfElse {
-    AstNullable( TemplateType type, String variableName ) {
-        super( type, variableName );
+    AstNullable( TemplateType type ) {
+        super( type );
     }
 
     @Override
@@ -43,12 +45,12 @@ public class AstNullable extends AstIfElse {
     }
 
     @Override
-    protected String getInnerVariable() {
+    protected String getInnerVariable( Supplier<String> newVariable ) {
         return null;
     }
 
     @Override
-    protected String getInnerVariableSetter( Render render ) {
+    protected String getInnerVariableSetter( String variableName, Render render ) {
         return null;
     }
 }

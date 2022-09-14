@@ -80,7 +80,7 @@ orExps [TemplateType parentType, MaxMin firstAst] returns [MaxMin ast]
     : (PIPE exps[parentType] { $list.add(firstAst); $list.add($exps.ast); } ( PIPE exps[parentType] {$list.add($exps.ast);})*) {
         if( $list.isEmpty() ) $ast = firstAst;
         else {
-            var or = new AstOr(parentType, () -> newVariable());
+            var or = new AstOr(parentType);
             for( var item : $list) {
               item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false, null));
             }
@@ -108,7 +108,7 @@ concatenation[TemplateType parentType] returns [AstConcatenation ast]
     : CAST_TYPE? LBRACE citems[parentType] {
         try {
         com.google.common.base.Preconditions.checkArgument(  $CAST_TYPE == null || oap.template.LogConfiguration.FieldType.parse( $CAST_TYPE.text.substring(1, $CAST_TYPE.text.length() - 1) ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
-        $ast = new AstConcatenation(parentType, $citems.list, newVariable());
+        $ast = new AstConcatenation(parentType, $citems.list);
         } catch ( java.lang.ClassNotFoundException e) {
           throw new TemplateException( e.getMessage(), e );
         }
@@ -129,7 +129,7 @@ citem[TemplateType parentType] returns [MaxMin ast]
     ;
 
 math[TemplateType parentType] returns [MaxMin ast]
-    : mathOperation number { $ast = new MaxMin(new AstMath($parentType, $mathOperation.text, $number.text, newVariable())); }
+    : mathOperation number { $ast = new MaxMin(new AstMath($parentType, $mathOperation.text, $number.text)); }
     ;
 
 number:

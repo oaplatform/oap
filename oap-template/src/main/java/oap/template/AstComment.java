@@ -32,6 +32,7 @@ class AstComment extends Ast {
 
     AstComment( TemplateType type, String comment ) {
         super( type );
+
         this.comment = comment;
     }
 

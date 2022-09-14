@@ -29,18 +29,16 @@ import oap.template.LogConfiguration.FieldType;
 
 @ToString( callSuper = true )
 public class AstField extends Ast {
-    final String variableName;
     final String fieldName;
     final boolean forceCast;
     final FieldType castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType, String variableName ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
         super( fieldType );
 
         this.fieldName = fieldName;
         this.forceCast = forceCast;
         this.castType = castType;
-        this.variableName = variableName;
     }
 
     @Override
@@ -53,6 +51,8 @@ public class AstField extends Ast {
                 throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
             }
         }
+
+        var variableName = render.newVariable();
 
         render.ntab()
             .append( "%s %s = ", type.getTypeName(), variableName );

@@ -31,19 +31,19 @@ import java.util.List;
 
 @ToString( callSuper = true )
 class AstFunction extends Ast {
-    final String funcVariable;
     final Method method;
     final List<String> parameters;
 
-    AstFunction( TemplateType type, Method method, List<String> parameters, String funcVariable ) {
+    AstFunction( TemplateType type, Method method, List<String> parameters ) {
         super( type );
         this.method = method;
         this.parameters = parameters;
-        this.funcVariable = funcVariable;
     }
 
     @Override
     void render( Render render ) {
+        var funcVariable = render.newVariable();
+
         render.ntab().append( "%s %s = %s.%s( %s",
             method.getGenericReturnType().getTypeName(), funcVariable,
             method.getDeclaringClass().getName(), method.getName(), render.field );
