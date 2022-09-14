@@ -38,7 +38,7 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
     }
 
     @Override
-    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException, IOException {
+    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
         OutputStream outputStream = pnioExchange.responseBuffer.getOutputStream();
         if( pnioExchange.gzipSupported() ) {
             outputStream = new GZIPOutputStream( outputStream );

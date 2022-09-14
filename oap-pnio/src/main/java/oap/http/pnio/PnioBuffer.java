@@ -27,6 +27,7 @@ package oap.http.pnio;
 import com.google.common.io.ByteStreams;
 import oap.io.FixedLengthArrayOutputStream;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -59,6 +60,10 @@ public class PnioBuffer {
 
     public final boolean isEmpty() {
         return length == 0;
+    }
+
+    public InputStream getInputStream() {
+        return new ByteArrayInputStream( buffer, 0, length );
     }
 
     public OutputStream getOutputStream() {
