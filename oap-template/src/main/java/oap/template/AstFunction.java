@@ -31,7 +31,6 @@ import java.util.List;
 
 @ToString( callSuper = true )
 class AstFunction extends Ast {
-    final String funcVariable;
     final Method method;
     final List<String> parameters;
 
@@ -39,11 +38,12 @@ class AstFunction extends Ast {
         super( type );
         this.method = method;
         this.parameters = parameters;
-        funcVariable = newVariable();
     }
 
     @Override
     void render( Render render ) {
+        var funcVariable = render.newVariable();
+
         render.ntab().append( "%s %s = %s.%s( %s",
             method.getGenericReturnType().getTypeName(), funcVariable,
             method.getDeclaringClass().getName(), method.getName(), render.field );

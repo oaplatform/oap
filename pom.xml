@@ -120,7 +120,7 @@
         <oap.deps.maven.version>3.0-alpha-2</oap.deps.maven.version>
         <oap.deps.maven.plugin-annotations.version>3.6.4</oap.deps.maven.plugin-annotations.version>
         <oap.deps.maven.plugin-plugin.version>3.6.4</oap.deps.maven.plugin-plugin.version>
-        <oap.deps.plugins.antlr4.version>4.9.3</oap.deps.plugins.antlr4.version>
+        <oap.deps.plugins.antlr4.version>4.11.1</oap.deps.plugins.antlr4.version>
 
         <oap.deps.aws-java-sdk.version>1.12.286</oap.deps.aws-java-sdk.version>
         <oap.deps.s3mock.version>0.2.6</oap.deps.s3mock.version>
