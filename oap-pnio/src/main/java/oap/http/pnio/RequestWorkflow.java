@@ -18,7 +18,7 @@ import java.util.function.Function;
 public class RequestWorkflow<WorkflowState> {
     @AllArgsConstructor
     static class Node<WorkflowState> {
-        final PnioRequestHandler<WorkflowState> task;
+        final PnioRequestHandler<WorkflowState> handler;
         Node<WorkflowState> next;
     }
 
@@ -42,8 +42,8 @@ public class RequestWorkflow<WorkflowState> {
             lastNode = workflow.root;
         }
 
-        public RequestWorkflowBuilder<WorkflowState> next( PnioRequestHandler<WorkflowState> task ) {
-            var node = new Node<>( task, null );
+        public RequestWorkflowBuilder<WorkflowState> next( PnioRequestHandler<WorkflowState> handlers ) {
+            var node = new Node<>( handlers, null );
             lastNode.next = node;
             lastNode = node;
 
@@ -62,8 +62,8 @@ public class RequestWorkflow<WorkflowState> {
             if( postProcess != null ) {
                 next( new PnioRequestHandler<WorkflowState>() {
                     @Override
-                    public boolean isCpu() {
-                        return true;
+                    public Type getType() {
+                        return Type.COMPUTE;
                     }
 
                     @Override
@@ -76,8 +76,7 @@ public class RequestWorkflow<WorkflowState> {
             return this;
         }
 
-        public RequestWorkflow<WorkflowState> build( PnioResponseBuilder<WorkflowState> responseBuilder ) {
-            next( responseBuilder );
+        public RequestWorkflow<WorkflowState> build() {
             return workflow;
         }
     }

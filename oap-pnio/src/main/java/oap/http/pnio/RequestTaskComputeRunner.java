@@ -14,14 +14,16 @@ import net.openhft.affinity.Affinity;
 
 import java.util.concurrent.BlockingQueue;
 
+import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
+
 @Slf4j
-class RequestTaskCpuRunner<WorkflowState> implements Runnable {
+class RequestTaskComputeRunner<WorkflowState> implements Runnable {
     private final BlockingQueue<PnioExchange<WorkflowState>> queue;
     private final int cpu;
     volatile boolean done = false;
     private Thread thread;
 
-    RequestTaskCpuRunner( BlockingQueue<PnioExchange<WorkflowState>> queue, int cpu ) {
+    RequestTaskComputeRunner( BlockingQueue<PnioExchange<WorkflowState>> queue, int cpu ) {
         this.queue = queue;
         this.cpu = cpu;
     }
@@ -35,13 +37,13 @@ class RequestTaskCpuRunner<WorkflowState> implements Runnable {
 
         while( !done ) {
             try {
-                PnioExchange<WorkflowState> taskState = queue.take();
+                PnioExchange<WorkflowState> pnioExchange = queue.take();
                 try {
-                    taskState.runTasks( true );
+                    pnioExchange.runTasks( COMPUTE );
 
-                    taskState.completeFuture();
+                    pnioExchange.completeFuture();
                 } catch( Throwable e ) {
-                    taskState.completeWithFail( e );
+                    pnioExchange.completeWithFail( e );
                 }
             } catch( InterruptedException e ) {
                 done = true;

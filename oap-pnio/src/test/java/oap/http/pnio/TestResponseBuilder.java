@@ -29,13 +29,24 @@ import oap.http.Http;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
 
-public class TestResponseBuilder extends PnioResponseBuilder<TestState> {
+public class TestResponseBuilder extends PnioRequestHandler<TestState> {
     @Override
-    public void accept( PnioExchange<TestState> pnioExchange, TestState testState, PnioExchange.HttpResponse httpResponse, OutputStream outputStream ) throws IOException {
+    public Type getType() {
+        return Type.COMPUTE;
+    }
+
+    @Override
+    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException, IOException {
+        OutputStream outputStream = pnioExchange.responseBuffer.getOutputStream();
+        if( pnioExchange.gzipSupported() ) {
+            outputStream = new GZIPOutputStream( outputStream );
+            pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
+        }
         outputStream.write( testState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
 
-        httpResponse.status = Http.StatusCode.OK;
-        httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+        pnioExchange.httpResponse.status = Http.StatusCode.OK;
+        pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
     }
 }

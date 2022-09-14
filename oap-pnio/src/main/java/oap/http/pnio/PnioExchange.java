@@ -13,7 +13,6 @@ import io.undertow.util.StatusCodes;
 import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
-import oap.json.ext.Ext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,8 +44,6 @@ public class PnioExchange<WorkflowState> {
     HttpResponse httpResponse = new HttpResponse();
     private final WorkflowState workflowState;
 
-    public Ext ext;
-
     public PnioExchange( int requestSize, int responseSize, RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
                          HttpServerExchange exchange, long startTimeNano, long timeout ) {
         requestBuffer = new PnioBuffer( requestSize );
@@ -70,7 +67,7 @@ public class PnioExchange<WorkflowState> {
     public String getCurrentTaskName() {
         if( currentTaskNode == null ) return "NONE";
 
-        return currentTaskNode.task.getClass().getSimpleName();
+        return currentTaskNode.handler.getClass().getSimpleName();
     }
 
     private void readFully( InputStream body ) {
@@ -196,19 +193,21 @@ public class PnioExchange<WorkflowState> {
         return timeout - duration;
     }
 
-    void runTasks( boolean isCpu ) {
+    void runTasks( PnioRequestHandler.Type type ) {
         try {
-            while( currentTaskNode != null && currentTaskNode.task.isCpu() == isCpu ) {
+            while( currentTaskNode != null && currentTaskNode.handler.getType() == type ) {
                 if( getTimeLeft() <= 0 ) {
                     completeWithTimeout();
                     return;
                 }
                 if( isDone() ) return;
-                PnioRequestHandler<WorkflowState> task = currentTaskNode.task;
+                PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
                 task.handle( this, workflowState );
                 if( isDone() ) return;
                 currentTaskNode = currentTaskNode.next;
             }
+        } catch( BufferOverflowException e ) {
+            completeWithBufferOverflow( false );
         } catch( Throwable e ) {
             completeWithFail( e );
         }

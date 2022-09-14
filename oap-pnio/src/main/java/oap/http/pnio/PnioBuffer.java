@@ -67,8 +67,16 @@ public class PnioBuffer {
 
     public void set( String data ) {
         byte[] bytes = data.getBytes( UTF_8 );
-        System.arraycopy( bytes, 0, buffer, 0, bytes.length );
-        length = bytes.length;
+        set( bytes );
+    }
+
+    public void set( byte[] bytes, int length ) {
+        System.arraycopy( bytes, 0, buffer, 0, length );
+        this.length = length;
+    }
+
+    public void set( byte[] bytes ) {
+        set( bytes, bytes.length );
     }
 
     class PnioOutputStream extends FixedLengthArrayOutputStream {

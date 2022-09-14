@@ -26,9 +26,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static oap.http.pnio.PnioExchange.ProcessState.CONNECTION_CLOSED;
+import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
+import static oap.http.pnio.PnioRequestHandler.Type.IO;
 
 @Slf4j
-public class PNioHttpHandler<WorkflowState> implements Closeable {
+public class PnioHttpHandler<WorkflowState> implements Closeable {
     public final int requestSize;
     public final int responseSize;
     public final int threads;
@@ -40,9 +42,9 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
     public final double queueTimeoutPercent;
     public final int cpuAffinityFirstCpu;
 
-    private final ArrayList<RequestTaskCpuRunner<WorkflowState>> tasks = new ArrayList<>();
+    private final ArrayList<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
 
-    public PNioHttpHandler( int requestSize, int responseSize,
+    public PnioHttpHandler( int requestSize, int responseSize,
                             double queueTimeoutPercent,
                             int cpuThreads, boolean cpuQueueFair, int cpuAffinityFirstCpu,
                             RequestWorkflow<WorkflowState> workflow,
@@ -65,9 +67,10 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
             new oap.concurrent.ThreadPoolExecutor.BlockingPolicy() );
 
         for( var i = 0; i < cpuThreads; i++ ) {
-            RequestTaskCpuRunner<WorkflowState> requestTaskCpuRunner = new RequestTaskCpuRunner<>( queue, cpuAffinityFirstCpu >= 0 ? cpuAffinityFirstCpu + i : -1 );
-            pool.submit( requestTaskCpuRunner );
-            tasks.add( requestTaskCpuRunner );
+            RequestTaskComputeRunner<WorkflowState> requestTaskComputeRunner = new RequestTaskComputeRunner<>( queue,
+                cpuAffinityFirstCpu >= 0 ? cpuAffinityFirstCpu + i : -1 );
+            pool.submit( requestTaskComputeRunner );
+            tasks.add( requestTaskComputeRunner );
         }
     }
 
@@ -87,11 +90,11 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
         var requestState = new PnioExchange<>( requestSize, responseSize, workflow, workflowState, exchange, startTimeNano, timeout );
 
         while( !requestState.isDone() ) {
-            PnioRequestHandler<WorkflowState> task = requestState.currentTaskNode.task;
-            if( task.isCpu() ) {
+            PnioRequestHandler<WorkflowState> task = requestState.currentTaskNode.handler;
+            if( task.getType() == COMPUTE ) {
                 requestState.register( queue, queueTimeoutPercent );
             } else {
-                requestState.runTasks( false );
+                requestState.runTasks( IO );
             }
 
             if( !requestState.waitForCompletion() ) {
@@ -104,12 +107,15 @@ public class PNioHttpHandler<WorkflowState> implements Closeable {
 
     private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
         if( pnioExchange.currentTaskNode != null ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             try {
+                httpResponse.cookies.clear();
+                httpResponse.headers.clear();
+
                 errorResponse.handle( pnioExchange, workflowState );
             } catch( Throwable e ) {
                 LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), e.getMessage(), e );
 
-                PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
                 httpResponse.cookies.clear();
                 httpResponse.headers.clear();
                 httpResponse.status = Http.StatusCode.BAD_GATEWAY;

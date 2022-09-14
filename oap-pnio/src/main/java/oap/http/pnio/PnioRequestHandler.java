@@ -9,6 +9,8 @@
 
 package oap.http.pnio;
 
+import java.io.IOException;
+
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class PnioRequestHandler<State> {
     public String description() {
@@ -20,7 +22,11 @@ public abstract class PnioRequestHandler<State> {
         return description();
     }
 
-    public abstract boolean isCpu();
+    public abstract Type getType();
 
-    public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException;
+    public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException;
+
+    enum Type {
+        IO, COMPUTE
+    }
 }

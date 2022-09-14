@@ -26,19 +26,19 @@ package oap.http.pnio;
 
 public class TestHandler extends PnioRequestHandler<TestState> {
     private final String name;
-    private final boolean cpu;
+    private final Type type;
 
     public RuntimeException runtimeException;
     public long sleepTime = -1;
 
-    public TestHandler( String name, boolean cpu ) {
+    public TestHandler( String name, Type type ) {
         this.name = name;
-        this.cpu = cpu;
+        this.type = type;
     }
 
     @Override
-    public boolean isCpu() {
-        return cpu;
+    public Type getType() {
+        return type;
     }
 
     @Override
@@ -48,7 +48,7 @@ public class TestHandler extends PnioRequestHandler<TestState> {
 
         if( testState.sb.length() > 0 ) testState.sb.append( "\n" );
 
-        var data = "name '" + name + "' cpu " + cpu + " thread '" + Thread.currentThread().getName().substring( 0, 2 )
+        var data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 0, 2 )
             + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
 
         testState.sb.append( data );
@@ -58,7 +58,7 @@ public class TestHandler extends PnioRequestHandler<TestState> {
 
     @Override
     public String description() {
-        return "name '" + name + "' cpu " + cpu + " thread '" + Thread.currentThread().getName() + "'";
+        return "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName() + "'";
     }
 
     public TestHandler withException( RuntimeException testException ) {
