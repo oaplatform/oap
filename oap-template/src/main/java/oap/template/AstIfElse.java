@@ -32,9 +32,9 @@ public abstract class AstIfElse extends Ast {
     final String variableName;
     public AstText printIfOptEmpty = null;
 
-    AstIfElse( TemplateType type ) {
+    AstIfElse( TemplateType type, String variableName ) {
         super( type );
-        variableName = newVariable();
+        this.variableName = variableName;
     }
 
     @Override

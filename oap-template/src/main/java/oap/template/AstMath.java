@@ -30,20 +30,20 @@ import lombok.ToString;
 class AstMath extends Ast {
     final String operation;
     final String number;
+    private final String mathVariable;
 
-    AstMath( TemplateType type, String operation, String number ) {
+    AstMath( TemplateType type, String operation, String number, String mathVariable ) {
         super( type );
         this.operation = operation;
         this.number = number;
+        this.mathVariable = mathVariable;
     }
 
     @Override
     void render( Render render ) {
-        var newResultVariable = newVariable();
+        render.ntab().append( "var %s = %s %s %s;", mathVariable, render.field, operation, number );
 
-        render.ntab().append( "var %s = %s %s %s;", newResultVariable, render.field, operation, number );
-
-        var newRender = render.withField( newResultVariable ).withParentType( type );
+        var newRender = render.withField( mathVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }

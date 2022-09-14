@@ -39,15 +39,24 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 abstract class TemplateGrammarAdaptor extends Parser {
+    protected final ConcurrentHashMap<Class<?>, AtomicInteger> ids = new ConcurrentHashMap<>();
+
     Map<String, List<Method>> builtInFunction;
     ErrorStrategy errorStrategy;
 
     TemplateGrammarAdaptor( TokenStream input ) {
         super( input );
+    }
+
+    String newVariable() {
+        var id = ids.computeIfAbsent( getClass(), c -> new AtomicInteger() ).incrementAndGet();
+        return getClass().getSimpleName().toLowerCase() + id;
     }
 
     private static Field findField( Class<?> clazz, String fieldName ) throws NoSuchFieldException {
@@ -101,14 +110,14 @@ abstract class TemplateGrammarAdaptor extends Parser {
             if( parentType.isInstanceOf( Optional.class ) ) {
                 var valueType = parentType.getActualTypeArguments0();
                 var child = getAst( valueType, text, isMethod, castType );
-                var top = new AstOptional( valueType );
+                var top = new AstOptional( valueType, newVariable() );
                 top.addChild( child.top );
 
                 return new MaxMin( top, child.bottom );
             } else if( parentType.nullable ) {
                 var newType = new TemplateType( parentType.type, false );
                 var child = getAst( newType, text, isMethod, castType );
-                var top = new AstNullable( newType );
+                var top = new AstNullable( newType, newVariable() );
                 top.addChild( child.top );
 
                 return new MaxMin( top, child.bottom );
@@ -116,7 +125,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 return new MaxMin( new AstPrint( parentType, defaultValue ) );
             } else if( parentType.isInstanceOf( Map.class ) ) {
                 var valueType = parentType.getActualTypeArguments1();
-                return new MaxMin( new AstMap( text, valueType ) );
+                return new MaxMin( new AstMap( text, valueType, newVariable() ) );
             } else if( !isMethod ) {
                 var parentClass = parentType.getTypeClass();
                 var field = findField( parentClass, text );
@@ -128,7 +137,8 @@ abstract class TemplateGrammarAdaptor extends Parser {
                     fieldType = new TemplateType( extClass, fieldType.nullable );
                     forceCast = true;
                 }
-                return new MaxMin( new AstField( field.getName(), fieldType, forceCast, castType != null ? LogConfiguration.FieldType.parse( castType ) : null ) );
+                return new MaxMin( new AstField( field.getName(), fieldType, forceCast,
+                    castType != null ? LogConfiguration.FieldType.parse( castType ) : null, newVariable() ) );
             } else {
                 var parentClass = parentType.getTypeClass();
                 var method = Arrays
@@ -137,11 +147,11 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 if( method == null )
                     method = parentClass.getMethod( text );
 
-                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments ) );
+                return new MaxMin( new AstMethod( text, new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), arguments, newVariable() ) );
             }
         } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
-            return new MaxMin( new AstPathNotFound( e.getMessage() ) );
+            return new MaxMin( new AstPathNotFound( e.getMessage(), newVariable() ) );
         }
     }
 
@@ -149,16 +159,16 @@ abstract class TemplateGrammarAdaptor extends Parser {
         var list = builtInFunction.get( name );
         if( list == null ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
-            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
+            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found", newVariable() );
         }
 
         var method = Lists.find2( list, m -> m.getParameters().length == args.size() + 1 );
         if( method == null ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
-            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
+            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found", newVariable() );
         }
 
-        return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), method, args );
+        return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Template.Nullable.class ) ), method, args, newVariable() );
     }
 
     static class MaxMin {

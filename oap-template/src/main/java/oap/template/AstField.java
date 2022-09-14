@@ -34,13 +34,13 @@ public class AstField extends Ast {
     final boolean forceCast;
     final FieldType castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
+    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType, String variableName ) {
         super( fieldType );
 
         this.fieldName = fieldName;
         this.forceCast = forceCast;
         this.castType = castType;
-        variableName = newVariable();
+        this.variableName = variableName;
     }
 
     @Override

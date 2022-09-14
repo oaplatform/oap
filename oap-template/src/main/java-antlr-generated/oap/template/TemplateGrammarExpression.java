@@ -719,7 +719,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 
 				        if( _localctx.list.isEmpty() ) ((OrExpsContext)_localctx).ast =  firstAst;
 				        else {
-				            var or = new AstOr(parentType);
+				            var or = new AstOr(parentType, () -> newVariable());
 				            for( var item : _localctx.list) {
 				              item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false, null));
 				            }
@@ -1034,7 +1034,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 
 			        try {
 			        com.google.common.base.Preconditions.checkArgument(  ((ConcatenationContext)_localctx).CAST_TYPE == null || oap.template.LogConfiguration.FieldType.parse( (((ConcatenationContext)_localctx).CAST_TYPE!=null?((ConcatenationContext)_localctx).CAST_TYPE.getText():null).substring(1, (((ConcatenationContext)_localctx).CAST_TYPE!=null?((ConcatenationContext)_localctx).CAST_TYPE.getText():null).length() - 1) ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
-			        ((ConcatenationContext)_localctx).ast =  new AstConcatenation(parentType, ((ConcatenationContext)_localctx).citems.list);
+			        ((ConcatenationContext)_localctx).ast =  new AstConcatenation(parentType, ((ConcatenationContext)_localctx).citems.list, newVariable());
 			        } catch ( java.lang.ClassNotFoundException e) {
 			          throw new TemplateException( e.getMessage(), e );
 			        }
@@ -1252,7 +1252,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			((MathContext)_localctx).mathOperation = mathOperation();
 			setState(204);
 			((MathContext)_localctx).number = number();
-			 ((MathContext)_localctx).ast =  new MaxMin(new AstMath(_localctx.parentType, (((MathContext)_localctx).mathOperation!=null?_input.getText(((MathContext)_localctx).mathOperation.start,((MathContext)_localctx).mathOperation.stop):null), (((MathContext)_localctx).number!=null?_input.getText(((MathContext)_localctx).number.start,((MathContext)_localctx).number.stop):null))); 
+			 ((MathContext)_localctx).ast =  new MaxMin(new AstMath(_localctx.parentType, (((MathContext)_localctx).mathOperation!=null?_input.getText(((MathContext)_localctx).mathOperation.start,((MathContext)_localctx).mathOperation.stop):null), (((MathContext)_localctx).number!=null?_input.getText(((MathContext)_localctx).number.start,((MathContext)_localctx).number.stop):null), newVariable())); 
 			}
 		}
 		catch (RecognitionException re) {

@@ -28,8 +28,8 @@ import lombok.ToString;
 
 @ToString( callSuper = true )
 public class AstNullable extends AstIfElse {
-    AstNullable( TemplateType type ) {
-        super( type );
+    AstNullable( TemplateType type, String variableName ) {
+        super( type, variableName );
     }
 
     @Override

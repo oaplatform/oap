@@ -28,8 +28,8 @@ import lombok.ToString;
 
 @ToString( callSuper = true )
 public class AstOptional extends AstIfElse {
-    AstOptional( TemplateType type ) {
-        super( type );
+    AstOptional( TemplateType type, String variableName ) {
+        super( type, variableName );
     }
 
     @Override

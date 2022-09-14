@@ -35,11 +35,11 @@ class AstFunction extends Ast {
     final Method method;
     final List<String> parameters;
 
-    AstFunction( TemplateType type, Method method, List<String> parameters ) {
+    AstFunction( TemplateType type, Method method, List<String> parameters, String funcVariable ) {
         super( type );
         this.method = method;
         this.parameters = parameters;
-        funcVariable = newVariable();
+        this.funcVariable = funcVariable;
     }
 
     @Override

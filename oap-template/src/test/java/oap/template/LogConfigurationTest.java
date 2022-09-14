@@ -64,13 +64,13 @@ public class LogConfigurationTest extends Fixtures {
     }
 
     private static AstField af( String fieldName, Ast ast ) {
-        var astField = new AstField( fieldName, new TemplateType( String.class, false ), false, null );
+        var astField = new AstField( fieldName, new TemplateType( String.class, false ), false, null, "f1" );
         astField.children.add( ast );
         return astField;
     }
 
     public static AstOptional aopt( Ast ast ) {
-        var astOptional = new AstOptional( new TemplateType( String.class, false ) );
+        var astOptional = new AstOptional( new TemplateType( String.class, false ), "o1" );
         astOptional.children.add( ast );
         return astOptional;
     }

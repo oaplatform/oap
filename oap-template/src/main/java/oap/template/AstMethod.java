@@ -34,12 +34,12 @@ public class AstMethod extends Ast {
     private final String methodName;
     private final List<String> arguments;
 
-    public AstMethod( String methodName, TemplateType methodType, List<String> arguments ) {
+    public AstMethod( String methodName, TemplateType methodType, List<String> arguments, String variableName ) {
         super( methodType );
 
         this.methodName = methodName;
         this.arguments = arguments;
-        variableName = newVariable();
+        this.variableName = variableName;
     }
 
     @Override

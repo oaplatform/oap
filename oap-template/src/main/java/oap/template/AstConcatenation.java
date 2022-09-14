@@ -34,11 +34,11 @@ public class AstConcatenation extends Ast {
     final String newAndId;
     final String templateAccumulatorName;
 
-    AstConcatenation( TemplateType type, List<Ast> items ) {
+    AstConcatenation( TemplateType type, List<Ast> items, String newAndId ) {
         super( type );
         this.items = items;
 
-        newAndId = newVariable();
+        this.newAndId = newAndId;
         templateAccumulatorName = "acc_" + newAndId;
     }
 

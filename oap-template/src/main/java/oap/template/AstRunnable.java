@@ -31,10 +31,10 @@ public class AstRunnable extends Ast {
     String newFunctionId;
     String templateAccumulatorName;
 
-    AstRunnable( TemplateType type ) {
+    AstRunnable( TemplateType type, String runnableVariable ) {
         super( type );
 
-        newFunctionId = newVariable();
+        newFunctionId = runnableVariable;
         templateAccumulatorName = "acc_" + newFunctionId;
     }
 

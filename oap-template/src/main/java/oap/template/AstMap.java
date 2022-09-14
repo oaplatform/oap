@@ -29,21 +29,22 @@ import lombok.ToString;
 @ToString( callSuper = true )
 public class AstMap extends Ast {
     private final String key;
+    private final String mapVariable;
 
-    public AstMap( String key, TemplateType valueType ) {
+    public AstMap( String key, TemplateType valueType, String mapVariable ) {
         super( valueType );
 
         this.key = key;
+        this.mapVariable = mapVariable;
     }
 
     @Override
     void render( Render render ) {
-        var newVariable = newVariable();
         render.ntab().append( "%s %s = %s.get( \"%s\" );",
-            type.getTypeName(), newVariable,
+            type.getTypeName(), mapVariable,
             render.field, render.escapeJava( key ) );
 
-        var newRender = render.withField( newVariable ).withParentType( type );
+        var newRender = render.withField( mapVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }

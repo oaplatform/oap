@@ -29,21 +29,24 @@ import oap.template.TemplateGrammarAdaptor.MaxMin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @ToString( callSuper = true )
 public class AstOr extends Ast {
     final String orVariable;
     private final ArrayList<MaxMin> or = new ArrayList<>();
+    private final Supplier<String> newVariableSupp;
 
-    AstOr( TemplateType type ) {
+    AstOr( TemplateType type, Supplier<String> newVariable ) {
         super( type );
 
-        orVariable = newVariable();
+        orVariable = newVariable.get();
+        this.newVariableSupp = newVariable;
     }
 
     public void addTry( List<MaxMin> asts ) {
         for( var ast : asts ) {
-            var astRunnable = new AstRunnable( type );
+            var astRunnable = new AstRunnable( type, newVariableSupp.get() );
             astRunnable.addChild( ast.top );
             or.add( new MaxMin( astRunnable, ast.bottom ) );
         }
