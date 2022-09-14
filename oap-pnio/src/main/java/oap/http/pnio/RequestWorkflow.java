@@ -76,8 +76,8 @@ public class RequestWorkflow<WorkflowState> {
             return this;
         }
 
-        public RequestWorkflow<WorkflowState> build( PnioResponseBuilder<WorkflowState> task ) {
-            next( task );
+        public RequestWorkflow<WorkflowState> build( PnioResponseBuilder<WorkflowState> responseBuilder ) {
+            next( responseBuilder );
             return workflow;
         }
     }
