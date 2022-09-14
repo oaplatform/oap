@@ -1,4 +1,4 @@
-// Generated from TemplateGrammar.g4 by ANTLR 4.9.3
+// Generated from java-escape by ANTLR 4.11.1
 
 package oap.template;
 
@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -18,6 +17,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
+@SuppressWarnings("CheckReturnValue")
 public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	/**
 	 * {@inheritDoc}
