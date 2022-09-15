@@ -34,6 +34,7 @@ import oap.json.Binder;
 import oap.util.HashMaps;
 import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
+import org.xnio.IoUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -370,6 +371,10 @@ public class HttpServerExchange {
 
     public void send( byte[] bytes, int offset, int length ) {
         exchange.getResponseSender().send( ByteBuffer.wrap( bytes, offset, length ) );
+    }
+
+    public void closeConnection() {
+        IoUtils.safeClose( exchange.getConnection() );
     }
 
     public enum HttpMethod {
