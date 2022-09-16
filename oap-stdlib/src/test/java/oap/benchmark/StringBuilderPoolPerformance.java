@@ -24,7 +24,6 @@
 
 package oap.benchmark;
 
-import oap.benchmark.Benchmark;
 import oap.concurrent.pool.StringBuilderPool;
 import org.testng.annotations.Test;
 
