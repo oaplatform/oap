@@ -43,9 +43,9 @@ import static oap.io.IoStreams.Encoding.ZSTD;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
 
-@Test
+@Test( enabled = false )
 public class CompressionPerftest extends Fixtures {
-    {
+    public CompressionPerftest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
@@ -60,7 +60,7 @@ public class CompressionPerftest extends Fixtures {
         Path source = pathOfTestResource( getClass(), "file.txt" );
         int bufferSize = 1024 * 1024 * 10;
         byte[] bytesC = new byte[1024 * 64];
-        Benchmark benchmark = benchmark( "compress " + encoding.name(), 2, () -> {
+        Benchmark benchmark = benchmark( "compress " + encoding.name(), 20, () -> {
             try( InputStream is = IoStreams.in( source, PLAIN );
                  OutputStream out = IoStreams.out( path, encoding, bufferSize, false ) ) {
                 int read;
@@ -72,7 +72,7 @@ public class CompressionPerftest extends Fixtures {
 
         System.out.println( "compressed size for " + encoding + " = " + path.toFile().length() + " bytes" );
 
-        byte[] bytesD = new byte[1024];
+        byte[] bytesD = new byte[1024 * 64];
 
         benchmark = benchmark( "decompress " + encoding.name(), 20, () -> {
             try( InputStream in = IoStreams.in( path, encoding ) ) {
