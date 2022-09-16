@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 
 
 @Slf4j
-public class ThreadLocalMap<T extends Closeable> implements Closeable {
+public class ThreadLocalMap<T extends Closeable> implements Closeable, AutoCloseable {
     private final Supplier<T> init;
     private final ConcurrentHashMap<Thread, T> map = new ConcurrentHashMap<>();
 

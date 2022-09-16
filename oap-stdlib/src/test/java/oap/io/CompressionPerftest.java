@@ -41,7 +41,7 @@ import static oap.io.IoStreams.Encoding.ZSTD;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
 
-@Test( enabled = false )
+@Test
 public class CompressionPerftest extends Fixtures {
     {
         fixture( TestDirectoryFixture.FIXTURE );

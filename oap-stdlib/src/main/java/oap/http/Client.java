@@ -121,7 +121,7 @@ import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
 
 @Slf4j
-public final class Client implements Closeable {
+public final class Client implements Closeable, AutoCloseable {
     public static final Client DEFAULT = custom()
         .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
         .onTimeout( c -> log.error( "timeout" ) )
@@ -571,7 +571,7 @@ public final class Client implements Closeable {
 //    }
 
     @ToString( exclude = { "inputStream", "content" } )
-    public static class Response implements Closeable {
+    public static class Response implements Closeable, AutoCloseable {
         public final int code;
         public final String reasonPhrase;
         public final String contentType;
@@ -798,7 +798,7 @@ public final class Client implements Closeable {
         }
     }
 
-    public class OutputStreamWithResponse extends OutputStream implements Closeable {
+    public class OutputStreamWithResponse extends OutputStream implements Closeable, AutoCloseable {
         private final CompletableFuture<Response> completableFuture;
         private final HttpRequestBase request;
         private final long timeout;
@@ -837,20 +837,28 @@ public final class Client implements Closeable {
             try {
                 pos.flush();
                 pos.close();
-                pos = null;
-
                 return response = getResponse( request, timeout, completableFuture )
                     .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
             } catch( IOException e ) {
                 throw Throwables.propagate( e );
+            } finally {
+                try {
+                    pos.close();
+                } catch( IOException e ) {
+                    throw Throwables.propagate( e );
+                } finally {
+                    pos = null;
+                }
             }
         }
 
         @Override
         public void close() {
-            if( response == null ) {
-                waitAndGetResponse();
-
+            try {
+                if( response == null ) {
+                    waitAndGetResponse();
+                }
+            } finally {
                 response.close();
             }
         }

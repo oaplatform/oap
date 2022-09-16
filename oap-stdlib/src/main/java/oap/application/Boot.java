@@ -34,7 +34,7 @@ import java.nio.file.Path;
 
 @Slf4j
 public class Boot {
-    public static boolean terminated = false;
+    public static volatile boolean terminated = false;
     private static Kernel kernel;
 
     public static void main( String[] args ) {
@@ -59,9 +59,9 @@ public class Boot {
         try {
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
-            log.debug( "started" );
+            log.debug( "Kernel {} started", kernel.name );
         } catch( Exception e ) {
-            log.error( e.getMessage(), e );
+            log.error( "Cannot start kernel", e );
             exit( 13 );
         }
     }
@@ -82,9 +82,9 @@ public class Boot {
             terminated = true;
             try {
                 kernel.stop();
-                log.debug( "stopped" );
+                log.debug( "Kernel {} stopped", kernel.name );
             } catch( Exception e ) {
-                log.error( e.getMessage(), e );
+                log.error( "Cannot stop kernel", e );
             }
         }
     }

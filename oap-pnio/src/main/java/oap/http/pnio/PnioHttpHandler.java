@@ -30,7 +30,7 @@ import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
 import static oap.http.pnio.PnioRequestHandler.Type.IO;
 
 @Slf4j
-public class PnioHttpHandler<WorkflowState> implements Closeable {
+public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable {
     public final int requestSize;
     public final int responseSize;
     public final int threads;

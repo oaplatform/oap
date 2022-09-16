@@ -35,6 +35,7 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.testng.Asserts.locationOfTestResource;
@@ -44,8 +45,8 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     public static final String NO_PREFIX = "";
     public static final AtomicInteger LAST_PORT = new AtomicInteger( 20000 );
     protected final String prefix;
-    private final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Object> properties = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
     public AbstractEnvFixture() {
         this( NO_PREFIX );

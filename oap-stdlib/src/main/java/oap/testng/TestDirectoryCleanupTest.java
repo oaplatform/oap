@@ -27,12 +27,14 @@ package oap.testng;
 import lombok.extern.slf4j.Slf4j;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import static oap.testng.TestDirectoryFixture.deleteDirectory;
 import static oap.testng.TestDirectoryFixture.globalTestDirectory;
@@ -43,14 +45,23 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Slf4j
 public class TestDirectoryCleanupTest {
-    private static final long TEN_HOURS = 1000 * 60 * 60 * 10;
+    private static final long TEN_HOURS = TimeUnit.HOURS.toMillis( 10 );
 
     @Test
     public void test() {}
 
+    @BeforeClass
+    public void init() throws IOException {
+        Path dir = TestDirectoryFixture.testDirectory();
+        if ( dir.toFile().exists() ) return;
+        dir.toFile().mkdirs();
+    }
+
     @AfterClass
     public void checkForPollution() throws IOException {
-        long count = Files.list( TestDirectoryFixture.testDirectory() ).count();
+        Path dir = TestDirectoryFixture.testDirectory();
+        if ( !dir.toFile().exists() ) return;
+        long count = Files.list( dir ).count();
         assertThat( count )
             .withFailMessage( "POLLUTION DETECTED, the previous test left test directory with content" )
             .isEqualTo( 0 );

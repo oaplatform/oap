@@ -45,7 +45,9 @@ public class ScheduledExecutorService implements Closeable {
     public void shutdown( long timeout, TimeUnit unit ) {
         try {
             scheduledExecutorService.shutdown();
-            scheduledExecutorService.awaitTermination( timeout, unit );
+            if ( !scheduledExecutorService.awaitTermination( timeout, unit ) ) {
+                log.error( "Timeout {} {} exceeded while waiting for stopping", timeout, unit );
+            }
         } catch( InterruptedException e ) {
             Thread.currentThread().interrupt();
         }

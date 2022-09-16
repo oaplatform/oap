@@ -29,13 +29,14 @@ import oap.application.ApplicationException;
 import oap.application.Configuration;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 public class KernelExtConfiguration extends Configuration<KernelExt> {
     private static volatile KernelExtConfiguration instance;
 
-    private LinkedHashMap<String, KernelExt.ItemExt> modules = new LinkedHashMap<>();
-    private LinkedHashMap<String, KernelExt.ItemExt> services = new LinkedHashMap<>();
+    private Map<String, KernelExt.ItemExt> modules = new LinkedHashMap<>();
+    private Map<String, KernelExt.ItemExt> services = new LinkedHashMap<>();
 
     private KernelExtConfiguration() {
         super( KernelExt.class, "oap-module-ext" );

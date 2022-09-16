@@ -93,7 +93,7 @@ import static oap.util.Pair.__;
 
 @Slf4j
 @ToString
-public class MessageSender implements Closeable {
+public class MessageSender implements Closeable, AutoCloseable {
     private static final Pair<MessageStatus, Short> STATUS_OK = __( OK, MessageProtocol.STATUS_OK );
 
     private final Object syncDiskLock = new Object();

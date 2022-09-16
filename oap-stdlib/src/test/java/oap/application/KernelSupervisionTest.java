@@ -108,7 +108,7 @@ public class KernelSupervisionTest {
     }
 
     @Slf4j
-    public static class TestCloseable implements Closeable {
+    public static class TestCloseable implements Closeable, AutoCloseable {
 
         public boolean closed;
 
@@ -120,7 +120,7 @@ public class KernelSupervisionTest {
     }
 
     @Slf4j
-    public static class TestCloseable2 implements Closeable {
+    public static class TestCloseable2 implements Closeable, AutoCloseable {
         public boolean stopped;
         public boolean closed;
 
