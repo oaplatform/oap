@@ -24,11 +24,13 @@
 
 package oap.io;
 
+import oap.benchmark.Benchmark;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -53,31 +55,32 @@ public class CompressionPerftest extends Fixtures {
     }
 
     @Test( dataProvider = "encodings" )
-    public void testC( IoStreams.Encoding encoding ) {
+    public void testC( IoStreams.Encoding encoding ) throws IOException {
         Path path = testPath( "test." + encoding );
         Path source = pathOfTestResource( getClass(), "file.txt" );
-        benchmark( "compress " + encoding.name(), 2, () -> {
+        int bufferSize = 1024 * 1024 * 10;
+        byte[] bytesC = new byte[1024 * 64];
+        Benchmark benchmark = benchmark( "compress " + encoding.name(), 2, () -> {
             try( InputStream is = IoStreams.in( source, PLAIN );
-                 OutputStream out = IoStreams.out( path, encoding, 1024 * 1024 * 10, false ) ) {
-
-                byte[] bytes = new byte[1024 * 64];
-
+                 OutputStream out = IoStreams.out( path, encoding, bufferSize, false ) ) {
                 int read;
-                while( ( read = is.read( bytes ) ) > 0 ) out.write( bytes, 0, read );
+                while( ( read = is.read( bytesC ) ) > 0 ) out.write( bytesC, 0, read );
             }
-
-        } ).run();
+        } );
+        benchmark.warming( 5 );
+        benchmark.run();
 
         System.out.println( "compressed size for " + encoding + " = " + path.toFile().length() + " bytes" );
 
-        byte[] bytes = new byte[1024];
+        byte[] bytesD = new byte[1024];
 
-        benchmark( "decompress " + encoding.name(), 20, () -> {
+        benchmark = benchmark( "decompress " + encoding.name(), 20, () -> {
             try( InputStream in = IoStreams.in( path, encoding ) ) {
                 int read;
-                while( ( read = in.read( bytes ) ) > 0 ) read = read + 1;
+                while( ( read = in.read( bytesD ) ) > 0 ) read = read + 1;
             }
-
-        } ).run();
+        } );
+        benchmark.warming( 5 );
+        benchmark.run();
     }
 }
