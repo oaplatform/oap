@@ -22,17 +22,41 @@
  * SOFTWARE.
  */
 
-package oap.net;
+package oap.benchmark;
 
 import org.testng.annotations.Test;
 
-import static oap.benchmark.Benchmark.benchmark;
+import java.util.HashMap;
+import java.util.Map;
 
-public class InetPerftest {
+public class MapPerformance {
+
+    public static final int SAMPLES = 100000;
+    public static final int COUNT = 100;
+
     @Test
-    public void toLong() {
-        benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
-            .run();
-    }
+    public void test() {
+        var map = new HashMap<String, Integer>();
 
+        for( var i = 0; i < SAMPLES; i++ ) {
+            map.put( "str" + i, i );
+        }
+
+        Benchmark.benchmark( "hashmap", SAMPLES, () -> {
+            var res = 0;
+            for( var i = 0; i < COUNT; i++ ) {
+                res += map.get( "str" + i );
+            }
+
+        } ).run();
+
+        var imap = Map.copyOf( map );
+        Benchmark.benchmark( "imap", SAMPLES, () -> {
+            var res = 0;
+            for( var i = 0; i < COUNT; i++ ) {
+                res += imap.get( "str" + i );
+            }
+
+        } ).run();
+    }
 }

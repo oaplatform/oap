@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.perf;
+package oap.benchmark;
 
 import org.testng.annotations.Test;
 

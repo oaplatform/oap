@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.benchmark;
 
-import oap.benchmark.Benchmark;
+import oap.io.IoStreams;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.DataProvider;

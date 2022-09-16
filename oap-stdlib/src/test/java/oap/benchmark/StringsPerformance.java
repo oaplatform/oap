@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
+import oap.util.BitSet;
+import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 

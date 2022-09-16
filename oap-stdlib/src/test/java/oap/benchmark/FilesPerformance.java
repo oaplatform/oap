@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.benchmark;
 
+import oap.io.Files;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
 import org.joda.time.Period;
 import org.testng.annotations.Test;

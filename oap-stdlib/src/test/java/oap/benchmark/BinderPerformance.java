@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.json;
+package oap.benchmark;
 
+import oap.json.Binder;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;

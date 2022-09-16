@@ -22,42 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
-import oap.benchmark.Benchmark;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
-import java.util.Map;
 
-public class MapPerformance {
+import static oap.benchmark.Benchmark.benchmark;
 
-    public static final int SAMPLES = 100000;
-    public static final int COUNT = 100;
-
+@Test( enabled = false )
+public class MutableLongPerformance {
     @Test
-    public void test() {
-        var map = new HashMap<String, Integer>();
+    public void testIncrement() {
+        final int SAMPLES = 1000000;
 
-        for( var i = 0; i < SAMPLES; i++ ) {
-            map.put( "str" + i, i );
-        }
+        final HashMap<Integer, MutableLong> map1 = new HashMap<>();
+        final HashMap<Integer, Long> map2 = new HashMap<>();
 
-        Benchmark.benchmark( "hashmap", SAMPLES, () -> {
-            var res = 0;
-            for( var i = 0; i < COUNT; i++ ) {
-                res += map.get( "str" + i );
-            }
+        benchmark( "mutable_long", SAMPLES,
+            i -> map1.computeIfAbsent( i % 5, k -> new MutableLong() ).increment() ).run();
 
-        } ).run();
-
-        var imap = Map.copyOf( map );
-        Benchmark.benchmark( "imap", SAMPLES, () -> {
-            var res = 0;
-            for( var i = 0; i < COUNT; i++ ) {
-                res += imap.get( "str" + i );
-            }
-
-        } ).run();
+        benchmark( "Long_compute", SAMPLES,
+            i -> map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L ) ).run();
     }
 }

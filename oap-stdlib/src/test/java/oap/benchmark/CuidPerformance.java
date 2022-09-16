@@ -22,28 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
-import org.apache.commons.lang3.mutable.MutableLong;
+import oap.util.Cuid;
 import org.testng.annotations.Test;
-
-import java.util.HashMap;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-@Test( enabled = false )
-public class MutableLongPerformance {
+public class CuidPerformance {
     @Test
-    public void testIncrement() {
-        final int SAMPLES = 1000000;
+    public void test() {
+        Cuid.UNIQUE.next();
 
-        final HashMap<Integer, MutableLong> map1 = new HashMap<>();
-        final HashMap<Integer, Long> map2 = new HashMap<>();
-
-        benchmark( "mutable_long", SAMPLES,
-            i -> map1.computeIfAbsent( i % 5, k -> new MutableLong() ).increment() ).run();
-
-        benchmark( "Long_compute", SAMPLES,
-            i -> map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L ) ).run();
+        benchmark( "cuid", 20000000, Cuid.UNIQUE::next )
+            .threads( 100 )
+            .run();
     }
 }
+

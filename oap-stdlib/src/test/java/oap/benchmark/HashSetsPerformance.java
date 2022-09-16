@@ -22,19 +22,25 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
+import oap.util.HashSets;
 import org.testng.annotations.Test;
 
-import static oap.benchmark.Benchmark.benchmark;
+import java.util.HashSet;
+import java.util.stream.IntStream;
 
-@Test( enabled = false )
-public class SystemPerformance {
+public class HashSetsPerformance {
     @Test
-    public void testNanoTimeVsCurrentTimeMillis() {
-        final int SAMPLES = 10000000;
-
-        benchmark( "nanoTime", SAMPLES, System::nanoTime ).run();
-        benchmark( "currentTimeMillis", SAMPLES, System::currentTimeMillis ).run();
+    public void ofPerformance() {
+        Object[] values = IntStream.range( 1, 10000 ).boxed().toArray();
+        HashSet<Object> set1 = HashSets.of();
+        Benchmark.benchmark( "iteration", 10000, () -> {
+            for( var v : values ) set1.add( v );
+        } ).run();
+        HashSet<Object> set2 = HashSets.of();
+        Benchmark.benchmark( "addAll", 10000, () -> {
+            set2.addAll( java.util.Arrays.asList( values ) );
+        } ).run();
     }
 }

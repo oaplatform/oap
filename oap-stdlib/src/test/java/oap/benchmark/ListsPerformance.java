@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
