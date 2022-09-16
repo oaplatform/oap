@@ -44,7 +44,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>17.10.30.4</oap.project.version>
+        <oap.project.version>17.10.30.5</oap.project.version>
 
         <oap.deps.testng.version>7.6.1</oap.deps.testng.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
@@ -78,7 +78,7 @@
         <oap.deps.jackson-coreutils.version>2.0</oap.deps.jackson-coreutils.version>
         <oap.deps.typesafe-config.version>1.4.3</oap.deps.typesafe-config.version>
 
-        <oap.deps.lombok.version>1.18.22</oap.deps.lombok.version>
+        <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
 
         <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
         <oap.deps.micrometer.version>1.6.9</oap.deps.micrometer.version>
