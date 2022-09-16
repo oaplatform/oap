@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.pool;
+package oap.benchmark;
 
-import oap.benchmark.Benchmark;
+import oap.concurrent.pool.StringBuilderPool;
 import org.testng.annotations.Test;
 
 public class StringBuilderPoolPerformance {

@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.concurrent;
+package oap.benchmark;
 
+import oap.concurrent.LimitedTimeExecutor;
+import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;

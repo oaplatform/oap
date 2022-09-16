@@ -28,6 +28,8 @@ import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.SynchronizedRunnableReadyListener;
 import oap.concurrent.SynchronizedThread;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Slf4j
 public class ThreadService extends SynchronizedRunnable implements WrapperService<Runnable>, SynchronizedRunnableReadyListener {
 
@@ -35,8 +37,8 @@ public class ThreadService extends SynchronizedRunnable implements WrapperServic
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private final Runnable supervised;
     protected SynchronizedRunnableReadyListener listener;
-    private int maxFailures = 100;
-    private boolean done = false;
+    private AtomicInteger maxFailures = new AtomicInteger( 100 );
+    private volatile boolean done = false;
 
     public ThreadService( final String name, Runnable supervisee, final Supervisor supervisor ) {
         this.supervised = supervisee;
@@ -60,13 +62,13 @@ public class ThreadService extends SynchronizedRunnable implements WrapperServic
 
     @Override
     public void run() {
-        while( !done && thread.isRunning() && maxFailures > 0 ) try {
+        while( !done && thread.isRunning() && maxFailures.get() > 0 ) try {
             supervised.run();
         } catch( Exception e ) {
-            maxFailures--;
+            maxFailures.decrementAndGet();
             log.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
         }
-        if( maxFailures <= 0 ) {
+        if( maxFailures.get() <= 0 ) {
             log.error( supervised + " constantly crushing. Requesting shutdown..." );
             new Thread( () -> {
                 supervisor.preStop();

@@ -22,25 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
-import oap.benchmark.Benchmark;
+import oap.net.Inet;
 import org.testng.annotations.Test;
 
-import java.util.HashSet;
-import java.util.stream.IntStream;
+import static oap.benchmark.Benchmark.benchmark;
 
-public class HashSetsPerformance {
+public class InetPerftest {
     @Test
-    public void ofPerformance() {
-        Object[] values = IntStream.range( 1, 10000 ).boxed().toArray();
-        HashSet<Object> set1 = HashSets.of();
-        Benchmark.benchmark( "iteration", 10000, () -> {
-            for( var v : values ) set1.add( v );
-        } ).run();
-        HashSet<Object> set2 = HashSets.of();
-        Benchmark.benchmark( "addAll", 10000, () -> {
-            set2.addAll( java.util.Arrays.asList( values ) );
-        } ).run();
+    public void toLong() {
+        benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
+            .run();
     }
+
 }

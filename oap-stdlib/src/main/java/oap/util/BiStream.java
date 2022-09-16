@@ -24,6 +24,7 @@
 
 package oap.util;
 
+import java.io.Closeable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ import java.util.function.Predicate;
 
 import static oap.util.Pair.__;
 
-public class BiStream<A, B> extends Stream<Pair<A, B>> {
+public class BiStream<A, B> extends Stream<Pair<A, B>> implements Closeable, AutoCloseable {
     protected BiStream( java.util.stream.Stream<Pair<A, B>> underlying ) {
         super( underlying );
     }

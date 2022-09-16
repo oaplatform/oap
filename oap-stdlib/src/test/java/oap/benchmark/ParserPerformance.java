@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json;
+package oap.benchmark;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -37,6 +37,8 @@ import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import oap.io.Resources;
+import oap.json.Binder;
+import oap.json.OapJsonModule;
 import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;

@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,17 +90,14 @@ public class MessageHashStorage {
         try( var fos = new FileOutputStream( path.toFile() );
              var sw = new OutputStreamWriter( fos, UTF_8 ) ) {
 
-            ArrayList<Byte> keys = new ArrayList<>( map.keySet() );
+            List<Byte> keys = new ArrayList<>( map.keySet() );
             keys.sort( Byte::compareTo );
 
             for( var messageType : keys ) {
                 var hmap = map.get( messageType );
                 if( hmap == null ) continue;
-
                 sw.write( "---\n" );
-
                 sw.write( messageType + " - " + hmap.clientId + "\n" );
-
                 hmap.store( sw );
             }
         }
@@ -155,7 +153,7 @@ public class MessageHashStorage {
         public synchronized boolean put( String md5, long currentTimeMillis ) {
             if( containsKey( md5 ) ) return false;
 
-            if( map.size() == size ) {
+            while( map.size() >= size ) {
                 var firstKey = map.keySet().iterator().next();
                 map.remove( firstKey );
             }
@@ -178,7 +176,7 @@ public class MessageHashStorage {
             }
         }
 
-        public void store( OutputStreamWriter sw ) throws IOException {
+        public synchronized void store( OutputStreamWriter sw ) throws IOException {
             for( var entry : map.entrySet() ) {
                 var key = entry.getKey();
                 var time = entry.getValue();

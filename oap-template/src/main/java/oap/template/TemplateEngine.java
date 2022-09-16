@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 @Slf4j
 public class TemplateEngine implements Runnable {
@@ -102,10 +103,9 @@ public class TemplateEngine implements Runnable {
 
     private void loadFunctions() {
         var functions = new HashSet<Class<?>>();
-        Resources
-            .lines( "META-INF/oap-template-macros.list" )
-            .forEach( Try.consume( cs -> functions.add( Class.forName( cs ) ) ) );
-
+        try ( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
+            stream.forEach( Try.consume( cs -> functions.add( Class.forName( cs ) ) ) );
+        }
 
         for( var clazz : functions ) {
             for( var method : clazz.getDeclaredMethods() ) {
@@ -156,17 +156,13 @@ public class TemplateEngine implements Runnable {
                     lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                     grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
-
                 var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
-
                 log.trace( "\n" + ast.print() );
-
                 if( postProcess != null )
                     postProcess.accept( ast );
 
                 var tf = new JavaTemplate<>( name, template, type, tmpPath, acc, ast );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
-
             } );
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
@@ -174,7 +170,6 @@ public class TemplateEngine implements Runnable {
             if( e.getCause() instanceof TemplateException ) {
                 throw ( TemplateException ) e.getCause();
             }
-
             throw new TemplateException( e.getCause() );
         }
     }
@@ -185,22 +180,22 @@ public class TemplateEngine implements Runnable {
 
     @Override
     public void run() {
-        try {
-            templates.cleanUp();
-
-            var now = System.currentTimeMillis();
-            Files.walk( tmpPath ).forEach( path -> {
-                try {
-                    if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {
-                        log.debug( "delete {}", path );
-                        Files.deleteIfExists( path );
+        templates.cleanUp();
+        var now = System.currentTimeMillis();
+        try ( Stream<Path> stream = Files.walk( tmpPath ) ) {
+            stream
+                .forEach( path -> {
+                    try {
+                        if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {
+                            log.debug( "delete {}", path );
+                            Files.deleteIfExists( path );
+                        }
+                    } catch( IOException e ) {
+                        log.error( "Cannot delete {}", path, e );
                     }
-                } catch( IOException e ) {
-                    log.error( e.getMessage() );
-                }
-            } );
+                } );
         } catch( IOException e ) {
-            log.error( e.getMessage(), e );
+            log.error( "Could not walk through " + tmpPath, e );
         }
     }
 

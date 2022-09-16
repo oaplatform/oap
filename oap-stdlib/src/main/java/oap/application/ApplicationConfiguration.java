@@ -119,9 +119,11 @@ public final class ApplicationConfiguration {
 
     public static List<URL> getConfdUrls( Path confd ) {
         return confd != null
-            ? Stream.of( wildcard( confd, "*.conf", "*.yaml" ) )
-            .map( Files::toUrl )
-            .toList() : List.of();
+            ? Stream
+                .of( wildcard( confd, "*.conf", "*.yaml" ) )
+                .map( Files::toUrl )
+                .toList()
+            : List.of();
     }
 
     private static String getEnvConfig() {

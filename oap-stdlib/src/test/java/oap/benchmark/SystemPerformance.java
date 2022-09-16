@@ -22,24 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.perf;
+package oap.benchmark;
 
-import oap.io.Files;
-import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.Test;
 
 import static oap.benchmark.Benchmark.benchmark;
 
 @Test( enabled = false )
-public class WildcardMatchPerformance {
-    @Test( enabled = false )
-    public void perf() {
-        benchmark( "FilenameUtils.wildcardMatch", 10000000, () ->
-            FilenameUtils.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" )
-        ).experiments( 5 ).run();
+public class SystemPerformance {
+    @Test
+    public void testNanoTimeVsCurrentTimeMillis() {
+        final int SAMPLES = 10000000;
 
-        benchmark( "wildcardMatch", 10000000, () ->
-            Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" )
-        ).experiments( 5 ).run();
+        benchmark( "nanoTime", SAMPLES, System::nanoTime ).run();
+        benchmark( "currentTimeMillis", SAMPLES, System::currentTimeMillis ).run();
     }
 }

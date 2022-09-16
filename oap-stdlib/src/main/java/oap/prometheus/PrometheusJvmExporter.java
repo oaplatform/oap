@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.Closeable;
 
 @Slf4j
-public class PrometheusJvmExporter implements Closeable {
+public class PrometheusJvmExporter implements Closeable, AutoCloseable {
     public boolean enableClassLoaderMetrics = true;
     public boolean enableJvmMemoryMetrics = true;
     public boolean enableJvmGcMetrics = true;

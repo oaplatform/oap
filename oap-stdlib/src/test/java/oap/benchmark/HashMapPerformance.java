@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;

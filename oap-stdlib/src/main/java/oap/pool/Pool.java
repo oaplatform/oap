@@ -44,7 +44,7 @@ import java.util.function.Function;
  * @see https://github.com/DanielYWoo/fast-object-pool
  */
 @Slf4j
-public class Pool<T> implements Closeable {
+public class Pool<T> implements Closeable, AutoCloseable {
     public static final int MAX_WAIT_MILLISECONDS = ( int ) Dates.s( 5 );
     public static final int MAX_IDLE_MILLISECONDS = ( int ) Dates.m( 5 );
     public static final int SCAVENGE_INTERVAL_MILLISECONDS = ( int ) Dates.m( 2 );

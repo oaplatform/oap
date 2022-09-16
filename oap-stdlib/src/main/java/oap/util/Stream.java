@@ -24,6 +24,7 @@
 package oap.util;
 
 import javax.annotation.Nonnull;
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -62,7 +63,7 @@ import java.util.stream.StreamSupport;
 import static oap.util.Pair.__;
 import static oap.util.function.Functions.empty.consume;
 
-public class Stream<E> implements java.util.stream.Stream<E> {
+public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoCloseable {
     private final java.util.stream.Stream<E> underlying;
 
     protected Stream( java.util.stream.Stream<E> underlying ) {
@@ -530,7 +531,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     @Override
     @Nonnull
     public Stream<E> onClose( Runnable closeHandler ) {
-//        todo - multiple handlers do not go - check what's wrong with it
         return of( underlying.onClose( closeHandler ) );
     }
 
@@ -577,7 +577,8 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         @Override
         public long estimateSize() {
             double baseSize = base.estimateSize();
-            return baseSize == 0 ? 0
+            return baseSize == 0
+                ? 0
                 : ( long ) Math.ceil( baseSize / ( double ) batchSize );
         }
 
