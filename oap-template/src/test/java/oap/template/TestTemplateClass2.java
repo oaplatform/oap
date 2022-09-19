@@ -26,19 +26,20 @@ package oap.template;
 
 import oap.json.ext.Ext;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 public class TestTemplateClass2 {
     public String field2;
     public Optional<String> fieldOpt2;
-    @Template.Nullable
+    @Nullable
     public String fieldNullable2;
     public String field22;
     public TestTemplateClass2 child2;
     public Optional<TestTemplateClass2> childOpt2;
-    @Template.Nullable
+    @Nullable
     public TestTemplateClass2 childNullable2;
-    @Template.Nullable
+    @Nullable
     public Ext ext2;
     public ITestTemplateClassExt2 ext22;
     public int intField2;

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,7 +36,7 @@ import java.util.Set;
 public class TestTemplateClass {
     public String field;
     public Optional<String> fieldOpt = Optional.empty();
-    @Template.Nullable
+    @Nullable
     public String fieldNullable;
     public String field2;
     public TestTemplateClass child;
@@ -46,12 +47,14 @@ public class TestTemplateClass {
     public int intField;
     public Integer intObjectField;
     public Optional<TestTemplateClass> childOpt = Optional.empty();
-    @Template.Nullable
+    @Nullable
     public TestTemplateClass childNullable;
-    @Template.Nullable
+    @Nullable
     public Ext ext;
     public ITestTemplateClassExt ext2;
+    @Nullable
     public List<Integer> list;
+    @Nullable
     public List<Integer> list2;
     public Set<String> setString;
     @JsonProperty( "jsonTestNew" )

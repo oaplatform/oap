@@ -44,7 +44,7 @@ public class AstPrint extends Ast {
             .tabInc().ntab().append( "%s.accept( %s );", r.templateAccumulatorName, defaultValue )
             .tabDec().ntab().append( "} else {" ).tabInc();
 
-        r.ntab().append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
+        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
 
         if( checkNull ) r.tabDec().ntab().append( "}" );
     }
