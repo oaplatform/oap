@@ -409,6 +409,34 @@ public class TemplateEngineTest extends Fixtures {
             .hasCauseInstanceOf( ClassCastException.class );
     }
 
+    @Test
+    public void testObjectReference() {
+        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        var templateClass = new TestTemplateClass();
+        templateClass.child = new TestTemplateClass();
+        templateClass.child.intField = 100;
+
+        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "child.intField:${<java.lang.Integer>child.intField}",
+            templateAccumulator, ERROR, null ).render( templateClass );
+
+        assertString( str ).isEqualTo( "child.intField:100_i" );
+    }
+
+    @Test
+    public void testNullableObjectReference() {
+        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        var templateClass = new TestTemplateClass();
+        templateClass.childNullable = new TestTemplateClass();
+        templateClass.childNullable.intField = 100;
+
+        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "childNullable.intField:${<java.lang.Integer>childNullable.intField}",
+            templateAccumulator, ERROR, null ).render( templateClass );
+
+        assertThat( str ).isEqualTo( "childNullable.intField:100_i" );
+    }
+
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
         @Override
         public void accept( String text ) {
