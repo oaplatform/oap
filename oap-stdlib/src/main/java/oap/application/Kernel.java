@@ -69,7 +69,7 @@ import static oap.util.function.Functions.exception;
 
 @Slf4j
 @ToString( of = "name" )
-public class Kernel implements Closeable {
+public class Kernel implements Closeable, AutoCloseable {
     public static final String DEFAULT = Strings.DEFAULT;
 
     static final ArrayList<AbstractKernelCommand<?>> commands = new ArrayList<>();

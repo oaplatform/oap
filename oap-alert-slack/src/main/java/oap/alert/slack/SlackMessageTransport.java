@@ -38,7 +38,7 @@ import oap.alert.MessageTransport;
 public class SlackMessageTransport implements MessageTransport<Payload> {
 
     private final String webhookUrl;
-    private SlackWebhookClient webhookClient;
+    private volatile SlackWebhookClient webhookClient;
 
     public SlackMessageTransport( String webhookUrl ) {
         this.webhookUrl = webhookUrl;

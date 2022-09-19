@@ -53,7 +53,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
-public class NioHttpServer implements Closeable {
+public class NioHttpServer implements Closeable, AutoCloseable {
     public final int defaultPort;
 
     private final HashMap<Integer, PathHandler> pathHandler = new HashMap<>();
@@ -69,7 +69,7 @@ public class NioHttpServer implements Closeable {
     public int maxHeaders = -1; // default = 200
     public int maxHeaderSize = -1; // default = 1024 * 1024
     public boolean statistics = false;
-    public HashMap<Integer, Undertow> servers;
+    public volatile HashMap<Integer, Undertow> servers;
     public boolean forceCompressionSupport = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
@@ -85,14 +85,14 @@ public class NioHttpServer implements Closeable {
         contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 100 );
     }
 
-    public void start() {
+    public synchronized void start() {
         servers = new HashMap<>();
         for( var port : pathHandler.keySet() ) {
             startNewPort( port );
         }
     }
 
-    private synchronized void startNewPort( int port ) {
+    private void startNewPort( int port ) {
         var portPathHandler = pathHandler.get( port );
 
         Preconditions.checkNotNull( portPathHandler );
@@ -100,10 +100,8 @@ public class NioHttpServer implements Closeable {
         log.info( "bind {}", portPathHandler );
 
         Undertow.Builder builder = Undertow.builder()
-
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
-
             .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
 
         if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
@@ -203,11 +201,15 @@ public class NioHttpServer implements Closeable {
         bind( prefix, handler, true, port );
     }
 
-    public void preStop() {
+    public synchronized void preStop() {
         if( servers != null ) {
-            for( var server : servers.values() )
-                server.stop();
-
+            for( var server : servers.values() ) {
+                try {
+                    server.stop();
+                } catch( Exception ex ) {
+                   log.error( "Cannot stop server", ex );
+                }
+            }
             pathHandler.clear();
             servers = null;
         }

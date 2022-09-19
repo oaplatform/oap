@@ -29,34 +29,35 @@ import oap.util.BiStream;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class Supervisor {
-    private final LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
-    private final LinkedHashMap<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
+    private final Map<String, StartableService> supervised = new LinkedHashMap<>();
+    private final Map<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
 
-    private boolean stopped = false;
+    private volatile boolean stopped = false;
 
-    public void startSupervised( String name, Object service,
+    public synchronized void startSupervised( String name, Object service,
                                  List<String> preStartWith, List<String> startWith,
                                  List<String> preStopWith, List<String> stopWith ) {
         this.supervised.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
-    public void startThread( String name, Object instance ) {
+    public synchronized void startThread( String name, Object instance ) {
         this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
     }
 
-//    public void startScheduledThread( String name, Object instance, long delay, TimeUnit milliseconds ) {
+//    public synchronized void startScheduledThread( String name, Object instance, long delay, TimeUnit milliseconds ) {
 //        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
 //    }
 
-    public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
+    public synchronized void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
         this.wrappers.put( name, new DelayScheduledService( service, delay, unit ) );
     }
 
-    public void scheduleCron( String name, Runnable service, String cron ) {
+    public synchronized void scheduleCron( String name, Runnable service, String cron ) {
         this.wrappers.put( name, new CronScheduledService( service, cron ) );
     }
 
