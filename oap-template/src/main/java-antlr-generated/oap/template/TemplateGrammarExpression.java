@@ -1119,7 +1119,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			((ConcatenationContext)_localctx).citems = citems(parentType);
 
 			        try {
-			        com.google.common.base.Preconditions.checkArgument(  _localctx.castType == null || oap.template.LogConfiguration.FieldType.parse( _localctx.castType.substring(1, _localctx.castType.length() - 1) ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
+			        com.google.common.base.Preconditions.checkArgument(  _localctx.castType == null || oap.template.LogConfiguration.FieldType.parse( _localctx.castType ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
 			        ((ConcatenationContext)_localctx).ast =  new AstConcatenation(parentType, ((ConcatenationContext)_localctx).citems.list);
 			        } catch ( java.lang.ClassNotFoundException e) {
 			          throw new TemplateException( e.getMessage(), e );
