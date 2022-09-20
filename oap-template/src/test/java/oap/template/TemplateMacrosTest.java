@@ -24,9 +24,11 @@
 
 package oap.template;
 
+import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateMacrosTest {
     @Test
@@ -34,5 +36,13 @@ public class TemplateMacrosTest {
         assertThat( TemplateMacros.urlencode( "12 ?3", 2 ) ).isEqualTo( "12%2B%253F3" );
         assertThat( TemplateMacros.urlencode( null, 1 ) ).isNull();
         assertThat( TemplateMacros.urlencode( null ) ).isNull();
+    }
+
+    @Test
+    public void testFormat() {
+        assertThat( TemplateMacros.format( new DateTime( 2022, 9, 20, 17, 1, 2, UTC ), "DATE" ) )
+            .isEqualTo( "2022-09-20" );
+        assertThat( TemplateMacros.format( new DateTime( 2022, 9, 20, 17, 1, 2, UTC ), "YYYY-dd" ) )
+            .isEqualTo( "2022-20" );
     }
 }

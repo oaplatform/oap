@@ -25,9 +25,14 @@
 package oap.template;
 
 import lombok.SneakyThrows;
+import oap.util.Dates;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TemplateMacros {
     public static String urlencode( String src, long depth ) {
@@ -64,5 +69,25 @@ public class TemplateMacros {
 
     public static String toLowerCase( String src ) {
         return src != null ? src.toLowerCase() : null;
+    }
+
+    private static final ConcurrentHashMap<String, DateTimeFormatter> dateTimeFormatters = new ConcurrentHashMap<>();
+
+    static {
+        dateTimeFormatters.put( "SIMPLE", Dates.FORMAT_SIMPLE );
+        dateTimeFormatters.put( "MILLIS", Dates.FORMAT_MILLIS );
+        dateTimeFormatters.put( "SIMPLE_CLEAN", Dates.FORMAT_SIMPLE_CLEAN );
+        dateTimeFormatters.put( "DATE", Dates.FORMAT_DATE );
+    }
+
+    public static String format( DateTime dateTime, String pattern ) {
+        if( dateTime == null ) return null;
+
+        DateTimeFormatter dateTimeFormatter = dateTimeFormatters.computeIfAbsent( pattern, p -> DateTimeFormat
+            .forPattern( p )
+            .withZoneUTC()
+        );
+
+        return dateTimeFormatter.print( dateTime );
     }
 }
