@@ -40,7 +40,6 @@ import java.lang.reflect.ParameterizedType;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
@@ -80,7 +79,6 @@ public class LogConfiguration extends Configuration {
 
     private static final String STANDARD_DELIMITER = "\t";
     private final TemplateEngine engine;
-    public boolean compact = false;
     public boolean typeValidation = true;
 
     public LogConfiguration( TemplateEngine engine ) {
@@ -121,10 +119,12 @@ public class LogConfiguration extends Configuration {
             if( !field.containsProperty( "path" ) ) continue;
 
             var id = field.getId();
-            var path = ( String ) field.getProperty( "path" ).orElseThrow();
-            var idType = ( String ) field.getProperty( "type" ).orElseThrow();
+            var path = checkStringAndGet( field, "path" );
+            var fieldType = checkStringAndGet( field, "type" );
+            var format = field.getProperty( "format" ).orElse( null );
 
             boolean collection = false;
+            var idType = fieldType;
             if( idType.endsWith( COLLECTION_SUFFIX ) ) {
                 collection = true;
                 idType = idType.substring( 0, idType.length() - COLLECTION_SUFFIX.length() );
@@ -135,16 +135,14 @@ public class LogConfiguration extends Configuration {
             var defaultValue = field.getProperty( "default" )
                 .orElseThrow( () -> new IllegalStateException( "default not found for " + type + "/" + id ) );
 
-            var lastFieldIndex = path.lastIndexOf( '.' );
-            var startPath = lastFieldIndex > 0 ? path.substring( 0, lastFieldIndex + 1 ) : "";
-            var endPath = lastFieldIndex > 0 ? path.substring( lastFieldIndex + 1 ) : path;
+            var templateFunction = format != null ? "; format(\"" + format + "\")" : "";
+
+            var comment = "model '" + type + "' id '" + id + "' type '" + fieldType + "' defaultValue '" + defaultValue + "'";
 
             var pDefaultValue = defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"' : defaultValue;
-            cols.add( __( path, "${" + startPath + toJavaType( javaType, collection ) + endPath + " ?? " + pDefaultValue + "}" ) );
+            cols.add( __( path, "${/* " + comment + " */" + toJavaType( javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" ) );
             headers.add( id );
         }
-
-        if( compact ) cols.sort( Comparator.comparing( p -> p._1 ) );
 
         var template = String.join( "\t", Lists.map( cols, p -> p._2 ) );
         var templateFunc = engine.getTemplate(
@@ -153,8 +151,14 @@ public class LogConfiguration extends Configuration {
             template,
             templateAccumulator,
             ERROR,
-            compact ? CompactAstPostProcessor.INSTANCE : null );
+            null );
         return new DictionaryTemplate<>( templateFunc, template, headers.toString() );
+    }
+
+    private static String checkStringAndGet( Dictionary dictionary, String fieldName ) {
+        Object fieldObject = dictionary.getProperty( fieldName ).orElseThrow( () -> new TemplateException( dictionary.getId() + ": type is required" ) );
+        Preconditions.checkArgument( fieldObject instanceof String, dictionary.getId() + ": type must be String, but is " + fieldObject.getClass() );
+        return ( String ) fieldObject;
     }
 
     private String toJavaType( String javaType, boolean collection ) {

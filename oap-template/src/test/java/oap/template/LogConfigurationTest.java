@@ -156,7 +156,7 @@ public class LogConfigurationTest extends Fixtures {
                       id = LIST_FIELD
                       type = STRING_ARRAY
                       default = []
-                      path = setString
+                      path = child.setString
                       tags = [LOG]
                     }
                   ]
@@ -169,7 +169,8 @@ public class LogConfigurationTest extends Fixtures {
         var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
 
         var c = new TestTemplateClass();
-        c.setString = new LinkedHashSet<>( List.of( "s'1", "s2" ) );
+        c.child = new TestTemplateClass();
+        c.child.setString = new LinkedHashSet<>( List.of( "s'1", "s2" ) );
 
         var res = dictionaryTemplate.templateFunction.render( c );
         assertThat( res ).isEqualTo( "['s\\'1','s2']" );
