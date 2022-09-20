@@ -387,56 +387,6 @@ public class TemplateEngineTest extends Fixtures {
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
     }
 
-    @Test
-    public void testTypes() {
-        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
-        templateClass.booleanField = true;
-        templateClass.booleanObjectField = true;
-        templateClass.intField = 1;
-        templateClass.intObjectField = 2;
-
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "booleanField:${<java.lang.Boolean>booleanField},booleanObjectField:${<java.lang.Boolean>booleanObjectField},intField:${<java.lang.Integer>intField},intObjectField:${<java.lang.Integer>intObjectField}",
-            templateAccumulator, ERROR, null ).render( templateClass );
-
-        assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
-
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "booleanField:${<java.lang.Integer>booleanField}",
-            templateAccumulator, ERROR, null ).render( templateClass ) )
-            .isInstanceOf( TemplateException.class )
-            .hasCauseInstanceOf( ClassCastException.class );
-    }
-
-    @Test
-    public void testObjectReference() {
-        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
-        templateClass.child = new TestTemplateClass();
-        templateClass.child.intField = 100;
-
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "child.intField:${<java.lang.Integer>child.intField}",
-            templateAccumulator, ERROR, null ).render( templateClass );
-
-        assertString( str ).isEqualTo( "child.intField:100_i" );
-    }
-
-    @Test
-    public void testNullableObjectReference() {
-        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
-        templateClass.childNullable = new TestTemplateClass();
-        templateClass.childNullable.intField = 100;
-
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "childNullable.intField:${<java.lang.Integer>childNullable.intField}",
-            templateAccumulator, ERROR, null ).render( templateClass );
-
-        assertThat( str ).isEqualTo( "childNullable.intField:100_i" );
-    }
-
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
         @Override
         public void accept( String text ) {

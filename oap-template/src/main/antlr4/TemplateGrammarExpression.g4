@@ -96,9 +96,10 @@ exps [TemplateType parentType, String castType] returns [MaxMin ast]
       math[$ast.bottom.type]? {
         if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
       }
-    | exp[parentType, null]  { $ast = $exp.ast; } DOT? concatenation[$ast.bottom.type, castType] {
-       $ast.addToBottomChildrenAndSet( $concatenation.ast );
-    }
+    | exp[parentType, null]  { $ast = $exp.ast; }
+      DOT? concatenation[$ast.bottom.type, castType] {
+        $ast.addToBottomChildrenAndSet( $concatenation.ast );
+      }
     | exp[parentType, null] { $ast = $exp.ast; }
       (DOT exp[$ast.bottom.type, null] {
         $ast.addToBottomChildrenAndSet($exp.ast);
@@ -111,7 +112,7 @@ exps [TemplateType parentType, String castType] returns [MaxMin ast]
       (DOT exp[$ast.bottom.type, null] {
         $ast.addToBottomChildrenAndSet($exp.ast);
       })*
-      exp[$ast.bottom.type, null] { $ast.addToBottomChildrenAndSet($exp.ast); }
+      DOT exp[$ast.bottom.type, null] { $ast.addToBottomChildrenAndSet($exp.ast); }
       DOT? concatenation[$ast.bottom.type, castType] {
         $ast.addToBottomChildrenAndSet( $concatenation.ast );
       }
