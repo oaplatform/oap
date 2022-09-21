@@ -232,11 +232,12 @@ public class HttpAsserts {
         }
 
         public HttpAssertion containsCookie( String name, Consumer<Cookie> assertion ) {
-            assertThat( Stream.of( cookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny() )
+            Optional<Cookie> cookie = Stream.of( cookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
+            assertThat( cookie )
                 .isNotEmpty()
                 .withFailMessage( "no such cookie: " + name )
                 .get()
-                .satisfies( assertion );
+                .satisfiesAnyOf( new Consumer[] { assertion } );
             return this;
         }
 
