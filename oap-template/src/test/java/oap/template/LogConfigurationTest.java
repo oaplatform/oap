@@ -25,7 +25,6 @@
 package oap.template;
 
 import oap.io.Files;
-import oap.lang.ThreadLocalStringBuilder;
 import oap.reflect.Reflect;
 import oap.reflect.TypeRef;
 import oap.template.LogConfiguration.FieldType;
@@ -47,7 +46,6 @@ import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LogConfigurationTest extends Fixtures {
-    private final ThreadLocalStringBuilder threadLocalStringBuilder = new ThreadLocalStringBuilder();
     private TemplateEngine engine;
     private String testMethodName;
 
@@ -87,24 +85,6 @@ public class LogConfigurationTest extends Fixtures {
     @BeforeMethod
     public void nameBefore( Method method ) {
         testMethodName = method.getName();
-    }
-
-    @Test
-    public void testConsumerCompact() {
-        var exp1 = aexp( "a.b", af( "a", aopt( af( "b", aps() ) ) ) );
-        var exp2 = aexp( "a.c", af( "a", aopt( af( "c", aps() ) ) ) );
-
-        var ar = new AstRoot( new TemplateType( getClass() ) );
-        ar.children.addAll( List.of( exp1, new AstText( "123" ), exp2 ) );
-
-        CompactAstPostProcessor.INSTANCE.accept( ar );
-
-        System.out.println( ar.print() );
-
-        assertThat( ar.children ).hasSize( 1 );
-        assertThat( ar.children.get( 0 ).children ).hasSize( 1 );
-        assertThat( ar.children.get( 0 ).children.get( 0 ).children ).hasSize( 1 );
-        assertThat( ar.children.get( 0 ).children.get( 0 ).children.get( 0 ) ).isInstanceOf( AstOptional.class );
     }
 
     @Test
