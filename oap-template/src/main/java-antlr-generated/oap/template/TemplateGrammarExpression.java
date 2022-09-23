@@ -219,7 +219,11 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			          _localctx.ast.addToBottomChildrenAndSet( ((ExpressionContext)_localctx).function.func );
 			        }
 
-			        _localctx.ast.addLeafs( () -> getAst(_localctx.ast.bottom.type, null, false, ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null, null ) );
+			        java.util.function.Function<Ast, AstText> printDefautlValueAst = ast -> new AstText(((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null );
+
+			        _localctx.ast.addLeafs( () -> getAst(_localctx.ast.bottom.type, null, false, ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null, null ).top );
+			        _localctx.ast.update( ast -> ast instanceof AstNullable, ast -> ((AstNullable)ast).elseAst = printDefautlValueAst.apply( ast ) );
+			        _localctx.ast.update( ast -> ast instanceof AstOptional, ast -> ((AstOptional)ast).elseAst = printDefautlValueAst.apply( ast ) );
 
 			        if( _localctx.comment != null ) {
 			            _localctx.ast.setTop( new AstComment( parentType, _localctx.comment ) );

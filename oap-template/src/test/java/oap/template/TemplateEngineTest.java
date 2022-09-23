@@ -200,19 +200,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testCompact() {
-        var c = new TestTemplateClass();
-        var cp = new TestTemplateClass();
-        c.fieldOpt = Optional.of( "o" );
-        c.intField = 10;
-
-        cp.childOpt = Optional.of( c );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING,
-            CompactAstPostProcessor.INSTANCE ).render( cp ) )
-            .isEqualTo( "10-o" );
-    }
-
-    @Test
     public void testNullable() {
         var c = new TestTemplateClass();
 
@@ -255,8 +242,12 @@ public class TemplateEngineTest extends Fixtures {
     @Test
     public void testDefaultBoolean() {
         var c = new TestTemplateClass();
-        c.booleanField = true;
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${booleanField??false}", STRING, null ).render( c ) )
+        c.childNullable = null;
+        c.childOpt = Optional.empty();
+
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childNullable.booleanObjectField??true}", STRING, null ).render( c ) )
+            .isEqualTo( "true" );
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childOpt.booleanObjectField??true}", STRING, null ).render( c ) )
             .isEqualTo( "true" );
     }
 

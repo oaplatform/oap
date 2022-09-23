@@ -32,7 +32,11 @@ expression[TemplateType parentType] returns [MaxMin ast]
           $ast.addToBottomChildrenAndSet( $function.func );
         }
 
-        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null, null ) );
+        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null, null ).top );
+
+        java.util.function.Function<Ast, AstText> printDefautlValueAst = ast -> new AstText($defaultValue.ctx != null ? $defaultValue.v : null );
+        $ast.update( ast -> ast instanceof AstNullable, ast -> ((AstNullable)ast).elseAst = printDefautlValueAst.apply( ast ) );
+        $ast.update( ast -> ast instanceof AstOptional, ast -> ((AstOptional)ast).elseAst = printDefautlValueAst.apply( ast ) );
 
         if( $comment != null ) {
             $ast.setTop( new AstComment( parentType, $comment ) );

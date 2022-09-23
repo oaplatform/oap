@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @ToString( callSuper = true )
 public abstract class AstIfElse extends Ast {
-    public AstText printIfOptEmpty = null;
+    public Ast elseAst = null;
 
     AstIfElse( TemplateType type ) {
         super( type );
@@ -60,22 +60,22 @@ public abstract class AstIfElse extends Ast {
 
         render.ntab().append( "}" );
 
-        if( printIfOptEmpty != null ) {
+        if( elseAst != null ) {
             var nRender = render.append( " else {" )
                 .tabInc();
-            printIfOptEmpty.render( nRender );
+            elseAst.render( nRender );
             render.ntab().append( "}" );
         }
     }
 
     @Override
     protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
-        if( printIfOptEmpty != null ) {
+        if( elseAst != null ) {
             printTop( buffer, prefix );
             buffer.append( childrenPrefix ).append( "│" ).append( getFalseToString() );
             buffer.append( '\n' );
 
-            printIfOptEmpty.print( buffer, childrenPrefix + "│" + "└── ", childrenPrefix + "│" + "    " );
+            elseAst.print( buffer, childrenPrefix + "│" + "└── ", childrenPrefix + "│" + "    " );
 
             printChildren( buffer, childrenPrefix, children );
         } else {

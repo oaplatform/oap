@@ -40,6 +40,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
@@ -192,17 +194,30 @@ abstract class TemplateGrammarAdaptor extends Parser {
             this.bottom = mm.bottom;
         }
 
-        public void addLeafs( Supplier<MaxMin> sup ) {
+        public void addLeafs( Supplier<Ast> sup ) {
             addLeafs( bottom, sup );
         }
 
-        private void addLeafs( Ast ast, Supplier<MaxMin> sup ) {
+        private void addLeafs( Ast ast, Supplier<Ast> sup ) {
             if( ast.children.isEmpty() )
-                ast.addChild( sup.get().top );
-            else
+                ast.addChild( sup.get() );
+            else {
                 for( var child : ast.children ) {
                     addLeafs( child, sup );
                 }
+            }
+        }
+
+        public void update( Predicate<Ast> predicate, Consumer<Ast> consumer ) {
+            update( top, predicate, consumer );
+        }
+
+        private void update( Ast ast, Predicate<Ast> predicate, Consumer<Ast> consumer ) {
+            if( predicate.test( ast ) ) consumer.accept( ast );
+
+            for( var child : ast.children ) {
+                update( child, predicate, consumer );
+            }
         }
     }
 
