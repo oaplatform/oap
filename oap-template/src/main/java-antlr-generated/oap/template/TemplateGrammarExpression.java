@@ -374,7 +374,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				match(LBRACK);
 				setState(68);
 				match(RBRACK);
-				 ((DefaultValueTypeContext)_localctx).v =  "java.util.List.of()"; 
+				 ((DefaultValueTypeContext)_localctx).v =  "[]";
 				}
 				break;
 			default:
