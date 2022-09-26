@@ -331,7 +331,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				{
 				setState(56);
 				((DefaultValueTypeContext)_localctx).SSTRING = match(SSTRING);
-				 ((DefaultValueTypeContext)_localctx).v =  sStringToDString( (((DefaultValueTypeContext)_localctx).SSTRING!=null?((DefaultValueTypeContext)_localctx).SSTRING.getText():null) ); 
+				 ((DefaultValueTypeContext)_localctx).v =  sdStringToString( (((DefaultValueTypeContext)_localctx).SSTRING!=null?((DefaultValueTypeContext)_localctx).SSTRING.getText():null) );
 				}
 				break;
 			case DSTRING:
@@ -339,7 +339,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				{
 				setState(58);
 				((DefaultValueTypeContext)_localctx).DSTRING = match(DSTRING);
-				 ((DefaultValueTypeContext)_localctx).v =  (((DefaultValueTypeContext)_localctx).DSTRING!=null?((DefaultValueTypeContext)_localctx).DSTRING.getText():null); 
+				 ((DefaultValueTypeContext)_localctx).v =  sdStringToString( (((DefaultValueTypeContext)_localctx).DSTRING!=null?((DefaultValueTypeContext)_localctx).DSTRING.getText():null) );
 				}
 				break;
 			case MINUS:
