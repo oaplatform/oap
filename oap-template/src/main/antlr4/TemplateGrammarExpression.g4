@@ -50,12 +50,12 @@ defaultValue returns [String v]
     ;
 
 defaultValueType returns [String v]
-    : SSTRING { $v = sStringToDString( $SSTRING.text ); }
-    | DSTRING { $v = $DSTRING.text; }
+    : SSTRING { $v = sdStringToString( $SSTRING.text ); }
+    | DSTRING { $v = sdStringToString($DSTRING.text); }
     | longRule { $v = $longRule.text; }
     | FLOAT { $v = $FLOAT.text; }
     | BOOLEAN { $v = $BOOLEAN.text; }
-    | LBRACK RBRACK { $v = "[]"; }
+    | LBRACK RBRACK { $v = "[]"; })
     ; 
 
 longRule
