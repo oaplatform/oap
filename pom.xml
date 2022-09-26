@@ -44,7 +44,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>17.10.32.6</oap.project.version>
+        <oap.project.version>17.10.32.7</oap.project.version>
 
         <oap.deps.testng.version>7.5</oap.deps.testng.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
