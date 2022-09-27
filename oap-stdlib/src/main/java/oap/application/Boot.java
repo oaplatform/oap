@@ -27,8 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.module.Module;
 import oap.cli.Cli;
 import oap.cli.Option;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import java.nio.file.Path;
 
@@ -67,14 +65,13 @@ public class Boot {
     }
 
     private static void installSignals() {
-        SignalHandler handler = signal -> {
-            log.info( "cought signal: {}", signal.getName() );
-            System.out.println( "cought signal: " + signal.getName() );
-            System.out.flush();
-            exit( 0 );
-        };
-        Signal.handle( new Signal( "INT" ), handler );
-        Signal.handle( new Signal( "TERM" ), handler );
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+                log.info( "cought signal: TERM" );
+                System.out.println( "cought signal: TERM" );
+                System.out.flush();
+                exit( 0 );
+            }
+        ) );
     }
 
     public static synchronized void stop() {
@@ -94,10 +91,10 @@ public class Boot {
         System.out.println( "exit status = " + status );
         try {
             stop();
+            System.exit( status );
         } catch( Throwable e ) {
-            log.error( e.getMessage(), e );
+            log.error( "Cannot stop with status code: " + status, e );
         }
-
-        System.exit( status );
+        System.exit( -1 );
     }
 }
