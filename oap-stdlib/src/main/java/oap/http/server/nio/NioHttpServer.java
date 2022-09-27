@@ -50,13 +50,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class NioHttpServer implements Closeable, AutoCloseable {
     public final int defaultPort;
 
-    private final HashMap<Integer, PathHandler> pathHandler = new HashMap<>();
+    private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
     private final ContentEncodingRepository contentEncodingRepository;
     private final AtomicLong requestId = new AtomicLong();
     public int backlog = -1;

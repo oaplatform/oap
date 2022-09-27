@@ -24,30 +24,16 @@
 
 package oap.http.pnio;
 
-import oap.http.Http;
-import oap.util.Throwables;
+import java.util.function.BiConsumer;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPOutputStream;
+class PnioInputOutputRequestHandler<State> extends PnioComputeRequestHandler<State> {
 
-public class TestResponseBuilder extends PnioInputOutputRequestHandler<TestState> {
-    TestResponseBuilder() {
-        super( ( pnioExchange, testState ) -> {
-            try ( OutputStream outputStream = pnioExchange.gzipSupported()
-                 ? new GZIPOutputStream( pnioExchange.responseBuffer.getOutputStream() )
-                 : pnioExchange.responseBuffer.getOutputStream() ) {
-                if( pnioExchange.gzipSupported() ) {
-                    pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
-                }
-                outputStream.write( testState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+    PnioInputOutputRequestHandler( BiConsumer<PnioExchange<State>, State> function ) {
+        super( function );
+    }
 
-                pnioExchange.httpResponse.status = Http.StatusCode.OK;
-                pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-            } catch( IOException ex ) {
-                Throwables.propagate( ex );
-            }
-        } );
+    @Override
+    public Type getType() {
+        return Type.IO;
     }
 }

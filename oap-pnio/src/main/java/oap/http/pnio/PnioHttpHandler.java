@@ -21,6 +21,7 @@ import org.slf4j.event.Level;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public final double queueTimeoutPercent;
     public final int cpuAffinityFirstCpu;
 
-    private final ArrayList<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
+    private final List<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
 
     public PnioHttpHandler( int requestSize, int responseSize,
                             double queueTimeoutPercent,
@@ -133,18 +134,31 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     }
 
     @Override
+    /**
+     * Immediately shutdown
+     */
     public void close() {
         pool.shutdownNow();
+        if ( !tasks.isEmpty() ) {
+            log.info( "Cancelling " + tasks.size() + " tasks..." );
+        }
+        for( var task : tasks ) {
+            task.interrupt();
+        }
+        tasks.clear();
+        waitForFinish();
+    }
+
+    private void waitForFinish() {
         try {
-
-            for( var task : tasks ) {
-                task.interrupt();
+            int count = 12; // 1 minute
+            while( count > 0 && !pool.awaitTermination( 5, TimeUnit.SECONDS ) ) {
+                log.debug( "waiting for finishing..." );
+                count--;
             }
-
-            if( !pool.awaitTermination( 60, TimeUnit.SECONDS ) ) {
-                log.trace( "timeout awaitTermination" );
-            }
+            if ( count == 0 ) log.error( "60 sec timeout awaitTermination" );
         } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException( e );
         }
     }

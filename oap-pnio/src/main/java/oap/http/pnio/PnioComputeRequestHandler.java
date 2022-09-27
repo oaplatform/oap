@@ -24,30 +24,24 @@
 
 package oap.http.pnio;
 
-import oap.http.Http;
-import oap.util.Throwables;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPOutputStream;
+import java.util.function.BiConsumer;
 
-public class TestResponseBuilder extends PnioInputOutputRequestHandler<TestState> {
-    TestResponseBuilder() {
-        super( ( pnioExchange, testState ) -> {
-            try ( OutputStream outputStream = pnioExchange.gzipSupported()
-                 ? new GZIPOutputStream( pnioExchange.responseBuffer.getOutputStream() )
-                 : pnioExchange.responseBuffer.getOutputStream() ) {
-                if( pnioExchange.gzipSupported() ) {
-                    pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
-                }
-                outputStream.write( testState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+class PnioComputeRequestHandler<State> extends PnioRequestHandler<State> {
+    private final BiConsumer<PnioExchange<State>, State> function;
 
-                pnioExchange.httpResponse.status = Http.StatusCode.OK;
-                pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-            } catch( IOException ex ) {
-                Throwables.propagate( ex );
-            }
-        } );
+    PnioComputeRequestHandler( BiConsumer<PnioExchange<State>, State> function ) {
+        this.function = function;
+    }
+
+    @Override
+    public Type getType() {
+        return Type.COMPUTE;
+    }
+
+    @Override
+    public void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException {
+        function.accept( pnioExchange, state );
     }
 }

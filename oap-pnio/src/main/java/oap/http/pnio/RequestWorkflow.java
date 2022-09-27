@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
+
 public class RequestWorkflow<WorkflowState> {
     @AllArgsConstructor
     static class Node<WorkflowState> {
@@ -58,21 +60,9 @@ public class RequestWorkflow<WorkflowState> {
             for( var item : list ) {
                 next( next.apply( item ) );
             }
-
             if( postProcess != null ) {
-                next( new PnioRequestHandler<WorkflowState>() {
-                    @Override
-                    public Type getType() {
-                        return Type.COMPUTE;
-                    }
-
-                    @Override
-                    public void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
-                        postProcess.accept( pnioExchange, workflowState );
-                    }
-                } );
+                next( PnioRequestHandler.<WorkflowState>create( ( pnioExchange, workflowState ) -> postProcess.accept( pnioExchange, workflowState ), COMPUTE ) );
             }
-
             return this;
         }
 

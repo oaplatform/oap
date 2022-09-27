@@ -10,6 +10,7 @@
 package oap.http.pnio;
 
 import java.io.IOException;
+import java.util.function.BiConsumer;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class PnioRequestHandler<State> {
@@ -28,5 +29,10 @@ public abstract class PnioRequestHandler<State> {
 
     enum Type {
         IO, COMPUTE
+    }
+
+    public static <State> PnioRequestHandler create( BiConsumer<PnioExchange<State>, State> function, Type type ) {
+        if ( type == Type.COMPUTE ) return new PnioComputeRequestHandler<>( function );
+        return new PnioInputOutputRequestHandler<>( function );
     }
 }

@@ -39,7 +39,7 @@ public class PnioExchange<WorkflowState> {
     public final long startTimeNano;
     public final long timeout;
 
-    RequestWorkflow.Node<WorkflowState> currentTaskNode;
+    volatile RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
     HttpResponse httpResponse = new HttpResponse();
     private final WorkflowState workflowState;

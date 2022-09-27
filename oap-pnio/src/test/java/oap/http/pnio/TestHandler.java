@@ -24,9 +24,13 @@
 
 package oap.http.pnio;
 
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+
 public class TestHandler extends PnioRequestHandler<TestState> {
     private final String name;
     private final Type type;
+    private final BiConsumer<PnioExchange<TestState>, TestState> function;
 
     public RuntimeException runtimeException;
     public long sleepTime = -1;
@@ -34,6 +38,23 @@ public class TestHandler extends PnioRequestHandler<TestState> {
     public TestHandler( String name, Type type ) {
         this.name = name;
         this.type = type;
+        function = ( pnioExchange, testState ) -> {
+            if( runtimeException != null ) throw new RuntimeException( runtimeException );
+            if( sleepTime > 0 ) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep( sleepTime );
+                } catch( InterruptedException e ) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException( e );
+                }
+            }
+            if( testState.sb.length() > 0 ) testState.sb.append( "\n" );
+            var data = "name '" + name + "' type " + type + " thread '"
+                + Thread.currentThread().getName().substring( 0, 2 )
+                + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
+            testState.sb.append( data );
+            testState.oldThreadName = Thread.currentThread().getName();
+        };
     }
 
     @Override
@@ -42,18 +63,8 @@ public class TestHandler extends PnioRequestHandler<TestState> {
     }
 
     @Override
-    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
-        if( runtimeException != null ) throw new RuntimeException( runtimeException );
-        if( sleepTime > 0 ) Thread.sleep( sleepTime );
-
-        if( testState.sb.length() > 0 ) testState.sb.append( "\n" );
-
-        var data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 0, 2 )
-            + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
-
-        testState.sb.append( data );
-
-        testState.oldThreadName = Thread.currentThread().getName();
+    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) {
+        function.accept( pnioExchange, testState );
     }
 
     @Override
