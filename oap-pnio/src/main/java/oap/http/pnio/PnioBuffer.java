@@ -32,11 +32,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.BufferOverflowException;
+import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PnioBuffer {
-    private final byte[] buffer;
+    final byte[] buffer;
     public int length;
 
     public PnioBuffer( int capacity ) {
@@ -54,8 +55,8 @@ public class PnioBuffer {
         return new String( buffer, 0, length );
     }
 
-    final byte[] array() {
-        return buffer;
+    public final byte[] array() {
+        return Arrays.copyOfRange( buffer, 0, length );
     }
 
     public final boolean isEmpty() {

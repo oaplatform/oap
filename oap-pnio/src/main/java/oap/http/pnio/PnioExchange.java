@@ -223,7 +223,7 @@ public class PnioExchange<WorkflowState> {
         if( contentType != null ) exchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
 
         if( !responseBuffer.isEmpty() )
-            exchange.send( responseBuffer.array(), 0, responseBuffer.length );
+            exchange.send( responseBuffer.buffer, 0, responseBuffer.length );
         else
             exchange.endExchange();
     }
