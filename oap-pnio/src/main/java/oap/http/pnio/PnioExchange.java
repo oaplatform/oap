@@ -228,7 +228,7 @@ public class PnioExchange<WorkflowState> {
             exchange.endExchange();
     }
 
-    static class HttpResponse {
+    public static class HttpResponse {
         public int status = StatusCodes.NO_CONTENT;
         public String contentType;
         public final HashMap<String, String> headers = new HashMap<>();
