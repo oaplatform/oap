@@ -41,7 +41,7 @@ public class PnioExchange<WorkflowState> {
 
     RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
-    HttpResponse httpResponse = new HttpResponse();
+    public final HttpResponse httpResponse = new HttpResponse();
     private final WorkflowState workflowState;
 
     public PnioExchange( int requestSize, int responseSize, RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
