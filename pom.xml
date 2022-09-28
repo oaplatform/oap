@@ -52,8 +52,8 @@
 
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
 
-        <oap.deps.logback.version>1.4.0</oap.deps.logback.version>
-        <oap.deps.slf4j.version>2.0.0</oap.deps.slf4j.version>
+        <oap.deps.logback.version>1.2.6</oap.deps.logback.version>
+        <oap.deps.slf4j.version>1.7.32</oap.deps.slf4j.version>
 
         <oap.deps.mockito.version>4.8.0</oap.deps.mockito.version>
 
