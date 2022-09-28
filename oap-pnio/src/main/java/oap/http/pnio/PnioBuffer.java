@@ -51,6 +51,10 @@ public class PnioBuffer {
         length = to.size();
     }
 
+    public void setEmpty() {
+        length = 0;
+    }
+
     public final String string() {
         return new String( buffer, 0, length );
     }
