@@ -11,11 +11,27 @@ package oap.http.pnio;
 
 import lombok.AllArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class RequestWorkflow<WorkflowState> {
+    public RequestWorkflow<WorkflowState> skipBefore( Predicate<PnioRequestHandler<WorkflowState>> predicate ) {
+        var current = root;
+
+        while( current != null ) {
+            if( predicate.test( current.handler ) ) {
+                return new RequestWorkflow<>( current );
+            }
+
+            current = current.next;
+        }
+
+        return new RequestWorkflow<>( null );
+    }
+
     @AllArgsConstructor
     static class Node<WorkflowState> {
         final PnioRequestHandler<WorkflowState> handler;
@@ -26,6 +42,19 @@ public class RequestWorkflow<WorkflowState> {
 
     private RequestWorkflow( Node<WorkflowState> root ) {
         this.root = root;
+    }
+
+    public <T> List<T> map( Function<PnioRequestHandler<WorkflowState>, T> mapFunc ) {
+        var ret = new ArrayList<T>();
+
+        var current = root;
+
+        while( current != null ) {
+            ret.add( mapFunc.apply( current.handler ) );
+            current = current.next;
+        }
+
+        return ret;
     }
 
     public static <WorkflowState> RequestWorkflowBuilder<WorkflowState> init( PnioRequestHandler<WorkflowState> task ) {
