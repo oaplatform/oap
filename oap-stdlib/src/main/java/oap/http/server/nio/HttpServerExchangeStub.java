@@ -24,6 +24,9 @@
 
 package oap.http.server.nio;
 
+import io.undertow.io.Receiver;
+import io.undertow.io.Sender;
+import io.undertow.server.BlockingHttpExchange;
 import io.undertow.server.ConnectorStatisticsImpl;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
@@ -44,6 +47,8 @@ import org.xnio.conduits.StreamSinkConduit;
 import org.xnio.conduits.StreamSourceConduit;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
@@ -109,6 +114,34 @@ public class HttpServerExchangeStub {
         httpServerExchange.setRequestMethod( new HttpString( "GET" ) );
         httpServerExchange.setProtocol( Protocols.HTTP_1_1 );
         httpServerExchange.setDestinationAddress( new InetSocketAddress( 8081 ) );
+
+        httpServerExchange.startBlocking( new BlockingHttpExchange() {
+            @Override
+            public InputStream getInputStream() {
+                return InputStream.nullInputStream();
+            }
+
+            @Override
+            public OutputStream getOutputStream() {
+                return OutputStream.nullOutputStream();
+            }
+
+            @Override
+            public Sender getSender() {
+                return null;
+            }
+
+            @Override
+            public void close() throws IOException {
+
+            }
+
+            @Override
+            public Receiver getReceiver() {
+                return null;
+            }
+        } );
+
         return httpServerExchange;
     }
 }
