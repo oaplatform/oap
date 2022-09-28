@@ -14,6 +14,7 @@ import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
@@ -193,9 +194,9 @@ public class PnioExchange<WorkflowState> {
         return timeout - duration;
     }
 
-    void runTasks( PnioRequestHandler.Type type ) {
+    public void runTasks( @Nullable PnioRequestHandler.Type type ) {
         try {
-            while( currentTaskNode != null && currentTaskNode.handler.getType() == type ) {
+            while( currentTaskNode != null && ( type == null || currentTaskNode.handler.getType() == type ) ) {
                 if( getTimeLeft() <= 0 ) {
                     completeWithTimeout();
                     return;
