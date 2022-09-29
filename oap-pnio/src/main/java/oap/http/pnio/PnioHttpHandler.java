@@ -120,7 +120,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
                 httpResponse.headers.clear();
                 httpResponse.status = Http.StatusCode.BAD_GATEWAY;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                pnioExchange.responseBuffer.set( Throwables.getStackTraceAsString( e ) );
+                pnioExchange.responseBuffer.setAndResize( Throwables.getStackTraceAsString( e ) );
             }
         }
 

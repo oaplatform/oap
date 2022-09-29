@@ -37,7 +37,7 @@ import java.util.Arrays;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PnioBuffer {
-    final byte[] buffer;
+    byte[] buffer;
     public int length;
 
     public PnioBuffer( int capacity ) {
@@ -51,7 +51,7 @@ public class PnioBuffer {
         length = to.size();
     }
 
-    public void setEmpty() {
+    public final void setEmpty() {
         length = 0;
     }
 
@@ -67,26 +67,26 @@ public class PnioBuffer {
         return length == 0;
     }
 
-    public InputStream getInputStream() {
+    public final InputStream getInputStream() {
         return new ByteArrayInputStream( buffer, 0, length );
     }
 
-    public OutputStream getOutputStream() {
+    public final OutputStream getOutputStream() {
         return new PnioOutputStream();
     }
 
-    public void set( String data ) {
+    public final void setAndResize( String data ) {
         byte[] bytes = data.getBytes( UTF_8 );
-        set( bytes );
+        setAndResize( bytes );
     }
 
-    public void set( byte[] bytes, int length ) {
-        System.arraycopy( bytes, 0, buffer, 0, length );
+    public final void setAndResize( byte[] bytes, int length ) {
+        this.buffer = bytes;
         this.length = length;
     }
 
-    public void set( byte[] bytes ) {
-        set( bytes, bytes.length );
+    public final void setAndResize( byte[] bytes ) {
+        setAndResize( bytes, bytes.length );
     }
 
     class PnioOutputStream extends FixedLengthArrayOutputStream {
