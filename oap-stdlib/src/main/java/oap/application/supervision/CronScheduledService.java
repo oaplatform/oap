@@ -29,6 +29,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.util.Numbers;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
@@ -56,12 +57,7 @@ public class CronScheduledService extends AbstractScheduledService {
 
     @Override
     public void run() {
-        if( jitter > 0 ) try {
-            Thread.sleep( RandomUtils.nextLong( 0, jitter + 1 ) );
-        } catch( InterruptedException e ) {
-            return;
-        }
-
+        if( jitter > 0 ) LockSupport.parkNanos( RandomUtils.nextLong( 0, jitter + 1 ) * 1_000_000 );
         super.run();
     }
 
