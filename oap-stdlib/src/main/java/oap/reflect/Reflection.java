@@ -99,14 +99,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
     }
 
-    public Set<Class<?>> assignableTo() {
-        return Stream.<Class<?>>flatTraverse( underlying, c -> {
-            Stream<Class<?>> result = Stream.of( c.getInterfaces() );
-            return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
-        } ).toSet();
-    }
-
-    Reflection init() {
+   Reflection init() {
         if( this.methods == null ) {
             synchronized( this ) {
                 if( this.methods == null ) {
@@ -154,6 +147,13 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
     public boolean assignableTo( Class<?> clazz ) {
         return clazz.isAssignableFrom( this.underlying );
+    }
+
+    public Set<Class<?>> assignableTo() {
+        return Stream.<Class<?>>flatTraverse( underlying, c -> {
+            Stream<Class<?>> result = Stream.of( c.getInterfaces() );
+            return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
+        } ).toSet();
     }
 
     public boolean assignableFrom( Class<?> clazz ) {
