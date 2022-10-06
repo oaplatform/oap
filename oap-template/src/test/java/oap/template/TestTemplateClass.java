@@ -56,6 +56,8 @@ public class TestTemplateClass {
     public List<Integer> list;
     @Nullable
     public List<Integer> list2;
+    public List<String> listString;
+    public List<TestTemplateEnum> listEnum;
     public Set<String> setString;
     @JsonProperty( "jsonTestNew" )
     @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
