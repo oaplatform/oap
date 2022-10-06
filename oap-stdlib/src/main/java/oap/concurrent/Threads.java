@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -61,10 +62,7 @@ public class Threads {
     }
 
     public static void sleepSafely( long time, TimeUnit timeUnit ) {
-        try {
-            Thread.sleep( timeUnit.toMillis( time ) );
-        } catch( InterruptedException ignored ) {
-        }
+        LockSupport.parkNanos( timeUnit.toMillis( time ) * 1_000_000 );
     }
 
     @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )

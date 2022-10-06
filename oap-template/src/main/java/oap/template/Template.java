@@ -32,6 +32,10 @@ public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
 
     void render( TIn obj, TOutMutable out );
 
+    /**
+     * @see javax.annotation.Nullable
+     */
+    @Deprecated( forRemoval = true )
     @Retention( RetentionPolicy.RUNTIME )
     @interface Nullable {
     }

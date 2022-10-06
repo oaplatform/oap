@@ -14,6 +14,7 @@ import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
@@ -41,7 +42,7 @@ public class PnioExchange<WorkflowState> {
 
     RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
-    HttpResponse httpResponse = new HttpResponse();
+    public final HttpResponse httpResponse = new HttpResponse();
     private final WorkflowState workflowState;
 
     public PnioExchange( int requestSize, int responseSize, RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
@@ -193,9 +194,9 @@ public class PnioExchange<WorkflowState> {
         return timeout - duration;
     }
 
-    void runTasks( PnioRequestHandler.Type type ) {
+    public void runTasks( @Nullable PnioRequestHandler.Type type ) {
         try {
-            while( currentTaskNode != null && currentTaskNode.handler.getType() == type ) {
+            while( currentTaskNode != null && ( type == null || currentTaskNode.handler.getType() == type ) ) {
                 if( getTimeLeft() <= 0 ) {
                     completeWithTimeout();
                     return;
@@ -223,12 +224,12 @@ public class PnioExchange<WorkflowState> {
         if( contentType != null ) exchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
 
         if( !responseBuffer.isEmpty() )
-            exchange.send( responseBuffer.array(), 0, responseBuffer.length );
+            exchange.send( responseBuffer.buffer, 0, responseBuffer.length );
         else
             exchange.endExchange();
     }
 
-    static class HttpResponse {
+    public static class HttpResponse {
         public int status = StatusCodes.NO_CONTENT;
         public String contentType;
         public final HashMap<String, String> headers = new HashMap<>();

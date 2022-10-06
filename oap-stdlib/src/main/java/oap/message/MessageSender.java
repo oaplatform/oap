@@ -75,6 +75,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
@@ -221,18 +222,11 @@ public class MessageSender implements Closeable, AutoCloseable {
 
         int count = 0;
         while( count < 100 && !messages.inProgress.isEmpty() ) {
-            try {
-                Thread.sleep( 100 );
-                count++;
-            } catch( InterruptedException e ) {
-                Thread.currentThread().interrupt();
-                break;
-            }
+            LockSupport.parkNanos( 100_000_000 );
+            count++;
         }
-
         httpClient.dispatcher().executorService().shutdown();
         httpClient.connectionPool().evictAll();
-
         saveMessagesToDirectory( directory );
     }
 

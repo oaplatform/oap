@@ -34,7 +34,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public final int requestSize;
     public final int responseSize;
     public final int threads;
-    private final RequestWorkflow<WorkflowState> workflow;
+    private RequestWorkflow<WorkflowState> workflow;
     private final ErrorResponse<WorkflowState> errorResponse;
     private final ThreadPoolExecutor pool;
     private final SynchronousQueue<PnioExchange<WorkflowState>> queue;
@@ -120,7 +120,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
                 httpResponse.headers.clear();
                 httpResponse.status = Http.StatusCode.BAD_GATEWAY;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                pnioExchange.responseBuffer.set( Throwables.getStackTraceAsString( e ) );
+                pnioExchange.responseBuffer.setAndResize( Throwables.getStackTraceAsString( e ) );
             }
         }
 
@@ -130,6 +130,10 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         }
 
         pnioExchange.send();
+    }
+
+    public void updateWorkflow( RequestWorkflow<WorkflowState> newWorkflow ) {
+        this.workflow = newWorkflow;
     }
 
     @Override

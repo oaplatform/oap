@@ -38,7 +38,7 @@ public class AstText extends Ast {
     @Override
     void render( Render render ) {
         render.ntab()
-            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text ) );
+            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
     }
 
     @Override

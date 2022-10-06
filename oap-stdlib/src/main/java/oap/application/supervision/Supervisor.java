@@ -29,19 +29,18 @@ import oap.util.BiStream;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class Supervisor {
-    private final Map<String, StartableService> supervised = new LinkedHashMap<>();
-    private final Map<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
+    private final LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
+    private final LinkedHashMap<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
 
     private volatile boolean stopped = false;
 
     public synchronized void startSupervised( String name, Object service,
-                                 List<String> preStartWith, List<String> startWith,
-                                 List<String> preStopWith, List<String> stopWith ) {
+                                              List<String> preStartWith, List<String> startWith,
+                                              List<String> preStopWith, List<String> stopWith ) {
         this.supervised.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
@@ -191,7 +190,7 @@ public class Supervisor {
             this.stopped = true;
 
             BiStream.of( this.wrappers )
-                .filter( s -> s._1.equals( serviceName ) )
+                .filter( ( name, service ) -> name.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "[{}] stopping {}...", service.type(), name );
                     KernelHelper.setThreadNameSuffix( name );
@@ -206,7 +205,7 @@ public class Supervisor {
             this.wrappers.clear();
 
             BiStream.of( this.supervised )
-                .filter( s -> s._1.equals( serviceName ) )
+                .filter( ( name, service ) -> name.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
                     KernelHelper.setThreadNameSuffix( name );

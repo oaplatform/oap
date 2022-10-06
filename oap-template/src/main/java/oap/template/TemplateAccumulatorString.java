@@ -24,9 +24,9 @@
 
 package oap.template;
 
-import java.util.Collection;
+import org.apache.commons.lang3.StringUtils;
 
-import static java.util.stream.Collectors.joining;
+import java.util.Collection;
 
 public class TemplateAccumulatorString implements TemplateAccumulator<String, StringBuilder, TemplateAccumulatorString> {
     protected final StringBuilder sb;
@@ -99,8 +99,28 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
 
     @Override
     public void accept( Collection<?> list ) {
-        if( list != null )
-            sb.append( list.stream().map( String::valueOf ).collect( joining( ",", "[", "]" ) ) );
+        if( list == null ) {
+            sb.append( "[]" );
+            return;
+        }
+
+        sb.append( '[' );
+        boolean first = true;
+        for( var item : list ) {
+            if( !first ) {
+                sb.append( ',' );
+            } else {
+                first = false;
+            }
+            if( item instanceof Collection ) {
+                accept( ( Collection<?> ) item );
+            } else if( item instanceof String ) {
+                sb.append( '\'' ).append( StringUtils.replace( ( String ) item, "'", "\\'" ) ).append( '\'' );
+            } else {
+                accept( item );
+            }
+        }
+        sb.append( ']' );
     }
 
     @Override

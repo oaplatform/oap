@@ -26,13 +26,17 @@ import java.util.Map;
 }
 
 expression[TemplateType parentType] returns [MaxMin ast]
-    locals [String comment = null; ]
-    : (BLOCK_COMMENT { $comment = $BLOCK_COMMENT.text; })? exps[parentType] { $ast = $exps.ast; } orExps[parentType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
+    locals [String comment = null, String castType = null; ]
+    : (BLOCK_COMMENT { $comment = $BLOCK_COMMENT.text; })? (CAST_TYPE { $castType = getCastType($CAST_TYPE.text); })? exps[parentType, $castType] { $ast = $exps.ast; } orExps[parentType, $castType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
         if( $function.ctx != null ) {
           $ast.addToBottomChildrenAndSet( $function.func );
         }
 
-        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null, null ) );
+        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null, null ).top );
+
+        java.util.function.Function<Ast, AstText> printDefautlValueAst = ast -> new AstText($defaultValue.ctx != null ? $defaultValue.v : null );
+        $ast.update( ast -> ast instanceof AstNullable, ast -> ((AstNullable)ast).elseAst = printDefautlValueAst.apply( ast ) );
+        $ast.update( ast -> ast instanceof AstOptional, ast -> ((AstOptional)ast).elseAst = printDefautlValueAst.apply( ast ) );
 
         if( $comment != null ) {
             $ast.setTop( new AstComment( parentType, $comment ) );
@@ -46,12 +50,12 @@ defaultValue returns [String v]
     ;
 
 defaultValueType returns [String v]
-    : SSTRING { $v = sStringToDString( $SSTRING.text ); }
-    | DSTRING { $v = $DSTRING.text; }
+    : SSTRING { $v = sdStringToString( $SSTRING.text ); }
+    | DSTRING { $v = sdStringToString($DSTRING.text); }
     | longRule { $v = $longRule.text; }
     | FLOAT { $v = $FLOAT.text; }
     | BOOLEAN { $v = $BOOLEAN.text; }
-    | LBRACK RBRACK { $v = "java.util.List.of()"; }
+    | LBRACK RBRACK { $v = "[]"; }
     ; 
 
 longRule
@@ -75,9 +79,9 @@ functionArg returns [String ret]
     | DSTRING { $ret = $DSTRING.text; }
     ;
 
-orExps [TemplateType parentType, MaxMin firstAst] returns [MaxMin ast]
+orExps [TemplateType parentType, String castType, MaxMin firstAst] returns [MaxMin ast]
     locals [ArrayList<MaxMin> list = new ArrayList<>();]
-    : (PIPE exps[parentType] { $list.add(firstAst); $list.add($exps.ast); } ( PIPE exps[parentType] {$list.add($exps.ast);})*) {
+    : (PIPE exps[parentType, castType] { $list.add(firstAst); $list.add($exps.ast); } ( PIPE exps[parentType, castType] {$list.add($exps.ast);})*) {
         if( $list.isEmpty() ) $ast = firstAst;
         else {
             var or = new AstOr(parentType);
@@ -91,23 +95,46 @@ orExps [TemplateType parentType, MaxMin firstAst] returns [MaxMin ast]
     | { $ast = firstAst; }
     ;
 
-exps [TemplateType parentType] returns [MaxMin ast]
-    : (exp[parentType] { $ast = $exp.ast; }  
-        (DOT exp[$ast.bottom.type] {$ast.addToBottomChildrenAndSet($exp.ast);})*)
-        DOT? concatenation[$ast.bottom.type]? { if( $concatenation.ctx != null ) $ast.addToBottomChildrenAndSet( $concatenation.ast ); }
-        math[$ast.bottom.type]? { if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast ); }
-    | concatenation[parentType] { $ast = new MaxMin( $concatenation.ast ); }
+exps [TemplateType parentType, String castType] returns [MaxMin ast]
+    : exp[parentType, castType]  { $ast = $exp.ast; }
+      math[$ast.bottom.type]? {
+        if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
+      }
+    | exp[parentType, null]  { $ast = $exp.ast; }
+      DOT? concatenation[$ast.bottom.type, castType] {
+        $ast.addToBottomChildrenAndSet( $concatenation.ast );
+      }
+    | exp[parentType, null] { $ast = $exp.ast; }
+      (DOT exp[$ast.bottom.type, null] {
+        $ast.addToBottomChildrenAndSet($exp.ast);
+      })*
+      DOT exp[$ast.bottom.type, castType] { $ast.addToBottomChildrenAndSet($exp.ast); }
+      math[$ast.bottom.type]? {
+        if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
+      }
+    | exp[parentType, null] { $ast = $exp.ast; }
+      (DOT exp[$ast.bottom.type, null] {
+        $ast.addToBottomChildrenAndSet($exp.ast);
+      })*
+      DOT exp[$ast.bottom.type, null] { $ast.addToBottomChildrenAndSet($exp.ast); }
+      DOT? concatenation[$ast.bottom.type, castType] {
+        $ast.addToBottomChildrenAndSet( $concatenation.ast );
+      }
+      math[$ast.bottom.type]? {
+        if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
+      }
+    | concatenation[parentType, castType] { $ast = new MaxMin( $concatenation.ast ); }
     ;
 
-exp[TemplateType parentType] returns [MaxMin ast]
-    : (CAST_TYPE? ID LPAREN functionArgs? RPAREN) { $ast = getAst($parentType, $ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of(), $CAST_TYPE != null ? getCastType($CAST_TYPE.text) : null ); }
-    | CAST_TYPE? ID { $ast = getAst($parentType, $ID.text, false, $CAST_TYPE != null ? getCastType($CAST_TYPE.text) : null ); }
+exp[TemplateType parentType, String castType] returns [MaxMin ast]
+    : (ID LPAREN functionArgs? RPAREN) { $ast = getAst($parentType, $ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of(), castType ); }
+    | ID { $ast = getAst($parentType, $ID.text, false, castType ); }
     ;
 
-concatenation[TemplateType parentType] returns [AstConcatenation ast]
-    : CAST_TYPE? LBRACE citems[parentType] {
+concatenation[TemplateType parentType, String castType] returns [AstConcatenation ast]
+    : LBRACE citems[parentType] {
         try {
-        com.google.common.base.Preconditions.checkArgument(  $CAST_TYPE == null || oap.template.LogConfiguration.FieldType.parse( $CAST_TYPE.text.substring(1, $CAST_TYPE.text.length() - 1) ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
+        com.google.common.base.Preconditions.checkArgument(  $castType == null || oap.template.LogConfiguration.FieldType.parse( $castType ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
         $ast = new AstConcatenation(parentType, $citems.list);
         } catch ( java.lang.ClassNotFoundException e) {
           throw new TemplateException( e.getMessage(), e );

@@ -26,7 +26,7 @@ public abstract class PnioRequestHandler<State> {
 
     public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException;
 
-    enum Type {
+    public enum Type {
         IO, COMPUTE
     }
 }

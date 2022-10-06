@@ -22,27 +22,52 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.http.pnio;
 
-import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.joda.time.DateTimeZone.UTC;
+import java.io.IOException;
+import java.util.List;
 
-public class TemplateMacrosTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RequestWorkflowTest {
     @Test
-    public void testUrlencode() {
-        assertThat( TemplateMacros.urlencode( "12 ?3", 2 ) ).isEqualTo( "12%2B%253F3" );
-        assertThat( TemplateMacros.urlencode( null, 1 ) ).isNull();
-        assertThat( TemplateMacros.urlencode( null ) ).isNull();
+    public void testSkip() {
+        var workflow = RequestWorkflow
+            .init( new TestPnioRequestHandler( "1" ) )
+            .next( new TestPnioRequestHandler( "2" ) )
+            .next( new TestPnioRequestHandler( "3" ) )
+            .next( new TestPnioRequestHandler( "4" ) )
+            .build();
+
+        assertThat( workflow.map( PnioRequestHandler::toString ) ).isEqualTo( List.of( "1", "2", "3", "4" ) );
+        assertThat( workflow
+            .skipBefore( h -> ( ( TestPnioRequestHandler ) h ).id.equals( "2" ) )
+            .map( PnioRequestHandler::toString ) ).isEqualTo( List.of( "2", "3", "4" ) );
     }
 
     @Test
-    public void testFormat() {
-        assertThat( TemplateMacros.format( new DateTime( 2022, 9, 20, 17, 1, 2, UTC ), "DATE" ) )
-            .isEqualTo( "2022-09-20" );
-        assertThat( TemplateMacros.format( new DateTime( 2022, 9, 20, 17, 1, 2, UTC ), "YYYY-dd" ) )
-            .isEqualTo( "2022-20" );
+    private static class TestPnioRequestHandler extends PnioRequestHandler<Object> {
+        public final String id;
+
+        private TestPnioRequestHandler( String id ) {
+            this.id = id;
+        }
+
+        @Override
+        public Type getType() {
+            return Type.COMPUTE;
+        }
+
+        @Override
+        public void handle( PnioExchange<Object> pnioExchange, Object o ) throws InterruptedException, IOException {
+
+        }
+
+        @Override
+        public String toString() {
+            return id;
+        }
     }
 }

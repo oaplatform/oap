@@ -121,6 +121,8 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
             clientHashCacheSize, context );
 
+        log.info( "custom status = {}", MessageProtocol.printMapping() );
+
         hashes = new MessageHashStorage( clientHashCacheSize );
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
 

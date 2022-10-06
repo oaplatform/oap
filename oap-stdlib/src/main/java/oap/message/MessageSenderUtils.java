@@ -27,28 +27,27 @@ package oap.message;
 import oap.util.Throwables;
 
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.LockSupport;
 
 public class MessageSenderUtils {
     public static void waitSendAll( MessageSender messageSender, long timeout, long retryTimeout ) {
         try {
-            long now = System.currentTimeMillis();
+            long retryNanos = retryTimeout * 1_000_000;
+            long now = System.nanoTime();
+            long timeoutNanos = timeout * 1_000_000;
 
             while( messageSender.getReadyMessages() != 0
                 || messageSender.getRetryMessages() != 0
                 || messageSender.getInProgressMessages() != 0 ) {
-                if( System.currentTimeMillis() > now + timeout )
-                    throw new TimeoutException();
+                if( System.nanoTime() > now + timeoutNanos )
+                    throw new TimeoutException( "Timeout " + timeout + " ms reached" );
 
                 messageSender.syncMemory();
 
-                Thread.sleep( retryTimeout );
+                LockSupport.parkNanos( retryNanos );
             }
-        } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-            throw Throwables.propagate( e );
         } catch( TimeoutException e ) {
             throw Throwables.propagate( e );
         }
-
     }
 }

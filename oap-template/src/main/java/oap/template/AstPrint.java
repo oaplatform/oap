@@ -41,10 +41,10 @@ public class AstPrint extends Ast {
         var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
         if( checkNull ) r = r
             .append( "if( %s == null ) {", r.field )
-            .tabInc().ntab().append( "%s.accept( %s );", r.templateAccumulatorName, defaultValue )
+            .tabInc().ntab().append( "%s.acceptText( \"%s\" );", r.templateAccumulatorName, defaultValue )
             .tabDec().ntab().append( "} else {" ).tabInc();
 
-        r.ntab().append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
+        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
 
         if( checkNull ) r.tabDec().ntab().append( "}" );
     }

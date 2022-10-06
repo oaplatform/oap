@@ -143,6 +143,14 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testListFieldDefaultValue() {
+        var c = new TestTemplateClass();
+        c.list = null;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list??[]}", STRING, null ).render( c ) )
+            .isEqualTo( "[]" );
+    }
+
+    @Test
     public void testChain() {
         var c1 = new TestTemplateClass();
         var c2 = new TestTemplateClass();
@@ -200,19 +208,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testCompact() {
-        var c = new TestTemplateClass();
-        var cp = new TestTemplateClass();
-        c.fieldOpt = Optional.of( "o" );
-        c.intField = 10;
-
-        cp.childOpt = Optional.of( c );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING,
-            CompactAstPostProcessor.INSTANCE ).render( cp ) )
-            .isEqualTo( "10-o" );
-    }
-
-    @Test
     public void testNullable() {
         var c = new TestTemplateClass();
 
@@ -255,8 +250,12 @@ public class TemplateEngineTest extends Fixtures {
     @Test
     public void testDefaultBoolean() {
         var c = new TestTemplateClass();
-        c.booleanField = true;
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${booleanField??false}", STRING, null ).render( c ) )
+        c.childNullable = null;
+        c.childOpt = Optional.empty();
+
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childNullable.booleanObjectField??true}", STRING, null ).render( c ) )
+            .isEqualTo( "true" );
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childOpt.booleanObjectField??true}", STRING, null ).render( c ) )
             .isEqualTo( "true" );
     }
 
@@ -385,28 +384,6 @@ public class TemplateEngineTest extends Fixtures {
 
 
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
-    }
-
-    @Test
-    public void testTypes() {
-        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
-        templateClass.booleanField = true;
-        templateClass.booleanObjectField = true;
-        templateClass.intField = 1;
-        templateClass.intObjectField = 2;
-
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "booleanField:${<java.lang.Boolean>booleanField},booleanObjectField:${<java.lang.Boolean>booleanObjectField},intField:${<java.lang.Integer>intField},intObjectField:${<java.lang.Integer>intObjectField}",
-            templateAccumulator, ERROR, null ).render( templateClass );
-
-        assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
-
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "booleanField:${<java.lang.Integer>booleanField}",
-            templateAccumulator, ERROR, null ).render( templateClass ) )
-            .isInstanceOf( TemplateException.class )
-            .hasCauseInstanceOf( ClassCastException.class );
     }
 
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {

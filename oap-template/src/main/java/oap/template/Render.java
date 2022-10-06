@@ -27,8 +27,6 @@ package oap.template;
 import lombok.ToString;
 import org.apache.commons.text.StringEscapeUtils;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ToString
@@ -124,11 +122,6 @@ class Render {
 
     public String out() {
         return sb.toString();
-    }
-
-    public Class<?> getClass( Type type ) {
-        if( type instanceof ParameterizedType ) return getClass( ( ( ParameterizedType ) type ).getRawType() );
-        return ( Class<?> ) type;
     }
 
     public String nameEscaped() {
