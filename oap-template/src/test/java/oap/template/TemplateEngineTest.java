@@ -143,6 +143,22 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testListString() {
+        var c = new TestTemplateClass();
+        c.listString = List.of( "1", "'", "\\" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listString}", STRING, null ).render( c ) )
+            .isEqualTo( "['1','\\'','\\\\']" );
+    }
+
+    @Test
+    public void testListEnum() {
+        var c = new TestTemplateClass();
+        c.listEnum = List.of( TestTemplateEnum.VAL2, TestTemplateEnum.VAL1 );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listEnum}", STRING, null ).render( c ) )
+            .isEqualTo( "['VAL2','VAL1']" );
+    }
+
+    @Test
     public void testListFieldDefaultValue() {
         var c = new TestTemplateClass();
         c.list = null;

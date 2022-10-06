@@ -115,7 +115,9 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
             if( item instanceof Collection ) {
                 accept( ( Collection<?> ) item );
             } else if( item instanceof String ) {
-                sb.append( '\'' ).append( StringUtils.replace( ( String ) item, "'", "\\'" ) ).append( '\'' );
+                acceptStringWithSingleQuote( ( String ) item );
+            } else if( item instanceof Enum ) {
+                acceptStringWithSingleQuote( ( ( Enum<?> ) item ).name() );
             } else {
                 accept( item );
             }
@@ -156,5 +158,15 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     @Override
     public String get() {
         return sb.toString();
+    }
+
+    public void acceptStringWithSingleQuote( String item ) {
+        String escapeItem = item;
+        escapeItem = StringUtils.replace( escapeItem, "\\", "\\\\" );
+        escapeItem = StringUtils.replace( escapeItem, "'", "\\'" );
+
+        sb.append( '\'' )
+            .append( escapeItem )
+            .append( '\'' );
     }
 }
