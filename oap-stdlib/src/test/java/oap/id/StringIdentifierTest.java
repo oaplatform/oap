@@ -27,6 +27,7 @@ package oap.id;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.function.Functions;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -54,6 +55,28 @@ public class StringIdentifierTest {
     }
 
     @Test
+    public void emptySuggestions() {
+        var identifier = Identifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .options( COMPACT )
+            .build();
+        var a = new Bean( "aaaa" );
+        assertThat( identifier.getOrInit( a, "U"::equals ) ).isEqualTo( "U0" );
+        assertThat( a.id ).isEqualTo( "U0" );
+    }
+
+    @Test
+    public void tooShort() {
+        var identifier = Identifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
+            .suggestion( o -> o.s )
+            .options( COMPACT )
+            .build();
+        var a = new Bean( "X" );
+        assertThat( identifier.getOrInit( a, id -> Integer.parseInt( id, 36 ) < 36 ) ).isEqualTo( "X0" );
+        assertThat( a.id ).isEqualTo( "X0" );
+    }
+
+    @Test
     public void forIdWithSetter() {
         var identifier = Identifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
@@ -78,25 +101,31 @@ public class StringIdentifierTest {
         assertThat( a.id ).isEqualTo( "SMTXTXX" );
 
         assertThat( identifier.getOrInit( b, Functions.empty.reject() ) ).isEqualTo( "NTHRTXT" );
-
     }
 
-    @Test
-    public void conflictResolution() {
+    @DataProvider
+    public Object[][] conflicts() {
+        return new Object[][] {
+            { new Identifier.Option[] { COMPACT, FILL }, new String[] { "SMTXTXX", "SMTXTX0", "SMTXTX1", "SMTXTX2", "SMTXTX3", "SMTXTX4", "SMTXTX5" } },
+            { new Identifier.Option[] { COMPACT }, new String[] { "SMTXT", "SMTXT0", "SMTXT1", "SMTXT2", "SMTXT3", "SMTXT4", "SMTXT5" } }
+        };
+    }
+
+    @Test( dataProvider = "conflicts" )
+    public void conflictResolution( Identifier.Option[] options, String[] results ) {
         var identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
-            .options( COMPACT, FILL )
+            .options( options )
             .build();
 
-        String[] results = { "SMTXTXX", "SMTXTX0", "SMTXTX1", "SMTXTX2", "SMTXTX3", "SMTXTX4", "SMTXTX5" };
         List<String> list = new ArrayList<>();
         for( int i = 0; i < 7; i++ ) {
             var value = identifier.getOrInit( new Bean( "some text" ), list::contains );
             list.add( value );
             assertThat( value ).isEqualTo( results[i] );
         }
-
+        assertThat( list ).containsOnly( results );
     }
 
     @ToString

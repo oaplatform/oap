@@ -149,22 +149,22 @@ public class StringsTest {
 
     @Test
     public static void toUserFriendlyId() {
-        assertThat( Identifier.generate( "some text", 7, reject(), COMPACT, FILL ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), 10000, COMPACT, FILL ) )
             .isEqualTo( "SMTXTXX" );
-        assertThat( Identifier.generate( "another text", 7, reject(), COMPACT, FILL ) )
+        assertThat( Identifier.generate( "another text", 7, reject(), 10000, COMPACT, FILL ) )
             .isEqualTo( "NTHRTXT" );
 
-        assertThat( Identifier.generate( "some text", 7, reject(), COMPACT ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), 10000, COMPACT ) )
             .isEqualTo( "SMTXT" );
 
-        assertThat( Identifier.generate( "some text", 7, reject() ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), 10000 ) )
             .isEqualTo( "SOMETEX" );
-        assertThat( Identifier.generate( "another text", 7, reject() ) )
+        assertThat( Identifier.generate( "another text", 7, reject(), 10000 ) )
             .isEqualTo( "ANOTHER" );
 
         Set<String> items = Sets.empty();
         for( int i = 0; i < 39; i++ )
-            items.add( Identifier.generate( "some text", 7, items::contains, COMPACT, FILL ) );
+            items.add( Identifier.generate( "some text", 7, items::contains, 10000, COMPACT, FILL ) );
 
         assertThat( items ).containsExactly(
             "SMTXTXX",
