@@ -25,6 +25,7 @@
 package oap.application;
 
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import oap.application.module.Module;
 import oap.application.module.Service;
 import oap.util.Lists;
@@ -33,7 +34,7 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
-
+@ToString
 class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
@@ -88,6 +89,7 @@ class ModuleItem {
         return location;
     }
 
+    @ToString
     @EqualsAndHashCode
     static class ModuleReference {
         final ModuleItem moduleItem;
@@ -105,6 +107,7 @@ class ModuleItem {
             return "reference:" + moduleItem.getName();
         }
 
+        @ToString
         @EqualsAndHashCode
         static class ServiceLink {
             final ServiceItem from;
@@ -117,6 +120,7 @@ class ModuleItem {
         }
     }
 
+    @ToString
     static class ServiceItem {
         public final String serviceName;
         public final ModuleItem moduleItem;

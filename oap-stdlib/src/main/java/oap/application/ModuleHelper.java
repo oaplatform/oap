@@ -58,7 +58,9 @@ class ModuleHelper {
     }
 
     public static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
-                                       LinkedHashSet<String> profiles, LinkedHashSet<String> main, Kernel kernel ) throws ApplicationException {
+                                       LinkedHashSet<String> profiles,
+                                       LinkedHashSet<String> main,
+                                       Kernel kernel ) throws ApplicationException {
         var map = init( modules, profiles );
 
         loadOnlyMainModuleAndDependsOn( map, main, profiles );
@@ -129,7 +131,8 @@ class ModuleHelper {
                 enabled = false;
             }
 
-            map.put( module.module.name, new ModuleItem( module.module, module.location, enabled, new LinkedHashMap<>() ) );
+            ModuleItem moduleItem = new ModuleItem( module.module, module.location, enabled, new LinkedHashMap<>() );
+            map.put( module.module.name, moduleItem );
         }
 
         return map;
@@ -162,34 +165,33 @@ class ModuleHelper {
             if( !moduleItem.isEnabled() ) continue;
 
             moduleItem.services.forEach( ( serviceName, serviceItem ) -> {
-                if( serviceItem.enabled ) {
-                    for( var dService : serviceItem.service.dependsOn ) {
+                if( !serviceItem.enabled ) return;
 
-                        String dModuleName;
-                        String dServiceName;
-                        if( ServiceKernelCommand.INSTANCE.matches( dService ) ) {
-                            var ref = ServiceKernelCommand.INSTANCE.reference( ( String ) dService, moduleItem );
-                            dModuleName = ref.module;
-                            dServiceName = ref.service;
-                        } else if( dService instanceof String ) {
-                            dModuleName = "this";
-                            dServiceName = ( String ) dService;
-                        } else throw new ApplicationException( "Unknown deps format " + dService );
+                for( var dService : serviceItem.service.dependsOn ) {
+                    String dModuleName;
+                    String dServiceName;
+                    if( ServiceKernelCommand.INSTANCE.matches( dService ) ) {
+                        var ref = ServiceKernelCommand.INSTANCE.reference( ( String ) dService, moduleItem );
+                        dModuleName = ref.module;
+                        dServiceName = ref.service;
+                    } else if( dService instanceof String ) {
+                        dModuleName = "this";
+                        dServiceName = ( String ) dService;
+                    } else throw new ApplicationException( "Unknown deps format " + dService );
 
-                        var moduleService = findService( map, moduleItem.getName(), dModuleName, dServiceName );
-                        if( moduleService == null ) {
-                            throw new ApplicationException( "[" + dModuleName + ":" + dServiceName + "] 'this:" + dService + "' not found" );
-                        }
-
-                        serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
+                    var moduleService = findService( map, moduleItem.getName(), dModuleName, dServiceName );
+                    if( moduleService == null ) {
+                        throw new ApplicationException( "[" + dModuleName + ":" + dServiceName + "] 'this:" + dService + "' not found" );
                     }
 
-                    for( var link : serviceItem.service.link.values() )
-                        initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem, true );
+                    serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
+                }
 
-                    for( var value : serviceItem.service.parameters.values() ) {
-                        initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem, false );
-                    }
+                for( var link : serviceItem.service.link.values() )
+                    initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem, true );
+
+                for( var value : serviceItem.service.parameters.values() ) {
+                    initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem, false );
                 }
             } );
         }
@@ -223,6 +225,7 @@ class ModuleHelper {
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main, LinkedHashSet<String> profiles ) {
         var modules = map.clone();
+        log.info( "loading main modules: {}", main );
         loadOnlyMainModuleAndDependsOn( modules, main, profiles, new LinkedHashSet<>() );
 
         for( var moduleItem : modules.values() ) {
@@ -231,12 +234,15 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules, Set<String> main, LinkedHashSet<String> profiles, LinkedHashSet<String> loaded ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules,
+                                                        LinkedHashSet<String> main,
+                                                        LinkedHashSet<String> profiles,
+                                                        LinkedHashSet<String> loaded ) {
         for( var module : main ) {
             var moduleItem = modules.get( module );
 
             if( moduleItem == null && !loaded.contains( module ) )
-                throw new ApplicationException( "main.boot: unknown module name '" + module + "'" );
+                throw new ApplicationException( "main.boot: unknown module name '" + module + "', already loaded: " + loaded );
 
             if( moduleItem != null ) {
                 moduleItem.setLoad();
@@ -246,8 +252,12 @@ class ModuleHelper {
 
                 var dependsOn = new LinkedHashSet<String>();
                 for( var d : moduleItem.module.dependsOn ) {
-                    if( KernelHelper.profileEnabled( d.profiles, profiles ) )
+                    if( KernelHelper.profileEnabled( d.profiles, profiles ) ) {
+                        log.trace( "dependant module {} enabled for module {}", d.name, module );
                         dependsOn.add( d.name );
+                    } else {
+                        log.trace( "dependant module {} disabled for module {}", d.name, module );
+                    }
                 }
 
                 loadOnlyMainModuleAndDependsOn( modules, dependsOn, profiles, loaded );
@@ -268,8 +278,8 @@ class ModuleHelper {
         }
 
         if( !invalidRemoting.isEmpty() ) {
-            log.error( "uri == null, services " + invalidRemoting );
-            throw new ApplicationException( "remoting: uri == null, services " + invalidRemoting );
+            log.error( "url == null, services " + invalidRemoting );
+            throw new ApplicationException( "remoting: url == null, services " + invalidRemoting );
         }
     }
 
@@ -457,12 +467,16 @@ class ModuleHelper {
     private static void initModuleDeps( ModuleItemTree map, LinkedHashSet<String> profiles ) {
         for( var moduleItem : map.values() ) {
             for( var d : moduleItem.module.dependsOn ) {
-                ModuleItem dModule;
-                if( KernelHelper.profileEnabled( d.profiles, profiles ) && ( dModule = map.findModule( moduleItem, d.name ) ).isEnabled() ) {
-                    moduleItem.addDependsOn( new ModuleReference( dModule ) );
-                } else {
-                    log.trace( "[module#{}]: skip dependsOn {}", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
+                if ( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
+                    log.trace( "[module#{}]: skip dependsOn {}, module profiles are not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
+                    continue;
                 }
+                ModuleItem dModule  = map.findModule( moduleItem, d.name );
+                if( !dModule.isEnabled() ) {
+                    log.trace( "[module#{}]: skip dependsOn {}, module is not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
+                    continue;
+                }
+                moduleItem.addDependsOn( new ModuleReference( dModule ) );
             }
         }
     }
