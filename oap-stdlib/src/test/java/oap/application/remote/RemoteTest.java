@@ -120,7 +120,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "oap-module-with-invalid-remoting" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "remoting: uri == null, services [oap-module-with-invalid-remoting:remote-client]" );
+                .hasMessage( "remoting: url == null, services [oap-module-with-invalid-remoting:remote-client]" );
         }
     }
 
