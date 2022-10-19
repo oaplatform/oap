@@ -54,4 +54,12 @@ public final class Hash {
             throw new RuntimeException( e );
         }
     }
+
+    public static String ak( String value ) {
+        return AKHash.hash( value );
+    }
+
+    public static String ak( String value, int length ) {
+        return AKHash.hash( value, length );
+    }
 }
