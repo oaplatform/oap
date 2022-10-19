@@ -56,6 +56,6 @@ public class AKHashTest {
 //        BiStream.of( collisions.asMap() )
 //            .filter( ( h, v ) -> v.size() > 1 )
 //            .forEach( ( h, v ) -> System.out.printf( "%s -> %s\n", h, v ) );
-        System.out.format( "values: %s -> hashes: %s, collision rate: %2.0f%%\n", count, collisions.asMap().size(), 100d * collisions.asMap().size() / count );
+        System.out.format( "values: %s -> hashes: %s, collision rate: %2.0f%%\n", count, collisions.asMap().size(), 100 - 100d * collisions.asMap().size() / count );
     }
 }
