@@ -82,7 +82,7 @@
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
         <oap.deps.disruptor.version>1.2.19</oap.deps.disruptor.version>
 
-        <oap.deps.maven.plexus-utils.version>3.4.1</oap.deps.maven.plexus-utils.version>
+        <oap.deps.maven.plexus-utils.version>3.5.0</oap.deps.maven.plexus-utils.version>
         <oap.deps.maven.plugin-build-helper.version>1.10</oap.deps.maven.plugin-build-helper.version>
         <oap.deps.maven.plugin-api.version>3.8.1</oap.deps.maven.plugin-api.version>
         <oap.deps.maven.version>3.0-alpha-2</oap.deps.maven.version>
