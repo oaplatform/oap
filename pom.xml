@@ -80,7 +80,7 @@
         <oap.deps.fst.version>3.0.3-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
-        <oap.deps.disruptor.version>1.2.19</oap.deps.disruptor.version>
+        <oap.deps.disruptor.version>1.2.21</oap.deps.disruptor.version>
 
         <oap.deps.maven.plexus-utils.version>3.4.1</oap.deps.maven.plexus-utils.version>
         <oap.deps.maven.plugin-build-helper.version>1.10</oap.deps.maven.plugin-build-helper.version>
