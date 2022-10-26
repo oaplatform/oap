@@ -29,6 +29,7 @@ import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import lombok.ToString;
 import oap.http.ContentTypes;
 import oap.json.Binder;
 import oap.util.HashMaps;
@@ -55,6 +56,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
+@ToString
 public class HttpServerExchange {
     private static final Map<String, Function<Object, String>> producers = HashMaps.of(
         TEXT_PLAIN.getMimeType(), String::valueOf,

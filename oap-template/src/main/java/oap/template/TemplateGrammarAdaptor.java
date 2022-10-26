@@ -164,6 +164,7 @@ abstract class TemplateGrammarAdaptor extends Parser {
         return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Nullable.class ) || method.isAnnotationPresent( Template.Nullable.class ) ), method, args );
     }
 
+    @ToString
     static class MaxMin {
         public Ast top;
         public Ast bottom;

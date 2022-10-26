@@ -66,7 +66,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -254,7 +253,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                 var msgPath = parentDirectory.resolve( message.getHexMd5() + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
-                log.error( "[{}] type: {}, md5: {}, data: {}",
+                log.error( "Could not save message. [{}] type: {}, md5: {}, data: {}",
                     name, message.messageType, message.getHexMd5(), message.getHexData(), e );
             }
         }
@@ -301,7 +300,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                 }
                 return onOkRespone( messageInfo, response, now );
 
-            } catch( UnknownHostException e ) {
+            } catch( IOException e ) {
                 processException( messageInfo, now, message, e, true );
 
                 ioExceptionStartRetryTimeout = now;
@@ -396,7 +395,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
-        log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
+        log.trace( "[{}] sync (ready: {}, retry: {}, inprogress: {}) ...",
             name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
@@ -437,7 +436,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     private boolean isGlobalIoRetryTimeout( long now ) {
-        return globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
+        return globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
     }
 
     private long currentPeriod( long time ) {
