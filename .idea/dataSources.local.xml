@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="MongoDB on @localhost" uuid="349268f1-05fa-4eb6-b55c-6560a1d95ee4">
+      <database-info product="Mongo DB" version="" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.14" dbms="UNKNOWN" exact-version="0" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <secret-storage>master_key</secret-storage>
+      <schema-mapping />
+    </data-source>
+    <data-source name="DynamoDB on @localhost docker" uuid="07191c78-05c8-4a2c-b5bd-afe22d838779">
+      <database-info product="DynamoDB" version="00.00.0000 API Version 2012-08-10" jdbc-version="4.2" driver-name="DynamoDBJDBC" driver-version="1.1.3.1003" dbms="UNKNOWN" exact-version="0.0" exact-driver-version="1.1">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <secret-storage>master_key</secret-storage>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="database" negative="1">
+            <node kind="schema" negative="1" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+  </component>
+</project>

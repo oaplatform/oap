@@ -36,11 +36,11 @@
     </repositories>
 
     <properties>
-        <oap.project.version>17.10.36.1</oap.project.version>
+        <oap.project.version>17.10.36.2</oap.project.version>
 
         <oap.deps.testng.version>7.5</oap.deps.testng.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
-        <oap.deps.mockserver-netty.version>5.11.2</oap.deps.mockserver-netty.version>
+        <oap.deps.mockserver-netty.version>5.14.0</oap.deps.mockserver-netty.version>
 
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
 
@@ -66,7 +66,6 @@
 
         <oap.deps.jackson.version>2.13.3</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
-        <oap.deps.jackson-coreutils.version>2.0</oap.deps.jackson-coreutils.version>
         <oap.deps.typesafe-config.version>1.4.3</oap.deps.typesafe-config.version>
 
         <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>

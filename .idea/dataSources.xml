@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="MongoDB on @localhost" uuid="349268f1-05fa-4eb6-b55c-6560a1d95ee4">
+      <driver-ref>mongo</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost:27017</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="DynamoDB on @localhost docker" uuid="07191c78-05c8-4a2c-b5bd-afe22d838779">
+      <driver-ref>java.sql.Driver</driver-ref>
+      <synchronize>true</synchronize>
+      <configured-by-url>true</configured-by-url>
+      <jdbc-driver>com.simba.dynamodb.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:dynamodb:AccessKey=dummy;DynamoDBLocal=1;LogLevel=3;Host=127.0.0.1;Port=8000;Protocol=HTTP;SecretKey=dummy;Region=us-east-1;</jdbc-url>
+      <driver-properties>
+        <property name="Region" value="us-east-1" />
+      </driver-properties>
+    </data-source>
+  </component>
+</project>
