@@ -42,6 +42,12 @@
             <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.java-json-tools</groupId>
+                    <artifactId>jackson-coreutils</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>
