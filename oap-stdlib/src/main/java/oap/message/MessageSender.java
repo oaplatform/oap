@@ -395,19 +395,15 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
-        log.trace( "[{}] sync (ready: {}, retry: {}, inprogress: {}) ...",
-            name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
-
+        if ( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 ) {
+            log.trace( "[{}] sync (ready: {}, retry: {}, inprogress: {}) ...",
+                    name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
+        }
         long now = DateTimeUtils.currentTimeMillis();
-
         if( isGlobalIoRetryTimeout( now ) ) return;
-
         long period = currentPeriod( now );
-
         Messages.MessageInfo messageInfo = null;
-
         messages.retry();
-
         do {
             now = DateTimeUtils.currentTimeMillis();
 
@@ -449,26 +445,29 @@ public class MessageSender implements Closeable, AutoCloseable {
 
         try( DirectoryStream<Path> clientIdStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             for( var clientIdPath : clientIdStream ) {
-                if( !isValidClientId( clientIdPath ) ) {
+                Pair<Boolean, Long> isValidClientId = getValidClientId( clientIdPath );
+                if( !isValidClientId._1 ) {
                     log.warn( "invalid client id {}", clientIdPath );
                     Files.deleteSafely( clientIdPath );
                     continue;
                 }
 
-                var msgClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
+                var msgClientId = isValidClientId._2;
                 try( DirectoryStream<Path> messageTypeStream = java.nio.file.Files.newDirectoryStream( clientIdPath ) ) {
                     for( var messageTypePath : messageTypeStream ) {
-                        if( !isValidMessageType( messageTypePath ) ) {
+                        Pair<Boolean, Byte> validMessageType = getValidMessageType( messageTypePath );
+                        if( !validMessageType._1 ) {
                             log.warn( "invalid message type {}", messageTypePath );
                             Files.deleteSafely( messageTypePath );
                             continue;
                         }
 
-                        var messageType = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
+                        var messageType = validMessageType._2;
 
                         try( DirectoryStream<Path> messageStream = java.nio.file.Files.newDirectoryStream( messageTypePath ) ) {
                             for( var messagePath : messageStream ) {
-                                if( !isValidMessage( messagePath ) ) {
+                                Pair<Boolean, ByteSequence> validMessage = getValidMessage( messagePath );
+                                if( !validMessage._1 ) {
                                     log.warn( "invalid message {}", messagePath );
                                     Files.deleteSafely( messagePath );
                                     continue;
@@ -480,12 +479,9 @@ public class MessageSender implements Closeable, AutoCloseable {
                                         log.warn( "invalid lock file {}", messagePath );
                                         Files.deleteSafely( messagePath );
                                     }
-
                                     continue;
                                 }
-
-                                String md5Hex = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
-                                var md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
+                                var md5 = validMessage._2;
 
                                 Path lockFile;
 
@@ -493,12 +489,12 @@ public class MessageSender implements Closeable, AutoCloseable {
                                     if( closed ) return this;
 
                                     if( ( lockFile = lock( messagePath, storageLockExpiration ) ) != null ) {
-                                        log.info( "[{}] reading unsent message {}", name, messagePath );
+                                        log.trace( "[{}] reading unsent message {}", name, messagePath );
                                         try {
                                             var data = Files.read( messagePath, ContentReader.ofBytes() );
 
                                             log.info( "[{}] client id {} message type {} md5 {}",
-                                                name, msgClientId, messageTypeToString( messageType ), md5Hex );
+                                                name, msgClientId, messageTypeToString( messageType ), md5.toString() );
 
                                             var message = new Message( clientId, messageType, md5, data );
                                             messages.add( message );
@@ -523,29 +519,35 @@ public class MessageSender implements Closeable, AutoCloseable {
         return this;
     }
 
-    private boolean isValidMessage( Path messagePath ) {
+    private Pair<Boolean, ByteSequence> getValidMessage( Path messagePath ) {
         try {
-            return !java.nio.file.Files.isDirectory( messagePath )
+            String name = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+            ByteSequence byteSequence = ByteSequence.of( Hex.decodeHex( name ) );
+            return Pair.__( !java.nio.file.Files.isDirectory( messagePath )
                 && ( messagePath.toString().endsWith( ".bin" ) || messagePath.toString().endsWith( ".lock" ) )
-                && ByteSequence.of( Hex.decodeHex( FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) ) ) ) != null;
+                && byteSequence != null, byteSequence );
         } catch( DecoderException e ) {
-            return false;
+            return Pair.__( false, null );
         }
     }
 
-    private boolean isValidMessageType( Path messageTypePath ) {
+    private Pair<Boolean, Byte> getValidMessageType( Path messageTypePath ) {
         try {
-            return java.nio.file.Files.isDirectory( messageTypePath ) && ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) ) > 0;
+            boolean isDirectory = java.nio.file.Files.isDirectory( messageTypePath );
+            byte type = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
+            return Pair.__( isDirectory && type > 0, type );
         } catch( NumberFormatException e ) {
-            return false;
+            return Pair.__( false, ( byte ) 0 );
         }
     }
 
-    private boolean isValidClientId( Path clientIdPath ) {
+    private Pair<Boolean, Long> getValidClientId( Path clientIdPath ) {
         try {
-            return java.nio.file.Files.isDirectory( clientIdPath ) && Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 ) > 0;
+            boolean isDirectory = java.nio.file.Files.isDirectory( clientIdPath );
+            long messageClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
+            return Pair.__( isDirectory && messageClientId > 0, messageClientId );
         } catch( NumberFormatException e ) {
-            return false;
+            return Pair.__( false, 0L );
         }
     }
 

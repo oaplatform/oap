@@ -72,9 +72,10 @@ class Messages {
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public void retry() {
         var now = DateTimeUtils.currentTimeMillis();
-
-        log.trace( "ready {} retry {} now {}",
-            getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
+        if ( getReadyMessages() + getRetryMessages() > 0 ) {
+            log.trace( "ready {} retry {} now {}",
+                    getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
+        }
 
         var it = retry.iterator();
         while( it.hasNext() ) {
