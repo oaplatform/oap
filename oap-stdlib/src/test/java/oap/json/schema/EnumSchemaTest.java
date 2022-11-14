@@ -35,7 +35,7 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "'test'" );
         assertOk( schema, "'test1'" );
 
-        assertFailure( schema, "'test2'", "instance does not match any member resolve the enumeration [test, test1]" );
+        assertFailure( schema, "'test2'", "instance of 'test2' does not match any member resolve the enumeration [test, test1]" );
     }
 
     @Test
@@ -56,7 +56,7 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test', 'b':'test'}" );
 
-        assertFailure( schema, "{'a':'test', 'b':'test2'}", "/b: instance does not match any member resolve the enumeration [test]" );
+        assertFailure( schema, "{'a':'test', 'b':'test2'}", "/b: instance of 'test2' does not match any member resolve the enumeration [test]" );
     }
 
     @Test
@@ -77,7 +77,7 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test1', 'b':'test1'}" );
 
-        assertFailure( schema, "{'a':'test', 'b':'test'}", "/b: instance does not match any member resolve the enumeration []" );
+        assertFailure( schema, "{'a':'test', 'b':'test'}", "/b: instance of 'test' does not match any member resolve the enumeration []" );
     }
 
     @Test
@@ -99,7 +99,7 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'a':'test1', 'b':'test1'}" );
         assertOk( schema, "{'a':'test2', 'b':'test2'}" );
 
-        assertFailure( schema, "{'a':'test', 'b':'test'}", "/b: instance does not match any member resolve the enumeration []" );
+        assertFailure( schema, "{'a':'test', 'b':'test'}", "/b: instance of 'test' does not match any member resolve the enumeration []" );
     }
 
     @Test
@@ -120,7 +120,7 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test1', 'test1': 'fv', 'test2': 'fv', 'b':'test1'}" );
 
-        assertFailure( schema, "{'a':'test1', 'test1': 'fv', 'test2': 'unknown', 'b':'test1'}", "/b: instance does not match any member resolve the enumeration []" );
+        assertFailure( schema, "{'a':'test1', 'test1': 'fv', 'test2': 'unknown', 'b':'test1'}", "/b: instance of 'test1' does not match any member resolve the enumeration []" );
     }
 
     @Test
@@ -147,7 +147,7 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':[{'c':'test'}], 'b':'test'}" );
 
-        assertFailure( schema, "{'a':[{'c':'test'}], 'b':'test2'}", "/b: instance does not match any member resolve the enumeration [test]" );
+        assertFailure( schema, "{'a':[{'c':'test'}], 'b':'test2'}", "/b: instance of 'test2' does not match any member resolve the enumeration [test]" );
     }
 
     @Test
@@ -171,6 +171,6 @@ public class EnumSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':['test'], 'b':'test'}" );
 
-        assertFailure( schema, "{'a':['test'], 'b':'test2'}", "/b: instance does not match any member resolve the enumeration [test]" );
+        assertFailure( schema, "{'a':['test'], 'b':'test2'}", "/b: instance of 'test2' does not match any member resolve the enumeration [test]" );
     }
 }
