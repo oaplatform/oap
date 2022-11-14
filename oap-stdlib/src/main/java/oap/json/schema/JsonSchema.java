@@ -161,7 +161,7 @@ public class JsonSchema {
             List<String> errors = jsonSchemaValidator.validate( properties, schema, value );
             schema.common.enumValue
                 .filter( e -> !e.apply( properties.rootJson, properties.path ).contains( value ) )
-                .ifPresent( e -> errors.add( properties.error( "instance does not match any member resolve the enumeration "
+                .ifPresent( e -> errors.add( properties.error( "instance of '" + value + "' does not match any member resolve the enumeration "
                     + e.apply( properties.rootJson, properties.path ) ) ) );
             return errors;
         }

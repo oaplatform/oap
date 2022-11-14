@@ -49,7 +49,7 @@ public abstract class Fixtures {
         if( fixture instanceof AbstractScopeFixture<?> ) fixture = ( F ) ( ( AbstractScopeFixture<?> ) fixture ).withScope( SUITE );
 
         var ret = suiteFixtures.putIfAbsent( fixture.getClass(), fixture );
-        if( ret != null ) throw new IllegalArgumentException( "fixture is already registered" );
+        if( ret != null ) throw new IllegalArgumentException( "Fixture '" + fixture.getClass().getCanonicalName() + "' has already been registered, registered: " + suiteFixtures.keySet() );
         return fixture;
     }
 
@@ -100,6 +100,10 @@ public abstract class Fixtures {
     public void fixAfterMethod() {
         fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
         Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
+    }
+
+    protected Fixture obtainRegistered( Class<? extends Fixture> clazz ) {
+        return suiteFixtures.get( clazz );
     }
 
     public enum Position {

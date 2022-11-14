@@ -94,7 +94,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 .map( Optional::get ).collect( toList() );
             if( children.isEmpty() )
                 return Result.failure( Lists.of(
-                    properties.error( "instance does not match any member resolve the enumeration " + printIds( cd.successValue ) )
+                    properties.error( "instance of '" + parentValue + "'does not match any member resolve the enumeration " + printIds( cd.successValue ) )
                 ) );
 
             cDict.addAll( children );
@@ -120,7 +120,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 if( !successes.isEmpty()
                     && successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
 
-                    errors.addAll( Lists.of( properties.error( "instance does not match any member resolve "
+                    errors.addAll( Lists.of( properties.error( "instance of '" + value + "' does not match any member resolve "
                         + "the enumeration " + printIds( successes ) ) ) );
                 }
             } );
