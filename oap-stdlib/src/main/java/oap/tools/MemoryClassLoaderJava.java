@@ -93,7 +93,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         if( list.isEmpty() ) {
             try {
                 findClass( classname );
-            } catch( UnsupportedClassVersionError e ) {
+            } catch( ClassFormatError e ) {
                 log.trace( e.getMessage(), e );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             } catch( ClassNotFoundException ignored ) {
