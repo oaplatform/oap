@@ -27,15 +27,18 @@ package oap.template;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
@@ -400,6 +403,24 @@ public class TemplateEngineTest extends Fixtures {
 
 
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
+    }
+
+    @Test
+    public void testCacheClassFormatError() throws IOException {
+        FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
+
+        var c = new TestTemplateClass();
+        c.field = "1";
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
+            .render( c ) ).isEqualTo( "12\t12" );
+
+        FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
+
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
+            .render( c ) ).isEqualTo( "12\t12" );
     }
 
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
