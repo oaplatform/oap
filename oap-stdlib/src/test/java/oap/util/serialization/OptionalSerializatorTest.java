@@ -121,7 +121,7 @@ public class OptionalSerializatorTest {
         private void readObject( @NotNull ObjectInputStream ois ) throws IOException, ClassNotFoundException {
             Map<String, String> copy = ( Map ) ois.readObject();
             Map<String, Optional<String>> original = new HashMap<>();
-            copy.forEach( ( key, value ) -> original.put( key, Optional.ofNullable( value ) ) ) ;
+            copy.forEach( ( key, value ) -> original.put( key, Optional.ofNullable( value ) ) );
             this.cons = original;
             readObjectTemplate( ois ); // it's important to read other fields AFTER manually processed
             ois.close();
