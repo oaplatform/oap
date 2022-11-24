@@ -26,16 +26,22 @@ package oap.json.ext;
 
 import lombok.EqualsAndHashCode;
 import oap.util.function.Try;
+import oap.util.serialization.OptionalSerializator;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @EqualsAndHashCode
-public abstract class Ext implements Serializable {
-    private static final ConcurrentHashMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
+public abstract class Ext implements Serializable, OptionalSerializator {
+    private static final ConcurrentMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
 
     @SuppressWarnings( "unchecked" )
     protected static Optional<Constructor<? extends Ext>> init( Class<?> parent, String field, Class<?>... params ) {
@@ -55,5 +61,13 @@ public abstract class Ext implements Serializable {
     @SuppressWarnings( "unchecked" )
     protected static <T extends Ext> T newExt( Class<?> parent, String field, Class<?>[] cparams, Object[] params ) {
         return init( parent, field, cparams ).map( Try.map( c -> ( T ) c.newInstance( params ) ) ).orElse( null );
+    }
+
+    private void writeObject( @NotNull ObjectOutputStream oos ) throws IOException {
+        writeObjectTemplate( oos );
+    }
+
+    private void readObject( @NotNull ObjectInputStream ois ) throws IOException, ClassNotFoundException {
+        readObjectTemplate( ois );
     }
 }

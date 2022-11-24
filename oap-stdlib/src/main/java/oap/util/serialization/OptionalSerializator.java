@@ -40,7 +40,8 @@ import java.util.Optional;
  *  }
  *
  *
- *  You may also implement your own fieldShouldBeSkipped and valueShouldBeSkipped to modify/extend sersialization/desirialization mechanizm.
+ *  You may also implement your own fieldShouldBeSkipped and valueShouldBeSkipped to modify/extend serialization/deserialization mechanism.
+ *  Note: if class contains any collection of Optional - you should implement it ser/deser manually in appropriate methods.
  */
 public interface OptionalSerializator extends Serializable {
 
