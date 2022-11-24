@@ -10,7 +10,6 @@
 package oap.util.serialization;
 
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import org.jetbrains.annotations.NotNull;
@@ -67,7 +66,7 @@ public interface OptionalSerializator extends Serializable {
     }
 
     @SneakyThrows
-    private void writeObject(@NotNull ObjectOutputStream oos, Serializable innerObject ) {
+    private void writeObject( @NotNull ObjectOutputStream oos, Serializable innerObject ) {
         oos.writeObject( innerObject );
     }
 
@@ -86,7 +85,7 @@ public interface OptionalSerializator extends Serializable {
     }
 
     @SneakyThrows
-    private Object readInnerObject(@NotNull ObjectInputStream ois ) {
+    private Object readInnerObject( @NotNull ObjectInputStream ois ) {
         return ois.readObject();
     }
 }

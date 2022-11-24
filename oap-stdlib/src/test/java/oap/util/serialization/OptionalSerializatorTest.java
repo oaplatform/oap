@@ -1,21 +1,11 @@
 package oap.util.serialization;
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.With;
-import oap.concurrent.LongAdder;
-import oap.util.BitSet;
-import oap.util.RandomResult;
-import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
@@ -69,7 +59,7 @@ public class OptionalSerializatorTest {
         protected Optional<String> field4 = Optional.of( "value4" );
         protected String field5 = "value5";
 
-        private void writeObject(ObjectOutputStream oos ) throws IOException {
+        private void writeObject( ObjectOutputStream oos ) throws IOException {
             writeObjectTemplate( oos );
         }
 
@@ -92,7 +82,7 @@ public class OptionalSerializatorTest {
             super();
         }
 
-        private void writeObject(ObjectOutputStream oos ) throws IOException {
+        private void writeObject( ObjectOutputStream oos ) throws IOException {
             writeObjectTemplate( oos );
         }
 
