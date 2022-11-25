@@ -35,13 +35,15 @@ registries:
   maven-oap:
     type: maven-repository
     url: https://mvn.oaplatform.org
+#    username: xenoss
+#    password: ${{secrets.MY_ARTIFACTORY_PASSWORD}}
 
 # Maintain dependencies for Maven
 updates:
   - package-ecosystem: "maven"
     directory: "/" # Location of package manifests
-    registries:
-      -   maven-oap
+#    registries:
+#      -   maven-oap
     open-pull-requests-limit: 5
     schedule:
       interval: "monthly"
