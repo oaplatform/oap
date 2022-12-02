@@ -434,10 +434,6 @@
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
                 </exclusion>
-<!--                <exclusion>-->
-<!--                    <groupId>com.github.java-json-tools</groupId>-->
-<!--                    <artifactId>jackson-coreutils</artifactId>-->
-<!--                </exclusion>-->
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-core</artifactId>
@@ -455,7 +451,12 @@
         <dependency>
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
-            <version>1.5.0-4</version>
+            <version>${oap.deps.luben.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>${oap.deps.jol.version}</version>
         </dependency>
     </dependencies>
 

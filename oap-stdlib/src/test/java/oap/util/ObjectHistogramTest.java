@@ -33,7 +33,7 @@ import org.testng.annotations.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ObjectHistogramTest {
-    private static final int PERIOD_HOUR = 1000 * 60 * 60;
+    private static final long PERIOD_HOUR = 3600_000;
 
     @AfterMethod
     public void afterMethod() {

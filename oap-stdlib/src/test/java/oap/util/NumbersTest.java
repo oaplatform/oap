@@ -39,6 +39,8 @@ public class NumbersTest {
     @Test
     public void parseLongWithUnits() {
         assertThat( Numbers.parseLongWithUnits( "1s" ) ).isEqualTo( 1000L );
+        assertThat( Numbers.parseLongWithUnits( "500ms" ) ).isEqualTo( 500L );
+        assertThat( Numbers.parseLongWithUnits( "1 day" ) ).isEqualTo( 24 * 3_600_000L );
         assertThat( Numbers.parseLongWithUnits( "30 days" ) ).isEqualTo( 2592000000L );
         assertThatExceptionOfType( NumberFormatException.class )
             .isThrownBy( () -> Numbers.parseLongWithUnits( "1aaa" ) )

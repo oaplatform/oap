@@ -70,7 +70,8 @@
 
         <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
 
-        <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
+        <oap.deps.jol.version>0.16</oap.deps.jol.version>
+        <oap.deps.luben.version>1.5.0-4</oap.deps.luben.version>
         <oap.deps.micrometer.version>1.6.9</oap.deps.micrometer.version>
         <oap.deps.fastutil.version>8.5.9</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>

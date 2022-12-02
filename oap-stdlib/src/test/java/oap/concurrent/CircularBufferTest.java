@@ -33,12 +33,15 @@ public class CircularBufferTest {
     @Test
     public void cycle() {
         CircularBuffer<Integer> buffer = new CircularBuffer<>( Integer.class, 3 );
+        assertThat( buffer.getElements() ).containsExactly();
         buffer.add( 1 );
         buffer.add( 2 );
         assertThat( buffer.getElements() ).containsExactly( 1, 2 );
         buffer.add( 3 );
         buffer.add( 4 );
         assertThat( buffer.getElements() ).containsExactly( 2, 3, 4 );
+        buffer.add( 4 );
+        assertThat( buffer.getElements() ).containsExactly( 3, 4, 4 );
     }
 
 }
