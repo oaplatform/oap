@@ -96,6 +96,6 @@
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
         <oap.deps.undertow.version>2.2.19.Final</oap.deps.undertow.version>
-        <oap.deps.affinity>3.21ea82</oap.deps.affinity>
+        <oap.deps.affinity>3.23.2</oap.deps.affinity>
     </properties>
 </project>
