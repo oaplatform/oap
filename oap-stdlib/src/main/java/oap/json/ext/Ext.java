@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentMap;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @EqualsAndHashCode
-public abstract class Ext implements Serializable, OptionalSerializator {
+public abstract class Ext implements Serializable {
     private static final ConcurrentMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
 
     @SuppressWarnings( "unchecked" )
@@ -61,13 +61,5 @@ public abstract class Ext implements Serializable, OptionalSerializator {
     @SuppressWarnings( "unchecked" )
     protected static <T extends Ext> T newExt( Class<?> parent, String field, Class<?>[] cparams, Object[] params ) {
         return init( parent, field, cparams ).map( Try.map( c -> ( T ) c.newInstance( params ) ) ).orElse( null );
-    }
-
-    private void writeObject( @NotNull ObjectOutputStream oos ) throws IOException {
-        writeObjectTemplate( oos );
-    }
-
-    private void readObject( @NotNull ObjectInputStream ois ) throws IOException, ClassNotFoundException {
-        readObjectTemplate( ois );
     }
 }
