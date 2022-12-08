@@ -33,6 +33,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
+    public static final Pattern JITTER = Pattern.compile("(.+)\\s+jitter\s+(\\d+\\w*)$");
+
     public final String cron;
     public final long jitter;
 
@@ -44,7 +46,7 @@ public class CronScheduledService extends AbstractScheduledService {
     }
 
     private static CronInfo parse( String cron ) {
-        var m = Pattern.compile( "(.+)\\s+jitter\s+(\\d+\\w*)$" ).matcher( cron );
+        var m = JITTER.matcher( cron );
         if( m.matches() ) return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
 
         return new CronInfo( cron.trim(), 0L );

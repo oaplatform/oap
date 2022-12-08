@@ -50,12 +50,14 @@ public class KernelSupervisionTest {
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
             );
-            assertEventually( 100, 100, () -> assertThat( srv.count.get() ).isGreaterThan( 10 ) );
+            assertEventually( 100, 100, () ->
+                assertThat( srv.count.get() ).isGreaterThan( 10 ) );
         }
     }
 
     @Test
     public void testSupervisionCron() {
+        TestCron.str.setLength( 0 );
         var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/cron.conf" ) );
 
@@ -67,13 +69,15 @@ public class KernelSupervisionTest {
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
             );
-            assertEventually( 100, 100, () -> assertThat( srv.count.get() ).isGreaterThan( 3 ) );
+            assertEventually( 100, 100, () ->
+                assertThat( srv.count.get() ).isGreaterThan( 3 ) );
         }
-        assertThat( TestCron.str.toString() ).isEqualTo( "" );
+        assertThat( TestCron.str.toString() ).matches( "(run/){4,}" );
     }
 
     @Test
     public void testSupervisionCronWithSupervise() {
+        TestCron.str.setLength( 0 );
         var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/cronWithSupervise.conf" ) );
 
@@ -85,10 +89,11 @@ public class KernelSupervisionTest {
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
             );
-            assertEventually( 100, 100, () -> assertThat( srv.count.get() ).isGreaterThan( 3 ) );
+            assertEventually( 100, 100, () ->
+                assertThat( srv.count.get() ).isGreaterThan( 3 ) );
         }
 
-        assertThat( TestCron.str.toString() ).isEqualTo( "start/stop/" );
+        assertThat( TestCron.str.toString() ).matches( "start/(run/){4,}stop/" );
     }
 
     @Test
@@ -173,7 +178,7 @@ public class KernelSupervisionTest {
 
         @Override
         public void run() {
-            log.info( "run" );
+            str.append("run/");
             count.incrementAndGet();
         }
     }

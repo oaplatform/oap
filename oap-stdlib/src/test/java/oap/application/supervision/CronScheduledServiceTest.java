@@ -39,12 +39,16 @@ public class CronScheduledServiceTest {
     @Test
     public void testJitter() {
         var css = new CronScheduledService( () -> {}, "36 * * * * ? *  jitter 40s" );
-        assertThat( css.jitter ).isEqualTo( 40000L );
+        assertThat( css.jitter ).isEqualTo( 40_000L );
         assertThat( css.cron ).isEqualTo( "36 * * * * ? *" );
 
         css = new CronScheduledService( () -> {}, "36 * * * * ? *  jitter 40" );
         assertThat( css.jitter ).isEqualTo( 40L );
         assertThat( css.cron ).isEqualTo( "36 * * * * ? *" );
+
+        css = new CronScheduledService( () -> {}, "18 * * * * ? *  jitter 10m" );
+        assertThat( css.jitter ).isEqualTo( 600_000L );
+        assertThat( css.cron ).isEqualTo( "18 * * * * ? *" );
     }
 
 }
