@@ -29,12 +29,12 @@ package oap.template;
  * No longer needed, see the latest logstream
  */
 @Deprecated
-public class DictionaryTemplate<F> {
-    public final Template<F, String, StringBuilder, TemplateAccumulatorString> templateFunction;
+public class DictionaryTemplate<F, TOut, TMutable, TA extends TemplateAccumulator<TOut, TMutable, TA>> {
+    public final Template<F, TOut, TMutable, TA> templateFunction;
     public final String template;
     public final String headers;
 
-    public DictionaryTemplate( Template<F, String, StringBuilder, TemplateAccumulatorString> templateFunction, String template, String headers ) {
+    public DictionaryTemplate( Template<F, TOut, TMutable, TA> templateFunction, String template, String headers ) {
         this.templateFunction = templateFunction;
         this.template = template;
         this.headers = headers;

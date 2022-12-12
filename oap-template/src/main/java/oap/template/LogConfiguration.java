@@ -47,7 +47,6 @@ import java.util.function.Predicate;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 import static oap.template.ErrorStrategy.ERROR;
-import static oap.template.TemplateAccumulators.STRING;
 import static oap.util.Pair.__;
 
 /**
@@ -94,20 +93,17 @@ public class LogConfiguration extends Configuration {
         this.engine = engine;
     }
 
-    public String getStandardDelimiter() {
-        return STANDARD_DELIMITER;
+    public <F, TOut, TMutable, TA extends TemplateAccumulator<TOut, TMutable, TA>> DictionaryTemplate<F, TOut, TMutable, TA> forType(
+        TypeRef<F> clazz, String type,
+        TA templateAccumulator ) {
+        return forType( clazz, type, d -> true, templateAccumulator );
     }
 
-    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type ) {
-        return forType( clazz, type, dictionary -> true );
-    }
+    public <F, TOut, TMutable, TA extends TemplateAccumulator<TOut, TMutable, TA>> DictionaryTemplate<F, TOut, TMutable, TA> forType(
+        TypeRef<F> clazz, String type,
+        Predicate<Dictionary> predicate,
+        TA templateAccumulator ) {
 
-    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate ) {
-        return forType( clazz, type, predicate, STRING );
-    }
-
-    public <F> DictionaryTemplate<F> forType( TypeRef<F> clazz, String type, Predicate<Dictionary> predicate,
-                                              TemplateAccumulatorString templateAccumulator ) {
         var value = getLatestDictionary().getValue( type );
 
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
@@ -144,7 +140,7 @@ public class LogConfiguration extends Configuration {
             headers.add( id );
         }
 
-        var template = String.join( "\t", Lists.map( cols, p -> p._2 ) );
+        var template = String.join( templateAccumulator.delimiter(), Lists.map( cols, p -> p._2 ) );
         var templateFunc = engine.getTemplate(
             "Log" + StringUtils.capitalize( type ),
             clazz,

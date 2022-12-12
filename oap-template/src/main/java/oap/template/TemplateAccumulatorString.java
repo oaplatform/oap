@@ -24,7 +24,9 @@
 
 package oap.template;
 
+import oap.util.Dates;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 
 import java.util.Collection;
 
@@ -58,11 +60,6 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
-    public void accept( char ch ) {
-        sb.append( ch );
-    }
-
-    @Override
     public void accept( byte b ) {
         sb.append( b );
     }
@@ -85,6 +82,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     @Override
     public void accept( float f ) {
         sb.append( f );
+    }
+
+    @Override
+    public void accept( DateTime jodaDateTime ) {
+        sb.append( Dates.FORMAT_SIMPLE.print( jodaDateTime ) );
     }
 
     @Override
@@ -153,6 +155,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     @Override
     public String getTypeName() {
         return "String";
+    }
+
+    @Override
+    public String delimiter() {
+        return "\t";
     }
 
     @Override

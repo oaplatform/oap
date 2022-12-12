@@ -24,7 +24,10 @@
 
 package oap.template;
 
+import org.joda.time.DateTime;
+
 import java.util.Collection;
+import java.util.Date;
 import java.util.function.Supplier;
 
 /**
@@ -43,13 +46,6 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     }
 
     void accept( boolean b );
-
-    default void accept( Character ch ) {
-        if( ch == null ) accept( ( Object ) ch );
-        else accept( ch.charValue() );
-    }
-
-    void accept( char ch );
 
     default void accept( Byte b ) {
         if( b == null ) accept( ( byte ) 0 );
@@ -91,6 +87,12 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
         else accept( d.doubleValue() );
     }
 
+    void accept( DateTime jodaDateTime );
+
+    default void accept( Date javaDateTime ) {
+        accept( new DateTime( javaDateTime ) );
+    }
+
     void accept( double d );
 
     void accept( Enum<?> e );
@@ -108,4 +110,6 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     TTemplateAccumulator newInstance( TMutable mutable );
 
     String getTypeName();
+
+    String delimiter();
 }

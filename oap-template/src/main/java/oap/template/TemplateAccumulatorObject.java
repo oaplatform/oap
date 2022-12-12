@@ -25,6 +25,7 @@
 package oap.template;
 
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.joda.time.DateTime;
 
 import java.util.Collection;
 
@@ -55,11 +56,6 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
-    public void accept( char ch ) {
-        accept( ( Object ) ch );
-    }
-
-    @Override
     public void accept( byte b ) {
         accept( ( Object ) b );
     }
@@ -82,6 +78,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public void accept( float f ) {
         accept( ( Object ) f );
+    }
+
+    @Override
+    public void accept( DateTime jodaDateTime ) {
+        accept( ( Object ) jodaDateTime );
     }
 
     @Override
@@ -127,6 +128,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public String getTypeName() {
         return "Object";
+    }
+
+    @Override
+    public String delimiter() {
+        return "";
     }
 
     @Override

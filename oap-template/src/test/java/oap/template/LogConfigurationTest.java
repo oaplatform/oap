@@ -112,7 +112,7 @@ public class LogConfigurationTest extends Fixtures {
             """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
-        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST", TemplateAccumulators.STRING );
 
         var c = new TestTemplateClass();
         c.list = List.of( 1, 2 );
@@ -146,7 +146,7 @@ public class LogConfigurationTest extends Fixtures {
             """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
-        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST", TemplateAccumulators.STRING );
 
         var c = new TestTemplateClass();
         c.child = new TestTemplateClass();
@@ -181,7 +181,7 @@ public class LogConfigurationTest extends Fixtures {
             """, ofString() );
 
         var logConfiguration = new LogConfiguration( engine, TestDirectoryFixture.testPath( "conf" ) );
-        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST" );
+        var dictionaryTemplate = logConfiguration.forType( new TypeRef<TestTemplateClass>() {}, "TEST", TemplateAccumulators.STRING );
 
         var c = new TestTemplateClass();
         c.booleanField = true;

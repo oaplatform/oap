@@ -24,8 +24,26 @@
 
 package oap.template;
 
-public final class TemplateAccumulators {
-    public static final TemplateAccumulatorBinary BINARY = new TemplateAccumulatorBinary();
-    public static final TemplateAccumulatorString STRING = new TemplateAccumulatorString();
-    public static final TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
+import com.google.common.base.Preconditions;
+
+public enum Types {
+    DATETIME( 1 ),
+    DATE( 2 ),
+    BOOLEAN( 3 ),
+    BYTE( 4 ),
+    SHORT( 5 ),
+    INTEGER( 6 ),
+    LONG( 7 ),
+    FLOAT( 8 ),
+    DOUBLE( 9 ),
+    STRING( 10 ),
+    LIST( 11 );
+
+    public final byte id;
+
+    Types( int id ) {
+        Preconditions.checkArgument( id == ( id & 0xFF ) );
+
+        this.id = ( byte ) id;
+    }
 }

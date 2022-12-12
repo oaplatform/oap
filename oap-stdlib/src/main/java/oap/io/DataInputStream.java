@@ -22,10 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.io;
 
-public final class TemplateAccumulators {
-    public static final TemplateAccumulatorBinary BINARY = new TemplateAccumulatorBinary();
-    public static final TemplateAccumulatorString STRING = new TemplateAccumulatorString();
-    public static final TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class DataInputStream extends java.io.DataInputStream {
+    public DataInputStream( @NotNull InputStream in ) {
+        super( in );
+    }
+
+    public int readVarInt() throws IOException {
+        return -1;
+    }
 }
