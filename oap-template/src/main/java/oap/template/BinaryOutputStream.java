@@ -159,6 +159,7 @@ public class BinaryOutputStream extends OutputStream {
         writeUTFWithType( str, Types.STRING );
     }
 
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     private void writeUTFWithType( @NotNull String str, Types type ) throws IOException {
         final int strlen = str.length();
         int utflen = strlen; // optimized for ASCII

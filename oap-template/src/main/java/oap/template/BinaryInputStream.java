@@ -175,7 +175,7 @@ public class BinaryInputStream extends InputStream {
     }
 
     @NotNull
-    @SuppressWarnings( { "checkstyle:MethodName", "checkstyle:OperatorWrap" } )
+    @SuppressWarnings( { "checkstyle:MethodName", "checkstyle:OperatorWrap", "checkstyle:UnnecessaryParentheses" } )
     private String _readString() throws IOException {
         int utflen = readUnsignedShort();
         if( bytearr.length < utflen ) {
