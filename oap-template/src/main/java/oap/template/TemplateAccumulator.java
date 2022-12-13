@@ -114,4 +114,6 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     String delimiter();
 
     String eol();
+
+    byte[] getBytes();
 }

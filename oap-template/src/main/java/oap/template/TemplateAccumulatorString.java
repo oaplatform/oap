@@ -30,6 +30,8 @@ import org.joda.time.DateTime;
 
 import java.util.Collection;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class TemplateAccumulatorString implements TemplateAccumulator<String, StringBuilder, TemplateAccumulatorString> {
     protected final StringBuilder sb;
 
@@ -170,6 +172,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     @Override
     public String get() {
         return sb.toString();
+    }
+
+    @Override
+    public byte[] getBytes() {
+        return get().getBytes( UTF_8 );
     }
 
     public void acceptStringWithSingleQuote( String item ) {

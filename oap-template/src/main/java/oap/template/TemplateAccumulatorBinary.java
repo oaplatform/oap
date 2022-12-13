@@ -183,4 +183,9 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
     public byte[] get() {
         return baos.toByteArray();
     }
+
+    @Override
+    public byte[] getBytes() {
+        return get();
+    }
 }

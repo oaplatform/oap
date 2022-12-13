@@ -24,10 +24,13 @@
 
 package oap.template;
 
+import oap.json.Binder;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TemplateAccumulatorObject implements TemplateAccumulator<Object, MutableObject<Object>, TemplateAccumulatorObject> {
     private final MutableObject<Object> obj;
@@ -143,5 +146,10 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public Object get() {
         return obj.getValue();
+    }
+
+    @Override
+    public byte[] getBytes() {
+        return Binder.json.marshal( get() ).getBytes( UTF_8 );
     }
 }
