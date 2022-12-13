@@ -112,4 +112,6 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     String getTypeName();
 
     String delimiter();
+
+    String eol();
 }

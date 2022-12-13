@@ -140,7 +140,7 @@ public class LogConfiguration extends Configuration {
             headers.add( id );
         }
 
-        var template = String.join( templateAccumulator.delimiter(), Lists.map( cols, p -> p._2 ) );
+        var template = String.join( templateAccumulator.delimiter(), Lists.map( cols, p -> p._2 ) ) + templateAccumulator.eol();
         var templateFunc = engine.getTemplate(
             "Log" + StringUtils.capitalize( type ),
             clazz,

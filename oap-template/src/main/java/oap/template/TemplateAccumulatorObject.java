@@ -136,6 +136,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
+    public String eol() {
+        return "";
+    }
+
+    @Override
     public Object get() {
         return obj.getValue();
     }

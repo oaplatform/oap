@@ -173,6 +173,11 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
         return "";
     }
 
+    @Override
+    public String eol() {
+        return "";
+    }
+
     @SneakyThrows
     @Override
     public byte[] get() {

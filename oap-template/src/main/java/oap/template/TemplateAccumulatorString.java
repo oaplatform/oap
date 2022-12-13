@@ -163,6 +163,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
+    public String eol() {
+        return "\n";
+    }
+
+    @Override
     public String get() {
         return sb.toString();
     }
