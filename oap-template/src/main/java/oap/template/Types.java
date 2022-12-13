@@ -27,6 +27,7 @@ package oap.template;
 import com.google.common.base.Preconditions;
 
 public enum Types {
+    EOL( 0 ),
     DATETIME( 1 ),
     DATE( 2 ),
     BOOLEAN( 3 ),

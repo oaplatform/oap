@@ -117,13 +117,12 @@ public class LogConfigurationTest extends Fixtures {
         var c = new TestTemplateClass();
         c.list = List.of( 1, 2 );
 
-        var res = dictionaryTemplate.templateFunction.render( c );
+        var res = dictionaryTemplate.templateFunction.render( c ).get();
         assertThat( res ).isEqualTo( "[1,2]" );
     }
 
     @Test
     public void testTypeSetString() {
-        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
         Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
             {
               name = config.v1
@@ -152,13 +151,12 @@ public class LogConfigurationTest extends Fixtures {
         c.child = new TestTemplateClass();
         c.child.setString = new LinkedHashSet<>( List.of( "s'1", "s2" ) );
 
-        var res = dictionaryTemplate.templateFunction.render( c );
+        var res = dictionaryTemplate.templateFunction.render( c ).get();
         assertThat( res ).isEqualTo( "['s\\'1','s2']" );
     }
 
     @Test
     public void testConcatenation() {
-        java.util.Collection<java.lang.Integer> a = new ArrayList<>();
         Files.write( TestDirectoryFixture.testPath( "conf/config.v1.conf" ), """
             {
               name = config.v1
@@ -187,7 +185,7 @@ public class LogConfigurationTest extends Fixtures {
         c.booleanField = true;
         c.fieldNullable = "test";
 
-        var res = dictionaryTemplate.templateFunction.render( c );
+        var res = dictionaryTemplate.templateFunction.render( c ).get();
         assertThat( res ).isEqualTo( "truextest" );
     }
 

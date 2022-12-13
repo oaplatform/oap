@@ -165,11 +165,6 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
-    public String eol() {
-        return "\n";
-    }
-
-    @Override
     public String get() {
         return sb.toString();
     }
@@ -187,5 +182,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
         sb.append( '\'' )
             .append( escapeItem )
             .append( '\'' );
+    }
+
+    @Override
+    public TemplateAccumulatorString addEol( boolean eol ) {
+        if( eol ) sb.append( '\n' );
+        return this;
     }
 }

@@ -139,11 +139,6 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
-    public String eol() {
-        return "";
-    }
-
-    @Override
     public Object get() {
         return obj.getValue();
     }
@@ -151,5 +146,10 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public byte[] getBytes() {
         return Binder.json.marshal( get() ).getBytes( UTF_8 );
+    }
+
+    @Override
+    public TemplateAccumulatorObject addEol( boolean eol ) {
+        return this;
     }
 }

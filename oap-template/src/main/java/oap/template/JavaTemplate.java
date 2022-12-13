@@ -68,16 +68,18 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
         }
     }
 
-    public TOut render( TIn obj ) {
+    public TA render( TIn obj, boolean eol ) {
         var newAcc = acc.newInstance();
         cons.accept( obj, Map.of(), newAcc );
 
-        return newAcc.get();
+        return newAcc.addEol( eol );
     }
 
     @Override
-    public void render( TIn obj, TOutMutable tOut ) {
+    public TA render( TIn obj, boolean eol, TOutMutable tOut ) {
         var newAcc = acc.newInstance( tOut );
         cons.accept( obj, Map.of(), newAcc );
+
+        return newAcc.addEol( eol );
     }
 }
