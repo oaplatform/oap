@@ -74,10 +74,10 @@ public abstract class Configuration {
             + mappingLocation + " or resource location " + resourceLocation );
 
         List<Pair<Integer, URL>> versionedDics = logConfigs
-            .stream()
-            .sorted( Comparator.comparing( URL::toString ) )
-            .map( path -> __( versionOf( path.getPath() ), path ) )
-            .collect( Collectors.toList() );
+                .stream()
+                .sorted(Comparator.comparing(URL::toString))
+                .map(path -> __(versionOf(path.getPath()), path))
+                .toList();
 
         var maxVersion = versionedDics.stream().mapToInt( p -> p._1 ).max().orElse( 1 );
 
