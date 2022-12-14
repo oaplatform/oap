@@ -38,6 +38,8 @@ import java.util.Objects;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class BinaryInputStream extends InputStream {
+    public static final Object EOL = new Object();
+
     protected byte[] readBuffer = new byte[8];
     protected byte[] bytearr = new byte[80];
     protected char[] chararr = new char[80];
@@ -262,20 +264,21 @@ public class BinaryInputStream extends InputStream {
         return ret;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> T readObject() throws IOException {
+    public Object readObject() throws IOException {
         int type = in.read();
 
-        if( type == Types.BOOLEAN.id ) return ( T ) ( Object ) _readBoolean();
-        else if( type == Types.BYTE.id ) return ( T ) ( Object ) _readByte();
-        else if( type == Types.SHORT.id ) return ( T ) ( Object ) _readShort();
-        else if( type == Types.INTEGER.id ) return ( T ) ( Object ) _readInt();
-        else if( type == Types.LONG.id ) return ( T ) ( Object ) _readLong();
-        else if( type == Types.FLOAT.id ) return ( T ) ( Object ) _readFloat();
-        else if( type == Types.DOUBLE.id ) return ( T ) ( Object ) _readDouble();
-        else if( type == Types.STRING.id ) return ( T ) _readString();
-        else if( type == Types.DATETIME.id ) return ( T ) _readDateTime();
-        else if( type == Types.LIST.id ) return ( T ) _readList();
+        if( type == Types.BOOLEAN.id ) return _readBoolean();
+        else if( type == Types.BYTE.id ) return _readByte();
+        else if( type == Types.SHORT.id ) return _readShort();
+        else if( type == Types.INTEGER.id ) return _readInt();
+        else if( type == Types.LONG.id ) return _readLong();
+        else if( type == Types.FLOAT.id ) return _readFloat();
+        else if( type == Types.DOUBLE.id ) return _readDouble();
+        else if( type == Types.STRING.id ) return _readString();
+        else if( type == Types.DATETIME.id ) return _readDateTime();
+        else if( type == Types.LIST.id ) return _readList();
+        else if( type == Types.EOL.id ) return EOL;
+        else if( type < 0 ) return null;
 
         throw new IllegalArgumentException( "Unknown type: " + type );
     }

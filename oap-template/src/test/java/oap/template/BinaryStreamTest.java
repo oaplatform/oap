@@ -30,6 +30,7 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,5 +74,19 @@ public class BinaryStreamTest {
         Object rvo = ( new BinaryInputStream( new ByteArrayInputStream( baos.toByteArray() ) ) ).readObject();
 
         assertThat( v ).isEqualTo( rvo );
+    }
+
+    @Test
+    public void testLines() throws IOException {
+        var bytes = BinaryUtils.lines( List.of( List.of( 1L, "1" ), List.of( 2L, "" ) ) );
+        var bais = new ByteArrayInputStream( bytes );
+        var bis = new BinaryInputStream( bais );
+        assertThat( bis.readObject() ).isEqualTo( 1L );
+        assertThat( bis.readObject() ).isEqualTo( "1" );
+        assertThat( bis.readObject() ).isEqualTo( BinaryInputStream.EOL );
+        assertThat( bis.readObject() ).isEqualTo( 2L );
+        assertThat( bis.readObject() ).isEqualTo( "" );
+        assertThat( bis.readObject() ).isNull();
+        assertThat( bis.readObject() ).isNull();
     }
 }
