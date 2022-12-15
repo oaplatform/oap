@@ -47,7 +47,6 @@ public class BinaryUtils {
     public static byte[] lines( List<List<Object>> rows ) throws IOException {
         var baos = new ByteArrayOutputStream();
         for( var row : rows ) {
-            if( baos.size() > 0 ) baos.write( Types.EOL.id );
             baos.write( line( row ) );
         }
 

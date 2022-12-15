@@ -86,6 +86,7 @@ public class BinaryStreamTest {
         assertThat( bis.readObject() ).isEqualTo( BinaryInputStream.EOL );
         assertThat( bis.readObject() ).isEqualTo( 2L );
         assertThat( bis.readObject() ).isEqualTo( "" );
+        assertThat( bis.readObject() ).isEqualTo( BinaryInputStream.EOL );
         assertThat( bis.readObject() ).isNull();
         assertThat( bis.readObject() ).isNull();
     }

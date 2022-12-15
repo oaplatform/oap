@@ -38,7 +38,12 @@ import java.util.Objects;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class BinaryInputStream extends InputStream {
-    public static final Object EOL = new Object();
+    public static final Object EOL = new Object() {
+        @Override
+        public String toString() {
+            return "BinaryInputStream#EOL";
+        }
+    };
 
     protected byte[] readBuffer = new byte[8];
     protected byte[] bytearr = new byte[80];
