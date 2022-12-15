@@ -39,6 +39,8 @@ public class BinaryUtils {
 
         for( var col : cols ) bos.writeObject( col );
 
+        baos.write( Types.EOL.id );
+
         return baos.toByteArray();
     }
 
