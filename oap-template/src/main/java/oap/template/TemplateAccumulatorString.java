@@ -27,6 +27,8 @@ package oap.template;
 import oap.util.Dates;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.Collection;
 
@@ -34,13 +36,26 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TemplateAccumulatorString implements TemplateAccumulator<String, StringBuilder, TemplateAccumulatorString> {
     protected final StringBuilder sb;
+    private final DateTimeFormatter dateTimeFormat;
 
     public TemplateAccumulatorString( StringBuilder sb ) {
-        this.sb = sb;
+        this( sb, Dates.PATTERN_FORMAT_DATE );
     }
 
     public TemplateAccumulatorString() {
-        this( new StringBuilder() );
+        this( new StringBuilder(), Dates.PATTERN_FORMAT_SIMPLE );
+    }
+
+    public TemplateAccumulatorString( String dateTimeFormat ) {
+        this( new StringBuilder(), dateTimeFormat );
+    }
+
+    public TemplateAccumulatorString( StringBuilder sb, String dateTimeFormat ) {
+        this.sb = sb;
+
+        this.dateTimeFormat = DateTimeFormat
+            .forPattern( dateTimeFormat )
+            .withZoneUTC();
     }
 
     @Override
@@ -88,7 +103,7 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
 
     @Override
     public void accept( DateTime jodaDateTime ) {
-        sb.append( Dates.FORMAT_SIMPLE.print( jodaDateTime ) );
+        sb.append( dateTimeFormat.print( jodaDateTime ) );
     }
 
     @Override
