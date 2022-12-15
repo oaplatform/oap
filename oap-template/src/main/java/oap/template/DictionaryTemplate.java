@@ -24,19 +24,22 @@
 
 package oap.template;
 
+import java.util.List;
+
 /**
  * Created by igor.petrenko on 2020-07-15.
  * No longer needed, see the latest logstream
  */
-@Deprecated
 public class DictionaryTemplate<F, TOut, TMutable, TA extends TemplateAccumulator<TOut, TMutable, TA>> {
     public final Template<F, TOut, TMutable, TA> templateFunction;
     public final String template;
-    public final String headers;
+    public final List<String> headers;
+    public final List<Byte[]> types;
 
-    public DictionaryTemplate( Template<F, TOut, TMutable, TA> templateFunction, String template, String headers ) {
+    public DictionaryTemplate( Template<F, TOut, TMutable, TA> templateFunction, String template, List<String> headers, List<Byte[]> types ) {
         this.templateFunction = templateFunction;
         this.template = template;
         this.headers = headers;
+        this.types = types;
     }
 }
