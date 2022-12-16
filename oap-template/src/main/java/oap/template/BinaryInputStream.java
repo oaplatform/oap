@@ -282,10 +282,26 @@ public class BinaryInputStream extends InputStream {
         else if( type == Types.STRING.id ) return _readString();
         else if( type == Types.DATETIME.id ) return _readDateTime();
         else if( type == Types.LIST.id ) return _readList();
+        else if( type == Types.RAW.id ) return _readRaw();
         else if( type == Types.EOL.id ) return EOL;
         else if( type < 0 ) return null;
 
         throw new IllegalArgumentException( "Unknown type: " + type );
+    }
+
+    private byte[] readRaw() throws IOException {
+        checkType( Types.RAW );
+
+        return _readRaw();
+    }
+
+    @SuppressWarnings( "checkstyle:MethodName" )
+    private byte[] _readRaw() throws IOException {
+        int length = _readInt();
+
+        var bytes = new byte[length];
+        readFully( bytes, 0, length );
+        return bytes;
     }
 
     protected void checkType( Types type ) throws IOException {

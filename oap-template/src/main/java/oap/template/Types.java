@@ -28,17 +28,18 @@ import com.google.common.base.Preconditions;
 
 public enum Types {
     EOL( 0 ),
-    DATETIME( 1 ),
-    DATE( 2 ),
-    BOOLEAN( 3 ),
-    BYTE( 4 ),
-    SHORT( 5 ),
-    INTEGER( 6 ),
-    LONG( 7 ),
-    FLOAT( 8 ),
-    DOUBLE( 9 ),
-    STRING( 10 ),
-    LIST( 11 );
+    RAW( 1 ),
+    DATETIME( 2 ),
+    DATE( 3 ),
+    BOOLEAN( 4 ),
+    BYTE( 5 ),
+    SHORT( 6 ),
+    INTEGER( 7 ),
+    LONG( 8 ),
+    FLOAT( 9 ),
+    DOUBLE( 10 ),
+    STRING( 11 ),
+    LIST( 12 );
 
     public final byte id;
 

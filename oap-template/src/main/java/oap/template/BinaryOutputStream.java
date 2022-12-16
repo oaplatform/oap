@@ -103,6 +103,7 @@ public class BinaryOutputStream extends OutputStream {
         else if( v instanceof Double d ) writeDouble( d );
         else if( v instanceof DateTime dt ) writeDateTime( dt );
         else if( v instanceof Date d ) writeDateTime( new DateTime( d, UTC ) );
+        else if( v instanceof byte[] b ) writeRaw( b );
         else if( v instanceof Collection<?> c ) writeList( c );
         else
             throw new IllegalArgumentException( "Unknown type " + v.getClass() );
@@ -121,6 +122,11 @@ public class BinaryOutputStream extends OutputStream {
     public void writeLong( long v ) throws IOException {
         writeBuffer[0] = Types.LONG.id;
         _writeLong( v );
+    }
+
+    public void writeRaw( byte[] bytes ) throws IOException {
+        writeByte( Types.RAW.id );
+        out.write( bytes );
     }
 
     @SuppressWarnings( "checkstyle:MethodName" )
