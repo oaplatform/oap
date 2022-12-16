@@ -118,7 +118,7 @@ public class LogConfiguration extends Configuration {
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
 
         var headers = new ArrayList<String>();
-        var rowTypes = new ArrayList<Byte[]>();
+        var rowTypes = new ArrayList<byte[]>();
         var cols = new ArrayList<Pair<String, String>>();
 
         for( var field : value.getValues( predicate ) ) {
@@ -149,9 +149,9 @@ public class LogConfiguration extends Configuration {
             cols.add( __( path, "${/* " + comment + " */" + toJavaType( rowType.javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" ) );
             headers.add( id );
             if( collection ) {
-                rowTypes.add( new Byte[] { Types.LIST.id, rowType.templateType.id } );
+                rowTypes.add( new byte[] { Types.LIST.id, rowType.templateType.id } );
             } else {
-                rowTypes.add( new Byte[] { rowType.templateType.id } );
+                rowTypes.add( new byte[] { rowType.templateType.id } );
             }
         }
 
@@ -163,7 +163,7 @@ public class LogConfiguration extends Configuration {
             templateAccumulator,
             ERROR,
             null );
-        return new DictionaryTemplate<>( templateFunc, template, headers, rowTypes );
+        return new DictionaryTemplate<>( templateFunc, template, headers.toArray( new String[0] ), rowTypes.toArray( new byte[0][] ) );
     }
 
     private static String checkStringAndGet( Dictionary dictionary, String fieldName ) {
