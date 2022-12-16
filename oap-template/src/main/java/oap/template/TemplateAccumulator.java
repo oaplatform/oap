@@ -116,4 +116,6 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     byte[] getBytes();
 
     TTemplateAccumulator addEol( boolean eol );
+
+    void reset();
 }

@@ -180,6 +180,11 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
         return this;
     }
 
+    @Override
+    public void reset() {
+        baos.reset();
+    }
+
     @SneakyThrows
     @Override
     public byte[] get() {

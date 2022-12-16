@@ -204,4 +204,9 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
         if( eol ) sb.append( '\n' );
         return this;
     }
+
+    @Override
+    public void reset() {
+        sb.delete( 0, sb.length() );
+    }
 }

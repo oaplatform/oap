@@ -152,4 +152,9 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     public TemplateAccumulatorObject addEol( boolean eol ) {
         return this;
     }
+
+    @Override
+    public void reset() {
+        obj.setValue( null );
+    }
 }
