@@ -31,6 +31,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.util.Collection;
+import java.util.Date;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -133,10 +134,12 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
             }
             if( item instanceof Collection ) {
                 accept( ( Collection<?> ) item );
-            } else if( item instanceof String ) {
-                acceptStringWithSingleQuote( ( String ) item );
-            } else if( item instanceof Enum ) {
-                acceptStringWithSingleQuote( ( ( Enum<?> ) item ).name() );
+            } else if( item instanceof String s ) {
+                acceptStringWithSingleQuote( s );
+            } else if( item instanceof Enum<?> e ) {
+                acceptStringWithSingleQuote( e.name() );
+            } else if( item instanceof DateTime dt ) {
+                acceptStringWithSingleQuote( dateTimeFormat.print( dt ) );
             } else {
                 accept( item );
             }
@@ -151,7 +154,10 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
 
     @Override
     public void accept( Object obj ) {
-        accept( String.valueOf( obj ) );
+        if( obj instanceof DateTime dt ) accept( dt );
+        else if( obj instanceof Date d ) accept( d );
+        else if( obj instanceof Collection<?> c ) accept( c );
+        else accept( String.valueOf( obj ) );
     }
 
     @Override
