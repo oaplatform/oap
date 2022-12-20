@@ -74,7 +74,7 @@ public abstract class Configuration {
         List<Pair<Integer, URL>> versionedDics = logConfigs
                 .stream()
                 .sorted( Comparator.comparing( URL::toString ) )
-                .map( path -> __( versionOf(path.getPath()), path ) )
+                .map( path -> __( versionOf( path.getPath() ), path ) )
                 .toList();
 
         var maxVersion = versionedDics.stream().mapToInt( p -> p._1 ).max().orElse( 1 );

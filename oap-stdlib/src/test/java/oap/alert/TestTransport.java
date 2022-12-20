@@ -24,7 +24,6 @@
 
 package oap.alert;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TestTransport implements MessageTransport<String> {
