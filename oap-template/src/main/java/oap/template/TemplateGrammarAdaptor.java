@@ -219,6 +219,21 @@ abstract class TemplateGrammarAdaptor extends Parser {
                 update( child, predicate, consumer );
             }
         }
+
+        public void replaceTopLeafs( java.util.function.Function<Ast, Ast> func ) {
+            if( top.children.isEmpty() ) top = new AstNullable( top.type ).addChild( top );
+            else replaceChildren( top.children, func );
+        }
+
+        private void replaceChildren( List<Ast> children, java.util.function.Function<Ast, Ast> func ) {
+            children.replaceAll( child -> {
+                if( child.children.isEmpty() ) return func.apply( child );
+                else {
+                    replaceChildren( child.children, func );
+                    return child;
+                }
+            } );
+        }
     }
 
     public String getCastType( String castType ) {

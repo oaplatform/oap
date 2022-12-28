@@ -41,6 +41,7 @@ public class AstOr extends Ast {
     public void addTry( List<MaxMin> asts ) {
         for( var ast : asts ) {
             var astRunnable = new AstRunnable( type );
+            ast.replaceTopLeafs( leaf -> new AstNullable( leaf.type ).addChild( leaf ) );
             astRunnable.addChild( ast.top );
             or.add( new MaxMin( astRunnable, ast.bottom ) );
         }
@@ -67,7 +68,7 @@ public class AstOr extends Ast {
         var minMax = or.get( 0 );
 
         var r = render;
-        r.ntab().append( render.templateAccumulator.getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
+        r.ntab().append( render.templateAccumulator.getClass().getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
         for( var i = 0; i < or.size(); i++ ) {
             minMax = or.get( i );
             var astRunnable = ( AstRunnable ) minMax.top;
@@ -79,7 +80,7 @@ public class AstOr extends Ast {
             r = r
                 .ntab().append( "%s.run();", newFunctionId )
                 .ntab().append( "if( !%s.isEmpty() ) { ", templateAccumulatorName )
-                .tabInc().ntab().append( "%s = %s.get();", orVariable, templateAccumulatorName )
+                .tabInc().ntab().append( "%s = %s;", orVariable, templateAccumulatorName )
                 .tabDec();
 
             if( i < or.size() - 1 ) r = r.ntab().append( "} else {" ).tabInc();

@@ -25,38 +25,38 @@
 package oap.template;
 
 import lombok.SneakyThrows;
+import oap.util.FastByteArrayOutputStream;
 import org.joda.time.DateTime;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Collection;
 import java.util.Date;
 
 import static org.joda.time.DateTimeZone.UTC;
 
-public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], ByteArrayOutputStream, TemplateAccumulatorBinary> {
+public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], FastByteArrayOutputStream, TemplateAccumulatorBinary> {
     public static final byte[] BYTES = new byte[0];
-    protected final ByteArrayOutputStream baos;
+    protected final FastByteArrayOutputStream baos;
     private final BinaryOutputStream bos;
 
-    public TemplateAccumulatorBinary( ByteArrayOutputStream baos ) {
+    public TemplateAccumulatorBinary( FastByteArrayOutputStream baos ) {
         this.baos = baos;
         this.bos = new BinaryOutputStream( baos );
     }
 
     public TemplateAccumulatorBinary() {
-        this( new ByteArrayOutputStream() );
+        this( new FastByteArrayOutputStream() );
     }
 
     @SneakyThrows
     @Override
     public void acceptText( String text ) {
-        bos.writeString( text != null ? text : "" );
+        bos.writeString( text );
     }
 
     @SneakyThrows
     @Override
     public void accept( String text ) {
-        bos.writeString( text != null ? text : "" );
+        bos.writeString( text );
     }
 
     @SneakyThrows
@@ -128,7 +128,9 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
     @SneakyThrows
     @Override
     public void accept( TemplateAccumulatorBinary acc ) {
-        bos.write( acc.get() );
+        FastByteArrayOutputStream baos = acc.baos;
+
+        bos.write( baos.array, 0, baos.length );
     }
 
     @Override
@@ -144,13 +146,14 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
         else if( obj instanceof DateTime dt ) accept( dt );
         else if( obj instanceof Date d ) accept( d );
         else if( obj instanceof Collection<?> c ) accept( c );
+        else if( obj instanceof TemplateAccumulatorBinary tab ) accept( tab );
 
         throw new IllegalArgumentException( "Unknown type " + obj.getClass() );
     }
 
     @Override
     public boolean isEmpty() {
-        return baos.size() == 0;
+        return baos.length == 0;
     }
 
     @Override
@@ -159,7 +162,7 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
     }
 
     @Override
-    public TemplateAccumulatorBinary newInstance( ByteArrayOutputStream mutable ) {
+    public TemplateAccumulatorBinary newInstance( FastByteArrayOutputStream mutable ) {
         return new TemplateAccumulatorBinary( mutable );
     }
 

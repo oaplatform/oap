@@ -40,6 +40,7 @@ import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
+import static oap.template.TemplateAccumulators.BINARY;
 import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -186,6 +187,15 @@ public class TemplateEngineTest extends Fixtures {
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", STRING, null ).render( c ).get() )
             .isEqualTo( "f2" );
+    }
+
+    @Test
+    public void testOrEmptyStringWithBinaryAccumulator() throws IOException {
+        var c = new TestTemplateClass();
+        c.field2 = "f2";
+
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", BINARY, null ).render( c ).get() ) )
+            .isEqualTo( List.of( List.of( "f2" ) ) );
     }
 
     @Test
