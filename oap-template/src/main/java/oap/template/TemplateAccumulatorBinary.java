@@ -176,7 +176,7 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
     @SneakyThrows
     @Override
     public TemplateAccumulatorBinary addEol( boolean eol ) {
-        if( eol ) bos.writeByte( Types.EOL.id );
+        if( eol ) bos.write( Types.EOL.id );
         return this;
     }
 
