@@ -24,8 +24,10 @@
 
 package oap.template;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BinaryUtils {
@@ -51,5 +53,23 @@ public class BinaryUtils {
         }
 
         return baos.toByteArray();
+    }
+
+    public static List<List<Object>> read( byte[] bytes ) throws IOException {
+        BinaryInputStream binaryInputStream = new BinaryInputStream( new ByteArrayInputStream( bytes ) );
+        Object obj = binaryInputStream.readObject();
+        var line = new ArrayList<Object>();
+        var res = new ArrayList<List<Object>>();
+        while( obj != null ) {
+            if( obj != BinaryInputStream.EOL ) line.add( obj );
+            else {
+                res.add( line );
+                line = new ArrayList<>();
+            }
+            obj = binaryInputStream.readObject();
+        }
+        if( !line.isEmpty() ) res.add( line );
+
+        return res;
     }
 }
