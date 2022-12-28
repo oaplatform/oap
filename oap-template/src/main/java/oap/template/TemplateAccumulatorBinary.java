@@ -165,7 +165,7 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], By
 
     @Override
     public String getTypeName() {
-        return "Binary";
+        return "byte[]";
     }
 
     @Override
