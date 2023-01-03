@@ -24,7 +24,6 @@
 
 package oap.template;
 
-import oap.dictionary.Dictionary;
 import oap.json.Binder;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.joda.time.DateTime;
@@ -97,11 +96,6 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public void accept( Enum<?> e ) {
         accept( ( Object ) e );
-    }
-
-    @Override
-    public void accept( Dictionary d ) {
-        accept( ( Object ) d );
     }
 
     @Override

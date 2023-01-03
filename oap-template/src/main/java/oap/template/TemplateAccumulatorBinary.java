@@ -121,12 +121,6 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
 
     @SneakyThrows
     @Override
-    public void accept( Dictionary d ) {
-        bos.writeString( d.getId() );
-    }
-
-    @SneakyThrows
-    @Override
     public void accept( Collection<?> list ) {
         bos.writeList( list );
     }

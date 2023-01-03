@@ -119,11 +119,6 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
-    public void accept( Dictionary d ) {
-        sb.append( d.getId() );
-    }
-
-    @Override
     public void accept( Collection<?> list ) {
         if( list == null ) {
             sb.append( "[]" );
