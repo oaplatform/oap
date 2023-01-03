@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import oap.dictionary.DictionaryRoot;
 import oap.util.function.Try;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
@@ -78,14 +79,18 @@ public class BinaryStreamTest {
 
     @Test
     public void testLines() throws IOException {
-        var bytes = BinaryUtils.lines( List.of( List.of( 1L, "1" ), List.of( 2L, "" ) ) );
+        var bytes = BinaryUtils.lines( List.of(
+            List.of( 1L, "1", new DictionaryRoot( "id", List.of() ) ),
+            List.of( 2L, "", new DictionaryRoot( "id2", List.of() ) ) ) );
         var bais = new ByteArrayInputStream( bytes );
         var bis = new BinaryInputStream( bais );
         assertThat( bis.readObject() ).isEqualTo( 1L );
         assertThat( bis.readObject() ).isEqualTo( "1" );
+        assertThat( bis.readObject() ).isEqualTo( "id" );
         assertThat( bis.readObject() ).isEqualTo( BinaryInputStream.EOL );
         assertThat( bis.readObject() ).isEqualTo( 2L );
         assertThat( bis.readObject() ).isEqualTo( "" );
+        assertThat( bis.readObject() ).isEqualTo( "id2" );
         assertThat( bis.readObject() ).isEqualTo( BinaryInputStream.EOL );
         assertThat( bis.readObject() ).isNull();
         assertThat( bis.readObject() ).isNull();

@@ -25,6 +25,7 @@
 package oap.template;
 
 import lombok.SneakyThrows;
+import oap.dictionary.Dictionary;
 import oap.util.FastByteArrayOutputStream;
 import org.joda.time.DateTime;
 
@@ -34,7 +35,6 @@ import java.util.Date;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], FastByteArrayOutputStream, TemplateAccumulatorBinary> {
-    public static final byte[] BYTES = new byte[0];
     protected final FastByteArrayOutputStream baos;
     private final BinaryOutputStream bos;
 
@@ -121,6 +121,12 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
 
     @SneakyThrows
     @Override
+    public void accept( Dictionary d ) {
+        bos.writeString( d.getId() );
+    }
+
+    @SneakyThrows
+    @Override
     public void accept( Collection<?> list ) {
         bos.writeList( list );
     }
@@ -143,6 +149,7 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
         else if( obj instanceof Float f ) accept( f );
         else if( obj instanceof Double d ) accept( d );
         else if( obj instanceof Enum<?> e ) accept( e );
+        else if( obj instanceof Dictionary d ) accept( d );
         else if( obj instanceof DateTime dt ) accept( dt );
         else if( obj instanceof Date d ) accept( d );
         else if( obj instanceof Collection<?> c ) accept( c );

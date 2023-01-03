@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import oap.dictionary.Dictionary;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
@@ -100,6 +101,8 @@ public class BinaryOutputStream extends OutputStream {
         else if( v instanceof Integer i ) writeInt( i );
         else if( v instanceof Long l ) writeLong( l );
         else if( v instanceof Float f ) writeFloat( f );
+        else if( v instanceof Enum<?> e ) writeEnum( e );
+        else if( v instanceof Dictionary d ) writeDictionary( d );
         else if( v instanceof Double d ) writeDouble( d );
         else if( v instanceof DateTime dt ) writeDateTime( dt );
         else if( v instanceof Date d ) writeDateTime( new DateTime( d, UTC ) );
@@ -159,6 +162,14 @@ public class BinaryOutputStream extends OutputStream {
         writeBuffer[0] = Types.DATETIME.id;
 
         _writeLong( jodaDateTime.getMillis() );
+    }
+
+    public void writeEnum( @NotNull Enum<?> e ) throws IOException {
+        writeString( e.name() );
+    }
+
+    public void writeDictionary( @NotNull Dictionary d ) throws IOException {
+        writeString( d.getId() );
     }
 
     public void writeString( @NotNull String str ) throws IOException {

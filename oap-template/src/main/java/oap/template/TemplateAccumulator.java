@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import oap.dictionary.Dictionary;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
@@ -96,6 +97,8 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     void accept( double d );
 
     void accept( Enum<?> e );
+
+    void accept( Dictionary d );
 
     void accept( Collection<?> list );
 

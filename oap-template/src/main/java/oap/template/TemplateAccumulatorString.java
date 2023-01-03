@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import oap.dictionary.Dictionary;
 import oap.util.Dates;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -118,6 +119,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
+    public void accept( Dictionary d ) {
+        sb.append( d.getId() );
+    }
+
+    @Override
     public void accept( Collection<?> list ) {
         if( list == null ) {
             sb.append( "[]" );
@@ -157,6 +163,7 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
         if( obj instanceof DateTime dt ) accept( dt );
         else if( obj instanceof Date d ) accept( d );
         else if( obj instanceof Collection<?> c ) accept( c );
+        else if( obj instanceof Dictionary d ) accept( d );
         else accept( String.valueOf( obj ) );
     }
 
