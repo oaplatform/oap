@@ -27,6 +27,7 @@ package oap.template;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -68,6 +69,12 @@ public class TemplateEngineTest extends Fixtures {
     public void testRenderStringText() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ).get() )
             .isEqualTo( "sdkjf hdkfgj d$...{}" );
+    }
+
+    @Test
+    public void testRenderUNKNOWNStringTextAsBinary() throws IOException {
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, Strings.UNKNOWN, BINARY, null ).render( null ).get() ) )
+            .isEqualTo( List.of( List.of( "" ) ) );
     }
 
     @Test

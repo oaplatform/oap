@@ -52,13 +52,13 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
     @SneakyThrows
     @Override
     public void acceptText( String text ) {
-        bos.writeString( text );
+        bos.writeString( text == null || Objects.equals( UNKNOWN, text ) ? "" : text );
     }
 
     @SneakyThrows
     @Override
     public void accept( String text ) {
-        bos.writeString( text == null || Objects.equals( UNKNOWN, text ) ? "" : text );
+        acceptText( text );
     }
 
     @SneakyThrows
