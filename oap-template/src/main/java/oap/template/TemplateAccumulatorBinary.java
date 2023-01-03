@@ -31,7 +31,9 @@ import org.joda.time.DateTime;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Objects;
 
+import static oap.util.Strings.UNKNOWN;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], FastByteArrayOutputStream, TemplateAccumulatorBinary> {
@@ -56,7 +58,7 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
     @SneakyThrows
     @Override
     public void accept( String text ) {
-        bos.writeString( text );
+        bos.writeString( text == null || Objects.equals( UNKNOWN, text ) ? "" : text );
     }
 
     @SneakyThrows
