@@ -25,6 +25,7 @@
 package oap.template;
 
 import oap.dictionary.DictionaryRoot;
+import oap.util.Strings;
 import oap.util.function.Try;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
@@ -55,26 +56,36 @@ public class BinaryStreamTest {
         check( List.of( 1L, 2L, 3L ), BinaryOutputStream::writeList, BinaryInputStream::readList );
         check( List.of( "1", "2", "3" ), BinaryOutputStream::writeList, BinaryInputStream::readList );
         check( List.of( 1.1d, 2.2f, 3L, 4, List.of( "test", 4d ) ), BinaryOutputStream::writeList, BinaryInputStream::readList );
+
+        check( Strings.UNKNOWN, "", BinaryOutputStream::writeString, BinaryInputStream::readString );
+        check( TestEnum.A, "A", BinaryOutputStream::writeEnum, BinaryInputStream::readString );
+        check( new DictionaryRoot( "dict", List.of() ), "dict", BinaryOutputStream::writeDictionary, BinaryInputStream::readString );
     }
 
     private <T> void check( T v,
                             Try.ThrowingBiConsumer<BinaryOutputStream, T> write,
                             Try.ThrowingFunction<BinaryInputStream, T> read ) throws Exception {
+        check( v, v, write, read );
+    }
+
+    private <In, Out> void check( In in, Out out,
+                                  Try.ThrowingBiConsumer<BinaryOutputStream, In> write,
+                                  Try.ThrowingFunction<BinaryInputStream, Out> read ) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         BinaryOutputStream bos = new BinaryOutputStream( baos );
-        write.accept( bos, v );
+        write.accept( bos, in );
 
-        T rv = read.apply( new BinaryInputStream( new ByteArrayInputStream( baos.toByteArray() ) ) );
+        Out rv = read.apply( new BinaryInputStream( new ByteArrayInputStream( baos.toByteArray() ) ) );
 
-        assertThat( v ).isEqualTo( rv );
+        assertThat( out ).isEqualTo( rv );
 
         baos = new ByteArrayOutputStream();
         bos = new BinaryOutputStream( baos );
-        bos.writeObject( v );
+        bos.writeObject( in );
 
         Object rvo = ( new BinaryInputStream( new ByteArrayInputStream( baos.toByteArray() ) ) ).readObject();
 
-        assertThat( v ).isEqualTo( rvo );
+        assertThat( out ).isEqualTo( rvo );
     }
 
     @Test
@@ -94,5 +105,9 @@ public class BinaryStreamTest {
         assertThat( bis.readObject() ).isEqualTo( BinaryInputStream.EOL );
         assertThat( bis.readObject() ).isNull();
         assertThat( bis.readObject() ).isNull();
+    }
+
+    public enum TestEnum {
+        A, B
     }
 }

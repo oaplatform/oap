@@ -25,6 +25,7 @@
 package oap.template;
 
 import oap.dictionary.Dictionary;
+import oap.util.Strings;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
@@ -173,7 +174,7 @@ public class BinaryOutputStream extends OutputStream {
     }
 
     public void writeString( @NotNull String str ) throws IOException {
-        writeUTFWithType( str, Types.STRING );
+        writeUTFWithType( Strings.UNKNOWN.equals( str ) ? "" : str, Types.STRING );
     }
 
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
