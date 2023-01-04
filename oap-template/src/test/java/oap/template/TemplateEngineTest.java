@@ -310,6 +310,12 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testDefaultDoubleBinary() throws IOException {
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}", BINARY, null ).render( Map.of( "prop", 1.1 ) ).get() ) )
+            .isEqualTo( List.of( List.of( 0.0d ) ) );
+    }
+
+    @Test
     public void testMix() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-${prop}-${b}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ).get() )
             .isEqualTo( "-val-b1-" );

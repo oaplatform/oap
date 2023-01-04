@@ -25,6 +25,7 @@
 package oap.template;
 
 import lombok.ToString;
+import org.apache.commons.lang3.StringUtils;
 
 @ToString( callSuper = true )
 public class AstPrint extends Ast {
@@ -41,11 +42,14 @@ public class AstPrint extends Ast {
         var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
         if( checkNull ) r = r
             .append( "if( %s == null ) {", r.field )
-            .tabInc().ntab().append( "%s.acceptText( \"%s\" );", r.templateAccumulatorName, defaultValue )
-            .tabDec().ntab().append( "} else {" ).tabInc();
+            .tabInc().ntab().append( "%s = %s;", r.field, format( r.parentType, defaultValue ) )
+            .tabDec().ntab().append( "}" ).ntab();
 
         r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
+    }
 
-        if( checkNull ) r.tabDec().ntab().append( "}" );
+    private String format( TemplateType parentType, String defaultValue ) {
+        if( String.class.equals( parentType.getTypeClass() ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
+        return defaultValue;
     }
 }
