@@ -197,6 +197,14 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testOrNull() {
+        var c = new TestTemplateClass();
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
     public void testOrEmptyStringWithBinaryAccumulator() throws IOException {
         var c = new TestTemplateClass();
         c.field2 = "f2";
