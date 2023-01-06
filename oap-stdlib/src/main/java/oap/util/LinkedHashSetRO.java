@@ -43,7 +43,7 @@ import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class LinkedHashSetRO<T> implements Set<T>, Externalizable , Serializable {
+public class LinkedHashSetRO<T> implements Set<T>, Externalizable, Serializable {
 
     @Serial
     private static final long serialVersionUID = 3720909775620214537L;
