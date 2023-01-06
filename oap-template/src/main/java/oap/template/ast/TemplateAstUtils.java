@@ -175,7 +175,7 @@ public class TemplateAstUtils {
         LinkedList<Ast> result = new LinkedList<>();
 
         try {
-            var castFieldType = TemplateType.FieldType.parse( castType != null ? castType : resultType.getTypeName() );
+            var castFieldType = FieldType.parse( castType != null ? castType : resultType.getTypeName() );
 
             for( int i = 0; i < exprs.exprs.size(); i++ ) {
                 Expr expr = exprs.exprs.get( i );
@@ -276,7 +276,7 @@ public class TemplateAstUtils {
             for( var item : exprs.concatenation.items ) {
                 if( item instanceof String si ) items.add( new AstText( si ) );
                 else if( item instanceof Expr ei )
-                    items.add( toAst( new Exprs( List.of( ei ) ), function, parentTemplateType, resultType, null,
+                    items.add( toAst( new Exprs( List.of( ei ) ), function, parentTemplateType, resultType, Object.class.getTypeName(),
                         defaultValue, builtInFunction, errorStrategy ) );
                 else
                     throw new TemplateException( "Unknown concatenation item " + item.getClass() );

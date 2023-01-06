@@ -373,6 +373,16 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testConcatenationWithNumber() {
+        var c = new TestTemplateClass();
+        c.intField = 3;
+        c.field2 = "f2";
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{intField,\"x\",field2}}", STRING, null ).render( c ).get() )
+            .isEqualTo( "3xf2" );
+    }
+
+    @Test
     public void testNestedConcatenation() {
         var c = new TestTemplateClass();
         var c1 = new TestTemplateClass();

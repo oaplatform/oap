@@ -25,7 +25,6 @@
 package oap.template.ast;
 
 import lombok.ToString;
-import oap.template.ast.TemplateType.FieldType;
 
 @ToString( callSuper = true )
 public class AstField extends Ast {

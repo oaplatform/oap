@@ -34,9 +34,9 @@ import java.util.Collection;
 @ToString( callSuper = true )
 public class AstPrintValue extends Ast {
     private final String value;
-    private final TemplateType.FieldType castType;
+    private final FieldType castType;
 
-    public AstPrintValue( TemplateType type, String value, TemplateType.FieldType castType ) {
+    public AstPrintValue( TemplateType type, String value, FieldType castType ) {
         super( type );
         this.value = value;
         this.castType = castType;
