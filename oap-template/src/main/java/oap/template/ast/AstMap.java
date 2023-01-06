@@ -22,32 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstRunnable extends Ast {
-    AstRunnable( TemplateType type ) {
-        super( type );
+public class AstMap extends Ast {
+    private final String key;
+
+    public AstMap( String key, TemplateType valueType ) {
+        super( valueType );
+
+        this.key = key;
     }
 
     @Override
-    void render( Render render ) {
-        var newFunctionId = render.newVariable();
-        var templateAccumulatorName = "acc_" + newFunctionId;
+    public void render( Render render ) {
+        var mapVariable = render.newVariable();
 
-        render( newFunctionId, templateAccumulatorName, render );
-    }
+        render.ntab().append( "%s %s = %s.get( \"%s\" );",
+            type.getTypeName(), mapVariable,
+            render.field, render.escapeJava( key ) );
 
-    void render( String newFunctionId, String templateAccumulatorName, Render render ) {
-        render
-            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
-            .ntab().append( "Runnable %s = () -> {", newFunctionId );
-
-        var newRender = render.withParentType( type ).withTemplateAccumulatorName( templateAccumulatorName ).tabInc();
-        children.forEach( ast -> ast.render( newRender ) );
-
-        render.ntab().append( "};" );
+        var newRender = render.withField( mapVariable ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

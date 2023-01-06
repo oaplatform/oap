@@ -27,6 +27,7 @@ package oap.template;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
+import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -57,6 +58,9 @@ public class TestTemplateClass {
     @Nullable
     public List<Integer> list2;
     public List<String> listString;
+
+    public DateTime dateTime;
+    public Optional<DateTime> dateTimeOptional = Optional.empty();
     public List<TestTemplateEnum> listEnum;
     public Set<String> setString;
     @JsonProperty( "jsonTestNew" )

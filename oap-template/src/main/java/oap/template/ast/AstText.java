@@ -22,29 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstMap extends Ast {
-    private final String key;
+public class AstText extends Ast {
+    public final String text;
 
-    public AstMap( String key, TemplateType valueType ) {
-        super( valueType );
-
-        this.key = key;
+    public AstText( String text ) {
+        super( new TemplateType( String.class ) );
+        this.text = text;
     }
 
     @Override
-    void render( Render render ) {
-        var mapVariable = render.newVariable();
+    public void render( Render render ) {
+        render.ntab()
+            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
+    }
 
-        render.ntab().append( "%s %s = %s.get( \"%s\" );",
-            type.getTypeName(), mapVariable,
-            render.field, render.escapeJava( key ) );
-
-        var newRender = render.withField( mapVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+    @Override
+    public boolean equalsAst( Ast ast ) {
+        return ast instanceof AstText;
     }
 }

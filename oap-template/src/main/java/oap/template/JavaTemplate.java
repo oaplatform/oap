@@ -26,6 +26,9 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
+import oap.template.ast.AstRoot;
+import oap.template.ast.Render;
+import oap.template.ast.TemplateType;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 

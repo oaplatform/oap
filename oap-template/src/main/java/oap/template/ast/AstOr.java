@@ -22,64 +22,60 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
-import oap.template.TemplateGrammarAdaptor.MaxMin;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @ToString( callSuper = true )
 public class AstOr extends Ast {
-    private final ArrayList<MaxMin> or = new ArrayList<>();
+    public final ArrayList<Ast> or = new ArrayList<>();
 
-    AstOr( TemplateType type ) {
+    public AstOr( TemplateType type, List<Ast> or ) {
         super( type );
-    }
 
-    public void addTry( List<MaxMin> asts ) {
-        for( var ast : asts ) {
-            var astRunnable = new AstRunnable( type );
-            ast.replaceTopLeafs( leaf -> new AstNullable( leaf.type ).addChild( leaf ) );
-            astRunnable.addChild( ast.top );
-            or.add( new MaxMin( astRunnable, ast.bottom ) );
+        for( var ast : or ) {
+            AstTryBlock astTryBlock = new AstTryBlock( type );
+            astTryBlock.addChild( ast );
+            this.or.add( astTryBlock );
         }
     }
 
     @Override
-    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         printTop( buffer, prefix );
         buffer.append( childrenPrefix ).append( "│OR" );
         buffer.append( '\n' );
 
         for( var i = 0; i < or.size(); i++ ) {
             var cp = "│".repeat( or.size() - i );
-            or.get( i ).top.print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
+            or.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
         }
 
         printChildren( buffer, childrenPrefix, children );
     }
 
     @Override
-    void render( Render render ) {
+    public void render( Render render ) {
         var orVariable = render.newVariable();
 
-        var minMax = or.get( 0 );
+        var ast = or.get( 0 );
 
         var r = render;
         r.ntab().append( render.templateAccumulator.getClass().getTypeName() ).append( " " ).append( orVariable ).append( " = acc.newInstance();" );
         for( var i = 0; i < or.size(); i++ ) {
-            minMax = or.get( i );
-            var astRunnable = ( AstRunnable ) minMax.top;
+            ast = or.get( i );
+            var astRunnable = ( AstTryBlock ) ast;
 
             var newFunctionId = render.newVariable();
             var templateAccumulatorName = "acc_" + newFunctionId;
 
             astRunnable.render( newFunctionId, templateAccumulatorName, render );
             r = r
-                .ntab().append( "%s.run();", newFunctionId )
-                .ntab().append( "if( !%s.isEmpty() ) { ", templateAccumulatorName )
+                .ntab().append( "boolean is_empty_%s = %s.getAsBoolean();", newFunctionId, newFunctionId )
+                .ntab().append( "if( !is_empty_%s ) { ", newFunctionId )
                 .tabInc().ntab().append( "%s = %s;", orVariable, templateAccumulatorName )
                 .tabDec();
 

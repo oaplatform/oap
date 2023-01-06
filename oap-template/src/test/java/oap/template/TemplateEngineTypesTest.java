@@ -32,8 +32,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 import static oap.template.ErrorStrategy.ERROR;
+import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -120,5 +122,15 @@ public class TemplateEngineTypesTest extends Fixtures {
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
         assertThat( str ).isEqualTo( "childNullable.intField:100_i" );
+    }
+
+    @Test
+    public void testDefaultBoolean() {
+        var c = new TestTemplateClass();
+        c.childNullable = null;
+        c.childOpt = Optional.empty();
+
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${<java.lang.Boolean>childNullable.booleanObjectField??true}", STRING, null ).render( c ).get() )
+            .isEqualTo( "true" );
     }
 }

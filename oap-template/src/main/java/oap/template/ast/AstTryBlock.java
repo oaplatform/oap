@@ -22,34 +22,43 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
 
 @ToString( callSuper = true )
-public class AstPrint extends Ast {
-    final String defaultValue;
-
-    AstPrint( TemplateType type, String defaultValue ) {
+public class AstTryBlock extends Ast {
+    public AstTryBlock( TemplateType type ) {
         super( type );
-        this.defaultValue = defaultValue;
     }
 
     @Override
-    void render( Render render ) {
-        var r = render.ntab();
-        var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
-        if( checkNull ) r = r
-            .append( "if( %s == null ) {", r.field )
-            .tabInc().ntab().append( "%s = %s;", r.field, format( r.parentType, defaultValue ) )
-            .tabDec().ntab().append( "}" ).ntab();
+    public void render( Render render ) {
+        var newFunctionId = render.newVariable();
+        var templateAccumulatorName = "acc_" + newFunctionId;
 
-        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
+        render( newFunctionId, templateAccumulatorName, render );
     }
 
-    private String format( TemplateType parentType, String defaultValue ) {
-        if( String.class.equals( parentType.getTypeClass() ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
-        return defaultValue;
+    public void render( String newFunctionId, String templateAccumulatorName, Render render ) {
+        String emptyVariable = "empty_" + newFunctionId;
+
+        render
+            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
+            .ntab().append( "BooleanSupplier %s = () -> {", newFunctionId )
+            .tabInc()
+            .ntab().append( "boolean %s = false;", emptyVariable );
+
+        var newRender = render.withParentType( type )
+            .withTryVariable( emptyVariable )
+            .withTemplateAccumulatorName( templateAccumulatorName )
+            .tabInc();
+        children.forEach( ast -> ast.render( newRender ) );
+
+        render
+            .tabInc()
+            .ntab().append( " return %s;", emptyVariable )
+            .tabDec()
+            .ntab().append( "};" );
     }
 }

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
 
@@ -33,17 +33,17 @@ import java.util.function.Supplier;
 public abstract class AstIfElse extends Ast {
     public Ast elseAst = null;
 
-    AstIfElse( TemplateType type ) {
+    public AstIfElse( TemplateType type ) {
         super( type );
     }
 
     @Override
-    protected boolean equalsAst( Ast ast ) {
+    public boolean equalsAst( Ast ast ) {
         return getClass().equals( ast.getClass() );
     }
 
     @Override
-    void render( Render render ) {
+    public void render( Render render ) {
         render
             .ntab().append( "if ( %s%s ) {", render.field, getTrue() );
 
@@ -63,13 +63,14 @@ public abstract class AstIfElse extends Ast {
         if( elseAst != null ) {
             var nRender = render.append( " else {" )
                 .tabInc();
+            if( nRender.tryVariable != null ) nRender.ntab().append( "%s = true;", nRender.tryVariable );
             elseAst.render( nRender );
             render.ntab().append( "}" );
         }
     }
 
     @Override
-    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         if( elseAst != null ) {
             printTop( buffer, prefix );
             buffer.append( childrenPrefix ).append( "│" ).append( getFalseToString() );

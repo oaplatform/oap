@@ -22,28 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
-import org.apache.commons.text.StringEscapeUtils;
 
-import java.util.ArrayList;
+import java.lang.reflect.Method;
+import java.util.List;
 
 @ToString( callSuper = true )
-public class AstExpression extends Ast {
-    final ArrayList<String> content = new ArrayList<>();
+public class AstFunction extends Ast {
+    final Method method;
+    final List<String> parameters;
 
-    AstExpression( Ast ast, String content ) {
-        super( ast.type );
-        this.children.add( ast );
-        this.content.add( content );
+    public AstFunction( TemplateType type, Method method, List<String> parameters ) {
+        super( type );
+        this.method = method;
+        this.parameters = parameters;
     }
 
     @Override
-    void render( Render render ) {
-        for( String c : content ) {
-            render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
-        }
-        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
+    public void render( Render render ) {
+        var funcVariable = render.newVariable();
+
+        render.ntab().append( "%s %s = %s.%s( %s",
+            method.getGenericReturnType().getTypeName(), funcVariable,
+            method.getDeclaringClass().getName(), method.getName(), render.field );
+        if( !parameters.isEmpty() ) render.append( ", " );
+        render.append( String.join( ", ", parameters ) ).append( " );" );
+
+        var newRender = render.withField( funcVariable ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

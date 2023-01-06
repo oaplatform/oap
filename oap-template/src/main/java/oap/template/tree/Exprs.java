@@ -22,40 +22,44 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
 import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
 
-import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
+@ToString
+public class Exprs {
+    public final ArrayList<Expr> exprs = new ArrayList<>();
+    public Math math = null;
+    public Concatenation concatenation = null;
 
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+    public Exprs() {
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
+    public Exprs( List<Expr> exprs ) {
+        this.exprs.addAll( exprs );
     }
 
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
-    }
+    public String print() {
+        StringBuilder sb = new StringBuilder();
 
+        if( !exprs.isEmpty() ) {
+            sb.append( "LIST\n" );
 
-    @ToString
-    static class Function {
-        public final String name;
+            var it = exprs.iterator();
+            while( it.hasNext() ) {
+                var item = it.next();
 
-        Function( String name ) {
-            this.name = name;
+                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
+
+            }
         }
+
+        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
+        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
+
+        return sb.toString();
     }
 }

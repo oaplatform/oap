@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
-import oap.template.LogConfiguration.FieldType;
+import oap.template.ast.TemplateType.FieldType;
 
 @ToString( callSuper = true )
 public class AstField extends Ast {
@@ -42,7 +42,7 @@ public class AstField extends Ast {
     }
 
     @Override
-    void render( Render render ) {
+    public void render( Render render ) {
         if( castType != null ) {
             var targetType = type;
             if( type.isOptional() ) targetType = type.getActualTypeArguments0();
@@ -66,7 +66,7 @@ public class AstField extends Ast {
     }
 
     @Override
-    protected boolean equalsAst( Ast ast ) {
+    public boolean equalsAst( Ast ast ) {
         if( !( ast instanceof AstField ) ) return false;
         return ( ( AstField ) ast ).fieldName.equals( fieldName );
     }

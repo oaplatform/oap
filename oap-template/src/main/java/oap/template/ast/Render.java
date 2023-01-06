@@ -22,32 +22,34 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
+import oap.template.TemplateAccumulator;
 import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ToString
-class Render {
+public class Render {
     private final AtomicInteger ids;
-    final String templateName;
-    final TemplateType parentType;
-    final TemplateAccumulator<?, ?, ?> templateAccumulator;
-    final String field;
-    final String templateAccumulatorName;
-    final int tab;
+    public final String templateName;
+    public final TemplateType parentType;
+    public final TemplateAccumulator<?, ?, ?> templateAccumulator;
+    public final String field;
+    public final String templateAccumulatorName;
+    public final int tab;
     private final StringBuilder sb;
     public final String content;
+    public final String tryVariable;
 
     private Render( String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
-                    String field, String templateAccumulatorName, int tab, AtomicInteger ids ) {
-        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab, ids );
+                    String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable ) {
+        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab, ids, tryVariable );
     }
 
-    Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
-            String field, String templateAccumulatorName, int tab, AtomicInteger ids ) {
+    public Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
+            String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable ) {
         this.sb = sb;
         this.templateName = templateName;
         this.content = content;
@@ -57,34 +59,41 @@ class Render {
         this.templateAccumulatorName = templateAccumulatorName;
         this.tab = tab;
         this.ids = ids;
+        this.tryVariable = tryVariable;
     }
 
     public static Render init( String templateName, String content, TemplateType type, TemplateAccumulator<?, ?, ?> acc ) {
-        return new Render( templateName, content, type, acc, null, null, 0, new AtomicInteger() );
+        return new Render( templateName, content, type, acc, null, null, 0, new AtomicInteger(), null );
     }
 
     public Render withField( String field ) {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab, ids );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable );
     }
 
     public Render withContent( String content ) {
-        return new Render( this.sb, this.templateName, content, this.parentType, this.templateAccumulator, field, this.templateAccumulatorName, this.tab, ids );
+        return new Render( this.sb, this.templateName, content, this.parentType, this.templateAccumulator, field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable );
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, templateAccumulatorName, this.tab, ids );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            templateAccumulatorName, this.tab, ids, tryVariable );
     }
 
     public Render tabInc() {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab + 1, ids );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab + 1, ids, tryVariable );
     }
 
     public Render tabDec() {
-        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab - 1, ids );
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab - 1, ids, tryVariable );
     }
 
     public Render withParentType( TemplateType parentType ) {
-        return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field, this.templateAccumulatorName, this.tab, ids );
+        return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable );
     }
 
     public Render n() {
@@ -139,4 +148,8 @@ class Render {
         return "v" + id;
     }
 
+    public Render withTryVariable( String tryVariable ) {
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable );
+    }
 }

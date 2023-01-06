@@ -22,33 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
+import org.apache.commons.text.StringEscapeUtils;
 
-import java.util.List;
+import java.util.ArrayList;
 
 @ToString( callSuper = true )
-public class AstConcatenation extends Ast {
-    final List<Ast> items;
+public class AstExpression extends Ast {
+    final ArrayList<String> content = new ArrayList<>();
 
-    AstConcatenation( TemplateType type, List<Ast> items ) {
-        super( type );
-
-        this.items = items;
+    public AstExpression( Ast ast, String content ) {
+        super( ast.type );
+        this.children.add( ast );
+        this.content.add( content );
     }
 
     @Override
-    void render( Render render ) {
-        var templateAccumulatorName = "acc_" + render.newVariable();
-        render
-            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName );
-
-        for( var item : items ) {
-            item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );
+    public void render( Render render ) {
+        for( String c : content ) {
+            render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
         }
-
-        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
-        children.forEach( a -> a.render( newRender ) );
+        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
     }
 }

@@ -9,10 +9,16 @@ options {
 @header {
 package oap.template;
 
+import oap.template.tree.*;
+import oap.template.tree.Math;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import oap.util.Lists;
+
 }
 
 @parser::members {
@@ -25,45 +31,36 @@ import java.util.Map;
 
 }
 
-expression[TemplateType parentType] returns [MaxMin ast]
-    locals [String comment = null, String castType = null; ]
-    : (BLOCK_COMMENT { $comment = $BLOCK_COMMENT.text; })? (CAST_TYPE { $castType = getCastType($CAST_TYPE.text); })? exps[parentType, $castType] { $ast = $exps.ast; } orExps[parentType, $castType, $ast] { $ast = $orExps.ast; } defaultValue? function? {
-        if( $function.ctx != null ) {
-          $ast.addToBottomChildrenAndSet( $function.func );
-        }
-
-        $ast.addLeafs( () -> getAst($ast.bottom.type, null, false, $defaultValue.ctx != null ? $defaultValue.v : null, null ).top );
-
-        java.util.function.Function<Ast, AstText> printDefautlValueAst = ast -> new AstText($defaultValue.ctx != null ? $defaultValue.v : null );
-        $ast.update( ast -> ast instanceof AstNullable, ast -> ((AstNullable)ast).elseAst = printDefautlValueAst.apply( ast ) );
-        $ast.update( ast -> ast instanceof AstOptional, ast -> ((AstOptional)ast).elseAst = printDefautlValueAst.apply( ast ) );
-
-        if( $comment != null ) {
-            $ast.setTop( new AstComment( parentType, $comment ) );
-        }
+expression returns [Expression ret]
+    : (BLOCK_COMMENT)? (CAST_TYPE)? exprs orExprs defaultValue? function? {
+        $ret = new Expression( $BLOCK_COMMENT.text,
+                                $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
+                                Lists.concat( List.of( $exprs.ret ), $orExprs.ret ),
+                                $defaultValue.ctx != null ? $defaultValue.ret : null,
+                                $function.ctx != null ? $function.ret : null );
       }
     ;
     
 
-defaultValue returns [String v]
-    : DQUESTION defaultValueType { $v = $defaultValueType.v; }
+defaultValue returns [String ret]
+    : DQUESTION defaultValueType { $ret = $defaultValueType.ret; }
     ;
 
-defaultValueType returns [String v]
-    : SSTRING { $v = sdStringToString( $SSTRING.text ); }
-    | DSTRING { $v = sdStringToString($DSTRING.text); }
-    | longRule { $v = $longRule.text; }
-    | FLOAT { $v = $FLOAT.text; }
-    | BOOLEAN { $v = $BOOLEAN.text; }
-    | LBRACK RBRACK { $v = "[]"; }
+defaultValueType returns [String ret]
+    : SSTRING { $ret = sdStringToString( $SSTRING.text ); }
+    | DSTRING { $ret = sdStringToString($DSTRING.text); }
+    | longRule { $ret = $longRule.text; }
+    | FLOAT { $ret = $FLOAT.text; }
+    | BOOLEAN { $ret = $BOOLEAN.text; }
+    | LBRACK RBRACK { $ret = "[]"; }
     ; 
 
 longRule
     : MINUS? DECDIGITS
     ;
 
-function returns [Ast func]
-    : SEMI ID LPAREN functionArgs? RPAREN { $func = getFunction( $ID.text, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }
+function returns [Func ret]
+    : SEMI ID LPAREN functionArgs? RPAREN { $ret = new Func( $ID.text, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }
     ;
 
 functionArgs returns [ArrayList<String> ret = new ArrayList<>()]
@@ -79,84 +76,54 @@ functionArg returns [String ret]
     | DSTRING { $ret = $DSTRING.text; }
     ;
 
-orExps [TemplateType parentType, String castType, MaxMin firstAst] returns [MaxMin ast]
-    locals [ArrayList<MaxMin> list = new ArrayList<>();]
-    : (PIPE exps[parentType, castType] { $list.add(firstAst); $list.add($exps.ast); } ( PIPE exps[parentType, castType] {$list.add($exps.ast);})*) {
-        if( $list.isEmpty() ) $ast = firstAst;
-        else {
-            var or = new AstOr(parentType);
-            for( var item : $list) {
-              item.addToBottomChildrenAndSet(getAst(item.bottom.type, null, false, null));
-            }
-            or.addTry($list);
-            $ast = new MaxMin(or);
-        }    
-    }
-    | { $ast = firstAst; }
+orExprs returns [ArrayList<Exprs> ret = new ArrayList<Exprs>() ]
+    : (PIPE exprs { $ret.add( $exprs.ret ); } ( PIPE exprs { $ret.add( $exprs.ret ); })*)
+    |
     ;
 
-exps [TemplateType parentType, String castType] returns [MaxMin ast]
-    : exp[parentType, castType]  { $ast = $exp.ast; }
-      math[$ast.bottom.type]? {
-        if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
-      }
-    | exp[parentType, null]  { $ast = $exp.ast; }
-      DOT? concatenation[$ast.bottom.type, castType] {
-        $ast.addToBottomChildrenAndSet( $concatenation.ast );
-      }
-    | exp[parentType, null] { $ast = $exp.ast; }
-      (DOT exp[$ast.bottom.type, null] {
-        $ast.addToBottomChildrenAndSet($exp.ast);
+exprs returns [Exprs ret = new Exprs()]
+    : expr  { $ret.exprs.add( $expr.ret ); }
+      math? { if( $math.ctx != null ) $ret.math = $math.ret; }
+    | expr  { $ret.exprs.add( $expr.ret ); }
+      DOT? concatenation { $ret.concatenation =$concatenation.ret; }
+    | expr { $ret.exprs.add( $expr.ret ); }
+      (DOT expr {
+        $ret.exprs.add( $expr.ret );
       })*
-      DOT exp[$ast.bottom.type, castType] { $ast.addToBottomChildrenAndSet($exp.ast); }
-      math[$ast.bottom.type]? {
-        if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
-      }
-    | exp[parentType, null] { $ast = $exp.ast; }
-      (DOT exp[$ast.bottom.type, null] {
-        $ast.addToBottomChildrenAndSet($exp.ast);
-      })*
-      DOT exp[$ast.bottom.type, null] { $ast.addToBottomChildrenAndSet($exp.ast); }
-      DOT? concatenation[$ast.bottom.type, castType] {
-        $ast.addToBottomChildrenAndSet( $concatenation.ast );
-      }
-      math[$ast.bottom.type]? {
-        if( $math.ctx != null ) $ast.addToBottomChildrenAndSet( $math.ast );
-      }
-    | concatenation[parentType, castType] { $ast = new MaxMin( $concatenation.ast ); }
+      DOT expr { $ret.exprs.add( $expr.ret ); }
+      math? { if( $math.ctx != null ) $ret.math = $math.ret; }
+    | expr { $ret.exprs.add( $expr.ret ); }
+      (DOT expr { $ret.exprs.add( $expr.ret ); })*
+      DOT expr { $ret.exprs.add( $expr.ret ); }
+      DOT? concatenation { $ret.concatenation = $concatenation.ret; }
+      math? { if( $math.ctx != null ) $ret.math = $math.ret; }
+    | concatenation { $ret.concatenation = $concatenation.ret; }
     ;
 
-exp[TemplateType parentType, String castType] returns [MaxMin ast]
-    : (ID LPAREN functionArgs? RPAREN) { $ast = getAst($parentType, $ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of(), castType ); }
-    | ID { $ast = getAst($parentType, $ID.text, false, castType ); }
+expr returns [Expr ret]
+    : (ID LPAREN functionArgs? RPAREN) { $ret = new Expr($ID.text, true, $functionArgs.ctx != null ? $functionArgs.ret : List.of() ); }
+    | ID { $ret = new Expr($ID.text, false, List.of() ); }
     ;
 
-concatenation[TemplateType parentType, String castType] returns [AstConcatenation ast]
-    : LBRACE citems[parentType] {
-        try {
-        com.google.common.base.Preconditions.checkArgument(  $castType == null || oap.template.LogConfiguration.FieldType.parse( $castType ).equals( new oap.template.LogConfiguration.FieldType( String.class )));
-        $ast = new AstConcatenation(parentType, $citems.list);
-        } catch ( java.lang.ClassNotFoundException e) {
-          throw new TemplateException( e.getMessage(), e );
-        }
-      } RBRACE
+concatenation returns [Concatenation ret]
+    : LBRACE citems { $ret = new Concatenation( $citems.ret ); } RBRACE
     ;
 
-citems[TemplateType parentType] returns [ArrayList<Ast> list = new ArrayList<Ast>()]
-    : citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false, null)); }
-        ( COMMA citem[parentType] { $list.add($citem.ast.top); $citem.ast.addToBottomChildrenAndSet(getAst($citem.ast.bottom.type, null, false, null)); } )*
-    ;
-    
-citem[TemplateType parentType] returns [MaxMin ast]
-    : ID { $ast = getAst($parentType, $ID.text, false, null); }
-    | DSTRING  { $ast = new MaxMin(new AstText(sdStringToString($DSTRING.text))); }
-    | SSTRING { $ast = new MaxMin(new AstText(sdStringToString($SSTRING.text))); }
-    | DECDIGITS { $ast = new MaxMin(new AstText(String.valueOf($DECDIGITS.text))); }
-    | FLOAT { $ast = new MaxMin(new AstText(String.valueOf($FLOAT.text))); }
+citems returns [ArrayList<Object> ret = new ArrayList<>()]
+    : citem { $ret.add($citem.ret); }
+        ( COMMA citem { $ret.add($citem.ret); } )*
     ;
 
-math[TemplateType parentType] returns [MaxMin ast]
-    : mathOperation number { $ast = new MaxMin(new AstMath($parentType, $mathOperation.text, $number.text)); }
+citem returns [Object ret]
+    : ID { $ret = new Expr( $ID.text, false, List.of() ); }
+    | DSTRING  { $ret = sdStringToString( $DSTRING.text ); }
+    | SSTRING { $ret = sdStringToString( $SSTRING.text ); }
+    | DECDIGITS { $ret = String.valueOf( $DECDIGITS.text ); }
+    | FLOAT { $ret = String.valueOf( $FLOAT.text ); }
+    ;
+
+math returns [Math ret]
+    : mathOperation number { $ret = new Math( $mathOperation.text, $number.text ); }
     ;
 
 number:

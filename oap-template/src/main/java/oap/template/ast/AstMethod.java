@@ -22,40 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
 
-import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
+@ToString( callSuper = true )
+public class AstMethod extends Ast {
+    private final String methodName;
+    private final List<String> arguments;
 
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+    public AstMethod( String methodName, TemplateType methodType, List<String> arguments ) {
+        super( methodType );
+
+        this.methodName = methodName;
+        this.arguments = arguments;
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
-    }
+    @Override
+    public void render( Render render ) {
+        var variableName = render.newVariable();
 
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
-    }
+        render.ntab().append( "%s %s = %s.%s(%s);",
+            type.getTypeName(), variableName,
+            render.field, methodName, String.join( ",", arguments ) );
 
-
-    @ToString
-    static class Function {
-        public final String name;
-
-        Function( String name ) {
-            this.name = name;
-        }
+        var newRender = render.withField( variableName ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

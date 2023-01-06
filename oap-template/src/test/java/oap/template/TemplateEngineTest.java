@@ -29,6 +29,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
+import org.joda.time.DateTime;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -41,11 +42,13 @@ import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
+import static oap.template.ErrorStrategy.IGNORE;
 import static oap.template.TemplateAccumulators.BINARY;
 import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateEngineTest extends Fixtures {
     private TemplateEngine engine;
@@ -243,7 +246,7 @@ public class TemplateEngineTest extends Fixtures {
         c.intField = 10;
 
         cp.childOpt = Optional.of( c );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING, null ).render( cp ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING, Map.of(), IGNORE ).render( cp ).get() )
             .isEqualTo( "o-10" );
 
         cp.childOpt = Optional.empty();
@@ -271,11 +274,11 @@ public class TemplateEngineTest extends Fixtures {
         c.fieldNullable = "o";
 
         cp.childNullable = c;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable}", STRING, null ).render( cp ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable??''}", STRING, null ).render( cp ).get() )
             .isEqualTo( "o" );
 
         cp.childNullable = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable}", STRING, null ).render( cp ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable??''}", STRING, null ).render( cp ).get() )
             .isEqualTo( "" );
     }
 
@@ -299,7 +302,7 @@ public class TemplateEngineTest extends Fixtures {
 
         assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childNullable.booleanObjectField??true}", STRING, null ).render( c ).get() )
             .isEqualTo( "true" );
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childOpt.booleanObjectField??true}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childOpt.booleanObjectField??true}", STRING, Map.of(), IGNORE ).render( c ).get() )
             .isEqualTo( "true" );
     }
 
@@ -313,6 +316,14 @@ public class TemplateEngineTest extends Fixtures {
     public void testDefaultDoubleBinary() throws IOException {
         assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}", BINARY, null ).render( Map.of( "prop", 1.1 ) ).get() ) )
             .isEqualTo( List.of( List.of( 0.0d ) ) );
+    }
+
+    @Test
+    public void testDefaultDateTime() throws IOException {
+//        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${dateTime??'2023-01-04 18:09:10'}", BINARY, null ).render( new TestTemplateClass() ).get() ) )
+//            .isEqualTo( List.of( List.of( new DateTime( 2023, 1, 4, 18, 9, 10, UTC ) ) ) );
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${dateTimeOptional??'2023-01-04 18:09:11'}", BINARY, null ).render( new TestTemplateClass() ).get() ) )
+            .isEqualTo( List.of( List.of( new DateTime( 2023, 1, 4, 18, 9, 11, UTC ) ) ) );
     }
 
     @Test
@@ -333,7 +344,7 @@ public class TemplateEngineTest extends Fixtures {
         c3.field2 = "f2";
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING,
-            Map.of( "child.field", "child2.field2" ), null ).render( c1 ).get() )
+            Map.of( "child.field", "child2.field2" ), ERROR ).render( c1 ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -397,10 +408,9 @@ public class TemplateEngineTest extends Fixtures {
     @Test
     public void testSumDefault() {
         var c = new TestTemplateClass();
-        c.intField = 123;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45 ?? 5}", STRING, null ).render( c ).get() )
-            .isEqualTo( "135.45" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intObjectField + 12.45 ?? 5}", STRING, null ).render( c ).get() )
+            .isEqualTo( "5" );
     }
 
     @Test

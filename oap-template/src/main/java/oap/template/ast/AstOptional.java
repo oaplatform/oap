@@ -22,35 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
 
 import java.util.function.Supplier;
 
 @ToString( callSuper = true )
-public class AstNullable extends AstIfElse {
-    AstNullable( TemplateType type ) {
+public class AstOptional extends AstIfElse {
+    public AstOptional( TemplateType type ) {
         super( type );
     }
 
     @Override
     protected String getTrue() {
-        return " != null";
+        return ".isPresent()";
     }
 
     @Override
     protected String getFalseToString() {
-        return "NULL";
+        return "isEmpty()";
     }
 
     @Override
     protected String getInnerVariable( Supplier<String> newVariable ) {
-        return null;
+        return newVariable.get();
     }
 
     @Override
     protected String getInnerVariableSetter( String variableName, Render render ) {
-        return null;
+        return "%s %s = %s.get();".formatted( type.getTypeName(), variableName, render.field );
     }
 }

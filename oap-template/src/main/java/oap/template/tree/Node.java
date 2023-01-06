@@ -22,35 +22,8 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
-import lombok.ToString;
-
-import java.lang.reflect.Method;
-import java.util.List;
-
-@ToString( callSuper = true )
-class AstFunction extends Ast {
-    final Method method;
-    final List<String> parameters;
-
-    AstFunction( TemplateType type, Method method, List<String> parameters ) {
-        super( type );
-        this.method = method;
-        this.parameters = parameters;
-    }
-
-    @Override
-    void render( Render render ) {
-        var funcVariable = render.newVariable();
-
-        render.ntab().append( "%s %s = %s.%s( %s",
-            method.getGenericReturnType().getTypeName(), funcVariable,
-            method.getDeclaringClass().getName(), method.getName(), render.field );
-        if( !parameters.isEmpty() ) render.append( ", " );
-        render.append( String.join( ", ", parameters ) ).append( " );" );
-
-        var newRender = render.withField( funcVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
-    }
+public interface Node {
+    String print();
 }

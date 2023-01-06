@@ -22,40 +22,24 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
 import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
 
-import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
+@ToString
+public class Func {
+    public final String name;
+    public final ArrayList<String> arguments = new ArrayList<>();
 
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+    public Func( String name, List<String> arguments ) {
+        this.name = name;
+        this.arguments.addAll( arguments );
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
-    }
-
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
-    }
-
-
-    @ToString
-    static class Function {
-        public final String name;
-
-        Function( String name ) {
-            this.name = name;
-        }
+    public String print() {
+        return name + "(" + String.join( ", ", arguments ) + ")";
     }
 }

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.ast;
 
 import lombok.ToString;
 
@@ -33,16 +33,18 @@ import java.util.List;
 @ToString( of = { "type" } )
 public abstract class Ast {
     public final TemplateType type;
-    final ArrayList<Ast> children = new ArrayList<>();
+    public final ArrayList<Ast> children = new ArrayList<>();
 
-    Ast( TemplateType type ) {
+    public Ast( TemplateType type ) {
         this.type = type;
     }
 
-    abstract void render( Render render );
+    public abstract void render( Render render );
 
-    public void addChildren( List<? extends Ast> list ) {
+    public Ast addChildren( List<? extends Ast> list ) {
         children.addAll( list );
+
+        return this;
     }
 
     public Ast addChild( Ast ast ) {
@@ -57,16 +59,16 @@ public abstract class Ast {
         return buffer.toString();
     }
 
-    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         print( buffer, prefix, childrenPrefix, children );
     }
 
-    protected void print( StringBuilder buffer, String prefix, String childrenPrefix, List<Ast> children ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix, List<Ast> children ) {
         printTop( buffer, prefix );
         printChildren( buffer, childrenPrefix, children );
     }
 
-    protected void printChildren( StringBuilder buffer, String childrenPrefix, List<Ast> children ) {
+    public void printChildren( StringBuilder buffer, String childrenPrefix, List<Ast> children ) {
         for( var it = children.iterator(); it.hasNext(); ) {
             Ast next = it.next();
             if( it.hasNext() ) {
@@ -77,13 +79,13 @@ public abstract class Ast {
         }
     }
 
-    protected void printTop( StringBuilder buffer, String prefix ) {
+    public void printTop( StringBuilder buffer, String prefix ) {
         buffer.append( prefix );
         buffer.append( toString() );
         buffer.append( '\n' );
     }
 
-    protected boolean equalsAst( Ast ast ) {
+    public boolean equalsAst( Ast ast ) {
         return false;
     }
 }

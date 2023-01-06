@@ -41,50 +41,43 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     void accept( String text );
 
     default void accept( Boolean b ) {
-        if( b == null ) accept( false );
-        else accept( b.booleanValue() );
+        accept( b.booleanValue() );
     }
 
     void accept( boolean b );
 
     default void accept( Byte b ) {
-        if( b == null ) accept( ( byte ) 0 );
-        else accept( b.byteValue() );
+        accept( b.byteValue() );
     }
 
     void accept( byte b );
 
     default void accept( Short s ) {
-        if( s == null ) accept( ( short ) 0 );
-        else accept( s.shortValue() );
+        accept( s.shortValue() );
     }
 
     void accept( short s );
 
     default void accept( Integer i ) {
-        if( i == null ) accept( ( int ) 0 );
-        else accept( i.intValue() );
+        accept( i.intValue() );
     }
 
     void accept( int i );
 
     default void accept( Long l ) {
-        if( l == null ) accept( ( long ) 0 );
-        else accept( l.longValue() );
+        accept( l.longValue() );
     }
 
     void accept( long l );
 
     default void accept( Float f ) {
-        if( f == null ) accept( ( float ) 0.0 );
-        else accept( f.floatValue() );
+        accept( f.floatValue() );
     }
 
     void accept( float f );
 
     default void accept( Double d ) {
-        if( d == null ) accept( ( double ) 0.0 );
-        else accept( d.doubleValue() );
+        accept( d.doubleValue() );
     }
 
     void accept( DateTime jodaDateTime );
