@@ -149,6 +149,14 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testEnumFieldNonNull() {
+        var c = new TestTemplateClass();
+        c.nonNullEnumField = TestTemplateEnum.VAL2;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${nonNullEnumField}", STRING, null ).render( c ).get() )
+            .isEqualTo( "VAL2" );
+    }
+
+    @Test
     public void testListField() {
         var c = new TestTemplateClass();
         c.list = List.of( 1, 2, 3 );

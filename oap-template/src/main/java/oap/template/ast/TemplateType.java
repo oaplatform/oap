@@ -72,7 +72,11 @@ public class TemplateType {
     }
 
     public TemplateType getActualTypeArguments1() {
-        return new TemplateType( ( ( ParameterizedType ) type ).getActualTypeArguments()[1] );
+        return getActualTypeArguments1( false );
+    }
+
+    public TemplateType getActualTypeArguments1( boolean nullable ) {
+        return new TemplateType( ( ( ParameterizedType ) type ).getActualTypeArguments()[1], nullable );
     }
 
     public List<TemplateType> getActualArguments() {
@@ -86,5 +90,4 @@ public class TemplateType {
     public boolean isOptional() {
         return getTypeClass().isAssignableFrom( Optional.class );
     }
-
 }

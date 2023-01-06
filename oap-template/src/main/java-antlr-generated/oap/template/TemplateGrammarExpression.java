@@ -125,6 +125,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExpressionContext extends ParserRuleContext {
+		public String template;
 		public Expression ret;
 		public Token BLOCK_COMMENT;
 		public Token CAST_TYPE;
@@ -146,8 +147,10 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		public FunctionContext function() {
 			return getRuleContext(FunctionContext.class,0);
 		}
-		public ExpressionContext(ParserRuleContext parent, int invokingState) {
+		public ExpressionContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
+		public ExpressionContext(ParserRuleContext parent, int invokingState, String template) {
 			super(parent, invokingState);
+			this.template = template;
 		}
 		@Override public int getRuleIndex() { return RULE_expression; }
 		@Override
@@ -160,8 +163,8 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		}
 	}
 
-	public final ExpressionContext expression() throws RecognitionException {
-		ExpressionContext _localctx = new ExpressionContext(_ctx, getState());
+	public final ExpressionContext expression(String template) throws RecognitionException {
+		ExpressionContext _localctx = new ExpressionContext(_ctx, getState(), template);
 		enterRule(_localctx, 0, RULE_expression);
 		int _la;
 		try {
@@ -212,7 +215,9 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			}
 
 
-			        ((ExpressionContext)_localctx).ret =  new Expression( (((ExpressionContext)_localctx).BLOCK_COMMENT!=null?((ExpressionContext)_localctx).BLOCK_COMMENT.getText():null),
+			        ((ExpressionContext)_localctx).ret =  new Expression(
+			                                _localctx.template,
+			                                (((ExpressionContext)_localctx).BLOCK_COMMENT!=null?((ExpressionContext)_localctx).BLOCK_COMMENT.getText():null),
 			                                (((ExpressionContext)_localctx).CAST_TYPE!=null?((ExpressionContext)_localctx).CAST_TYPE.getText():null) != null ? (((ExpressionContext)_localctx).CAST_TYPE!=null?((ExpressionContext)_localctx).CAST_TYPE.getText():null).substring( 1, (((ExpressionContext)_localctx).CAST_TYPE!=null?((ExpressionContext)_localctx).CAST_TYPE.getText():null).length() - 1 ) : null,
 			                                Lists.concat( List.of( ((ExpressionContext)_localctx).exprs.ret ), ((ExpressionContext)_localctx).orExprs.ret ),
 			                                ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.ret : null,

@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +44,8 @@ public class TestTemplateClass {
     public TestTemplateClass child;
     public TestTemplateClass2 child2;
     public TestTemplateEnum enumField;
+    @Nonnull
+    public TestTemplateEnum nonNullEnumField = TestTemplateEnum.VAL1;
     public boolean booleanField;
     public Boolean booleanObjectField;
     public int intField;

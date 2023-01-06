@@ -46,11 +46,11 @@ import oap.util.Lists;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,29 +150,33 @@ public class TemplateAstUtils {
             orAst.add( itemAst );
         }
 
-        Ast ret;
+        Chain list = new Chain();
+
+        list.add( new AstComment( templateType, "// " + expression.template ) );
+        if( expression.comment != null ) list.add( new AstComment( templateType, "// " + expression.comment ) );
 
         if( orAst.size() > 1 ) {
-            ret = new AstOr( templateType, orAst );
+            var ast = new AstOr( templateType, orAst );
             if( expression.function != null ) {
                 Ast astFunction = getFunction( expression.function.name, expression.function.arguments, builtInFunction, errorStrategy );
-                ret.addChild( astFunction );
+                ast.addChild( astFunction );
                 astFunction.addChild( new AstPrintField( templateType ) );
             } else
-                ret.addChild( new AstPrintField( templateType ) );
+                ast.addChild( new AstPrintField( templateType ) );
+            list.add( ast );
         } else {
-            ret = orAst.get( 0 );
+            list.add( orAst.get( 0 ) );
         }
 
-        return ret;
+        return list.head();
 
     }
 
-    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses" } )
     private static Ast toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
                               String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         var currentTemplateType = templateType;
-        LinkedList<Ast> result = new LinkedList<>();
+        Chain result = new Chain();
 
         try {
             var castFieldType = FieldType.parse( castType != null ? castType : resultType.getTypeName() );
@@ -198,7 +202,7 @@ public class TemplateAstUtils {
                     result.add( ast );
                     currentTemplateType = newType;
                 } else if( currentTemplateType.isInstanceOf( Map.class ) ) {
-                    var valueType = currentTemplateType.getActualTypeArguments1();
+                    var valueType = currentTemplateType.getActualTypeArguments1( true );
                     AstMap ast = new AstMap( expr.name, valueType );
 
                     result.add( ast );
@@ -207,7 +211,9 @@ public class TemplateAstUtils {
                     var parentClass = currentTemplateType.getTypeClass();
                     var field = findField( parentClass, expr.name );
 
-                    var fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
+                    boolean nullable = field.isAnnotationPresent( Nullable.class )
+                        || ( !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class ) );
+                    var fieldType = new TemplateType( field.getGenericType(), nullable );
                     boolean forceCast = false;
                     if( fieldType.isInstanceOf( Ext.class ) ) {
                         var extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
@@ -242,7 +248,7 @@ public class TemplateAstUtils {
                 ast.addChild( wrap( exprs, function, actualTypeArguments0, resultType, defaultValue, builtInFunction, errorStrategy ) );
                 ast.elseAst = new AstPrintValue( actualTypeArguments0, defaultValue, castFieldType );
                 result.add( ast );
-            } else if( currentTemplateType.nullable || !currentTemplateType.isPrimitiveType() ) {
+            } else if( currentTemplateType.nullable ) {
                 AstNullable ast = new AstNullable( currentTemplateType );
                 ast.addChild( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
                 ast.elseAst = new AstPrintValue( currentTemplateType, defaultValue, castFieldType );
@@ -250,15 +256,7 @@ public class TemplateAstUtils {
             } else
                 result.add( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
 
-            var it = result.iterator();
-            var current = it.next();
-            while( it.hasNext() ) {
-                var item = it.next();
-                current.addChild( item );
-                current = item;
-            }
-
-            return result.peekFirst();
+            return result.head();
         } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
             return new AstPathNotFound( e.getMessage() );
@@ -268,7 +266,7 @@ public class TemplateAstUtils {
     @SuppressWarnings( "checkstyle:ParameterAssignment" )
     private static Ast wrap( Exprs exprs, Func function, TemplateType parentTemplateType, TemplateType resultType,
                              String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
-        LinkedList<Ast> list = new LinkedList<>();
+        Chain list = new Chain();
 
         if( exprs.concatenation != null ) {
             ArrayList<Ast> items = new ArrayList<>();
@@ -291,23 +289,20 @@ public class TemplateAstUtils {
         if( exprs.math != null ) {
             AstMath ast = new AstMath( parentTemplateType, exprs.math.operation, exprs.math.value );
 
-            if( list.peekLast() != null ) list.peekLast().addChild( ast );
-            else list.add( ast );
+            list.add( ast );
         }
 
         if( function != null ) {
             Ast ast = getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
 
-            if( list.peekLast() != null ) list.peekLast().addChild( ast );
-            else list.add( ast );
+            list.add( ast );
         }
 
-        var ast = new AstPrintField( new TemplateType( String.class, false ) );
-        if( list.peekLast() != null ) list.peekLast().addChild( ast );
-        else list.add( ast );
+        var ast = new AstPrintField( parentTemplateType );
+        list.add( ast );
 
 
-        return list.peekFirst();
+        return list.head();
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
@@ -325,7 +320,7 @@ public class TemplateAstUtils {
                         lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                         grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                     }
-                    var tree = grammar.expression().ret;
+                    var tree = grammar.expression( e.expression ).ret;
                     log.trace( e.expression + "\n" + tree.print() );
 
                     ast = toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy );

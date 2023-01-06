@@ -31,9 +31,11 @@ import oap.util.Lists;
 
 }
 
-expression returns [Expression ret]
+expression[String template] returns [Expression ret]
     : (BLOCK_COMMENT)? (CAST_TYPE)? exprs orExprs defaultValue? function? {
-        $ret = new Expression( $BLOCK_COMMENT.text,
+        $ret = new Expression(
+                                $template,
+                                $BLOCK_COMMENT.text,
                                 $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
                                 Lists.concat( List.of( $exprs.ret ), $orExprs.ret ),
                                 $defaultValue.ctx != null ? $defaultValue.ret : null,
