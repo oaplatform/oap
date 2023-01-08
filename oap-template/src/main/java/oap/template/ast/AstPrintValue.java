@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
+import java.util.HashSet;
 
 @ToString( callSuper = true )
 public class AstPrintValue extends Ast {
@@ -54,6 +55,23 @@ public class AstPrintValue extends Ast {
         r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, value ) );
     }
 
+    private static final HashSet<Class<?>> numberClass = new HashSet<>();
+
+    static {
+        numberClass.add( Byte.class );
+        numberClass.add( byte.class );
+        numberClass.add( Short.class );
+        numberClass.add( short.class );
+        numberClass.add( Integer.class );
+        numberClass.add( int.class );
+        numberClass.add( Long.class );
+        numberClass.add( long.class );
+        numberClass.add( Float.class );
+        numberClass.add( float.class );
+        numberClass.add( Double.class );
+        numberClass.add( double.class );
+    }
+
     @SuppressWarnings( { "checkstyle:ParameterAssignment", "unchecked" } )
     private String format( TemplateType parentType, String defaultValue ) {
         Class<?> typeClass = parentType.isOptional() ? parentType.getActualTypeArguments0().getTypeClass() : parentType.getTypeClass();
@@ -61,22 +79,14 @@ public class AstPrintValue extends Ast {
         if( defaultValue == null ) {
             if( String.class.equals( typeClass ) ) return "\"\"";
             else if( Boolean.class.equals( typeClass ) || boolean.class.equals( typeClass ) ) return "false";
-            else if( Byte.class.equals( typeClass ) || byte.class.equals( typeClass ) ) return "(byte)0";
-            else if( Short.class.equals( typeClass ) || short.class.equals( typeClass ) ) return "(short)0";
-            else if( Integer.class.equals( typeClass ) || int.class.equals( typeClass ) ) return "0";
-            else if( Long.class.equals( typeClass ) || long.class.equals( typeClass ) ) return "0L";
-            else if( Float.class.equals( typeClass ) || float.class.equals( typeClass ) ) return "0f";
-            else if( Double.class.equals( typeClass ) || double.class.equals( typeClass ) ) return "0d";
-            else if( Collection.class.isAssignableFrom( typeClass ) ) return "java.util.List.of()";
+            else if( numberClass.contains( typeClass ) ) defaultValue = "0";
             else if( Enum.class.isAssignableFrom( typeClass ) ) {
                 try {
                     defaultValue = Enum.valueOf( ( Class<Enum> ) typeClass, Strings.UNKNOWN ).name();
                 } catch( IllegalArgumentException ignored ) {
                     defaultValue = EnumUtils.getEnumList( ( Class<Enum> ) typeClass ).get( 0 ).toString();
                 }
-                return defaultValue;
-            } else if( typeClass.isPrimitive() ) return "0";
-            else defaultValue = "";
+            } else defaultValue = "";
         }
 
         if( String.class.equals( typeClass ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
