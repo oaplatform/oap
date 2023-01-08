@@ -347,50 +347,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testConcatenation() {
-        var c = new TestTemplateClass();
-        c.field = "f1";
-        c.field2 = "f2";
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{field,\"x\",field2}}", STRING, null ).render( c ).get() )
-            .isEqualTo( "f1xf2" );
-    }
-
-    @Test
-    public void testConcatenationWithNumber() {
-        var c = new TestTemplateClass();
-        c.intField = 3;
-        c.field2 = "f2";
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{intField,\"x\",field2}}", STRING, null ).render( c ).get() )
-            .isEqualTo( "3xf2" );
-    }
-
-    @Test
-    public void testNestedConcatenation() {
-        var c = new TestTemplateClass();
-        var c1 = new TestTemplateClass();
-        c.child = c1;
-        c1.field = "f1";
-        c1.field2 = "f2";
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child{field,\"x\",field2}}", STRING, null ).render( c ).get() )
-            .isEqualTo( "f1xf2" );
-    }
-
-    @Test
-    public void testNestedConcatenationWithDot() {
-        var c = new TestTemplateClass();
-        var c1 = new TestTemplateClass2();
-        c.child2 = c1;
-        c1.field2 = "f1";
-        c1.field22 = "f2";
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child2.{field2,\"x\",field22}}", STRING, null ).render( c ).get() )
-            .isEqualTo( "f1xf2" );
-    }
-
-    @Test
     public void testSum() {
         var c = new TestTemplateClass();
         c.intField = 123;

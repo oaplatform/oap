@@ -245,12 +245,12 @@ public class TemplateAstUtils {
                 TemplateType actualTypeArguments0 = currentTemplateType.getActualTypeArguments0();
                 AstOptional ast = new AstOptional( actualTypeArguments0 );
                 ast.addChild( wrap( exprs, function, actualTypeArguments0, resultType, defaultValue, builtInFunction, errorStrategy ) );
-                ast.elseAst = new AstPrintValue( actualTypeArguments0, defaultValue, castFieldType );
+                ast.elseAst = new AstPrintValue( resultType, defaultValue, castFieldType );
                 result.add( ast );
             } else if( currentTemplateType.nullable ) {
                 AstNullable ast = new AstNullable( currentTemplateType );
                 ast.addChild( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
-                ast.elseAst = new AstPrintValue( currentTemplateType, defaultValue, castFieldType );
+                ast.elseAst = new AstPrintValue( resultType, defaultValue, castFieldType );
                 result.add( ast );
             } else
                 result.add( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
