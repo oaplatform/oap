@@ -53,7 +53,7 @@ public class AstPrintValue extends Ast {
         if( defaultValue == null ) defaultValue = r.templateAccumulator.getDefault( type.getTypeClass() );
 
         if( defaultValue == null ) {
-            r.append( "%s.acceptNull( %s.class );", r.templateAccumulatorName, type.getTypeClass().getSimpleName() );
+            r.append( "%s.acceptNull( %s.class );", r.templateAccumulatorName, type.getTypeClass().getTypeName() );
         } else {
             String cast = "";
             if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
