@@ -133,6 +133,11 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
         bos.write( baos.array, 0, baos.length );
     }
 
+    @SneakyThrows
+    public void accept( TemplateAccumulatorString acc ) {
+        bos.writeString( acc.get() );
+    }
+
     @Override
     public void accept( Object obj ) {
         if( obj instanceof String s ) accept( s );
@@ -148,8 +153,9 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
         else if( obj instanceof Date d ) accept( d );
         else if( obj instanceof Collection<?> c ) accept( c );
         else if( obj instanceof TemplateAccumulatorBinary tab ) accept( tab );
-
-        throw new IllegalArgumentException( "Unknown type " + obj.getClass() );
+        else if( obj instanceof TemplateAccumulatorString tab ) accept( tab );
+        else
+            throw new IllegalArgumentException( "Unknown type " + obj.getClass() );
     }
 
     @Override

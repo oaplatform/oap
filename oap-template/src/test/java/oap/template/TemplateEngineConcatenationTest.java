@@ -31,9 +31,12 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Optional;
 
+import static oap.template.TemplateAccumulators.BINARY;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,6 +66,16 @@ public class TemplateEngineConcatenationTest extends Fixtures {
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{field,\"x\",field2}}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
+    }
+
+    @Test
+    public void testConcatenationBinary() throws IOException {
+        var c = new TestTemplateClass();
+        c.field = "f1";
+        c.field2 = "f2";
+
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{field,\"x\",field2}}", BINARY, null ).render( c ).get() ) )
+            .isEqualTo( List.of( List.of( "f1xf2" ) ) );
     }
 
     @Test
@@ -120,7 +133,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         var c = new TestTemplateClass();
         var c1 = new TestTemplateClass();
         var c11 = new TestTemplateClass();
-        c.childOpt =  Optional.of( c1 );
+        c.childOpt = Optional.of( c1 );
 
         c1.childOpt = Optional.of( c11 );
 
