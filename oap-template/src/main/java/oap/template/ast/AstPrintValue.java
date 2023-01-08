@@ -59,22 +59,23 @@ public class AstPrintValue extends Ast {
         Class<?> typeClass = parentType.isOptional() ? parentType.getActualTypeArguments0().getTypeClass() : parentType.getTypeClass();
 
         if( defaultValue == null ) {
-            if( String.class.equals( typeClass ) ) defaultValue = "";
-            else if( Boolean.class.equals( typeClass ) || boolean.class.equals( typeClass ) ) defaultValue = "false";
-            else if( Byte.class.equals( typeClass ) || byte.class.equals( typeClass ) ) defaultValue = "(byte)0";
-            else if( Short.class.equals( typeClass ) || short.class.equals( typeClass ) ) defaultValue = "(short)0";
-            else if( Integer.class.equals( typeClass ) || int.class.equals( typeClass ) ) defaultValue = "0";
-            else if( Long.class.equals( typeClass ) || long.class.equals( typeClass ) ) defaultValue = "0L";
-            else if( Float.class.equals( typeClass ) || float.class.equals( typeClass ) ) defaultValue = "0f";
-            else if( Double.class.equals( typeClass ) || double.class.equals( typeClass ) ) defaultValue = "0d";
-            else if( Collection.class.isAssignableFrom( typeClass ) ) defaultValue = "[]";
+            if( String.class.equals( typeClass ) ) return "";
+            else if( Boolean.class.equals( typeClass ) || boolean.class.equals( typeClass ) ) return "false";
+            else if( Byte.class.equals( typeClass ) || byte.class.equals( typeClass ) ) return "(byte)0";
+            else if( Short.class.equals( typeClass ) || short.class.equals( typeClass ) ) return "(short)0";
+            else if( Integer.class.equals( typeClass ) || int.class.equals( typeClass ) ) return "0";
+            else if( Long.class.equals( typeClass ) || long.class.equals( typeClass ) ) return "0L";
+            else if( Float.class.equals( typeClass ) || float.class.equals( typeClass ) ) return "0f";
+            else if( Double.class.equals( typeClass ) || double.class.equals( typeClass ) ) return "0d";
+            else if( Collection.class.isAssignableFrom( typeClass ) ) return "[]";
             else if( Enum.class.isAssignableFrom( typeClass ) ) {
                 try {
                     defaultValue = Enum.valueOf( ( Class<Enum> ) typeClass, Strings.UNKNOWN ).name();
                 } catch( IllegalArgumentException ignored ) {
                     defaultValue = EnumUtils.getEnumList( ( Class<Enum> ) typeClass ).get( 0 ).toString();
                 }
-            } else if( typeClass.isPrimitive() ) defaultValue = "0";
+                return defaultValue;
+            } else if( typeClass.isPrimitive() ) return "0";
             else defaultValue = "";
         }
 

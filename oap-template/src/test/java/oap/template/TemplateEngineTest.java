@@ -44,6 +44,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.ErrorStrategy.IGNORE;
 import static oap.template.TemplateAccumulators.BINARY;
+import static oap.template.TemplateAccumulators.OBJECT;
 import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +73,15 @@ public class TemplateEngineTest extends Fixtures {
     public void testRenderStringText() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ).get() )
             .isEqualTo( "sdkjf hdkfgj d$...{}" );
+    }
+
+    @Test
+    public void testWithoutDefaultValue() {
+        var c = new TestTemplateClass();
+        c.childNullable = new TestTemplateClass();
+        c.childNullable.longField = 0;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.longField}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( 0L );
     }
 
     @Test
