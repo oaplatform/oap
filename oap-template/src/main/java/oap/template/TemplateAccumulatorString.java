@@ -164,7 +164,13 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
 
     @Override
     public void acceptNull( Class<?> type ) {
+    }
 
+    @Override
+    public String getDefault( Class<?> type ) {
+        if( Collection.class.isAssignableFrom( type ) ) return "[]";
+
+        return null;
     }
 
     @Override

@@ -159,6 +159,13 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testListFieldWithoutDefault() {
+        var c = new TestTemplateClass();
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list}", STRING, null ).render( c ).get() )
+            .isEqualTo( "[]" );
+    }
+
+    @Test
     public void testListString() {
         var c = new TestTemplateClass();
         c.listString = List.of( "1", "'", "\\" );

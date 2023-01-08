@@ -33,6 +33,7 @@ import org.joda.time.DateTime;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.joda.time.DateTimeZone.UTC;
@@ -163,21 +164,40 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
 
     @Override
     public void acceptNull( Class<?> type ) {
-        if( String.class.equals( type ) ) acceptText( "\"\"" );
-        else if( Boolean.class.equals( type ) || boolean.class.equals( type ) ) accept( false );
-        else if( Byte.class.equals( type ) || byte.class.equals( type ) ) accept( ( byte ) 0 );
-        else if( Short.class.equals( type ) || short.class.equals( type ) ) accept( ( short ) 0 );
-        else if( Integer.class.equals( type ) || int.class.equals( type ) ) accept( ( int ) 0 );
-        else if( Long.class.equals( type ) || long.class.equals( type ) ) accept( 0L );
-        else if( Float.class.equals( type ) || float.class.equals( type ) ) accept( 0f );
-        else if( Double.class.equals( type ) || double.class.equals( type ) ) accept( 0d );
+        throw new IllegalArgumentException( "type " + type );
+    }
+
+    private static final HashSet<Class<?>> numberClass = new HashSet<>();
+
+    static {
+        numberClass.add( Byte.class );
+        numberClass.add( byte.class );
+        numberClass.add( Short.class );
+        numberClass.add( short.class );
+        numberClass.add( Integer.class );
+        numberClass.add( int.class );
+        numberClass.add( Long.class );
+        numberClass.add( long.class );
+        numberClass.add( Float.class );
+        numberClass.add( float.class );
+        numberClass.add( Double.class );
+        numberClass.add( double.class );
+    }
+
+
+    @Override
+    public String getDefault( Class<?> type ) {
+        if( String.class.equals( type ) ) return "";
+        else if( Boolean.class.equals( type ) || boolean.class.equals( type ) ) return "false";
+        else if( numberClass.contains( type ) ) return "0";
         else if( Enum.class.isAssignableFrom( type ) ) {
             try {
-                accept( Enum.valueOf( ( Class<Enum> ) type, Strings.UNKNOWN ) );
+                return Enum.valueOf( ( Class<Enum> ) type, Strings.UNKNOWN ).name();
             } catch( IllegalArgumentException ignored ) {
-                accept( EnumUtils.getEnumList( ( Class<Enum> ) type ).get( 0 ) );
+                List<Enum> enumList = EnumUtils.getEnumList( ( Class<Enum> ) type );
+                return enumList.get( 0 ).name();
             }
-        } else if( Collection.class.isAssignableFrom( type ) ) accept( List.of() );
+        } else if( Collection.class.isAssignableFrom( type ) ) return "[]";
         else
             throw new TemplateException( new IllegalArgumentException( "class " + type + " unknown default value" ) );
     }

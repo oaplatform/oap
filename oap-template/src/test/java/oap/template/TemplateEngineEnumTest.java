@@ -72,6 +72,14 @@ public class TemplateEngineEnumTest extends Fixtures {
     }
 
     @Test
+    public void testEnumFieldWithoutDefault() {
+        var c = new TestTemplateClass();
+        c.enumField = null;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
     public void testEnumFieldDefaultEmptyAsUNKNOWN() {
         var c = new TestTemplateClass();
         c.enumField = null;

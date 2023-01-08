@@ -48,12 +48,17 @@ public class AstPrintValue extends Ast {
     public void render( Render render ) {
         var r = render.ntab();
 
-        if( value == null ) r.append( "%s.acceptNull( %s.class );", r.templateAccumulatorName, type.getTypeClass().getSimpleName() );
-        else {
+        var defaultValue = value;
+
+        if( defaultValue == null ) defaultValue = r.templateAccumulator.getDefault( type.getTypeClass() );
+
+        if( defaultValue == null ) {
+            r.append( "%s.acceptNull( %s.class );", r.templateAccumulatorName, type.getTypeClass().getSimpleName() );
+        } else {
             String cast = "";
             if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
 
-            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, value ) );
+            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, defaultValue ) );
         }
     }
 

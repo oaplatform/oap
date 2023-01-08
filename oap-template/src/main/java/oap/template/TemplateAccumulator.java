@@ -98,6 +98,8 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
 
     void acceptNull( Class<?> type );
 
+    String getDefault( Class<?> type );
+
     boolean isEmpty();
 
     TTemplateAccumulator newInstance();
