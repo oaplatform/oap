@@ -75,8 +75,7 @@ public class AstPrintValue extends Ast {
         else if( Collection.class.isAssignableFrom( typeClass ) ) {
             return "java.util.List.of()";
         } else if( Enum.class.isAssignableFrom( typeClass ) ) {
-
-            return "%s.%s".formatted( parentType.getTypeName(), defaultValue );
+            return "%s.%s".formatted( parentType.getTypeName(), defaultValue.isEmpty() ? Strings.UNKNOWN : defaultValue );
         } else if( DateTime.class.equals( typeClass ) ) {
             DateTime dateTime = Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( defaultValue );
             return "new org.joda.time.DateTime( " + dateTime.getMillis() + "L, org.joda.time.DateTimeZone.UTC )";
