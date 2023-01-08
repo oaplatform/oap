@@ -60,7 +60,13 @@ public class AstPrintValue extends Ast {
 
         if( defaultValue == null ) {
             if( String.class.equals( typeClass ) ) defaultValue = "";
-            else if( Boolean.class.equals( typeClass ) ) defaultValue = "false";
+            else if( Boolean.class.equals( typeClass ) || boolean.class.equals( typeClass ) ) defaultValue = "false";
+            else if( Byte.class.equals( typeClass ) || byte.class.equals( typeClass ) ) defaultValue = "(byte)0";
+            else if( Short.class.equals( typeClass ) || short.class.equals( typeClass ) ) defaultValue = "(short)0";
+            else if( Integer.class.equals( typeClass ) || int.class.equals( typeClass ) ) defaultValue = "0";
+            else if( Long.class.equals( typeClass ) || long.class.equals( typeClass ) ) defaultValue = "0L";
+            else if( Float.class.equals( typeClass ) || float.class.equals( typeClass ) ) defaultValue = "0f";
+            else if( Double.class.equals( typeClass ) || double.class.equals( typeClass ) ) defaultValue = "0d";
             else if( Collection.class.isAssignableFrom( typeClass ) ) defaultValue = "[]";
             else if( Enum.class.isAssignableFrom( typeClass ) ) {
                 try {
@@ -69,9 +75,15 @@ public class AstPrintValue extends Ast {
                     defaultValue = EnumUtils.getEnumList( ( Class<Enum> ) typeClass ).get( 0 ).toString();
                 }
             } else if( typeClass.isPrimitive() ) defaultValue = "0";
+            else defaultValue = "";
         }
 
         if( String.class.equals( typeClass ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
+        else if( Byte.class.isAssignableFrom( typeClass ) || byte.class.equals( typeClass ) ) return "(byte)%s".formatted( defaultValue );
+        else if( Short.class.isAssignableFrom( typeClass ) || short.class.equals( typeClass ) ) return "(short)%s".formatted( defaultValue );
+        else if( Long.class.isAssignableFrom( typeClass ) || long.class.equals( typeClass ) ) return "%sL".formatted( defaultValue );
+        else if( Float.class.isAssignableFrom( typeClass ) || float.class.equals( typeClass ) ) return "%sf".formatted( defaultValue );
+        else if( Double.class.isAssignableFrom( typeClass ) || double.class.equals( typeClass ) ) return "%sd".formatted( defaultValue );
         else if( Collection.class.isAssignableFrom( typeClass ) ) {
             return "java.util.List.of()";
         } else if( Enum.class.isAssignableFrom( typeClass ) ) {

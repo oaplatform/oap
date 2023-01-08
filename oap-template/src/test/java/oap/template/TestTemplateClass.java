@@ -49,8 +49,18 @@ public class TestTemplateClass {
     public TestTemplateEnum nonNullEnumField = TestTemplateEnum.VAL1;
     public boolean booleanField;
     public Boolean booleanObjectField;
+    public short byteField;
+    public Byte byteObjectField;
+    public short shortField;
+    public Short shortObjectField;
     public int intField;
     public Integer intObjectField;
+    public long longField;
+    public Long longObjectField;
+    public float floatField;
+    public Float floatObjectField;
+    public double doubleField;
+    public Double doubleObjectField;
     public Optional<TestTemplateClass> childOpt = Optional.empty();
     @Nullable
     public TestTemplateClass childNullable;

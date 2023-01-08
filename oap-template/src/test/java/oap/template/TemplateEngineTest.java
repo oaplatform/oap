@@ -396,6 +396,32 @@ public class TemplateEngineTest extends Fixtures {
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
     }
 
+    @SuppressWarnings( "checkstyle:NoWhitespaceBefore" )
+    @Test
+    public void testPrimitiveAsObjectDefaultValue() {
+        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        var templateClass = new TestTemplateClass();
+
+        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "booleanField:${booleanField??true},booleanObjectField:${booleanObjectField??true}"
+                + ",byteField:${byteField??1},byteObjectField:${byteObjectField??1}"
+                + ",shortField:${shortField??1},shortObjectField:${shortObjectField??1}"
+                + ",intField:${intField??1},intObjectField:${intObjectField??1}"
+                + ",longField:${longField??1},longObjectField:${longObjectField??1}"
+                + ",floatField:${floatField??1},floatObjectField:${floatObjectField??1}"
+                + ",doubleField:${doubleField??1},doubleObjectField:${doubleObjectField??1}"
+            , templateAccumulator, ERROR, null ).render( templateClass ).get();
+
+
+        assertString( str ).isEqualTo( "booleanField:false_b,booleanObjectField:true_b"
+            + ",byteField:0,byteObjectField:1"
+            + ",shortField:0,shortObjectField:1"
+            + ",intField:0_i,intObjectField:1_i"
+            + ",longField:0,longObjectField:1"
+            + ",floatField:0.0,floatObjectField:1.0"
+            + ",doubleField:0.0,doubleObjectField:1.0" );
+    }
+
     @Test
     public void testCacheClassFormatError() throws IOException {
         FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
