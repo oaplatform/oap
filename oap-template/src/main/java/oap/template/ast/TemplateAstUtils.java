@@ -322,7 +322,8 @@ public class TemplateAstUtils {
                     var tree = grammar.expression().ret;
                     log.trace( e.expression + "\n" + tree.print() );
 
-                    ast = toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy );
+                    ast = new AstComment( templateType, "// " + e.expression );
+                    ast.addChild( toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
                 } catch( Exception exp ) {
                     throw new TemplateException( e.expression + ": " + exp.getMessage(), exp );
                 }
