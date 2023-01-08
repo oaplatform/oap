@@ -44,6 +44,7 @@ public class TestTemplateClass {
     public TestTemplateClass child;
     public TestTemplateClass2 child2;
     public TestTemplateEnum enumField;
+    public TestTemplateEnumWithoutDefaultValue enumFieldWithoutDefaultValue;
     @Nonnull
     public TestTemplateEnum nonNullEnumField = TestTemplateEnum.VAL1;
     public boolean booleanField;

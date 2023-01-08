@@ -24,6 +24,6 @@
 
 package oap.template;
 
-public enum TestTemplateEnum {
-    VAL1, VAL2, UNKNOWN
+public enum TestTemplateEnumWithoutDefaultValue {
+    VAL1, VAL2
 }

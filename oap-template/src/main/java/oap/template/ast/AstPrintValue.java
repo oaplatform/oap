@@ -26,6 +26,8 @@ package oap.template.ast;
 
 import lombok.ToString;
 import oap.util.Dates;
+import oap.util.Strings;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
@@ -52,7 +54,7 @@ public class AstPrintValue extends Ast {
         r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, value ) );
     }
 
-    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    @SuppressWarnings( { "checkstyle:ParameterAssignment", "unchecked" } )
     private String format( TemplateType parentType, String defaultValue ) {
         Class<?> typeClass = parentType.isOptional() ? parentType.getActualTypeArguments0().getTypeClass() : parentType.getTypeClass();
 
@@ -60,12 +62,21 @@ public class AstPrintValue extends Ast {
             if( String.class.equals( typeClass ) ) defaultValue = "";
             else if( Boolean.class.equals( typeClass ) ) defaultValue = "false";
             else if( Collection.class.isAssignableFrom( typeClass ) ) defaultValue = "[]";
-            else if( typeClass.isPrimitive() ) defaultValue = "0";
+            else if( Enum.class.isAssignableFrom( typeClass ) ) {
+                try {
+                    defaultValue = Enum.valueOf( ( Class<Enum> ) typeClass, Strings.UNKNOWN ).name();
+                } catch( IllegalArgumentException ignored ) {
+                    defaultValue = EnumUtils.getEnumList( ( Class<Enum> ) typeClass ).get( 0 ).toString();
+                }
+            } else if( typeClass.isPrimitive() ) defaultValue = "0";
         }
 
         if( String.class.equals( typeClass ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
         else if( Collection.class.isAssignableFrom( typeClass ) ) {
             return "java.util.List.of()";
+        } else if( Enum.class.isAssignableFrom( typeClass ) ) {
+
+            return "%s.%s".formatted( parentType.getTypeName(), defaultValue );
         } else if( DateTime.class.equals( typeClass ) ) {
             DateTime dateTime = Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( defaultValue );
             return "new org.joda.time.DateTime( " + dateTime.getMillis() + "L, org.joda.time.DateTimeZone.UTC )";

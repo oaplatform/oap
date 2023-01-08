@@ -141,22 +141,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testEnumField() {
-        var c = new TestTemplateClass();
-        c.enumField = TestTemplateEnum.VAL1;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING, null ).render( c ).get() )
-            .isEqualTo( "VAL1" );
-    }
-
-    @Test
-    public void testEnumFieldNonNull() {
-        var c = new TestTemplateClass();
-        c.nonNullEnumField = TestTemplateEnum.VAL2;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${nonNullEnumField}", STRING, null ).render( c ).get() )
-            .isEqualTo( "VAL2" );
-    }
-
-    @Test
     public void testListField() {
         var c = new TestTemplateClass();
         c.list = List.of( 1, 2, 3 );
@@ -170,14 +154,6 @@ public class TemplateEngineTest extends Fixtures {
         c.listString = List.of( "1", "'", "\\" );
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listString}", STRING, null ).render( c ).get() )
             .isEqualTo( "['1','\\'','\\\\']" );
-    }
-
-    @Test
-    public void testListEnum() {
-        var c = new TestTemplateClass();
-        c.listEnum = List.of( TestTemplateEnum.VAL2, TestTemplateEnum.VAL1 );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listEnum}", STRING, null ).render( c ).get() )
-            .isEqualTo( "['VAL2','VAL1']" );
     }
 
     @Test

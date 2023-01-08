@@ -31,15 +31,13 @@ import java.util.List;
 
 @ToString
 public class Expression {
-    public final String template;
     public final String comment;
     public final String castType;
     public final ArrayList<Exprs> or = new ArrayList<>();
     public final String defaultValue;
     public final Func function;
 
-    public Expression( String template, String comment, String castType, List<Exprs> or, String defaultValue, Func function ) {
-        this.template = template;
+    public Expression( String comment, String castType, List<Exprs> or, String defaultValue, Func function ) {
         this.comment = comment;
         this.castType = castType;
         this.or.addAll( or );
@@ -49,7 +47,6 @@ public class Expression {
 
     public String print() {
         StringBuilder sb = new StringBuilder();
-        sb.append( "TEMPLATE " ).append( template ).append( '\n' );
         if( comment != null ) sb.append( "COMMENT " ).append( comment ).append( '\n' );
         if( castType != null ) sb.append( "CAST " ).append( castType ).append( '\n' );
         if( defaultValue != null ) sb.append( "DEFAULT '" ).append( defaultValue ).append( "'\n" );

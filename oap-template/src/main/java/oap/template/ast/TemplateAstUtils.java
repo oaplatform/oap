@@ -152,8 +152,7 @@ public class TemplateAstUtils {
 
         Chain list = new Chain();
 
-        list.add( new AstComment( templateType, "// " + expression.template ) );
-        if( expression.comment != null ) list.add( new AstComment( templateType, "// " + expression.comment ) );
+        if( expression.comment != null ) list.add( new AstComment( templateType, expression.comment ) );
 
         if( orAst.size() > 1 ) {
             var ast = new AstOr( templateType, orAst );
@@ -320,7 +319,7 @@ public class TemplateAstUtils {
                         lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                         grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                     }
-                    var tree = grammar.expression( e.expression ).ret;
+                    var tree = grammar.expression().ret;
                     log.trace( e.expression + "\n" + tree.print() );
 
                     ast = toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy );
