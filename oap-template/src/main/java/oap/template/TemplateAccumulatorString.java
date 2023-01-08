@@ -163,6 +163,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
+    public void acceptNull( Class<?> type ) {
+
+    }
+
+    @Override
     public boolean isEmpty() {
         return sb.length() == 0;
     }

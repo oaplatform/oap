@@ -27,10 +27,13 @@ package oap.template;
 import lombok.SneakyThrows;
 import oap.dictionary.Dictionary;
 import oap.util.FastByteArrayOutputStream;
+import oap.util.Strings;
+import org.apache.commons.lang3.EnumUtils;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -156,6 +159,27 @@ public class TemplateAccumulatorBinary implements TemplateAccumulator<byte[], Fa
         else if( obj instanceof TemplateAccumulatorString tab ) accept( tab );
         else
             throw new IllegalArgumentException( "Unknown type " + obj.getClass() );
+    }
+
+    @Override
+    public void acceptNull( Class<?> type ) {
+        if( String.class.equals( type ) ) acceptText( "\"\"" );
+        else if( Boolean.class.equals( type ) || boolean.class.equals( type ) ) accept( false );
+        else if( Byte.class.equals( type ) || byte.class.equals( type ) ) accept( ( byte ) 0 );
+        else if( Short.class.equals( type ) || short.class.equals( type ) ) accept( ( short ) 0 );
+        else if( Integer.class.equals( type ) || int.class.equals( type ) ) accept( ( int ) 0 );
+        else if( Long.class.equals( type ) || long.class.equals( type ) ) accept( 0L );
+        else if( Float.class.equals( type ) || float.class.equals( type ) ) accept( 0f );
+        else if( Double.class.equals( type ) || double.class.equals( type ) ) accept( 0d );
+        else if( Enum.class.isAssignableFrom( type ) ) {
+            try {
+                accept( Enum.valueOf( ( Class<Enum> ) type, Strings.UNKNOWN ) );
+            } catch( IllegalArgumentException ignored ) {
+                accept( EnumUtils.getEnumList( ( Class<Enum> ) type ).get( 0 ) );
+            }
+        } else if( Collection.class.isAssignableFrom( type ) ) accept( List.of() );
+        else
+            throw new TemplateException( new IllegalArgumentException( "class " + type + " unknown default value" ) );
     }
 
     @Override

@@ -96,6 +96,8 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
 
     void accept( Object obj );
 
+    void acceptNull( Class<?> type );
+
     boolean isEmpty();
 
     TTemplateAccumulator newInstance();

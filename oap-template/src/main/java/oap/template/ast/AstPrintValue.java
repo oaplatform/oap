@@ -24,15 +24,14 @@
 
 package oap.template.ast;
 
+import com.google.common.base.Preconditions;
 import lombok.ToString;
 import oap.util.Dates;
 import oap.util.Strings;
-import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
 import java.util.Collection;
-import java.util.HashSet;
 
 @ToString( callSuper = true )
 public class AstPrintValue extends Ast {
@@ -49,45 +48,20 @@ public class AstPrintValue extends Ast {
     public void render( Render render ) {
         var r = render.ntab();
 
-        String cast = "";
-        if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
+        if( value == null ) r.append( "%s.acceptNull( %s.class );", r.templateAccumulatorName, type.getTypeClass().getSimpleName() );
+        else {
+            String cast = "";
+            if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
 
-        r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, value ) );
-    }
-
-    private static final HashSet<Class<?>> numberClass = new HashSet<>();
-
-    static {
-        numberClass.add( Byte.class );
-        numberClass.add( byte.class );
-        numberClass.add( Short.class );
-        numberClass.add( short.class );
-        numberClass.add( Integer.class );
-        numberClass.add( int.class );
-        numberClass.add( Long.class );
-        numberClass.add( long.class );
-        numberClass.add( Float.class );
-        numberClass.add( float.class );
-        numberClass.add( Double.class );
-        numberClass.add( double.class );
-    }
-
-    @SuppressWarnings( { "checkstyle:ParameterAssignment", "unchecked" } )
-    private String format( TemplateType parentType, String defaultValue ) {
-        Class<?> typeClass = parentType.isOptional() ? parentType.getActualTypeArguments0().getTypeClass() : parentType.getTypeClass();
-
-        if( defaultValue == null ) {
-            if( String.class.equals( typeClass ) ) return "\"\"";
-            else if( Boolean.class.equals( typeClass ) || boolean.class.equals( typeClass ) ) return "false";
-            else if( numberClass.contains( typeClass ) ) defaultValue = "0";
-            else if( Enum.class.isAssignableFrom( typeClass ) ) {
-                try {
-                    defaultValue = Enum.valueOf( ( Class<Enum> ) typeClass, Strings.UNKNOWN ).name();
-                } catch( IllegalArgumentException ignored ) {
-                    defaultValue = EnumUtils.getEnumList( ( Class<Enum> ) typeClass ).get( 0 ).toString();
-                }
-            } else defaultValue = "";
+            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, value ) );
         }
+    }
+
+    @SuppressWarnings( { "checkstyle:ParameterAssignment" } )
+    private String format( TemplateType parentType, String defaultValue ) {
+        Preconditions.checkNotNull( defaultValue );
+
+        Class<?> typeClass = parentType.isOptional() ? parentType.getActualTypeArguments0().getTypeClass() : parentType.getTypeClass();
 
         if( String.class.equals( typeClass ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
         else if( Byte.class.isAssignableFrom( typeClass ) || byte.class.equals( typeClass ) ) return "(byte)%s".formatted( defaultValue );

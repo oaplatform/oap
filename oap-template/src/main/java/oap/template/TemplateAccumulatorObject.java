@@ -114,6 +114,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
+    public void acceptNull( Class<?> type ) {
+        obj.setValue( null );
+    }
+
+    @Override
     public boolean isEmpty() {
         return obj.getValue() == null;
     }
