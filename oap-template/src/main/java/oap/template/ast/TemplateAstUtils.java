@@ -232,7 +232,9 @@ public class TemplateAstUtils {
                     if( method == null )
                         method = parentClass.getMethod( expr.name );
 
-                    TemplateType fieldType = new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Nullable.class ) );
+                    boolean nullable = method.isAnnotationPresent( Nullable.class )
+                        || ( !method.getReturnType().isPrimitive() && !method.isAnnotationPresent( Nonnull.class ) );
+                    TemplateType fieldType = new TemplateType( method.getGenericReturnType(), nullable );
                     AstMethod ast = new AstMethod( expr.name, fieldType, expr.arguments );
 
                     result.add( ast );

@@ -65,6 +65,15 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     }
 
     @Test
+    public void testMethodDefault() {
+        var c = new TestTemplateClass();
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM()??'d'}", STRING, null ).render( c ).get() )
+            .isEqualTo( "d" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childM().field??'d'}", STRING, null ).render( c ).get() )
+            .isEqualTo( "d" );
+    }
+
+    @Test
     public void testMethodWithIntParameter() {
         var c = new TestTemplateClass();
         c.field = "val2";
