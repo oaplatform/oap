@@ -41,11 +41,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     private final DateTimeFormatter dateTimeFormat;
 
     public TemplateAccumulatorString( StringBuilder sb ) {
-        this( sb, Dates.PATTERN_FORMAT_DATE );
+        this( sb, Dates.PATTERN_FORMAT_SIMPLE_CLEAN );
     }
 
     public TemplateAccumulatorString() {
-        this( new StringBuilder(), Dates.PATTERN_FORMAT_SIMPLE );
+        this( new StringBuilder() );
     }
 
     public TemplateAccumulatorString( String dateTimeFormat ) {
