@@ -48,4 +48,12 @@ public enum Types {
 
         this.id = ( byte ) id;
     }
+
+    public static Types valueOf( byte type ) {
+        for( var v : values() ) {
+            if( v.id == type ) return v;
+        }
+
+        throw new IllegalArgumentException( "Unknown id " + type );
+    }
 }
