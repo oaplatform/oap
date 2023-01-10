@@ -59,7 +59,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     private final int defaultPort;
 
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
-    private final Map<Integer, Undertow> servers = new HashMap<>();
+    private final Map<Integer, Holder> servers = new HashMap<>();
 
     private final ContentEncodingRepository contentEncodingRepository;
     private final AtomicLong requestId = new AtomicLong();
@@ -88,6 +88,21 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 50 );
     }
 
+    private static class Holder {
+        Undertow server;
+        int port;
+
+        Holder( int port, Undertow server ) {
+            this.port = port;
+            this.server = server;
+            server.start();
+        }
+
+        public void stop() {
+            server.stop();
+        }
+    }
+
     public void start() {
         pathHandler.forEach( this::startNewPort );
     }
@@ -95,13 +110,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     private void startNewPort( int port, PathHandler portPathHandler ) {
         Preconditions.checkNotNull( portPathHandler );
 
-        log.info( "starting server port {} with {} ...", port, portPathHandler.toString() );
+        log.info( "starting server on port: {} with {} ...", port, portPathHandler.toString() );
         long time = System.currentTimeMillis();
-        Undertow server = createUndertowServer( port, portPathHandler );
-        server.start();
-        servers.put( port, server );
+        Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServer( port, portPathHandler ) ) ).server;
 
-        log.info( "server on port {}, statistics: {} ioThreads: {} workerThreads: {} started in {} ms",
+        log.info( "server on port: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
             port, statistics,
             server.getWorker().getMXBean().getIoThreadCount(),
             server.getWorker().getMXBean().getMaxWorkerPoolSize(),
@@ -184,7 +197,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
-        log.debug( "binding {} on port {} ...", prefix, port );
+        log.debug( "binding '{}' on port: {} ...", prefix, port );
         io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange, requestId.incrementAndGet() ) );
 
         if( !forceCompressionSupport && compressionSupport ) {
@@ -197,10 +210,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
-        if( servers.containsKey( port ) ) {
-            log.info( "server on port: {} already started", port );
-            return;
-        }
         startNewPort( port, assignedHandler );
     }
 

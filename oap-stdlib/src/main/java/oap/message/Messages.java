@@ -71,19 +71,19 @@ class Messages {
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public void retry() {
+        if ( getRetryMessages() == 0 ) return;
         var now = DateTimeUtils.currentTimeMillis();
-        if ( getReadyMessages() + getRetryMessages() > 0 ) {
-            log.trace( "ready {} retry {} now {}",
-                    getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
-        }
+
+        log.trace( "ready {} retry {} now {}",
+                getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
 
         var it = retry.iterator();
         while( it.hasNext() ) {
-            var retry = it.next();
-
-            if( retry.startTime < now ) {
+            var retryInfo = it.next();
+            if( retryInfo.startTime < now ) {
                 it.remove();
-                add( retry.messageInfo );
+                add( retryInfo.messageInfo );
+                log.trace( "retrying " + retryInfo.messageInfo.message.md5 + " ..." );
             }
         }
     }
