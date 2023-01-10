@@ -43,6 +43,7 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.encoding.RequestEncodingHandler;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
+import org.jetbrains.annotations.NotNull;
 import org.xnio.Options;
 
 import java.io.Closeable;
@@ -50,13 +51,16 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class NioHttpServer implements Closeable, AutoCloseable {
-    public final int defaultPort;
+    private final int defaultPort;
 
-    private final HashMap<Integer, PathHandler> pathHandler = new HashMap<>();
+    private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
+    private final Map<Integer, Holder> servers = new HashMap<>();
+
     private final ContentEncodingRepository contentEncodingRepository;
     private final AtomicLong requestId = new AtomicLong();
     public int backlog = -1;
@@ -69,7 +73,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public int maxHeaders = -1; // default = 200
     public int maxHeaderSize = -1; // default = 1024 * 1024
     public boolean statistics = false;
-    public volatile HashMap<Integer, Undertow> servers;
     public boolean forceCompressionSupport = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
@@ -82,23 +85,70 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         contentEncodingRepository = new ContentEncodingRepository();
         contentEncodingRepository.addEncodingHandler( "gzip", new GzipEncodingProvider(), 100 );
-        contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 100 );
+        contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 50 );
     }
 
-    public synchronized void start() {
-        servers = new HashMap<>();
-        for( var port : pathHandler.keySet() ) {
-            startNewPort( port );
+    private static class Holder {
+        Undertow server;
+        int port;
+
+        Holder( int port, Undertow server ) {
+            this.port = port;
+            this.server = server;
+            server.start();
+        }
+
+        public void stop() {
+            server.stop();
         }
     }
 
-    private void startNewPort( int port ) {
-        var portPathHandler = pathHandler.get( port );
+    public void start() {
+        pathHandler.forEach( this::startNewPort );
+    }
 
+    private void startNewPort( int port, PathHandler portPathHandler ) {
         Preconditions.checkNotNull( portPathHandler );
 
-        log.info( "bind {}", portPathHandler );
+        log.info( "starting server on port: {} with {} ...", port, portPathHandler.toString() );
+        long time = System.currentTimeMillis();
+        Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServer( port, portPathHandler ) ) ).server;
 
+        log.info( "server on port: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
+            port, statistics,
+            server.getWorker().getMXBean().getIoThreadCount(),
+            server.getWorker().getMXBean().getMaxWorkerPoolSize(),
+            System.currentTimeMillis() - time
+        );
+
+        if( statistics ) {
+            addStats( server );
+        }
+    }
+
+    private void addStats( Undertow server ) {
+        for( var listenerInfo : server.getListenerInfo() ) {
+            var sa = ( InetSocketAddress ) listenerInfo.getAddress();
+            var sPort = String.valueOf( sa.getPort() );
+
+            ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
+
+            Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
+            Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
+            Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+
+            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "active" ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
+        }
+    }
+
+    @NotNull
+    private Undertow createUndertowServer( int port, PathHandler portPathHandler ) {
         Undertow.Builder builder = Undertow.builder()
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
@@ -125,58 +175,29 @@ public class NioHttpServer implements Closeable, AutoCloseable {
                 .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
-        if( readTimeout > 0 )
-            handler = BlockingReadTimeoutHandler.builder().readTimeout( Duration.ofMillis( readTimeout ) ).nextHandler( handler ).build();
+        if( readTimeout > 0 ) {
+            handler = BlockingReadTimeoutHandler.builder()
+                    .readTimeout( Duration.ofMillis( readTimeout ) )
+                    .nextHandler( handler )
+                    .build();
+        }
         handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
         builder.addHttpListener( port, "0.0.0.0", handler );
 
-        var server = builder.build();
-
-        servers.put( port, server );
-
-        server.start();
-
-        log.info( "port {} statistics {} ioThreads {} workerThreads {}",
-            port, statistics,
-            server.getWorker().getMXBean().getIoThreadCount(),
-            server.getWorker().getMXBean().getMaxWorkerPoolSize()
-        );
-
-        if( statistics ) {
-            for( var listenerInfo : server.getListenerInfo() ) {
-                var sa = ( InetSocketAddress ) listenerInfo.getAddress();
-                var sPort = String.valueOf( sa.getPort() );
-
-                ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
-
-                Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-                Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-                Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
-
-                Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
-
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "active" ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
-                Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
-
-            }
-        }
+        return builder.build();
     }
 
     public void bind( String prefix, HttpHandler handler, boolean compressionSupport ) {
         bind( prefix, handler, compressionSupport, this.defaultPort );
     }
 
-    public synchronized void bind( String prefix, HttpHandler handler, boolean compressionSupport, int port ) {
-        log.debug( "bind {}", prefix );
-
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, int port ) {
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
+        log.debug( "binding '{}' on port: {} ...", prefix, port );
         io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange, requestId.incrementAndGet() ) );
 
         if( !forceCompressionSupport && compressionSupport ) {
@@ -186,11 +207,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
                 .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
-        pathHandler.computeIfAbsent( port, p -> new PathHandler() ).addPrefixPath( prefix, httpHandler );
+        PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
+        assignedHandler.addPrefixPath( prefix, httpHandler );
 
-        if( servers != null && !servers.containsKey( port ) ) {
-            startNewPort( port );
-        }
+        startNewPort( port, assignedHandler );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
@@ -201,18 +221,16 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         bind( prefix, handler, true, port );
     }
 
-    public synchronized void preStop() {
-        if( servers != null ) {
-            for( var server : servers.values() ) {
-                try {
-                    server.stop();
-                } catch( Exception ex ) {
-                   log.error( "Cannot stop server", ex );
-                }
+    public void preStop() {
+        for( var server : servers.values() ) {
+            try {
+                server.stop();
+            } catch( Exception ex ) {
+               log.error( "Cannot stop server", ex );
             }
-            pathHandler.clear();
-            servers = null;
         }
+        pathHandler.clear();
+        servers.clear();
     }
 
     @Override
