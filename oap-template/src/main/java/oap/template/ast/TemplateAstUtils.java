@@ -135,8 +135,10 @@ public class TemplateAstUtils {
     }
 
     static Ast toAst( Expression expression, TemplateType templateType, String castType, String defaultValue,
-                      Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+                      Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
         var orAst = new ArrayList<Ast>();
+
+        TemplateType lastTemplateType = null;
 
         for( int i = 0; i < expression.or.size(); i++ ) {
             Exprs item = expression.or.get( i );
@@ -148,6 +150,13 @@ public class TemplateAstUtils {
                 expression.or.size() == 1 ? expression.function : null,
                 templateType, expressionResultType, castType, defaultValue, builtInFunction, itemErrorStrategy );
             orAst.add( itemAst );
+
+            TemplateType itemTemplateType = findLastsTemplateType( itemAst );
+            if( lastTemplateType != null && !lastTemplateType.equals( itemTemplateType ) ) {
+                throw new TemplateException( "last " + lastTemplateType + " current " + itemTemplateType );
+            }
+
+            lastTemplateType = itemTemplateType;
         }
 
         Chain list = new Chain();
@@ -155,7 +164,10 @@ public class TemplateAstUtils {
         if( expression.comment != null ) list.add( new AstComment( templateType, expression.comment ) );
 
         if( orAst.size() > 1 ) {
+            var castFieldType = FieldType.parse( castType != null ? castType : lastTemplateType.getTypeName() );
+
             var ast = new AstOr( templateType, orAst );
+            ast.elseAst = new AstPrintValue( lastTemplateType, defaultValue, castFieldType );
             if( expression.function != null ) {
                 Ast astFunction = getFunction( expression.function.name, expression.function.arguments, builtInFunction, errorStrategy );
                 ast.addChild( astFunction );
@@ -171,7 +183,14 @@ public class TemplateAstUtils {
 
     }
 
-    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses" } )
+    private static TemplateType findLastsTemplateType( Ast ast ) {
+        if( ast.children.isEmpty() ) return ast.type;
+
+        return findLastsTemplateType( ast.children.get( 0 ) );
+    }
+
+
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder" } )
     private static Ast toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
                               String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         var currentTemplateType = templateType;

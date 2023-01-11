@@ -102,6 +102,10 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
 
     boolean isEmpty();
 
+    default boolean isNotEmpty() {
+        return !isEmpty();
+    }
+
     TTemplateAccumulator newInstance();
 
     TTemplateAccumulator newInstance( TMutable mutable );

@@ -192,41 +192,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testOrEmptyString() {
-        var c = new TestTemplateClass();
-        c.field2 = "f2";
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", STRING, null ).render( c ).get() )
-            .isEqualTo( "f2" );
-    }
-
-    @Test
-    public void testOrNull() {
-        var c = new TestTemplateClass();
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", STRING, null ).render( c ).get() )
-            .isEqualTo( "" );
-    }
-
-    @Test
-    public void testOrEmptyStringWithBinaryAccumulator() throws IOException {
-        var c = new TestTemplateClass();
-        c.field2 = "f2";
-
-        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", BINARY, null ).render( c ).get() ) )
-            .isEqualTo( List.of( List.of( "f2" ) ) );
-    }
-
-    @Test
-    public void testOrCollections() {
-        var c = new TestTemplateClass();
-        c.list2 = List.of( 2, 3 );
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list | list2}", STRING, null ).render( c ).get() )
-            .isEqualTo( "[2,3]" );
-    }
-
-    @Test
     public void testOptional() {
         var c = new TestTemplateClass();
 

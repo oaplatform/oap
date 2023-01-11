@@ -28,9 +28,10 @@ import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @ToString( callSuper = true )
-public class AstOr extends Ast {
+public class AstOr extends AstIfElse {
     public final ArrayList<Ast> or = new ArrayList<>();
 
     public AstOr( TemplateType type, List<Ast> or ) {
@@ -54,7 +55,27 @@ public class AstOr extends Ast {
             or.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
         }
 
-        printChildren( buffer, childrenPrefix, children );
+        super.print( buffer, prefix, childrenPrefix );
+    }
+
+    @Override
+    protected String getTrue() {
+        return ".isNotEmpty()";
+    }
+
+    @Override
+    protected String getFalseToString() {
+        return "isEmpty()";
+    }
+
+    @Override
+    protected String getInnerVariable( Supplier<String> newVariable ) {
+        return null;
+    }
+
+    @Override
+    protected String getInnerVariableSetter( String variableName, Render render ) {
+        return null;
     }
 
     @Override
@@ -72,7 +93,7 @@ public class AstOr extends Ast {
             var newFunctionId = render.newVariable();
             var templateAccumulatorName = "acc_" + newFunctionId;
 
-            astRunnable.render( newFunctionId, templateAccumulatorName, render );
+            astRunnable.render( newFunctionId, templateAccumulatorName, r );
             r = r
                 .ntab().append( "boolean is_empty_%s = %s.getAsBoolean();", newFunctionId, newFunctionId )
                 .ntab().append( "if( !is_empty_%s ) { ", newFunctionId )
@@ -84,7 +105,7 @@ public class AstOr extends Ast {
 
         for( var i = 0; i < or.size(); i++ ) r = r.tabDec().ntab().append( "}" );
 
-        var newRender = r.withField( orVariable ).withParentType( new TemplateType( Object.class ) );
-        children.forEach( a -> a.render( newRender ) );
+        var newRender = r.withField( orVariable );
+        super.render( newRender );
     }
 }

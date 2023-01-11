@@ -24,6 +24,7 @@
 
 package oap.template.ast;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Lists;
 
@@ -32,6 +33,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 
+@EqualsAndHashCode
 @ToString
 public class TemplateType {
     public final Type type;
