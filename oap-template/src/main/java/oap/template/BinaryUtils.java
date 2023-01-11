@@ -56,7 +56,11 @@ public class BinaryUtils {
     }
 
     public static List<List<Object>> read( byte[] bytes ) throws IOException {
-        BinaryInputStream binaryInputStream = new BinaryInputStream( new ByteArrayInputStream( bytes ) );
+        return read( bytes, 0, bytes.length );
+    }
+
+    public static List<List<Object>> read( byte[] bytes, int offset, int length ) throws IOException {
+        BinaryInputStream binaryInputStream = new BinaryInputStream( new ByteArrayInputStream( bytes, offset, length ) );
         Object obj = binaryInputStream.readObject();
         var line = new ArrayList<Object>();
         var res = new ArrayList<List<Object>>();
