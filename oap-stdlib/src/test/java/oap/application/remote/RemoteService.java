@@ -41,7 +41,7 @@ public class RemoteService implements RemoteClient {
 
     @Override
     public void erroneous() {
-        throw new IllegalStateException();
+        throw new IllegalStateException( "this method always produces exception" );
     }
 
     @Override

@@ -111,14 +111,16 @@ public class Remote implements HttpHandler {
                 Result<Object, Throwable> r;
                 int status = HTTP_OK;
                 try {
-                    r = Result.success( service.getClass()
-                        .getMethod( invocation.method, invocation.types() )
-                        .invoke( service, invocation.values() ) );
+                    Object invokeResult = service.getClass()
+                            .getMethod( invocation.method, invocation.types() )
+                            .invoke( service, invocation.values() );
+                    r = Result.success( invokeResult );
                 } catch( NoSuchMethodException | IllegalAccessException e ) {
                     errorMetrics.increment();
                     // transport error - illegal setup
                     // wrapping into RIE to be handled at client's properly
-                    log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method, e );
+                    log.error( "method [{}#{}] doesn't exist or access isn't allowed",
+                            service.getClass().getCanonicalName(), invocation.method, e );
                     log.debug( "method '{}' types {} parameters {}",
                             invocation.method,
                             invocation.types() != null ? List.of( invocation.types() ) : null,
@@ -128,9 +130,9 @@ public class Remote implements HttpHandler {
                 } catch( InvocationTargetException e ) {
                     errorMetrics.increment();
                     // application error
-                    status = HTTP_INTERNAL_ERROR;
                     r = Result.failure( e.getCause() );
-                    log.debug( "exception occurred on call to method [{}]", invocation.method, e );
+                    log.debug( "{} occurred on call to method [{}#{}]",
+                            e.getCause().getClass().getCanonicalName(), service.getClass().getCanonicalName(), invocation.method, e );
                     log.debug( "method '{}' types {} parameters {}",
                             invocation.method,
                             invocation.types() != null ? List.of( invocation.types() ) : null,
@@ -143,24 +145,28 @@ public class Remote implements HttpHandler {
                 try( var outputStream = exchange.getOutputStream();
                      var bos = new BufferedOutputStream( outputStream );
                      var dos = new DataOutputStream( bos ) ) {
-                    dos.writeBoolean( result.isSuccess() );
+                     dos.writeBoolean( result.isSuccess() );
 
-                    if( !result.isSuccess() ) fst.writeObjectWithSize( dos, result.failureValue );
-                    else if( result.successValue instanceof Stream<?> ) {
+                     if( !result.isSuccess() ) {
+                         fst.writeObjectWithSize( dos, result.failureValue );
+                     } else if( result.successValue instanceof Stream<?> ) {
                         dos.writeBoolean( true );
 
                         ( ( Stream<?> ) result.successValue ).forEach( Try.consume( obj ->
                             fst.writeObjectWithSize( dos, obj ) ) );
                         dos.writeInt( 0 );
-                    } else {
+                     } else {
                         dos.writeBoolean( false );
                         fst.writeObjectWithSize( dos, result.successValue );
-                    }
+                     }
                 }
-                successMetrics.increment();
+                if( result.isSuccess() ) {
+                    successMetrics.increment();
+                } else {
+                    errorMetrics.increment();
+                }
             } catch( Throwable e ) {
-                log.error( "invocation = {}", invocation );
-                log.error( e.getMessage(), e );
+                log.error( "invocation = {}", invocation, e );
             }
         } else {
             errorMetrics.increment();
