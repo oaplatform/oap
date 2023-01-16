@@ -59,8 +59,9 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
-                .isPresent()
+            Optional<RemoteClient> service = kernel.<RemoteClient>service("*.remote-client");
+            assertThat( service ).isPresent();
+            assertThat( service )
                 .get()
                 .satisfies( remote -> {
                     assertThat( remote.accessible() ).isTrue();
@@ -68,17 +69,18 @@ public class RemoteTest extends Fixtures {
                     assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
                 } );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
-                .isPresent()
+            assertThat( service )
                 .get()
-                .satisfies( remote -> assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class ) );
+                .satisfies( remote -> {
+                    assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class );
+                    assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                } );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
-                .isPresent()
+            assertThat( service )
                 .get()
                 .satisfies( RemoteClient::testRetry );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client-unreachable" ) )
+            assertThat( kernel.<RemoteClient>service( "*.remote-client-unreachable" ))
                 .isPresent()
                 .get()
                 .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( RemoteInvocationException.class ) );
