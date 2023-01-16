@@ -44,6 +44,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
@@ -117,18 +118,23 @@ public class Remote implements HttpHandler {
                     errorMetrics.increment();
                     // transport error - illegal setup
                     // wrapping into RIE to be handled at client's properly
-                    log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
-                    log.debug( "method '{}' types {} parameters {}", invocation.method, List.of( invocation.types() ), List.of( invocation.values() ) );
-                    log.debug( e.getMessage(), e );
+                    log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method, e );
+                    log.debug( "method '{}' types {} parameters {}",
+                            invocation.method,
+                            invocation.types() != null ? List.of( invocation.types() ) : null,
+                            invocation.values() != null ? List.of( invocation.values() ) : null );
                     status = HTTP_NOT_FOUND;
                     r = Result.failure( new RemoteInvocationException( e ) );
                 } catch( InvocationTargetException e ) {
                     errorMetrics.increment();
                     // application error
+                    status = HTTP_INTERNAL_ERROR;
                     r = Result.failure( e.getCause() );
-                    log.debug( "exception occurred on call to method [{}]", invocation.method );
-                    log.trace( "method '{}' types {} parameters {}", invocation.method, List.of( invocation.types() ), List.of( invocation.values() ) );
-                    log.trace( e.getMessage(), e );
+                    log.debug( "exception occurred on call to method [{}]", invocation.method, e );
+                    log.debug( "method '{}' types {} parameters {}",
+                            invocation.method,
+                            invocation.types() != null ? List.of( invocation.types() ) : null,
+                            invocation.values() != null ? List.of( invocation.values() ) : null );
                 }
                 exchange.setStatusCode( status );
                 exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
