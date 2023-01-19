@@ -35,7 +35,6 @@ import oap.util.function.Functions;
 import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
