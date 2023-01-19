@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
@@ -308,8 +309,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public Object get( Object instance ) {
             try {
                 return this.underlying.get( instance );
-            } catch( IllegalAccessException e ) {
-                throw new ReflectException( e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke 'get' "
+                    + underlying.getName()
+                    + " on instance of: " + instance.getClass().getCanonicalName(), e );
             }
         }
 
@@ -319,8 +322,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                     throw new IllegalAccessException( this + ": Constant Expressions. See: https://stackoverflow.com/questions/17506329/java-final-field-compile-time-constant-expression" );
                 }
                 this.underlying.set( instance, value );
-            } catch( IllegalAccessException e ) {
-                throw new ReflectException( e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke 'set' "
+                        + underlying.getName()
+                        + " on instance of: " + instance.getClass().getCanonicalName()
+                        + " with value: " + argsToString( value ), e );
             }
         }
 
@@ -359,6 +365,12 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
     }
 
+    private String argsToString( Object... args ) {
+        if ( args == null || args.length == 0 ) return "()";
+        List<String> arguments = Stream.of( args ).map( arg -> arg.getClass().getCanonicalName() + "=" + arg ).toList();
+        return "(" + Joiner.on( "," ).join( arguments ) + ")";
+    }
+
     public class Method extends AbstractAnnotated<java.lang.reflect.Method> {
         public List<Parameter> parameters;
         private final Supplier<Reflection> returnType = Functions.memoize( () ->
@@ -386,8 +398,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public <T> T invoke( Object instance, Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.invoke( instance, args );
-            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException e ) {
-                throw new ReflectException( e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke "
+                        + underlying.getName()
+                        + " on instance of: " + instance.getClass().getCanonicalName()
+                        + " with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -433,8 +448,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public <T> T invoke( Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.newInstance( args );
-            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException | InstantiationException e ) {
-                throw new ReflectException( underlying.getName() + ":" + java.util.Arrays.toString( args ), e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke constructor of "
+                        + underlying.getClass().getCanonicalName()
+                        + " with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -459,7 +476,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 return instance;
 
             } catch( Exception e ) {
-                throw new ReflectException( this + ":" + args, e );
+                throw new ReflectException( "Cannot invoke constructor of "
+                        + underlying.getClass().getCanonicalName()
+                        + " with parameters: " + argsToString( args ), e );
             }
         }
 
