@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import com.google.common.primitives.Primitives;
 import lombok.EqualsAndHashCode;

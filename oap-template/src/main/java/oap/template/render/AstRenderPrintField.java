@@ -22,43 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstTryBlock extends Ast {
-    public AstTryBlock( TemplateType type ) {
+public class AstRenderPrintField extends AstRender {
+    public AstRenderPrintField( TemplateType type ) {
         super( type );
     }
 
     @Override
     public void render( Render render ) {
-        var newFunctionId = render.newVariable();
-        var templateAccumulatorName = "acc_" + newFunctionId;
-
-        render( newFunctionId, templateAccumulatorName, render );
-    }
-
-    public void render( String newFunctionId, String templateAccumulatorName, Render render ) {
-        String emptyVariable = "empty_" + newFunctionId;
-
-        render
-            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
-            .ntab().append( "BooleanSupplier %s = () -> {", newFunctionId )
-            .tabInc()
-            .ntab().append( "boolean %s = false;", emptyVariable );
-
-        var newRender = render.withParentType( type )
-            .withTryVariable( emptyVariable )
-            .withTemplateAccumulatorName( templateAccumulatorName )
-            .tabInc();
-        children.forEach( ast -> ast.render( newRender ) );
-
-        render
-            .tabInc()
-            .ntab().append( " return %s;", emptyVariable )
-            .tabDec()
-            .ntab().append( "};" );
+        var r = render.ntab();
+        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
     }
 }

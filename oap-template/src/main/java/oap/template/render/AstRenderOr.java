@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
@@ -31,14 +31,14 @@ import java.util.List;
 import java.util.function.Supplier;
 
 @ToString( callSuper = true )
-public class AstOr extends AstIfElse {
-    public final ArrayList<Ast> or = new ArrayList<>();
+public class AstRenderOr extends AstRenderIfElse {
+    public final ArrayList<AstRender> or = new ArrayList<>();
 
-    public AstOr( TemplateType type, List<Ast> or ) {
+    public AstRenderOr( TemplateType type, List<AstRender> or ) {
         super( type );
 
         for( var ast : or ) {
-            AstTryBlock astTryBlock = new AstTryBlock( type );
+            AstRenderTryBlock astTryBlock = new AstRenderTryBlock( type );
             astTryBlock.addChild( ast );
             this.or.add( astTryBlock );
         }
@@ -88,12 +88,12 @@ public class AstOr extends AstIfElse {
         r.ntab().append( render.templateAccumulator.getClass().getTypeName() ).append( " " ).append( orVariable ).append( " = acc.newInstance();" );
         for( var i = 0; i < or.size(); i++ ) {
             ast = or.get( i );
-            var astRunnable = ( AstTryBlock ) ast;
+            var astRunnable = ( AstRenderTryBlock ) ast;
 
             var newFunctionId = render.newVariable();
             var templateAccumulatorName = "acc_" + newFunctionId;
 
-            astRunnable.render( newFunctionId, templateAccumulatorName, r );
+            astRunnable.render( newFunctionId, templateAccumulatorName, r.newBlock() );
             r = r
                 .ntab().append( "boolean is_empty_%s = %s.getAsBoolean();", newFunctionId, newFunctionId )
                 .ntab().append( "if( !is_empty_%s ) { ", newFunctionId )

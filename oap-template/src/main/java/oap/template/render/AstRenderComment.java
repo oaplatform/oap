@@ -22,29 +22,24 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstMap extends Ast {
-    private final String key;
+class AstRenderComment extends AstRender {
+    final String comment;
 
-    public AstMap( String key, TemplateType valueType ) {
-        super( valueType );
+    AstRenderComment( TemplateType type, String comment ) {
+        super( type );
 
-        this.key = key;
+        this.comment = comment;
     }
 
     @Override
     public void render( Render render ) {
-        var mapVariable = render.newVariable();
+        render.ntab().append( comment );
 
-        render.ntab().append( "%s %s = %s.get( \"%s\" );",
-            type.getTypeName(), mapVariable,
-            render.field, render.escapeJava( key ) );
-
-        var newRender = render.withField( mapVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+        children.forEach( a -> a.render( render ) );
     }
 }

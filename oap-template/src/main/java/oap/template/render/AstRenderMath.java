@@ -22,49 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
-import oap.template.TemplateAccumulator;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @ToString( callSuper = true )
-public class AstConcatenation extends Ast {
-    final ArrayList<Ast> items = new ArrayList<>();
+public class AstRenderMath extends AstRender {
+    public final String operation;
+    public final String number;
 
-    public AstConcatenation( TemplateType type, List<Ast> items ) {
+    public AstRenderMath( TemplateType type, String operation, String number ) {
         super( type );
-
-        this.items.addAll( items );
+        this.operation = operation;
+        this.number = number;
     }
 
     @Override
     public void render( Render render ) {
-        var templateAccumulatorName = "acc_" + render.newVariable();
-        render
-            .ntab().append( "var %s = new TemplateAccumulatorString();", templateAccumulatorName );
+        var mathVariable = render.newVariable();
 
-        for( var item : items ) {
-            item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );
-        }
+        render.ntab().append( "var %s = %s %s %s;", mathVariable, render.field, operation, number );
 
-        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
+        var newRender = render.withField( mathVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
-    }
-
-    @Override
-    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
-        printTop( buffer, prefix );
-        buffer.append( childrenPrefix ).append( "│CONCATENATION" );
-        buffer.append( '\n' );
-
-        for( var i = 0; i < items.size(); i++ ) {
-            var cp = "│".repeat( items.size() - i );
-            items.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
-        }
-
-        printChildren( buffer, childrenPrefix, children );
     }
 }

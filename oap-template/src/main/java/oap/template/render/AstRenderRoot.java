@@ -22,13 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstRoot extends Ast {
-    public AstRoot( TemplateType parentType ) {
+public class AstRenderRoot extends AstRender {
+    public AstRenderRoot( TemplateType parentType ) {
         super( parentType );
     }
 

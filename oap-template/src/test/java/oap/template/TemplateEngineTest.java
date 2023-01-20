@@ -422,6 +422,13 @@ public class TemplateEngineTest extends Fixtures {
             .render( c ).get() ).isEqualTo( "12\t12" );
     }
 
+    @Test
+    public void testReuseVariables() {
+        engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.longField}\t${child.longField}", new TestTemplateAccumulatorString(), null );
+
+        assertThat( TestDirectoryFixture.testPath( "oap.template.testReuseVariables.java" ) ).content().containsOnlyOnce( " = s.child;" );
+    }
+
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
         @Override
         public void accept( String text ) {

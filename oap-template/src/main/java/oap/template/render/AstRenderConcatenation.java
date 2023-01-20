@@ -22,51 +22,49 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
+import oap.template.TemplateAccumulator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @ToString( callSuper = true )
-public class AstField extends Ast {
-    final String fieldName;
-    final boolean forceCast;
-    final FieldType castType;
+public class AstRenderConcatenation extends AstRender {
+    final ArrayList<AstRender> items = new ArrayList<>();
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
-        super( fieldType );
+    public AstRenderConcatenation( TemplateType type, List<AstRender> items ) {
+        super( type );
 
-        this.fieldName = fieldName;
-        this.forceCast = forceCast;
-        this.castType = castType;
+        this.items.addAll( items );
     }
 
     @Override
     public void render( Render render ) {
-        if( castType != null ) {
-            var targetType = type;
-            if( type.isOptional() ) targetType = type.getActualTypeArguments0();
+        var templateAccumulatorName = "acc_" + render.newVariable();
+        render
+            .ntab().append( "var %s = new TemplateAccumulatorString();", templateAccumulatorName );
 
-            if( !castType.isAssignableFrom( targetType ) ) {
-                throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
-            }
+        for( var item : items ) {
+            item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );
         }
 
-        var variableName = render.newVariable();
-
-        render.ntab()
-            .append( "%s %s = ", type.getTypeName(), variableName );
-
-        if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
-
-        render.append( "%s.%s;", render.field, fieldName );
-
-        var newRender = render.withField( variableName ).withParentType( type );
+        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
         children.forEach( a -> a.render( newRender ) );
     }
 
     @Override
-    public boolean equalsAst( Ast ast ) {
-        if( !( ast instanceof AstField ) ) return false;
-        return ( ( AstField ) ast ).fieldName.equals( fieldName );
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+        printTop( buffer, prefix );
+        buffer.append( childrenPrefix ).append( "│CONCATENATION" );
+        buffer.append( '\n' );
+
+        for( var i = 0; i < items.size(); i++ ) {
+            var cp = "│".repeat( items.size() - i );
+            items.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
+        }
+
+        printChildren( buffer, childrenPrefix, children );
     }
 }

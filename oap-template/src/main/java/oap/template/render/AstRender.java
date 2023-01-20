@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
@@ -31,26 +31,18 @@ import java.util.List;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @ToString( of = { "type" } )
-public abstract class Ast {
+public abstract class AstRender {
     public final TemplateType type;
-    public final ArrayList<Ast> children = new ArrayList<>();
+    public final ArrayList<AstRender> children = new ArrayList<>();
 
-    public Ast( TemplateType type ) {
+    public AstRender( TemplateType type ) {
         this.type = type;
     }
 
     public abstract void render( Render render );
 
-    public Ast addChildren( List<? extends Ast> list ) {
-        children.addAll( list );
-
-        return this;
-    }
-
-    public Ast addChild( Ast ast ) {
-        children.add( ast );
-
-        return this;
+    public void addChild( AstRender astRender ) {
+        children.add( astRender );
     }
 
     public String print() {
@@ -63,14 +55,14 @@ public abstract class Ast {
         print( buffer, prefix, childrenPrefix, children );
     }
 
-    public void print( StringBuilder buffer, String prefix, String childrenPrefix, List<Ast> children ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix, List<AstRender> children ) {
         printTop( buffer, prefix );
         printChildren( buffer, childrenPrefix, children );
     }
 
-    public void printChildren( StringBuilder buffer, String childrenPrefix, List<Ast> children ) {
+    public void printChildren( StringBuilder buffer, String childrenPrefix, List<AstRender> children ) {
         for( var it = children.iterator(); it.hasNext(); ) {
-            Ast next = it.next();
+            AstRender next = it.next();
             if( it.hasNext() ) {
                 next.print( buffer, childrenPrefix + "├── ", childrenPrefix + "│   " );
             } else {
@@ -81,11 +73,8 @@ public abstract class Ast {
 
     public void printTop( StringBuilder buffer, String prefix ) {
         buffer.append( prefix );
-        buffer.append( toString() );
+        buffer.append( this );
         buffer.append( '\n' );
     }
 
-    public boolean equalsAst( Ast ast ) {
-        return false;
-    }
 }

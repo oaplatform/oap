@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -134,9 +134,9 @@ public class TemplateAstUtils {
         }
     }
 
-    static Ast toAst( Expression expression, TemplateType templateType, String castType, String defaultValue,
-                      Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
-        var orAst = new ArrayList<Ast>();
+    static AstRender toAst( Expression expression, TemplateType templateType, String castType, String defaultValue,
+                            Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
+        var orAst = new ArrayList<AstRender>();
 
         TemplateType lastTemplateType = null;
 
@@ -161,19 +161,19 @@ public class TemplateAstUtils {
 
         Chain list = new Chain();
 
-        if( expression.comment != null ) list.add( new AstComment( templateType, expression.comment ) );
+        if( expression.comment != null ) list.add( new AstRenderComment( templateType, expression.comment ) );
 
         if( orAst.size() > 1 ) {
             var castFieldType = FieldType.parse( castType != null ? castType : lastTemplateType.getTypeName() );
 
-            var ast = new AstOr( templateType, orAst );
-            ast.elseAst = new AstPrintValue( lastTemplateType, defaultValue, castFieldType );
+            var ast = new AstRenderOr( templateType, orAst );
+            ast.elseAstRender = new AstRenderPrintValue( lastTemplateType, defaultValue, castFieldType );
             if( expression.function != null ) {
-                Ast astFunction = getFunction( expression.function.name, expression.function.arguments, builtInFunction, errorStrategy );
-                ast.addChild( astFunction );
-                astFunction.addChild( new AstPrintField( templateType ) );
+                AstRender astRenderFunction = getFunction( expression.function.name, expression.function.arguments, builtInFunction, errorStrategy );
+                ast.addChild( astRenderFunction );
+                astRenderFunction.addChild( new AstRenderPrintField( templateType ) );
             } else
-                ast.addChild( new AstPrintField( templateType ) );
+                ast.addChild( new AstRenderPrintField( templateType ) );
             list.add( ast );
         } else {
             list.add( orAst.get( 0 ) );
@@ -183,16 +183,16 @@ public class TemplateAstUtils {
 
     }
 
-    private static TemplateType findLastsTemplateType( Ast ast ) {
-        if( ast.children.isEmpty() ) return ast.type;
+    private static TemplateType findLastsTemplateType( AstRender astRender ) {
+        if( astRender.children.isEmpty() ) return astRender.type;
 
-        return findLastsTemplateType( ast.children.get( 0 ) );
+        return findLastsTemplateType( astRender.children.get( 0 ) );
     }
 
 
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder" } )
-    private static Ast toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
-                              String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+    private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
+                                    String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         var currentTemplateType = templateType;
         Chain result = new Chain();
 
@@ -203,8 +203,8 @@ public class TemplateAstUtils {
                 Expr expr = exprs.exprs.get( i );
                 if( currentTemplateType.isInstanceOf( Optional.class ) ) {
                     var valueType = currentTemplateType.getActualTypeArguments0();
-                    AstOptional ast = new AstOptional( valueType );
-                    ast.elseAst = new AstPrintValue( resultType, defaultValue, castFieldType );
+                    AstRenderOptional ast = new AstRenderOptional( valueType );
+                    ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
 
                     i--;
 
@@ -212,8 +212,8 @@ public class TemplateAstUtils {
                     currentTemplateType = valueType;
                 } else if( currentTemplateType.nullable ) {
                     var newType = new TemplateType( currentTemplateType.type, false );
-                    AstNullable ast = new AstNullable( newType );
-                    ast.elseAst = new AstPrintValue( resultType, defaultValue, castFieldType );
+                    AstRenderNullable ast = new AstRenderNullable( newType );
+                    ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
 
                     i--;
 
@@ -221,7 +221,7 @@ public class TemplateAstUtils {
                     currentTemplateType = newType;
                 } else if( currentTemplateType.isInstanceOf( Map.class ) ) {
                     var valueType = currentTemplateType.getActualTypeArguments1( true );
-                    AstMap ast = new AstMap( expr.name, valueType );
+                    AstRenderMap ast = new AstRenderMap( expr.name, valueType );
 
                     result.add( ast );
                     currentTemplateType = valueType;
@@ -238,7 +238,7 @@ public class TemplateAstUtils {
                         fieldType = new TemplateType( extClass, fieldType.nullable );
                         forceCast = true;
                     }
-                    AstField ast = new AstField( field.getName(), fieldType, forceCast,
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast,
                         i < exprs.exprs.size() - 1 || exprs.concatenation != null ? null : castFieldType );
 
                     result.add( ast );
@@ -254,7 +254,7 @@ public class TemplateAstUtils {
                     boolean nullable = method.isAnnotationPresent( Nullable.class )
                         || ( !method.getReturnType().isPrimitive() && !method.isAnnotationPresent( Nonnull.class ) );
                     TemplateType fieldType = new TemplateType( method.getGenericReturnType(), nullable );
-                    AstMethod ast = new AstMethod( expr.name, fieldType, expr.arguments );
+                    AstRenderMethod ast = new AstRenderMethod( expr.name, fieldType, expr.arguments );
 
                     result.add( ast );
                     currentTemplateType = fieldType;
@@ -264,14 +264,14 @@ public class TemplateAstUtils {
 
             if( currentTemplateType.isOptional() ) {
                 TemplateType actualTypeArguments0 = currentTemplateType.getActualTypeArguments0();
-                AstOptional ast = new AstOptional( actualTypeArguments0 );
+                AstRenderOptional ast = new AstRenderOptional( actualTypeArguments0 );
                 ast.addChild( wrap( exprs, function, actualTypeArguments0, resultType, defaultValue, builtInFunction, errorStrategy ) );
-                ast.elseAst = new AstPrintValue( resultType, defaultValue, castFieldType );
+                ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
                 result.add( ast );
             } else if( currentTemplateType.nullable ) {
-                AstNullable ast = new AstNullable( currentTemplateType );
+                AstRenderNullable ast = new AstRenderNullable( currentTemplateType );
                 ast.addChild( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
-                ast.elseAst = new AstPrintValue( resultType, defaultValue, castFieldType );
+                ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
                 result.add( ast );
             } else
                 result.add( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
@@ -279,20 +279,20 @@ public class TemplateAstUtils {
             return result.head();
         } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
-            return new AstPathNotFound( e.getMessage() );
+            return new AstRenderPathNotFound( e.getMessage() );
         }
     }
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )
-    private static Ast wrap( Exprs exprs, Func function, TemplateType parentTemplateType, TemplateType resultType,
-                             String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+    private static AstRender wrap( Exprs exprs, Func function, TemplateType parentTemplateType, TemplateType resultType,
+                                   String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         Chain list = new Chain();
 
         if( exprs.concatenation != null ) {
-            ArrayList<Ast> items = new ArrayList<>();
+            ArrayList<AstRender> items = new ArrayList<>();
 
             for( var item : exprs.concatenation.items ) {
-                if( item instanceof String si ) items.add( new AstText( si ) );
+                if( item instanceof String si ) items.add( new AstRenderText( si ) );
                 else if( item instanceof Expr ei )
                     items.add( toAst( new Exprs( List.of( ei ) ), function, parentTemplateType, resultType, Object.class.getTypeName(),
                         defaultValue, builtInFunction, errorStrategy ) );
@@ -300,25 +300,25 @@ public class TemplateAstUtils {
                     throw new TemplateException( "Unknown concatenation item " + item.getClass() );
             }
 
-            var ast = new AstConcatenation( parentTemplateType, items );
+            var ast = new AstRenderConcatenation( parentTemplateType, items );
             list.add( ast );
 
             parentTemplateType = new TemplateType( String.class, false );
         }
 
         if( exprs.math != null ) {
-            AstMath ast = new AstMath( parentTemplateType, exprs.math.operation, exprs.math.value );
+            AstRenderMath ast = new AstRenderMath( parentTemplateType, exprs.math.operation, exprs.math.value );
 
             list.add( ast );
         }
 
         if( function != null ) {
-            Ast ast = getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
+            AstRender astRender = getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
 
-            list.add( ast );
+            list.add( astRender );
         }
 
-        var ast = new AstPrintField( parentTemplateType );
+        var ast = new AstRenderPrintField( parentTemplateType );
         list.add( ast );
 
 
@@ -326,12 +326,12 @@ public class TemplateAstUtils {
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
-    public static AstRoot toAst( Elements elements, TemplateType templateType, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
-        AstRoot astRoot = new AstRoot( templateType );
+    public static AstRenderRoot toAst( Elements elements, TemplateType templateType, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+        AstRenderRoot astRoot = new AstRenderRoot( templateType );
         for( var element : elements.elements ) {
-            Ast ast;
+            AstRender astRender;
             if( element instanceof TextElement t ) {
-                ast = new AstText( t.text );
+                astRender = new AstRenderText( t.text );
             } else if( element instanceof ExpressionElement e ) {
                 try {
                     var lexer = new TemplateLexerExpression( CharStreams.fromString( e.expression ) );
@@ -343,32 +343,32 @@ public class TemplateAstUtils {
                     var tree = grammar.expression().ret;
                     log.trace( e.expression + "\n" + tree.print() );
 
-                    ast = new AstComment( templateType, "// " + e.expression );
-                    ast.addChild( toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
+                    astRender = new AstRenderComment( templateType, "// " + e.expression );
+                    astRender.addChild( toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
                 } catch( Exception exp ) {
                     throw new TemplateException( e.expression + ": " + exp.getMessage(), exp );
                 }
             } else {
                 throw new TemplateException( "Unknown element " + element.getClass() );
             }
-            astRoot.addChild( ast );
+            astRoot.addChild( astRender );
         }
         return astRoot;
     }
 
-    public static Ast getFunction( String name, List<String> args, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+    public static AstRender getFunction( String name, List<String> args, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         var list = builtInFunction.get( name );
         if( list == null ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
-            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
+            return new AstRenderPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
         }
 
         var method = Lists.find2( list, m -> m.getParameters().length == args.size() + 1 );
         if( method == null ) {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
-            return new AstPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
+            return new AstRenderPathNotFound( "function " + name + "(" + String.join( ", ", args ) + ") not found" );
         }
 
-        return new AstFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Nullable.class ) ), method, args );
+        return new AstRenderFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Nullable.class ) ), method, args );
     }
 }

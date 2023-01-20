@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import com.google.common.base.Preconditions;
 import lombok.ToString;
@@ -34,11 +34,11 @@ import org.joda.time.DateTime;
 import java.util.Collection;
 
 @ToString( callSuper = true )
-public class AstPrintValue extends Ast {
+public class AstRenderPrintValue extends AstRender {
     private final String value;
     private final FieldType castType;
 
-    public AstPrintValue( TemplateType type, String value, FieldType castType ) {
+    public AstRenderPrintValue( TemplateType type, String value, FieldType castType ) {
         super( type );
         this.value = value;
         this.castType = castType;

@@ -22,28 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
-import java.util.Iterator;
-import java.util.LinkedList;
+import lombok.ToString;
 
-public class Chain {
-    private final LinkedList<Ast> list = new LinkedList<>();
+import java.util.List;
 
-    public Ast head() {
-        return list.peekFirst();
+@ToString( callSuper = true )
+public class AstRenderMethod extends AstRender {
+    private final String methodName;
+    private final List<String> arguments;
+
+    public AstRenderMethod( String methodName, TemplateType methodType, List<String> arguments ) {
+        super( methodType );
+
+        this.methodName = methodName;
+        this.arguments = arguments;
     }
 
-    public Ast bottom() {
-        return list.peekLast();
-    }
+    @Override
+    public void render( Render render ) {
+        var variableName = render.newVariable( methodName );
 
-    public void add( Ast ast ) {
-        if( !list.isEmpty() ) bottom().addChild( ast );
-        list.add( ast );
-    }
+        if( variableName.isNew ) {
+            render.ntab().append( "%s %s = %s.%s(%s);",
+                type.getTypeName(), variableName.name,
+                render.field, methodName, String.join( ",", arguments ) );
+        }
 
-    public Iterator<Ast> iterator() {
-        return list.iterator();
+        var newRender = render.withField( variableName.name ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

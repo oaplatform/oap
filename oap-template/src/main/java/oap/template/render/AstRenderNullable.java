@@ -22,28 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
-@ToString( callSuper = true )
-public class AstPathNotFound extends Ast {
-    final String description;
+import java.util.function.Supplier;
 
-    public AstPathNotFound( String description ) {
-        super( new TemplateType( String.class ) );
-        this.description = description;
+@ToString( callSuper = true )
+public class AstRenderNullable extends AstRenderIfElse {
+    public AstRenderNullable( TemplateType type ) {
+        super( type );
     }
 
     @Override
-    public void render( Render render ) {
-        var newVariable = render.newVariable();
+    protected String getTrue() {
+        return " != null";
+    }
 
-        render
-            .ntab().append( "// %s", description )
-            .ntab().append( "var %s = \"\";", newVariable );
+    @Override
+    protected String getFalseToString() {
+        return "NULL";
+    }
 
-        var newRender = render.withField( newVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+    @Override
+    protected String getInnerVariable( Supplier<String> newVariable ) {
+        return null;
+    }
+
+    @Override
+    protected String getInnerVariableSetter( String variableName, Render render ) {
+        return null;
     }
 }

@@ -22,35 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.function.Supplier;
-
 @ToString( callSuper = true )
-public class AstOptional extends AstIfElse {
-    public AstOptional( TemplateType type ) {
-        super( type );
+public class AstRenderMap extends AstRender {
+    private final String key;
+
+    public AstRenderMap( String key, TemplateType valueType ) {
+        super( valueType );
+
+        this.key = key;
     }
 
     @Override
-    protected String getTrue() {
-        return ".isPresent()";
-    }
+    public void render( Render render ) {
+        var mapVariable = render.newVariable();
 
-    @Override
-    protected String getFalseToString() {
-        return "isEmpty()";
-    }
+        render.ntab().append( "%s %s = %s.get( \"%s\" );",
+            type.getTypeName(), mapVariable,
+            render.field, render.escapeJava( key ) );
 
-    @Override
-    protected String getInnerVariable( Supplier<String> newVariable ) {
-        return newVariable.get();
-    }
-
-    @Override
-    protected String getInnerVariableSetter( String variableName, Render render ) {
-        return "%s %s = %s.get();".formatted( type.getTypeName(), variableName, render.field );
+        var newRender = render.withField( mapVariable ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

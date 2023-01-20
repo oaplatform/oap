@@ -34,10 +34,10 @@ import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
-import oap.template.ast.Ast;
-import oap.template.ast.AstRoot;
-import oap.template.ast.TemplateAstUtils;
-import oap.template.ast.TemplateType;
+import oap.template.render.AstRender;
+import oap.template.render.AstRenderRoot;
+import oap.template.render.TemplateAstUtils;
+import oap.template.render.TemplateType;
 import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
@@ -121,17 +121,17 @@ public class TemplateEngine implements Runnable {
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
@@ -142,7 +142,7 @@ public class TemplateEngine implements Runnable {
 
     @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
         assert template != null;
         assert acc != null;
 
@@ -169,7 +169,7 @@ public class TemplateEngine implements Runnable {
                 log.trace( "\n" + elements.print() );
 
 
-                AstRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
+                AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
 
                 if( postProcess != null )
                     postProcess.accept( ast );

@@ -22,33 +22,48 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.List;
-
 @ToString( callSuper = true )
-public class AstMethod extends Ast {
-    private final String methodName;
-    private final List<String> arguments;
+public class AstRenderField extends AstRender {
+    final String fieldName;
+    final boolean forceCast;
+    final FieldType castType;
 
-    public AstMethod( String methodName, TemplateType methodType, List<String> arguments ) {
-        super( methodType );
+    public AstRenderField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
+        super( fieldType );
 
-        this.methodName = methodName;
-        this.arguments = arguments;
+        this.fieldName = fieldName;
+        this.forceCast = forceCast;
+        this.castType = castType;
     }
 
     @Override
     public void render( Render render ) {
-        var variableName = render.newVariable();
+        if( castType != null ) {
+            var targetType = type;
+            if( type.isOptional() ) targetType = type.getActualTypeArguments0();
 
-        render.ntab().append( "%s %s = %s.%s(%s);",
-            type.getTypeName(), variableName,
-            render.field, methodName, String.join( ",", arguments ) );
+            if( !castType.isAssignableFrom( targetType ) ) {
+                throw new ClassCastException( "fieldName '" + fieldName + "' path '" + render.content + "': current '" + type + "' required '" + castType + "'" );
+            }
+        }
 
-        var newRender = render.withField( variableName ).withParentType( type );
+        var variableName = render.newVariable( fieldName );
+
+        if( variableName.isNew ) {
+            render
+                .ntab()
+                .append( "%s %s = ", type.getTypeName(), variableName.name );
+
+            if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
+
+            render.append( "%s.%s;", render.field, fieldName );
+        }
+
+        var newRender = render.withField( variableName.name ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }

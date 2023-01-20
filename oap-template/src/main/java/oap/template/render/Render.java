@@ -22,12 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 import oap.template.TemplateAccumulator;
 import org.apache.commons.text.StringEscapeUtils;
 
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ToString
@@ -42,14 +44,24 @@ public class Render {
     private final StringBuilder sb;
     public final String content;
     public final String tryVariable;
+    public final String prefix;
+
+    private final ArrayDeque<HashSet<String>> variables;
 
     private Render( String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
                     String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable ) {
-        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab, ids, tryVariable );
+        this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab, ids, tryVariable,
+            "", new ArrayDeque<>() {
+                {
+                    this.addFirst( new HashSet<>() );
+                }
+            } );
     }
 
     public Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
-            String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable ) {
+                   String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable,
+                   String prefix,
+                   ArrayDeque<HashSet<String>> variables ) {
         this.sb = sb;
         this.templateName = templateName;
         this.content = content;
@@ -60,6 +72,9 @@ public class Render {
         this.tab = tab;
         this.ids = ids;
         this.tryVariable = tryVariable;
+        this.prefix = prefix;
+
+        this.variables = variables;
     }
 
     public static Render init( String templateName, String content, TemplateType type, TemplateAccumulator<?, ?, ?> acc ) {
@@ -68,32 +83,32 @@ public class Render {
 
     public Render withField( String field ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, variableNameWithPrefix( field ), variables );
     }
 
     public Render withContent( String content ) {
         return new Render( this.sb, this.templateName, content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            templateAccumulatorName, this.tab, ids, tryVariable );
+            templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
     }
 
     public Render tabInc() {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab + 1, ids, tryVariable );
+            this.templateAccumulatorName, this.tab + 1, ids, tryVariable, prefix, variables );
     }
 
     public Render tabDec() {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab - 1, ids, tryVariable );
+            this.templateAccumulatorName, this.tab - 1, ids, tryVariable, prefix, variables );
     }
 
     public Render withParentType( TemplateType parentType ) {
         return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
     }
 
     public Render n() {
@@ -148,8 +163,48 @@ public class Render {
         return "v" + id;
     }
 
+    public NewVariable newVariable( String name ) {
+        var fullName = variableNameWithPrefix( name );
+        var it = variables.descendingIterator();
+
+        while( it.hasNext() ) {
+            var map = it.next();
+
+            if( map.contains( fullName ) ) return new NewVariable( fullName, false );
+        }
+
+        variables.getFirst().add( fullName );
+        return new NewVariable( fullName, true );
+    }
+
     public Render withTryVariable( String tryVariable ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
+    }
+
+    public Render newBlock() {
+
+        var newStack = new ArrayDeque<HashSet<String>>();
+
+        for( var item : variables ) newStack.addLast( new HashSet<>( item ) );
+        newStack.addFirst( new HashSet<>() );
+
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, newStack );
+    }
+
+    @ToString
+    public static class NewVariable {
+        public final String name;
+        public final boolean isNew;
+
+        public NewVariable( String name, boolean isNew ) {
+            this.name = name;
+            this.isNew = isNew;
+        }
+    }
+
+    private String variableNameWithPrefix( String name ) {
+        return prefix.isEmpty() ? name : prefix + "_" + name;
     }
 }

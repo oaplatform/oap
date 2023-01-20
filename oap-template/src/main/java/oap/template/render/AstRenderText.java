@@ -22,15 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.template.ast;
+package oap.template.render;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstText extends Ast {
+public class AstRenderText extends AstRender {
     public final String text;
 
-    public AstText( String text ) {
+    public AstRenderText( String text ) {
         super( new TemplateType( String.class ) );
         this.text = text;
     }
@@ -41,8 +41,4 @@ public class AstText extends Ast {
             .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
     }
 
-    @Override
-    public boolean equalsAst( Ast ast ) {
-        return ast instanceof AstText;
-    }
 }
