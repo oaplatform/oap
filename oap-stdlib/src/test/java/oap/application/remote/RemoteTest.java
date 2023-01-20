@@ -59,8 +59,9 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
-                .isPresent()
+            Optional<RemoteClient> service = kernel.<RemoteClient>service( "*.remote-client" );
+            assertThat( service ).isPresent();
+            assertThat( service )
                 .get()
                 .satisfies( remote -> {
                     assertThat( remote.accessible() ).isTrue();
@@ -68,13 +69,14 @@ public class RemoteTest extends Fixtures {
                     assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
                 } );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
-                .isPresent()
+            assertThat( service )
                 .get()
-                .satisfies( remote -> assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class ) );
+                .satisfies( remote -> {
+                    assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class );
+                    assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                } );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ) )
-                .isPresent()
+            assertThat( service )
                 .get()
                 .satisfies( RemoteClient::testRetry );
 
@@ -120,7 +122,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "oap-module-with-invalid-remoting" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "remoting: uri == null, services [oap-module-with-invalid-remoting:remote-client]" );
+                .hasMessage( "remoting: url == null, services [oap-module-with-invalid-remoting:remote-client]" );
         }
     }
 

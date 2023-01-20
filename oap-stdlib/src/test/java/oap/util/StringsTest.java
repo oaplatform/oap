@@ -149,22 +149,22 @@ public class StringsTest {
 
     @Test
     public static void toUserFriendlyId() {
-        assertThat( Identifier.generate( "some text", 7, reject(), COMPACT, FILL ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), 10000, COMPACT, FILL ) )
             .isEqualTo( "SMTXTXX" );
-        assertThat( Identifier.generate( "another text", 7, reject(), COMPACT, FILL ) )
+        assertThat( Identifier.generate( "another text", 7, reject(), 10000, COMPACT, FILL ) )
             .isEqualTo( "NTHRTXT" );
 
-        assertThat( Identifier.generate( "some text", 7, reject(), COMPACT ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), 10000, COMPACT ) )
             .isEqualTo( "SMTXT" );
 
-        assertThat( Identifier.generate( "some text", 7, reject() ) )
+        assertThat( Identifier.generate( "some text", 7, reject(), 10000 ) )
             .isEqualTo( "SOMETEX" );
-        assertThat( Identifier.generate( "another text", 7, reject() ) )
+        assertThat( Identifier.generate( "another text", 7, reject(), 10000 ) )
             .isEqualTo( "ANOTHER" );
 
         Set<String> items = Sets.empty();
         for( int i = 0; i < 39; i++ )
-            items.add( Identifier.generate( "some text", 7, items::contains, COMPACT, FILL ) );
+            items.add( Identifier.generate( "some text", 7, items::contains, 10000, COMPACT, FILL ) );
 
         assertThat( items ).containsExactly(
             "SMTXTXX",
@@ -216,17 +216,4 @@ public class StringsTest {
         assertThat( Strings.join( ";", Lists.of( 1, 2, 3 ) ) ).isEqualTo( "1;2;3" );
         assertThat( Strings.join( ";", true, Lists.of( 1, null, 3 ) ) ).isEqualTo( "1;3" );
     }
-
-    @Test
-    public void toAccessKey() {
-        assertThat( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "SMVRLFSMTXJH" );
-        assertThat( Strings.toAccessKey( "j.smith@smith.com", 16 ) ).isEqualTo( "MWLFJHCSRMSHVHTX" );
-        assertThat( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "SQNRMFCMNUJH" );
-        assertThat( Strings.toAccessKey( "a" ) ).isEqualTo( "VKUYJXLWMITZ" );
-        assertThat( Strings.toAccessKey( "A" ) ).isEqualTo( "PWOSXRVQUYNT" );
-        assertThat( Strings.toAccessKey( "b" ) ).isEqualTo( "DKCGLFJEIMBH" );
-        assertThat( Strings.toAccessKey( "/" ) ).isEqualTo( "XMWQLZNYOKVP" );
-        assertThat( Strings.toAccessKey( "@" ) ).isEqualTo( "OVNRWQUPTXMS" );
-    }
-
 }

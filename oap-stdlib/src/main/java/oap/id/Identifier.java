@@ -81,7 +81,7 @@ public interface Identifier<I, T> {
     Pattern SAFE_COMPACT = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
     Pattern SAFE = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9_\\-]+", CASE_INSENSITIVE );
 
-    static String generate( String base, int length, Predicate<String> conflict, Option... options ) {
+    static String generate( String base, int length, Predicate<String> conflict, int maxAttempts, Option... options ) {
         requireNonNull( base );
 
         String id = ( Arrays.contains( COMPACT, options ) ? SAFE_COMPACT : SAFE )
@@ -94,18 +94,25 @@ public interface Identifier<I, T> {
             ? id.substring( 0, length )
             : Arrays.contains( FILL, options )
                 ? id + "X".repeat( length - id.length() )
-                : id;
+                : id.isBlank() ? "U" : id;
 
-        StringBuilder sb = new StringBuilder( baseId );
-        //10k max attempts
-        for( int i = 0; i < 10000; i++ ) {
-            if( !conflict.test( sb.toString() ) ) break;
+        String newId = baseId;
+        for( int i = 0; i < maxAttempts; i++ ) {
+            if( !conflict.test( newId ) ) break;
             String suffix = Integer.toString( i, 36 ).toUpperCase();
             if( suffix.length() > length ) break;
-            sb.replace( sb.length() - suffix.length(), sb.length(), suffix );
+            if( baseId.length() + suffix.length() <= length ) newId = baseId + suffix;
+            else if( suffix.length() == length ) newId = suffix;
+            else newId = baseId.substring( 0, length - suffix.length() ) + suffix;
+//            try {
+//                newId.replace( newId.length() - suffix.length(), newId.length(), suffix );
+//            } catch( StringIndexOutOfBoundsException e ) {
+//                System.out.println( newId + " -> " + suffix );
+//                throw e;
+//            }
         }
 
-        id = sb.toString();
+        id = newId.toString();
 
         if( conflict.test( id ) )
             throw new IllegalArgumentException( format( "cannot resolve conflict for base '%s' with max id length %s", id, length ) );

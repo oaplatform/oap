@@ -72,13 +72,18 @@ public class JsonSchemaParserContext {
         Object schemaType = map.get( "type" );
 
         if( schemaType instanceof String ) {
-            return new JsonSchemaParserContext( schemaName, map, ( String ) schemaType, mapParser, urlParser,
-                rootPath,
-                SchemaPath.resolve( path, field ),
-                astW, ast, storage );
+            return new JsonSchemaParserContext( schemaName, map,
+                    ( String ) schemaType,
+                    mapParser,
+                    urlParser,
+                    rootPath,
+                    SchemaPath.resolve( path, field ),
+                    astW,
+                    ast,
+                    storage );
         } else {
             throw new UnknownTypeValidationSyntaxException(
-                "Unknown type " + ( schemaType == null ? "nothing" : schemaType.getClass() )
+                "Unknown SchemaType type: " + ( schemaType == null ? "nothing" : schemaType.getClass() ) + " for field: [" + field + "] and map: " + map
             );
         }
     }

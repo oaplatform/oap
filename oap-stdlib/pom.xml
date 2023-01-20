@@ -37,7 +37,6 @@
         <version>${oap.project.version}</version>
     </parent>
 
-
     <dependencies>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -184,11 +183,6 @@
             <version>${oap.deps.lz4.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.jbellis</groupId>
-            <artifactId>jamm</artifactId>
-            <version>${oap.deps.jamm.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
             <version>${oap.deps.guava-retrying.version}</version>
@@ -321,11 +315,6 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
             <version>${oap.deps.jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.java-json-tools</groupId>
-            <artifactId>jackson-coreutils</artifactId>
-            <version>${oap.deps.jackson-coreutils.version}</version>
         </dependency>
         <dependency>
             <groupId>org.antlr</groupId>
@@ -461,7 +450,12 @@
         <dependency>
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
-            <version>1.5.0-4</version>
+            <version>${oap.deps.luben.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>${oap.deps.jol.version}</version>
         </dependency>
     </dependencies>
 

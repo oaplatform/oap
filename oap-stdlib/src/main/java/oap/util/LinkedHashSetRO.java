@@ -29,6 +29,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -41,7 +43,11 @@ import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
+public class LinkedHashSetRO<T> implements Set<T>, Externalizable, Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 3720909775620214537L;
+
     private final ArrayList<T> list;
     private final HashSet<T> set;
 

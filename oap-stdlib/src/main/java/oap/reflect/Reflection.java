@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
@@ -34,7 +35,6 @@ import oap.util.function.Functions;
 import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -57,18 +58,15 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     //todo why map?
     public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
     private final Coercions coercions;
-    @SuppressWarnings( "UnstableApiUsage" )
     private final TypeToken<?> typeToken;
-    public List<Method> methods;
+    public volatile List<Method> methods;
     public List<Reflection> typeParameters;
     public List<Constructor> constructors;
 
-    @SuppressWarnings( "UnstableApiUsage" )
     Reflection( TypeToken<?> typeToken ) {
         this( typeToken, Coercions.basic().withIdentity() );
     }
 
-    @SuppressWarnings( "UnstableApiUsage" )
     Reflection( TypeToken<?> typeToken, Coercions coercions ) {
         super( typeToken.getRawType() );
         this.coercions = coercions;
@@ -101,16 +99,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
     }
 
-    private static Stream<Class<?>> baseOf( Class<?> clazz ) {
-        return Stream.flatTraverse( clazz,
-            c -> {
-                Stream<Class<?>> result = Stream.of( clazz.getInterfaces() );
-                return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
-            } );
-    }
-
-    @SuppressWarnings( "UnstableApiUsage" )
-    Reflection init() {
+   Reflection init() {
         if( this.methods == null ) {
             synchronized( this ) {
                 if( this.methods == null ) {
@@ -160,27 +149,30 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         return clazz.isAssignableFrom( this.underlying );
     }
 
+    public Set<Class<?>> assignableTo() {
+        return Stream.<Class<?>>flatTraverse( underlying, c -> {
+            Stream<Class<?>> result = Stream.of( c.getInterfaces() );
+            return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
+        } ).toSet();
+    }
+
     public boolean assignableFrom( Class<?> clazz ) {
         return this.underlying.isAssignableFrom( clazz );
     }
 
     public boolean isEnum() {
-        //noinspection UnstableApiUsage
         return this.typeToken.getRawType().isEnum();
     }
 
     public boolean isArray() {
-        //noinspection UnstableApiUsage
         return this.typeToken.getRawType().isArray();
     }
 
     public boolean isOptional() {
-        //noinspection UnstableApiUsage
         return Optional.class.equals( this.typeToken.getRawType() );
     }
 
     public Enum<?> enumValue( String value ) {
-        //noinspection UnstableApiUsage
         return Arrays.find(
             constant -> Objects.equals( constant.name(), value ),
             ( Enum<?>[] ) this.typeToken.getRawType().getEnumConstants()
@@ -189,7 +181,6 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
     //    todo cache all invokers of resolve (PERFORMANCE)
     Reflection resolve( Type type ) {
-        //noinspection UnstableApiUsage
         return Reflect.reflect( typeToken.resolveType( type ) );
     }
 
@@ -239,24 +230,23 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     }
 
     public Type getType() {
-        //noinspection UnstableApiUsage
         return typeToken.getType();
     }
 
     //    @todo check implementation via typetoken
     public Reflection getCollectionComponentType() {
-        //noinspection UnstableApiUsage
-        return baseOf( typeToken.getRawType() )
-            .filter( i -> Collection.class.isAssignableFrom( i ) && i.getTypeParameters().length > 0 )
+        return assignableTo()
+            .stream()
+            .filter( i -> Collection.class.equals( i ) && i.getTypeParameters().length > 0 )
             .map( i -> resolve( i.getTypeParameters()[0] ) )
             .findAny()
             .orElse( null );
     }
 
     public Pair<Reflection, Reflection> getMapComponentsType() {
-        //noinspection UnstableApiUsage
-        return baseOf( typeToken.getRawType() )
-            .filter( i -> Map.class.isAssignableFrom( i ) && i.getTypeParameters().length > 1 )
+        return assignableTo()
+            .stream()
+            .filter( i -> Map.class.equals( i ) && i.getTypeParameters().length > 1 )
             .map( i -> __( resolve( i.getTypeParameters()[0] ), resolve( i.getTypeParameters()[1] ) ) )
             .findAny()
             .orElse( null );
@@ -269,19 +259,16 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
     @Override
     public boolean equals( Object obj ) {
-        //noinspection UnstableApiUsage
         return obj instanceof Reflection
             && this.typeToken.equals( ( ( Reflection ) obj ).typeToken );
     }
 
     @Override
     public int hashCode() {
-        //noinspection UnstableApiUsage
         return this.typeToken.hashCode();
     }
 
     public String name() {
-        //noinspection UnstableApiUsage
         return this.typeToken.getRawType().getCanonicalName();
     }
 
@@ -306,12 +293,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     }
 
     public boolean implementationOf( Class<?> clazz ) {
-        //noinspection UnstableApiUsage
         return this.typeToken.getTypes().interfaces().rawTypes().contains( clazz );
     }
 
     public class Field extends AbstractAnnotated<java.lang.reflect.Field> implements Comparable<Field> {
-        @SuppressWarnings( "UnstableApiUsage" )
         private final Supplier<Reflection> type = Functions.memoize( () ->
             Reflect.reflect( typeToken.resolveType( this.underlying.getGenericType() ) ) );
 
@@ -323,8 +308,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public Object get( Object instance ) {
             try {
                 return this.underlying.get( instance );
-            } catch( IllegalAccessException e ) {
-                throw new ReflectException( e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke 'get' "
+                    + underlying.getName()
+                    + " on instance of: " + instance.getClass().getCanonicalName(), e );
             }
         }
 
@@ -334,8 +321,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                     throw new IllegalAccessException( this + ": Constant Expressions. See: https://stackoverflow.com/questions/17506329/java-final-field-compile-time-constant-expression" );
                 }
                 this.underlying.set( instance, value );
-            } catch( IllegalAccessException e ) {
-                throw new ReflectException( e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke 'set' "
+                        + underlying.getName()
+                        + " on instance of: " + instance.getClass().getCanonicalName()
+                        + " with value: " + argsToString( value ), e );
             }
         }
 
@@ -374,9 +364,14 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
     }
 
+    private String argsToString( Object... args ) {
+        if ( args == null || args.length == 0 ) return "()";
+        List<String> arguments = Stream.of( args ).map( arg -> arg.getClass().getCanonicalName() + "=" + arg ).toList();
+        return "(" + Joiner.on( "," ).join( arguments ) + ")";
+    }
+
     public class Method extends AbstractAnnotated<java.lang.reflect.Method> {
         public List<Parameter> parameters;
-        @SuppressWarnings( "UnstableApiUsage" )
         private final Supplier<Reflection> returnType = Functions.memoize( () ->
             Reflect.reflect( typeToken.resolveType( this.underlying.getGenericReturnType() ) ) );
 
@@ -402,8 +397,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public <T> T invoke( Object instance, Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.invoke( instance, args );
-            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException e ) {
-                throw new ReflectException( e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke "
+                        + underlying.getName()
+                        + " on instance of: " + instance.getClass().getCanonicalName()
+                        + " with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -449,8 +447,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public <T> T invoke( Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.newInstance( args );
-            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException | InstantiationException e ) {
-                throw new ReflectException( underlying.getName() + ":" + java.util.Arrays.toString( args ), e );
+            } catch( ReflectiveOperationException e ) {
+                throw new ReflectException( "Cannot invoke constructor of "
+                        + underlying.getClass().getCanonicalName()
+                        + " with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -475,7 +475,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 return instance;
 
             } catch( Exception e ) {
-                throw new ReflectException( this + ":" + args, e );
+                throw new ReflectException( "Cannot invoke constructor of "
+                        + underlying.getClass().getCanonicalName()
+                        + " with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -484,7 +486,6 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public String toString() {
-            //noinspection UnstableApiUsage
             return underlying.getName() + "(" + Stream.of( parameters )
                 .map( parameter -> parameter.type().typeToken.getType() + " " + parameter.name() )
                 .collect( joining( "," ) ) + ")";
@@ -509,7 +510,6 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     }
 
     public class Parameter extends AbstractAnnotated<java.lang.reflect.Parameter> {
-        @SuppressWarnings( "UnstableApiUsage" )
         private final Supplier<Reflection> type = Functions.memoize( () ->
             Reflect.reflect( typeToken.resolveType( this.underlying.getParameterizedType() ) ) );
 

@@ -51,7 +51,7 @@ public final class StringIdentifier<T> extends AbstractIdentifier<String, T> {
             requireNonNull( suggestion, "null id, suggestion required" );
             requireNonNull( setter, "null id, setter required " );
 
-            id = Identifier.generate( suggestion.apply( object ), length, conflict, options );
+            id = Identifier.generate( suggestion.apply( object ), length, conflict, 10000, options );
 
             setter.accept( object, id );
         }

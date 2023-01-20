@@ -89,7 +89,7 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
         }
 
         public A required() {
-            return value.orElseThrow( () -> new ValidationSyntaxException( properties.error( property + " is required" ) ) );
+            return value.orElseThrow( () -> new ValidationSyntaxException( properties.error( "'" + property + "' is required" ) ) );
         }
     }
 

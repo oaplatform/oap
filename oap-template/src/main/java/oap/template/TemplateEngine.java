@@ -32,6 +32,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
+import oap.google.JodaTicker;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
 import oap.template.render.AstRender;
@@ -75,6 +76,7 @@ public class TemplateEngine implements Runnable {
         this.ttl = ttl;
 
         templates = CacheBuilder.newBuilder()
+            .ticker( JodaTicker.JODA_TICKER )
             .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
             .recordStats()
             .maximumSize( maxSize )

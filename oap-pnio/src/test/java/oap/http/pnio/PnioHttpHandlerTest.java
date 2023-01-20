@@ -141,22 +141,22 @@ public class PnioHttpHandlerTest extends Fixtures {
             case EXCEPTION -> {
                 httpResponse.status = Http.StatusCode.BAD_GATEWAY;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                pnioExchange.responseBuffer.set( pnioExchange.throwable.getMessage() );
+                pnioExchange.responseBuffer.setAndResize( pnioExchange.throwable.getMessage() );
             }
             case RESPONSE_BUFFER_OVERFLOW -> {
                 httpResponse.status = Http.StatusCode.BAD_REQUEST;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                pnioExchange.responseBuffer.set( "BO" );
+                pnioExchange.responseBuffer.setAndResize( "BO" );
             }
             case REQUEST_BUFFER_OVERFLOW, TIMEOUT, REJECTED -> {
                 httpResponse.status = Http.StatusCode.BAD_REQUEST;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                pnioExchange.responseBuffer.set( pnioExchange.processState.name() );
+                pnioExchange.responseBuffer.setAndResize( pnioExchange.processState.name() );
             }
             default -> {
                 httpResponse.status = Http.StatusCode.NO_CONTENT;
                 httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                pnioExchange.responseBuffer.set( "DEFAULT" );
+                pnioExchange.responseBuffer.setAndResize( "DEFAULT" );
             }
         }
     }

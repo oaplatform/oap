@@ -25,17 +25,23 @@ package oap.reflect;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.util.AssocList;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.testng.annotations.Test;
 
+import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.AbstractCollection;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -138,8 +144,30 @@ public class ReflectionTest {
     }
 
     @Test
-    public void getCollectionElementType() {
+    public void getCollectionComponentType() {
         assertThat( Reflect.reflect( StringList.class ).getCollectionComponentType().underlying ).isEqualTo( String.class );
+    }
+
+    @Test
+    public void getCollectionComponentTypeAssocList() {
+        assertThat( Reflect.reflect( StringAssocList.class ).getCollectionComponentType().underlying ).isEqualTo( Integer.class );
+    }
+
+    @Test
+    public void getCollectionComponentTypeBugWithSerializable() {
+        Reflect.reflect( Bug.class ).getCollectionComponentType();
+    }
+
+    @Test
+    public void assignableTo() {
+        assertThat( Reflect.reflect( StringAssocList.class ).assignableTo() )
+            .containsOnly(
+                StringAssocList.class, AssocList.class, LinkedHashSet.class, Set.class,
+                Collection.class, Iterable.class, HashSet.class, Cloneable.class,
+                Serializable.class, AbstractSet.class, AbstractCollection.class, Object.class );
+    }
+
+    public static class Bug extends ArrayList<String> implements Serializable {
     }
 
     @Test
@@ -284,6 +312,13 @@ class Bean {
 
 class StringList extends ArrayList<String> {
 
+}
+
+class StringAssocList extends AssocList<String, Integer> implements Serializable {
+    @Override
+    protected String keyOf( Integer o ) {
+        return o.toString();
+    }
 }
 
 @EqualsAndHashCode
