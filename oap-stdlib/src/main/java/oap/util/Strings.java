@@ -154,7 +154,7 @@ public final class Strings {
     }
 
     public static String substitute( String s, Map<String, Object> map ) {
-        return substitute( s, map, true );
+        return substitute( s, map, false );
     }
 
     public static String substitute( String s, Map<String, Object> map, boolean enableUndefinedVariableException ) {
@@ -162,13 +162,14 @@ public final class Strings {
     }
 
     public static String substitute( String s, Function<String, Object> mapper ) {
-        return substitute( s, mapper, true );
+        return substitute( s, mapper, false );
     }
 
     public static String substitute( String s, Function<String, Object> mapper, boolean enableUndefinedVariableException ) {
         return new StringSubstitutor( key -> {
             Object value = mapper.apply( key );
-            return value == null ? null : String.valueOf( value );
+            if( value != null ) return String.valueOf( value );
+            return enableUndefinedVariableException ? null : "";
         } ).setEnableUndefinedVariableException( enableUndefinedVariableException ).replace( s );
     }
 
