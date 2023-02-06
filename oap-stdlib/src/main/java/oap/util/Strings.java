@@ -58,7 +58,8 @@ public final class Strings {
     @Deprecated
     private static final Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
 
-    private Strings() {}
+    private Strings() {
+    }
 
     public static String substringAfter( String s, String delimiter ) {
         return s != null && s.contains( delimiter )
@@ -153,14 +154,22 @@ public final class Strings {
     }
 
     public static String substitute( String s, Map<String, Object> map ) {
-        return new StringSubstitutor( map ).replace( s );
+        return substitute( s, map, true );
+    }
+
+    public static String substitute( String s, Map<String, Object> map, boolean enableUndefinedVariableException ) {
+        return new StringSubstitutor( map ).setEnableUndefinedVariableException( enableUndefinedVariableException ).replace( s );
     }
 
     public static String substitute( String s, Function<String, Object> mapper ) {
+        return substitute( s, mapper, true );
+    }
+
+    public static String substitute( String s, Function<String, Object> mapper, boolean enableUndefinedVariableException ) {
         return new StringSubstitutor( key -> {
             Object value = mapper.apply( key );
-            return value == null ? "" : String.valueOf( value );
-        } ).replace( s );
+            return value == null ? null : String.valueOf( value );
+        } ).setEnableUndefinedVariableException( enableUndefinedVariableException ).replace( s );
     }
 
     public static String join( Collection<?> items ) {
@@ -320,7 +329,7 @@ public final class Strings {
     }
 
     /**
-     * @see oap.id.Identifier#generate(String, int, Predicate, oap.id.Identifier.Option...)
+     * @see oap.id.Identifier#generate(String, int, Predicate, int, oap.id.Identifier.Option...)
      */
     @Deprecated
     public static String toUserFriendlyId( String source, int length, Predicate<String> conflict, FriendlyIdOption... opts ) {
