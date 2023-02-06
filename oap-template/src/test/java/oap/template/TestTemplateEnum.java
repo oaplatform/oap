@@ -25,5 +25,5 @@
 package oap.template;
 
 public enum TestTemplateEnum {
-    VAL1, VAL2
+    VAL1, VAL2, UNKNOWN
 }

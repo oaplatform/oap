@@ -36,7 +36,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>17.10.37.18</oap.project.version>
+        <oap.project.version>17.11.0.0</oap.project.version>
 
         <oap.deps.testng.version>7.5</oap.deps.testng.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>

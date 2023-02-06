@@ -43,7 +43,8 @@ public class UserAgentTest {
 
     private static class Agent extends UserAgent {
         String version;
-        public Agent( String expectedBrowser, String versionAndAgentCsv ) {
+
+        private Agent( String expectedBrowser, String versionAndAgentCsv ) {
             super( versionAndAgentCsv.replaceFirst( "^[^;]++;'(.*)'", "$1" ) );
             version = versionAndAgentCsv.replaceFirst( "^([^;]++);'.*'", "$1" );
             assertEquals( expectedBrowser, browser.name() );

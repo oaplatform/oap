@@ -2,6 +2,8 @@
 
 package oap.template;
 
+import oap.template.tree.*;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,18 +21,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class TemplateGrammarBaseListener implements TemplateGrammarListener {
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTemplate(TemplateGrammar.TemplateContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTemplate(TemplateGrammar.TemplateContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
