@@ -449,7 +449,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 return ( T ) underlying.newInstance( args );
             } catch( ReflectiveOperationException e ) {
                 throw new ReflectException( "Cannot invoke constructor of "
-                        + underlying.getClass().getCanonicalName()
+                        + name()
                         + " with parameters: " + argsToString( args ), e );
             }
         }
@@ -476,7 +476,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
             } catch( Exception e ) {
                 throw new ReflectException( "Cannot invoke constructor of "
-                        + underlying.getClass().getCanonicalName()
+                        + name()
                         + " with parameters: " + argsToString( args ), e );
             }
         }
