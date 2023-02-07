@@ -35,6 +35,10 @@ import lombok.extern.slf4j.Slf4j;
 import oap.google.JodaTicker;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
+import oap.template.render.AstRender;
+import oap.template.render.AstRenderRoot;
+import oap.template.render.TemplateAstUtils;
+import oap.template.render.TemplateType;
 import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
@@ -105,7 +109,7 @@ public class TemplateEngine implements Runnable {
 
     private void loadFunctions() {
         var functions = new HashSet<Class<?>>();
-        try ( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
+        try( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
             stream.forEach( Try.consume( cs -> functions.add( Class.forName( cs ) ) ) );
         }
 
@@ -119,23 +123,28 @@ public class TemplateEngine implements Runnable {
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
+    }
+
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
+        return getTemplate( name, type, template, acc, aliases, errorStrategy, ast -> {} );
     }
 
     @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
         assert template != null;
         assert acc != null;
 
@@ -158,10 +167,16 @@ public class TemplateEngine implements Runnable {
                     lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                     grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
-                var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
-                log.trace( "\n" + ast.print() );
+                var elements = grammar.elements( aliases ).ret;
+                log.trace( "\n" + elements.print() );
+
+
+                AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
+
                 if( postProcess != null )
                     postProcess.accept( ast );
+
+                log.trace( "\n" + ast.print() );
 
                 var tf = new JavaTemplate<>( name, template, type, tmpPath, acc, ast );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
@@ -184,7 +199,7 @@ public class TemplateEngine implements Runnable {
     public void run() {
         templates.cleanUp();
         var now = System.currentTimeMillis();
-        try ( Stream<Path> stream = Files.walk( tmpPath ) ) {
+        try( Stream<Path> stream = Files.walk( tmpPath ) ) {
             stream
                 .forEach( path -> {
                     try {

@@ -49,6 +49,8 @@ import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
+import static oap.message.MessageListenerMock.MESSAGE_TYPE3;
+
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.urlOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
@@ -139,12 +141,14 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
+        var listener3 = new MessageListenerMock( MESSAGE_TYPE3 );
 
         try( var server = new NioHttpServer( port );
-             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 );
+             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2, listener3 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
+            server.bind( "/logs", messageHttpHandler );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -155,11 +159,13 @@ public class MessageServerTest extends Fixtures {
                 .send( MESSAGE_TYPE, "124", ofString() )
                 .send( MESSAGE_TYPE, "123", ofString() )
                 .send( MESSAGE_TYPE2, "555", ofString() )
+                .send( MESSAGE_TYPE3, "666", ofString() )
                 .syncMemory();
 
             assertEventually( 100, 50, () -> {
                 assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
                 assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 1, "555" ) );
+                assertThat( listener3.getMessages() ).containsOnly( new TestMessage( 1, "666" ) );
             } );
             assertThat( client.getReadyMessages() ).isEqualTo( 0L );
             assertThat( client.getRetryMessages() ).isEqualTo( 0L );

@@ -40,9 +40,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 /**
@@ -58,10 +56,10 @@ public abstract class Configuration {
         var logConfigs = new ArrayList<URL>();
         if( mappingLocation != null ) {
             log.info( "mappingLocation = {}", mappingLocation );
-            logConfigs.addAll( Stream.of( Files.fastWildcard( mappingLocation, "*.json" ).stream() )
-                .concat( Files.fastWildcard( mappingLocation, "*.conf" ).stream() )
-                .map( Try.map( p -> p.toUri().toURL() ) )
-                .collect( toList() ) );
+            logConfigs.addAll( Stream.of( Files.fastWildcard( mappingLocation,  "*.json" ).stream() )
+                    .concat( Files.fastWildcard( mappingLocation,  "*.conf" ).stream() )
+                    .map( Try.map( p -> p.toUri().toURL() ) )
+                    .toList() );
         }
 
         if( logConfigs.isEmpty() && resourceLocation != null ) {
@@ -74,10 +72,10 @@ public abstract class Configuration {
             + mappingLocation + " or resource location " + resourceLocation );
 
         List<Pair<Integer, URL>> versionedDics = logConfigs
-            .stream()
-            .sorted( Comparator.comparing( URL::toString ) )
-            .map( path -> __( versionOf( path.getPath() ), path ) )
-            .collect( Collectors.toList() );
+                .stream()
+                .sorted( Comparator.comparing( URL::toString ) )
+                .map( path -> __( versionOf( path.getPath() ), path ) )
+                .toList();
 
         var maxVersion = versionedDics.stream().mapToInt( p -> p._1 ).max().orElse( 1 );
 

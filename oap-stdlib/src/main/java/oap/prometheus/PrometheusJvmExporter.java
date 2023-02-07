@@ -27,9 +27,12 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics;
+import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
@@ -41,16 +44,28 @@ public class PrometheusJvmExporter implements Closeable, AutoCloseable {
     public boolean enableJvmGcMetrics = true;
     public boolean enableLogbackMetrics = true;
     public boolean enableJvmThreadMetrics = true;
+    public boolean enableJvmProcessorMetrics = true;
+    public boolean enableFileDescriptorMetrics = true;
+    public boolean enableJvmHeapPressureMetrics = true;
 
     private JvmGcMetrics jvmGcMetrics;
     private LogbackMetrics logbackMetrics;
 
     public void start() {
-        log.info( "enableClassLoaderMetrics = {}, enableJvmMemoryMetrics = {}, enableJvmGcMetrics = {}, enableLogbackMetrics = {}",
-            enableClassLoaderMetrics, enableJvmMemoryMetrics, enableJvmGcMetrics, enableLogbackMetrics );
+        log.info( "enableClassLoaderMetrics = {}, enableJvmMemoryMetrics = {}, "
+            + "enableJvmGcMetrics = {}, enableLogbackMetrics = {}, "
+            + "enableJvmProcessorMetrics = {}, enableFileDescriptorMetrics = {}, "
+            + "enableJvmHeapPressureMetrics = {}",
+            enableClassLoaderMetrics, enableJvmMemoryMetrics,
+            enableJvmGcMetrics, enableLogbackMetrics,
+            enableJvmProcessorMetrics, enableFileDescriptorMetrics,
+            enableJvmHeapPressureMetrics );
 
         if( enableClassLoaderMetrics ) new ClassLoaderMetrics().bindTo( Metrics.globalRegistry );
+        if( enableJvmProcessorMetrics ) new ProcessorMetrics().bindTo( Metrics.globalRegistry );
+        if( enableFileDescriptorMetrics ) new FileDescriptorMetrics().bindTo( Metrics.globalRegistry );
         if( enableJvmMemoryMetrics ) new JvmMemoryMetrics().bindTo( Metrics.globalRegistry );
+        if( enableJvmHeapPressureMetrics ) new JvmHeapPressureMetrics().bindTo( Metrics.globalRegistry );
         if( enableJvmGcMetrics ) {
             jvmGcMetrics = new JvmGcMetrics();
             jvmGcMetrics.bindTo( Metrics.globalRegistry );

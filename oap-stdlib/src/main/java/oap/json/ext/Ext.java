@@ -26,16 +26,16 @@ package oap.json.ext;
 
 import lombok.EqualsAndHashCode;
 import oap.util.function.Try;
-
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @EqualsAndHashCode
 public abstract class Ext implements Serializable {
-    private static final ConcurrentHashMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Optional<Constructor<? extends Ext>>> cons = new ConcurrentHashMap<>();
 
     @SuppressWarnings( "unchecked" )
     protected static Optional<Constructor<? extends Ext>> init( Class<?> parent, String field, Class<?>... params ) {

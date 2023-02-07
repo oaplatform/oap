@@ -136,7 +136,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         try {
             if( controlStatePath.toFile().exists() ) hashes.load( controlStatePath );
         } catch( Exception e ) {
-            log.warn( e.getMessage() );
+            log.warn( "Cannot load hashes", e );
         }
 
         for( var listener : listeners ) {
@@ -227,7 +227,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             if( scheduled != null ) scheduled.close();
             hashes.store( controlStatePath );
         } catch( IOException e ) {
-            log.error( e.getMessage(), e );
+            log.error( "Cannot close handler", e );
         }
     }
 }

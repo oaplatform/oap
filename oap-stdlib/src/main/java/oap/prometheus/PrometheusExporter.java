@@ -27,6 +27,7 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.CollectorRegistry;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
@@ -38,6 +39,7 @@ public class PrometheusExporter implements HttpHandler {
     public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
 
     static {
+        CollectorRegistry.defaultRegistry.clear();
         Metrics.addRegistry( prometheusRegistry );
     }
 

@@ -37,10 +37,9 @@ import static oap.http.Http.Headers.DATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
-    private final EnvFixture fixture;
+    private final EnvFixture fixture = fixture( new EnvFixture() );
 
     public NioHttpServerTest() {
-        fixture = fixture( new EnvFixture() );
     }
 
     @Test
@@ -56,7 +55,6 @@ public class NioHttpServerTest extends Fixtures {
                 .hasSize( 3 )
                 .containsKey( DATE )
                 .containsKey( CONNECTION );
-
         }
 
         try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
@@ -70,7 +68,6 @@ public class NioHttpServerTest extends Fixtures {
                 .hasSize( 1 )
                 .doesNotContainKey( DATE )
                 .doesNotContainKey( CONNECTION );
-
         }
     }
 

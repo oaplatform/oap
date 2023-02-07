@@ -44,9 +44,9 @@ public class UserAgent {
             return userAgent.contains( "Mobile" ) ? Browser.OPERA_MOBILE : Browser.OPERA;
         else if( userAgent.contains( "Firefox" ) || userAgent.contains( "FxiOS" ) )
             return Browser.FIREFOX;
-        else if( !userAgent.contains( "Chrome" ) && ( userAgent.contains( "Safari" ) || userAgent.contains( "AppleWebKit" ) ) )
+        else if( !userAgent.contains( "Chrome" ) && ( userAgent.contains( "Safari" ) || userAgent.contains( "AppleWebKit" ) ) ) {
             return userAgent.contains( "Mobile" ) ? Browser.SAFARI_MOBILE : Browser.SAFARI;
-        else if( userAgent.contains( "UCBrowser" ) )
+        } else if( userAgent.contains( "UCBrowser" ) )
             return Browser.UC_BROWSER;
         else if( userAgent.contains( "Trident" ) )
             return Browser.INTERNET_EXPLORER;

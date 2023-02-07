@@ -34,10 +34,11 @@ import oap.util.Collections;
 import oap.util.Lists;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class HealthHttpHandler implements HttpHandler {
-    private final ArrayList<HealthDataProvider<?>> providers = new ArrayList<>();
+    private final List<HealthDataProvider<?>> providers = new ArrayList<>();
     private final String secret;
     private final String prefix;
 
@@ -62,7 +63,7 @@ public class HealthHttpHandler implements HttpHandler {
     }
 
     public void start() {
-        log.debug( "prefix '{}' providers {}", prefix, Lists.map( providers, HealthDataProvider::name ) );
+        log.debug( "starting handler with prefix: '{}' and providers: {}", prefix, Lists.map( providers, HealthDataProvider::name ) );
     }
 
     @Override

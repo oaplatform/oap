@@ -44,21 +44,21 @@
 
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
 
-        <oap.deps.logback.version>1.4.3</oap.deps.logback.version>
-        <oap.deps.slf4j.version>2.0.3</oap.deps.slf4j.version>
+        <oap.deps.logback.version>1.4.5</oap.deps.logback.version>
+        <oap.deps.slf4j.version>2.0.6</oap.deps.slf4j.version>
 
-        <oap.deps.mockito.version>4.8.0</oap.deps.mockito.version>
+        <oap.deps.mockito.version>4.10.0</oap.deps.mockito.version>
 
-        <oap.deps.okhttp.version>4.9.3</oap.deps.okhttp.version>
-        <oap.deps.apache.httpcomponents.version>4.4.15</oap.deps.apache.httpcomponents.version>
-        <oap.deps.apache.httpclient.version>4.5.13</oap.deps.apache.httpclient.version>
+        <oap.deps.okhttp.version>4.10.0</oap.deps.okhttp.version>
+        <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
+        <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
         <oap.deps.apache.httpmime.version>4.5.13</oap.deps.apache.httpmime.version>
-        <oap.deps.apache.configuration.version>2.7</oap.deps.apache.configuration.version>
+        <oap.deps.apache.configuration.version>2.8.0</oap.deps.apache.configuration.version>
 
         <oap.deps.apache.lang.version>3.12.0</oap.deps.apache.lang.version>
-        <oap.deps.apache.commons.text.version>1.9</oap.deps.apache.commons.text.version>
-        <oap.deps.apache.compress.version>1.21</oap.deps.apache.compress.version>
+        <oap.deps.apache.commons.text.version>1.10.0</oap.deps.apache.commons.text.version>
+        <oap.deps.apache.compress.version>1.22</oap.deps.apache.compress.version>
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.11.0</oap.deps.apache.io.version>
 
@@ -70,8 +70,25 @@
 
         <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
 
-        <oap.deps.jamm.version>0.3.5</oap.deps.jamm.version>
+        <oap.deps.jol.version>0.16</oap.deps.jol.version>
+        <oap.deps.luben.version>1.5.2-5</oap.deps.luben.version>
+        <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
+        for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type
+        and in later versions it is left unchanged so exception will arise.
+        In order to fix that we have to rename all GAUGEs with same name as COUNTER's to different ones,
+        for instance by adding "extra" suffix
+        Example:
+            Metrics.counter( "task_queue", Tags.of( "type", "total" ) );
+            Metrics.gauge( "task_queue", Tags.of( "type", "current" ), this, 5 );
+
+        should be changed to
+
+            Metrics.counter( "task_queue", Tags.of( "type", "total" ) );
+            Metrics.gauge( "task_queue_extra", Tags.of( "type", "current" ), this, 5 );
+
+         -->
         <oap.deps.micrometer.version>1.6.9</oap.deps.micrometer.version>
+
         <oap.deps.fastutil.version>8.5.9</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
         <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
@@ -95,6 +112,6 @@
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
         <oap.deps.undertow.version>2.2.19.Final</oap.deps.undertow.version>
-        <oap.deps.affinity>3.21ea82</oap.deps.affinity>
+        <oap.deps.affinity>3.23.2</oap.deps.affinity>
     </properties>
 </project>

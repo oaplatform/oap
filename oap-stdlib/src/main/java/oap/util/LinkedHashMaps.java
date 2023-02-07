@@ -24,11 +24,20 @@
 
 package oap.util;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class LinkedHashMaps {
+public class LinkedHashMaps implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = -2431116666637195482L;
+
+    private LinkedHashMaps() {
+    }
+
     public static <K, V> LinkedHashMap<K, V> of() {
         return new LinkedHashMap<K, V>();
     }
