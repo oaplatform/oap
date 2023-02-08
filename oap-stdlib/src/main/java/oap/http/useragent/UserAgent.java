@@ -40,19 +40,19 @@ public class UserAgent {
 
         if( userAgent.contains( "Edge" ) )
             return Browser.EDGE;
-        else if( userAgent.contains( "OPR" ) || userAgent.contains( "Presto" ) )
-            return userAgent.contains( "Mobile" ) ? Browser.OPERA_MOBILE : Browser.OPERA;
-        else if( userAgent.contains( "Firefox" ) || userAgent.contains( "FxiOS" ) )
-            return Browser.FIREFOX;
-        else if( !userAgent.contains( "Chrome" ) && ( userAgent.contains( "Safari" ) || userAgent.contains( "AppleWebKit" ) ) ) {
-            return userAgent.contains("Mobile") ? Browser.SAFARI_MOBILE : Browser.SAFARI;
-        }
-        else if( userAgent.contains( "UCBrowser" ) )
-            return Browser.UC_BROWSER;
-        else if( userAgent.contains( "Trident" ) )
-            return Browser.INTERNET_EXPLORER;
         else if( userAgent.contains( "Chrome" ) )
             return userAgent.contains( "Mobile" ) ? Browser.CHROME_MOBILE : Browser.CHROME;
+        else if( userAgent.contains( "Firefox" ) || userAgent.contains( "FxiOS" ) )
+            return Browser.FIREFOX;
+        else if( userAgent.contains( "Trident" ) || userAgent.contains( "MSIE" ) )
+            return Browser.INTERNET_EXPLORER;
+        else if( !userAgent.contains( "Chrome" ) && ( userAgent.contains( "Safari" ) || userAgent.contains( "AppleWebKit" ) ) ) {
+            return userAgent.contains( "Mobile" ) ? Browser.SAFARI_MOBILE : Browser.SAFARI;
+        }
+        else if( userAgent.contains( "OPR" ) || userAgent.contains( "Presto" ) )
+            return userAgent.contains( "Mobile" ) ? Browser.OPERA_MOBILE : Browser.OPERA;
+        else if( userAgent.contains( "UCBrowser" ) || userAgent.contains( "UCWeb" ) )
+            return Browser.UC_BROWSER; //It is not safari and has its own engine
         else return Browser.UNKNOWN;
     }
 
