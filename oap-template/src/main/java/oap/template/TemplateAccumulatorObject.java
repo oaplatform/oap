@@ -24,13 +24,9 @@
 
 package oap.template;
 
-import oap.json.Binder;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.joda.time.DateTime;
 
 import java.util.Collection;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TemplateAccumulatorObject implements TemplateAccumulator<Object, MutableObject<Object>, TemplateAccumulatorObject> {
     private final MutableObject<Object> obj;
@@ -59,6 +55,11 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
+    public void accept( char ch ) {
+        accept( ( Object ) ch );
+    }
+
+    @Override
     public void accept( byte b ) {
         accept( ( Object ) b );
     }
@@ -81,11 +82,6 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     @Override
     public void accept( float f ) {
         accept( ( Object ) f );
-    }
-
-    @Override
-    public void accept( DateTime jodaDateTime ) {
-        accept( ( Object ) jodaDateTime );
     }
 
     @Override
@@ -114,16 +110,6 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
-    public void acceptNull( Class<?> type ) {
-        obj.setValue( null );
-    }
-
-    @Override
-    public String getDefault( Class<?> type ) {
-        return null;
-    }
-
-    @Override
     public boolean isEmpty() {
         return obj.getValue() == null;
     }
@@ -144,27 +130,7 @@ public class TemplateAccumulatorObject implements TemplateAccumulator<Object, Mu
     }
 
     @Override
-    public String delimiter() {
-        return "";
-    }
-
-    @Override
     public Object get() {
         return obj.getValue();
-    }
-
-    @Override
-    public byte[] getBytes() {
-        return Binder.json.marshal( get() ).getBytes( UTF_8 );
-    }
-
-    @Override
-    public TemplateAccumulatorObject addEol( boolean eol ) {
-        return this;
-    }
-
-    @Override
-    public void reset() {
-        obj.setValue( null );
     }
 }

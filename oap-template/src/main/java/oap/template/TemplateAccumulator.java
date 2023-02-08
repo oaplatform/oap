@@ -24,10 +24,7 @@
 
 package oap.template;
 
-import org.joda.time.DateTime;
-
 import java.util.Collection;
-import java.util.Date;
 import java.util.function.Supplier;
 
 /**
@@ -41,49 +38,57 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
     void accept( String text );
 
     default void accept( Boolean b ) {
-        accept( b.booleanValue() );
+        if( b == null ) accept( false );
+        else accept( b.booleanValue() );
     }
 
     void accept( boolean b );
 
+    default void accept( Character ch ) {
+        if( ch == null ) accept( ( Object ) ch );
+        else accept( ch.charValue() );
+    }
+
+    void accept( char ch );
+
     default void accept( Byte b ) {
-        accept( b.byteValue() );
+        if( b == null ) accept( ( byte ) 0 );
+        else accept( b.byteValue() );
     }
 
     void accept( byte b );
 
     default void accept( Short s ) {
-        accept( s.shortValue() );
+        if( s == null ) accept( ( short ) 0 );
+        else accept( s.shortValue() );
     }
 
     void accept( short s );
 
     default void accept( Integer i ) {
-        accept( i.intValue() );
+        if( i == null ) accept( ( int ) 0 );
+        else accept( i.intValue() );
     }
 
     void accept( int i );
 
     default void accept( Long l ) {
-        accept( l.longValue() );
+        if( l == null ) accept( ( long ) 0 );
+        else accept( l.longValue() );
     }
 
     void accept( long l );
 
     default void accept( Float f ) {
-        accept( f.floatValue() );
+        if( f == null ) accept( ( float ) 0.0 );
+        else accept( f.floatValue() );
     }
 
     void accept( float f );
 
     default void accept( Double d ) {
-        accept( d.doubleValue() );
-    }
-
-    void accept( DateTime jodaDateTime );
-
-    default void accept( Date javaDateTime ) {
-        accept( new DateTime( javaDateTime ) );
+        if( d == null ) accept( ( double ) 0.0 );
+        else accept( d.doubleValue() );
     }
 
     void accept( double d );
@@ -96,27 +101,11 @@ public interface TemplateAccumulator<T, TMutable, TTemplateAccumulator extends T
 
     void accept( Object obj );
 
-    void acceptNull( Class<?> type );
-
-    String getDefault( Class<?> type );
-
     boolean isEmpty();
-
-    default boolean isNotEmpty() {
-        return !isEmpty();
-    }
 
     TTemplateAccumulator newInstance();
 
     TTemplateAccumulator newInstance( TMutable mutable );
 
     String getTypeName();
-
-    String delimiter();
-
-    byte[] getBytes();
-
-    TTemplateAccumulator addEol( boolean eol );
-
-    void reset();
 }

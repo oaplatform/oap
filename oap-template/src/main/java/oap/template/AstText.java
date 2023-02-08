@@ -24,19 +24,25 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+@ToString( callSuper = true )
+public class AstText extends Ast {
+    public final String text;
 
-    void render( TIn obj, TOutMutable out );
+    public AstText( String text ) {
+        super( new TemplateType( String.class ) );
+        this.text = text;
+    }
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+    @Override
+    void render( Render render ) {
+        render.ntab()
+            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
+    }
+
+    @Override
+    protected boolean equalsAst( Ast ast ) {
+        return ast instanceof AstText;
     }
 }

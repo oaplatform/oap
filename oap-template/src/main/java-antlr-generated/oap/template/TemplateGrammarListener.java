@@ -2,8 +2,6 @@
 
 package oap.template;
 
-import oap.template.tree.*;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +14,16 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link TemplateGrammar}.
  */
 public interface TemplateGrammarListener extends ParseTreeListener {
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#template}.
+	 * @param ctx the parse tree
+	 */
+	void enterTemplate(TemplateGrammar.TemplateContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#template}.
+	 * @param ctx the parse tree
+	 */
+	void exitTemplate(TemplateGrammar.TemplateContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammar#elements}.
 	 * @param ctx the parse tree

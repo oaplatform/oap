@@ -54,10 +54,4 @@ public class FastByteArrayOutputStream extends it.unimi.dsi.fastutil.io.FastByte
     public String toString() {
         return new String( array, 0, length );
     }
-
-    public byte[] toByteArray() {
-        var ret = new byte[length];
-        System.arraycopy( array, 0, ret, 0, length );
-        return ret;
-    }
 }

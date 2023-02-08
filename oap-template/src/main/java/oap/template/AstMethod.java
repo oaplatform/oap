@@ -24,19 +24,31 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+import java.util.List;
 
-    void render( TIn obj, TOutMutable out );
+@ToString( callSuper = true )
+public class AstMethod extends Ast {
+    private final String methodName;
+    private final List<String> arguments;
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+    public AstMethod( String methodName, TemplateType methodType, List<String> arguments ) {
+        super( methodType );
+
+        this.methodName = methodName;
+        this.arguments = arguments;
+    }
+
+    @Override
+    void render( Render render ) {
+        var variableName = render.newVariable();
+
+        render.ntab().append( "%s %s = %s.%s(%s);",
+            type.getTypeName(), variableName,
+            render.field, methodName, String.join( ",", arguments ) );
+
+        var newRender = render.withField( variableName ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

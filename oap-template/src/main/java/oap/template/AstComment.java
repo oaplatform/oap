@@ -24,19 +24,22 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+@ToString( callSuper = true )
+class AstComment extends Ast {
+    final String comment;
 
-    void render( TIn obj, TOutMutable out );
+    AstComment( TemplateType type, String comment ) {
+        super( type );
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+        this.comment = comment;
+    }
+
+    @Override
+    void render( Render render ) {
+        render.ntab().append( comment );
+
+        children.forEach( a -> a.render( render ) );
     }
 }

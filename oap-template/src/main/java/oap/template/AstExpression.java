@@ -24,19 +24,26 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
+import org.apache.commons.text.StringEscapeUtils;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+import java.util.ArrayList;
 
-    void render( TIn obj, TOutMutable out );
+@ToString( callSuper = true )
+public class AstExpression extends Ast {
+    final ArrayList<String> content = new ArrayList<>();
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+    AstExpression( Ast ast, String content ) {
+        super( ast.type );
+        this.children.add( ast );
+        this.content.add( content );
+    }
+
+    @Override
+    void render( Render render ) {
+        for( String c : content ) {
+            render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
+        }
+        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
     }
 }

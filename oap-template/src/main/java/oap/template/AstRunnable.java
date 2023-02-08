@@ -24,19 +24,30 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+@ToString( callSuper = true )
+public class AstRunnable extends Ast {
+    AstRunnable( TemplateType type ) {
+        super( type );
+    }
 
-    void render( TIn obj, TOutMutable out );
+    @Override
+    void render( Render render ) {
+        var newFunctionId = render.newVariable();
+        var templateAccumulatorName = "acc_" + newFunctionId;
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+        render( newFunctionId, templateAccumulatorName, render );
+    }
+
+    void render( String newFunctionId, String templateAccumulatorName, Render render ) {
+        render
+            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
+            .ntab().append( "Runnable %s = () -> {", newFunctionId );
+
+        var newRender = render.withParentType( type ).withTemplateAccumulatorName( templateAccumulatorName ).tabInc();
+        children.forEach( ast -> ast.render( newRender ) );
+
+        render.ntab().append( "};" );
     }
 }

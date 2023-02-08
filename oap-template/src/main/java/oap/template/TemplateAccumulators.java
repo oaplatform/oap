@@ -25,7 +25,6 @@
 package oap.template;
 
 public final class TemplateAccumulators {
-    public static final TemplateAccumulatorBinary BINARY = new TemplateAccumulatorBinary();
     public static final TemplateAccumulatorString STRING = new TemplateAccumulatorString();
     public static final TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
 }

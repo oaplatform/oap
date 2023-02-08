@@ -37,22 +37,18 @@ import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
 public class Dates {
-    public static final String PATTERN_FORMAT_MILLIS = "yyyy-MM-dd'T'HH:mm:ss.SSS";
-    public static final String PATTERN_FORMAT_SIMPLE = "yyyy-MM-dd'T'HH:mm:ss";
-    public static final String PATTERN_FORMAT_SIMPLE_CLEAN = "yyyy-MM-dd HH:mm:ss";
-    public static final String PATTERN_FORMAT_DATE = "yyyy-MM-dd";
 
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
-        .forPattern( PATTERN_FORMAT_MILLIS )
+        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
         .withZoneUTC();
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
-        .forPattern( PATTERN_FORMAT_SIMPLE )
+        .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
         .withZoneUTC();
     public static final DateTimeFormatter FORMAT_SIMPLE_CLEAN = DateTimeFormat
-        .forPattern( PATTERN_FORMAT_SIMPLE_CLEAN )
+        .forPattern( "yyyy-MM-dd HH:mm:ss" )
         .withZoneUTC();
     public static final DateTimeFormatter FORMAT_DATE = DateTimeFormat
-        .forPattern( PATTERN_FORMAT_DATE )
+        .forPattern( "yyyy-MM-dd" )
         .withZoneUTC();
 
     public static final DateTimeFormatter PARSER_MULTIPLE_DATETIME = new DateTimeFormatterBuilder()

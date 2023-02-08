@@ -27,9 +27,7 @@ package oap.template;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.json.ext.Ext;
-import org.joda.time.DateTime;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
@@ -44,23 +42,10 @@ public class TestTemplateClass {
     public TestTemplateClass child;
     public TestTemplateClass2 child2;
     public TestTemplateEnum enumField;
-    public TestTemplateEnumWithoutDefaultValue enumFieldWithoutDefaultValue;
-    @Nonnull
-    public TestTemplateEnum nonNullEnumField = TestTemplateEnum.VAL1;
     public boolean booleanField;
     public Boolean booleanObjectField;
-    public short byteField;
-    public Byte byteObjectField;
-    public short shortField;
-    public Short shortObjectField;
     public int intField;
     public Integer intObjectField;
-    public long longField;
-    public Long longObjectField;
-    public float floatField;
-    public Float floatObjectField;
-    public double doubleField;
-    public Double doubleObjectField;
     public Optional<TestTemplateClass> childOpt = Optional.empty();
     @Nullable
     public TestTemplateClass childNullable;
@@ -72,9 +57,6 @@ public class TestTemplateClass {
     @Nullable
     public List<Integer> list2;
     public List<String> listString;
-
-    public DateTime dateTime;
-    public Optional<DateTime> dateTimeOptional = Optional.empty();
     public List<TestTemplateEnum> listEnum;
     public Set<String> setString;
     @JsonProperty( "jsonTestNew" )

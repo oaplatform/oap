@@ -32,10 +32,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
-import java.util.Optional;
 
 import static oap.template.ErrorStrategy.ERROR;
-import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -69,7 +67,7 @@ public class TemplateEngineTypesTest extends Fixtures {
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "booleanField:${<java.lang.Boolean>booleanField},booleanObjectField:${<java.lang.Boolean>booleanObjectField},intField:${<java.lang.Integer>intField},intObjectField:${<java.lang.Integer>intObjectField}",
-            templateAccumulator, ERROR, null ).render( templateClass ).get();
+            templateAccumulator, ERROR, null ).render( templateClass );
 
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
 
@@ -89,7 +87,7 @@ public class TemplateEngineTypesTest extends Fixtures {
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "child.intField:${<java.lang.Integer>child.intField}",
-            templateAccumulator, ERROR, null ).render( templateClass ).get();
+            templateAccumulator, ERROR, null ).render( templateClass );
 
         assertString( str ).isEqualTo( "child.intField:100_i" );
     }
@@ -105,7 +103,7 @@ public class TemplateEngineTypesTest extends Fixtures {
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "child.child.{field,\"x\",field2}:${<java.lang.String>child.child.{field,\"x\",field2}}",
-            templateAccumulator, ERROR, null ).render( templateClass ).get();
+            templateAccumulator, ERROR, null ).render( templateClass );
 
         assertString( str ).isEqualTo( "child.child.{field,\"x\",field2}:v1xv2" );
     }
@@ -119,18 +117,8 @@ public class TemplateEngineTypesTest extends Fixtures {
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "childNullable.intField:${<java.lang.Integer>childNullable.intField}",
-            templateAccumulator, ERROR, null ).render( templateClass ).get();
+            templateAccumulator, ERROR, null ).render( templateClass );
 
         assertThat( str ).isEqualTo( "childNullable.intField:100_i" );
-    }
-
-    @Test
-    public void testDefaultBoolean() {
-        var c = new TestTemplateClass();
-        c.childNullable = null;
-        c.childOpt = Optional.empty();
-
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${<java.lang.Boolean>childNullable.booleanObjectField??true}", STRING, null ).render( c ).get() )
-            .isEqualTo( "true" );
     }
 }

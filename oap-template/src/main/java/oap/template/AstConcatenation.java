@@ -24,19 +24,31 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import lombok.ToString;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+import java.util.List;
 
-    void render( TIn obj, TOutMutable out );
+@ToString( callSuper = true )
+public class AstConcatenation extends Ast {
+    final List<Ast> items;
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+    AstConcatenation( TemplateType type, List<Ast> items ) {
+        super( type );
+
+        this.items = items;
+    }
+
+    @Override
+    void render( Render render ) {
+        var templateAccumulatorName = "acc_" + render.newVariable();
+        render
+            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName );
+
+        for( var item : items ) {
+            item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );
+        }
+
+        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

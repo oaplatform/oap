@@ -26,9 +26,6 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
-import oap.template.render.AstRenderRoot;
-import oap.template.render.Render;
-import oap.template.render.TemplateType;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 
@@ -47,7 +44,7 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRenderRoot ast ) {
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
         this.acc = acc;
         try {
             var render = Render.init( name, template, new TemplateType( type.type() ), acc );
@@ -71,18 +68,16 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
         }
     }
 
-    public TA render( TIn obj, boolean eol ) {
+    public TOut render( TIn obj ) {
         var newAcc = acc.newInstance();
         cons.accept( obj, Map.of(), newAcc );
 
-        return newAcc.addEol( eol );
+        return newAcc.get();
     }
 
     @Override
-    public TA render( TIn obj, boolean eol, TOutMutable tOut ) {
+    public void render( TIn obj, TOutMutable tOut ) {
         var newAcc = acc.newInstance( tOut );
         cons.accept( obj, Map.of(), newAcc );
-
-        return newAcc.addEol( eol );
     }
 }
