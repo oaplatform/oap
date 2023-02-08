@@ -35,13 +35,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -60,7 +58,8 @@ public final class Strings {
     @Deprecated
     private static final Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
 
-    private Strings() {}
+    private Strings() {
+    }
 
     public static String substringAfter( String s, String delimiter ) {
         return s != null && s.contains( delimiter )
@@ -155,14 +154,23 @@ public final class Strings {
     }
 
     public static String substitute( String s, Map<String, Object> map ) {
-        return new StringSubstitutor( map ).replace( s );
+        return substitute( s, map, false );
+    }
+
+    public static String substitute( String s, Map<String, Object> map, boolean enableUndefinedVariableException ) {
+        return new StringSubstitutor( map ).setEnableUndefinedVariableException( enableUndefinedVariableException ).replace( s );
     }
 
     public static String substitute( String s, Function<String, Object> mapper ) {
+        return substitute( s, mapper, false );
+    }
+
+    public static String substitute( String s, Function<String, Object> mapper, boolean enableUndefinedVariableException ) {
         return new StringSubstitutor( key -> {
             Object value = mapper.apply( key );
-            return value == null ? "" : String.valueOf( value );
-        } ).replace( s );
+            if( value != null ) return String.valueOf( value );
+            return enableUndefinedVariableException ? null : "";
+        } ).setEnableUndefinedVariableException( enableUndefinedVariableException ).replace( s );
     }
 
     public static String join( Collection<?> items ) {
@@ -322,7 +330,7 @@ public final class Strings {
     }
 
     /**
-     * @see oap.id.Identifier#generate(String, int, Predicate, oap.id.Identifier.Option...)
+     * @see oap.id.Identifier#generate(String, int, Predicate, int, oap.id.Identifier.Option...)
      */
     @Deprecated
     public static String toUserFriendlyId( String source, int length, Predicate<String> conflict, FriendlyIdOption... opts ) {
@@ -381,32 +389,6 @@ public final class Strings {
             buf.setLength( 0 );
         }
         return s;
-    }
-
-    //eiminating most used letters in english from source
-    public static String toAccessKey( String email ) {
-        return toAccessKey( email, 12 );
-    }
-
-    public static String toAccessKey( String email, int length ) {
-        var transitions = Lists.of( IntStream.range( 0, length ).toArray() );
-        java.util.Collections.shuffle( transitions, new Random( transitions.size() ) );
-        StringBuilder result = new StringBuilder();
-        Function<Character, Boolean> isGoodLetter = c ->
-            ( c > 64 && c < 91 || c > 96 && c < 123 )
-                && c != 'E' && c != 'e'
-                && c != 'T' && c != 't'
-                && c != 'A' && c != 'a'
-                && c != 'O' && c != 'o'
-                && c != 'I' && c != 'i'
-                && c != 'N' && c != 'n';
-        for( int t : transitions )
-            if( t >= email.length() || !isGoodLetter.apply( email.charAt( t ) ) ) {
-                var c = email.charAt( t % email.length() );
-                var base = Character.toUpperCase( isGoodLetter.apply( c ) ? c : 'A' + ( c % 26 ) );
-                result.append( ( char ) ( base + t <= 'Z' ? base + t : base - t ) );
-            } else result.append( Character.toUpperCase( email.charAt( t ) ) );
-        return result.toString();
     }
 
     @Deprecated
