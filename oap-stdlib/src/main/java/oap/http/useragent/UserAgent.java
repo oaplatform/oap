@@ -48,8 +48,7 @@ public class UserAgent {
             return Browser.INTERNET_EXPLORER;
         else if( !userAgent.contains( "Chrome" ) && ( userAgent.contains( "Safari" ) || userAgent.contains( "AppleWebKit" ) ) ) {
             return userAgent.contains( "Mobile" ) ? Browser.SAFARI_MOBILE : Browser.SAFARI;
-        }
-        else if( userAgent.contains( "OPR" ) || userAgent.contains( "Presto" ) )
+        } else if( userAgent.contains( "OPR" ) || userAgent.contains( "Presto" ) )
             return userAgent.contains( "Mobile" ) ? Browser.OPERA_MOBILE : Browser.OPERA;
         else if( userAgent.contains( "UCBrowser" ) || userAgent.contains( "UCWeb" ) )
             return Browser.UC_BROWSER; //It is not safari and has its own engine
