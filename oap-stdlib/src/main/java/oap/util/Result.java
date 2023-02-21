@@ -149,7 +149,7 @@ public final class Result<S, F> implements Serializable {
     @Override
     public String toString() {
         return success
-            ? "Result.success(" + Strings.deepToString( successValue ) + ")"
-            : "Result.failure(" + Strings.deepToString( failureValue ) + ")";
+            ? "Result.success (reason: " + Strings.deepToString( successValue ) + ")"
+            : "Result.failure (reason: " + Strings.deepToString( failureValue ) + ")";
     }
 }
