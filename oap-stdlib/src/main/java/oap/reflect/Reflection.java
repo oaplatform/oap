@@ -309,7 +309,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             try {
                 return this.underlying.get( instance );
             } catch( ReflectiveOperationException e ) {
-                throw new ReflectException( "Cannot invoke 'get' "
+                throw new ReflectException( "Cannot invoke method 'get' "
                     + underlying.getName()
                     + " on instance of: " + instance.getClass().getCanonicalName(), e );
             }
@@ -322,7 +322,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 }
                 this.underlying.set( instance, value );
             } catch( ReflectiveOperationException e ) {
-                throw new ReflectException( "Cannot invoke 'set' "
+                throw new ReflectException( "Cannot invoke method 'set' "
                         + underlying.getName()
                         + " on instance of: " + instance.getClass().getCanonicalName()
                         + " with value: " + argsToString( value ), e );
@@ -398,10 +398,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             try {
                 return ( T ) underlying.invoke( instance, args );
             } catch( ReflectiveOperationException e ) {
-                throw new ReflectException( "Cannot invoke "
+                throw new ReflectException( "Cannot invoke method '"
                         + underlying.getName()
-                        + " on instance of: " + instance.getClass().getCanonicalName()
-                        + " with parameters: " + argsToString( args ), e );
+                        + "' on instance of class '" + instance.getClass().getCanonicalName()
+                        + "' with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -448,9 +448,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             try {
                 return ( T ) underlying.newInstance( args );
             } catch( ReflectiveOperationException e ) {
-                throw new ReflectException( "Cannot invoke constructor of "
+                throw new ReflectException( "Cannot invoke constructor of class '"
                         + name()
-                        + " with parameters: " + argsToString( args ), e );
+                        + "' with parameters: " + argsToString( args ), e );
             }
         }
 
