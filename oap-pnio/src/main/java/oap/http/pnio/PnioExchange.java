@@ -123,7 +123,7 @@ public class PnioExchange<WorkflowState> {
         completeFuture();
     }
 
-    void completeWithRejected() {
+    public void completeWithRejected() {
         processState = ProcessState.REJECTED;
 
         completeFuture();
