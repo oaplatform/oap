@@ -34,7 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
@@ -44,7 +44,6 @@ import static oap.util.Collectors.CH_ID;
 import static oap.util.Pair.__;
 
 public class Lists extends oap.util.Collections {
-    private static final Random random = new Random();
 
     @SafeVarargs
     public static <E> List<E> addAll( List<E> list, E... array ) {
@@ -152,7 +151,6 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-
     public static <E> List<E> filter( Collection<E> list, Predicate<E> predicate ) {
         var result = new ArrayList<E>();
 
@@ -162,7 +160,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> Optional<E> random( List<E> list ) {
-        return Optional.ofNullable( list.isEmpty() ? null : list.get( random.nextInt( list.size() ) ) );
+        return Optional.ofNullable( list.isEmpty() ? null : list.get( ThreadLocalRandom.current().nextInt( list.size() ) ) );
     }
 
     @Deprecated
@@ -171,7 +169,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> List<E> randomSublist( List<E> list ) {
-        return randomSublist( list, random.nextInt( list.size() + 1 ) );
+        return randomSublist( list, ThreadLocalRandom.current().nextInt( list.size() + 1 ) );
     }
 
     public static <E> List<E> randomSublist( List<E> list, int sublistSize ) {

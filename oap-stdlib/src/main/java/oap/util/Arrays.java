@@ -30,14 +30,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static oap.util.Pair.__;
 
 public class Arrays {
-    private static final Random random = new Random();
 
     @SafeVarargs
     public static <T> Optional<T> find( Predicate<T> predicate, T... array ) {
@@ -95,7 +94,6 @@ public class Arrays {
         );
     }
 
-
     @SafeVarargs
     @Deprecated
     public static <E> E[][] splitBy( Class<?> componentType, int by, E... a ) {
@@ -113,7 +111,6 @@ public class Arrays {
         return result;
     }
 
-
     @SafeVarargs
     public static <E> boolean contains( E v, E... array ) {
         if( v == null ) {
@@ -128,7 +125,7 @@ public class Arrays {
     }
 
     public static <E> Optional<E> random( E[] array ) {
-        return array.length > 0 ? Optional.ofNullable( array[random.nextInt( array.length )] ) : Optional.empty();
+        return array.length > 0 ? Optional.ofNullable( array[ThreadLocalRandom.current().nextInt( array.length )] ) : Optional.empty();
     }
 
     public static int[] range( int from, int to ) {
