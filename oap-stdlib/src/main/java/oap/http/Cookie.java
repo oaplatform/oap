@@ -33,7 +33,7 @@ import java.util.Date;
 
 @EqualsAndHashCode
 public class Cookie {
-    public final io.undertow.server.handlers.Cookie cookie;
+    public final io.undertow.server.handlers.Cookie delegate;
 
     public Cookie( String name, Object value ) {
         this( name, String.valueOf( value ) );
@@ -44,7 +44,7 @@ public class Cookie {
     }
 
     private Cookie( io.undertow.server.handlers.Cookie cookie ) {
-        this.cookie = cookie;
+        this.delegate = cookie;
     }
 
     public static Cookie parseSetCookieHeader( String headerValue ) {
@@ -52,27 +52,27 @@ public class Cookie {
     }
 
     public Cookie withDomain( String domain ) {
-        this.cookie.setDomain( domain );
+        this.delegate.setDomain( domain );
         return this;
     }
 
     public Cookie withSameSite( boolean sameSite ) {
-        this.cookie.setSameSite( sameSite );
+        this.delegate.setSameSite( sameSite );
         return this;
     }
 
     public Cookie withExpires( DateTime expires ) {
-        this.cookie.setExpires( expires.toDate() );
+        this.delegate.setExpires( expires.toDate() );
         return this;
     }
 
     public Cookie withPath( String path ) {
-        this.cookie.setPath( path );
+        this.delegate.setPath( path );
         return this;
     }
 
     public Cookie withMaxAge( long seconds ) {
-        this.cookie.setMaxAge( ( int ) seconds );
+        this.delegate.setMaxAge( ( int ) seconds );
         return this;
     }
 
@@ -81,52 +81,52 @@ public class Cookie {
     }
 
     public Cookie httpOnly( boolean httpOnly ) {
-        this.cookie.setHttpOnly( httpOnly );
+        this.delegate.setHttpOnly( httpOnly );
         return this;
     }
 
     public Cookie secure( boolean secure ) {
-        this.cookie.setSecure( secure );
+        this.delegate.setSecure( secure );
         return this;
     }
 
     public String toString() {
-        return cookie.toString();
+        return delegate.toString();
     }
 
     public String getName() {
-        return cookie.getName();
+        return delegate.getName();
     }
 
     public String getValue() {
-        return cookie.getValue();
+        return delegate.getValue();
     }
 
     public String getDomain() {
-        return cookie.getDomain();
+        return delegate.getDomain();
     }
 
     public Date getExpires() {
-        return cookie.getExpires();
+        return delegate.getExpires();
     }
 
     public String getPath() {
-        return cookie.getPath();
+        return delegate.getPath();
     }
 
     public Integer getMaxAge() {
-        return cookie.getMaxAge();
+        return delegate.getMaxAge();
     }
 
     public boolean isSameSite() {
-        return cookie.isSameSite();
+        return delegate.isSameSite();
     }
 
     public boolean isSecure() {
-        return cookie.isSecure();
+        return delegate.isSecure();
     }
 
     public boolean isHttpOnly() {
-        return cookie.isHttpOnly();
+        return delegate.isHttpOnly();
     }
 }
