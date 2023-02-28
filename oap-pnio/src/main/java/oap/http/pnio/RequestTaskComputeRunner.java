@@ -12,7 +12,6 @@ package oap.http.pnio;
 import lombok.extern.slf4j.Slf4j;
 import net.openhft.affinity.Affinity;
 
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 
 import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
@@ -25,7 +24,7 @@ class RequestTaskComputeRunner<WorkflowState> implements Runnable {
     private Thread thread;
 
     RequestTaskComputeRunner( BlockingQueue<PnioExchange<WorkflowState>> queue, int cpu ) {
-        this.queue = Objects.requireNonNull( queue );
+        this.queue = queue;
         this.cpu = cpu;
     }
 
@@ -41,14 +40,13 @@ class RequestTaskComputeRunner<WorkflowState> implements Runnable {
                 PnioExchange<WorkflowState> pnioExchange = queue.take();
                 try {
                     pnioExchange.runTasks( COMPUTE );
+
                     pnioExchange.completeFuture();
                 } catch( Throwable e ) {
                     pnioExchange.completeWithFail( e );
                 }
             } catch( InterruptedException e ) {
-                Thread.currentThread().interrupt();
                 done = true;
-                break;
             }
         }
     }

@@ -35,7 +35,7 @@ public class Closeables {
         try {
             if( closeable != null ) closeable.close();
         } catch( Exception e ) {
-            log.error( "Cannot close given resource: {}", closeable.getClass().getCanonicalName(), e );
+            log.error( e.getMessage(), e );
         }
     }
 
@@ -43,7 +43,7 @@ public class Closeables {
         try {
             if( service != null ) service.shutdownNow();
         } catch( Exception e ) {
-            log.error( "Cannot stop executor", e );
+            log.error( e.getMessage(), e );
         }
     }
 }

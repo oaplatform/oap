@@ -51,12 +51,9 @@ public class Threads {
     }
 
     public static void joinSafely( Thread thread ) {
-        if( thread != null ) {
-            try {
-                thread.join();
-            } catch ( InterruptedException ignored ) {
-                thread.interrupt();
-            }
+        if( thread != null ) try {
+            thread.join();
+        } catch( InterruptedException ignored ) {
         }
     }
 
@@ -123,6 +120,7 @@ public class Threads {
         }
     }
 
+
     public static boolean isInterrupted() {
         return Thread.currentThread().isInterrupted();
     }
@@ -139,14 +137,12 @@ public class Threads {
         synchronizedOn( lock, action::run );
     }
 
+
     public static void awaitTermination( ExecutorService service, long timeout, TimeUnit unit ) {
         try {
-            if( !service.awaitTermination( timeout, unit ) ) {
-                log.warn( "service {} is not terminated, timeout {} ms occurs", service, unit.toMillis( timeout ) );
-            }
+            if( !service.awaitTermination( timeout, unit ) ) log.warn( "service {} terminated with timeout", service );
         } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-            log.warn( "Interruption detected for {}", service, e );
+            log.warn( "abnormal termination of " + service, e );
         }
     }
 

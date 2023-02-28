@@ -24,18 +24,8 @@
 
 package oap.concurrent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
-
 public class Times {
     public static void times( int times, Runnable action ) {
         for( int i = 0; i < times; i++ ) action.run();
-    }
-
-    public static <T> List<T> times( int times, Supplier<T> supplier ) {
-        List<T> result = new ArrayList<>();
-        for( int i = 0; i < times; i++ ) result.add( supplier.get() );
-        return result;
     }
 }

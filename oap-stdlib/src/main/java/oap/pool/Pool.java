@@ -34,7 +34,6 @@ import oap.concurrent.ThreadPoolExecutor;
 import oap.util.Dates;
 
 import java.io.Closeable;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -70,33 +69,18 @@ public class Pool<T> implements Closeable, AutoCloseable {
      * @param scavengeIntervalMilliseconds set it to zero if you don't want to automatically shrink your pool.
      * @param objectFactory
      */
-    public Pool( int minSize,
-                 int maxSize,
-                 int partitionSize,
-                 int maxWaitMilliseconds,
-                 int maxIdleMilliseconds,
-                 int scavengeIntervalMilliseconds,
-                 ObjectFactory<T> objectFactory,
-                 ThreadFactory threadFactory ) {
-        this( getConfig( minSize, maxSize, partitionSize, maxWaitMilliseconds, maxIdleMilliseconds, scavengeIntervalMilliseconds ), objectFactory, threadFactory );
-    }
+    public Pool( int minSize, int maxSize, int partitionSize, int maxWaitMilliseconds, int maxIdleMilliseconds, int scavengeIntervalMilliseconds,
+                 ObjectFactory<T> objectFactory, ThreadFactory threadFactory ) {
+        var config = new PoolConfig()
+            .setMinSize( minSize )
+            .setMinSize( maxSize )
+            .setPartitionSize( partitionSize )
+            .setMaxWaitMilliseconds( maxWaitMilliseconds )
+            .setMaxIdleMilliseconds( maxIdleMilliseconds )
+            .setScavengeIntervalMilliseconds( scavengeIntervalMilliseconds );
 
-    public static PoolConfig getConfig( int minSize, int maxSize, int partitionSize, int maxWaitMilliseconds, int maxIdleMilliseconds, int scavengeIntervalMilliseconds ) {
-        return new PoolConfig()
-                .setMinSize( minSize )
-                .setMinSize( maxSize )
-                .setPartitionSize( partitionSize )
-                .setMaxWaitMilliseconds( maxWaitMilliseconds )
-                .setMaxIdleMilliseconds( maxIdleMilliseconds )
-                .setScavengeIntervalMilliseconds( scavengeIntervalMilliseconds );
-    }
-
-    public Pool( PoolConfig config,
-                 ObjectFactory<T> objectFactory,
-                 ThreadFactory threadFactory ) {
-
-        objectPool = new DisruptorObjectPool<>( Objects.requireNonNull( config ), objectFactory );
-        threadPool = Executors.newFixedBlockingThreadPool( config.getMinSize(), config.getMaxSize(), threadFactory );
+        objectPool = new DisruptorObjectPool<>( config, objectFactory );
+        threadPool = Executors.newFixedBlockingThreadPool( minSize, maxSize, threadFactory );
     }
 
     public <R> CompletableFuture<R> supply( Function<T, R> function ) {
@@ -138,8 +122,7 @@ public class Pool<T> implements Closeable, AutoCloseable {
         try {
             objectPool.shutdown();
         } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-            log.warn( "Interruption detected" );
+            log.warn( e.getMessage() );
         }
     }
 
@@ -149,15 +132,13 @@ public class Pool<T> implements Closeable, AutoCloseable {
             threadPool.shutdown();
             threadPool.awaitTermination( 1, TimeUnit.HOURS );
         } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-            log.warn( "Interruption detected" );
+            log.warn( e.getMessage() );
         }
 
         try {
             objectPool.shutdown();
         } catch( InterruptedException e ) {
-            Thread.currentThread().interrupt();
-            log.warn( "Interruption detected" );
+            log.warn( e.getMessage() );
         }
 
     }

@@ -43,7 +43,7 @@ public class Resource {
 
     public Resource( String resource ) {
         this( Resources.url( Resource.class, resource )
-            .orElseThrow( () -> new IllegalArgumentException( "resource '" + resource + "' is not found" ) ) );
+            .orElseThrow( () -> new IllegalArgumentException( "resource " + resource + " is not found" ) ) );
     }
 
     public <R> R read( ContentReader<R> reader ) {

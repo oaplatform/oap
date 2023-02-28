@@ -56,12 +56,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class NioHttpServer implements Closeable, AutoCloseable {
-    public static final String DEFLATE = "deflate";
-    public static final String GZIP = "gzip";
-    public static final String NIO_REQUESTS = "nio_requests";
-    public static final String NIO_POOL_SIZE = "nio_pool_size";
-    public static final String ACTIVE = "active";
-    public static final String WORKER = "worker";
     private final int defaultPort;
 
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
@@ -90,8 +84,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         pathHandler.put( defaultPort, new PathHandler() );
 
         contentEncodingRepository = new ContentEncodingRepository();
-        contentEncodingRepository.addEncodingHandler( GZIP, new GzipEncodingProvider(), 100 );
-        contentEncodingRepository.addEncodingHandler( DEFLATE, new DeflateEncodingProvider(), 50 );
+        contentEncodingRepository.addEncodingHandler( "gzip", new GzipEncodingProvider(), 100 );
+        contentEncodingRepository.addEncodingHandler( "deflate", new DeflateEncodingProvider(), 50 );
     }
 
     private static class Holder {
@@ -139,17 +133,17 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
             ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
 
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+            Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
+            Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveRequests );
+            Metrics.gauge( "nio_requests", Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
 
-            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", "active" ), connectorStatistics, ConnectorStatistics::getActiveConnections );
 
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "active" ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
+            Metrics.gauge( "nio_pool_size", Tags.of( "port", sPort, "name", "worker", "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
         }
     }
 
@@ -177,8 +171,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         if( forceCompressionSupport ) {
             handler = new EncodingHandler( handler, contentEncodingRepository );
             handler = new RequestEncodingHandler( handler )
-                .addEncoding( GZIP, GzipStreamSourceConduit.WRAPPER )
-                .addEncoding( DEFLATE, InflatingStreamSourceConduit.WRAPPER );
+                .addEncoding( "gzip", GzipStreamSourceConduit.WRAPPER )
+                .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
         if( readTimeout > 0 ) {
@@ -209,8 +203,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         if( !forceCompressionSupport && compressionSupport ) {
             httpHandler = new EncodingHandler( httpHandler, contentEncodingRepository );
             httpHandler = new RequestEncodingHandler( httpHandler )
-                .addEncoding( GZIP, GzipStreamSourceConduit.WRAPPER )
-                .addEncoding( DEFLATE, InflatingStreamSourceConduit.WRAPPER );
+                .addEncoding( "gzip", GzipStreamSourceConduit.WRAPPER )
+                .addEncoding( "deflate", InflatingStreamSourceConduit.WRAPPER );
         }
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );

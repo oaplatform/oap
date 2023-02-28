@@ -9,9 +9,8 @@ public class JodaTicker extends Ticker {
     private JodaTicker() {
     }
 
-    //in seconds
     @Override
     public long read() {
-        return DateTimeUtils.currentTimeMillis() * 1_000_000L;
+        return DateTimeUtils.currentTimeMillis() * 1000000L;
     }
 }

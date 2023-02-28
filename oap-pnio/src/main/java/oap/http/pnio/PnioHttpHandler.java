@@ -12,7 +12,6 @@ package oap.http.pnio;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.http.Http;
@@ -22,7 +21,6 @@ import org.slf4j.event.Level;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -44,60 +42,31 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public final double queueTimeoutPercent;
     public final int cpuAffinityFirstCpu;
 
-    private final List<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
+    private final ArrayList<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
 
-    @Builder
-    public static class PnioHttpSettings {
-        int requestSize;
-        int responseSize;
-        double queueTimeoutPercent;
-        int cpuThreads;
-        boolean cpuQueueFair;
-        int cpuAffinityFirstCpu;
-    }
-
-    @Deprecated
-    // use builder for settings
-    public PnioHttpHandler( int requestSize,
-                            int responseSize,
+    public PnioHttpHandler( int requestSize, int responseSize,
                             double queueTimeoutPercent,
-                            int cpuThreads,
-                            boolean cpuQueueFair,
-                            int cpuAffinityFirstCpu,
+                            int cpuThreads, boolean cpuQueueFair, int cpuAffinityFirstCpu,
                             RequestWorkflow<WorkflowState> workflow,
                             ErrorResponse<WorkflowState> errorResponse ) {
-        this(   PnioHttpSettings.builder()
-                        .requestSize( requestSize )
-                        .responseSize( responseSize )
-                        .queueTimeoutPercent( queueTimeoutPercent )
-                        .cpuThreads( cpuThreads )
-                        .cpuQueueFair( cpuQueueFair )
-                        .cpuAffinityFirstCpu( cpuAffinityFirstCpu )
-                        .build(),
-                workflow,
-                errorResponse );
-    }
-    public PnioHttpHandler( PnioHttpSettings settings,
-                            RequestWorkflow<WorkflowState> workflow,
-                            ErrorResponse<WorkflowState> errorResponse ) {
-        this.requestSize = settings.requestSize;
-        this.responseSize = settings.responseSize;
-        this.queueTimeoutPercent = settings.queueTimeoutPercent;
+        this.requestSize = requestSize;
+        this.responseSize = responseSize;
+        this.queueTimeoutPercent = queueTimeoutPercent;
 
-        this.threads = settings.cpuThreads > 0 ? settings.cpuThreads : Runtime.getRuntime().availableProcessors();
-        this.cpuAffinityFirstCpu = settings.cpuAffinityFirstCpu;
+        this.threads = cpuThreads > 0 ? cpuThreads : Runtime.getRuntime().availableProcessors();
+        this.cpuAffinityFirstCpu = cpuAffinityFirstCpu;
         this.workflow = workflow;
         this.errorResponse = errorResponse;
 
         Preconditions.checkArgument( this.threads <= Runtime.getRuntime().availableProcessors() );
 
-        this.queue = new SynchronousQueue<>( settings.cpuQueueFair );
+        this.queue = new SynchronousQueue<>( cpuQueueFair );
 
         this.pool = new ThreadPoolExecutor( this.threads, this.threads, 1, TimeUnit.MINUTES, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "cpu-http-%d" ).build(),
             new oap.concurrent.ThreadPoolExecutor.BlockingPolicy() );
 
-        for( var i = 0; i < settings.cpuThreads; i++ ) {
+        for( var i = 0; i < cpuThreads; i++ ) {
             RequestTaskComputeRunner<WorkflowState> requestTaskComputeRunner = new RequestTaskComputeRunner<>( queue,
                 cpuAffinityFirstCpu >= 0 ? cpuAffinityFirstCpu + i : -1 );
             pool.submit( requestTaskComputeRunner );
@@ -145,9 +114,6 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
                 errorResponse.handle( pnioExchange, workflowState );
             } catch( Throwable e ) {
-                if ( e instanceof OutOfMemoryError ) {
-                    log.error( "OOM error, need restarting!", e );
-                }
                 LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), e.getMessage(), e );
 
                 httpResponse.cookies.clear();

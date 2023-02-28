@@ -79,7 +79,7 @@ public class PnioExchange<WorkflowState> {
             completeWithBufferOverflow(true);
         } catch (SocketException e) {
             completeWithConnectionClosed(e);
-        } catch (Exception e) {
+        } catch (IOException e) {
             completeWithFail(e);
         }
     }
@@ -146,12 +146,12 @@ public class PnioExchange<WorkflowState> {
         try {
             long timeoutCpuQueue = getTimeLeft(timeoutPercent);
             if (timeoutCpuQueue < 1) {
-                completeWithTimeout();
+                completeWithRejected();
             } else {
                 future = new CompletableFuture<>();
 
                 if (!queue.offer(this, timeoutCpuQueue, TimeUnit.MILLISECONDS)) {
-                    completeWithTimeout();
+                    completeWithRejected();
                 }
             }
         } catch (InterruptedException e) {
