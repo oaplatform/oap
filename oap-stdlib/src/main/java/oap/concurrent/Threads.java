@@ -54,7 +54,7 @@ public class Threads {
         if( thread != null ) {
             try {
                 thread.join();
-            } catch (InterruptedException ignored) {
+            } catch ( InterruptedException ignored ) {
                 thread.interrupt();
             }
         }

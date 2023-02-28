@@ -307,7 +307,7 @@ public class HttpServerExchange {
     }
 
     public HttpServerExchange setResponseCookie( oap.http.Cookie cookie ) {
-        exchange.setResponseCookie( cookie.delegate);
+        exchange.setResponseCookie( cookie.delegate );
 
         return this;
     }

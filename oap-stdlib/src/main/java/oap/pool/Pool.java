@@ -81,21 +81,21 @@ public class Pool<T> implements Closeable, AutoCloseable {
         this( getConfig( minSize, maxSize, partitionSize, maxWaitMilliseconds, maxIdleMilliseconds, scavengeIntervalMilliseconds ), objectFactory, threadFactory );
     }
 
-    public static PoolConfig getConfig(int minSize, int maxSize, int partitionSize, int maxWaitMilliseconds, int maxIdleMilliseconds, int scavengeIntervalMilliseconds) {
+    public static PoolConfig getConfig( int minSize, int maxSize, int partitionSize, int maxWaitMilliseconds, int maxIdleMilliseconds, int scavengeIntervalMilliseconds ) {
         return new PoolConfig()
-                .setMinSize(minSize)
-                .setMinSize(maxSize)
-                .setPartitionSize(partitionSize)
-                .setMaxWaitMilliseconds(maxWaitMilliseconds)
-                .setMaxIdleMilliseconds(maxIdleMilliseconds)
-                .setScavengeIntervalMilliseconds(scavengeIntervalMilliseconds);
+                .setMinSize( minSize )
+                .setMinSize( maxSize )
+                .setPartitionSize( partitionSize )
+                .setMaxWaitMilliseconds( maxWaitMilliseconds )
+                .setMaxIdleMilliseconds( maxIdleMilliseconds )
+                .setScavengeIntervalMilliseconds( scavengeIntervalMilliseconds );
     }
 
     public Pool( PoolConfig config,
                  ObjectFactory<T> objectFactory,
                  ThreadFactory threadFactory ) {
 
-        objectPool = new DisruptorObjectPool<>(Objects.requireNonNull( config ), objectFactory );
+        objectPool = new DisruptorObjectPool<>( Objects.requireNonNull( config ), objectFactory );
         threadPool = Executors.newFixedBlockingThreadPool( config.getMinSize(), config.getMaxSize(), threadFactory );
     }
 

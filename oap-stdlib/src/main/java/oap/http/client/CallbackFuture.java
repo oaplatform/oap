@@ -53,7 +53,7 @@ public class CallbackFuture implements Callback {
         try {
             return future.get( timeout, unit );
         } catch( ExecutionException e ) {
-            if( e.getCause() instanceof IOException cause) throw cause;
+            if( e.getCause() instanceof IOException cause ) throw cause;
             else throw Throwables.propagate( e );
         }
     }

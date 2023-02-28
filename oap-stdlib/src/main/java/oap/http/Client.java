@@ -810,8 +810,8 @@ public final class Client implements Closeable, AutoCloseable {
             try {
                 pos.flush();
                 pos.close();
-                Response result = getResponse(request, timeout, completableFuture)
-                        .orElseThrow(() -> new oap.concurrent.TimeoutException(NO_RESPONSE));
+                Response result = getResponse( request, timeout, completableFuture )
+                        .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
                 response = result;
                 return result;
             } catch( IOException e ) {

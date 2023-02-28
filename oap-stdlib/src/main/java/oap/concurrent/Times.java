@@ -33,7 +33,7 @@ public class Times {
         for( int i = 0; i < times; i++ ) action.run();
     }
 
-    public static <T> List<T> times(int times, Supplier<T> supplier ) {
+    public static <T> List<T> times( int times, Supplier<T> supplier ) {
         List<T> result = new ArrayList<>();
         for( int i = 0; i < times; i++ ) result.add( supplier.get() );
         return result;

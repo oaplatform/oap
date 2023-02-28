@@ -140,12 +140,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
 
             Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE), connectorStatistics, ConnectorStatistics::getActiveRequests );
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
             Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
 
-            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE), connectorStatistics, ConnectorStatistics::getActiveConnections );
+            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
 
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
             Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
             Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
             Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
@@ -177,8 +177,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         if( forceCompressionSupport ) {
             handler = new EncodingHandler( handler, contentEncodingRepository );
             handler = new RequestEncodingHandler( handler )
-                .addEncoding(GZIP, GzipStreamSourceConduit.WRAPPER )
-                .addEncoding(DEFLATE, InflatingStreamSourceConduit.WRAPPER );
+                .addEncoding( GZIP, GzipStreamSourceConduit.WRAPPER )
+                .addEncoding( DEFLATE, InflatingStreamSourceConduit.WRAPPER );
         }
 
         if( readTimeout > 0 ) {
@@ -209,8 +209,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         if( !forceCompressionSupport && compressionSupport ) {
             httpHandler = new EncodingHandler( httpHandler, contentEncodingRepository );
             httpHandler = new RequestEncodingHandler( httpHandler )
-                .addEncoding(GZIP, GzipStreamSourceConduit.WRAPPER )
-                .addEncoding(DEFLATE, InflatingStreamSourceConduit.WRAPPER );
+                .addEncoding( GZIP, GzipStreamSourceConduit.WRAPPER )
+                .addEncoding( DEFLATE, InflatingStreamSourceConduit.WRAPPER );
         }
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
