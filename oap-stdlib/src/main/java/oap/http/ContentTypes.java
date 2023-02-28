@@ -23,20 +23,23 @@
  */
 package oap.http;
 
+import oap.io.MimeTypes;
+
 /**
  * @see Http.ContentType
  */
 @Deprecated
+//Use MimeType instead
 public class ContentTypes {
-    public static final String TEXT_TSV = "text/tab-separated-values";
+    public static final String TEXT_TSV = MimeTypes.TEXT_TAB_SEPARATED_VALUES;
     public static final String TEXT_CSV = "text/csv";
-    public static final String TEXT_HTML = "text/html";
-    public static final String TEXT_PLAIN = "text/plain";
+    public static final String TEXT_HTML = MimeTypes.TEXT_HTML;
+    public static final String TEXT_PLAIN = MimeTypes.TEXT_PLAIN;
     public static final String TEXT_XML = "text/xml";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String APPLICATION_XML = "application/xml";
-    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+    public static final String APPLICATION_JSON = MimeTypes.APPLICATION_JSON;
+    public static final String APPLICATION_XML = MimeTypes.APPLICATION_XML;
+    public static final String APPLICATION_OCTET_STREAM = MimeTypes.APPLICATION_OCTET_STREAM;
     public static final String MULTIPART_FORM_DATA = "multipart/form-data";
     public static final String APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
-    public static final String APPLICATION_X_TAR = "application/x-tar";
+    public static final String APPLICATION_X_TAR = MimeTypes.APPLICATION_X_TAR;
 }

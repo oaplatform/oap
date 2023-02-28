@@ -30,7 +30,7 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import lombok.ToString;
-import oap.http.ContentTypes;
+import oap.io.MimeTypes;
 import oap.json.Binder;
 import oap.util.HashMaps;
 import oap.util.function.Try;
@@ -239,18 +239,18 @@ public class HttpServerExchange {
     public void responseJson( int statusCode, String reasonPhrase, Object body ) {
         setStatusCode( statusCode );
         setReasonPhrase( reasonPhrase );
-        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON );
+        setResponseHeader( Headers.CONTENT_TYPE, MimeTypes.APPLICATION_JSON );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
     public void responseJson( int statusCode, Object body ) {
         setStatusCode( statusCode );
-        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON );
+        setResponseHeader( Headers.CONTENT_TYPE, MimeTypes.APPLICATION_JSON );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
     public void responseJson( Object body ) {
-        setResponseHeader( Headers.CONTENT_TYPE, ContentTypes.APPLICATION_JSON );
+        setResponseHeader( Headers.CONTENT_TYPE, MimeTypes.APPLICATION_JSON );
         Binder.json.marshal( body, exchange.getOutputStream() );
     }
 
@@ -307,7 +307,7 @@ public class HttpServerExchange {
     }
 
     public HttpServerExchange setResponseCookie( oap.http.Cookie cookie ) {
-        exchange.setResponseCookie( cookie.cookie );
+        exchange.setResponseCookie( cookie.delegate);
 
         return this;
     }

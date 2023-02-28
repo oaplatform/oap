@@ -26,6 +26,8 @@ package oap.io;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
@@ -35,7 +37,7 @@ public class Closeables {
         try {
             if( closeable != null ) closeable.close();
         } catch( Exception e ) {
-            log.error( e.getMessage(), e );
+            log.error( "Cannot close given resource: {}", closeable.getClass().getCanonicalName(), e );
         }
     }
 
@@ -43,7 +45,7 @@ public class Closeables {
         try {
             if( service != null ) service.shutdownNow();
         } catch( Exception e ) {
-            log.error( e.getMessage(), e );
+            log.error( "Cannot stop executor", e );
         }
     }
 }

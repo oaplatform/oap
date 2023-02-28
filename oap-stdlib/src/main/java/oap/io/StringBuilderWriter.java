@@ -25,12 +25,13 @@
 package oap.io;
 
 import java.io.Writer;
+import java.util.Objects;
 
 public class StringBuilderWriter extends Writer {
     private final StringBuilder sb;
 
     public StringBuilderWriter( StringBuilder sb ) {
-        this.sb = sb;
+        this.sb = Objects.requireNonNull( sb );
     }
 
     @Override
@@ -79,11 +80,9 @@ public class StringBuilderWriter extends Writer {
 
     @Override
     public void flush() {
-
     }
 
     @Override
     public void close() {
-
     }
 }

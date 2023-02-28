@@ -126,6 +126,7 @@ public final class Client implements Closeable, AutoCloseable {
         .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
         .onTimeout( c -> log.error( "timeout" ) )
         .build();
+
     private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<>() {
         @Override
         public void completed( org.apache.http.HttpResponse result ) {
@@ -133,14 +134,14 @@ public final class Client implements Closeable, AutoCloseable {
 
         @Override
         public void failed( Exception e ) {
-            log.warn( e.getMessage() );
+            log.error( "Error appears", e );
         }
 
         @Override
         public void cancelled() {
-
         }
     };
+    public static final String NO_RESPONSE = "no response";
 
     private final BasicCookieStore basicCookieStore;
     private final ClientBuilder builder;
@@ -186,12 +187,12 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response get( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return get( uri, params, headers, builder.timeout )
-            .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
+            .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response within timeout " + builder.timeout + " ms" ) );
     }
 
     public Response get( URI uri, Map<String, Object> headers ) {
         return get( uri, headers, builder.timeout )
-            .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
+            .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
     }
 
     public Optional<Response> get( String uri, Map<String, Object> params, long timeout ) {
@@ -213,7 +214,7 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response post( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return post( uri, params, headers, builder.timeout )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Optional<Response> post( String uri, Map<String, Object> params, long timeout ) {
@@ -228,7 +229,7 @@ public final class Client implements Closeable, AutoCloseable {
                     e.getValue() == null ? "" : e.getValue().toString() ) )
                 .toList()
             ) );
-            return getResponse( request, builder.timeout, execute( request, headers ) );
+            return getResponse( request, Math.max( builder.timeout, timeout ), execute( request, headers ) );
         } catch( UnsupportedEncodingException e ) {
             throw new UncheckedIOException( e );
         }
@@ -240,7 +241,7 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response post( String uri, String content, String contentType, Map<String, Object> headers ) {
         return post( uri, content, contentType, headers, builder.timeout )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Optional<Response> post( String uri, String content, String contentType, long timeout ) {
@@ -289,21 +290,21 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response post( String uri, InputStream content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response post( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     private Optional<Response> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
@@ -313,8 +314,12 @@ public final class Client implements Closeable, AutoCloseable {
             var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
             builder.onError.accept( this, newEx );
             throw newEx;
-        } catch( InterruptedException | TimeoutException e ) {
+        } catch( TimeoutException e ) {
             this.builder.onTimeout.accept( this );
+            return Optional.empty();
+        } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            this.builder.onError.accept( this, e );
             return Optional.empty();
         }
     }
@@ -323,7 +328,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response put( String uri, String content, String contentType ) {
@@ -334,7 +339,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPut( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response put( String uri, byte[] content, String contentType ) {
@@ -345,7 +350,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPut( uri );
         request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response put( String uri, InputStream is, String contentType ) {
@@ -356,7 +361,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPatch( uri );
         request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response patch( String uri, String content, String contentType ) {
@@ -367,7 +372,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPatch( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
 
@@ -379,7 +384,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPatch( uri );
         request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public Response patch( String uri, InputStream is, String contentType ) {
@@ -400,8 +405,8 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response delete( String uri, Map<String, Object> headers, long timeout ) {
         var request = new HttpDelete( uri );
-        return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+        return getResponse( request, Math.max( builder.timeout, timeout ), execute( request, headers ) )
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public List<Cookie> getCookies() {
@@ -503,6 +508,7 @@ public final class Client implements Closeable, AutoCloseable {
             builder.onError.accept( this, e );
             throw e;
         } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
             builder.onTimeout.accept( this );
             return Optional.empty();
         }
@@ -537,39 +543,6 @@ public final class Client implements Closeable, AutoCloseable {
         Closeables.close( client );
     }
 
-//    @SneakyThrows
-//    public Response uploadFile( String uri, String prefix, Path path ) {
-//        ContentType contentType = ContentType.create( java.nio.file.Files.probeContentType( path ) );
-//
-//
-////        todo why OK? too much clients
-//
-//        OkHttpClient client = new OkHttpClient();
-//
-//        MultipartBody body = new MultipartBody.Builder()
-//            .setType( MultipartBody.FORM )
-//            .addFormDataPart( "upfile", path.toFile().getName(), RequestBody.create( MediaType.parse( contentType.toString() ), path.toFile() ) )
-//            .addFormDataPart( "prefix", prefix )
-//            .build();
-//
-//        okhttp3.Request request = new okhttp3.Request.Builder()
-//            .url( uri )
-//            .post( body )
-//            .build();
-//
-//
-//        var response = client.newCall( request ).execute();
-//
-//        var headers = response.headers().toMultimap();
-//
-//        Stream<String> stream = Stream.of( headers.names() );
-//        Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
-//        var responseBody = response.body();
-//        return new Response( response.code(), response.message(), h,
-//            Optional.ofNullable( responseBody.contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
-//            responseBody.byteStream() );
-//    }
-
     @ToString( exclude = { "inputStream", "content" } )
     public static class Response implements Closeable, AutoCloseable {
         public final int code;
@@ -577,7 +550,7 @@ public final class Client implements Closeable, AutoCloseable {
         public final String contentType;
         public final List<Pair<String, String>> headers;
         private InputStream inputStream;
-        private byte[] content = null;
+        private volatile byte[] content = null;
 
         public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull String contentType, InputStream inputStream ) {
             this.code = code;
@@ -605,7 +578,7 @@ public final class Client implements Closeable, AutoCloseable {
         @Nullable
         @SneakyThrows
         public byte[] content() {
-            if( content == null && inputStream == null ) return null;
+            if( inputStream == null ) return null;
             if( content == null ) synchronized( this ) {
                 if( content == null ) {
                     content = ByteStreams.toByteArray( inputStream );
@@ -620,11 +593,11 @@ public final class Client implements Closeable, AutoCloseable {
         }
 
         public String contentString() {
-            var content = content();
+            var text = content();
 
-            if( content == null ) return null;
+            if( text == null ) return null;
 
-            return new String( content, UTF_8 );
+            return new String( text, UTF_8 );
         }
 
         public <T> Optional<T> unmarshal( Class<T> clazz ) {
@@ -837,15 +810,17 @@ public final class Client implements Closeable, AutoCloseable {
             try {
                 pos.flush();
                 pos.close();
-                return response = getResponse( request, timeout, completableFuture )
-                    .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
+                Response result = getResponse(request, timeout, completableFuture)
+                        .orElseThrow(() -> new oap.concurrent.TimeoutException(NO_RESPONSE));
+                response = result;
+                return result;
             } catch( IOException e ) {
                 throw Throwables.propagate( e );
             } finally {
                 try {
                     pos.close();
                 } catch( IOException e ) {
-                    throw Throwables.propagate( e );
+                    log.error( "Cannot close output", e );
                 } finally {
                     pos = null;
                 }

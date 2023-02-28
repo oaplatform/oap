@@ -29,6 +29,7 @@ import oap.util.Throwables;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 public class LongAdder extends java.util.concurrent.atomic.LongAdder {
     private static Field baseField;
@@ -37,7 +38,7 @@ public class LongAdder extends java.util.concurrent.atomic.LongAdder {
         try {
             baseField = java.util.concurrent.atomic.LongAdder.class.getSuperclass().getDeclaredField( "base" );
             baseField.setAccessible( true );
-        } catch( NoSuchFieldException e ) {
+        } catch( ReflectiveOperationException e ) {
             throw Throwables.propagate( e );
         }
     }
@@ -57,7 +58,7 @@ public class LongAdder extends java.util.concurrent.atomic.LongAdder {
 
     @Override
     public boolean equals( Object obj ) {
-        return sum() == ( ( LongAdder ) obj ).sum();
+        return sum() == ( ( LongAdder ) Objects.requireNonNull( obj ) ).sum();
     }
 
     @Override

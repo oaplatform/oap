@@ -38,7 +38,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PnioBuffer {
     byte[] buffer;
-    public int length;
+    int length;
 
     public PnioBuffer( int capacity ) {
         this.buffer = new byte[capacity];
