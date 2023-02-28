@@ -38,7 +38,7 @@ public class Boot {
     private static Kernel kernel;
 
     public static void main( String[] args ) {
-        System.out.println( "CPU = " + Runtime.getRuntime().availableProcessors() );
+        System.out.println( "Total " + Runtime.getRuntime().availableProcessors() + " CPUs available" );
 
         Cli.create()
             .group( "Starting service",
@@ -59,7 +59,7 @@ public class Boot {
         try {
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
-            log.debug( "Kernel {} started", kernel.name );
+            log.debug( "Kernel {} is started", kernel.name );
         } catch( Exception e ) {
             log.error( "Cannot start kernel", e );
             exit( 13 );
@@ -68,9 +68,9 @@ public class Boot {
 
     private static void installSignals() {
         SignalHandler handler = signal -> {
-            log.info( "cought signal: {}", signal.getName() );
-            System.out.println( "cought signal: " + signal.getName() );
-            System.out.flush();
+            log.error( "Kernel caught signal: {}", signal.getName() );
+            System.err.println( "Kernel caught signal: " + signal.getName() );
+            System.err.flush();
             exit( 0 );
         };
         Signal.handle( new Signal( "INT" ), handler );
@@ -82,11 +82,13 @@ public class Boot {
             terminated = true;
             try {
                 kernel.stop();
-                log.debug( "Kernel {} stopped", kernel.name );
+                log.info( "Kernel {} is stopped", kernel.name );
             } catch( Exception e ) {
                 log.error( "Cannot stop kernel", e );
             }
+            return;
         }
+        log.debug( "Kernel {} is already being stopped", kernel.name );
     }
 
     public static void exit( int status ) {
