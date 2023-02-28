@@ -229,7 +229,7 @@ public final class Client implements Closeable, AutoCloseable {
                     e.getValue() == null ? "" : e.getValue().toString() ) )
                 .toList()
             ) );
-            return getResponse( request, builder.timeout, execute( request, headers ) );
+            return getResponse( request, Math.max( builder.timeout, timeout ), execute( request, headers ) );
         } catch( UnsupportedEncodingException e ) {
             throw new UncheckedIOException( e );
         }
@@ -405,8 +405,8 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response delete( String uri, Map<String, Object> headers, long timeout ) {
         var request = new HttpDelete( uri );
-        return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+        return getResponse( request, Math.max( builder.timeout, timeout ), execute( request, headers ) )
+            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
     public List<Cookie> getCookies() {
@@ -810,12 +810,20 @@ public final class Client implements Closeable, AutoCloseable {
             try {
                 pos.flush();
                 pos.close();
-                pos = null;
-
-                return response = getResponse( request, timeout, completableFuture )
-                    .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
-            } catch( Exception e ) {
+                Response result = getResponse( request, timeout, completableFuture )
+                        .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
+                response = result;
+                return result;
+            } catch( IOException e ) {
                 throw Throwables.propagate( e );
+            } finally {
+                try {
+                    pos.close();
+                } catch( IOException e ) {
+                    log.error( "Cannot close output", e );
+                } finally {
+                    pos = null;
+                }
             }
         }
 

@@ -37,18 +37,20 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class FileWalkerCache {
-    private final HashMap<Path, ArrayList<Path>> map = new HashMap<>();
-    private final HashMap<Path, Boolean> isDirectory = new HashMap<>();
-    private final HashMap<Path, Boolean> exists = new HashMap<>();
-    private final HashMap<Path, FileTime> lastModifiedTime = new HashMap<>();
+    private final Map<Path, ArrayList<Path>> map = new HashMap<>();
+    private final Map<Path, Boolean> isDirectory = new HashMap<>();
+    private final Map<Path, Boolean> exists = new HashMap<>();
+    private final Map<Path, FileTime> lastModifiedTime = new HashMap<>();
 
     public DirectoryStream<Path> newDirectoryStream( Path dir,
                                                      DirectoryStream.Filter<? super Path> filter ) throws IOException {
-        final ArrayList<Path> list = map.get( dir );
+        List<Path> list = map.get( dir );
         if( list == null ) {
-            final ArrayList<Path> paths = map.computeIfAbsent( dir, d -> new ArrayList<>() );
+            List<Path> paths = map.computeIfAbsent( dir, d -> new ArrayList<>() );
 
             return java.nio.file.Files.newDirectoryStream( dir, file -> {
                 paths.add( file );
@@ -72,7 +74,6 @@ public class FileWalkerCache {
 
             @Override
             public void close() {
-
             }
         };
     }
