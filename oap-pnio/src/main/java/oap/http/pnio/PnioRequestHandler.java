@@ -22,7 +22,9 @@ public abstract class PnioRequestHandler<State> {
         return description();
     }
 
-    public abstract Type getType();
+    public Type getType() {
+        return Type.IO;
+    }
 
     public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException;
 

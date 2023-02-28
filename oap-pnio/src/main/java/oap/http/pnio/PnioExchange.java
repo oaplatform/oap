@@ -79,7 +79,7 @@ public class PnioExchange<WorkflowState> {
             completeWithBufferOverflow(true);
         } catch (SocketException e) {
             completeWithConnectionClosed(e);
-        } catch (IOException e) {
+        } catch (Exception e) {
             completeWithFail(e);
         }
     }

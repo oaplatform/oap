@@ -32,7 +32,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class ResultTest {
-
     @Test( expectedExceptions = InterruptedException.class )
     public void catchingInterruptible() throws InterruptedException {
         Result.catchingInterruptible( () -> {
@@ -59,7 +58,7 @@ public class ResultTest {
 
     @Test
     public void resultToString() {
-        assertString( Result.success( "aaaa" ).toString() ).isEqualTo( "Result.success(aaaa)" );
-        assertString( Result.failure( "aaaa" ).toString() ).isEqualTo( "Result.failure(aaaa)" );
+        assertString( Result.success( "aaaa" ).toString() ).isEqualTo( "Result.success (reason: aaaa)" );
+        assertString( Result.failure( "aaaa" ).toString() ).isEqualTo( "Result.failure (reason: aaaa)" );
     }
 }
