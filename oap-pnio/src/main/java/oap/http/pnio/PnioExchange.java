@@ -15,7 +15,6 @@ import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
 import java.nio.BufferOverflowException;
