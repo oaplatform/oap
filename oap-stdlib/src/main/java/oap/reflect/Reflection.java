@@ -38,6 +38,7 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -55,8 +56,7 @@ import static java.util.stream.Collectors.joining;
 import static oap.util.Pair.__;
 
 public class Reflection extends AbstractAnnotated<Class<?>> {
-    //todo why map?
-    public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
+    public final Map<String, Field> fields = new LinkedHashMap<>();
     private final Coercions coercions;
     private final TypeToken<?> typeToken;
     public volatile List<Method> methods;
@@ -421,13 +421,13 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     public class Constructor extends AbstractAnnotated<java.lang.reflect.Constructor<?>> {
         public final List<Parameter> parameters;
         private final Supplier<List<Reflection>> parameterTypes;
-        private final List<String> parameterNames;
+        private final Set<String> parameterNames;
 
         Constructor( java.lang.reflect.Constructor<?> constructor ) {
             super( constructor );
             trySetAccessible( this.underlying );
             this.parameters = Lists.map( constructor.getParameters(), Parameter::new );
-            this.parameterNames = Lists.map( constructor.getParameters(), java.lang.reflect.Parameter::getName );
+            this.parameterNames = new LinkedHashSet<>( Lists.map( constructor.getParameters(), java.lang.reflect.Parameter::getName ) );
             this.parameterTypes = Suppliers.memoize( () -> Lists.map( parameters, Reflection.Parameter::type ) );
         }
 
@@ -450,34 +450,38 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             } catch( ReflectiveOperationException e ) {
                 throw new ReflectException( "Cannot invoke constructor of class '"
                         + name()
-                        + "' with parameters: " + argsToString( args ), e );
+                        + "' with constructor parameters: " + argsToString( args )
+                        + "\nwhile expecting:\n" + parameterNames, e );
             }
         }
 
         public <T> T invoke( Map<String, Object> args ) throws ReflectException {
             //      @todo check match of parameter types
+            List<Object> extraParameters = new ArrayList<>();
             try {
+                //step 1: new instance
                 Object[] cArgs = Stream.of( parameters )
                     .map( p -> coercions.cast( p.type(), args.get( p.name() ) ) )
                     .toArray();
                 T instance = invoke( cArgs );
-
+                //step 2: fill extra parameters
                 for( String key : args.keySet() ) {
-                    if( parameterNames.contains( key ) ) continue;
-
+                    if( parameterNames.contains( key ) ) {
+                        //skip constructor parameter
+                        continue;
+                    }
                     Optional<Field> f = field( key );
                     f.ifPresent( field -> {
                         Object arg = coercions.cast( field.type(), args.get( key ) );
+                        extraParameters.add( arg );
                         field.set( instance, arg );
                     } );
                 }
-
                 return instance;
-
             } catch( Exception e ) {
-                throw new ReflectException( "Cannot invoke constructor of "
+                throw new ReflectException( "Cannot invoke constructor of class '"
                         + name()
-                        + " with parameters: " + argsToString( args ), e );
+                        + "' with extra parameters: " + argsToString( extraParameters ), e );
             }
         }
 
