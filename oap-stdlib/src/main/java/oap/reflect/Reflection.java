@@ -38,6 +38,7 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -457,7 +458,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
         public <T> T invoke( Map<String, Object> args ) throws ReflectException {
             //      @todo check match of parameter types
-            List<Object> extraParameters = new ArrayList<>();
+            Map<String, Object> extraParameters = new LinkedHashMap<>( args );
             try {
                 //step 1: new instance
                 Object[] cArgs = Stream.of( parameters )
@@ -468,12 +469,12 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 for( String key : args.keySet() ) {
                     if( parameterNames.contains( key ) ) {
                         //skip constructor parameter
+                        extraParameters.remove( key );
                         continue;
                     }
                     Optional<Field> f = field( key );
                     f.ifPresent( field -> {
                         Object arg = coercions.cast( field.type(), args.get( key ) );
-                        extraParameters.add( arg );
                         field.set( instance, arg );
                     } );
                 }
