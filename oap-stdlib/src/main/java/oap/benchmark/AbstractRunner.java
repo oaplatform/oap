@@ -24,6 +24,7 @@
 
 package oap.benchmark;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.testng.Teamcity;
 import oap.util.Lists;
 import oap.util.function.Try;
@@ -34,16 +35,19 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 import static oap.benchmark.Benchmark.WARMING_EXPERIMENT;
 
+@Slf4j
 abstract class AbstractRunner {
     abstract Result runExperiment( int experiment, Benchmark benchmark );
 
     Result run( Benchmark benchmark ) {
         return Teamcity.progress( benchmark.name + "...", Try.supply( () -> {
             if( benchmark.warming > 0 ) {
-                System.out.println( "warming up..." );
-                for( var i = 0; i < benchmark.warming; i++ ) benchmark.code.accept( WARMING_EXPERIMENT, i );
+                log.info( "warming up..." );
+                for( var i = 0; i < benchmark.warming; i++ ) {
+                    benchmark.code.accept( WARMING_EXPERIMENT, i );
+                }
             }
-            System.out.println( "starting test..." );
+            log.info( "starting test..." );
 
             List<Result> results = IntStream
                 .range( 0, benchmark.experiments )

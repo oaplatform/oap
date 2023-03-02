@@ -45,12 +45,11 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
     public static String getType( Object object ) {
         if( object instanceof Boolean ) return "boolean";
         else if( object instanceof String ) return "string";
-        else if( object instanceof Integer || object instanceof Long || object instanceof Float
-            || object instanceof Double ) return "number";
+        else if( object instanceof Number ) return "number";
         else if( object instanceof Map<?, ?> ) return "object";
         else if( object instanceof List<?> ) return "array";
         else
-            throw new Error( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
+            throw new JsonSchemaException( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
     }
 
     public static List<String> typeFailed( JsonValidatorProperties properties, AbstractSchemaAST<?> schema, Object value ) {

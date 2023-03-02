@@ -187,7 +187,7 @@ public class Kernel implements Closeable, AutoCloseable {
         log.debug( "application kernel started " + name );
     }
 
-    private void checkForUnknownServices( LinkedHashMap<String, ApplicationConfigurationModule> services ) throws ApplicationException {
+    private void checkForUnknownServices( Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {
         services.forEach( ( moduleName, conf ) -> {
             if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) && conf.isEnabled() )
                 throw new ApplicationException( "unknown application configuration module: " + moduleName );

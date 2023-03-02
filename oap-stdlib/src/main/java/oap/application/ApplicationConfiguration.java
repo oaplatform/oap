@@ -43,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import static oap.io.Files.wildcard;
@@ -53,11 +54,11 @@ import static oap.util.Lists.concat;
 public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
     public static final String OAP_PROFILE_PREFIX = "OAP_PROFILE_";
-    public final LinkedHashMap<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
+    public final Map<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
     @JsonAlias( "profile" )
-    public final ArrayList<Object> profiles = new ArrayList<>();
+    public final List<Object> profiles = new ArrayList<>();
     public final ModuleBoot boot = new ModuleBoot();
-    private LinkedHashSet<String> profilesCache = null;
+    private Set<String> profilesCache = null;
 
     private ApplicationConfiguration() {
     }
@@ -140,7 +141,7 @@ public final class ApplicationConfiguration {
         return res.toString();
     }
 
-    private static void optimizeProfiles( ArrayList<String> profiles ) {
+    private static void optimizeProfiles( List<String> profiles ) {
         var cache = new HashSet<String>();
 
         var it = profiles.listIterator( profiles.size() );
@@ -154,35 +155,23 @@ public final class ApplicationConfiguration {
     }
 
     @SuppressWarnings( "unchecked" )
-    public LinkedHashSet<String> getProfiles() {
-        if( profilesCache == null ) {
-            synchronized( this ) {
-                if( profilesCache == null ) {
-                    var p = new ArrayList<String>();
-
-                    for( var profile : this.profiles ) {
-                        if( profile instanceof String ) p.add( ( String ) profile );
-                        else if( profile instanceof Map<?, ?> ) {
-
-                            var conf = Binder.json.unmarshal( ProfileMap.class, Binder.json.marshal( profile ) );
-
-                            if( conf.enabled )
-                                p.add( conf.name );
-                        }
-                    }
-
-                    addProfiles( p, System.getenv() );
-                    addProfiles( p, System.getProperties() );
-
-                    optimizeProfiles( p );
-
-                    profilesCache = new LinkedHashSet<>( p );
-
-                    log.info( "application profiles = {}", profilesCache );
-                }
+    public synchronized Set<String> getProfiles() {
+        if( profilesCache != null ) return profilesCache;
+        var p = new ArrayList<String>();
+        for( var profile : this.profiles ) {
+            if( profile instanceof String ) p.add( ( String ) profile );
+            else if( profile instanceof Map<?, ?> ) {
+                String profileJson = Binder.json.marshal( profile );
+                var conf = Binder.json.unmarshal( ProfileMap.class, profileJson );
+                if( conf.enabled )
+                    p.add( conf.name );
             }
         }
-
+        addProfiles( p, System.getenv() );
+        addProfiles( p, System.getProperties() );
+        optimizeProfiles( p );
+        profilesCache = new LinkedHashSet<>( p );
+        log.info( "application profiles = {}", profilesCache );
         return profilesCache;
     }
 
@@ -190,7 +179,7 @@ public final class ApplicationConfiguration {
         profilesCache = null;
     }
 
-    private void addProfiles( ArrayList<String> ret, Map<? extends Object, ? extends Object> env ) {
+    private void addProfiles( List<String> ret, Map<? extends Object, ? extends Object> env ) {
         env.forEach( ( nameObj, valueObj ) -> {
             var name = ( String ) nameObj;
             var value = ( String ) valueObj;

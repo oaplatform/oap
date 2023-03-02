@@ -309,9 +309,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             try {
                 return this.underlying.get( instance );
             } catch( ReflectiveOperationException e ) {
-                throw new ReflectException( "Cannot invoke method 'get' "
+                throw new ReflectException( "Cannot get field's '"
                     + underlying.getName()
-                    + " on instance of: " + instance.getClass().getCanonicalName(), e );
+                    + "' value on instance of: " + instance.getClass().getCanonicalName(), e );
             }
         }
 
@@ -322,10 +322,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 }
                 this.underlying.set( instance, value );
             } catch( ReflectiveOperationException e ) {
-                throw new ReflectException( "Cannot invoke method 'set' "
+                throw new ReflectException( "Cannot set field's '"
                         + underlying.getName()
-                        + " on instance of: " + instance.getClass().getCanonicalName()
-                        + " with value: " + argsToString( value ), e );
+                        + "' value '" + argsToString( value ) + "' on instance of: "
+                        + instance.getClass().getCanonicalName(), e );
             }
         }
 
