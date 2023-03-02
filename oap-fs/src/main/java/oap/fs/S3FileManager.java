@@ -78,8 +78,6 @@ public class S3FileManager extends AbstractFileManager  {
         return transferManager.download( bucket, relativePath, destination );
     }
 
-
     public void copyFromTo( String src, String dist ) {
-
     }
 }

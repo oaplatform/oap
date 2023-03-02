@@ -71,6 +71,7 @@
         <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
 
         <oap.deps.jol.version>0.16</oap.deps.jol.version>
+        <oap.deps.bucket4j.version>8.1.1</oap.deps.bucket4j.version>
         <oap.deps.luben.version>1.5.2-5</oap.deps.luben.version>
         <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
         for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type

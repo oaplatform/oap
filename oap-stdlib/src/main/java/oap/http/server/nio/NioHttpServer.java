@@ -25,6 +25,11 @@
 package oap.http.server.nio;
 
 import com.google.common.base.Preconditions;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.ConsumptionProbe;
+import io.github.bucket4j.Refill;
+import io.github.bucket4j.local.LocalBucketBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.undertow.Undertow;
@@ -41,8 +46,12 @@ import io.undertow.server.handlers.encoding.DeflateEncodingProvider;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.server.handlers.encoding.RequestEncodingHandler;
+import io.undertow.util.HttpString;
+import io.undertow.util.StatusCodes;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
+import oap.util.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.xnio.Options;
 
@@ -51,7 +60,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -62,6 +73,13 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public static final String NIO_POOL_SIZE = "nio_pool_size";
     public static final String ACTIVE = "active";
     public static final String WORKER = "worker";
+
+    private static Bandwidth DEFAULT_LIMIT;
+    static {
+        DEFAULT_LIMIT = Bandwidth.simple( 1_000_000L, Duration.ofSeconds( 1 ) );
+    }
+
+    public final List<Bandwidth> bandwidths = Lists.of( DEFAULT_LIMIT );
     private final int defaultPort;
 
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
@@ -84,6 +102,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean alwaysSetKeepAlive = true;
     public long readTimeout = Dates.s( 60 );
 
+    private Bucket bucket;
+
     public NioHttpServer( int port ) {
         this.defaultPort = port;
 
@@ -94,6 +114,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         contentEncodingRepository.addEncodingHandler( DEFLATE, new DeflateEncodingProvider(), 50 );
     }
 
+    @ToString( exclude = { "server" } )
     private static class Holder {
         Undertow server;
         int port;
@@ -111,6 +132,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public void start() {
         pathHandler.forEach( this::startNewPort );
+        LocalBucketBuilder builder = Bucket.builder();
+        bandwidths.forEach( builder::addLimit );
+        bucket = builder.build();
     }
 
     private void startNewPort( int port, PathHandler portPathHandler ) {
@@ -204,7 +228,19 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         Preconditions.checkArgument( !prefix.isEmpty() );
 
         log.debug( "binding '{}' on port: {} ...", prefix, port );
-        io.undertow.server.HttpHandler httpHandler = exchange -> handler.handleRequest( new HttpServerExchange( exchange, requestId.incrementAndGet() ) );
+        io.undertow.server.HttpHandler httpHandler = exchange -> {
+            HttpServerExchange serverExchange = new HttpServerExchange(exchange, requestId.incrementAndGet());
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining( 1 );
+            if ( probe.isConsumed() ) {
+                // allowed
+                handler.handleRequest( serverExchange );
+            } else {
+                exchange.setStatusCode( StatusCodes.TOO_MANY_REQUESTS );
+                long nanosToRetry = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill());
+                exchange.getResponseHeaders().add( HttpString.tryFromString( "X-Rate-Limit-Retry-After-Seconds" ), nanosToRetry );
+                exchange.setReasonPhrase( "Too many requests");
+            }
+        };
 
         if( !forceCompressionSupport && compressionSupport ) {
             httpHandler = new EncodingHandler( httpHandler, contentEncodingRepository );

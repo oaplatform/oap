@@ -54,7 +54,7 @@ public class DatesTest extends Fixtures {
     @Test
     public void currentTimeDay() {
         DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 1, 1, 0, 0, UTC ).getMillis() );
-        assertThat( Dates.currentTimeDay() ).isEqualTo( 0 );
+        assertThat( Dates.currentTimeDay() ).isZero();
 
         DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 2, 10, 0, 0, UTC ).getMillis() );
         assertThat( Dates.currentTimeDay() ).isEqualTo( 40 );

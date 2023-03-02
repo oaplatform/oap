@@ -32,7 +32,7 @@ public class CronScheduledServiceTest {
     @Test
     public void testCron() {
         var css = new CronScheduledService( () -> {}, "36 * * * * ? *" );
-        assertThat( css.jitter ).isEqualTo( 0L );
+        assertThat( css.jitter ).isZero();
         assertThat( css.cron ).isEqualTo( "36 * * * * ? *" );
     }
 

@@ -51,7 +51,7 @@ public class CuidTest {
 
     @Test
     public void idLength() {
-        assertThat( Cuid.UNIQUE.next().length() ).isEqualTo( 23 );
+        assertThat( Cuid.UNIQUE.next() ).hasSize( 23 );
     }
 
     @Test
@@ -61,7 +61,7 @@ public class CuidTest {
         int count = 2000000;
         for( int i = 0; i < count; i++ ) ids.add( Cuid.UNIQUE.next() );
 
-        assertThat( ids.size() ).isEqualTo( count );
+        assertThat( ids ).hasSize( count );
     }
 
     @Test

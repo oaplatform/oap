@@ -29,10 +29,12 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.util.Numbers;
 import org.apache.commons.lang3.RandomUtils;
 
+import java.util.SplittableRandom;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
+    private static SplittableRandom RANDOM = new SplittableRandom();
     public static final Pattern JITTER = Pattern.compile( "(.+)\\s+jitter\s++(\\d++\\w*)$" );
 
     public final String cron;
@@ -47,7 +49,11 @@ public class CronScheduledService extends AbstractScheduledService {
 
     private static CronInfo parse( String cron ) {
         var m = JITTER.matcher( cron );
-        if( m.matches() ) return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
+        if( m.matches() ) {
+            return new CronInfo(
+                    m.group( 1 ).trim(),
+                    Numbers.parseLongWithUnits( m.group( 2 ) ) );
+        }
 
         return new CronInfo( cron.trim(), 0L );
     }
@@ -59,7 +65,10 @@ public class CronScheduledService extends AbstractScheduledService {
 
     @Override
     public void run() {
-        if( jitter > 0 ) LockSupport.parkNanos( RandomUtils.nextLong( 0, jitter + 1 ) * 1_000_000 );
+        if( jitter > 0 ) {
+            long nanos = RANDOM.nextLong(0, jitter + 1) * 1_000_000L;
+            LockSupport.parkNanos(nanos);
+        }
         super.run();
     }
 

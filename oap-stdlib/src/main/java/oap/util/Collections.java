@@ -91,9 +91,9 @@ public class Collections {
         return collection.isEmpty() ? null : collection.iterator().next();
     }
 
-    public static <T, K, U> LinkedHashMap<K, U> toLinkedHashMap( Collection<T> collection,
-                                                                 Function<? super T, ? extends K> keyMapper,
-                                                                 Function<? super T, ? extends U> valueMapper ) {
+    public static <T, K, U> Map<K, U> toLinkedHashMap( Collection<T> collection,
+                                                       Function<? super T, ? extends K> keyMapper,
+                                                       Function<? super T, ? extends U> valueMapper ) {
         var map = new LinkedHashMap<K, U>();
         for( var item : collection ) {
             map.put( keyMapper.apply( item ), valueMapper.apply( item ) );
@@ -102,9 +102,9 @@ public class Collections {
         return map;
     }
 
-    public static <T, K, U> HashMap<K, U> toHashMap( Collection<T> collection,
-                                                     Function<? super T, ? extends K> keyMapper,
-                                                     Function<? super T, ? extends U> valueMapper ) {
+    public static <T, K, U> Map<K, U> toHashMap( Collection<T> collection,
+                                                 Function<? super T, ? extends K> keyMapper,
+                                                 Function<? super T, ? extends U> valueMapper ) {
         var map = new HashMap<K, U>();
         for( var item : collection ) {
             map.put( keyMapper.apply( item ), valueMapper.apply( item ) );

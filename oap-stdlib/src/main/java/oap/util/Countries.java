@@ -43,18 +43,16 @@ public final class Countries {
     static {
 
         List<Locale> locales = Stream.of( Locale.getISOCountries() )
-            .map( a2 -> new Locale( "", a2 ) )
-            .collect( toList() );
+                .map(a2 -> new Locale( "", a2 ) )
+                .toList();
 
         iso3Countries = locales
             .stream()
             .map( l -> l.getISO3Country().intern() )
             .toArray( String[]::new );
 
-
         locales.forEach( l -> twoChTo3Ch.put( l.getCountry().intern(), l.getISO3Country().intern() ) );
         locales.forEach( l -> threeChTo2Ch.put( l.getISO3Country().intern(), l.getCountry().intern() ) );
-
 
         bitMap.put( Strings.UNKNOWN, 0 );
 

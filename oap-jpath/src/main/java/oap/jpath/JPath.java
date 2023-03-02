@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class JPath {
-    public final HashMap<String, Object> variables = new HashMap<>();
+    public final Map<String, Object> variables = new HashMap<>();
 
 
     public JPath( Map<String, Object> variables ) {

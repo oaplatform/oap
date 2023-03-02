@@ -54,8 +54,8 @@ public class SlackMessageTransport implements MessageTransport<Payload> {
                 webhookClient.shutdown();
                 webhookClient = null;
             }
-        } catch( Throwable e ) {
-            log.warn( e.getMessage(), e );
+        } catch( Exception e ) {
+            log.error( "Cannot stop client", e );
         }
     }
 

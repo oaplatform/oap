@@ -457,6 +457,11 @@
             <artifactId>jol-core</artifactId>
             <version>${oap.deps.jol.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>${oap.deps.bucket4j.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
