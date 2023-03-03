@@ -30,7 +30,11 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
     private final Thread thread = new Thread( this );
     private final Runnable child;
     private final Semaphore semaphore = new Semaphore( 0 );
-    private boolean stopped = true;
+    private State running = State.INIT;
+
+    enum State {
+        INIT, RUN, STOPPING, STOPPED, INTERRUPTED
+    }
 
     public SynchronizedThread( SynchronizedRunnable child ) {
         this.child = child;
@@ -63,22 +67,26 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
      * the 2nd is released by {@link #notifyReady()} from {@link SynchronizedRunnable}
      */
     public synchronized void start() {
-        stopped = false;
+        running = State.RUN;
         thread.start();
         try {
             semaphore.acquire( child instanceof SynchronizedRunnable ? 2 : 1 );
         } catch( InterruptedException e ) {
+            running = State.INTERRUPTED;
+            Thread.currentThread().interrupt();
             throw new ThreadException( e );
         }
     }
 
     @SuppressWarnings( "deprecation" )
     public synchronized void stop() {
-        stopped = true;
+        running = State.STOPPING;
         thread.interrupt();
         try {
             thread.join( stopTimeout );
+            running = State.STOPPED;
         } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
             thread.stop();
         }
     }
@@ -91,8 +99,8 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
         this.thread.setName( name );
     }
 
-    public boolean isRunning() {
-        return !stopped;
+    public synchronized boolean isRunning() {
+        return running == State.RUN;
     }
 
     @Override

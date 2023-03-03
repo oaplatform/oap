@@ -51,12 +51,11 @@ public class Threads {
     }
 
     public static void joinSafely( Thread thread ) {
-        if( thread != null ) {
-            try {
-                thread.join();
-            } catch ( InterruptedException ignored ) {
-                thread.interrupt();
-            }
+        if ( thread == null ) return;
+        try {
+            thread.join();
+        } catch ( InterruptedException ignored ) {
+            thread.interrupt();
         }
     }
 

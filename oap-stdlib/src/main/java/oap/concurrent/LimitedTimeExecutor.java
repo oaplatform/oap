@@ -26,12 +26,15 @@ package oap.concurrent;
 import lombok.SneakyThrows;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+/**
+ * Executes task within dedicated time frame.
+ */
 public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, LimitedTimeExecutor> {
     public final long timeout;
     public final TimeUnit unit;
@@ -61,17 +64,24 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, Lim
             T value = executor.submit( code::get ).get( timeout, unit );
             onSuccess.accept( this );
             return Optional.ofNullable( value );
-        } catch( InterruptedException | TimeoutException e ) {
+        } catch( CancellationException e ) {
+            onCancel.accept( this );
+            return Optional.empty();
+        } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            onError.accept( this, e );
+            throw e.getCause();
+        } catch( TimeoutException e ) {
             onTimeout.accept( this );
             return Optional.empty();
-        } catch( ExecutionException e ) {
+        } catch( Exception e ) {
             onError.accept( this, e );
             throw e.getCause();
         }
     }
 
     public void execute( Runnable code ) {
-        execute( this.timeout, this.unit, code );
+        execute( timeout, unit, code );
     }
 
     @SneakyThrows
@@ -79,13 +89,18 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, Lim
         try {
             executor.submit( code ).get( timeout, unit );
             onSuccess.accept( this );
-        } catch( InterruptedException | TimeoutException e ) {
+        } catch( CancellationException e ) {
+            onCancel.accept( this );
+        } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
+            onError.accept( this, e );
+            throw e.getCause();
+        } catch( TimeoutException e ) {
             onTimeout.accept( this );
-        } catch( ExecutionException e ) {
+        } catch( Exception e ) {
             onError.accept( this, e );
             throw e.getCause();
         }
     }
-
 
 }

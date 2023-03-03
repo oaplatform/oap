@@ -37,8 +37,8 @@ public class LimitedTimeExecutorPerformance {
     @Test
     public void testPerf() {
 
-        final int samples = 100000;
-        final int threads = 5000;
+        final int samples = 100_000;
+        final int threads = 100;
 
         benchmark( "without-LimitedTime", samples, () -> Thread.sleep( 10 ) )
             .threads( threads )

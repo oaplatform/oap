@@ -68,7 +68,7 @@ public class GzipHttpTest extends Fixtures {
     @Test
     public void singleBandwidth() {
         server.bandwidths.clear();
-        server.bandwidths.add( Bandwidth.simple(2, Duration.ofMinutes( 1 ) ) );
+        server.bandwidths.add( Bandwidth.simple( 2, Duration.ofMinutes( 1 ) ) );
         server.bind( "test", exchange ->
                 exchange.responseOk( "test", true, TEXT_PLAIN )
         );
@@ -80,10 +80,10 @@ public class GzipHttpTest extends Fixtures {
     }
 
     @Test
-    public void coupleBandwidth() throws Exception {
+    public void coupleBandwidths() throws Exception {
         server.bandwidths.clear();
-        server.bandwidths.add( Bandwidth.simple(2, Duration.ofMinutes( 1 ) ) );
-        server.bandwidths.add( Bandwidth.simple(1, Duration.ofSeconds( 2 ) ) );
+        server.bandwidths.add( Bandwidth.simple( 2, Duration.ofMinutes( 1 ) ) );
+        server.bandwidths.add( Bandwidth.simple( 1, Duration.ofSeconds( 2 ) ) );
         server.bind( "test", exchange ->
                 exchange.responseOk( "test", true, TEXT_PLAIN )
         );

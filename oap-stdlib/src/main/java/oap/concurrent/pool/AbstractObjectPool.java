@@ -29,10 +29,12 @@ import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
 import io.micrometer.core.instrument.Metrics;
+import oap.concurrent.LongAdder;
 import oap.util.Dates;
 
 public class AbstractObjectPool<T, Self extends AbstractObjectPool<T, Self>> {
     protected final DisruptorObjectPool<T> pool;
+    protected final LongAdder used = new LongAdder();
     protected final PoolConfig config;
 
     protected AbstractObjectPool( ObjectFactory<T> objectFactory ) {
@@ -62,11 +64,18 @@ public class AbstractObjectPool<T, Self extends AbstractObjectPool<T, Self>> {
     }
 
     public Poolable<T> borrowObject( boolean blocking ) {
+        used.increment();
         return pool.borrowObject( blocking );
     }
 
     public Poolable<T> borrowObject() {
+        used.increment();
         return pool.borrowObject();
+    }
+
+    public void returnObject( Poolable<T> obj ) {
+        used.decrement();
+        pool.returnObject( obj );
     }
 
     public int getSize() {
@@ -74,10 +83,11 @@ public class AbstractObjectPool<T, Self extends AbstractObjectPool<T, Self>> {
     }
 
     @SuppressWarnings( "unchecked" )
-    public Self withMethrics( String prefix ) {
+    public Self withMetrics( String prefix ) {
         Metrics.gauge( prefix + "_pool_partition_size", config, p -> config.getPartitionSize() );
         Metrics.gauge( prefix + "_pool_min_size", config, p -> config.getMinSize() );
         Metrics.gauge( prefix + "_pool_max_size", config, p -> config.getMaxSize() );
+        Metrics.gauge( prefix + "_pool_in_use", config, p -> used.intValue() );
 
         Metrics.gauge( prefix + "_pool_size", pool, p -> ( double ) p.getSize() );
 

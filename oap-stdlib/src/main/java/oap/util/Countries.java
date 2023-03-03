@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-import static java.util.stream.Collectors.toList;
 
 @Deprecated
 // use xenoss-geo/Countries instead
@@ -43,7 +42,7 @@ public final class Countries {
     static {
 
         List<Locale> locales = Stream.of( Locale.getISOCountries() )
-                .map(a2 -> new Locale( "", a2 ) )
+                .map( a2 -> new Locale( "", a2 ) )
                 .toList();
 
         iso3Countries = locales

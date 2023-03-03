@@ -32,7 +32,7 @@ public class ThreadLocalStringBuilderPool {
     private String prefix = null;
 
     public ThreadLocalStringBuilderPool( int partitionSize, int poolMinSize, int poolMaxSize, long maxIdle, long maxWait ) {
-        pool = ThreadLocal.withInitial( () -> new StringBuilderPool( partitionSize, poolMinSize, poolMaxSize, maxIdle, maxWait ).withMethrics( prefix + ":" + Thread.currentThread().getName() ) );
+        pool = ThreadLocal.withInitial( () -> new StringBuilderPool( partitionSize, poolMinSize, poolMaxSize, maxIdle, maxWait ).withMetrics( prefix + ":" + Thread.currentThread().getName() ) );
     }
 
 

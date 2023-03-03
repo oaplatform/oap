@@ -33,9 +33,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 public class Group {
@@ -50,12 +51,17 @@ public class Group {
     }
 
     boolean matches( List<Pair<String, String>> parameters ) {
-        for( Pair<String, String> parameter : parameters )
-            if( !options.containsKey( parameter._1 )
-                || !options.get( parameter._1 ).matches( parameter ) ) return false;
-        List<String> parameterNames = parameters.stream().map( p -> p._1 ).collect( toList() );
-        for( Option<?> option : options.values() )
+        for( Pair<String, String> parameter : parameters ) {
+            Option<?> option = options.get( parameter._1 );
+            if ( option != null && option.matches( parameter ) ) {
+                continue;
+            }
+            return false;
+        }
+        Set<String> parameterNames = parameters.stream().map( p -> p._1 ).collect( Collectors.toSet() );
+        for( Option<?> option : options.values() ) {
             if( option.isRequired() && !parameterNames.contains( option.name ) ) return false;
+        }
         return true;
     }
 

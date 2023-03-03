@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -37,7 +38,7 @@ import static java.util.Objects.requireNonNull;
 @Slf4j
 public class ThreadLocalMap<T extends Closeable> implements Closeable, AutoCloseable {
     private final Supplier<T> init;
-    private final ConcurrentHashMap<Thread, T> map = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, T> map = new ConcurrentHashMap<>();
 
     public ThreadLocalMap() {
         this( null );
@@ -62,7 +63,7 @@ public class ThreadLocalMap<T extends Closeable> implements Closeable, AutoClose
             try {
                 v.close();
             } catch( IOException e ) {
-                log.trace( e.getMessage(), e );
+                log.trace( "Cannot close after '{}'", lastE, e );
                 lastE = e;
             }
 

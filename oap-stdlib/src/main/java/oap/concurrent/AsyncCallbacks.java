@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 @SuppressWarnings( "unchecked" )
 public class AsyncCallbacks<T extends AsyncCallbacks<T, P>, P> {
     public Consumer<P> onTimeout = Functions.empty.consume();
+    public Consumer<P> onCancel = Functions.empty.consume();
     public Consumer<P> onSuccess = Functions.empty.consume();
     public BiConsumer<P, Exception> onError = Functions.empty.biConsume();
 
@@ -43,6 +44,12 @@ public class AsyncCallbacks<T extends AsyncCallbacks<T, P>, P> {
         this.onSuccess = onSuccess;
         return ( T ) this;
     }
+
+    public T onCancel( Consumer<P> onCancel ) {
+        this.onCancel = onCancel;
+        return ( T ) this;
+    }
+
 
     public T onError( BiConsumer<P, Exception> onError ) {
         this.onError = onError;

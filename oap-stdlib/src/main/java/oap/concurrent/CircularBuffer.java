@@ -47,11 +47,10 @@ public class CircularBuffer<T> {
 
     @SuppressWarnings( "unchecked" )
     public synchronized T[] getElements() {
-        if( cycled ) {
-            T[] result = ( T[] ) Array.newInstance( clazz, data.length );
-            System.arraycopy( data, index, result, 0, data.length - index );
-            System.arraycopy( data, 0, result, data.length - index, index );
-            return result;
-        } else return Arrays.copyOf( data, index );
+        if( !cycled ) return Arrays.copyOf( data, index );
+        T[] result = ( T[] ) Array.newInstance( clazz, data.length );
+        System.arraycopy( data, index, result, 0, data.length - index );
+        System.arraycopy( data, 0, result, data.length - index, index );
+        return result;
     }
 }

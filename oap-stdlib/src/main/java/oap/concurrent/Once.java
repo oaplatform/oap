@@ -26,6 +26,8 @@ package oap.concurrent;
 import java.util.HashSet;
 import java.util.Set;
 
+@Deprecated
+// using it is dangerous: inner static collection is meant to cause memory leak as it never clears
 public class Once {
     private static final Set<Object> done = new HashSet<>();
 

@@ -27,14 +27,13 @@ import lombok.ToString;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.util.Numbers;
-import org.apache.commons.lang3.RandomUtils;
 
 import java.util.SplittableRandom;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
-    private static SplittableRandom RANDOM = new SplittableRandom();
+    private static final SplittableRandom RANDOM = new SplittableRandom();
     public static final Pattern JITTER = Pattern.compile( "(.+)\\s+jitter\s++(\\d++\\w*)$" );
 
     public final String cron;
@@ -66,8 +65,8 @@ public class CronScheduledService extends AbstractScheduledService {
     @Override
     public void run() {
         if( jitter > 0 ) {
-            long nanos = RANDOM.nextLong(0, jitter + 1) * 1_000_000L;
-            LockSupport.parkNanos(nanos);
+            long nanos = RANDOM.nextLong( 0, jitter + 1 ) * 1_000_000L;
+            LockSupport.parkNanos( nanos );
         }
         super.run();
     }
