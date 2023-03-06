@@ -55,6 +55,24 @@ public class Functions {
             : Optional.empty();
     }
 
+    public static <T> void applyIf( boolean testValue,
+                                    Consumer<T> action,
+                                    T actionValue ) {
+        if ( testValue && action != null ) action.accept( actionValue );
+    }
+
+    public static <T> void applyIfElse( boolean testValue,
+                                        Consumer<T> actionIf,
+                                        Consumer<T> actionElse,
+                                        T actionValue ) {
+        if ( testValue ) {
+            if ( actionIf != null ) actionIf.accept( actionValue );
+        }
+        else if ( actionElse != null ) {
+            actionElse.accept( actionValue );
+        }
+    }
+
     public static Runnable once( Runnable runnable ) {
         return Once.once( runnable );
     }
