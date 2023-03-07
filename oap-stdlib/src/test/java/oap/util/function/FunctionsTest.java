@@ -56,7 +56,7 @@ public class FunctionsTest {
     @Test
     public void applyIf() {
         AtomicInteger actionValue = new AtomicInteger( 1 );
-        Functions.applyIf( true, v -> v.set( 2 * v.get() ), actionValue);
+        Functions.applyIf( true, v -> v.set( 2 * v.get() ), actionValue );
 
         assertThat( actionValue.get() ).isEqualTo( 2 );
     }
@@ -67,7 +67,7 @@ public class FunctionsTest {
         AtomicInteger elseValue = new AtomicInteger( 5 );
 
         Functions.applyIfElse( false, null, v -> v.set( 3 * v.get() ), elseValue );
-        Functions.applyIfElse( true, v -> v.set( 11 * v.get() ), null, actionValue);
+        Functions.applyIfElse( true, v -> v.set( 11 * v.get() ), null, actionValue );
 
         assertThat( elseValue.get() ).isEqualTo( 15 );
         assertThat( actionValue.get() ).isEqualTo( 33 );

@@ -67,8 +67,7 @@ public class Functions {
                                         T actionValue ) {
         if ( testValue ) {
             if ( actionIf != null ) actionIf.accept( actionValue );
-        }
-        else if ( actionElse != null ) {
+        } else if ( actionElse != null ) {
             actionElse.accept( actionValue );
         }
     }
