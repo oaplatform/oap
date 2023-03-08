@@ -24,6 +24,16 @@
 
 package oap.template.tree;
 
+/**
+ * text1${expr1}text2${exp2} - {@link Elements}
+ * text1 - {@link TextElement}
+ * exp1 - {@link Expression}
+ * text2 - {@link TextElement}
+ * exp2 - {@link Expression}
+ *
+ * @see Expression
+ * @see TextElement
+ */
 public interface Node {
     String print();
 }
