@@ -129,9 +129,9 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
         public void close() throws IOException {
             if( in != null ) {
                 try {
-                    def.end();
                     in.close();
                 } finally {
+                    def.end();
                     in = null;
                 }
             }
