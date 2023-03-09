@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
 
@@ -55,13 +56,18 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
     protected static class StatefullGzipStreamEnumerator implements Enumeration<InputStream> {
 
         protected final InputStream in;
+        protected InternalGzipCompressingInputStream contentStream;
         protected final int bufferSize;
         protected StreamState state;
 
         public StatefullGzipStreamEnumerator( InputStream in, int bufferSize ) {
-            this.in = in;
+            this.in = Objects.requireNonNull( in );
             this.bufferSize = bufferSize;
             state = StreamState.HEADER;
+        }
+
+        public void close() throws IOException {
+            if ( contentStream != null ) contentStream.close();
         }
 
         public boolean hasMoreElements() {
@@ -103,8 +109,6 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
             return new ByteArrayInputStream( GZIP_HEADER );
         }
 
-        protected InternalGzipCompressingInputStream contentStream;
-
         protected InputStream createContentStream() {
             contentStream = new InternalGzipCompressingInputStream( new CRC32InputStream( in ), bufferSize );
             return contentStream;
@@ -122,19 +126,13 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
         protected final CRC32InputStream crcIn;
 
         public InternalGzipCompressingInputStream( CRC32InputStream in, int bufferSize ) {
-            super( in, new Deflater( Deflater.DEFAULT_COMPRESSION, true ), bufferSize );
+            super( Objects.requireNonNull( in ), new Deflater( Deflater.DEFAULT_COMPRESSION, true ), bufferSize );
             crcIn = in;
         }
 
         public void close() throws IOException {
-            if( in != null ) {
-                try {
-                    in.close();
-                } finally {
-                    def.end();
-                    in = null;
-                }
-            }
+            super.close();
+            def.end(); // as we created our own deflator have to close it
         }
 
         protected static final int TRAILER_SIZE = 8;

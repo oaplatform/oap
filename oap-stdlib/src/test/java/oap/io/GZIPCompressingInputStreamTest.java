@@ -33,16 +33,16 @@ public class GZIPCompressingInputStreamTest {
     }
 
     protected void compressor( String dataInfo, byte[] data ) throws IOException {
-        InputStream uncompressedIn = new ByteArrayInputStream( data );
-        InputStream compressedIn = new GZIPCompressingInputStream( uncompressedIn );
-        InputStream uncompressedOut = new GZIPInputStream( compressedIn );
+        try ( InputStream uncompressedIn = new ByteArrayInputStream( data );
+              InputStream compressedIn = new GZIPCompressingInputStream( uncompressedIn );
+              InputStream uncompressedOut = new GZIPInputStream( compressedIn ); ) {
 
-        byte[] result = IOUtils.toByteArray( uncompressedOut );
 
-        assertThat( result )
-            .withFailMessage( "Test failed for: " + dataInfo )
-            .containsExactly( data );
+            byte[] result = IOUtils.toByteArray(uncompressedOut);
 
+            assertThat(result)
+                    .withFailMessage("Test failed for: " + dataInfo)
+                    .containsExactly(data);
+        }
     }
-
 }
