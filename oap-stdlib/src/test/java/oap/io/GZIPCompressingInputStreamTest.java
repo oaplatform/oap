@@ -17,7 +17,7 @@ public class GZIPCompressingInputStreamTest {
     @Test
     public void test() throws IOException {
         compressor( "test1 test2 test3" );
-        compressor( "1MB binary data", createTestPattern( 1024 * 1024 ) );
+        compressor( "1MiB binary data", createTestPattern( 1024 * 1024 ) );
         for( int i = 0; i < 4096; i++ ) compressor( i + " bytes of binary data", createTestPattern( i ) );
     }
 
@@ -38,11 +38,11 @@ public class GZIPCompressingInputStreamTest {
               InputStream uncompressedOut = new GZIPInputStream( compressedIn ); ) {
 
 
-            byte[] result = IOUtils.toByteArray(uncompressedOut);
+            byte[] result = IOUtils.toByteArray( uncompressedOut );
 
             assertThat(result)
-                    .withFailMessage("Test failed for: " + dataInfo)
-                    .containsExactly(data);
+                    .withFailMessage( "Test failed for: " + dataInfo )
+                    .containsExactly( data );
         }
     }
 }
