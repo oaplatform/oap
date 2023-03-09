@@ -24,19 +24,40 @@
 
 package oap.template;
 
+import oap.dictionary.Dictionary;
+import oap.util.Dates;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.util.Collection;
+import java.util.Date;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TemplateAccumulatorString implements TemplateAccumulator<String, StringBuilder, TemplateAccumulatorString> {
     protected final StringBuilder sb;
+    private final DateTimeFormatter dateTimeFormat;
 
     public TemplateAccumulatorString( StringBuilder sb ) {
-        this.sb = sb;
+        this( sb, Dates.PATTERN_FORMAT_SIMPLE_CLEAN );
     }
 
     public TemplateAccumulatorString() {
         this( new StringBuilder() );
+    }
+
+    public TemplateAccumulatorString( String dateTimeFormat ) {
+        this( new StringBuilder(), dateTimeFormat );
+    }
+
+    public TemplateAccumulatorString( StringBuilder sb, String dateTimeFormat ) {
+        this.sb = sb;
+
+        this.dateTimeFormat = DateTimeFormat
+            .forPattern( dateTimeFormat )
+            .withZoneUTC();
     }
 
     @Override
@@ -55,11 +76,6 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     @Override
     public void accept( boolean b ) {
         sb.append( b );
-    }
-
-    @Override
-    public void accept( char ch ) {
-        sb.append( ch );
     }
 
     @Override
@@ -85,6 +101,11 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     @Override
     public void accept( float f ) {
         sb.append( f );
+    }
+
+    @Override
+    public void accept( DateTime jodaDateTime ) {
+        sb.append( dateTimeFormat.print( jodaDateTime ) );
     }
 
     @Override
@@ -114,10 +135,12 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
             }
             if( item instanceof Collection ) {
                 accept( ( Collection<?> ) item );
-            } else if( item instanceof String ) {
-                acceptStringWithSingleQuote( ( String ) item );
-            } else if( item instanceof Enum ) {
-                acceptStringWithSingleQuote( ( ( Enum<?> ) item ).name() );
+            } else if( item instanceof String s ) {
+                acceptStringWithSingleQuote( s );
+            } else if( item instanceof Enum<?> e ) {
+                acceptStringWithSingleQuote( e.name() );
+            } else if( item instanceof DateTime dt ) {
+                acceptStringWithSingleQuote( dateTimeFormat.print( dt ) );
             } else {
                 accept( item );
             }
@@ -132,7 +155,22 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
 
     @Override
     public void accept( Object obj ) {
-        accept( String.valueOf( obj ) );
+        if( obj instanceof DateTime dt ) accept( dt );
+        else if( obj instanceof Date d ) accept( d );
+        else if( obj instanceof Collection<?> c ) accept( c );
+        else if( obj instanceof Dictionary d ) accept( d );
+        else accept( String.valueOf( obj ) );
+    }
+
+    @Override
+    public void acceptNull( Class<?> type ) {
+    }
+
+    @Override
+    public String getDefault( Class<?> type ) {
+        if( Collection.class.isAssignableFrom( type ) ) return "[]";
+
+        return null;
     }
 
     @Override
@@ -156,8 +194,18 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
     }
 
     @Override
+    public String delimiter() {
+        return "\t";
+    }
+
+    @Override
     public String get() {
         return sb.toString();
+    }
+
+    @Override
+    public byte[] getBytes() {
+        return get().getBytes( UTF_8 );
     }
 
     public void acceptStringWithSingleQuote( String item ) {
@@ -168,5 +216,16 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
         sb.append( '\'' )
             .append( escapeItem )
             .append( '\'' );
+    }
+
+    @Override
+    public TemplateAccumulatorString addEol( boolean eol ) {
+        if( eol ) sb.append( '\n' );
+        return this;
+    }
+
+    @Override
+    public void reset() {
+        sb.delete( 0, sb.length() );
     }
 }

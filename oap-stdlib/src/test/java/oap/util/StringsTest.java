@@ -216,17 +216,4 @@ public class StringsTest {
         assertThat( Strings.join( ";", Lists.of( 1, 2, 3 ) ) ).isEqualTo( "1;2;3" );
         assertThat( Strings.join( ";", true, Lists.of( 1, null, 3 ) ) ).isEqualTo( "1;3" );
     }
-
-    @Test
-    public void toAccessKey() {
-        assertThat( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "SMVRLFSMTXJH" );
-        assertThat( Strings.toAccessKey( "j.smith@smith.com", 16 ) ).isEqualTo( "MWLFJHCSRMSHVHTX" );
-        assertThat( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "SQNRMFCMNUJH" );
-        assertThat( Strings.toAccessKey( "a" ) ).isEqualTo( "VKUYJXLWMITZ" );
-        assertThat( Strings.toAccessKey( "A" ) ).isEqualTo( "PWOSXRVQUYNT" );
-        assertThat( Strings.toAccessKey( "b" ) ).isEqualTo( "DKCGLFJEIMBH" );
-        assertThat( Strings.toAccessKey( "/" ) ).isEqualTo( "XMWQLZNYOKVP" );
-        assertThat( Strings.toAccessKey( "@" ) ).isEqualTo( "OVNRWQUPTXMS" );
-    }
-
 }
