@@ -29,6 +29,9 @@ import lombok.ToString;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ${expression; &lt;function name&gt(args...)}
+ */
 @ToString
 public class Func {
     public final String name;
