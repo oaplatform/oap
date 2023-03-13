@@ -39,6 +39,10 @@ public class TemplateAccumulatorString implements TemplateAccumulator<String, St
         this( new StringBuilder() );
     }
 
+    public TemplateAccumulatorString( int initLength ) {
+        this( new StringBuilder( initLength ) );
+    }
+
     @Override
     public void acceptText( String text ) {
         if( text != null )
