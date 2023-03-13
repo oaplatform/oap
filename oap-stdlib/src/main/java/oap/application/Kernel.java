@@ -314,7 +314,7 @@ public class Kernel implements Closeable, AutoCloseable {
                     exception( e -> new ApplicationException( "Unknown service link " + serviceRef + " in"
                             + "\n{\n\timplementation = " + initialization.service.implementation
                             + "\n\tlink." + fieldName + " = " + serviceRef
-                            + "\n}") ) ) );
+                            + "\n}" ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
