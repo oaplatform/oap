@@ -308,7 +308,8 @@ class ModuleHelper {
 
             for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
-                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled [" + dModuleInfo.moduleItem.module.name + "]" );
+                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled." +
+                            " [" + dModuleInfo.moduleItem.module.name + "] is disabled." );
                 }
             }
         }
@@ -336,7 +337,7 @@ class ModuleHelper {
 
                 for( var dServiceReference : serviceInfo.dependsOn ) {
                     if( !dServiceReference.serviceItem.enabled && dServiceReference.required ) {
-                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled [" + dServiceReference.serviceItem.serviceName + "]" );
+                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. [" + dServiceReference.serviceItem.serviceName + "] is disabled." );
                     }
                 }
             }

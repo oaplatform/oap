@@ -240,7 +240,7 @@ public class KernelTest {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "reference" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "[reference:s1] dependencies are not enabled [s2]" );
+                .hasMessage( "[reference:s1] dependencies are not enabled. [s2] is disabled." );
         }
     }
 
