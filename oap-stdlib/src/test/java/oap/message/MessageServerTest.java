@@ -85,7 +85,7 @@ public class MessageServerTest extends Fixtures {
             client.start();
             assertThatCode( messageHttpHandler::preStart )
                 .isInstanceOf( IllegalArgumentException.class )
-                .hasMessage( "duplicate [l2-127, l1-127]" );
+                .hasMessage( "duplicate listener [127:l2-127, 127:l1-127]" );
         }
     }
 
@@ -620,7 +620,8 @@ public class MessageServerTest extends Fixtures {
             kernelFixture.service( "oap", MessageSender.class ).send( ( byte ) 12, "123", ofString() );
 
             assertEventually( 50, 100, () -> {
-                assertThat( kernelFixture.service( "oap-message-test", MessageListenerMock.class ).getMessages() )
+                MessageListenerMock service = kernelFixture.service("oap-message-test", MessageListenerMock.class);
+                assertThat( service.getMessages() )
                     .containsExactly( new TestMessage( 1, "123" ) );
             } );
 

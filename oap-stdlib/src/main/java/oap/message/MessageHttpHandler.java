@@ -104,24 +104,12 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
 
     public int port = -1;
 
-    public MessageHttpHandler( NioHttpServer server,
-                               String context,
-                               Path controlStatePath,
-                               List<MessageListener> listeners,
-                               long hashTtl ) {
+    public MessageHttpHandler( NioHttpServer server, String context, Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
         this.server = server;
         this.context = context;
         this.controlStatePath = controlStatePath;
         this.listeners = listeners;
         this.hashTtl = hashTtl;
-        for( var listener : listeners ) {
-            var d = this.map.put( listener.getId(), listener );
-            if( d != null )
-                throw new IllegalArgumentException( "duplicate listener [" + listener.getId() + ":" + listener.getInfo()
-                        + ", " + d.getId() + ":" + d.getInfo() + "]" );
-        }
-        hashes = new MessageHashStorage( clientHashCacheSize );
-        Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
     }
 
     public void updateHash() {
@@ -129,9 +117,14 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     }
 
     public void preStart() {
-        log.info( "controlStatePath '{}', listeners '{}', hashTtl '{}', clientHashCacheSize '{}', http context '{}', custom status '{}'",
+        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}'",
             controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
-            clientHashCacheSize, context, MessageProtocol.printMapping() );
+            clientHashCacheSize, context );
+
+        log.info( "custom status = {}", MessageProtocol.printMapping() );
+
+        hashes = new MessageHashStorage( clientHashCacheSize );
+        Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
 
         if( port == -1 )
             server.bind( context, this );
@@ -145,6 +138,13 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         } catch( Exception e ) {
             log.warn( "Cannot load hashes", e );
         }
+
+        for( var listener : listeners ) {
+            var d = this.map.put( listener.getId(), listener );
+            if( d != null )
+                throw new IllegalArgumentException( "duplicate listener [" + listener.getId() + ":" + listener.getInfo()
+                        + ", " + d.getId() + ":" + d.getInfo() + "]" );
+        }
     }
 
     @Override
@@ -156,14 +156,15 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             String clientHostPort = hostName + ":" + port;
 
             var messageType = in.readByte();
+
             var messageVersion = in.readShort();
             var clientId = in.readLong();
-            final var md5 = Hex.encodeHexString( in.readNBytes( MD5_LENGTH ) ).intern();
+            var md5 = Hex.encodeHexString( in.readNBytes( MD5_LENGTH ) ).intern();
 
             in.skipBytes( 8 ); // reserved
             var size = in.readInt();
 
-            log.trace( "Message from [{}], type {} version {} clientId {} md5 {} size '{}'",
+            log.trace( "new message from [{}], type {}, version {}, clientId {}, md5 {}, size '{}'",
                 clientHostPort, messageTypeToString( messageType ), messageVersion, clientId, md5, FileUtils.byteCountToDisplaySize( size ) );
 
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -190,14 +191,14 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                     status = listener.run( messageVersion, hostName, size, data, md5 );
                     if( status == STATUS_OK ) {
                         hashes.add( messageType, clientId, md5 );
-                        Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
                     } else {
                         log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
                                 clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
                     }
+                    Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
                     writeResponse( exchange, status, clientId, md5 );
                 } catch( Exception e ) {
-                    log.error( "Message from [" + clientHostPort + "] " + e.getMessage(), e );
+                    log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
                     Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
                     writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                 }
