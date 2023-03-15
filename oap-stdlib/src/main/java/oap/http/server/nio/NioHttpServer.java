@@ -101,7 +101,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean alwaysSetKeepAlive = true;
     public long readTimeout = Dates.s( 60 );
 
-    private Bucket bucket;
+    private final Bucket bucket;
 
     public NioHttpServer( int port ) {
         this.defaultPort = port;
@@ -111,6 +111,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         contentEncodingRepository = new ContentEncodingRepository();
         contentEncodingRepository.addEncodingHandler( GZIP, new GzipEncodingProvider(), 100 );
         contentEncodingRepository.addEncodingHandler( DEFLATE, new DeflateEncodingProvider(), 50 );
+        LocalBucketBuilder builder = Bucket.builder();
+        bandwidths.forEach( builder::addLimit );
+        bucket = builder.build();
     }
 
     @ToString( exclude = { "server" } )
@@ -131,9 +134,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public void start() {
         pathHandler.forEach( this::startNewPort );
-        LocalBucketBuilder builder = Bucket.builder();
-        bandwidths.forEach( builder::addLimit );
-        bucket = builder.build();
     }
 
     private void startNewPort( int port, PathHandler portPathHandler ) {
