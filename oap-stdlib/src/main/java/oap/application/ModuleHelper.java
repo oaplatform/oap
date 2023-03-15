@@ -308,8 +308,8 @@ class ModuleHelper {
 
             for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
-                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled." +
-                            " [" + dModuleInfo.moduleItem.module.name + "] is disabled." );
+                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled."
+                            + " [" + dModuleInfo.moduleItem.module.name + "] is disabled." );
                 }
             }
         }
