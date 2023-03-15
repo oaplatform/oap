@@ -620,7 +620,7 @@ public class MessageServerTest extends Fixtures {
             kernelFixture.service( "oap", MessageSender.class ).send( ( byte ) 12, "123", ofString() );
 
             assertEventually( 50, 100, () -> {
-                MessageListenerMock service = kernelFixture.service("oap-message-test", MessageListenerMock.class);
+                MessageListenerMock service = kernelFixture.service( "oap-message-test", MessageListenerMock.class );
                 assertThat( service.getMessages() )
                     .containsExactly( new TestMessage( 1, "123" ) );
             } );
