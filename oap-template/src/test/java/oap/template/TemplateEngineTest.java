@@ -307,6 +307,23 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testDiskCache() {
+        var c1 = new TestTemplateClass();
+        c1.field = "1";
+        c1.field2 = "2";
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, Map.of(), null ).render( c1 ) )
+            .isEqualTo( "1" );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field2}", STRING, Map.of(), null ).render( c1 ) )
+            .isEqualTo( "2" );
+
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, Map.of(), null ).render( c1 ) )
+            .isEqualTo( "1" );
+    }
+
+    @Test
     public void testErrorSyntax() {
         assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class );

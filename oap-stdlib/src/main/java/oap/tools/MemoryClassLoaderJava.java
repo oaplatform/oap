@@ -55,7 +55,7 @@ import static oap.io.content.ContentWriter.ofString;
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
-    private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
+    public static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -68,10 +68,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         if( diskCache != null ) {
             var sourceFile = diskCache.resolve( classname + ".java" );
             var classFile = diskCache.resolve( classname + ".class" );
-            if(
-                Files.exists( sourceFile )
-                    && filecontent.equals( oap.io.Files.readString( sourceFile ) )
-                    && Files.exists( classFile ) ) {
+            if( Files.exists( classFile ) ) {
 
                 log.trace( "found: {}", classname );
 
