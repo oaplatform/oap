@@ -27,6 +27,7 @@ package oap.template;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.micrometer.core.instrument.Metrics;
@@ -53,6 +54,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public class TemplateEngine implements Runnable {
@@ -103,7 +106,7 @@ public class TemplateEngine implements Runnable {
 
     private void loadFunctions() {
         var functions = new HashSet<Class<?>>();
-        try ( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
+        try( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
             stream.forEach( Try.consume( cs -> functions.add( Class.forName( cs ) ) ) );
         }
 
@@ -137,14 +140,16 @@ public class TemplateEngine implements Runnable {
         assert template != null;
         assert acc != null;
 
-        var id = name
-            + "_"
-            + getHash( template )
-            + "_"
-            + aliases.hashCode()
-            + "_"
-            + acc.getClass().hashCode()
-            + ( postProcess != null ? "_" + postProcess.getClass().hashCode() : "" );
+        Hasher hasher = Hashing.murmur3_128().newHasher();
+        hasher
+            .putString( template, UTF_8 )
+            .putString( acc.getClass().toString(), UTF_8 );
+
+        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
+
+        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
+
+        var id = hasher.hash().toString();
 
         log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
@@ -161,7 +166,7 @@ public class TemplateEngine implements Runnable {
                 if( postProcess != null )
                     postProcess.accept( ast );
 
-                var tf = new JavaTemplate<>( name, template, type, tmpPath, acc, ast );
+                var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
             } );
 
@@ -182,7 +187,7 @@ public class TemplateEngine implements Runnable {
     public void run() {
         templates.cleanUp();
         var now = System.currentTimeMillis();
-        try ( Stream<Path> stream = Files.walk( tmpPath ) ) {
+        try( Stream<Path> stream = Files.walk( tmpPath ) ) {
             stream
                 .forEach( path -> {
                     try {
