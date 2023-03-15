@@ -55,7 +55,7 @@ import static oap.io.content.ContentWriter.ofString;
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
-    public static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
+    private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
