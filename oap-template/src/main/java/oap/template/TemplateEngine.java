@@ -59,9 +59,9 @@ import java.util.stream.Stream;
 public class TemplateEngine implements Runnable {
     public final Path tmpPath;
     public final long ttl;
-    private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
+    private final Map<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
-    public long maxSize = 1_000_000;
+    public long maxSize = 1_000_000L;
 
     public TemplateEngine( Path tmpPath ) {
         this( tmpPath, Dates.d( 30 ) );
@@ -75,6 +75,8 @@ public class TemplateEngine implements Runnable {
             .ticker( JodaTicker.JODA_TICKER )
             .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
             .recordStats()
+            .softValues()
+            .concurrencyLevel( Runtime.getRuntime().availableProcessors() )
             .maximumSize( maxSize )
             .build();
 
