@@ -28,7 +28,6 @@ import com.google.common.base.Preconditions;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
-import io.github.bucket4j.Refill;
 import io.github.bucket4j.local.LocalBucketBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -74,12 +73,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public static final String ACTIVE = "active";
     public static final String WORKER = "worker";
 
-    private static Bandwidth DEFAULT_LIMIT;
+    private static Bandwidth defaultLimit;
     static {
-        DEFAULT_LIMIT = Bandwidth.simple( 1_000_000L, Duration.ofSeconds( 1 ) );
+        defaultLimit = Bandwidth.simple( 1_000_000L, Duration.ofSeconds( 1 ) );
     }
 
-    public final List<Bandwidth> bandwidths = Lists.of( DEFAULT_LIMIT );
+    public final List<Bandwidth> bandwidths = Lists.of( defaultLimit );
     private final int defaultPort;
 
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
@@ -229,16 +228,16 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         log.debug( "binding '{}' on port: {} ...", prefix, port );
         io.undertow.server.HttpHandler httpHandler = exchange -> {
-            HttpServerExchange serverExchange = new HttpServerExchange(exchange, requestId.incrementAndGet());
+            HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
             ConsumptionProbe probe = bucket != null ? bucket.tryConsumeAndReturnRemaining( 1 ) : null;
             if ( probe == null || probe.isConsumed() ) {
                 // allowed
                 handler.handleRequest( serverExchange );
             } else {
                 exchange.setStatusCode( StatusCodes.TOO_MANY_REQUESTS );
-                long nanosToRetry = TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill());
+                long nanosToRetry = TimeUnit.NANOSECONDS.toSeconds( probe.getNanosToWaitForRefill() );
                 exchange.getResponseHeaders().add( HttpString.tryFromString( "X-Rate-Limit-Retry-After-Seconds" ), nanosToRetry );
-                exchange.setReasonPhrase( "Too many requests");
+                exchange.setReasonPhrase( "Too many requests" );
             }
         };
 
