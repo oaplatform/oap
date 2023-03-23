@@ -33,7 +33,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
-    public static final Pattern JITTER = Pattern.compile("(.+)\\s+jitter\s++(\\d++\\w*)$");
+    public static final Pattern JITTER = Pattern.compile( "(.+)\\s+jitter\s++(\\d++\\w*)$" );
 
     public final String cron;
     public final long jitter;

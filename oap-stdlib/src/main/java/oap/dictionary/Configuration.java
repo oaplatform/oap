@@ -40,7 +40,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
@@ -75,8 +74,8 @@ public abstract class Configuration {
 
         List<Pair<Integer, URL>> versionedDics = logConfigs
                 .stream()
-                .sorted(Comparator.comparing(URL::toString))
-                .map(path -> __(versionOf(path.getPath()), path))
+                .sorted( Comparator.comparing( URL::toString ) )
+                .map( path -> __( versionOf( path.getPath() ), path ) )
                 .toList();
 
         var maxVersion = versionedDics.stream().mapToInt( p -> p._1 ).max().orElse( 1 );

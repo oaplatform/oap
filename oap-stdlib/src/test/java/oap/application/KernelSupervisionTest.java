@@ -178,7 +178,7 @@ public class KernelSupervisionTest {
 
         @Override
         public void run() {
-            str.append("run/");
+            str.append( "run/" );
             count.incrementAndGet();
         }
     }
