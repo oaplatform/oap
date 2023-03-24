@@ -59,7 +59,7 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
-public class TemplateEngine implements Runnable {
+public class TemplateEngine implements Runnable, AutoCloseable {
     public final Path tmpPath;
     public final long ttl;
     private final Map<String, List<Method>> builtInFunction = new HashMap<>();
@@ -171,7 +171,7 @@ public class TemplateEngine implements Runnable {
                     postProcess.accept( ast );
 
                 var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
-                return new TemplateFunction( tf, new Exception().getStackTrace() );
+                return new TemplateFunction( tf );
             } );
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
@@ -208,14 +208,17 @@ public class TemplateEngine implements Runnable {
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        templates.cleanUp();
+    }
+
     public static class TemplateFunction {
         @JsonIgnore
         public final Template<?, ?, ?, ?> template;
-        public final StackTraceElement[] stackTrace;
 
-        public TemplateFunction( Template<?, ?, ?, ?> template, StackTraceElement[] stackTrace ) {
+        public TemplateFunction( Template<?, ?, ?, ?> template ) {
             this.template = template;
-            this.stackTrace = stackTrace;
         }
     }
 }
