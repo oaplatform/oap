@@ -42,19 +42,25 @@ import java.util.Set;
 public class KernelHelper {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
-    public static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
-                                                                 ServiceStorage storage,
-                                                                 LinkedHashMap<String, Object> parameters ) {
-        fixLinks( kernel, thisModuleName, storage, parameters );
+    public static Parameters fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
+                                                     ServiceStorage storage,
+                                                     LinkedHashMap<String, Object> parameters ) {
 
-        var ret = new LinkedHashMap<String, Object>();
+        Parameters p = new Parameters();
 
-        parameters.forEach( ( name, value ) -> {
-            Object newValue = fixValue( kernel, thisModuleName, storage, value );
-            ret.put( name, newValue );
+        parameters.forEach( ( k, v ) -> {
+            var res = fixLinks( kernel, thisModuleName, storage, v );
+
+            if( !res.ignoreCast ) {
+                Object newValue = fixValue( kernel, thisModuleName, storage, res.value );
+
+                p.configurationParameters.put( k, newValue );
+            } else {
+                p.serviceParameters.put( k, res.value );
+            }
         } );
 
-        return ret;
+        return p;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -94,38 +100,37 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
-    public static Object fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, Object value ) {
+    public static Parameter fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, final Object value ) {
         if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
                 var oldValue = it.next();
                 var v = fixLinks( kernel, thisModuleItem, storage, oldValue );
-                if( v != null ) {
-                    it.set( v );
+                if( v.value != null ) {
+                    it.set( v.value );
                 }
             }
         } else if( value instanceof Map<?, ?> ) {
             for( var entry : ( ( Map<?, Object> ) value ).entrySet() ) {
                 var v = fixLinks( kernel, thisModuleItem, storage, entry.getValue() );
-                if( v != null ) {
-                    entry.setValue( v );
+                if( v.value != null ) {
+                    entry.setValue( v.value );
                 }
             }
         } else if( value instanceof String ) {
-            var finalValue = value;
-            var command = Lists.find2( Kernel.commands, c -> c.matches( finalValue ) );
+            var command = Lists.find2( Kernel.commands, c -> c.matches( value ) );
             if( command != null ) {
                 var result = command.getInstance( value, kernel, thisModuleItem, storage );
                 if( !result.isSuccess() ) {
                     log.trace( "{} not found", value );
-                    value = null;
+                    return new Parameter( null, false );
                 } else {
-                    value = result.successValue;
+                    return new Parameter( result.successValue, true );
                 }
             }
         }
 
-        return value;
+        return new Parameter( value, false );
     }
 
     public static boolean profileEnabled( LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles ) {
@@ -170,5 +175,13 @@ public class KernelHelper {
             thread.setName( name.substring( 0, index ) );
         }
 
+    }
+
+    record Parameter(Object value, boolean ignoreCast) {
+    }
+
+    static class Parameters {
+        public final LinkedHashMap<String, Object> configurationParameters = new LinkedHashMap<>();
+        public final LinkedHashMap<String, Object> serviceParameters = new LinkedHashMap<>();
     }
 }

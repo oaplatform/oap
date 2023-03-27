@@ -38,11 +38,11 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -99,7 +99,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
     }
 
-   Reflection init() {
+    Reflection init() {
         if( this.methods == null ) {
             synchronized( this ) {
                 if( this.methods == null ) {
@@ -124,16 +124,20 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         return newInstance( Map.of() );
     }
 
-    public <T> T newInstance( Object... args ) {
+    public <T> T newInstance( Map<String, Object> args ) {
+        return newInstance( args, Set.of() );
+    }
+
+    public <T> T newInstance( Map<String, Object> args, Set<String> ignoreCast ) {
         for( Constructor constructor : constructors )
-            if( constructor.typeMatch( args ) ) return constructor.invoke( args );
+            if( constructor.nameMatch( args ) ) return constructor.invoke( args, ignoreCast );
 
         throw constructorNotFound( args );
     }
 
-    public <T> T newInstance( Map<String, Object> args ) {
+    public <T> T newInstance( Object... args ) {
         for( Constructor constructor : constructors )
-            if( constructor.nameMatch( args ) ) return constructor.invoke( args );
+            if( constructor.typeMatch( args ) ) return constructor.invoke( args );
 
         throw constructorNotFound( args );
     }
@@ -323,9 +327,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 this.underlying.set( instance, value );
             } catch( ReflectiveOperationException e ) {
                 throw new ReflectException( "Cannot set field's '"
-                        + underlying.getName()
-                        + "' value '" + argsToString( value ) + "' on instance of: "
-                        + instance.getClass().getCanonicalName(), e );
+                    + underlying.getName()
+                    + "' value '" + argsToString( value ) + "' on instance of: "
+                    + instance.getClass().getCanonicalName(), e );
             }
         }
 
@@ -365,7 +369,7 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     }
 
     private String argsToString( Object... args ) {
-        if ( args == null || args.length == 0 ) return "()";
+        if( args == null || args.length == 0 ) return "()";
         List<String> arguments = Stream.of( args ).map( arg -> arg.getClass().getCanonicalName() + "=" + arg ).toList();
         return "(" + Joiner.on( "," ).join( arguments ) + ")";
     }
@@ -399,9 +403,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 return ( T ) underlying.invoke( instance, args );
             } catch( ReflectiveOperationException e ) {
                 throw new ReflectException( "Cannot invoke method '"
-                        + underlying.getName()
-                        + "' on instance of class '" + instance.getClass().getCanonicalName()
-                        + "' with parameters: " + argsToString( args ), e );
+                    + underlying.getName()
+                    + "' on instance of class '" + instance.getClass().getCanonicalName()
+                    + "' with parameters: " + argsToString( args ), e );
             }
         }
 
@@ -449,19 +453,26 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 return ( T ) underlying.newInstance( args );
             } catch( ReflectiveOperationException e ) {
                 throw new ReflectException( "Cannot invoke constructor of class '"
-                        + name()
-                        + "' with constructor parameters: " + argsToString( args )
-                        + "\nwhile expecting:\n" + parameterNames, e );
+                    + name()
+                    + "' with constructor parameters: " + argsToString( args )
+                    + "\nwhile expecting:\n" + parameterNames, e );
             }
         }
 
         public <T> T invoke( Map<String, Object> args ) throws ReflectException {
+            return invoke( args, Set.of() );
+        }
+
+        public <T> T invoke( Map<String, Object> args, Set<String> ignoreCast ) throws ReflectException {
             //      @todo check match of parameter types
             Map<String, Object> extraParameters = new LinkedHashMap<>( args );
             try {
                 //step 1: new instance
                 Object[] cArgs = Stream.of( parameters )
-                    .map( p -> coercions.cast( p.type(), args.get( p.name() ) ) )
+                    .map( p -> {
+                        Object value = args.get( p.name() );
+                        return !ignoreCast.contains( p.name() ) ? coercions.cast( p.type(), value ) : value;
+                    } )
                     .toArray();
                 T instance = invoke( cArgs );
                 //step 2: fill extra parameters
@@ -473,15 +484,16 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                     }
                     Optional<Field> f = field( key );
                     f.ifPresent( field -> {
-                        Object arg = coercions.cast( field.type(), args.get( key ) );
+                        Object value = args.get( key );
+                        Object arg = !ignoreCast.contains( key ) ? coercions.cast( field.type(), value ) : value;
                         field.set( instance, arg );
                     } );
                 }
                 return instance;
             } catch( Exception e ) {
                 throw new ReflectException( "Cannot invoke constructor of class '"
-                        + name()
-                        + "' with extra parameters: " + argsToString( extraParameters ), e );
+                    + name()
+                    + "' with extra parameters: " + argsToString( extraParameters ), e );
             }
         }
 
