@@ -230,10 +230,10 @@ public class Kernel implements Closeable, AutoCloseable {
                     var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service.parameters );
 
                     var p = new LinkedHashMap<String, Object>();
-                    p.putAll( parametersWithoutLinks.serviceParameters );
+                    p.putAll( parametersWithoutLinks.serviceReferenceParameters );
                     p.putAll( parametersWithoutLinks.configurationParameters );
 
-                    instance = reflect.newInstance( p, parametersWithoutLinks.serviceParameters.keySet() );
+                    instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
                     setServiceName( reflect, instance, service.name );
 //                    updateLoggerIfExists( instance, implName );
                 } else {

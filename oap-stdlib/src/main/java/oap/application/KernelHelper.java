@@ -56,7 +56,7 @@ public class KernelHelper {
 
                 p.configurationParameters.put( k, newValue );
             } else {
-                p.serviceParameters.put( k, res.value );
+                p.serviceReferenceParameters.put( k, res.value );
             }
         } );
 
@@ -182,6 +182,6 @@ public class KernelHelper {
 
     static class Parameters {
         public final LinkedHashMap<String, Object> configurationParameters = new LinkedHashMap<>();
-        public final LinkedHashMap<String, Object> serviceParameters = new LinkedHashMap<>();
+        public final LinkedHashMap<String, Object> serviceReferenceParameters = new LinkedHashMap<>();
     }
 }
