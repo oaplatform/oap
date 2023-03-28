@@ -42,11 +42,11 @@ import java.util.Set;
 public class KernelHelper {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
-    public static Parameters fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
-                                                     ServiceStorage storage,
-                                                     LinkedHashMap<String, Object> parameters ) {
+    public static ServiceConfigurationParameters fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
+                                                                         ServiceStorage storage,
+                                                                         LinkedHashMap<String, Object> parameters ) {
 
-        Parameters p = new Parameters();
+        ServiceConfigurationParameters p = new ServiceConfigurationParameters();
 
         parameters.forEach( ( k, v ) -> {
             var res = fixLinks( kernel, thisModuleName, storage, v );
@@ -100,7 +100,7 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
-    public static Parameter fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, final Object value ) {
+    public static ServiceConfigurationParameter fixLinks( Kernel kernel, ModuleItem thisModuleItem, ServiceStorage storage, final Object value ) {
         if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
@@ -123,14 +123,14 @@ public class KernelHelper {
                 var result = command.getInstance( value, kernel, thisModuleItem, storage );
                 if( !result.isSuccess() ) {
                     log.trace( "{} not found", value );
-                    return new Parameter( null, false );
+                    return new ServiceConfigurationParameter( null, false );
                 } else {
-                    return new Parameter( result.successValue, true );
+                    return new ServiceConfigurationParameter( result.successValue, true );
                 }
             }
         }
 
-        return new Parameter( value, false );
+        return new ServiceConfigurationParameter( value, false );
     }
 
     public static boolean profileEnabled( LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles ) {
@@ -177,10 +177,10 @@ public class KernelHelper {
 
     }
 
-    record Parameter( Object value, boolean ignoreCast ) {
+    record ServiceConfigurationParameter( Object value, boolean ignoreCast ) {
     }
 
-    static class Parameters {
+    static class ServiceConfigurationParameters {
         public final LinkedHashMap<String, Object> configurationParameters = new LinkedHashMap<>();
         public final LinkedHashMap<String, Object> serviceReferenceParameters = new LinkedHashMap<>();
     }
