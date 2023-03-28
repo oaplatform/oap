@@ -177,7 +177,7 @@ public class KernelHelper {
 
     }
 
-    record Parameter(Object value, boolean ignoreCast) {
+    record Parameter( Object value, boolean ignoreCast ) {
     }
 
     static class Parameters {
