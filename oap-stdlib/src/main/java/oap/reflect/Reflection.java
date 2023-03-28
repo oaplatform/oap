@@ -42,10 +42,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -135,16 +137,20 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         return newInstance( Map.of() );
     }
 
-    public <T> T newInstance( Object... args ) {
+    public <T> T newInstance( Map<String, Object> args ) {
+        return newInstance( args, Set.of() );
+    }
+
+    public <T> T newInstance( Map<String, Object> args, Set<String> ignoreCast ) {
         for( Constructor constructor : constructors )
-            if( constructor.typeMatch( args ) ) return constructor.invoke( args );
+            if( constructor.nameMatch( args ) ) return constructor.invoke( args, ignoreCast );
 
         throw constructorNotFound( args );
     }
 
-    public <T> T newInstance( Map<String, Object> args ) {
+    public <T> T newInstance( Object... args ) {
         for( Constructor constructor : constructors )
-            if( constructor.nameMatch( args ) ) return constructor.invoke( args );
+            if( constructor.typeMatch( args ) ) return constructor.invoke( args );
 
         throw constructorNotFound( args );
     }
@@ -455,10 +461,17 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public <T> T invoke( Map<String, Object> args ) throws ReflectException {
+            return invoke( args, Set.of() );
+        }
+
+        public <T> T invoke( Map<String, Object> args, Set<String> ignoreCast ) throws ReflectException {
             //      @todo check match of parameter types
             try {
                 Object[] cArgs = Stream.of( parameters )
-                    .map( p -> coercions.cast( p.type(), args.get( p.name() ) ) )
+                    .map( p -> {
+                        Object value = args.get( p.name() );
+                        return !ignoreCast.contains( p.name() ) ? coercions.cast( p.type(), value ) : value;
+                    } )
                     .toArray();
                 T instance = invoke( cArgs );
 
@@ -467,7 +480,8 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
                     Optional<Field> f = field( key );
                     f.ifPresent( field -> {
-                        Object arg = coercions.cast( field.type(), args.get( key ) );
+                        Object value = args.get( key );
+                        Object arg = !ignoreCast.contains( key ) ? coercions.cast( field.type(), value ) : value;
                         field.set( instance, arg );
                     } );
                 }

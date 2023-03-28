@@ -45,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static oap.application.KernelTest.Enum.ONE;
 import static oap.application.KernelTest.Enum.TWO;
@@ -405,6 +407,21 @@ public class KernelTest {
         }
     }
 
+    @Test
+    public void testQueueAsService() {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "queue.conf" ) ) ) ) {
+            kernel.start( Map.of( "boot.main", "queue" ) );
+
+            TestQueueContainer testQueueContainer = kernel.serviceOfClass( TestQueueContainer.class ).orElseThrow();
+
+            assertThat( testQueueContainer.queueArg ).isInstanceOf( LinkedBlockingQueue.class );
+            assertThat( testQueueContainer.queueArg ).containsOnly( "item1", "item2" );
+
+            assertThat( testQueueContainer.queueField ).isInstanceOf( LinkedBlockingQueue.class );
+            assertThat( testQueueContainer.queueField ).containsOnly( "item1", "item2" );
+        }
+    }
+
     public enum Enum {
         ONE, TWO
     }
@@ -491,5 +508,14 @@ public class KernelTest {
     public static class ServiceFinalParameter {
         public final String a = "test";
         public final ArrayList<String> al = new ArrayList<>();
+    }
+
+    public static class TestQueueContainer {
+        public final Queue<String> queueArg;
+        public Queue<String> queueField;
+
+        public TestQueueContainer( Queue<String> queueArg ) {
+            this.queueArg = queueArg;
+        }
     }
 }
