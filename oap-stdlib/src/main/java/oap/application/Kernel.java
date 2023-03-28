@@ -300,23 +300,29 @@ public class Kernel implements Closeable, AutoCloseable {
                         var methodSuffix = StringUtils.capitalize( fieldName );
 
                         var linkMethod = reflect.method( "add" + methodSuffix ).orElse( null );
-                        if( linkMethod == null ) linkMethod = reflect.method( "set" + methodSuffix ).orElse( null );
-                        if( linkMethod == null )
+                        if( linkMethod == null ) {
+                            linkMethod = reflect.method( "set" + methodSuffix ).orElse( null );
+                        }
+                        if( linkMethod == null ) {
                             linkMethod = reflect.method( "add" + methodSuffix + "Listener" ).orElse( null );
+                        }
 
-                        if( linkMethod != null && linkMethod.parameters.size() == 1 )
+                        if( linkMethod != null && linkMethod.parameters.size() == 1 ) {
                             linkMethod.invoke( service.instance, initialization.instance );
-                        else {
+                        } else {
                             var linkField = reflect.field( fieldName ).orElse( null );
-                            if( linkField != null )
-                                if( linkField.type().assignableTo( Collection.class ) )
+                            if( linkField != null ) {
+                                if( linkField.type().assignableTo( Collection.class ) ) {
                                     ( ( Collection<Object> ) linkField.get( service.instance ) )
                                         .add( initialization.instance );
-                                else linkField.set( service.instance, initialization.instance );
-                            else
+                                } else {
+                                    linkField.set( service.instance, initialization.instance );
+                                }
+                            } else {
                                 exception( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
                                     + " should have field " + fieldName
                                     + " for " + initialization.implementationName + "/" + initialization.service.implementation ) );
+                            }
                         }
                     },
                     exception( e -> new ApplicationException( "Unknown service link " + serviceRef + " in"
