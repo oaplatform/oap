@@ -28,6 +28,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -42,11 +43,11 @@ public class PrometheusExporter implements HttpHandler {
     }
 
     public PrometheusExporter( NioHttpServer server ) {
-        server.bind( "/metrics", this );
+        server.bind( "/metrics", this, Http.Schema.HTTP );
     }
 
     public PrometheusExporter( NioHttpServer server, int port ) {
-        server.bind( "/metrics", this, port );
+        server.bind( "/metrics", this, port, Http.Schema.HTTP );
     }
 
     @Override

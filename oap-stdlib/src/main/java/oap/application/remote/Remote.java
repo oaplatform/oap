@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
+import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -66,7 +67,7 @@ public class Remote implements HttpHandler {
         this.context = context;
         this.kernel = kernel;
 
-        server.bind( context, this );
+        server.bind( context, this, Http.Schema.HTTP );
 
 
         errorMetrics = Metrics.counter( "remote_server", Tags.of( "status", "error" ) );

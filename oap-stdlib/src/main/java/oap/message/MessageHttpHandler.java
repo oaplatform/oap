@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -125,9 +126,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
 
         if( port == -1 )
-            server.bind( context, this );
+            server.bind( context, this, Http.Schema.HTTP );
         else
-            server.bind( context, this, port );
+            server.bind( context, this, port, Http.Schema.HTTP );
 
         scheduled = Scheduler.scheduleWithFixedDelay( 1, TimeUnit.SECONDS, this::updateHash );
 

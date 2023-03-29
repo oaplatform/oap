@@ -34,6 +34,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import static oap.http.Http.Schema.HTTP;
 import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
 import static oap.http.pnio.PnioRequestHandler.Type.IO;
 import static oap.http.testng.HttpAsserts.assertPost;
@@ -174,7 +175,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.start();
 
             httpServer.bind( "/test",
-                exchange -> httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() ) );
+                exchange -> httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() ), HTTP );
 
             cons.accept( port );
         }

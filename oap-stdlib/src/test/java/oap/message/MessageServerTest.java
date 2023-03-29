@@ -25,6 +25,7 @@
 package oap.message;
 
 import oap.application.testng.KernelFixture;
+import oap.http.Http;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
@@ -43,6 +44,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static oap.http.Http.Schema.HTTP;
 import static oap.io.content.ContentWriter.ofJson;
 import static oap.io.content.ContentWriter.ofString;
 import static oap.message.MessageAvailabilityReport.State.FAILED;
@@ -144,7 +146,7 @@ public class MessageServerTest extends Fixtures {
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -179,7 +181,7 @@ public class MessageServerTest extends Fixtures {
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -212,7 +214,7 @@ public class MessageServerTest extends Fixtures {
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.poolSize = 1;
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -244,7 +246,7 @@ public class MessageServerTest extends Fixtures {
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -274,7 +276,7 @@ public class MessageServerTest extends Fixtures {
 
             client.retryTimeout = 100;
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -306,7 +308,7 @@ public class MessageServerTest extends Fixtures {
 
             client.retryTimeout = 100;
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -346,7 +348,7 @@ public class MessageServerTest extends Fixtures {
             client.retryTimeout = 100;
             client.globalIoRetryTimeout = 100;
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();
@@ -394,7 +396,7 @@ public class MessageServerTest extends Fixtures {
             try( var server = new NioHttpServer( port );
                  var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
-                server.bind( "/messages", messageHttpHandler );
+                server.bind( "/messages", messageHttpHandler, HTTP );
                 messageHttpHandler.preStart();
                 server.start();
 
@@ -418,7 +420,7 @@ public class MessageServerTest extends Fixtures {
             try( var server = new NioHttpServer( port );
                  var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
-                server.bind( "/messages", messageHttpHandler );
+                server.bind( "/messages", messageHttpHandler, HTTP );
                 messageHttpHandler.preStart();
                 server.start();
 
@@ -449,7 +451,7 @@ public class MessageServerTest extends Fixtures {
         try( var server = new NioHttpServer( port );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 ) ) {
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             messageHttpHandler.preStart();
             server.start();
 
@@ -517,7 +519,7 @@ public class MessageServerTest extends Fixtures {
         try( var server = new NioHttpServer( port );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             messageHttpHandler.preStart();
             server.start();
 
@@ -577,7 +579,7 @@ public class MessageServerTest extends Fixtures {
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.retryTimeout = 100;
 
-            server.bind( "/messages", messageHttpHandler );
+            server.bind( "/messages", messageHttpHandler, HTTP );
             client.start();
             messageHttpHandler.preStart();
             server.start();

@@ -110,4 +110,8 @@ public interface Http {
         String APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
         String APPLICATION_X_TAR = "application/x-tar";
     }
+
+    enum Schema {
+        HTTP, HTTPS
+    }
 }

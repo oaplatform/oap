@@ -26,6 +26,7 @@ package oap.http.server.nio.health;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.http.ContentTypes;
+import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
@@ -44,13 +45,13 @@ public class HealthHttpHandler implements HttpHandler {
     public HealthHttpHandler( NioHttpServer server, String prefix, int port, String secret ) {
         this.secret = secret;
         this.prefix = prefix;
-        server.bind( prefix, this, port );
+        server.bind( prefix, this, port, Http.Schema.HTTP );
     }
 
     public HealthHttpHandler( NioHttpServer server, String prefix, String secret ) {
         this.secret = secret;
         this.prefix = prefix;
-        server.bind( prefix, this );
+        server.bind( prefix, this, Http.Schema.HTTP );
     }
 
     public HealthHttpHandler( NioHttpServer server, String prefix ) {

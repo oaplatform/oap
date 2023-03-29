@@ -26,6 +26,7 @@ package oap.http.server.nio;
 
 import oap.http.Client;
 import oap.http.Http;
+import oap.testng.Asserts;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
@@ -34,6 +35,8 @@ import java.io.IOException;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
+import static oap.http.Http.Schema.HTTP;
+import static oap.http.Http.Schema.HTTPS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
@@ -81,14 +84,35 @@ public class NioHttpServerTest extends Fixtures {
         int testPort2 = fixture.portFor( getClass() + "test2" );
 
         try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
-            httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort );
+            httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort, HTTP );
             httpServer.start();
-            httpServer.bind( "/test2", exchange -> exchange.responseOk( "test2", Http.ContentType.TEXT_PLAIN ), testPort2 );
-            httpServer.bind( "/test3", exchange -> exchange.responseOk( "test3", Http.ContentType.TEXT_PLAIN ), testPort2 );
+            httpServer.bind( "/test2", exchange -> exchange.responseOk( "test2", Http.ContentType.TEXT_PLAIN ), testPort2, HTTP );
+            httpServer.bind( "/test3", exchange -> exchange.responseOk( "test3", Http.ContentType.TEXT_PLAIN ), testPort2, HTTP );
 
             assertThat( Client.DEFAULT.get( "http://localhost:" + testPort + "/test" ).contentString() ).isEqualTo( "test" );
             assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test2" ).contentString() ).isEqualTo( "test2" );
             assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test3" ).contentString() ).isEqualTo( "test3" );
+        }
+    }
+
+    @Test
+    public void testHttps() throws IOException {
+        int port = fixture.portFor( getClass() );
+
+        try( NioHttpServer httpServer = new NioHttpServer() ) {
+            httpServer.sslConfiguration.port = port;
+            httpServer.sslConfiguration.password = "test12";
+            httpServer.sslConfiguration.jks = Asserts.pathOfTestResource( getClass(), "keystore.jks" );
+
+            httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), HTTPS );
+            httpServer.start();
+
+            System.setProperty( "javax.net.ssl.keyStorePassword", "test12" );
+            System.setProperty( "javax.net.ssl.keyStore", httpServer.sslConfiguration.jks.toString() );
+            System.setProperty( "javax.net.ssl.trustStorePassword", "test12" );
+            System.setProperty( "javax.net.ssl.trustStore", Asserts.pathOfTestResource( getClass(), "truststore.jks" ).toString() );
+
+            assertThat( Client.DEFAULT.get( "https://localhost:" + port + "/test" ).contentString() ).isEqualTo( "test" );
         }
     }
 }

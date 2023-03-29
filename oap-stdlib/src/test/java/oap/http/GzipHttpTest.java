@@ -64,9 +64,7 @@ public class GzipHttpTest extends Fixtures {
 
     @Test
     public void gzipOutput() {
-        server.bind( "test", exchange ->
-            exchange.responseOk( "test", true, TEXT_PLAIN )
-        );
+        server.bind( "test", exchange -> exchange.responseOk( "test", true, TEXT_PLAIN ), Http.Schema.HTTP );
         server.start();
 
         var response = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" );
@@ -85,9 +83,7 @@ public class GzipHttpTest extends Fixtures {
 
     @Test
     public void gzipInput() {
-        server.bind( "test", exchange ->
-            exchange.responseOk( new String( exchange.readBody() ), true, TEXT_PLAIN )
-        );
+        server.bind( "test", exchange -> exchange.responseOk( new String( exchange.readBody() ), true, TEXT_PLAIN ), Http.Schema.HTTP );
         server.start();
 
         var response = Client.DEFAULT.post( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
