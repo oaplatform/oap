@@ -203,6 +203,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     private synchronized SSLContext getSSLContext() {
         if( sslContext != null ) return sslContext;
 
+        log.info( "SSL port {} jks {} password XXX", sslConfiguration.port, sslConfiguration.jks );
+
+        Preconditions.checkNotNull( sslConfiguration.jks );
+        Preconditions.checkNotNull( sslConfiguration.password );
+
         try( InputStream inputStream = Files.newInputStream( sslConfiguration.jks ) ) {
             KeyStore ks = KeyStore.getInstance( "JKS" );
             KeyManagerFactory kmf = KeyManagerFactory.getInstance( KeyManagerFactory.getDefaultAlgorithm() );
