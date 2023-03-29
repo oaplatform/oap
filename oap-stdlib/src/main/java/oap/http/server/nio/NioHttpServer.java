@@ -116,7 +116,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         servers = new HashMap<>();
         pathHandler.forEach( ( p, v ) -> {
             startNewPort( p, v._2 );
-
         } );
     }
 
@@ -224,6 +223,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     public void bind( String prefix, HttpHandler handler, boolean compressionSupport ) {
+        Preconditions.checkArgument( port > 0 || sslConfiguration.port > 0 );
+
         if( this.port > 0 ) {
             bind( prefix, handler, compressionSupport, this.port, Http.Schema.HTTP );
         }
