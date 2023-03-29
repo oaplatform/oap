@@ -21,6 +21,7 @@
         <module>oap-fs</module>
         <module>oap-jpath</module>
         <module>oap-pnio</module>
+        <module>oap-hadoop</module>
         <module>maven</module>
     </modules>
 
@@ -36,7 +37,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>18.11.5.31</oap.project.version>
+        <oap.project.version>18.11.6.0</oap.project.version>
 
         <oap.deps.testng.version>7.8.0</oap.deps.testng.version>
         <oap.deps.assertj.version>3.24.2</oap.deps.assertj.version>
@@ -61,6 +62,8 @@
         <oap.deps.apache.compress.version>1.23.0</oap.deps.apache.compress.version>
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
+
+        <oap.deps.hadoop.version>3.3.4</oap.deps.hadoop.version>
 
         <oap.deps.joda.version>2.12.5</oap.deps.joda.version>
 

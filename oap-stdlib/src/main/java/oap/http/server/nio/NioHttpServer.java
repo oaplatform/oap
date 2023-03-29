@@ -136,12 +136,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         bucket = builder.build();
     }
 
-    private void startNewPort( int port, PathHandler portPathHandler ) {
+    private void startNewPort( int port, PathHandler portPathHandler, boolean https ) {
         Preconditions.checkNotNull( portPathHandler );
 
         log.info( "starting server on port: {} with {} ...", port, portPathHandler.toString() );
         long time = System.currentTimeMillis();
-        Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServer( port, portPathHandler ) ) ).server;
+        Undertow server = servers.computeIfAbsent( __(port, https), h -> new Holder( port, createUndertowServer( port, portPathHandler, https ) ) ).server;
 
         log.info( "server on port: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
             port, statistics,
@@ -177,7 +177,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     @NotNull
-    private Undertow createUndertowServer( int port, PathHandler portPathHandler ) {
+    private Undertow createUndertowServer( int port, PathHandler portPathHandler, boolean https ) {
         Undertow.Builder builder = Undertow.builder()
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
@@ -213,7 +213,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
-        builder.addHttpListener( port, "0.0.0.0", handler );
+        if(!https) {
+            builder.addHttpListener( port, "0.0.0.0", handler );
+        } else {
+            builder.addHttpsListener( port, "0.0.0.0", getSSLContext(), handler );
+        }
 
         return builder.build();
     }
