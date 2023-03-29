@@ -107,8 +107,6 @@ public class NioHttpServerTest extends Fixtures {
             httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), HTTPS );
             httpServer.start();
 
-            System.setProperty( "javax.net.ssl.keyStorePassword", "test12" );
-            System.setProperty( "javax.net.ssl.keyStore", httpServer.sslConfiguration.jks.toString() );
             System.setProperty( "javax.net.ssl.trustStorePassword", "test12" );
             System.setProperty( "javax.net.ssl.trustStore", Asserts.pathOfTestResource( getClass(), "truststore.jks" ).toString() );
 
