@@ -48,8 +48,8 @@ import oap.util.Dates;
 import oap.util.Pair;
 import org.xnio.Options;
 
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,7 +57,6 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -92,7 +91,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
     public long readTimeout = Dates.s( 60 );
-    private SSLContext sslContext;
+    private KeyManager[] keyManagers;
 
     public NioHttpServer() {
         this( -1 );
@@ -111,7 +110,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     public synchronized void start() {
-        if( sslConfiguration.port > 0 ) getSSLContext();
+        if( sslConfiguration.port > 0 ) getKeyManagers();
 
         servers = new HashMap<>();
         pathHandler.forEach( ( p, v ) -> {
@@ -162,7 +161,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             builder.addHttpListener( port, "0.0.0.0", handler );
         }
         if( schema == Http.Schema.HTTPS ) {
-            builder.addHttpsListener( port, "0.0.0.0", getSSLContext(), handler );
+            builder.addHttpsListener( port, "0.0.0.0", getKeyManagers(), null, handler );
         }
 
         var server = builder.build();
@@ -200,8 +199,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
     }
 
-    private synchronized SSLContext getSSLContext() {
-        if( sslContext != null ) return sslContext;
+    private synchronized KeyManager[] getKeyManagers() {
+        if( keyManagers != null ) return keyManagers;
 
         log.info( "SSL port {} jks {} password XXX", sslConfiguration.port, sslConfiguration.jks );
 
@@ -211,20 +210,18 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         try( InputStream inputStream = Files.newInputStream( sslConfiguration.jks ) ) {
             KeyStore ks = KeyStore.getInstance( "JKS" );
             KeyManagerFactory kmf = KeyManagerFactory.getInstance( KeyManagerFactory.getDefaultAlgorithm() );
-            sslContext = SSLContext.getInstance( "TLS" );
 
             ks.load( inputStream, sslConfiguration.password.toCharArray() );
             kmf.init( ks, sslConfiguration.password.toCharArray() );
 
-            sslContext.init( kmf.getKeyManagers(), null, null );
+            keyManagers = kmf.getKeyManagers();
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
-        } catch( UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException |
-                 KeyManagementException e ) {
+        } catch( UnrecoverableKeyException | CertificateException | KeyStoreException | NoSuchAlgorithmException e ) {
             throw new RuntimeException( e );
         }
 
-        return sslContext;
+        return keyManagers;
     }
 
     public void bind( String prefix, HttpHandler handler, boolean compressionSupport ) {
