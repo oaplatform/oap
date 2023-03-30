@@ -42,7 +42,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -455,7 +454,8 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public <T> T invoke( Object... args ) throws ReflectException {
             try {
                 return ( T ) underlying.newInstance( args );
-            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException | InstantiationException e ) {
+            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException |
+                     InstantiationException e ) {
                 throw new ReflectException( underlying.getName() + ":" + java.util.Arrays.toString( args ), e );
             }
         }
