@@ -5,6 +5,11 @@ Lightweight and simple DI/IoC tool.<br>
 ## oap-module.conf structure
 ..
 
+## oap-messaging
+Persistent asynchronous transactional binary protocol for sending data. For instance:
+- [oap-stats-db](https://github.com/oaplatform/oap-statsdb)
+- [oap-logstream](https://github.com/oaplatform/oap-logstream)
+
 ## Kernel
 Please check functionality in [Kernel.class](oap-stdlib/src/main/java/oap/application/Kernel.java) 
 and [KernelTest](oap-stdlib/src/test/java/oap/application/KernelTest.java) and [KernelFixtureTest](oap-stdlib/src/test/java/oap/application/testng/KernelFixtureTest.java)
