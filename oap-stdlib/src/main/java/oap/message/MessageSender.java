@@ -195,16 +195,24 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
+        return send( messageType, ( short ) 1, data, writer );
+    }
+
+    public <T> MessageSender send( byte messageType, short version, T data, ContentWriter<T> writer ) {
         byte[] bytes = writer.write( data );
-        return send( messageType, bytes, 0, bytes.length );
+        return send( messageType, version, bytes, 0, bytes.length );
     }
 
     public MessageSender send( byte messageType, byte[] data, int offset, int length ) {
+        return send( messageType, ( short ) 1, data, offset, length );
+    }
+
+    public MessageSender send( byte messageType, short version, byte[] data, int offset, int length ) {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
         var md5 = DigestUtils.getMd5Digest().digest( data );
-        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data, offset, length );
+        var message = new Message( clientId, messageType, version, ByteSequence.of( md5 ), data, offset, length );
         messages.add( message );
 
         return this;
@@ -253,11 +261,11 @@ public class MessageSender implements Closeable, AutoCloseable {
             var parentDirectory = directory
                 .resolve( Long.toHexString( clientId ) )
                 .resolve( String.valueOf( Byte.toUnsignedInt( message.messageType ) ) );
-            var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + ".bin.tmp" );
+            var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin.tmp" );
             log.debug( "[{}] writing unsent message to {}", name, tmpMsgPath );
             try {
                 Files.write( tmpMsgPath, message.data, ContentWriter.ofBytes() );
-                var msgPath = parentDirectory.resolve( message.getHexMd5() + ".bin" );
+                var msgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
                 log.error( "[{}] type: {}, md5: {}, data: {}",
@@ -285,7 +293,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
                  DataOutputStream out = new DataOutputStream( buf ) ) {
                 out.writeByte( message.messageType );
-                out.writeShort( PROTOCOL_VERSION_1 );
+                out.writeShort( message.version );
                 out.writeLong( message.clientId );
 
                 out.write( message.md5.bytes );
@@ -302,7 +310,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                     .build();
                 Call call = httpClient.newCall( request );
                 var response = call.execute();
-                if ( response.code() >= 300 || response.code() < 200 ) {
+                if( response.code() >= 300 || response.code() < 200 ) {
                     throw new IOException( "Not OK (" + response.code() + ") response code returned for url: " + messageUrl );
                 }
                 return onOkRespone( messageInfo, response, now );
@@ -491,7 +499,17 @@ public class MessageSender implements Closeable, AutoCloseable {
                                     continue;
                                 }
 
-                                String md5Hex = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+                                String md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+                                String md5Hex;
+                                short version;
+                                var versionStart = md5HexWithVersion.lastIndexOf( '-' );
+                                if( versionStart > 0 ) {
+                                    version = Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
+                                    md5Hex = md5HexWithVersion.substring( 0, versionStart );
+                                } else {
+                                    version = 1;
+                                    md5Hex = md5HexWithVersion;
+                                }
                                 var md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
 
                                 Path lockFile;
@@ -507,7 +525,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                                             log.info( "[{}] client id {} message type {} md5 {}",
                                                 name, msgClientId, messageTypeToString( messageType ), md5Hex );
 
-                                            var message = new Message( clientId, messageType, md5, data );
+                                            var message = new Message( clientId, messageType, version, md5, data );
                                             messages.add( message );
 
                                             Files.delete( messagePath );
@@ -532,10 +550,21 @@ public class MessageSender implements Closeable, AutoCloseable {
 
     private boolean isValidMessage( Path messagePath ) {
         try {
-            return !java.nio.file.Files.isDirectory( messagePath )
-                && ( messagePath.toString().endsWith( ".bin" ) || messagePath.toString().endsWith( ".lock" ) )
-                && ByteSequence.of( Hex.decodeHex( FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) ) ) ) != null;
-        } catch( DecoderException e ) {
+            if( java.nio.file.Files.isDirectory( messagePath ) ) return false;
+            String messageFile = messagePath.toString();
+            if( !messageFile.endsWith( ".bin" ) && !messageFile.endsWith( ".lock" ) ) return false;
+
+            var md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+            var versionStart = md5HexWithVersion.lastIndexOf( '-' );
+            if( versionStart > 0 ) {
+                Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
+                ByteSequence.of( Hex.decodeHex( md5HexWithVersion.substring( 0, versionStart ) ) );
+            } else {
+                ByteSequence.of( Hex.decodeHex( md5HexWithVersion ) );
+            }
+
+            return true;
+        } catch( DecoderException | NumberFormatException e ) {
             return false;
         }
     }
