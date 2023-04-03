@@ -70,132 +70,132 @@ public class TemplateEngine implements Runnable {
     private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
 
-    public TemplateEngine(Path tmpPath) {
-        this(tmpPath, Dates.d(30));
+    public TemplateEngine( Path tmpPath ) {
+        this( tmpPath, Dates.d( 30 ) );
     }
 
-    public TemplateEngine(Path tmpPath, long ttl) {
+    public TemplateEngine( Path tmpPath, long ttl ) {
         this.tmpPath = tmpPath;
         this.ttl = ttl;
 
         templates = CacheBuilder.newBuilder()
-                .ticker(JodaTicker.JODA_TICKER)
-                .expireAfterAccess(ttl, TimeUnit.MILLISECONDS)
-                .recordStats()
-                .softValues()
-                .concurrencyLevel(Runtime.getRuntime().availableProcessors())
-                .maximumSize(maxSize)
-                .build();
+            .ticker( JodaTicker.JODA_TICKER )
+            .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
+            .recordStats()
+            .softValues()
+            .concurrencyLevel( Runtime.getRuntime().availableProcessors() )
+            .maximumSize( maxSize )
+            .build();
 
         loadFunctions();
 
-        log.info("functions {}", builtInFunction.keySet());
+        log.info( "functions {}", builtInFunction.keySet() );
 
-        Metrics.gauge("oap_template_cache", Tags.of("type", "size"), templates, Cache::size);
-        Metrics.gauge("oap_template_cache", Tags.of("type", "hit"), templates, c -> c.stats().hitCount());
-        Metrics.gauge("oap_template_cache", Tags.of("type", "miss"), templates, c -> c.stats().missCount());
-        Metrics.gauge("oap_template_cache", Tags.of("type", "eviction"), templates, c -> c.stats().evictionCount());
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
+        Metrics.gauge( "oap_template_cache", Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
     }
 
-    public static String getHashName(String template) {
-        long hash = getHash(template);
-        return hashToName(hash);
+    public static String getHashName( String template ) {
+        long hash = getHash( template );
+        return hashToName( hash );
     }
 
-    public static long getHash(String template) {
+    public static long getHash( String template ) {
         var hashFunction = Hashing.murmur3_128();
 
-        return hashFunction.hashUnencodedChars(template).asLong();
+        return hashFunction.hashUnencodedChars( template ).asLong();
     }
 
-    private static String hashToName(long hash) {
-        return "template_" + (hash >= 0 ? String.valueOf(hash) : "_" + String.valueOf(hash).substring(1));
+    private static String hashToName( long hash ) {
+        return "template_" + ( hash >= 0 ? String.valueOf( hash ) : "_" + String.valueOf( hash ).substring( 1 ) );
     }
 
     private void loadFunctions() {
         var functions = new HashSet<Class<?>>();
-        try (Stream<String> stream = Resources.lines("META-INF/oap-template-macros.list")) {
-            stream.forEach(Try.consume(cs -> functions.add(Class.forName(cs))));
+        try( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
+            stream.forEach( Try.consume( cs -> functions.add( Class.forName( cs ) ) ) );
         }
 
-        for (var clazz : functions) {
-            for (var method : clazz.getDeclaredMethods()) {
-                if (!Modifier.isStatic(method.getModifiers())) continue;
+        for( var clazz : functions ) {
+            for( var method : clazz.getDeclaredMethods() ) {
+                if( !Modifier.isStatic( method.getModifiers() ) ) continue;
 
-                builtInFunction.computeIfAbsent(method.getName(), m -> new ArrayList<>()).add(method);
+                builtInFunction.computeIfAbsent( method.getName(), m -> new ArrayList<>() ).add( method );
             }
         }
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate(String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess) {
-        return getTemplate(name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess);
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
+        return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate(String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess) {
-        return getTemplate(name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess);
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
+        return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate(String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess) {
-        return getTemplate(name, type, template, acc, Map.of(), errorStrategy, postProcess);
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+        return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate(String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy) {
-        return getTemplate(name, type, template, acc, aliases, errorStrategy, ast -> {
-        });
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
+        return getTemplate( name, type, template, acc, aliases, errorStrategy, ast -> {
+        } );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate(String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
         assert template != null;
         assert acc != null;
 
         Hasher hasher = Hashing.murmur3_128().newHasher();
         hasher
-                .putString(template, UTF_8)
-                .putString(acc.getClass().toString(), UTF_8);
+            .putString( template, UTF_8 )
+            .putString( acc.getClass().toString(), UTF_8 );
 
-        if (postProcess != null) hasher.putString(postProcess.getClass().toString(), UTF_8);
+        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
 
-        aliases.forEach((k, v) -> hasher.putString(k, UTF_8).putString(v, UTF_8));
+        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
 
         var id = hasher.hash().toString();
 
-        log.trace("id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases);
+        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
         try {
-            TemplateFunction tFunc = templates.get(id, () -> {
-                var lexer = new TemplateLexer(CharStreams.fromString(template));
-                var grammar = new TemplateGrammar(new BufferedTokenStream(lexer), builtInFunction, errorStrategy);
-                if (errorStrategy == ErrorStrategy.ERROR) {
-                    lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
-                    grammar.addErrorListener(ThrowingErrorListener.INSTANCE);
+            TemplateFunction tFunc = templates.get( id, () -> {
+                var lexer = new TemplateLexer( CharStreams.fromString( template ) );
+                var grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+                if( errorStrategy == ErrorStrategy.ERROR ) {
+                    lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+                    grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
-                var elements = grammar.elements(aliases).ret;
-                log.trace("\n" + elements.print());
+                var elements = grammar.elements( aliases ).ret;
+                log.trace( "\n" + elements.print() );
 
 
-                AstRenderRoot ast = TemplateAstUtils.toAst(elements, new TemplateType(type.type()), builtInFunction, errorStrategy);
+                AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
 
-                if (postProcess != null)
-                    postProcess.accept(ast);
+                if( postProcess != null )
+                    postProcess.accept( ast );
 
-                log.trace("\n" + ast.print());
+                log.trace( "\n" + ast.print() );
 
-                var tf = new JavaTemplate<>(name + '_' + id, template, type, tmpPath, acc, ast);
-                return new TemplateFunction(tf, new Exception().getStackTrace());
-            });
+                var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
+                return new TemplateFunction( tf, new Exception().getStackTrace() );
+            } );
 
-            return (Template<TIn, TOut, TOutMutable, TA>) tFunc.template;
-        } catch (UncheckedExecutionException | ExecutionException e) {
-            if (e.getCause() instanceof TemplateException) {
-                throw (TemplateException) e.getCause();
+            return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
+        } catch( UncheckedExecutionException | ExecutionException e ) {
+            if( e.getCause() instanceof TemplateException ) {
+                throw ( TemplateException ) e.getCause();
             }
-            throw new TemplateException(e.getCause());
+            throw new TemplateException( e.getCause() );
         }
     }
 
@@ -207,20 +207,20 @@ public class TemplateEngine implements Runnable {
     public void run() {
         templates.cleanUp();
         var now = System.currentTimeMillis();
-        try (Stream<Path> stream = Files.walk(tmpPath)) {
+        try( Stream<Path> stream = Files.walk( tmpPath ) ) {
             stream
-                    .forEach(path -> {
-                        try {
-                            if (now - Files.getLastModifiedTime(path).toMillis() > ttl) {
-                                log.debug("delete {}", path);
-                                Files.deleteIfExists(path);
-                            }
-                        } catch (IOException e) {
-                            log.error("Cannot delete {}", path, e);
+                .forEach( path -> {
+                    try {
+                        if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {
+                            log.debug( "delete {}", path );
+                            Files.deleteIfExists( path );
                         }
-                    });
-        } catch (IOException e) {
-            log.error("Could not walk through " + tmpPath, e);
+                    } catch( IOException e ) {
+                        log.error( "Cannot delete {}", path, e );
+                    }
+                } );
+        } catch( IOException e ) {
+            log.error( "Could not walk through " + tmpPath, e );
         }
     }
 
@@ -229,7 +229,7 @@ public class TemplateEngine implements Runnable {
         public final Template<?, ?, ?, ?> template;
         public final StackTraceElement[] stackTrace;
 
-        public TemplateFunction(Template<?, ?, ?, ?> template, StackTraceElement[] stackTrace) {
+        public TemplateFunction( Template<?, ?, ?, ?> template, StackTraceElement[] stackTrace ) {
             this.template = template;
             this.stackTrace = stackTrace;
         }
