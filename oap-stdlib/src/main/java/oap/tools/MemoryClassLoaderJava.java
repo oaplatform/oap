@@ -68,10 +68,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         if( diskCache != null ) {
             var sourceFile = diskCache.resolve( classname + ".java" );
             var classFile = diskCache.resolve( classname + ".class" );
-            if(
-                Files.exists( sourceFile )
-                    && filecontent.equals( oap.io.Files.readString( sourceFile ) )
-                    && Files.exists( classFile ) ) {
+            if( Files.exists( classFile ) ) {
 
                 log.trace( "found: {}", classname );
 
