@@ -29,7 +29,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -177,7 +175,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
         } catch( Exception e ) {
-            if( e.getCause() instanceof TemplateException te) {
+            if( e.getCause() instanceof TemplateException te ) {
                 throw te;
             }
             throw new TemplateException( e.getCause() );

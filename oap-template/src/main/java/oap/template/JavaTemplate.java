@@ -81,7 +81,7 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
                 }
                 log.info( "Returned cached class loader for '{}', content md5 {}, path {}."
                         + "\nGiven content md5 {}, path {}", fullTemplateName, Hash.md5( v.source ), v.cacheFile,
-                        Hash.md5(fileContent), cacheFile );
+                        Hash.md5( fileContent ), cacheFile );
                 return v;
             } );
             cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> )
