@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -141,8 +142,8 @@ public class TemplateEngine implements Runnable, AutoCloseable {
     @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
-        assert template != null;
-        assert acc != null;
+        Objects.requireNonNull( template );
+        Objects.requireNonNull( acc );
 
         Hasher hasher = Hashing.murmur3_128().newHasher();
         hasher
@@ -175,9 +176,9 @@ public class TemplateEngine implements Runnable, AutoCloseable {
             } );
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
-        } catch( UncheckedExecutionException | ExecutionException e ) {
-            if( e.getCause() instanceof TemplateException ) {
-                throw ( TemplateException ) e.getCause();
+        } catch( Exception e ) {
+            if( e.getCause() instanceof TemplateException te) {
+                throw te;
             }
             throw new TemplateException( e.getCause() );
         }
