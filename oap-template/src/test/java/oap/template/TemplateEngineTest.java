@@ -47,6 +47,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TemplateEngineTest extends Fixtures {
     private TemplateEngine engine;
+    private TemplateEngine engine2;
+    private TemplateEngine engine3;
     private String testMethodName;
 
     public TemplateEngineTest() {
@@ -56,6 +58,8 @@ public class TemplateEngineTest extends Fixtures {
     @BeforeClass
     public void beforeClass() {
         engine = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        engine3 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
     }
 
     @BeforeMethod
@@ -65,8 +69,19 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testRenderStringText() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ) )
+        var template1 = engine.getTemplate(testMethodName, new TypeRef<Map<String, String>>() {
+        }, "sdkjf hdkfgj d$...{}", STRING, null);
+        var template2 = engine2.getTemplate(testMethodName, new TypeRef<Map<String, String>>() {
+        }, "doromet bulla ah sodoj trimac$...{}", STRING, null);
+        var template3sameAs2 = engine3.getTemplate(testMethodName, new TypeRef<Map<String, String>>() {
+        }, "doromet bulla ah sodoj trimac$...{}", STRING, null);
+        assertThat( template1.render( null ) )
             .isEqualTo( "sdkjf hdkfgj d$...{}" );
+        assertThat( template2.render( null ) )
+                .isEqualTo( "doromet bulla ah sodoj trimac$...{}" );
+        assertThat( template3sameAs2.render( null ) )
+                .isEqualTo( "doromet bulla ah sodoj trimac$...{}" );
+
     }
 
     @Test

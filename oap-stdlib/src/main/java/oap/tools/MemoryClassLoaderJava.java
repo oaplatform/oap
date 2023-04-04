@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static oap.io.content.ContentWriter.ofBytes;
 import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
@@ -69,9 +70,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
             var sourceFile = diskCache.resolve( classname + ".java" );
             var classFile = diskCache.resolve( classname + ".class" );
             if( Files.exists( classFile ) ) {
-
-                log.trace( "found: {}", classname );
-
+                log.trace( "template class '{}' found", classname );
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
                 manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
@@ -80,23 +79,26 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
                 METRICS_DISK.increment();
             } else {
-                log.trace( "not found: {} -> {}", classname, sourceFile );
+                log.trace( "template class '{}' not found, source '{}'", classname, sourceFile );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             }
         } else {
+            log.trace( "template class as given source '{}' ", classname );
             list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
         }
 
         if( list.isEmpty() ) {
             try {
                 findClass( classname );
-            } catch( ClassFormatError e ) {
-                log.trace( e.getMessage(), e );
+            } catch( ClassFormatError cfe ) {
+                log.trace( "Invalid class '{}'", classname, cfe );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             } catch( ClassNotFoundException ignored ) {
+                log.trace( "Class '{}' not found", classname, ignored );
             }
         }
 
+        // now list contains sources of templates
         if( !list.isEmpty() ) {
             var out = new StringWriter();
             var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
@@ -110,23 +112,23 @@ public class MemoryClassLoaderJava extends ClassLoader {
                         try {
                             oap.io.Files.write( javaFile, source.content, ofString() );
                             var bytes = manager.map.get( source.originalName ).toByteArray();
-                            oap.io.Files.write( classFile, bytes );
+                            oap.io.Files.write( classFile, bytes, ofBytes() );
                         } catch( Exception e ) {
+                            log.warn( "Template error found, deleting template '{}'", source.originalName );
                             oap.io.Files.delete( javaFile );
                             oap.io.Files.delete( classFile );
                         }
                     }
                 }
-                if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+                if( !out.getBuffer().isEmpty() ) log.debug( "source '" + out + "' is compiled" );
             } else {
                 METRICS_ERROR.increment();
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
-                        System.err.println( a );
-                        log.error( "{}", a );
+                        log.error( "Could not compile '{}'", a );
                     }
                 } );
-                if( out.toString().length() > 0 ) log.error( out.toString() );
+                if( !out.getBuffer().isEmpty() ) log.error( "Compiler error: {}", out.toString() );
             }
         }
     }
@@ -136,9 +138,11 @@ public class MemoryClassLoaderJava extends ClassLoader {
         synchronized( manager ) {
             var mc = manager.map.remove( name );
             if( mc != null ) {
+                log.info( "Looking for class {}, defining class {}...", name, name );
                 var array = mc.toByteArray();
                 return defineClass( name, array, 0, array.length );
             }
+            log.info( "Looking for class {}...", name );
         }
         return super.findClass( name );
     }

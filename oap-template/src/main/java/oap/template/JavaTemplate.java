@@ -27,12 +27,15 @@ package oap.template;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
 import oap.tools.MemoryClassLoaderJava;
+import oap.util.Hash;
 import oap.util.function.TriConsumer;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -42,6 +45,14 @@ import static java.util.stream.Collectors.joining;
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
     private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
+
+    private static ConcurrentMap<String, Holder> classLoaders = new ConcurrentHashMap<>();
+
+    private static class Holder {
+        MemoryClassLoaderJava classLoader;
+        String source;
+        Path cacheFile;
+    }
 
     @SuppressWarnings( "unchecked" )
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
@@ -58,11 +69,27 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
-            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
-                .loadClass( fullTemplateName )
-                .getDeclaredConstructor()
-                .newInstance();
+            var mcl = classLoaders.compute( fullTemplateName, ( k, v ) -> {
+                String fileContent = render.out();
+                if ( v == null ) {
+                    log.info( "Created new class loader for '{}'", fullTemplateName );
+                    Holder holder = new Holder();
+                    holder.classLoader = new MemoryClassLoaderJava( fullTemplateName, fileContent, cacheFile );
+                    holder.source = fileContent;
+                    holder.cacheFile = cacheFile;
+                    return holder;
+                }
+                log.info( "Returned cached class loader for '{}', content md5 {}, path {}."
+                        + "\nGiven content md5 {}, path {}", fullTemplateName, Hash.md5( v.source ), v.cacheFile,
+                        Hash.md5(fileContent), cacheFile );
+                return v;
+            } );
+            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> )
+                    mcl.classLoader
+                            .loadClass( fullTemplateName )
+                            .getDeclaredConstructor()
+                            .newInstance();
+            log.info( "Class {} is loaded with classloader {}", fullTemplateName, mcl.classLoader.hashCode() );
         } catch( Exception e ) {
             throw new TemplateException( e );
         }

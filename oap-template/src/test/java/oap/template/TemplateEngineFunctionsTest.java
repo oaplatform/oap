@@ -42,7 +42,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     private TemplateEngine engine;
     private String testMethodName;
 
-    {
+    public TemplateEngineFunctionsTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
