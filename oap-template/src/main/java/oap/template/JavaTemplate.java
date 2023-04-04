@@ -26,6 +26,7 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
+import oap.tools.CommonForTemplatesClassLoader;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 
@@ -43,6 +44,8 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
 
+    public static final CommonForTemplatesClassLoader classLoader = new CommonForTemplatesClassLoader();
+
     @SuppressWarnings( "unchecked" )
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
         this.acc = acc;
@@ -58,11 +61,12 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
+            var mcl = new MemoryClassLoaderJava( classLoader, fullTemplateName, render.out(), cacheFile );
             cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
                 .loadClass( fullTemplateName )
                 .getDeclaredConstructor()
                 .newInstance();
+            log.info( "Class {} is loaded with classloader {}", fullTemplateName, mcl.getClassLoader().hashCode() );
         } catch( Exception e ) {
             throw new TemplateException( e );
         }

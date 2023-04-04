@@ -33,114 +33,115 @@ import org.joda.time.DateTimeUtils;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
-import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
-import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import static oap.io.Files.delete;
+import static oap.io.Files.setLastModifiedTime;
+import static oap.io.Files.write;
+import static oap.io.content.ContentWriter.ofBytes;
 import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
-public class MemoryClassLoaderJava extends ClassLoader {
+public class MemoryClassLoaderJava {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
     private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
-    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final MemoryFileManager manager = new MemoryFileManager( compiler );
+    private final CommonForTemplatesClassLoader classLoader;
 
-    public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
+    public Class<?> loadClass( String name ) throws ClassNotFoundException {
+        return classLoader.loadClass( name );
+    }
+
+    private static class DiskCachedFiles {
+        Path sourceFile;
+        Path classFile;
+        boolean classFileExists;
+        boolean sourceFileExists;
+    }
+
+    public MemoryClassLoaderJava( CommonForTemplatesClassLoader classLoaderArg, String classname, String filecontent, Path diskCache ) {
+        this.classLoader = classLoaderArg == null
+                ? new CommonForTemplatesClassLoader()
+                : classLoaderArg;
+
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        List<Source> list = new ArrayList<>();
+        Source notCompiledSource = null;
 
+        DiskCachedFiles files = new DiskCachedFiles();
         if( diskCache != null ) {
-            var sourceFile = diskCache.resolve( classname + ".java" );
-            var classFile = diskCache.resolve( classname + ".class" );
-            if( Files.exists( classFile ) ) {
-
-                log.trace( "found: {}", classname );
-
-                var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
-                manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
+            files.sourceFile = diskCache.resolve( classname + ".java" );
+            files.classFile = diskCache.resolve( classname + ".class" );
+            files.classFileExists = Files.exists( files.classFile );
+            if( files.classFileExists ) {
+                log.trace( "template class '{}' found", classname );
+                var bytes = oap.io.Files.read( files.classFile, ContentReader.ofBytes() );
+                classLoader.manager.putAsCompiledClass( classname, bytes );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
-                oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
-                oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
+                setLastModifiedTime( files.sourceFile, currentTimeMillis );
+                setLastModifiedTime( files.classFile, currentTimeMillis );
 
                 METRICS_DISK.increment();
             } else {
-                log.trace( "not found: {} -> {}", classname, sourceFile );
-                list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
+                log.trace( "template class '{}' not found, source '{}'", classname, files.sourceFile );
+                notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
             }
         } else {
-            list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
+            log.trace( "template class as given source '{}' ", classname );
+            notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
         }
 
-        if( list.isEmpty() ) {
+        if( notCompiledSource == null ) {
             try {
-                findClass( classname );
-            } catch( ClassFormatError e ) {
-                log.trace( e.getMessage(), e );
-                list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
+                classLoader.findClass( classname );
+            } catch( ClassFormatError cfe ) {
+                log.trace( "Invalid class '{}'", classname, cfe );
+                notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
             } catch( ClassNotFoundException ignored ) {
+                log.trace( "Class '{}' not found", classname, ignored );
             }
         }
 
-        if( !list.isEmpty() ) {
+        // now notCompiledSources contains sources of templates
+        if( notCompiledSource != null ) {
             var out = new StringWriter();
-            var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
+            var task = classLoader.compiler.getTask( out, classLoader.manager, diagnostics, List.of(), null, List.of( notCompiledSource ) );
             if( task.call() ) {
+                //do compile
                 METRICS_COMPILE.increment();
                 if( diskCache != null ) {
-                    for( var source : list ) {
-                        var javaFile = diskCache.resolve( source.originalName + ".java" );
-                        var classFile = diskCache.resolve( source.originalName + ".class" );
-
-                        try {
-                            oap.io.Files.write( javaFile, source.content, ofString() );
-                            var bytes = manager.map.get( source.originalName ).toByteArray();
-                            oap.io.Files.write( classFile, bytes );
-                        } catch( Exception e ) {
-                            oap.io.Files.delete( javaFile );
-                            oap.io.Files.delete( classFile );
-                        }
+                    files.sourceFile = diskCache.resolve( notCompiledSource.originalName + ".java" );
+                    files.classFile = diskCache.resolve( notCompiledSource.originalName + ".class" );
+                    try {
+                        write( files.sourceFile, notCompiledSource.content, ofString() );
+                        files.sourceFileExists = true;
+                        var bytes = classLoader.manager.getAsClass( notCompiledSource.originalName, false );
+                        write( files.classFile, bytes, ofBytes() );
+                        files.classFileExists = true;
+                    } catch( Exception e ) {
+                        log.warn( "Template error found, deleting template source&class '{}'", notCompiledSource.originalName );
+                        if ( files.sourceFileExists ) delete( files.sourceFile );
+                        if ( files.classFileExists ) delete( files.classFile );
                     }
                 }
-                if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+                if( !out.getBuffer().isEmpty() ) log.debug( "source '" + out + "' is compiled" );
             } else {
                 METRICS_ERROR.increment();
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
-                        System.err.println( a );
-                        log.error( "{}", a );
+                        log.error( "Could not compile '{}'", a );
                     }
                 } );
-                if( out.toString().length() > 0 ) log.error( out.toString() );
+                if( !out.getBuffer().isEmpty() ) log.error( "Compiler error: {}", out.toString() );
             }
         }
-    }
-
-    @Override
-    protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( manager ) {
-            var mc = manager.map.remove( name );
-            if( mc != null ) {
-                var array = mc.toByteArray();
-                return defineClass( name, array, 0, array.length );
-            }
-        }
-        return super.findClass( name );
     }
 
     private static class Source extends SimpleJavaFileObject {
@@ -159,7 +160,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    private static class Output extends SimpleJavaFileObject {
+    static class Output extends SimpleJavaFileObject {
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         Output( String name, Kind kind ) {
@@ -183,18 +184,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-        private final Map<String, Output> map = new HashMap<>();
-
-        MemoryFileManager( JavaCompiler compiler ) {
-            super( compiler.getStandardFileManager( null, null, null ) );
-        }
-
-        @Override
-        public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
-            var mc = new Output( name, kind );
-            this.map.put( name, mc );
-            return mc;
-        }
+    public CommonForTemplatesClassLoader getClassLoader() {
+        return classLoader;
     }
 }
