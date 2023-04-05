@@ -202,6 +202,10 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                     writeResponse( exchange, STATUS_ALREADY_WRITTEN, clientId, md5 );
                 }
             }
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
+            log.error( "exchange {}: {}", exchange, e.getMessage() );
+            throw e;
         }
     }
 
