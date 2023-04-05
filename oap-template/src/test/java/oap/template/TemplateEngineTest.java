@@ -69,19 +69,18 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testRenderStringText() {
-        var template1 = engine.getTemplate(testMethodName, new TypeRef<Map<String, String>>() {
-        }, "sdkjf hdkfgj d$...{}", STRING, null);
-        var template2 = engine2.getTemplate(testMethodName, new TypeRef<Map<String, String>>() {
-        }, "doromet bulla ah sodoj trimac$...{}", STRING, null);
-        var template3sameAs2 = engine3.getTemplate(testMethodName, new TypeRef<Map<String, String>>() {
-        }, "doromet bulla ah sodoj trimac$...{}", STRING, null);
+        var template1 = engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
+        }, "sdkjf hdkfgj d$...{}", STRING, null );
+        var template2 = engine2.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
+        }, "doromet bulla ah sodoj trimac$...{}", STRING, null );
+        var template3sameAs2 = engine3.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
+        }, "doromet bulla ah sodoj trimac$...{}", STRING, null );
         assertThat( template1.render( null ) )
             .isEqualTo( "sdkjf hdkfgj d$...{}" );
         assertThat( template2.render( null ) )
                 .isEqualTo( "doromet bulla ah sodoj trimac$...{}" );
         assertThat( template3sameAs2.render( null ) )
                 .isEqualTo( "doromet bulla ah sodoj trimac$...{}" );
-
     }
 
     @Test
