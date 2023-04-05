@@ -82,7 +82,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
             files.classFile = diskCache.resolve( classname + ".class" );
             files.classFileExists = Files.exists( files.classFile );
             if( files.classFileExists ) {
-                log.trace( "template class '{}' found", classname );
+//                log.trace( "template class '{}' found", classname );
                 var bytes = oap.io.Files.read( files.classFile, ContentReader.ofBytes() );
                 manager.putAsCompiledClass( classname, bytes );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
@@ -91,11 +91,11 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
                 METRICS_DISK.increment();
             } else {
-                log.trace( "template class '{}' not found, source '{}'", classname, files.sourceFile );
+//                log.trace( "template class '{}' not found, source '{}'", classname, files.sourceFile );
                 notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
             }
         } else {
-            log.trace( "template class as given source '{}' ", classname );
+//            log.trace( "template class as given source '{}' ", classname );
             notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
         }
 
@@ -103,10 +103,10 @@ public class MemoryClassLoaderJava extends ClassLoader {
             try {
                 findClass( classname );
             } catch( ClassFormatError cfe ) {
-                log.trace( "Invalid class '{}'", classname, cfe );
+                log.warn( "Invalid class '{}'", classname, cfe );
                 notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
             } catch( ClassNotFoundException ignored ) {
-                log.trace( "Class '{}' not found", classname, ignored );
+                log.warn( "Class '{}' not found", classname, ignored );
             }
         }
 
@@ -150,10 +150,10 @@ public class MemoryClassLoaderJava extends ClassLoader {
         synchronized( manager ) {
             var mc = manager.getAsClass( name, true );
             if( mc != null ) {
-                log.info( "Looking for class {}, defining class {}...", name, name );
+//                log.trace( "Looking for class {}, defining class {}...", name, name );
                 return defineClass( name, mc, 0, mc.length );
             }
-            log.info( "Looking for class {}...", name );
+//            log.trace( "Looking for class {}...", name );
         }
         return super.findClass( name );
     }

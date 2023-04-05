@@ -20,3 +20,5 @@ kotlinc.xml
 /.idea/jarRepositories.xml
 /.idea/jsLibraryMappings.xml
 /.idea/runConfigurations.xml
+/.idea/sonarlint/*
+/codemr/*

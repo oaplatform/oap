@@ -27,19 +27,12 @@ package oap.template;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
 import oap.tools.MemoryClassLoaderJava;
-import oap.util.Hash;
 import oap.util.function.TriConsumer;
-
-import java.io.BufferedReader;
-import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-
-import static java.util.stream.Collectors.joining;
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
@@ -61,27 +54,23 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             var render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
 
-            var line = new AtomicInteger( 0 );
-            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
-                .lines()
-                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
-                .collect( joining( "\n" ) )
-            );
+//            var line = new AtomicInteger( 0 );
+//            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
+//                .lines()
+//                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
+//                .collect( joining( "\n" ) )
+//            );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
             var mcl = classLoaders.compute( fullTemplateName, ( k, v ) -> {
                 String fileContent = render.out();
                 if ( v == null ) {
-                    log.info( "Created new class loader for '{}'", fullTemplateName );
                     Holder holder = new Holder();
                     holder.classLoader = new MemoryClassLoaderJava( fullTemplateName, fileContent, cacheFile );
                     holder.source = fileContent;
                     holder.cacheFile = cacheFile;
                     return holder;
                 }
-                log.info( "Returned cached class loader for '{}', content md5 {}, path {}."
-                        + "\nGiven content md5 {}, path {}", fullTemplateName, Hash.md5( v.source ), v.cacheFile,
-                        Hash.md5( fileContent ), cacheFile );
                 return v;
             } );
             cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> )
@@ -89,7 +78,6 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
                             .loadClass( fullTemplateName )
                             .getDeclaredConstructor()
                             .newInstance();
-            log.info( "Class {} is loaded with classloader {}", fullTemplateName, mcl.classLoader.hashCode() );
         } catch( Exception e ) {
             throw new TemplateException( e );
         }
