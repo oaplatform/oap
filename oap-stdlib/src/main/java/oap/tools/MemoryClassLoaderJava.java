@@ -33,22 +33,14 @@ import org.joda.time.DateTimeUtils;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
-import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
-import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static oap.io.Files.delete;
 import static oap.io.Files.setLastModifiedTime;
@@ -71,7 +63,11 @@ public class MemoryClassLoaderJava extends ClassLoader {
     }
 
     public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
-        classLoaderJava = new CommonForTemplatesClassLoader();
+        this( new CommonForTemplatesClassLoader(), classname, filecontent, diskCache );
+    }
+
+    public MemoryClassLoaderJava( CommonForTemplatesClassLoader classLoader, String classname, String filecontent, Path diskCache ) {
+        classLoaderJava = classLoader;
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         Source notCompiledSource = null;
 

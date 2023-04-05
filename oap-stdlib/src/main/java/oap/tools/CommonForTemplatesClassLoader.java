@@ -17,26 +17,25 @@ import java.util.concurrent.ConcurrentMap;
 public class CommonForTemplatesClassLoader extends ClassLoader {
     private final Set<String> loadedClasses = new HashSet<>();
     protected JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    protected MemoryFileManager manager = new MemoryFileManager( compiler );
-    private final Object sync = new Object();
+    protected final MemoryFileManager manager = new MemoryFileManager( compiler );
 
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( sync ) {
-            if ( loadedClasses.add( name ) && manager != null ) {
+        synchronized( manager ) {
+            if ( loadedClasses.add( name ) ) {
                 var mc = manager.getAsClass( name, true );
                 if ( mc != null ) {
-                    log.info( "Looking for class {}, defining class {}...", name, name );
+//                    log.info( "Looking for class {}, defining class {}...", name, name );
                     return defineClass( name, mc, 0, mc.length );
                 }
             }
-            log.info( "Looking for class {}...", name );
+//            log.info( "Looking for class {}...", name );
         }
         return super.findClass( name );
     }
 
     public Set<String> getLoadedClasses() {
-        synchronized ( sync ) {
+        synchronized ( manager ) {
             return loadedClasses;
         }
     }
