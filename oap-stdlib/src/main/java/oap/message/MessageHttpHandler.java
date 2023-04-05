@@ -138,9 +138,12 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         }
 
         for( var listener : listeners ) {
+            log.info( "Listener type {} info {}", listener.getId(), listener.getInfo() );
+
             var d = this.map.put( listener.getId(), listener );
-            if( d != null )
+            if( d != null ) {
                 throw new IllegalArgumentException( "duplicate [" + listener.getInfo() + ", " + d.getInfo() + "]" );
+            }
         }
     }
 
