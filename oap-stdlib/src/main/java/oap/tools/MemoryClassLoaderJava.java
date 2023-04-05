@@ -33,35 +33,36 @@ import org.joda.time.DateTimeUtils;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
-import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
-import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
-public class MemoryClassLoaderJava extends ClassLoader {
+public class MemoryClassLoaderJava {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
     private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
-    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final MemoryFileManager manager = new MemoryFileManager( compiler );
+    private CommonTemplateClassLoader classLoader;
 
     public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
+        this( new CommonTemplateClassLoader(), classname, filecontent, diskCache );
+    }
+
+    public Class<?> loadClass( String name ) throws ReflectiveOperationException {
+        return classLoader.loadClass( name );
+    }
+
+    public MemoryClassLoaderJava( CommonTemplateClassLoader classLoader, String classname, String filecontent, Path diskCache ) {
+        this.classLoader = classLoader;
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         List<Source> list = new ArrayList<>();
 
@@ -70,17 +71,17 @@ public class MemoryClassLoaderJava extends ClassLoader {
             var classFile = diskCache.resolve( classname + ".class" );
             if( Files.exists( classFile ) ) {
 
-                log.trace( "found: {}", classname );
+//                log.trace( "found: {}", classname );
 
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
-                manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
+                classLoader.manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
                 oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
 
                 METRICS_DISK.increment();
             } else {
-                log.trace( "not found: {} -> {}", classname, sourceFile );
+//                log.trace( "not found: {} -> {}", classname, sourceFile );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             }
         } else {
@@ -89,18 +90,18 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
         if( list.isEmpty() ) {
             try {
-                findClass( classname );
+                classLoader.findClass( classname );
             } catch( ClassFormatError e ) {
-                log.trace( e.getMessage(), e );
+                log.error( "Error in class {}", classname, e );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             } catch( ClassNotFoundException ignored ) {
+                log.error( "not found class {}", classname  );
             }
         }
 
         if( !list.isEmpty() ) {
             var out = new StringWriter();
-            var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
-            if( task.call() ) {
+            if( classLoader.compile( out, diagnostics, list ) ) {
                 METRICS_COMPILE.increment();
                 if( diskCache != null ) {
                     for( var source : list ) {
@@ -109,7 +110,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
                         try {
                             oap.io.Files.write( javaFile, source.content, ofString() );
-                            var bytes = manager.map.get( source.originalName ).toByteArray();
+                            var bytes = classLoader.manager.map.get( source.originalName ).toByteArray();
                             oap.io.Files.write( classFile, bytes );
                         } catch( Exception e ) {
                             oap.io.Files.delete( javaFile );
@@ -122,28 +123,16 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 METRICS_ERROR.increment();
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
-                        System.err.println( a );
-                        log.error( "{}", a );
+//                        System.err.println( a );
+                        log.error( "compilation error {}", a );
                     }
                 } );
-                if( out.toString().length() > 0 ) log.error( out.toString() );
+//                if( out.toString().length() > 0 ) log.error( out.toString() );
             }
         }
     }
 
-    @Override
-    protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( manager ) {
-            var mc = manager.map.remove( name );
-            if( mc != null ) {
-                var array = mc.toByteArray();
-                return defineClass( name, array, 0, array.length );
-            }
-        }
-        return super.findClass( name );
-    }
-
-    private static class Source extends SimpleJavaFileObject {
+    static class Source extends SimpleJavaFileObject {
         final String originalName;
         private final String content;
 
@@ -159,7 +148,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    private static class Output extends SimpleJavaFileObject {
+    static class Output extends SimpleJavaFileObject {
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         Output( String name, Kind kind ) {
@@ -180,21 +169,6 @@ public class MemoryClassLoaderJava extends ClassLoader {
         @Override
         public ByteArrayOutputStream openOutputStream() {
             return this.baos;
-        }
-    }
-
-    private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-        private final Map<String, Output> map = new HashMap<>();
-
-        MemoryFileManager( JavaCompiler compiler ) {
-            super( compiler.getStandardFileManager( null, null, null ) );
-        }
-
-        @Override
-        public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
-            var mc = new Output( name, kind );
-            this.map.put( name, mc );
-            return mc;
         }
     }
 }

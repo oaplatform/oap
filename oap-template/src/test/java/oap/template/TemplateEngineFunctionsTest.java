@@ -24,6 +24,8 @@
 
 package oap.template;
 
+import com.google.common.base.Joiner;
+import oap.concurrent.Executors;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -32,7 +34,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,6 +69,50 @@ public class TemplateEngineFunctionsTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM()}", STRING, null ).render( c ) )
             .isEqualTo( "val2" );
     }
+
+    @Test
+    public void testLargeMapProperty() throws Exception {
+        Map<String, String> map = new HashMap<>();
+
+
+        String text = Joiner.on( "\n" ).join( IntStream
+                .range( 1, 1_0 )
+                .mapToObj( i -> {
+                    map.put( "prop" + i, "val" + i );
+                    return "$${prop" + i + "} = ${prop" + i + "}";
+                } )
+                .toList() );
+        var template = engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
+        }, text, STRING, null );
+
+        System.err.println( "10 sec preparation..." );
+        Thread.currentThread().sleep( 10_000 );
+        System.err.println( "starting..." );
+
+        ExecutorService service = Executors.newFixedThreadPool( 10 );
+
+        for ( int i = 1; i < 50; i++ ) {
+            int counter = i;
+            service.submit( () -> {
+                if ( counter % 5 == 0 ) System.err.println( "process #" + counter );
+                String subText = "template_" + counter + ".\n" + text;
+                var subTemplate = engine.getTemplate( testMethodName + counter, new TypeRef<Map<String, String>>() {
+                }, subText, STRING, null );
+            } );
+        }
+        service.shutdown();
+        service.awaitTermination( 30, TimeUnit.MINUTES );
+        System.gc();
+//        JavaTemplate.classLoader.reInit();
+
+//        template = null;
+        engine = null;
+        System.gc();
+
+        System.err.println( "finishing..." );
+        Thread.currentThread().sleep( 1_800_000 );
+    }
+
 
     @Test
     public void testMethodWithIntParameter() {
