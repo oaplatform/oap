@@ -199,6 +199,10 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                             log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
                             Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
                             writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
+                        } catch( Throwable e ) {
+                            log.error( "[" + clientHostPort + "] FATAL:" + e.getMessage(), e );
+                            Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
+                            writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                         }
                     }
                 } else {
