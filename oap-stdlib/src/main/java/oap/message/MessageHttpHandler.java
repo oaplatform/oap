@@ -117,9 +117,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     }
 
     public void preStart() {
-        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}'",
+        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}' port {}",
             controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
-            clientHashCacheSize, context );
+            clientHashCacheSize, context, port );
 
         hashes = new MessageHashStorage( clientHashCacheSize );
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
@@ -146,6 +146,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        if( log.isTraceEnabled() )
+            log.trace( "new message {}", exchange );
+
         try( var in = new DataInputStream( exchange.getInputStream() ) ) {
             InetSocketAddress peerAddress = ( InetSocketAddress ) exchange.exchange.getConnection().getPeerAddress();
             var hostName = peerAddress.getHostName();
