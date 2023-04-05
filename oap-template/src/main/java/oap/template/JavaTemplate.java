@@ -26,6 +26,7 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
+import oap.tools.CommonTemplateClassLoader;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 
@@ -38,6 +39,8 @@ import java.util.function.Supplier;
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
     private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
+
+    private CommonTemplateClassLoader classLoader = new CommonTemplateClassLoader();
 
     @SuppressWarnings( "unchecked" )
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {

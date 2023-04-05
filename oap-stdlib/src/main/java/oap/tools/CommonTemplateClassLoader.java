@@ -1,5 +1,7 @@
 package oap.tools;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
@@ -12,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class CommonTemplateClassLoader extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     final MemoryFileManager manager = new MemoryFileManager( compiler );
@@ -29,6 +32,7 @@ public class CommonTemplateClassLoader extends ClassLoader {
     }
 
     public Boolean compile( StringWriter out, DiagnosticCollector<JavaFileObject> diagnostics, List<MemoryClassLoaderJava.Source> list ) {
+        log.info( "!!! compile " + list );
         var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
         return task.call();
     }

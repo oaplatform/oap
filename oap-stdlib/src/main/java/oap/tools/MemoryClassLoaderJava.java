@@ -57,10 +57,6 @@ public class MemoryClassLoaderJava {
         this( new CommonTemplateClassLoader(), classname, filecontent, diskCache );
     }
 
-    public Class<?> loadClass( String name ) throws ReflectiveOperationException {
-        return classLoader.loadClass( name );
-    }
-
     public MemoryClassLoaderJava( CommonTemplateClassLoader classLoader, String classname, String filecontent, Path diskCache ) {
         this.classLoader = classLoader;
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -113,8 +109,10 @@ public class MemoryClassLoaderJava {
                             var bytes = classLoader.manager.map.get( source.originalName ).toByteArray();
                             oap.io.Files.write( classFile, bytes );
                         } catch( Exception e ) {
+                            log.error( "Invalid write into {} or {}", javaFile, classFile, e );
                             oap.io.Files.delete( javaFile );
                             oap.io.Files.delete( classFile );
+                            throw e;
                         }
                     }
                 }
@@ -130,6 +128,10 @@ public class MemoryClassLoaderJava {
 //                if( out.toString().length() > 0 ) log.error( out.toString() );
             }
         }
+    }
+
+    public Class<?> loadClass( String name ) throws ReflectiveOperationException {
+        return classLoader.loadClass( name );
     }
 
     static class Source extends SimpleJavaFileObject {
