@@ -183,7 +183,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                         var data = in.readNBytes( size );
                         short status;
                         try {
+                            log.trace( "handler {}...", listener.getId() );
                             status = listener.run( messageVersion, hostName, size, data, md5 );
+                            log.trace( "handler {}... Done. Status {}", listener.getId(), status );
 
                             writeResponse( exchange, status, clientId, md5 );
                             if( status == STATUS_OK ) {
