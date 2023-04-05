@@ -30,22 +30,12 @@ import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
     private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
-
-    private static ConcurrentMap<String, Holder> classLoaders = new ConcurrentHashMap<>();
-
-    private static class Holder {
-        MemoryClassLoaderJava classLoader;
-        String source;
-        Path cacheFile;
-    }
 
     @SuppressWarnings( "unchecked" )
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
@@ -62,22 +52,12 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
 //            );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            var mcl = classLoaders.compute( fullTemplateName, ( k, v ) -> {
-                String fileContent = render.out();
-                if ( v == null ) {
-                    Holder holder = new Holder();
-                    holder.classLoader = new MemoryClassLoaderJava( fullTemplateName, fileContent, cacheFile );
-                    holder.source = fileContent;
-                    holder.cacheFile = cacheFile;
-                    return holder;
-                }
-                return v;
-            } );
-            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> )
-                    mcl.classLoader
-                            .loadClass( fullTemplateName )
-                            .getDeclaredConstructor()
-                            .newInstance();
+            var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
+
+            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
+                .loadClass( fullTemplateName )
+                .getDeclaredConstructor()
+                .newInstance();
         } catch( Exception e ) {
             throw new TemplateException( e );
         }

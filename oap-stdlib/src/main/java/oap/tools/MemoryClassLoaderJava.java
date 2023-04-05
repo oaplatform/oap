@@ -62,9 +62,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
-    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final MemoryFileManager manager = new MemoryFileManager( compiler );
-
+    private final CommonForTemplatesClassLoader classLoaderJava;
     private static class DiskCachedFiles {
         Path sourceFile;
         Path classFile;
@@ -73,6 +71,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
     }
 
     public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
+        classLoaderJava = new CommonForTemplatesClassLoader();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         Source notCompiledSource = null;
 
@@ -84,7 +83,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
             if( files.classFileExists ) {
 //                log.trace( "template class '{}' found", classname );
                 var bytes = oap.io.Files.read( files.classFile, ContentReader.ofBytes() );
-                manager.putAsCompiledClass( classname, bytes );
+                classLoaderJava.manager.putAsCompiledClass( classname, bytes );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 setLastModifiedTime( files.sourceFile, currentTimeMillis );
                 setLastModifiedTime( files.classFile, currentTimeMillis );
@@ -113,7 +112,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         // now notCompiledSources contains sources of templates
         if( notCompiledSource != null ) {
             var out = new StringWriter();
-            var task = compiler.getTask( out, manager, diagnostics, List.of(), null, List.of( notCompiledSource ) );
+            var task = classLoaderJava.compiler.getTask( out, classLoaderJava.manager, diagnostics, List.of(), null, List.of( notCompiledSource ) );
             if( task.call() ) {
                 //do compile
                 METRICS_COMPILE.increment();
@@ -123,7 +122,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
                     try {
                         write( files.sourceFile, notCompiledSource.content, ofString() );
                         files.sourceFileExists = true;
-                        var bytes = manager.getAsClass( notCompiledSource.originalName, false );
+                        var bytes = classLoaderJava.manager.getAsClass( notCompiledSource.originalName, false );
                         write( files.classFile, bytes, ofBytes() );
                         files.classFileExists = true;
                     } catch( Exception e ) {
@@ -132,7 +131,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
                         if ( files.classFileExists ) delete( files.classFile );
                     }
                 }
-                if( !out.getBuffer().isEmpty() ) log.debug( "source '" + out + "' is compiled" );
+                if( !out.getBuffer().isEmpty() ) log.trace( "source '" + out + "' is compiled" );
             } else {
                 METRICS_ERROR.increment();
                 diagnostics.getDiagnostics().forEach( a -> {
@@ -147,8 +146,8 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( manager ) {
-            var mc = manager.getAsClass( name, true );
+        synchronized( classLoaderJava.manager ) {
+            var mc = classLoaderJava.manager.getAsClass( name, true );
             if( mc != null ) {
 //                log.trace( "Looking for class {}, defining class {}...", name, name );
                 return defineClass( name, mc, 0, mc.length );
@@ -174,7 +173,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    private static class Output extends SimpleJavaFileObject {
+    static class Output extends SimpleJavaFileObject {
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         Output( String name, Kind kind ) {
@@ -198,29 +197,4 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-        private final Map<String, Output> internalMap = new HashMap<>();
-
-        MemoryFileManager( JavaCompiler compiler ) {
-            super( compiler.getStandardFileManager( null, null, null ) );
-        }
-
-        @Override
-        public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
-            var mc = new Output( name, kind );
-            this.internalMap.put( name, mc );
-            return mc;
-        }
-
-        public void putAsCompiledClass( String classname, byte[] bytes ) {
-            internalMap.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
-        }
-
-        public byte[] getAsClass( String classname, boolean remove ) {
-            Output output = remove ? internalMap.remove( classname ) : internalMap.get( classname );
-            return output != null && output.getKind() == JavaFileObject.Kind.CLASS
-                    ? output.toByteArray()
-                    : null;
-        }
-    }
 }
