@@ -172,7 +172,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    private static class Output extends SimpleJavaFileObject {
+    static class Output extends SimpleJavaFileObject {
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         Output( String name, Kind kind ) {
