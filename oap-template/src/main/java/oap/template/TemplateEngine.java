@@ -40,6 +40,7 @@ import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -131,16 +132,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
         Objects.requireNonNull( template );
         Objects.requireNonNull( acc );
 
-        Hasher hasher = Hashing.murmur3_128().newHasher();
-        hasher
-            .putString( template, UTF_8 )
-            .putString( acc.getClass().toString(), UTF_8 );
-
-        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
-
-        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
-
-        var id = hasher.hash().toString();
+        String id = getId( template, acc, aliases, postProcess );
 
 //        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
@@ -168,6 +160,18 @@ public class TemplateEngine implements Runnable, AutoCloseable {
             }
             throw new TemplateException( e.getCause() );
         }
+    }
+
+    @NotNull
+    private <TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> String getId( String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+        Hasher hasher = Hashing.murmur3_128().newHasher();
+        hasher
+            .putString( template, UTF_8 )
+            .putString( acc.getClass().toString(), UTF_8 );
+
+        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
+        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
+        return hasher.hash().toString();
     }
 
     public long getCacheSize() {

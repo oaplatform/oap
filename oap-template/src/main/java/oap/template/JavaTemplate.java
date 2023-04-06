@@ -30,15 +30,11 @@ import oap.tools.CommonTemplateClassLoader;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 
-import java.io.BufferedReader;
-import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.joining;
 
 
 @Slf4j
@@ -59,12 +55,12 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             var render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
 
-            var line = new AtomicInteger( 0 );
-            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
-                .lines()
-                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
-                .collect( joining( "\n" ) )
-            );
+//            var line = new AtomicInteger( 0 );
+//            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
+//                .lines()
+//                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
+//                .collect( joining( "\n" ) )
+//            );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
             var mcl = new MemoryClassLoaderJava( classLoader, fullTemplateName, render.out(), cacheFile );
