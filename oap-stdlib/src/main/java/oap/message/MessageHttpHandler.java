@@ -195,12 +195,8 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                                 log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
                                     clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
                             }
-                        } catch( Exception e ) {
-                            log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
-                            Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
-                            writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                         } catch( Throwable e ) {
-                            log.error( "[" + clientHostPort + "] FATAL:" + e.getMessage(), e );
+                            log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
                             Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
                             writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                         }
@@ -214,7 +210,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                     writeResponse( exchange, STATUS_ALREADY_WRITTEN, clientId, md5 );
                 }
             }
-        } catch( Exception e ) {
+        } catch( Throwable e ) {
             log.error( e.getMessage(), e );
             log.error( "exchange {}: {}", exchange, e.getMessage() );
             throw e;
