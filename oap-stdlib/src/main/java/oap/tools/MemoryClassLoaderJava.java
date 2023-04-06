@@ -41,18 +41,17 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-import static oap.io.Files.delete;
-import static oap.io.Files.setLastModifiedTime;
-import static oap.io.Files.write;
 import static oap.io.content.ContentWriter.ofBytes;
 import static oap.io.content.ContentWriter.ofString;
 
@@ -62,97 +61,97 @@ public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
-    private final CommonForTemplatesClassLoader classLoaderJava;
-    private static class DiskCachedFiles {
-        Path sourceFile;
-        Path classFile;
-        boolean classFileExists;
-        boolean sourceFileExists;
-    }
+    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
+    private ConcurrentMap<String, Output> compiledTemplatesClasses = new ConcurrentHashMap<>();
 
     public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
-        classLoaderJava = new CommonForTemplatesClassLoader();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        Source notCompiledSource = null;
+        List<Source> list = new ArrayList<>();
 
-        DiskCachedFiles files = new DiskCachedFiles();
         if( diskCache != null ) {
-            files.sourceFile = diskCache.resolve( classname + ".java" );
-            files.classFile = diskCache.resolve( classname + ".class" );
-            files.classFileExists = Files.exists( files.classFile );
-            if( files.classFileExists ) {
-//                log.trace( "template class '{}' found", classname );
-                var bytes = oap.io.Files.read( files.classFile, ContentReader.ofBytes() );
-                classLoaderJava.manager.putAsCompiledClass( classname, bytes );
+            var sourceFile = diskCache.resolve( classname + ".java" );
+            var classFile = diskCache.resolve( classname + ".class" );
+            if( Files.exists( classFile ) ) {
+
+//                log.trace( "found: {}", classname );
+
+                var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
+                compiledTemplatesClasses.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
-                setLastModifiedTime( files.sourceFile, currentTimeMillis );
-                setLastModifiedTime( files.classFile, currentTimeMillis );
+                oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
+                oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
 
                 METRICS_DISK.increment();
             } else {
-//                log.trace( "template class '{}' not found, source '{}'", classname, files.sourceFile );
-                notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
+//                log.trace( "not found: {} -> {}", classname, sourceFile );
+                list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             }
         } else {
-//            log.trace( "template class as given source '{}' ", classname );
-            notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
+            list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
         }
 
-        if( notCompiledSource == null ) {
+        if( list.isEmpty() ) {
             try {
                 findClass( classname );
-            } catch( ClassFormatError cfe ) {
-                log.warn( "Invalid class '{}'", classname, cfe );
-                notCompiledSource = new Source( classname, JavaFileObject.Kind.SOURCE, filecontent );
+            } catch( ClassFormatError e ) {
+                log.trace( e.getMessage(), e );
+                list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             } catch( ClassNotFoundException ignored ) {
-                log.warn( "Class '{}' not found", classname, ignored );
+                log.warn( "Cannot generate|compile|find {}", list );
             }
         }
 
-        // now notCompiledSources contains sources of templates
-        if( notCompiledSource != null ) {
+        if( !list.isEmpty() ) {
             var out = new StringWriter();
-            var task = classLoaderJava.compiler.getTask( out, classLoaderJava.manager, diagnostics, List.of(), null, List.of( notCompiledSource ) );
-            if( task.call() ) {
-                //do compile
-                METRICS_COMPILE.increment();
-                if( diskCache != null ) {
-                    files.sourceFile = diskCache.resolve( notCompiledSource.originalName + ".java" );
-                    files.classFile = diskCache.resolve( notCompiledSource.originalName + ".class" );
-                    try {
-                        write( files.sourceFile, notCompiledSource.content, ofString() );
-                        files.sourceFileExists = true;
-                        var bytes = classLoaderJava.manager.getAsClass( notCompiledSource.originalName, false );
-                        write( files.classFile, bytes, ofBytes() );
-                        files.classFileExists = true;
-                    } catch( Exception e ) {
-                        log.warn( "Template error found, deleting template source&class '{}'", notCompiledSource.originalName );
-                        if ( files.sourceFileExists ) delete( files.sourceFile );
-                        if ( files.classFileExists ) delete( files.classFile );
+            //NOTE: MemoryFileManager
+            // should have been closed after in order to prevent memory leak
+            MemoryFileManager manager = new MemoryFileManager( compiledTemplatesClasses, compiler );
+            try {
+                var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
+                if ( task.call() ) {
+                    METRICS_COMPILE.increment();
+                    if ( diskCache != null ) {
+                        for ( var source : list ) {
+                            var javaFile = diskCache.resolve( source.originalName + ".java" );
+                            var classFile = diskCache.resolve( source.originalName + ".class" );
+
+                            try {
+                                oap.io.Files.write( javaFile, source.content, ofString() );
+                                var bytes = compiledTemplatesClasses.get( source.originalName ).toByteArray();
+                                oap.io.Files.write( classFile, bytes, ofBytes() );
+                            } catch ( Exception e ) {
+                                oap.io.Files.delete( javaFile );
+                                oap.io.Files.delete( classFile );
+                            }
+                        }
                     }
+                    if ( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+                } else {
+                    METRICS_ERROR.increment();
+                    diagnostics.getDiagnostics().forEach( a -> {
+                        if ( a.getKind() == Diagnostic.Kind.ERROR ) {
+                            log.error( "Could not compile {}: {}", list, a );
+                        }
+                    } );
+                    if ( out.toString().length() > 0 ) log.error( out.toString() );
                 }
-                if( !out.getBuffer().isEmpty() ) log.trace( "source '" + out + "' is compiled" );
-            } else {
-                METRICS_ERROR.increment();
-                diagnostics.getDiagnostics().forEach( a -> {
-                    if( a.getKind() == Diagnostic.Kind.ERROR ) {
-                        log.error( "Could not compile '{}'", a );
-                    }
-                } );
-                if( !out.getBuffer().isEmpty() ) log.error( "Compiler error: {}", out.toString() );
+            } finally {
+                try {
+                    manager.close();
+                } catch ( IOException e ) {
+                    throw new RuntimeException( e );
+                }
             }
         }
     }
 
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( classLoaderJava.manager ) {
-            var mc = classLoaderJava.manager.getAsClass( name, true );
-            if( mc != null ) {
-//                log.trace( "Looking for class {}, defining class {}...", name, name );
-                return defineClass( name, mc, 0, mc.length );
-            }
-//            log.trace( "Looking for class {}...", name );
+        var mc = compiledTemplatesClasses.remove( name );
+        if( mc != null ) {
+            var array = mc.toByteArray();
+            return defineClass( name, array, 0, array.length );
         }
         return super.findClass( name );
     }
@@ -197,4 +196,19 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
+    private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+        private final Map<String, Output> compiledClasses;
+
+        MemoryFileManager( Map<String, Output> map, JavaCompiler compiler ) {
+            super( compiler.getStandardFileManager( null, null, null ) );
+            this.compiledClasses = map;
+        }
+
+        @Override
+        public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
+            var mc = new Output( name, kind );
+            compiledClasses.put( name, mc );
+            return mc;
+        }
+    }
 }

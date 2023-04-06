@@ -28,9 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
+
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Supplier;
+
+
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
@@ -53,7 +56,6 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
             var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
-
             cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
                 .loadClass( fullTemplateName )
                 .getDeclaredConstructor()
