@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.google.common.base.Joiner;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -32,7 +33,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +48,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     private TemplateEngine engine;
     private String testMethodName;
 
-    {
+    public TemplateEngineFunctionsTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
@@ -63,6 +69,46 @@ public class TemplateEngineFunctionsTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM()}", STRING, null ).render( c ) )
             .isEqualTo( "val2" );
     }
+
+    @Test
+    public void testLargeMapProperty() throws Exception {
+        Map<String, String> map = new HashMap<>();
+        String text = Joiner.on( "\n" ).join( IntStream
+                .range( 1, 1_000 )
+                .mapToObj( i -> {
+                    map.put( "prop" + i, "val" + i );
+                    return "$${prop" + i + "} = ${prop" + i + "}";
+                } )
+                .toList() );
+        var template = engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
+        }, text, STRING, null );
+
+        System.err.println( "2 sec preparation..." );
+        Thread.currentThread().sleep( 2_000 );
+        System.err.println( "starting..." );
+
+        ExecutorService service = Executors.newFixedThreadPool( 10 );
+
+        for ( int i = 1; i < 250; i++ ) {
+            int counter = i;
+            service.submit( () -> {
+                if ( counter % 5 == 0 ) System.err.println( "process #" + counter );
+                String subText = "template_" + counter + ".\n" + text;
+                var subTemplate = engine.getTemplate( testMethodName + counter, new TypeRef<Map<String, String>>() {
+                }, subText, STRING, null );
+            } );
+        }
+        service.shutdown();
+        service.awaitTermination( 6, TimeUnit.MINUTES );
+        System.gc();
+
+//        engine = null;
+//        System.gc();
+
+        System.err.println( "finishing..." );
+        Thread.currentThread().sleep( 1_800_000 );
+    }
+
 
     @Test
     public void testMethodWithIntParameter() {

@@ -166,7 +166,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                     grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
                 var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
-                log.trace( "\n" + ast.print() );
+//                log.trace( "\n" + ast.print() );
                 if( postProcess != null )
                     postProcess.accept( ast );
 

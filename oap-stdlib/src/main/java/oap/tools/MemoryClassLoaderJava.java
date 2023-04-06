@@ -41,14 +41,16 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static oap.io.content.ContentWriter.ofString;
 
@@ -59,7 +61,8 @@ public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final MemoryFileManager manager = new MemoryFileManager( compiler );
+
+    private ConcurrentMap<String, Output> compiledTemplatesClasses = new ConcurrentHashMap<>();
 
     public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -73,7 +76,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 log.trace( "found: {}", classname );
 
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
-                manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
+                compiledTemplatesClasses.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
                 oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
@@ -94,11 +97,13 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 log.trace( e.getMessage(), e );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             } catch( ClassNotFoundException ignored ) {
+                log.warn( "Cannot generate|compile|find {}", list );
             }
         }
 
         if( !list.isEmpty() ) {
             var out = new StringWriter();
+            MemoryFileManager manager = new MemoryFileManager( compiledTemplatesClasses, compiler );
             var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
             if( task.call() ) {
                 METRICS_COMPILE.increment();
@@ -109,7 +114,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
                         try {
                             oap.io.Files.write( javaFile, source.content, ofString() );
-                            var bytes = manager.map.get( source.originalName ).toByteArray();
+                            var bytes = compiledTemplatesClasses.get( source.originalName ).toByteArray();
                             oap.io.Files.write( classFile, bytes );
                         } catch( Exception e ) {
                             oap.io.Files.delete( javaFile );
@@ -122,23 +127,25 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 METRICS_ERROR.increment();
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
-                        System.err.println( a );
-                        log.error( "{}", a );
+                        log.error( "Could not compile {}: {}", list, a );
                     }
                 } );
                 if( out.toString().length() > 0 ) log.error( out.toString() );
+            }
+            try {
+                manager.close();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
             }
         }
     }
 
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( manager ) {
-            var mc = manager.map.remove( name );
-            if( mc != null ) {
-                var array = mc.toByteArray();
-                return defineClass( name, array, 0, array.length );
-            }
+        var mc = compiledTemplatesClasses.remove( name );
+        if( mc != null ) {
+            var array = mc.toByteArray();
+            return defineClass( name, array, 0, array.length );
         }
         return super.findClass( name );
     }
@@ -184,16 +191,17 @@ public class MemoryClassLoaderJava extends ClassLoader {
     }
 
     private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-        private final Map<String, Output> map = new HashMap<>();
+        private final Map<String, Output> compiledClasses;
 
-        MemoryFileManager( JavaCompiler compiler ) {
+        MemoryFileManager( Map<String, Output> map, JavaCompiler compiler ) {
             super( compiler.getStandardFileManager( null, null, null ) );
+            this.compiledClasses = map;
         }
 
         @Override
         public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
             var mc = new Output( name, kind );
-            this.map.put( name, mc );
+            compiledClasses.put( name, mc );
             return mc;
         }
     }
