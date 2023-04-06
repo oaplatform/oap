@@ -149,8 +149,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
-        if( log.isTraceEnabled() )
-            log.trace( "new message {}", exchange );
+        log.trace( "new message {}", exchange );
 
         try( var in = new DataInputStream( exchange.getInputStream() ) ) {
             InetSocketAddress peerAddress = ( InetSocketAddress ) exchange.exchange.getConnection().getPeerAddress();
