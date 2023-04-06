@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static oap.io.content.ContentWriter.ofBytes;
 import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
@@ -73,7 +74,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
             var classFile = diskCache.resolve( classname + ".class" );
             if( Files.exists( classFile ) ) {
 
-                log.trace( "found: {}", classname );
+//                log.trace( "found: {}", classname );
 
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
                 compiledTemplatesClasses.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
@@ -83,7 +84,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
                 METRICS_DISK.increment();
             } else {
-                log.trace( "not found: {} -> {}", classname, sourceFile );
+//                log.trace( "not found: {} -> {}", classname, sourceFile );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             }
         } else {
@@ -103,39 +104,44 @@ public class MemoryClassLoaderJava extends ClassLoader {
 
         if( !list.isEmpty() ) {
             var out = new StringWriter();
+            //NOTE: MemoryFileManager
+            // should have been closed after in order to prevent memory leak
             MemoryFileManager manager = new MemoryFileManager( compiledTemplatesClasses, compiler );
-            var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
-            if( task.call() ) {
-                METRICS_COMPILE.increment();
-                if( diskCache != null ) {
-                    for( var source : list ) {
-                        var javaFile = diskCache.resolve( source.originalName + ".java" );
-                        var classFile = diskCache.resolve( source.originalName + ".class" );
+            try {
+                var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
+                if ( task.call() ) {
+                    METRICS_COMPILE.increment();
+                    if ( diskCache != null ) {
+                        for ( var source : list ) {
+                            var javaFile = diskCache.resolve( source.originalName + ".java" );
+                            var classFile = diskCache.resolve( source.originalName + ".class" );
 
-                        try {
-                            oap.io.Files.write( javaFile, source.content, ofString() );
-                            var bytes = compiledTemplatesClasses.get( source.originalName ).toByteArray();
-                            oap.io.Files.write( classFile, bytes );
-                        } catch( Exception e ) {
-                            oap.io.Files.delete( javaFile );
-                            oap.io.Files.delete( classFile );
+                            try {
+                                oap.io.Files.write( javaFile, source.content, ofString() );
+                                var bytes = compiledTemplatesClasses.get( source.originalName ).toByteArray();
+                                oap.io.Files.write( classFile, bytes, ofBytes() );
+                            } catch ( Exception e ) {
+                                oap.io.Files.delete( javaFile );
+                                oap.io.Files.delete( classFile );
+                            }
                         }
                     }
+                    if ( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+                } else {
+                    METRICS_ERROR.increment();
+                    diagnostics.getDiagnostics().forEach( a -> {
+                        if ( a.getKind() == Diagnostic.Kind.ERROR ) {
+                            log.error( "Could not compile {}: {}", list, a );
+                        }
+                    } );
+                    if ( out.toString().length() > 0 ) log.error( out.toString() );
                 }
-                if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
-            } else {
-                METRICS_ERROR.increment();
-                diagnostics.getDiagnostics().forEach( a -> {
-                    if( a.getKind() == Diagnostic.Kind.ERROR ) {
-                        log.error( "Could not compile {}: {}", list, a );
-                    }
-                } );
-                if( out.toString().length() > 0 ) log.error( out.toString() );
-            }
-            try {
-                manager.close();
-            } catch ( IOException e ) {
-                throw new RuntimeException( e );
+            } finally {
+                try {
+                    manager.close();
+                } catch ( IOException e ) {
+                    throw new RuntimeException( e );
+                }
             }
         }
     }

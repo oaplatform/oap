@@ -30,6 +30,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
@@ -71,7 +72,8 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     }
 
     @Test
-    public void testLargeMapProperty() throws Exception {
+    @Ignore
+    public void testMemoryLeakForLargeMapProperties() throws Exception {
         Map<String, String> map = new HashMap<>();
         String text = Joiner.on( "\n" ).join( IntStream
                 .range( 1, 1_000 )

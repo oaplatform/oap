@@ -155,7 +155,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
 
         var id = hasher.hash().toString();
 
-        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
+//        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
         try {
             TemplateFunction tFunc = templates.get( id, () -> {
