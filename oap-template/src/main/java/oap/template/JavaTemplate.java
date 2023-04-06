@@ -30,34 +30,44 @@ import oap.tools.CommonTemplateClassLoader;
 import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+
+import static java.util.stream.Collectors.joining;
 
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
     private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
+    private final CommonTemplateClassLoader classLoader;
 
-    private CommonTemplateClassLoader classLoader = new CommonTemplateClassLoader();
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
+        this( new CommonTemplateClassLoader(), name, template, type, cacheFile, acc, ast );
+    }
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
+    public JavaTemplate( CommonTemplateClassLoader classLoader, String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
+        this.classLoader = Objects.requireNonNull( classLoader );
         this.acc = acc;
         try {
             var render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
 
-//            var line = new AtomicInteger( 0 );
-//            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
-//                .lines()
-//                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
-//                .collect( joining( "\n" ) )
-//            );
+            var line = new AtomicInteger( 0 );
+            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
+                .lines()
+                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
+                .collect( joining( "\n" ) )
+            );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
+            var mcl = new MemoryClassLoaderJava( classLoader, fullTemplateName, render.out(), cacheFile );
             cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
                 .loadClass( fullTemplateName )
                 .getDeclaredConstructor()

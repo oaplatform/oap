@@ -41,25 +41,27 @@ public class AstRoot extends Ast {
             ;
 
             import oap.util.Strings;
-
             import java.util.*;
             import oap.util.function.TriConsumer;
             import java.util.function.Supplier;
             import com.google.common.base.CharMatcher;
 
-            public class\s""" ).append( render.nameEscaped() )
-            .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, templateAccumulatorClassName )
-            .append( """
+            public class\s""" )
+                .append( render.nameEscaped() )
+                .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, templateAccumulatorClassName )
+                .append( """
                 {
 
                  @Override
-                 public void accept(\s""".indent( 1 ) ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {\n" );
+                 public void accept(\s""" )
+                .append( className )
+                .append( " s, Map<String, Supplier<String>> m, " )
+                .append( templateAccumulatorClassName )
+                .append( " acc ) {" );
 
         Render childRender = render.tabInc().tabInc().tabInc().withField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
         children.forEach( child -> child.render( childRender ) );
 
-        render.append( """
-              }
-            }""".stripIndent() );
+        render.append( "\n }\n}" );
     }
 }

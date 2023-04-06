@@ -103,13 +103,11 @@ public class TemplateEngineFunctionsTest extends Fixtures {
             } );
         }
         service.shutdown();
-        service.awaitTermination( 30, TimeUnit.MINUTES );
+        service.awaitTermination( 6, TimeUnit.MINUTES );
         System.gc();
-//        JavaTemplate.classLoader.reInit();
 
-//        template = null;
-        engine = null;
-        System.gc();
+//        engine = null;
+//        System.gc();
 
         System.err.println( "finishing..." );
         Thread.currentThread().sleep( 1_800_000 );

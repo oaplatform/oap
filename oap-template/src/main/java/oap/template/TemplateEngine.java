@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.google.JodaTicker;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
+import oap.tools.CommonTemplateClassLoader;
 import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
@@ -59,6 +60,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public class TemplateEngine implements Runnable, AutoCloseable {
+
+    private static final CommonTemplateClassLoader classLoader = new CommonTemplateClassLoader();
     public final Path tmpPath;
     public final long ttl;
     private final Map<String, List<Method>> builtInFunction = new HashMap<>();
@@ -90,21 +93,6 @@ public class TemplateEngine implements Runnable, AutoCloseable {
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
-    }
-
-    public static String getHashName( String template ) {
-        long hash = getHash( template );
-        return hashToName( hash );
-    }
-
-    public static long getHash( String template ) {
-        var hashFunction = Hashing.murmur3_128();
-
-        return hashFunction.hashUnencodedChars( template ).asLong();
-    }
-
-    private static String hashToName( long hash ) {
-        return "template_" + ( hash >= 0 ? String.valueOf( hash ) : "_" + String.valueOf( hash ).substring( 1 ) );
     }
 
     private void loadFunctions() {
@@ -169,7 +157,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                 if( postProcess != null )
                     postProcess.accept( ast );
 
-                var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
+                var tf = new JavaTemplate<>( classLoader, name + '_' + id, template, type, tmpPath, acc, ast );
                 return new TemplateFunction( tf );
             } );
 
@@ -219,5 +207,20 @@ public class TemplateEngine implements Runnable, AutoCloseable {
         public TemplateFunction( Template<?, ?, ?, ?> template ) {
             this.template = template;
         }
+    }
+
+    public static String getHashName( String template ) {
+        long hash = getHash( template );
+        return hashToName( hash );
+    }
+
+    public static long getHash( String template ) {
+        var hashFunction = Hashing.murmur3_128();
+
+        return hashFunction.hashUnencodedChars( template ).asLong();
+    }
+
+    private static String hashToName( long hash ) {
+        return "template_" + ( hash >= 0 ? String.valueOf( hash ) : "_" + String.valueOf( hash ).substring( 1 ) );
     }
 }
