@@ -86,6 +86,7 @@ public final class Result<S, F> implements Serializable {
         try {
             return success( supplier.get() );
         } catch( InterruptedException e ) {
+            Thread.currentThread().interrupt();
             throw e;
         } catch( Throwable e ) {
             return failure( e );

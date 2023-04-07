@@ -160,8 +160,10 @@ public class Maps {
         return list;
     }
 
-    public static <K, V, M1 extends Multimap<K, V>,
-        M2 extends Multimap<? extends K, ? extends V>> M1 add( M1 base, M2 map ) {
+    public static <K, V,
+            M1 extends Multimap<K, V>,
+            M2 extends Multimap<? extends K, ? extends V>>
+    M1 add( M1 base, M2 map ) {
         base.putAll( map );
         return base;
     }
