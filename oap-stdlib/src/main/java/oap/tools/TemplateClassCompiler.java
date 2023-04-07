@@ -1,5 +1,8 @@
-package oap.template;
+package oap.tools;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Result;
@@ -21,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singleton;
 
@@ -41,6 +45,9 @@ import static java.util.Collections.singleton;
  */
 @Slf4j
 public class TemplateClassCompiler {
+    private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
+    private static final Timer METRICS_COMPILE_TIME = Metrics.timer( "oap_template", "type", "compile_time_in_millis" );
+    private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
     DiagnosticCollector<JavaFileObject> diagnostics = null;
 
     Map<String, CompiledJavaFile> compiledJavaFiles = new HashMap<>();
@@ -49,7 +56,7 @@ public class TemplateClassCompiler {
         final String javaName;
         private final String content;
 
-        SourceJavaFile( String name, String content ) {
+        public SourceJavaFile( String name, String content ) {
             super( URI.create( "memo:///" + name.replace( '.', '/' ) + Kind.SOURCE.extension ), Kind.SOURCE );
             this.content = Objects.requireNonNull( content );
             this.javaName = Objects.requireNonNull( name );
@@ -126,7 +133,11 @@ public class TemplateClassCompiler {
                     .stream()
                     .map( javaFile -> compileSingleFile( fileManager, javaFile ) )
                     .allMatch( Result::isSuccess );
-            if ( compilationOk ) return Result.success( compiledJavaFiles );
+            if ( compilationOk ) {
+                METRICS_COMPILE.increment();
+                return Result.success( compiledJavaFiles );
+            }
+            METRICS_ERROR.increment();
             return Result.failure( diagnostics.getDiagnostics().toString() );
         } finally {
             try {
@@ -152,7 +163,9 @@ public class TemplateClassCompiler {
                         singleton( javaFile ) );
         long time = System.currentTimeMillis();
         boolean compilationOk = compilationTask.call();
-        log.trace( "Compiling class '{}' - {}. took {} ms...", javaFile.javaName, compilationOk ? "OK" : "FAILURE", System.currentTimeMillis() - time );
+        long tookForCompilation = System.currentTimeMillis() - time;
+        METRICS_COMPILE_TIME.record( tookForCompilation, TimeUnit.MILLISECONDS );
+        log.trace( "Compiling class '{}' ({}) took {} ms", javaFile.javaName, compilationOk ? "SUCCESS" : "FAILURE", tookForCompilation );
         if ( compilationOk ) return Result.success( compiledJavaFiles );
         return Result.failure( diagnostics.getDiagnostics().toString() );
     }

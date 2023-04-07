@@ -26,6 +26,8 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
+import oap.tools.TemplateClassCompiler;
+import oap.tools.TemplateClassSupplier;
 import oap.util.Lists;
 import oap.util.function.TriConsumer;
 import org.jetbrains.annotations.NotNull;

@@ -1,5 +1,8 @@
-package oap.template;
+package oap.tools;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Result;
 
@@ -10,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Allows to load give compiled classes into main (parent) class loader
@@ -26,6 +30,8 @@ import java.util.Set;
  */
 @Slf4j
 public class TemplateClassSupplier {
+    private static final Counter METRICS_LOAD = Metrics.counter( "oap_template", "type", "load" );
+    private static final Timer METRICS_LOAD_TIME = Metrics.timer( "oap_template", "type", "load_time_in_millis" );
 
     private final Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles;
     private TemplateClassLoader mainClassLoader = null;
@@ -56,11 +62,10 @@ public class TemplateClassSupplier {
             var mc = compiledJavaFiles.remove( name );
             if( mc != null ) {
                 var array = mc.toByteArray();
-                log.trace( "-> Loading class '{}' into {}", name, toString() );
+                METRICS_LOAD.increment();
                 loadedClasses.add( name );
                 return defineClass( name, array, 0, array.length );
             }
-            log.trace( "<- Looking for class '{}' in {}", name, toString() );
             return super.findClass( name );
         }
 
@@ -99,12 +104,23 @@ public class TemplateClassSupplier {
         Map<String, Result<Class, Throwable>> result = new HashMap<>();
         classNames.stream().forEach( className -> {
             try {
-                result.put( className, Result.catchingInterruptible( () -> parentClassLoader.loadClass( className ) ) );
+                result.put( className, Result.catchingInterruptible( () -> loadClassIntoClassLoader( parentClassLoader, className ) ) );
             } catch ( InterruptedException e ) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException( e );
             }
         } );
         return result;
+    }
+
+    private Class<?> loadClassIntoClassLoader( TemplateClassLoader classLoader, String className ) throws ClassNotFoundException {
+        long time = System.nanoTime();
+        try {
+            return classLoader.loadClass( className );
+        } finally {
+            long took = ( System.nanoTime() - time ) / 1_000;
+            log.trace( "Loading class '{}' into {} took {} mcs", className, classLoader.toString(), took );
+            METRICS_LOAD_TIME.record( took, TimeUnit.MICROSECONDS );
+        }
     }
 }
