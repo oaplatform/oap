@@ -13,6 +13,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * Deprecated as templates now use TemplateClassCompiler / TemplateClassSupplier
+ */
+@Deprecated( forRemoval = true )
 @Slf4j
 public class CommonForTemplatesClassLoader extends ClassLoader {
     private final Set<String> loadedClasses = new HashSet<>();

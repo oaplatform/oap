@@ -49,8 +49,8 @@ public class TemplateClassCompiler {
         final String javaName;
         private final String content;
 
-        SourceJavaFile( String name, Kind kind, String content ) {
-            super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
+        SourceJavaFile( String name, String content ) {
+            super( URI.create( "memo:///" + name.replace( '.', '/' ) + Kind.SOURCE.extension ), Kind.SOURCE );
             this.content = Objects.requireNonNull( content );
             this.javaName = Objects.requireNonNull( name );
         }

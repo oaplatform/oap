@@ -26,13 +26,13 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
-import oap.tools.MemoryClassLoaderJava;
+import oap.util.Lists;
 import oap.util.function.TriConsumer;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Supplier;
-
 
 
 @Slf4j
@@ -44,8 +44,23 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
         this.acc = acc;
         try {
-            var render = Render.init( name, template, new TemplateType( type.type() ), acc );
-            ast.render( render );
+            // generate jav file for template
+            Render render = generateSourceFileForTemplate( name, template, type, acc, ast );
+            var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
+            // compile source of template into class
+            var compileResult = new TemplateClassCompiler().compile( Lists.of( new TemplateClassCompiler.SourceJavaFile( fullTemplateName, render.out() ) ) );
+            // instantiate class representing template
+            Class clazz = new TemplateClassSupplier( compileResult.getSuccessValue() ).loadClasses( Lists.of( fullTemplateName ) ).get( fullTemplateName ).getSuccessValue();
+            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) clazz.getDeclaredConstructor().newInstance();
+        } catch( Exception e ) {
+            throw new TemplateException( e );
+        }
+    }
+
+    @NotNull
+    private Render generateSourceFileForTemplate( String name, String template, TypeRef<TIn> type, TA acc, AstRoot ast ) {
+        var render = Render.init( name, template, new TemplateType( type.type() ), acc );
+        ast.render( render );
 
 //            var line = new AtomicInteger( 0 );
 //            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
@@ -53,16 +68,7 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
 //                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
 //                .collect( joining( "\n" ) )
 //            );
-
-            var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            var mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile );
-            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
-                .loadClass( fullTemplateName )
-                .getDeclaredConstructor()
-                .newInstance();
-        } catch( Exception e ) {
-            throw new TemplateException( e );
-        }
+        return render;
     }
 
     public TOut render( TIn obj ) {

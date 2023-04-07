@@ -55,6 +55,10 @@ import java.util.concurrent.ConcurrentMap;
 import static oap.io.content.ContentWriter.ofBytes;
 import static oap.io.content.ContentWriter.ofString;
 
+/**
+ * Deprecated as templates now use TemplateClassCompiler / TemplateClassSupplier
+ */
+@Deprecated( forRemoval = true )
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );

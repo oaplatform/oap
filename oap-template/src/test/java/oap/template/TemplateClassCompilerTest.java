@@ -4,7 +4,6 @@ import oap.util.Lists;
 import oap.util.Result;
 import org.testng.annotations.Test;
 
-import javax.tools.JavaFileObject;
 import java.util.Map;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -49,7 +48,7 @@ public class TemplateClassCompilerTest {
         var compiler = new TemplateClassCompiler();
         Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", JavaFileObject.Kind.SOURCE, sourceA )
+                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA )
                 )
         );
 
@@ -61,8 +60,8 @@ public class TemplateClassCompilerTest {
         var compiler = new TemplateClassCompiler();
         Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", JavaFileObject.Kind.SOURCE, sourceA ),
-                        new TemplateClassCompiler.SourceJavaFile(  "B", JavaFileObject.Kind.SOURCE, sourceB )
+                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA ),
+                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB )
                 )
         );
 
@@ -74,7 +73,7 @@ public class TemplateClassCompilerTest {
         var compiler = new TemplateClassCompiler();
         Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "Bad", JavaFileObject.Kind.SOURCE, sourceNoImport )
+                        new TemplateClassCompiler.SourceJavaFile(  "Bad", sourceNoImport )
                 )
         );
 
@@ -87,7 +86,7 @@ public class TemplateClassCompilerTest {
         var compiler = new TemplateClassCompiler();
         Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "InvalidJavaFileName", JavaFileObject.Kind.SOURCE, sourceA )
+                        new TemplateClassCompiler.SourceJavaFile(  "InvalidJavaFileName", sourceA )
                 )
         );
 
