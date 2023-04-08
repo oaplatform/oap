@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TemplateClassSupplier {
     private static final Counter METRICS_LOAD = Metrics.counter( "oap_template", "type", "load" );
+    private static final Counter METRICS_CNF = Metrics.counter( "oap_template", "type", "class_not_loaded" );
     private static final Timer METRICS_LOAD_TIME = Metrics.timer( "oap_template", "type", "load_time_in_millis" );
 
     private final Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles;
@@ -39,7 +40,7 @@ public class TemplateClassSupplier {
     public static class TemplateClassLoader extends ClassLoader {
         private final String className;
         private final Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles;
-        private Set<String> loadedClasses = new HashSet<>();
+        private final Set<String> loadedClasses = new HashSet<>();
 
         @Override
         public String toString() {
@@ -75,7 +76,7 @@ public class TemplateClassSupplier {
     }
 
     /**
-     * Allows to load classes provided within given classloader into same main (parent) classloader.
+     * Allows to load classes into provided classloader, which means into same main (parent) classloader.
      * @param classLoader
      */
     public TemplateClassSupplier( TemplateClassLoader classLoader ) {
@@ -84,7 +85,7 @@ public class TemplateClassSupplier {
     }
 
     /**
-     * Unlike another constructor it loads into separate clossloaders, each for loadClasses call
+     * Unlike another constructor it loads into different clossloaders, each for 'loadClasses' call
      * @param compiledJavaFiles
      */
     public TemplateClassSupplier( Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles ) {
@@ -116,11 +117,15 @@ public class TemplateClassSupplier {
     private Class<?> loadClassIntoClassLoader( TemplateClassLoader classLoader, String className ) throws ClassNotFoundException {
         long time = System.nanoTime();
         try {
-            return classLoader.loadClass( className );
-        } finally {
+            Class<?> result = classLoader.loadClass( className );
             long took = ( System.nanoTime() - time ) / 1_000;
             log.trace( "Loading class '{}' into {} took {} mcs", className, classLoader.toString(), took );
             METRICS_LOAD_TIME.record( took, TimeUnit.MICROSECONDS );
+            return result;
+        } catch ( Exception ex ) {
+            METRICS_CNF.increment();
+            log.trace( "Loading class '{}' into {} failed with ", className, classLoader.toString(), ex );
+            throw ex;
         }
     }
 }
