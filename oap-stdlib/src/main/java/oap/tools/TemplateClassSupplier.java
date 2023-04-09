@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TemplateClassSupplier {
     private static final Counter METRICS_LOAD = Metrics.counter( "oap_template", "type", "load" );
-    private static final Counter METRICS_CNF = Metrics.counter( "oap_template", "type", "class_not_loaded" );
+    private static final Counter METRICS_LOAD_ERROR = Metrics.counter( "oap_template", "type", "class_not_loaded" );
     private static final Timer METRICS_LOAD_TIME = Metrics.timer( "oap_template", "type", "load_time_in_millis" );
 
     private final Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles;
@@ -119,12 +119,12 @@ public class TemplateClassSupplier {
         try {
             Class<?> result = classLoader.loadClass( className );
             long took = ( System.nanoTime() - time ) / 1_000;
-            log.trace( "Loading class '{}' into {} took {} mcs", className, classLoader.toString(), took );
+            log.trace( "Class '{}' loaded into {} in {} mcs", className, classLoader.toString() + ":" + classLoader.hashCode(), took );
             METRICS_LOAD_TIME.record( took, TimeUnit.MICROSECONDS );
             return result;
         } catch ( Exception ex ) {
-            METRICS_CNF.increment();
-            log.trace( "Loading class '{}' into {} failed with ", className, classLoader.toString(), ex );
+            METRICS_LOAD_ERROR.increment();
+            log.trace( "Loading class '{}' into {} failed with error: ", className, classLoader.toString(), ex );
             throw ex;
         }
     }

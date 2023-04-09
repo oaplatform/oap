@@ -32,18 +32,17 @@ import oap.util.Lists;
 import oap.util.function.TriConsumer;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Supplier;
 
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
-    private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
+    private final TriConsumer<TIn, Map<String, Supplier<String>>, TA> cons;
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRoot ast ) {
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, TA acc, AstRoot ast ) {
         this.acc = acc;
         try {
             // generate jav file for template
@@ -52,8 +51,10 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             // compile source of template into class
             var compileResult = new TemplateClassCompiler().compile( Lists.of( new TemplateClassCompiler.SourceJavaFile( fullTemplateName, render.out() ) ) );
             // instantiate class representing template
-            Class clazz = new TemplateClassSupplier( compileResult.getSuccessValue() ).loadClasses( Lists.of( fullTemplateName ) ).get( fullTemplateName ).getSuccessValue();
-            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) clazz.getDeclaredConstructor().newInstance();
+            Class<?> clazz = new TemplateClassSupplier( compileResult.getSuccessValue() ).loadClasses( Lists.of( fullTemplateName ) ).get( fullTemplateName ).getSuccessValue();
+            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TA> ) clazz
+                    .getDeclaredConstructor()
+                    .newInstance();
         } catch( Exception e ) {
             throw new TemplateException( e );
         }
