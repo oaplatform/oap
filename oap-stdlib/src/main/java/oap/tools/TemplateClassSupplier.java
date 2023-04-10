@@ -1,5 +1,8 @@
-package oap.template;
+package oap.tools;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Result;
 
@@ -10,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Allows to load give compiled classes into main (parent) class loader
@@ -26,6 +30,9 @@ import java.util.Set;
  */
 @Slf4j
 public class TemplateClassSupplier {
+    private static final Counter METRICS_LOAD = Metrics.counter( "oap_template", "type", "load" );
+    private static final Counter METRICS_LOAD_ERROR = Metrics.counter( "oap_template", "type", "class_not_loaded" );
+    private static final Timer METRICS_LOAD_TIME = Metrics.timer( "oap_template", "type", "load_time_in_millis" );
 
     private final Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles;
     private TemplateClassLoader mainClassLoader = null;
@@ -33,7 +40,7 @@ public class TemplateClassSupplier {
     public static class TemplateClassLoader extends ClassLoader {
         private final String className;
         private final Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles;
-        private Set<String> loadedClasses = new HashSet<>();
+        private final Set<String> loadedClasses = new HashSet<>();
 
         @Override
         public String toString() {
@@ -56,11 +63,10 @@ public class TemplateClassSupplier {
             var mc = compiledJavaFiles.remove( name );
             if( mc != null ) {
                 var array = mc.toByteArray();
-                log.trace( "-> Loading class '{}' into {}", name, toString() );
+                METRICS_LOAD.increment();
                 loadedClasses.add( name );
                 return defineClass( name, array, 0, array.length );
             }
-            log.trace( "<- Looking for class '{}' in {}", name, toString() );
             return super.findClass( name );
         }
 
@@ -70,7 +76,7 @@ public class TemplateClassSupplier {
     }
 
     /**
-     * Allows to load classes provided within given classloader into same main (parent) classloader.
+     * Allows to load classes into provided classloader, which means into same main (parent) classloader.
      * @param classLoader
      */
     public TemplateClassSupplier( TemplateClassLoader classLoader ) {
@@ -79,7 +85,7 @@ public class TemplateClassSupplier {
     }
 
     /**
-     * Unlike another constructor it loads into separate clossloaders, each for loadClasses call
+     * Unlike another constructor it loads into different clossloaders, each for 'loadClasses' call
      * @param compiledJavaFiles
      */
     public TemplateClassSupplier( Map<String, TemplateClassCompiler.CompiledJavaFile> compiledJavaFiles ) {
@@ -99,12 +105,27 @@ public class TemplateClassSupplier {
         Map<String, Result<Class, Throwable>> result = new HashMap<>();
         classNames.stream().forEach( className -> {
             try {
-                result.put( className, Result.catchingInterruptible( () -> parentClassLoader.loadClass( className ) ) );
-            } catch (InterruptedException e) {
+                result.put( className, Result.catchingInterruptible( () -> loadClassIntoClassLoader( parentClassLoader, className ) ) );
+            } catch ( InterruptedException e ) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
+                throw new RuntimeException( e );
             }
         } );
         return result;
+    }
+
+    private Class<?> loadClassIntoClassLoader( TemplateClassLoader classLoader, String className ) throws ClassNotFoundException {
+        long time = System.nanoTime();
+        try {
+            Class<?> result = classLoader.loadClass( className );
+            long took = ( System.nanoTime() - time ) / 1_000;
+            log.trace( "Class '{}' loaded into {} in {} mcs", className, classLoader.toString() + ":" + classLoader.hashCode(), took );
+            METRICS_LOAD_TIME.record( took, TimeUnit.MICROSECONDS );
+            return result;
+        } catch ( Exception ex ) {
+            METRICS_LOAD_ERROR.increment();
+            log.trace( "Loading class '{}' into {} failed with error: ", className, classLoader.toString(), ex );
+            throw ex;
+        }
     }
 }

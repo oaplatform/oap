@@ -1,11 +1,9 @@
-package oap.template;
+package oap.tools;
 
 import oap.util.Lists;
-import oap.util.Maps;
 import oap.util.Result;
 import org.testng.annotations.Test;
 
-import javax.tools.JavaFileObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,13 +50,13 @@ public class TemplateClassSupplierTest {
         var compiler = new TemplateClassCompiler();
         compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", JavaFileObject.Kind.SOURCE, sourceA )
+                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA )
                 )
         );
 
         var supplier = new TemplateClassSupplier( compiler.compiledJavaFiles );
 
-        Class classA = supplier.loadClasses( List.of ( "A", "B" ) ).get( "A" ).getSuccessValue();
+        Class classA = supplier.loadClasses( List.of( "A", "B" ) ).get( "A" ).getSuccessValue();
         var exemplarOfClassA = classA.getDeclaredConstructor().newInstance();
         var methodOfClassA = classA.getDeclaredMethod( "getRandomNumber" );
 
@@ -70,7 +68,7 @@ public class TemplateClassSupplierTest {
         var compiler = new TemplateClassCompiler();
         compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "B", JavaFileObject.Kind.SOURCE, sourceB )
+                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB )
                 )
         );
 
@@ -88,16 +86,16 @@ public class TemplateClassSupplierTest {
         var compiler = new TemplateClassCompiler();
         compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", JavaFileObject.Kind.SOURCE, sourceA ),
-                        new TemplateClassCompiler.SourceJavaFile(  "B", JavaFileObject.Kind.SOURCE, sourceB ),
-                        new TemplateClassCompiler.SourceJavaFile(  "C", JavaFileObject.Kind.SOURCE, sourceC )
+                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA ),
+                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB ),
+                        new TemplateClassCompiler.SourceJavaFile(  "C", sourceC )
                 )
         );
 
         var classLoader = new TemplateClassSupplier.TemplateClassLoader( compiler.compiledJavaFiles );
         var supplier = new TemplateClassSupplier( classLoader );
 
-        Map<String, Result<Class, Throwable>> loadedClasses = supplier.loadClasses(List.of("A", "B$InnerB"));
+        Map<String, Result<Class, Throwable>> loadedClasses = supplier.loadClasses( List.of( "A", "B$InnerB" ) );
         Class classInnerB = loadedClasses.get( "B$InnerB" ).getSuccessValue();
         var exemplarOfInnerClassB = classInnerB.getDeclaredConstructor().newInstance();
         var methodOfClassInnerB = classInnerB.getDeclaredMethod( "getRandomNumber" );
@@ -120,13 +118,13 @@ public class TemplateClassSupplierTest {
         var compiler = new TemplateClassCompiler();
         var result1 = compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", JavaFileObject.Kind.SOURCE, sourceA )
+                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA )
                 )
         ).getSuccessValue();
         var result2 = compiler.compile(
                 Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "B", JavaFileObject.Kind.SOURCE, sourceB ),
-                        new TemplateClassCompiler.SourceJavaFile(  "C", JavaFileObject.Kind.SOURCE, sourceC )
+                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB ),
+                        new TemplateClassCompiler.SourceJavaFile(  "C", sourceC )
                 )
         ).getSuccessValue();
 

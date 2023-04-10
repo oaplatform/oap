@@ -39,6 +39,7 @@ import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -84,7 +85,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
 
         loadFunctions();
 
-        log.info( "functions {}", builtInFunction.keySet() );
+        log.info( "functions '{}' loaded", builtInFunction.keySet() );
 
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
@@ -122,37 +123,28 @@ public class TemplateEngine implements Runnable, AutoCloseable {
         }
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
+    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
+    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
+    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
+    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
         Objects.requireNonNull( template );
         Objects.requireNonNull( acc );
 
-        Hasher hasher = Hashing.murmur3_128().newHasher();
-        hasher
-            .putString( template, UTF_8 )
-            .putString( acc.getClass().toString(), UTF_8 );
-
-        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
-
-        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
-
-        var id = hasher.hash().toString();
+        String id = getTemplateId( template, acc, aliases, postProcess );
 
 //        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
@@ -169,7 +161,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                 if( postProcess != null )
                     postProcess.accept( ast );
 
-                var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
+                var tf = new JavaTemplate<>( name + '_' + id, template, type, acc, ast );
                 return new TemplateFunction( tf );
             } );
 
@@ -180,6 +172,20 @@ public class TemplateEngine implements Runnable, AutoCloseable {
             }
             throw new TemplateException( e.getCause() );
         }
+    }
+
+    @NotNull
+    private static <TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
+    String getTemplateId( String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+        Hasher hasher = Hashing.murmur3_128().newHasher();
+        hasher
+            .putString( template, UTF_8 )
+            .putString( acc.getClass().toString(), UTF_8 );
+
+        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
+        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
+        var id = hasher.hash().toString();
+        return id;
     }
 
     public long getCacheSize() {
@@ -195,15 +201,16 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                 .forEach( path -> {
                     try {
                         if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {
-                            log.debug( "delete {}", path );
-                            Files.deleteIfExists( path );
+                            boolean deleted = Files.deleteIfExists( path );
+                            log.debug( "delete files at '{}': {}", deleted ? "done" : "failure", path );
                         }
                     } catch( IOException e ) {
-                        log.error( "Cannot delete {}", path, e );
+                        log.error( "Cannot delete files at '{}'", path, e );
                     }
                 } );
+            log.info( "TemplateEngine has done its work in {} ms", System.currentTimeMillis() - now );
         } catch( IOException e ) {
-            log.error( "Could not walk through " + tmpPath, e );
+            log.error( "Could not walk through '{}'", tmpPath, e );
         }
     }
 
