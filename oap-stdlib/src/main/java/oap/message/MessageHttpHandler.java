@@ -117,9 +117,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     }
 
     public void preStart() {
-        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}'",
+        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}' port {}",
             controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
-            clientHashCacheSize, context );
+            clientHashCacheSize, context, port );
 
         hashes = new MessageHashStorage( clientHashCacheSize );
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
@@ -138,14 +138,19 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         }
 
         for( var listener : listeners ) {
+            log.info( "Listener type {} info {}", listener.getId(), listener.getInfo() );
+
             var d = this.map.put( listener.getId(), listener );
-            if( d != null )
+            if( d != null ) {
                 throw new IllegalArgumentException( "duplicate [" + listener.getInfo() + ", " + d.getInfo() + "]" );
+            }
         }
     }
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        log.trace( "new message {}", exchange );
+
         try( var in = new DataInputStream( exchange.getInputStream() ) ) {
             InetSocketAddress peerAddress = ( InetSocketAddress ) exchange.exchange.getConnection().getPeerAddress();
             var hostName = peerAddress.getHostName();
@@ -177,7 +182,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                         var data = in.readNBytes( size );
                         short status;
                         try {
+                            log.trace( "handler {}...", listener.getId() );
                             status = listener.run( messageVersion, hostName, size, data, md5 );
+                            log.trace( "handler {}... Done. Status {}", listener.getId(), status );
 
                             writeResponse( exchange, status, clientId, md5 );
                             if( status == STATUS_OK ) {
@@ -187,7 +194,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                                 log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
                                     clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
                             }
-                        } catch( Exception e ) {
+                        } catch( Throwable e ) {
                             log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
                             Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
                             writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
@@ -202,6 +209,10 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                     writeResponse( exchange, STATUS_ALREADY_WRITTEN, clientId, md5 );
                 }
             }
+        } catch( Throwable e ) {
+            log.error( e.getMessage(), e );
+            log.error( "exchange {}: {}", exchange, e.getMessage() );
+            throw e;
         }
     }
 
