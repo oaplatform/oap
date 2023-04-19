@@ -49,9 +49,13 @@ public class ArrayJsonValidator extends AbstractJsonSchemaValidator<ArraySchemaA
         schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
             .ifPresent( maxItems -> errors.add( properties.error( "array " + arrayValue + " has more than maxItems elements " + maxItems ) ) );
 
-        for( int i = 0; i < arrayValue.size(); i++ )
-            errors.addAll( properties.validator.apply( properties.withAdditionalProperties( schema.additionalProperties ).withPath( String.valueOf( i ) ),
-                schema.items, arrayValue.get( i ) ) );
+        for( int i = 0; i < arrayValue.size(); i++ ) {
+            var validatorProperties = properties
+                    .withPath( String.valueOf( i ) )
+                    .withAdditionalProperties( schema.additionalProperties );
+            List<String> jsonPathErrors = properties.validator.apply( validatorProperties, schema.items, arrayValue.get( i ) );
+            errors.addAll( jsonPathErrors );
+        }
 
         return errors;
     }

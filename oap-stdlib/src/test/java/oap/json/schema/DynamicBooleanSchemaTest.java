@@ -29,14 +29,46 @@ import org.testng.annotations.Test;
 public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
     @Test
     public void eq() {
-        var schema = "{additionalProperties: false, type: object, properties: {"
-            + "a.type=string,b:{type = string, enabled: {json-path:a, eq=b}}"
-            + "}}";
+        var schema = """
+            {
+                additionalProperties = false
+                type = object
+                properties = {
+                    a {
+                        type = string
+                        enabled = true
+                    }
+                    settings {
+                        additionalProperties = false
+                        type = object
+                        properties = {
+                            c {
+                                type = string
+                                enabled = {
+                                    json-path = a
+                                    eq = b
+                                }
+                            }
+                        }
+                    }
+                    b {
+                        type = string
+                        enabled = {
+                            json-path = a
+                            eq = b
+                        }
+                    }
+                }
+            }
+                """;
 
         assertOk( schema, "{'a':'1'}" );
         assertOk( schema, "{'a':'b'}" );
         assertOk( schema, "{'a':'b', 'b':'b'}" );
+        assertOk( schema, "{'a':'b', 'settings':{'c':'2'} }" );
 
+        assertFailure( schema, "{'settings':{'c':'2'} }", "/settings: additional properties are not permitted [c]" );
+        assertFailure( schema, "{'b':'2' }", "additional properties are not permitted [b]" );
         assertFailure( schema, "{'a':'1', 'b':'b'}", "additional properties are not permitted [b]" );
     }
 

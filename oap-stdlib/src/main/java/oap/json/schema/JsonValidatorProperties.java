@@ -23,11 +23,13 @@
  */
 package oap.json.schema;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.util.function.TriFunction;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 public class JsonValidatorProperties {
     public final Optional<Boolean> additionalProperties;
     public final boolean ignoreRequiredDefault;
@@ -56,8 +58,10 @@ public class JsonValidatorProperties {
     }
 
     public JsonValidatorProperties withPath( String path ) {
-        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, this.path.map( p -> p + "/" + path )
-            .or( () -> Optional.of( path ) ), additionalProperties, ignoreRequiredDefault, validator );
+        Optional<String> jsonPathModified = this.path.map( p -> p + "/" + path );
+//        jsonPathModified.ifPresent( x -> log.trace( "JSON path: {}", x ) );
+        Optional<String> jsonPath = jsonPathModified.or( () -> Optional.of( path ) );
+        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, jsonPath, additionalProperties, ignoreRequiredDefault, validator );
     }
 
     public JsonValidatorProperties withAdditionalProperties( Optional<Boolean> additionalProperties ) {

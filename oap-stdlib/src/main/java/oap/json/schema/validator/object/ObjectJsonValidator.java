@@ -23,6 +23,7 @@
  */
 package oap.json.schema.validator.object;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.json.schema.AbstractJsonSchemaValidator;
 import oap.json.schema.AbstractSchemaAST;
 import oap.json.schema.JsonSchemaParserContext;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchemaAST> {
     public ObjectJsonValidator() {
         super( "object" );
@@ -49,12 +51,15 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
 
         final List<String> errors = new ArrayList<>();
 
-        final HashMap<String, AbstractSchemaAST> objectProperties = new HashMap<>();
+        final Map<String, AbstractSchemaAST> objectProperties = new HashMap<>();
 
         schema.properties.forEach( ( k, ast ) -> {
             if( ast.common.enabled.map( e -> {
-                final JsonValidatorProperties np = properties.withPath( k );
-                return e.apply( properties.rootJson, value, np.path, np.prefixPath );
+                var np = properties
+                        .withPath( k );
+                boolean evaluated = e.apply( properties.rootJson, value, np.path, np.prefixPath );
+                log.trace( "evaluated '{}' with value '{}'", np.path, value );
+                return evaluated;
             } ).orElse( true ) )
                 objectProperties.put( k, ast );
         } );
@@ -63,9 +68,12 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             Object v = mapValue.get( k );
             if( v == null && ast.common.defaultValue.isPresent() )
                 mapValue.put( k, ast.common.defaultValue.get() );
-            else
-                errors.addAll( properties.validator
-                    .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
+            else {
+                var validatorProperties = properties
+                        .withPath( k )
+                        .withAdditionalProperties( schema.additionalProperties );
+                errors.addAll( properties.validator.apply( validatorProperties, ast, v ) );
+            }
         } );
 
         List<String> additionalProperties = Stream.of( mapValue.keySet() )

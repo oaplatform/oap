@@ -75,14 +75,16 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
         if( parentValues.isEmpty() ) {
             final String fixedPath = jsonPath.getFixedPath();
             if( !schema.common.required.orElse( BooleanReference.FALSE )
-                .apply( properties.rootJson, properties.rootJson, Optional.of( fixedPath ), properties.prefixPath ) )
+                .apply( properties.rootJson, properties.rootJson, Optional.of( fixedPath ), properties.prefixPath ) ) {
 //            return Result.failure( Lists.of( properties.error( fixedPath, "required property is missing" ) ) );
 //         else
                 parentValues = cd.successValue
                     .stream()
                     .flatMap( d -> d.getValues().stream().map( Dictionary::getId ) )
                     .collect( toList() );
+            }
         }
+        log.trace( "evaluating json-path '{}' with value '{}'", jsonPath.getFixedPath(), parentValues );
 
         final ArrayList<Dictionary> cDict = new ArrayList<>();
 
@@ -91,7 +93,8 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
                 .stream()
                 .map( d -> d.getValueOpt( parentValue.toString() ) )
                 .filter( Optional::isPresent )
-                .map( Optional::get ).collect( toList() );
+                .map( Optional::get )
+                .collect( toList() );
             if( children.isEmpty() )
                 return Result.failure( Lists.of(
                     properties.error( "instance of '" + parentValue + "'does not match any member resolve the enumeration " + printIds( cd.successValue ) )

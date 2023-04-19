@@ -1,7 +1,6 @@
 package oap.template;
 
 import oap.util.Lists;
-import oap.util.Maps;
 import oap.util.Result;
 import org.testng.annotations.Test;
 
@@ -58,7 +57,7 @@ public class TemplateClassSupplierTest {
 
         var supplier = new TemplateClassSupplier( compiler.compiledJavaFiles );
 
-        Class classA = supplier.loadClasses( List.of ( "A", "B" ) ).get( "A" ).getSuccessValue();
+        Class classA = supplier.loadClasses( List.of( "A", "B" ) ).get( "A" ).getSuccessValue();
         var exemplarOfClassA = classA.getDeclaredConstructor().newInstance();
         var methodOfClassA = classA.getDeclaredMethod( "getRandomNumber" );
 
@@ -97,7 +96,7 @@ public class TemplateClassSupplierTest {
         var classLoader = new TemplateClassSupplier.TemplateClassLoader( compiler.compiledJavaFiles );
         var supplier = new TemplateClassSupplier( classLoader );
 
-        Map<String, Result<Class, Throwable>> loadedClasses = supplier.loadClasses(List.of("A", "B$InnerB"));
+        Map<String, Result<Class, Throwable>> loadedClasses = supplier.loadClasses( List.of( "A", "B$InnerB" ) );
         Class classInnerB = loadedClasses.get( "B$InnerB" ).getSuccessValue();
         var exemplarOfInnerClassB = classInnerB.getDeclaredConstructor().newInstance();
         var methodOfClassInnerB = classInnerB.getDeclaredMethod( "getRandomNumber" );

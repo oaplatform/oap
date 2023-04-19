@@ -100,9 +100,9 @@ public class TemplateClassSupplier {
         classNames.stream().forEach( className -> {
             try {
                 result.put( className, Result.catchingInterruptible( () -> parentClassLoader.loadClass( className ) ) );
-            } catch (InterruptedException e) {
+            } catch ( InterruptedException e ) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
+                throw new RuntimeException( e );
             }
         } );
         return result;
