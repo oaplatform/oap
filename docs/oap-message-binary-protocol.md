@@ -7,7 +7,7 @@ This document describes the wire encoding for OAP-messages.
 
 ![UML Diagram](oap-messages.png)
 
-### Binary encoding
+### Binary request encoding
 ```
 +--------+--------+--------+--------+---------+--------+----------------------+
 |  mtype |  mver  |clientid|   md5  | reserve |  size  |     bytes            |
@@ -22,3 +22,20 @@ Where:
 * `reserve` is a 8-byte reserve
 * `size` is the size of the byte array, encoded as an int32, positive values only
 * `bytes` are the bytes of the byte array.
+
+### Binary response encoding
+```
++--------+--------+--------+---------+--------+
+|   ver  |clientid|   md5  | reserve | status |
++--------+--------+--------+---------+--------+
+```
+
+Where:
+* `ver` is a single-byte message version. Current 1.
+* `clientid` is a 64-bit number that is a unique customer identifier.
+* `md5` is a 16-byte md5
+* `reserve` is a 8-byte reserve
+* `status` is a 16-bit number that indicates the status of message processing. Reserved statuses:
+    * 0 OK
+    * 1 Unknown error - (need to resend)
+    * 2 Unknown error - (no retry)
