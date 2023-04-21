@@ -1,3 +1,13 @@
+OAP-messages Binary protocol encoding
+===============================
+
+This document describes the wire encoding for OAP-messages.
+
+### UML diagram
+
+![UML Diagram](oap-messages.png)
+
+### Binary encoding
 ```
 +--------+--------+--------+--------+---------+--------+----------------------+
 |  mtype |  mver  |clientid|   md5  | reserve |  size  |     bytes            |
