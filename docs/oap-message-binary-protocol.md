@@ -3,11 +3,20 @@ OAP-messages Binary protocol encoding
 
 This document describes the wire encoding for OAP-messages.
 
-### UML diagram
+# Contents
+
+* [UML diagram](#uml-diagram)
+* [Binary protocol](#binary-protocol)
+  * [Binary request encoding](#binary-request-encoding)
+  * [Binary response encoding](#binary-response-encoding)
+
+# UML diagram
 
 ![UML Diagram](oap-messages.png)
 
-### Binary request encoding
+# Binary protocol
+
+## Binary request encoding
 ```
 +--------+--------+--------+--------+---------+--------+----------------------+
 |  mtype |  mver  |clientid|   md5  | reserve |  size  |     bytes            |
@@ -23,7 +32,7 @@ Where:
 * `size` is the size of the byte array, encoded as an int32, positive values only
 * `bytes` are the bytes of the byte array.
 
-### Binary response encoding
+## Binary response encoding
 ```
 +--------+--------+--------+---------+--------+
 |   ver  |clientid|   md5  | reserve | status |
