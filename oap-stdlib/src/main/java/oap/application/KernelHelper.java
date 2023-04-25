@@ -177,7 +177,7 @@ public class KernelHelper {
 
     }
 
-    record ServiceConfigurationParameter(Object value, boolean ignoreCast) {
+    record ServiceConfigurationParameter( Object value, boolean ignoreCast ) {
     }
 
     static class ServiceConfigurationParameters {
