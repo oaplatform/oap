@@ -46,10 +46,12 @@ public abstract class Fixtures {
 
     @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
     public static <F extends Fixture> F suiteFixture( F fixture ) throws IllegalArgumentException {
-        if( fixture instanceof AbstractScopeFixture<?> ) fixture = ( F ) ( ( AbstractScopeFixture<?> ) fixture ).withScope( SUITE );
+        if( fixture instanceof AbstractScopeFixture<?> )
+            fixture = ( F ) ( ( AbstractScopeFixture<?> ) fixture ).withScope( SUITE );
 
         var ret = suiteFixtures.putIfAbsent( fixture.getClass(), fixture );
-        if( ret != null ) throw new IllegalArgumentException( "Fixture '" + fixture.getClass().getCanonicalName() + "' has already been registered, registered: " + suiteFixtures.keySet() );
+        if( ret != null )
+            throw new IllegalArgumentException( "Fixture '" + fixture.getClass().getCanonicalName() + "' has already been registered, registered: " + suiteFixtures.keySet() );
         return fixture;
     }
 
@@ -73,7 +75,7 @@ public abstract class Fixtures {
         suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeSuite ) );
     }
 
-    @AfterSuite
+    @AfterSuite( alwaysRun = true )
     public void fixAfterSuite() {
         Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterSuite ) );
     }
@@ -84,7 +86,7 @@ public abstract class Fixtures {
         fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeClass ) );
     }
 
-    @AfterClass
+    @AfterClass( alwaysRun = true )
     public void fixAfterClass() {
         fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterClass ) );
         Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterClass ) );
@@ -96,7 +98,7 @@ public abstract class Fixtures {
         fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeMethod ) );
     }
 
-    @AfterMethod
+    @AfterMethod( alwaysRun = true )
     public void fixAfterMethod() {
         fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
         Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
