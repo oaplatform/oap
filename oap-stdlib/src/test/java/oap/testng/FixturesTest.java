@@ -70,7 +70,6 @@ public class FixturesTest extends Fixtures {
         public void beforeMethod() {
             log.info( "beforeMethod" );
             result += "BM";
-            if(true) throw  new RuntimeException();
         }
 
         @Override
