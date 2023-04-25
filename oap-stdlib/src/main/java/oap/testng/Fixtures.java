@@ -24,6 +24,7 @@
 
 package oap.testng;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.util.Lists;
 import org.testng.annotations.AfterClass;
@@ -39,6 +40,7 @@ import java.util.LinkedList;
 import static oap.testng.Fixture.Scope.SUITE;
 
 
+@Slf4j
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class Fixtures {
     private static final LinkedHashMap<Class<? extends Fixture>, Fixture> suiteFixtures = new LinkedHashMap<>();
@@ -77,7 +79,9 @@ public abstract class Fixtures {
 
     @AfterSuite( alwaysRun = true )
     public void fixAfterSuite() {
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterSuite ) );
+        SilentRun silentRun = new SilentRun();
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterSuite ) ) );
+        silentRun.done();
     }
 
     @BeforeClass
@@ -88,8 +92,10 @@ public abstract class Fixtures {
 
     @AfterClass( alwaysRun = true )
     public void fixAfterClass() {
-        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterClass ) );
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterClass ) );
+        SilentRun silentRun = new SilentRun();
+        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterClass ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterClass ) ) );
+        silentRun.done();
     }
 
     @BeforeMethod
@@ -100,8 +106,10 @@ public abstract class Fixtures {
 
     @AfterMethod( alwaysRun = true )
     public void fixAfterMethod() {
-        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), f::afterMethod ) );
+        SilentRun silentRun = new SilentRun();
+        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterMethod ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterMethod ) ) );
+        silentRun.done();
     }
 
     protected Fixture obtainRegistered( Class<? extends Fixture> clazz ) {
@@ -110,5 +118,23 @@ public abstract class Fixtures {
 
     public enum Position {
         FIRST, LAST
+    }
+
+    private static class SilentRun {
+        private Throwable throwable;
+
+        public void run( Runnable run ) {
+            try {
+                run.run();
+            } catch( Throwable e ) {
+                if( throwable == null ) throwable = e;
+
+                log.error( e.getMessage(), e );
+            }
+        }
+
+        public void done() {
+            if( throwable != null ) throw new RuntimeException( throwable );
+        }
     }
 }

@@ -227,8 +227,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     @Override
     protected void after() {
-        this.kernel.stop();
-        this.kernel = null;
+        if( this.kernel != null ) {
+            this.kernel.stop();
+            this.kernel = null;
+        }
         super.after();
     }
 }
