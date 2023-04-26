@@ -235,6 +235,9 @@ public class Kernel implements Closeable, AutoCloseable {
 
                     instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
                     setServiceName( reflect, instance, service.name );
+
+                    service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
+
 //                    updateLoggerIfExists( instance, implName );
                 } else {
                     instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
