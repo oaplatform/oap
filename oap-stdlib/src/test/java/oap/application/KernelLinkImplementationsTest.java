@@ -124,6 +124,15 @@ public class KernelLinkImplementationsTest {
         }
     }
 
+    @Test
+    public void testConstructorReferenceFinalField() {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference-constructor.conf" ) ) ) ) {
+            kernel.start( Map.of( "boot.main", "field-reference-constructor" ) );
+
+            assertThat( kernel.serviceOfClass2( FieldReferenceFinal.class ).ti ).isNotNull();
+        }
+    }
+
     public interface TestInterface {
 
     }
@@ -157,6 +166,16 @@ public class KernelLinkImplementationsTest {
         }
     }
 
+    public static class FieldReferenceFinal {
+        public final String ti;
+        public final TestInterface ti2;
+
+        public FieldReferenceFinal( TestInterface ti ) {
+            this.ti = String.valueOf( ti );
+            this.ti2 = ti;
+        }
+    }
+
     public static class FieldReferences {
         public final ArrayList<TestInterface> tis = new ArrayList<>();
 
@@ -187,6 +206,14 @@ public class KernelLinkImplementationsTest {
 
         public void addTestLink( TestCLink link ) {
             links.add( link );
+        }
+    }
+
+    public static class TestLinkByConstructorFinalField {
+        public final TestInterfaceImpl1 impl;
+
+        public TestLinkByConstructorFinalField( TestInterfaceImpl1 impl ) {
+            this.impl = impl;
         }
     }
 }

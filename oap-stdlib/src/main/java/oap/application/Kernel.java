@@ -56,7 +56,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -120,14 +119,14 @@ public class Kernel implements Closeable, AutoCloseable {
 
     public void start( String appConfigPath, String confd ) throws ApplicationException {
         try {
-            var configURL =
-                appConfigPath.startsWith( "classpath:" )
+            var configURL = appConfigPath.startsWith( "classpath:" )
                 ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
                 : new File( appConfigPath ).toURI().toURL();
 
             Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
 
-            var confdPath = confd != null ? Paths.get( confd )
+            var confdPath = confd != null
+                ? Paths.get( confd )
                 : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
 
             start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
@@ -157,8 +156,7 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public void start( ApplicationConfiguration config ) throws ApplicationException {
-        log.debug( "initializing application kernel  " + name + "..." );
-        log.debug( "application config {}", config );
+        log.debug( "initializing application kernel  {} with config {}", name, config );
 
         this.profiles.addAll( config.getProfiles() );
 
@@ -199,7 +197,7 @@ public class Kernel implements Closeable, AutoCloseable {
         for( var module : this.modules ) {
             var moduleServices = services.get( module.module.name );
             if( moduleServices != null ) {
-                var applicationConfigurationServices = new HashSet<>( moduleServices.keySet() );
+                var applicationConfigurationServices = new LinkedHashSet<>( moduleServices.keySet() );
 
                 for( var serviceName : module.module.services.keySet() ) {
                     applicationConfigurationServices.remove( serviceName );
@@ -237,6 +235,9 @@ public class Kernel implements Closeable, AutoCloseable {
 
                     instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
                     setServiceName( reflect, instance, service.name );
+
+                    service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
+
 //                    updateLoggerIfExists( instance, implName );
                 } else {
                     instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
@@ -327,7 +328,10 @@ public class Kernel implements Closeable, AutoCloseable {
                             }
                         }
                     },
-                    exception( e -> new ApplicationException( "Unknown service link " + serviceRef ) ) ) );
+                    exception( e -> new ApplicationException( "Unknown service link " + serviceRef + " in"
+                        + "\n{\n\timplementation = " + initialization.service.implementation
+                        + "\n\tlink." + fieldName + " = " + serviceRef
+                        + "\n}" ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
