@@ -12,10 +12,11 @@ OAP-template Documentation
 * [Main](#main)
 * [Expression](#expression)
 * [Comment](#comment)
+* [Nullable and Optional](#nullable-and-optional)
 
 ### Main
 `(` *expression* `|` *comment* `|` *text* `){1..N}`
-
+  
 * **text** → any character set except *expr*
 * **expression** → [expression](#expresssion)
 
@@ -39,3 +40,10 @@ OAP-template Documentation
       * **operation**  → _*_ `|` */* `|` *+* `|` *-*
       * **number** → *LONG* `|` *FLOAT*
 
+
+### Comment
+
+### Nullable and Optional
+* `Optional<?>` fields cannot be null.
+* By default, all non-primitive types at the end of a path are treated as possibly nullable, except for `Optional<?>` and the direct specification of the `@javax.annotation.Nullable` annotation.
+* All types at the beginning of the path are treated as non-nullable, except `Optional<?>` or `@javax.annotation.Nullable` annotated.
