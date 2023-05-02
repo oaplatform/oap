@@ -7,12 +7,14 @@ OAP-template Documentation
 * [Syntax](#syntax)
 
 ## Motivation
+<p>The main application is in systems with a high load, where the speed of template rendering is important. The framework converts the template to pure Java code without using reflection and compiles to bytecode.</p>
 
 ## Syntax
 * [Main](#main)
 * [Expression](#expression)
 * [Comment](#comment)
 * [Nullable and Optional](#nullable-and-optional)
+* [Built-in functions](#built-in-functions)
 
 ### Main
 `(` *expression* `|` *comment* `|` *text* `){1..N}`
@@ -45,5 +47,18 @@ OAP-template Documentation
 
 ### Nullable and Optional
 * `Optional<?>` fields cannot be null.
-* By default, all non-primitive types at the end of a path are treated as possibly nullable, except for `Optional<?>` and the direct specification of the `@javax.annotation.Nullable` annotation.
+* By default, all non-primitive types at the end of a path are treated as possibly nullable, except for `Optional<?>` and the direct specification of the `@javax.annotation.Nonnull` annotation.
 * All types at the beginning of the path are treated as non-nullable, except `Optional<?>` or `@javax.annotation.Nullable` annotated.
+
+### Built-in functions
+* urlencode(depth) → depth=3 → urlencode(urlencode(urlencode(data)))
+* urlencode→   [URLEncoder.encode( src, StandardCharsets.UTF_8.name() )](https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/net/URLEncoder.html#encode(java.lang.String,java.nio.charset.Charset))
+* urlencodePercent → urlencode and `+` replaced by `%20`
+* toUpperCase → [String#toUpperCase](https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/String.html#toUpperCase())
+* toLowerCase → [String#toLowerCase](https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/String.html#toLowerCase())
+* format(pattern) → 
+  * [string pattern](https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html) or predefinded:
+    * `"SIMPLE"` → `"yyyy-MM-dd'T'HH:mm:ss"`
+    * `"MILLIS"`→ `"yyyy-MM-dd'T'HH:mm:ss.SSS"`
+    * `"SIMPLE_CLEAN"` → `"yyyy-MM-dd HH:mm:ss"`
+    *  `"DATE"` → `"yyyy-MM-dd"`
