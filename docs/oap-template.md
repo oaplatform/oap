@@ -12,7 +12,7 @@ OAP-template Documentation
 ## Syntax
 * [Main](#main)
 * [Expression](#expression)
-* [Comment](#comment)
+* [Example](#example)
 * [Nullable and Optional](#nullable-and-optional)
 * [Built-in functions](#built-in-functions)
 
@@ -43,7 +43,23 @@ OAP-template Documentation
       * **number** → *LONG* `|` *FLOAT*
 
 
-### Comment
+### Example
+| Bean                                                                         | Template                    | Result          |
+|------------------------------------------------------------------------------|-----------------------------|-----------------|
+| <pre>{field: string := "teststr"}</pre>                                      | `${field}-${field}`         | `teststr-teststr` |
+| <pre>{field(): string := "teststr"}</pre>                                    | `${field()}`                | `teststr`       |
+| <pre>{field: string := "teststr"}</pre>                                      | `$${field}`                 | `${field}`      |
+| <pre>{child: object := {field: int := 10}}</pre>                             | `${child.field}`            | `10`            |
+| <pre>{field: string := null}</pre>                                           | `${field ?? "def"}`         | `def`           |
+| <pre>{field: int := 123}</pre>                                               | `${intField + 12.45}`       | `135.45`        |
+| <pre>{field: int := 123}</pre>                                               | `${/* intField */intField}` | `123`           |
+| <pre>{<br/>  field1: string := "f1"<br/>  field2: string := "f2"<br/>}</pre> | `${field1,"--",field2}`     | `f1--f2`        |
+| <pre>{<br/>  field1: string := null<br/>  field2: string := "f2"<br/>}</pre> | `${field1\|field2}`         | `f2`          |
+| <pre>{v: string := "a i/d"}</pre>                                            | `id=${v; urlencode(0)}`     | `id=a i/d`      |
+| <pre>{v: string := "a i/d"}</pre>                                            | `id=${v; urlencode(1)}`     | `id=a+i%2Fd`    |
+| <pre>{v: string := "a i/d"}</pre>                                            | `id=${v; urlencode()}`      | `id=a+i%2Fd`    |
+| <pre>{v: string := "a i/d"}</pre>                                            | `id=${v; urlencode(2)}`     | `id=a%2Bi%252Fd` |
+
 
 ### Nullable and Optional
 * `Optional<?>` fields cannot be null.
@@ -57,7 +73,7 @@ OAP-template Documentation
 * toUpperCase → [String#toUpperCase](https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/String.html#toUpperCase())
 * toLowerCase → [String#toLowerCase](https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/String.html#toLowerCase())
 * format(pattern) → 
-  * [string pattern](https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html) or predefinded:
+  * [string pattern](https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html) or predefined:
     * `"SIMPLE"` → `"yyyy-MM-dd'T'HH:mm:ss"`
     * `"MILLIS"`→ `"yyyy-MM-dd'T'HH:mm:ss.SSS"`
     * `"SIMPLE_CLEAN"` → `"yyyy-MM-dd HH:mm:ss"`
