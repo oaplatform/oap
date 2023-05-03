@@ -12,7 +12,7 @@ OAP-template Documentation
 ## Syntax
 * [Main](#main)
 * [Expression](#expression)
-* [Example](#example)
+* [Examples](#examples)
 * [Nullable and Optional](#nullable-and-optional)
 * [Built-in functions](#built-in-functions)
 
@@ -43,7 +43,7 @@ OAP-template Documentation
       * **number** → *LONG* `|` *FLOAT*
 
 
-### Example
+### Examples
 | Bean                                                                         | Template                    | Result          |
 |------------------------------------------------------------------------------|-----------------------------|-----------------|
 | <pre>{field: string := "teststr"}</pre>                                      | `${field}-${field}`         | `teststr-teststr` |
