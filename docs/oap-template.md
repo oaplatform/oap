@@ -15,6 +15,7 @@ OAP-template Documentation
 * [Examples](#examples)
 * [Nullable and Optional](#nullable-and-optional)
 * [Built-in functions](#built-in-functions)
+* [Result type](#result-type)
 
 ### Main
 `(` *expression* `|` *comment* `|` *text* `){1..N}`
@@ -27,6 +28,7 @@ OAP-template Documentation
 `${` `(`*expression_comment*`){0..1}` `(`*result_type*`){0..1}` *exprs* `(`*defauult_type*`){0..1}` `(`*function*`){0..1}` `}`
 
 * **expression_comment** → _/*_ &lt;ANY> _*/_<br>
+* **result_type** → *&lt;* *JAVA_TYPE_NAME* *>*
 * **default_type** → *??* *value*<br>
   * **value** → *STRING* `|` *LONG* `|` *FLOAT* `|` *BOOLEAN* | *[]*
     * **STRING** → `"` *&lt;TEXT>* `"` `|` `'` *&lt;TEXT>* `'`
@@ -78,3 +80,9 @@ OAP-template Documentation
     * `"MILLIS"`→ `"yyyy-MM-dd'T'HH:mm:ss.SSS"`
     * `"SIMPLE_CLEAN"` → `"yyyy-MM-dd HH:mm:ss"`
     *  `"DATE"` → `"yyyy-MM-dd"`
+
+### Result Type
+The result of the template function is passed to the TemplateAccumulator interface.
+Default implementations:
+* *TemplateAccumulatorString* is used to render patterns with many expressions, the results of the expressions are accumulated in a StringBuilder.
+* *TemplateAccumulatorObject* is used to get the result from an expression. If the template contains several expressions, then the last one is taken. 
