@@ -114,7 +114,7 @@ class ModuleHelper {
 
         if( found.isEmpty() ) return null;
 
-        var enabled = Lists.find2( found, f -> f._1.isEnabled() && f._2.enabled );
+        var enabled = Lists.find2( found, f -> f._1.isEnabled() && f._2.enabled == ServiceEnabledStatus.ENABLED );
         if( enabled != null ) return enabled;
 
         return Lists.head2( found );
@@ -124,10 +124,10 @@ class ModuleHelper {
         var map = new ModuleItemTree();
 
         for( var module : modules ) {
-            var enabled = true;
+            var enabled = ServiceEnabledStatus.ENABLED;
             if( !KernelHelper.isModuleEnabled( module.module, profiles ) ) {
                 log.debug( "skipping module {} with profiles {}", module.module.name, module.module.profiles );
-                enabled = false;
+                enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
             }
 
             ModuleItem moduleItem = new ModuleItem( module.module, module.location, enabled, new LinkedHashMap<>() );
@@ -142,16 +142,16 @@ class ModuleHelper {
             for( var serviceEntry : moduleInfo.module.services.entrySet() ) {
                 var serviceName = serviceEntry.getKey();
                 var service = serviceEntry.getValue();
-                var enabled = true;
+                var enabled = ServiceEnabledStatus.ENABLED;
 
                 if( !KernelHelper.isServiceEnabled( service, profiles ) ) {
                     log.debug( "skipping service {}:{} with profiles {}", moduleInfo.module.name, serviceName, service.profiles );
-                    enabled = false;
+                    enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
                 }
 
                 if( !service.enabled ) {
                     log.debug( "skipping service {}:{}, reason: enabled = false", moduleInfo.module.name, serviceName );
-                    enabled = false;
+                    enabled = ServiceEnabledStatus.DISABLED_BY_FLAG;
                 }
 
                 moduleInfo.services.put( serviceName, new ModuleItem.ServiceItem( serviceName, moduleInfo, service, enabled ) );
@@ -164,7 +164,7 @@ class ModuleHelper {
             if( !moduleItem.isEnabled() ) continue;
 
             moduleItem.services.forEach( ( serviceName, serviceItem ) -> {
-                if( !serviceItem.enabled ) return;
+                if( !serviceItem.isEnabled() ) return;
 
                 for( var dService : serviceItem.service.dependsOn ) {
                     String dModuleName;
@@ -293,7 +293,7 @@ class ModuleHelper {
 
     private static void removeDisabledServices( ModuleItemTree map ) {
         for( var moduleInfo : map.values() ) {
-            moduleInfo.services.values().removeIf( serviceInfo -> !serviceInfo.enabled );
+            moduleInfo.services.values().removeIf( serviceInfo -> !serviceInfo.isEnabled() );
         }
     }
 
@@ -309,7 +309,8 @@ class ModuleHelper {
             for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
                     throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled."
-                            + " [" + dModuleInfo.moduleItem.module.name + "] is disabled." );
+                            + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
+                            + dModuleInfo.moduleItem.getEnabled().toString() + "." );
                 }
             }
         }
@@ -320,7 +321,7 @@ class ModuleHelper {
             if( !moduleInfo.isEnabled() ) continue;
 
             for( var serviceInfo : moduleInfo.services.values() ) {
-                if( !serviceInfo.enabled ) continue;
+                if( !serviceInfo.isEnabled() ) continue;
 
                 if( serviceInfo.service.implementation == null )
                     throw new ApplicationException( "failed to initialize service: " + moduleInfo.module.name + ":" + serviceInfo.serviceName + ". implementation == null" );
@@ -333,11 +334,12 @@ class ModuleHelper {
             if( !moduleInfo.isEnabled() ) continue;
 
             for( var serviceInfo : moduleInfo.services.values() ) {
-                if( !serviceInfo.enabled ) continue;
+                if( !serviceInfo.isEnabled() ) continue;
 
                 for( var dServiceReference : serviceInfo.dependsOn ) {
-                    if( !dServiceReference.serviceItem.enabled && dServiceReference.required ) {
-                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. [" + dServiceReference.serviceItem.serviceName + "] is disabled." );
+                    if( !dServiceReference.serviceItem.isEnabled() && dServiceReference.required ) {
+                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. Required service [" + dServiceReference.serviceItem.serviceName + "] is disabled by "
+                                + dServiceReference.serviceItem.enabled.toString() + "." );
                     }
                 }
             }

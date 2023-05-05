@@ -38,12 +38,12 @@ import java.util.LinkedHashSet;
 class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
-    private final boolean enabled;
+    private final ServiceEnabledStatus enabled;
     private final LinkedHashMap<String, ModuleReference> dependsOn;
     private final URL location;
     private boolean load = false;
 
-    ModuleItem( Module module, URL location, boolean enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
+    ModuleItem( Module module, URL location, ServiceEnabledStatus enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
         this.module = module;
         this.location = location;
         this.enabled = enabled;
@@ -55,7 +55,11 @@ class ModuleItem {
     }
 
     final boolean isEnabled() {
-        return enabled && load;
+        return this.enabled == ServiceEnabledStatus.ENABLED && load;
+    }
+
+    final ServiceEnabledStatus getEnabled() {
+        return enabled;
     }
 
     final String getName() {
@@ -125,10 +129,10 @@ class ModuleItem {
         public final String serviceName;
         public final ModuleItem moduleItem;
         public final Service service;
-        public final boolean enabled;
+        public final ServiceEnabledStatus enabled;
         public final LinkedHashSet<ServiceReference> dependsOn = new LinkedHashSet<>();
 
-        ServiceItem( String serviceName, ModuleItem moduleItem, Service service, boolean enabled ) {
+        ServiceItem( String serviceName, ModuleItem moduleItem, Service service, ServiceEnabledStatus enabled ) {
             this.serviceName = serviceName;
             this.moduleItem = moduleItem;
             this.service = service;
@@ -176,6 +180,10 @@ class ModuleItem {
                 if( found != null ) dependsOn.remove( found );
                 dependsOn.add( serviceReference );
             }
+        }
+
+        public boolean isEnabled() {
+            return enabled == ServiceEnabledStatus.ENABLED;
         }
 
         static class ServiceReference {

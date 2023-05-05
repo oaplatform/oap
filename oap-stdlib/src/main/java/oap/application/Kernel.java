@@ -215,7 +215,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
         for( var serviceItem : map.services ) {
             if( !serviceItem.moduleItem.isEnabled() ) continue;
-            if( !serviceItem.enabled ) continue;
+            if( !serviceItem.isEnabled() ) continue;
 
             var moduleItem = serviceItem.moduleItem;
             var moduleName = moduleItem.getName();
