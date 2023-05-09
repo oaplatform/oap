@@ -24,7 +24,9 @@ This document describes the wire encoding for OAP-messages.
 ```
 
 Where:
-* `mtype` is a single-byte message type. Set by the protocol client.
+* `mtype` is a single-byte message type. Set by the protocol client. Reserved:
+  * *10* - [oap-statsdb](https://github.com/oaplatform/oap-statsdb) 
+  * *20* - [oap-logstream](https://github.com/oaplatform/oap-logstream)
 * `mver` is a 16-bit number that indicates the version of the data sent by the client.
 * `clientid` is a 64-bit number that is a unique customer identifier.
 * `md5` is a 16-byte md5
