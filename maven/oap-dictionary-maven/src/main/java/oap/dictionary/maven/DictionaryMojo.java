@@ -33,6 +33,7 @@ import oap.dictionary.ExternalIdType;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
+import oap.util.Collections;
 import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
@@ -105,8 +106,7 @@ public class DictionaryMojo extends AbstractMojo {
                     .append( "import java.util.Optional;\n" )
                     .append( "import java.util.List;\n\n" )
                     .append( "import static java.util.Collections.emptyList;\n" )
-                    .append( "import static java.util.Collections.emptyMap;\n" )
-                    .append( "import static java.util.Arrays.asList;\n\n" )
+                    .append( "import static java.util.Collections.emptyMap;\n\n" )
                     .append( "public enum " + dict.name + " implements Dictionary {\n" );
 
                 var properties = dict.values
@@ -158,7 +158,7 @@ public class DictionaryMojo extends AbstractMojo {
 
                 for( var property : properties ) {
                     out
-                        .append( "  public final " + propertyType( property, optional, types ) + " " + property + "(){return " + property + ";}\n" );
+                        .append( "  public final " + propertyType( property, optional, types ) + " " + property + "() { return " + property + "; }\n" );
                 }
 
                 out
@@ -176,8 +176,7 @@ public class DictionaryMojo extends AbstractMojo {
                 }
 
                 out
-                    .append( "  }\n"
-                        + "\n"
+                    .append( "  }\n\n"
                         + "  public static " + dict.name + " valueOf( int externalId ) {\n"
                         + "    switch( externalId ) {\n" );
 
@@ -198,92 +197,95 @@ public class DictionaryMojo extends AbstractMojo {
                         + "    }\n"
                         + "  }\n"
                         + "\n"
-                        + "  @Override\n"
-                        + "  public int getOrDefault( String id, int defaultValue ) {\n"
-                        + "    return defaultValue;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public Integer get( String id ) {\n"
-                        + "    return null;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public String getOrDefault( int externlId, String defaultValue ) {\n"
-                        + "    return defaultValue;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public boolean containsValueWithId( String id ) {\n"
-                        + "    return false;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public List<String> ids() {\n"
-                        + "    return emptyList();\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public int[] externalIds() {\n"
-                        + "    return new int[0];\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public Map<String, Object> getProperties() {\n"
-                        + "    return emptyMap();\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public Optional<? extends Dictionary> getValueOpt( String name ) {\n"
-                        + "    return Optional.empty();\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public Dictionary getValue( String name ) {\n"
-                        + "    return null;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public Dictionary getValue( int externalId ) {\n"
-                        + "    return null;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public List<? extends Dictionary> getValues() {\n"
-                        + "    return emptyList();\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public String getId() {\n"
-                        + "    return name();\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public Optional<Object> getProperty( String name ) {\n"
-                        + "    return Optional.empty();\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public boolean isEnabled() {\n"
-                        + "    return enabled;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public int getExternalId() {\n"
-                        + "    return externalId;\n"
-                        + "  }\n"
+                        + """
+                              @Override
+                                public int getOrDefault( String id, int defaultValue ) {
+                                  return defaultValue;
+                                }
+
+                                @Override
+                                public Integer get( String id ) {
+                                  return null;
+                                }
+
+                                @Override
+                                public String getOrDefault( int externlId, String defaultValue ) {
+                                  return defaultValue;
+                                }
+
+                                @Override
+                                public boolean containsValueWithId( String id ) {
+                                  return false;
+                                }
+
+                                @Override
+                                public List<String> ids() {
+                                  return emptyList();
+                                }
+
+                                @Override
+                                public int[] externalIds() {
+                                  return new int[0];
+                                }
+
+                                @Override
+                                public Map<String, Object> getProperties() {
+                                  return emptyMap();
+                                }
+
+                                @Override
+                                public Optional<? extends Dictionary> getValueOpt( String name ) {
+                                  return Optional.empty();
+                                }
+
+                                @Override
+                                public Dictionary getValue( String name ) {
+                                  return null;
+                                }
+
+                                @Override
+                                public Dictionary getValue( int externalId ) {
+                                  return null;
+                                }
+
+                                @Override
+                                public List<? extends Dictionary> getValues() {
+                                  return emptyList();
+                                }
+
+                                @Override
+                                public String getId() {
+                                  return name();
+                                }
+
+                                @Override
+                                public Optional<Object> getProperty( String name ) {
+                                  return Optional.empty();
+                                }
+
+                                @Override
+                                public boolean isEnabled() {
+                                  return enabled;
+                                }
+
+                                @Override
+                                public int getExternalId() {
+                                  return externalId;
+                                }
+
+                                @Override
+                                public boolean containsProperty( String name ) {
+                                  return false;
+                                }
+
+                            """
                         + "  @Override\n"
                         + "  public " + dict.name + " cloneDictionary() {\n"
                         + "    return this;\n"
-                        + "  }\n"
+                        + "  }\n\n"
                         + "  public " + externalIdType + " externalId() {\n"
                         + "    return externalId;\n"
-                        + "  }\n"
-                        + "\n"
-                        + "  @Override\n"
-                        + "  public boolean containsProperty( String name ) {\n"
-                        + "    return false;\n"
-                        + "  }\n" )
+                        + "  }\n\n" )
                     .append( "}\n" );
 
 
@@ -426,7 +428,7 @@ public class DictionaryMojo extends AbstractMojo {
             }
 
             public boolean containsValueWithId( String id ) {
-                return Lists.find2( values, v -> v.getId().equals( id ) ) != null;
+                return Collections.find2( values, v -> v.getId().equals( id ) ) != null;
             }
         }
     }
