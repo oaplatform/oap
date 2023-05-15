@@ -116,9 +116,9 @@ public class KernelLinkImplementationsTest {
         try {
             kernel.start( Map.of( "boot.main", "creference" ) );
 
-            assertThat( kernel.serviceOfClass2( TestCLinks.class ).links ).hasSize( 2 );
-            assertThat( kernel.<TestCLink>service( "creference.link1" ).orElseThrow().link ).isNull();
-            assertThat( kernel.<TestCLink>service( "creference.link2" ).orElseThrow().link ).isNotNull();
+            assertThat( kernel.serviceOfClass2( TestCLinks.class ).references ).hasSize( 2 );
+            assertThat( kernel.<TestCLink>service( "creference.link1" ).orElseThrow().reference ).isNull();
+            assertThat( kernel.<TestCLink>service( "creference.link2" ).orElseThrow().reference ).isNotNull();
         } finally {
             kernel.stop();
         }
@@ -193,19 +193,19 @@ public class KernelLinkImplementationsTest {
     }
 
     public static class TestCLink {
-        public TestCLink link;
+        public TestCLink reference;
     }
 
     public static class TestCLinks {
-        public final ArrayList<TestCLink> links = new ArrayList<>();
-        public final TestCLink link;
+        public final List<TestCLink> references = new ArrayList<>();
+        public final TestCLink reference;
 
-        public TestCLinks( TestCLink link ) {
-            this.link = link;
+        public TestCLinks( TestCLink reference ) {
+            this.reference = reference;
         }
 
-        public void addTestLink( TestCLink link ) {
-            links.add( link );
+        public void addLinkingPhaseTestLink( TestCLink reference ) {
+            references.add( reference );
         }
     }
 
