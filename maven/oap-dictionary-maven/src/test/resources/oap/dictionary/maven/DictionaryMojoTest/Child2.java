@@ -8,7 +8,6 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.Arrays.asList;
 
 public enum Child2 implements Dictionary {
   sid111(101, true, "t1"),
@@ -21,7 +20,7 @@ public enum Child2 implements Dictionary {
 
   private final String title;
 
-  public final String title(){return title;}
+  public final String title() { return title; }
 
   Child2( int externalId, boolean enabled, String title ) {
     this.externalId = externalId;
@@ -40,89 +39,92 @@ public enum Child2 implements Dictionary {
   }
 
   @Override
-  public int getOrDefault( String id, int defaultValue ) {
-    return defaultValue;
-  }
+    public int getOrDefault( String id, int defaultValue ) {
+      return defaultValue;
+    }
 
-  @Override
-  public Integer get( String id ) {
-    return null;
-  }
+    @Override
+    public Integer get( String id ) {
+      return null;
+    }
 
-  @Override
-  public String getOrDefault( int externlId, String defaultValue ) {
-    return defaultValue;
-  }
+    @Override
+    public String getOrDefault( int externlId, String defaultValue ) {
+      return defaultValue;
+    }
 
-  @Override
-  public boolean containsValueWithId( String id ) {
-    return false;
-  }
+    @Override
+    public boolean containsValueWithId( String id ) {
+      return false;
+    }
 
-  @Override
-  public List<String> ids() {
-    return emptyList();
-  }
+    @Override
+    public List<String> ids() {
+      return emptyList();
+    }
 
-  @Override
-  public int[] externalIds() {
-    return new int[0];
-  }
+    @Override
+    public int[] externalIds() {
+      return new int[0];
+    }
 
-  @Override
-  public Map<String, Object> getProperties() {
-    return emptyMap();
-  }
+    @Override
+    public Map<String, Object> getProperties() {
+      return emptyMap();
+    }
 
-  @Override
-  public Optional<? extends Dictionary> getValueOpt( String name ) {
-    return Optional.empty();
-  }
+    @Override
+    public Optional<? extends Dictionary> getValueOpt( String name ) {
+      return Optional.empty();
+    }
 
-  @Override
-  public Dictionary getValue( String name ) {
-    return null;
-  }
+    @Override
+    public Dictionary getValue( String name ) {
+      return null;
+    }
 
-  @Override
-  public Dictionary getValue( int externalId ) {
-    return null;
-  }
+    @Override
+    public Dictionary getValue( int externalId ) {
+      return null;
+    }
 
-  @Override
-  public List<? extends Dictionary> getValues() {
-    return emptyList();
-  }
+    @Override
+    public List<? extends Dictionary> getValues() {
+      return emptyList();
+    }
 
-  @Override
-  public String getId() {
-    return name();
-  }
+    @Override
+    public String getId() {
+      return name();
+    }
 
-  @Override
-  public Optional<Object> getProperty( String name ) {
-    return Optional.empty();
-  }
+    @Override
+    public Optional<Object> getProperty( String name ) {
+      return Optional.empty();
+    }
 
-  @Override
-  public boolean isEnabled() {
-    return enabled;
-  }
+    @Override
+    public boolean isEnabled() {
+      return enabled;
+    }
 
-  @Override
-  public int getExternalId() {
-    return externalId;
-  }
+    @Override
+    public int getExternalId() {
+      return externalId;
+    }
+
+    @Override
+    public boolean containsProperty( String name ) {
+      return false;
+    }
+
   @Override
   public Child2 cloneDictionary() {
     return this;
   }
+
   public int externalId() {
     return externalId;
   }
 
-  @Override
-  public boolean containsProperty( String name ) {
-    return false;
-  }
 }

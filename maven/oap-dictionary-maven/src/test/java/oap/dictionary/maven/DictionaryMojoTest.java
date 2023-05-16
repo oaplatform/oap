@@ -33,7 +33,7 @@ import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.TestDirectoryFixture.testPath;
 
 public class DictionaryMojoTest extends Fixtures {
-    {
+    public DictionaryMojoTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
