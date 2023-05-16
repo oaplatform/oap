@@ -8,6 +8,7 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Arrays.asList;
 
 public enum Child2 implements Dictionary {
   sid111(101, true, "t1"),

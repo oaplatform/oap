@@ -8,6 +8,7 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Arrays.asList;
 
 public enum TestDictionaryExternalIdAsCharacter implements Dictionary {
   id1('A', true, Optional.of(1L), Optional.of("1"), true, Optional.of(asList(true, false)), Optional.of(asList("test1", "test2")), "title1"),

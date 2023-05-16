@@ -106,7 +106,8 @@ public class DictionaryMojo extends AbstractMojo {
                     .append( "import java.util.Optional;\n" )
                     .append( "import java.util.List;\n\n" )
                     .append( "import static java.util.Collections.emptyList;\n" )
-                    .append( "import static java.util.Collections.emptyMap;\n\n" )
+                    .append( "import static java.util.Collections.emptyMap;\n" )
+                    .append( "import static java.util.Arrays.asList;\n\n" )
                     .append( "public enum " + dict.name + " implements Dictionary {\n" );
 
                 var properties = dict.values
