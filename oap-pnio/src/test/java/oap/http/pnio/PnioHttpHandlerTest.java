@@ -167,8 +167,15 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = envFixture.portFor( "pnio" );
-        try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( requestSize, responseSize, 0.99, cpuThreads,
-            true, -1, workflow, this::errorResponse );
+        var settings = PnioHttpHandler.PnioHttpSettings.builder()
+                .requestSize( requestSize )
+                .responseSize( responseSize )
+                .queueTimeoutPercent( 0.99 )
+                .cpuThreads( cpuThreads )
+                .cpuQueueFair( true )
+                .cpuAffinityFirstCpu( -1 )
+                .build();
+        try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, this::errorResponse );
              NioHttpServer httpServer = new NioHttpServer( port ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
