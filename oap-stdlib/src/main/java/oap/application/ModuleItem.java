@@ -33,9 +33,10 @@ import oap.util.Lists;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 @ToString
-class ModuleItem {
+public class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
     private final ServiceEnabledStatus enabled;
@@ -54,7 +55,7 @@ class ModuleItem {
         load = true;
     }
 
-    final boolean isEnabled() {
+    public final boolean isEnabled() {
         return this.enabled == ServiceEnabledStatus.ENABLED && load;
     }
 
@@ -62,7 +63,7 @@ class ModuleItem {
         return enabled;
     }
 
-    final String getName() {
+    public final String getName() {
         return module.name;
     }
 
@@ -85,7 +86,7 @@ class ModuleItem {
         return module.name.hashCode();
     }
 
-    final LinkedHashMap<String, ModuleReference> getDependsOn() {
+    public final Map<String, ModuleReference> getDependsOn() {
         return dependsOn;
     }
 
@@ -95,7 +96,7 @@ class ModuleItem {
 
     @ToString
     @EqualsAndHashCode
-    static class ModuleReference {
+    public static class ModuleReference {
         final ModuleItem moduleItem;
 
         ModuleReference( ModuleItem moduleItem ) {
@@ -125,7 +126,7 @@ class ModuleItem {
     }
 
     @ToString
-    static class ServiceItem {
+    public static class ServiceItem {
         public final String serviceName;
         public final ModuleItem moduleItem;
         public final Service service;

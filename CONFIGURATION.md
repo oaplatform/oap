@@ -1,6 +1,6 @@
 [ INJECTION via constructor and public non-final field ]
 
-During startup Kernel load configuration file and initializes beans.
+During startup Kernel loads configuration file and initializes beans.
 /META-INF/oap-module.conf is the starting point for manipulating OAP dependencies and other application settings. That file uses HOCON format. Main point is services section, where beans described (like spring beans). 
 Each described bean inside is called ‘service’ and has 2 obligatory parameters - its name (not-null-objects-factory) and implementation class (io.xenoss.example.NotNull). 
 For example
@@ -155,3 +155,11 @@ public void addEnricher( Object filter ) throws IllegalAccessException
 ~~~
 in BidRequestProcessor class. Of course, it might be done in opposite way with Enricher constructor parameter. 
 So this is just a second way to link services/beans.
+
+[ PROGRAMM ACCESS to services/beans ]
+
+- Get service/bean name from configuration from class.
+~~~
+var fServiceName = kernel.serviceOfClass( TestServiceNameField.class ).orElseThrow();
+~~~
+-
