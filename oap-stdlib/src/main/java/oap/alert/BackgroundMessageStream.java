@@ -50,7 +50,7 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
     @Override
     public void run() {
         while( true ) {
-            Message message;
+            Message message = null;
             try {
                 message = messages.take();
                 guaranteedDeliveryTransport.send( message, transport );
