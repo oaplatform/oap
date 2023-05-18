@@ -44,7 +44,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 public class Archiver {
-    private static int BUFFER_SIZE = 4096;
+    private static final int BUFFER_SIZE = 4096;
 
     @SneakyThrows
     public void unpack( Path archive, Path dest, ArchiveType type ) {
@@ -65,8 +65,8 @@ public class Archiver {
                             }
                         }
                     }
-                } catch (IOException exception) {
-                    throw new IllegalStateException("Cannot uncompress 7-zip from " + archive.toUri() + " to {}" + dest.toUri(), exception);
+                } catch ( IOException exception ) {
+                    throw new IllegalStateException( "Cannot uncompress 7-zip from " + archive.toUri() + " to {}" + dest.toUri(), exception );
                 }
             }
             default -> throw new IllegalArgumentException( String.valueOf( type ) );
