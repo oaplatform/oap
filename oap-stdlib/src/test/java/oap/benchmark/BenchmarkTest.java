@@ -29,11 +29,14 @@ import org.testng.annotations.Test;
 import static oap.benchmark.Benchmark.benchmark;
 
 public class BenchmarkTest {
+
+    private static final int SAMPLES = 1_000;
+
     @Test
     public void graph() {
-        benchmark( "scale", 1000, ( x, s ) -> {
+        benchmark( "scale", SAMPLES, (x, s ) -> {
             long r = 0;
-            for( int i = 0; i < 100000 * ( x + 1 ); i++ ) r += Math.sqrt( i );
+            for(int i = 0; i < 100 * SAMPLES * ( x + 1 ); i++ ) r += Math.sqrt( i );
         } )
             .formatExperiment( x -> ( x + 1 ) * 100 + "k" )
             .threads( 10 )
