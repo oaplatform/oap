@@ -38,7 +38,7 @@ public class JPathTest {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test}", Map.of( "test", 1 ), output );
 
-        assertThat( output.toString() ).isEqualTo( "1" );
+        assertThat( output.toString() ).hasToString( "1" );
     }
 
     @Test
@@ -46,7 +46,7 @@ public class JPathTest {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.val}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
 
-        assertThat( output.toString() ).isEqualTo( "val1" );
+        assertThat( output.toString() ).hasToString( "val1" );
     }
 
     @Test
@@ -54,7 +54,7 @@ public class JPathTest {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.testPrivate.val}", Map.of( "test", new TestBean( "val1", null, new TestBean( "pv", null, null ) ) ), output );
 
-        assertThat( output.toString() ).isEqualTo( "pv" );
+        assertThat( output.toString() ).hasToString( "pv" );
     }
 
     @Test
@@ -62,25 +62,25 @@ public class JPathTest {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.getPrivate().val}", Map.of( "test", new TestBean( "val1", null, new TestBean( "pv", null, null ) ) ), output );
 
-        assertThat( output.toString() ).isEqualTo( "pv" );
+        assertThat( output.toString() ).hasToString( "pv" );
     }
 
     @Test
     public void testSuperMethod() {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.keySet().stream().count()}", Map.of( "test", Map.of( "1", "2", "3", "4" ) ), output );
-        assertThat( output.toString() ).isEqualTo( "2" );
+        assertThat( output.toString() ).hasToString( "2" );
     }
 
     @Test
     public void testMethodString() {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.getString(\"str\")}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
-        assertThat( output.toString() ).isEqualTo( "str" );
+        assertThat( output.toString() ).hasToString( "str" );
 
         output.reset();
         JPath.evaluate( "${test.getString(\"str\", \"str2\")}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
-        assertThat( output.toString() ).isEqualTo( "strstr2" );
+        assertThat( output.toString() ).hasToString( "strstr2" );
     }
 
     @Test
@@ -89,7 +89,7 @@ public class JPathTest {
         var testBean = new TestBean( "val1", null, null );
         testBean.intList = new int[] { 1, 2, 3 };
         JPath.evaluate( "${test.intList[1]}", Map.of( "test", testBean ), output );
-        assertThat( output.toString() ).isEqualTo( "2" );
+        assertThat( output.toString() ).hasToString( "2" );
     }
 
     @Test
@@ -98,22 +98,22 @@ public class JPathTest {
         var testBean = new TestBean( "val1", null, null );
         testBean.list = List.of( new TestBean( "b1", null, null ), new TestBean( "b2", null, null ) );
         JPath.evaluate( "${test.list[1].val}", Map.of( "test", testBean ), output );
-        assertThat( output.toString() ).isEqualTo( "b2" );
+        assertThat( output.toString() ).hasToString( "b2" );
     }
 
     @Test
     public void testDecimalInteger() {
         var output = new StringBuilderJPathOutput();
         JPath.evaluate( "${test.getStringInt(\"str\", 2)}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
-        assertThat( output.toString() ).isEqualTo( "str2" );
+        assertThat( output.toString() ).hasToString( "str2" );
 
         output.reset();
         JPath.evaluate( "${test.getStringLong(\"str\", 3)}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
-        assertThat( output.toString() ).isEqualTo( "str3" );
+        assertThat( output.toString() ).hasToString( "str3" );
 
         output.reset();
         JPath.evaluate( "${test.getStringLong2(\"str\", 4)}", Map.of( "test", new TestBean( "val1", null, null ) ), output );
-        assertThat( output.toString() ).isEqualTo( "str4" );
+        assertThat( output.toString() ).hasToString( "str4" );
     }
 
     @ToString

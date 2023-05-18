@@ -24,8 +24,8 @@
 
 package oap.application.link;
 
-public interface LinkReflection {
-    boolean set( Object value );
+public interface LinkReflection<T> {
+    boolean set( T value );
 
-    Object get();
+    T get();
 }

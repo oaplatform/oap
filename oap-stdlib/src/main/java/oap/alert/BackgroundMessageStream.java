@@ -50,14 +50,16 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
     @Override
     public void run() {
         while( true ) {
+            Message message;
             try {
-                Message p = messages.take();
-                guaranteedDeliveryTransport.send( p, transport );
+                message = messages.take();
+                guaranteedDeliveryTransport.send( message, transport );
             } catch( InterruptedException e ) {
-                log.info( "Interrupted background message stream - exiting" );
+                Thread.currentThread().interrupt();
+                log.error( "Interrupted background message stream - exiting" );
                 return;
             } catch( Exception e ) {
-                log.error( "Unexpected exception", e );
+                log.error( "Unexpected exception while sending: " + message, e );
             }
         }
     }

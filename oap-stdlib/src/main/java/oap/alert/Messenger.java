@@ -24,6 +24,7 @@
 
 package oap.alert;
 
+@FunctionalInterface
 public interface Messenger {
     void send( String host, String name, Alert alert, boolean changed );
 }

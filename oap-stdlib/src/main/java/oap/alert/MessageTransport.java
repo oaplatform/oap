@@ -24,6 +24,7 @@
 
 package oap.alert;
 
+@FunctionalInterface
 public interface MessageTransport<M> {
     void send( M message );
 }

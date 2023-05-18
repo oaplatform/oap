@@ -45,9 +45,8 @@ public class FieldLinkReflection implements LinkReflection {
         if( field != null ) {
             field.set( instance, value );
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     @Override
@@ -55,9 +54,8 @@ public class FieldLinkReflection implements LinkReflection {
         var field = reflection.field( this.field ).orElse( null );
         if( field != null ) {
             return field.get( instance );
-        } else {
-            return null;
         }
+        return null;
     }
 
 }

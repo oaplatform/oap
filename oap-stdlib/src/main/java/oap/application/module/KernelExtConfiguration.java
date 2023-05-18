@@ -33,7 +33,7 @@ import java.util.Map;
 
 @Slf4j
 public class KernelExtConfiguration extends Configuration<KernelExt> {
-    private static volatile KernelExtConfiguration instance;
+    private static KernelExtConfiguration instance;
 
     private Map<String, KernelExt.ItemExt> modules = new LinkedHashMap<>();
     private Map<String, KernelExt.ItemExt> services = new LinkedHashMap<>();
@@ -65,14 +65,12 @@ public class KernelExtConfiguration extends Configuration<KernelExt> {
     }
 
     public static KernelExtConfiguration getInstance() {
-        if( instance == null ) {
-            synchronized( KernelExtConfiguration.class ) {
-                if( instance == null ) {
-                    instance = new KernelExtConfiguration();
-                }
+        synchronized( KernelExtConfiguration.class ) {
+            if( instance == null ) {
+                instance = new KernelExtConfiguration();
             }
+            return instance;
         }
-        return instance;
     }
 
     public Object deserializeModule( String key, Object value ) {

@@ -26,30 +26,78 @@ package oap.archive;
 import lombok.SneakyThrows;
 import oap.io.Files;
 import oap.io.IoStreams;
+import oap.reflect.Reflect;
 import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.jar.JarArchiveInputStream;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 public class Archiver {
+    private static int BUFFER_SIZE = 4096;
+
     @SneakyThrows
     public void unpack( Path archive, Path dest, ArchiveType type ) {
-        if( type == ArchiveType.TAR_GZ ) {
-            try( TarArchiveInputStream tar = new TarArchiveInputStream( IoStreams.in( archive, GZIP ) ) ) {
-                ArchiveEntry entry;
-                while( ( entry = tar.getNextEntry() ) != null ) {
-                    Path path = dest.resolve( entry.getName() );
-                    if( entry.isDirectory() ) Files.ensureDirectory( path );
-                    else IoStreams.write( path, PLAIN, tar );
+        switch ( type ) {
+            case TAR_GZ -> writeUnarchived( archive, dest, ArchiveType.TAR_GZ );
+            case JAR -> writeUnarchived( archive, dest, ArchiveType.JAR );
+            case ZIP -> writeUnarchived( archive, dest, ArchiveType.ZIP );
+            case SEVEN_Z -> {
+                try ( SevenZFile archiveInputStream = new SevenZFile( archive.toFile() ) ) {
+                    byte[] buffer = new byte[ BUFFER_SIZE ];
+                    ArchiveEntry archiveEntry;
+                    while ( null != ( archiveEntry = archiveInputStream.getNextEntry() ) ) {
+                        File file = new File( dest.toFile(), archiveEntry.getName() );
+                        try ( FileOutputStream fileOutputStream = new FileOutputStream( file ) ) {
+                            int length = -1;
+                            while ( ( length = archiveInputStream.read( buffer ) ) != -1 ) {
+                                fileOutputStream.write( buffer, 0, length );
+                            }
+                        }
+                    }
+                } catch (IOException exception) {
+                    throw new IllegalStateException("Cannot uncompress 7-zip from " + archive.toUri() + " to {}" + dest.toUri(), exception);
                 }
             }
-        } else throw new IllegalArgumentException( String.valueOf( type ) );
+            default -> throw new IllegalArgumentException( String.valueOf( type ) );
+        }
+    }
+
+    private void writeUnarchived( Path archive, Path dest, ArchiveType type ) throws IOException {
+        InputStream in = IoStreams.in( archive, GZIP );
+        try( var tar = type.create( in ) ) {
+            ArchiveEntry entry;
+            while( ( entry = tar.getNextEntry() ) != null ) {
+                Path path = dest.resolve( entry.getName() );
+                if( entry.isDirectory() ) Files.ensureDirectory( path );
+                else IoStreams.write( path, PLAIN, tar );
+            }
+        }
     }
 
     public enum ArchiveType {
-        TAR_GZ
+        TAR_GZ( TarArchiveInputStream.class ),
+        JAR( JarArchiveInputStream.class ),
+        ZIP( ZipArchiveInputStream.class ),
+        SEVEN_Z( null );
+        private final Class<? extends ArchiveInputStream> clazz;
+
+
+        ArchiveType( Class<? extends ArchiveInputStream> archiveInputStreamClass ) {
+            this.clazz = archiveInputStreamClass;
+        }
+        public ArchiveInputStream create( InputStream in ) {
+            return Reflect.newInstance( clazz, new Object[] { in } );
+        }
     }
 }

@@ -130,9 +130,9 @@ public final class Benchmark {
     private String getPeriod() {
         final long millis = period.toStandardDuration().getMillis();
         if( millis == 1 ) return "ms";
-        else if( millis == 1000 ) return "s";
-        else if( millis == 1000 * 60 ) return "m";
-        else if( millis == 1000 * 60 * 60 ) return "h";
+        else if( millis == 1000L ) return "s";
+        else if( millis == 1000L * 60 ) return "m";
+        else if( millis == 1000L * 60 * 60 ) return "h";
         else return period.toString();
     }
 
@@ -142,7 +142,7 @@ public final class Benchmark {
 
     void printResult( Result result ) {
         System.out.format( "benchmarking %s: experiment %s, %d samples, %d usec, avg time %d usec, rate %s\n",
-            name, result.experiment, samples, result.total / 1000, result.time, rateToString( result.rate ) );
+            name, result.experiment, samples, result.total / 1000.0, result.time, rateToString( result.rate ) );
     }
 
     void printAverageResult( Result result ) {

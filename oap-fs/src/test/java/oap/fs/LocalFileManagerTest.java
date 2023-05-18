@@ -24,12 +24,15 @@
 
 package oap.fs;
 
+import com.google.common.base.Charsets;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -37,12 +40,12 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LocalFileManagerTest extends Fixtures {
-    {
+    public LocalFileManagerTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
     private LocalFileManager fileManager;
-    private Path tmp = TestDirectoryFixture.testPath( "/tmp/test" );
+    private final Path tmp = TestDirectoryFixture.testPath( "/tmp/test" );
 
     @BeforeClass
     public void setUp() {
@@ -55,7 +58,7 @@ public class LocalFileManagerTest extends Fixtures {
         var read = fileManager.read( TestDirectoryFixture.testPath( "/tmp/test/file.txt" ).toString() );
 
         assertThat( read.isPresent() ).isTrue();
-        assertThat( new String( read.get() ) ).isEqualTo( "test" );
+        assertThat( new String( read.get(), StandardCharsets.UTF_8 ) ).isEqualTo( "test" );
     }
 
     @AfterClass

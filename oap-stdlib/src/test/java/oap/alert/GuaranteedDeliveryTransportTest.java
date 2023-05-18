@@ -39,7 +39,7 @@ public class GuaranteedDeliveryTransportTest {
         gdt.send( "Aha!", transport );
 
         assertThat( transport.messages ).containsOnly( "Aha!" );
-        assertThat( transport.failures ).isEqualTo( 0 );
+        assertThat( transport.failures ).isZero();
     }
 
     @Test

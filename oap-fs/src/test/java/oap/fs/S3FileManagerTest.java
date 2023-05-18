@@ -50,11 +50,10 @@ public class S3FileManagerTest extends Fixtures {
 
     private S3Mock api;
     private S3FileManager fileManager;
-    //    private Path tmp = TestDirectoryFixture.testPath( "s3" );
 
     private final EnvFixture envFixture;
 
-    {
+    public S3FileManagerTest() {
         fixture( TestDirectoryFixture.FIXTURE );
         envFixture = fixture( new EnvFixture() );
     }
