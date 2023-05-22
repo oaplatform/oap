@@ -28,16 +28,19 @@ import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.apache.commons.io.FileUtils;
+import org.codehaus.plexus.util.StringUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
@@ -324,6 +327,30 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testDiskCacheChangeSourceCode() throws IOException {
+        var c1 = new TestTemplateClass();
+        c1.field = "1";
+        c1.field2 = "2";
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, Map.of(), null ).render( c1 ) )
+            .isEqualTo( "1" );
+
+        replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.class" );
+        replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.java" );
+
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, Map.of(), null ).render( c1 ) )
+            .isEqualTo( "1" );
+    }
+
+    private static void replace( String fileName ) throws IOException {
+        File file = TestDirectoryFixture.testPath( fileName ).toFile();
+        String classStr = new String( FileUtils.readFileToByteArray( file ), ISO_8859_1 );
+        byte[] classBytes = StringUtils.replace( classStr, "TemplateAccumulator", "FAKElateAccumulator" ).getBytes( ISO_8859_1 );
+        FileUtils.writeByteArrayToFile( file, classBytes );
+    }
+
+    @Test
     public void testErrorSyntax() {
         assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class );
@@ -432,7 +459,7 @@ public class TemplateEngineTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
             .render( c ) ).isEqualTo( "12\t12" );
 
-        FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
+        FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError_3b60ec011f36dd34bd4b2996cdb8ea8a.class" ).toFile(), "", UTF_8 );
 
         var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
 
