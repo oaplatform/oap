@@ -29,7 +29,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -56,8 +55,8 @@ public class TemplateEngineTest extends Fixtures {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    @BeforeClass
-    public void beforeClass() {
+    @BeforeMethod
+    public void beforeCMethod() {
         engine = new TemplateEngine( TestDirectoryFixture.testDirectory() );
     }
 
