@@ -25,7 +25,7 @@ public class TimerAdapter implements AutoCloseable {
         Objects.requireNonNull( callable );
         try ( var adapter = new TimerAdapter( timer ) ) {
             return callable.call();
-        } catch (Exception e) {
+        } catch ( Exception e ) {
             throw new RuntimeException( "Cannot calculate metric for " + callable.getClass().getCanonicalName(), e );
         }
     }
@@ -35,7 +35,7 @@ public class TimerAdapter implements AutoCloseable {
         Objects.requireNonNull( supplier );
         try ( var adapter = new TimerAdapter( timer ) ) {
             return supplier.get();
-        } catch (Exception e) {
+        } catch ( Exception e ) {
             throw new RuntimeException( "Cannot calculate metric for " + supplier.getClass().getCanonicalName(), e );
         }
     }

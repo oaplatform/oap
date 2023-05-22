@@ -14,10 +14,10 @@ public class TimerAdapterTest {
     @Test
     public void recordMetricCallable() {
         Timer timer = Timer.builder( "test" ).register( new SimpleMeterRegistry() );
-        boolean result = TimerAdapter.<Boolean>recordForCallable(timer, () -> {
-            TimeUnit.MILLISECONDS.sleep(500);
+        boolean result = TimerAdapter.<Boolean>recordForCallable( timer, () -> {
+            TimeUnit.MILLISECONDS.sleep( 500 );
             return true;
-        });
+        } );
         assertThat( result ).isTrue();
         assertThat( timer.totalTime( TimeUnit.MILLISECONDS ) ).isGreaterThan( 499 );
     }
@@ -25,10 +25,10 @@ public class TimerAdapterTest {
     @Test
     public void recordMetricSupplier() {
         Timer timer = Timer.builder( "test" ).register( new SimpleMeterRegistry() );
-        String result = TimerAdapter.recordForCallable(timer, () -> {
-            TimeUnit.MILLISECONDS.sleep(500);
+        String result = TimerAdapter.recordForCallable( timer, () -> {
+            TimeUnit.MILLISECONDS.sleep( 500 );
             return "abc";
-        });
+        } );
         assertThat( result ).isEqualTo( "abc" );
         assertThat( timer.totalTime( TimeUnit.MILLISECONDS ) ).isGreaterThan( 499 );
     }
