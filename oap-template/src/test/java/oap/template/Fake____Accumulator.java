@@ -26,5 +26,6 @@ package oap.template;
 
 import java.util.function.Supplier;
 
-public interface FakeLateAccumulator<T, TMutable, TTemplateAccumulator extends FakeLateAccumulator<T, TMutable, TTemplateAccumulator>> extends Supplier<T> {
+@SuppressWarnings( "checkstyle:TypeName" )
+public interface Fake____Accumulator<T, TMutable, TTemplateAccumulator extends Fake____Accumulator<T, TMutable, TTemplateAccumulator>> extends Supplier<T> {
 }

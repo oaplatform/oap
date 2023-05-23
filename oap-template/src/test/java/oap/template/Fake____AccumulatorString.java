@@ -24,7 +24,8 @@
 
 package oap.template;
 
-public class FAKElateAccumulatorString implements FAKElateAccumulator<String, StringBuilder, FAKElateAccumulatorString> {
+@SuppressWarnings( "checkstyle:TypeName" )
+public class Fake____AccumulatorString implements Fake____Accumulator<String, StringBuilder, Fake____AccumulatorString> {
 
     @Override
     public String get() {

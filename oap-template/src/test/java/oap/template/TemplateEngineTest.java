@@ -345,7 +345,7 @@ public class TemplateEngineTest extends Fixtures {
     private static void replace( String fileName ) throws IOException {
         File file = TestDirectoryFixture.testPath( fileName ).toFile();
         String classStr = new String( FileUtils.readFileToByteArray( file ), ISO_8859_1 );
-        byte[] classBytes = StringUtils.replace( classStr, "TemplateAccumulator", "FAKElateAccumulator" ).getBytes( ISO_8859_1 );
+        byte[] classBytes = StringUtils.replace( classStr, "TemplateAccumulator", "Fake____Accumulator" ).getBytes( ISO_8859_1 );
         FileUtils.writeByteArrayToFile( file, classBytes );
     }
 
