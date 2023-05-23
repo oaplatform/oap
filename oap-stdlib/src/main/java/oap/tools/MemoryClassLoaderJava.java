@@ -70,8 +70,7 @@ public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
         if( diskCache != null ) {
             var sourceFile = diskCache.resolve( classname + ".java" );
             var classFile = diskCache.resolve( classname + ".class" );
-            if( Files.exists( classFile ) ) {
-
+            if( Files.exists( classFile ) && Files.exists( sourceFile ) && sourceContentEquals( sourceFile, filecontent ) ) {
                 log.trace( "found: {}", classname );
 
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
@@ -131,6 +130,16 @@ public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
                 if( out.toString().length() > 0 ) log.error( out.toString() );
             }
         }
+    }
+
+    private boolean sourceContentEquals( Path sourceFile, String filecontent ) {
+        var source = oap.io.Files.read( sourceFile, ContentReader.ofString() );
+        boolean res = filecontent.equals( source );
+        if( !res ) {
+            log.warn( "{}: file content != template content", sourceFile );
+        }
+
+        return res;
     }
 
     @Override
