@@ -26,5 +26,5 @@ package oap.template;
 
 import java.util.function.Supplier;
 
-public interface FAKElateAccumulator<T, TMutable, TTemplateAccumulator extends FAKElateAccumulator<T, TMutable, TTemplateAccumulator>> extends Supplier<T> {
+public interface FakeLateAccumulator<T, TMutable, TTemplateAccumulator extends FakeLateAccumulator<T, TMutable, TTemplateAccumulator>> extends Supplier<T> {
 }
