@@ -41,6 +41,8 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
@@ -53,7 +55,7 @@ import java.util.Map;
 import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
-public class MemoryClassLoaderJava extends ClassLoader {
+public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
     private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
@@ -68,8 +70,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         if( diskCache != null ) {
             var sourceFile = diskCache.resolve( classname + ".java" );
             var classFile = diskCache.resolve( classname + ".class" );
-            if( Files.exists( classFile ) ) {
-
+            if( Files.exists( classFile ) && Files.exists( sourceFile ) && sourceContentEquals( sourceFile, filecontent ) ) {
                 log.trace( "found: {}", classname );
 
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
@@ -131,6 +132,16 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
+    private boolean sourceContentEquals( Path sourceFile, String filecontent ) {
+        var source = oap.io.Files.read( sourceFile, ContentReader.ofString() );
+        boolean res = filecontent.equals( source );
+        if( !res ) {
+            log.warn( "{}: file content != template content", sourceFile );
+        }
+
+        return res;
+    }
+
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
         synchronized( manager ) {
@@ -141,6 +152,17 @@ public class MemoryClassLoaderJava extends ClassLoader {
             }
         }
         return super.findClass( name );
+    }
+
+    /**
+     * Closing FileManager is very important!
+     * That prevents:
+     * - from memory holding (GC cannot freeing it)
+     * - from stuck in file pointers (every used JAR is left opened)
+     */
+    @Override
+    public void close() throws IOException {
+        manager.close();
     }
 
     private static class Source extends SimpleJavaFileObject {
