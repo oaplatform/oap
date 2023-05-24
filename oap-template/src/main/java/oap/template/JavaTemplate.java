@@ -61,9 +61,9 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            try( MemoryClassLoaderJava mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile )) {
-                cons = (TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>>) mcl
-                        .loadClass(fullTemplateName)
+            try( MemoryClassLoaderJava mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile ) ) {
+                cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
+                        .loadClass( fullTemplateName )
                         .getDeclaredConstructor()
                         .newInstance();
             }

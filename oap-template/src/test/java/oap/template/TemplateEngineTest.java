@@ -31,7 +31,6 @@ import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.joda.time.DateTime;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
