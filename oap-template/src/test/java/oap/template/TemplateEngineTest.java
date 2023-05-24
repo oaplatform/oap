@@ -29,17 +29,20 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
+import org.codehaus.plexus.util.StringUtils;
 import org.joda.time.DateTime;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.ErrorStrategy.IGNORE;
@@ -59,8 +62,8 @@ public class TemplateEngineTest extends Fixtures {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    @BeforeClass
-    public void beforeClass() {
+    @BeforeMethod
+    public void beforeCMethod() {
         engine = new TemplateEngine( TestDirectoryFixture.testDirectory() );
     }
 
@@ -361,6 +364,30 @@ public class TemplateEngineTest extends Fixtures {
         var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
+    }
+
+    @Test
+    public void testDiskCacheChangeSourceCode() throws IOException {
+        var c1 = new TestTemplateClass();
+        c1.field = "1";
+        c1.field2 = "2";
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
+                .isEqualTo( "1" );
+
+        replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.class" );
+        replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.java" );
+
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
+                .isEqualTo( "1" );
+    }
+
+    private static void replace( String fileName ) throws IOException {
+        File file = TestDirectoryFixture.testPath( fileName ).toFile();
+        String classStr = new String( FileUtils.readFileToByteArray( file ), ISO_8859_1 );
+        byte[] classBytes = StringUtils.replace( classStr, "TemplateAccumulator", "Fake____Accumulator" ).getBytes( ISO_8859_1 );
+        FileUtils.writeByteArrayToFile( file, classBytes );
     }
 
     @Test
