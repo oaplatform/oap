@@ -349,6 +349,7 @@ public class KernelTest {
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3 ).isNotNull();
             assertThat( s3.service3.name ).isEqualTo( "from resource" );
+            assertThat( s3.service3.timeout ).isEqualTo( 1234 );
         } finally {
             kernel.stop();
         }
@@ -449,6 +450,7 @@ public class KernelTest {
     public static class Service3 {
         public Service3 service3;
         public String name;
+        public int timeout;
 
         public Service3( String name ) {
             this.name = name;
