@@ -28,7 +28,13 @@ not-null-objects-factory {
     }
 }
 ~~~
-
+Usually parameters are simple classes (int, string, bool), but also can be used
+with map loader like below (.conf files are in HOCON format)
+~~~
+parameters {
+    constructorParameter1 = classpath(/oap/application/KernelTest/beanFromClasspathFile.conf)
+}
+~~~
 In this example we may see how the NotNull class (below) can be used in configuration above
 ~~~
 public class NotNull {
