@@ -37,7 +37,7 @@ public class KernelFixtureTest extends Fixtures {
     private final KernelFixture kernelFixture;
     private final TestFixture testFixture;
 
-    {
+    public KernelFixtureTest() {
         testFixture = fixture( new TestFixture() );
         kernelFixture = fixture( new KernelFixture(
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),

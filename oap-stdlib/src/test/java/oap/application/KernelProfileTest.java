@@ -89,8 +89,9 @@ public class KernelProfileTest {
     @Test
     public void profile3() {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module3.conf" ) ) ) ) {
-            startWithProfile( kernel, "test-profile3", "profile-name" );
+            startWithProfile( kernel, "test-profile3", "profile-2" );
             assertThat( kernel.<TestContainer>service( "*.container" ) ).isPresent();
+            assertThat( kernel.<TestProfile2>service( "*.bean-name" ) ).isPresent().get().isInstanceOf( KernelProfileTest.TestProfile2.class );
         }
     }
 
@@ -115,7 +116,7 @@ public class KernelProfileTest {
     public void profile6() {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module6.conf" ) ) ) ) {
             startWithProfile( kernel, "test-profile6", "run" );
-            assertThat( kernel.<TestContainer>service( "*.container1" ).get().profile ).isInstanceOf( TestProfile1.class );
+            assertThat( kernel.<TestContainer>service( "*.container1" ).get().beanName ).isInstanceOf( TestProfile1.class );
         }
     }
 
@@ -176,11 +177,11 @@ public class KernelProfileTest {
     }
 
     public static class TestContainer {
-        public final TestProfile profile;
+        public final TestProfile beanName;
 
-        public TestContainer( TestProfile profile ) {
-            this.profile = profile;
-            assertThat( profile ).isNotNull();
+        public TestContainer( TestProfile beanName ) {
+            this.beanName = beanName;
+            assertThat( beanName ).isNotNull();
         }
     }
 
