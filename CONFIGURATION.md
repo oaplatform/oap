@@ -69,7 +69,31 @@ services {
     }
 }
 ~~~
-
+There is a way to load service/bean depending os profile:
+~~~
+services {
+    s1 {
+        name = service-to-reference
+        profile = s1-activated
+        implementation = ...S1
+    }
+    s2 {
+        name = service-to-reference
+        profile = s2-activated
+        implementation = ...S2
+    }
+    real-service {
+        implementation = ...ClassX
+        parameters {
+            referenced = modules.this.service-to-reference
+        }
+    }
+}
+~~~
+In this example ClassX has constructor parameter which depends on profile:
+if case of using profile 's1-activated' bean 'service-to-reference' will be
+implemented with S1, otherwise S2.
+Note: this works if 'service-to-reference' name is within the same module with s1 and s2.
 [ SERVICES/BEANS AS THREADS ]
 ~~~
 thread-service {  
