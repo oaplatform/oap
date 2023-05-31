@@ -142,13 +142,21 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> List<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
+    public static <E, R> List<R> filterThenMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
         var result = new ArrayList<R>();
         for( var e : list ) {
             if( !predicate.test( e ) ) continue;
             result.add( mapper.apply( e ) );
         }
         return result;
+    }
+
+    @Deprecated( forRemoval = true )
+    /**
+     * Typo in name! Use filterThenMap instead
+     */
+    public static <E, R> List<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
+        return filterThenMap( list, predicate, mapper );
     }
 
     public static <E> List<E> filter( Collection<E> list, Predicate<E> predicate ) {
