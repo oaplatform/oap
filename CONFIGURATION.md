@@ -69,7 +69,7 @@ services {
     }
 }
 ~~~
-There is a way to load service/bean depending os profile:
+There is a way to load service/bean depending on profile:
 ~~~
 services {
     s1 {

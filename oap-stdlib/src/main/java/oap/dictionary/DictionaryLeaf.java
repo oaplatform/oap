@@ -39,15 +39,14 @@ import java.util.Optional;
 
 @EqualsAndHashCode
 @ToString
-@JsonPropertyOrder( { "id", "externalId", "enabled", "properties" } )
 public class DictionaryLeaf implements Dictionary {
+    final String id;
+    final int externalId;
     @JsonIgnore
     final boolean enabled;
-    final int externalId;
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
     @JsonProperty
     final Map<String, Object> properties;
-    final String id;
 
     public DictionaryLeaf( String id, boolean enabled, int externalId, Map<String, Object> properties ) {
         this.id = id;

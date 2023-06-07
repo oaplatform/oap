@@ -36,17 +36,33 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
+/**
+ * The Dates class provides utility methods for working with dates and times.
+ */
 public class Dates {
 
+    /**
+     * The standard SQL date format with milliseconds.
+     */
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
         .withZoneUTC();
+
+    /**
+     * The standard SQL date format.
+     */
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
         .withZoneUTC();
+    /**
+     * The clean simple date format.
+     */
     public static final DateTimeFormatter FORMAT_SIMPLE_CLEAN = DateTimeFormat
         .forPattern( "yyyy-MM-dd HH:mm:ss" )
         .withZoneUTC();
+    /**
+     * The date format.
+     */
     public static final DateTimeFormatter FORMAT_DATE = DateTimeFormat
         .forPattern( "yyyy-MM-dd" )
         .withZoneUTC();
@@ -83,6 +99,12 @@ public class Dates {
         .toFormatter()
         .withZoneUTC();
 
+    /**
+     * Parses a date with milliseconds.
+     *
+     * @param date the date to parse
+     * @return the parsed date
+     */
     public static Result<DateTime, Exception> parseDateWithMillis( String date ) {
         return parse( date, FORMAT_MILLIS );
     }
@@ -91,10 +113,23 @@ public class Dates {
         return parse( date, FORMAT_SIMPLE );
     }
 
+    /**
+     * Parses a date with timezone.
+     *
+     * @param date the date to parse
+     * @return the parsed date
+     */
     public static Result<DateTime, Exception> parseDateWithTimeZone( String date ) {
         return parse( date, PARSER_FULL );
     }
 
+    /**
+     * Parses a date with the given formatter.
+     *
+     * @param date the date to parse
+     * @param formatter the formatter to use
+     * @return the parsed date
+     */
     private static Result<DateTime, Exception> parse( String date, DateTimeFormatter formatter ) {
         try {
             return Result.success( formatter.parseDateTime( date ) );
@@ -103,31 +138,68 @@ public class Dates {
         }
     }
 
+    /**
+     * Gets the current UTC date and time.
+     *
+     * @return the current UTC date and time
+     */
     public static DateTime nowUtc() {
         return DateTime.now( DateTimeZone.UTC );
     }
 
+    /**
+     * Gets the current UTC date.
+     *
+     * @return the current UTC date
+     */
     public static DateTime nowUtcDate() {
         return nowUtc().withTime( 0, 0, 0, 0 );
     }
 
+    /**
+     * Gets the current UTC date (deprecated).
+     *
+     * @return the current UTC date
+     */
     @Deprecated
     public static DateTime nowUtcClean() {
         return nowUtcDate();
     }
 
+    /**
+     * Gets the current hour in milliseconds.
+     *
+     * @return the current hour in milliseconds
+     */
     public static long currentTimeHour() {
-        return DateTimeUtils.currentTimeMillis() / 1000 / 60 / 60;
+        return DateTimeUtils.currentTimeMillis() / 3_600_000;
     }
 
+    /**
+     * Gets the current day in milliseconds.
+     *
+     * @return the current day in milliseconds
+     */
     public static long currentTimeDay() {
         return DateTimeUtils.currentTimeMillis() / 1000 / 60 / 60 / 24;
     }
 
+    /**
+     * Formats a date with milliseconds.
+     *
+     * @param date the date to format
+     * @return the formatted date
+     */
     public static String formatDateWithMillis( DateTime date ) {
         return FORMAT_MILLIS.print( date );
     }
 
+    /**
+     * Formats a date with milliseconds.
+     *
+     * @param millis the milliseconds to format
+     * @return the formatted date
+     */
     public static String formatDateWithMillis( long millis ) {
         return FORMAT_MILLIS.print( millis );
     }
