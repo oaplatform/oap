@@ -51,7 +51,6 @@ public interface Cuid {
 
     String last();
 
-    @ToString
     class UniqueCuid implements Cuid {
         private static final String UNKNOWN_IP = "UUUUUUUU";
         private static final String suffix = Inet.getLocalIp()
