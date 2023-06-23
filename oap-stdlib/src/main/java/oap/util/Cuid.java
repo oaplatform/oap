@@ -116,7 +116,7 @@ public interface Cuid {
 
     }
 
-    @ToString
+    @ToString( of = { "counter" } )
     class IncrementalCuid implements Cuid {
         private final AtomicLong counter = new AtomicLong();
 

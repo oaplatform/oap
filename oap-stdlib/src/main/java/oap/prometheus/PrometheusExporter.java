@@ -36,19 +36,20 @@ import org.apache.http.entity.ContentType;
 
 @Slf4j
 public class PrometheusExporter implements HttpHandler {
-    public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+    public final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
 
     static {
         CollectorRegistry.defaultRegistry.clear();
-        Metrics.addRegistry( prometheusRegistry );
     }
 
     public PrometheusExporter( NioHttpServer server ) {
         server.bind( "/metrics", this );
+        Metrics.addRegistry( prometheusRegistry );
     }
 
     public PrometheusExporter( NioHttpServer server, int port ) {
         server.bind( "/metrics", this, port );
+        Metrics.addRegistry( prometheusRegistry );
     }
 
     @Override
