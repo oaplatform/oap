@@ -36,6 +36,7 @@ import oap.http.server.nio.NioHttpServer;
 import org.apache.http.entity.ContentType;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -61,13 +62,25 @@ public class PrometheusExporter implements HttpHandler {
         Metrics.addRegistry( prometheusRegistry );
     }
 
-    public static void recreate() {
+    public PrometheusExporter( NioHttpServer server, int port, String uuid ) {
+        server.bind( "/metrics", this, port );
+        registeredInstances.put( uuid, this );
+        Metrics.addRegistry( prometheusRegistry );
+    }
+
+    public static void recreate( String uuid ) {
         CollectorRegistry.defaultRegistry.clear();
         registeredInstances.forEach( ( key, value ) -> {
-            Metrics.removeRegistry( value.prometheusRegistry );
-            value.prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
-            Metrics.addRegistry( value.prometheusRegistry );
+            if ( uuid == null || uuid.equals( key ) ) {
+                Metrics.removeRegistry( value.prometheusRegistry );
+                value.prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+                Metrics.addRegistry( value.prometheusRegistry );
+            }
         } );
+    }
+
+    public static PrometheusExporter getInstance( String uuid ) {
+        return registeredInstances.get( Objects.requireNonNull( uuid ) );
     }
 
     @Override
