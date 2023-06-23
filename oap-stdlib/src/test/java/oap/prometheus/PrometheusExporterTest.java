@@ -40,7 +40,7 @@ public class PrometheusExporterTest extends Fixtures {
     private static final Counter TEST_1 = Metrics.counter( "test1" );
     private final EnvFixture envFixture;
 
-    {
+    public PrometheusExporterTest() {
         envFixture = fixture( new EnvFixture() );
     }
 
