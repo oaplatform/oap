@@ -35,8 +35,6 @@ import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import org.apache.http.entity.ContentType;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
