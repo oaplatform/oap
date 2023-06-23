@@ -28,15 +28,24 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.CollectorRegistry;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import org.apache.http.entity.ContentType;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Slf4j
+@EqualsAndHashCode
 public class PrometheusExporter implements HttpHandler {
-    public final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+    private static final Map<String, PrometheusExporter> registeredInstances = new ConcurrentHashMap<>();
+    public PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
 
     static {
         CollectorRegistry.defaultRegistry.clear();
@@ -44,12 +53,23 @@ public class PrometheusExporter implements HttpHandler {
 
     public PrometheusExporter( NioHttpServer server ) {
         server.bind( "/metrics", this );
+        registeredInstances.put( UUID.randomUUID().toString(), this );
         Metrics.addRegistry( prometheusRegistry );
     }
 
     public PrometheusExporter( NioHttpServer server, int port ) {
         server.bind( "/metrics", this, port );
+        registeredInstances.put( UUID.randomUUID().toString(), this );
         Metrics.addRegistry( prometheusRegistry );
+    }
+
+    public static void recreate() {
+        CollectorRegistry.defaultRegistry.clear();
+        registeredInstances.forEach( ( key, value ) -> {
+            Metrics.removeRegistry( value.prometheusRegistry );
+            value.prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+            Metrics.addRegistry( value.prometheusRegistry );
+        } );
     }
 
     @Override
