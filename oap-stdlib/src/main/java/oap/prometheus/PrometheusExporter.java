@@ -33,10 +33,10 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
+import oap.util.Pair;
 import org.apache.http.entity.ContentType;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,20 +69,16 @@ public class PrometheusExporter implements HttpHandler {
         Metrics.addRegistry( prometheusRegistry );
     }
 
-    public static void recreate( String uuid ) {
-        CollectorRegistry.defaultRegistry.clear();
-        registeredInstances.forEach( ( key, value ) -> {
-            if ( uuid == null || uuid.equals( key ) ) {
-                Metrics.removeRegistry( value.prometheusRegistry );
-                value.prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
-                Metrics.addRegistry( value.prometheusRegistry );
-            }
-        } );
+    public static void removeInstance( String uuid ) {
+        registeredInstances.remove( uuid );
     }
 
-    public static PrometheusExporter getInstance( Optional<String> uuid ) {
-        if ( uuid.isEmpty() && registeredInstances.size() == 1 ) return registeredInstances.values().stream().findFirst().get();
-        return registeredInstances.get( Objects.requireNonNull( uuid ) );
+    public static Pair<String, PrometheusExporter> getInstance( Optional<String> uuid ) {
+        if ( uuid.isEmpty() && registeredInstances.size() == 1 ) {
+            Map.Entry<String, PrometheusExporter> entry = registeredInstances.entrySet().stream().findFirst().get();
+            return Pair.__( entry.getKey(), entry.getValue() );
+        }
+        throw new IllegalStateException( "After each usage the registered instance should have been removed with removeInstance(...)" );
     }
 
     @Override
