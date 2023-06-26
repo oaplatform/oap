@@ -37,6 +37,7 @@ import org.apache.http.entity.ContentType;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -79,7 +80,8 @@ public class PrometheusExporter implements HttpHandler {
         } );
     }
 
-    public static PrometheusExporter getInstance( String uuid ) {
+    public static PrometheusExporter getInstance( Optional<String> uuid ) {
+        if ( uuid.isEmpty() && registeredInstances.size() == 1 ) return registeredInstances.values().stream().findFirst().get();
         return registeredInstances.get( Objects.requireNonNull( uuid ) );
     }
 
