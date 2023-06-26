@@ -37,7 +37,7 @@ import oap.util.Pair;
 import org.apache.http.entity.ContentType;
 
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -73,12 +73,14 @@ public class PrometheusExporter implements HttpHandler {
         registeredInstances.remove( uuid );
     }
 
-    public static Pair<String, PrometheusExporter> getInstance( Optional<String> uuid ) {
-        if ( uuid.isEmpty() && registeredInstances.size() == 1 ) {
-            Map.Entry<String, PrometheusExporter> entry = registeredInstances.entrySet().stream().findFirst().get();
-            return Pair.__( entry.getKey(), entry.getValue() );
-        }
-        throw new IllegalStateException( "After each usage the registered instance should have been removed with removeInstance(...)" );
+    public static Pair<String, PrometheusExporter> getInstance( Set<String> usedUuid ) {
+        var entry = registeredInstances.entrySet()
+                .stream()
+                .filter( e -> !usedUuid.contains( e.getKey() ) )
+                .findFirst()
+                .orElse( null );
+        if ( entry != null ) return Pair.__( entry.getKey(), entry.getValue() );
+        return Pair.__( null, null );
     }
 
     @Override
