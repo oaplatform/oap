@@ -36,7 +36,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>18.11.5.18</oap.project.version>
+        <oap.project.version>18.11.5.20</oap.project.version>
 
         <oap.deps.testng.version>7.7.1</oap.deps.testng.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
@@ -44,8 +44,8 @@
 
         <oap.deps.guava.version>31.1-jre</oap.deps.guava.version>
 
-        <oap.deps.logback.version>1.4.5</oap.deps.logback.version>
-        <oap.deps.slf4j.version>2.0.6</oap.deps.slf4j.version>
+        <oap.deps.logback.version>1.4.8</oap.deps.logback.version>
+        <oap.deps.slf4j.version>2.0.7</oap.deps.slf4j.version>
 
         <oap.deps.mockito.version>4.10.0</oap.deps.mockito.version>
 
@@ -53,25 +53,25 @@
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
-        <oap.deps.apache.httpmime.version>4.5.13</oap.deps.apache.httpmime.version>
-        <oap.deps.apache.configuration.version>2.8.0</oap.deps.apache.configuration.version>
+        <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
+        <oap.deps.apache.configuration.version>2.9.0</oap.deps.apache.configuration.version>
 
         <oap.deps.apache.lang.version>3.12.0</oap.deps.apache.lang.version>
         <oap.deps.apache.commons.text.version>1.10.0</oap.deps.apache.commons.text.version>
-        <oap.deps.apache.compress.version>1.22</oap.deps.apache.compress.version>
+        <oap.deps.apache.compress.version>1.23.0</oap.deps.apache.compress.version>
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.11.0</oap.deps.apache.io.version>
 
-        <oap.deps.joda.version>2.11.0</oap.deps.joda.version>
+        <oap.deps.joda.version>2.12.5</oap.deps.joda.version>
 
-        <oap.deps.jackson.version>2.13.3</oap.deps.jackson.version>
+        <oap.deps.jackson.version>2.15.2</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
         <oap.deps.typesafe-config.version>1.4.3</oap.deps.typesafe-config.version>
 
-        <oap.deps.lombok.version>1.18.24</oap.deps.lombok.version>
+        <oap.deps.lombok.version>1.18.28</oap.deps.lombok.version>
 
-        <oap.deps.jol.version>0.16</oap.deps.jol.version>
-        <oap.deps.bucket4j.version>8.1.1</oap.deps.bucket4j.version>
+        <oap.deps.jol.version>0.17</oap.deps.jol.version>
+        <oap.deps.bucket4j.version>8.3.0</oap.deps.bucket4j.version>
         <oap.deps.luben.version>1.5.2-5</oap.deps.luben.version>
         <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
         for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type
@@ -90,14 +90,14 @@
          -->
         <oap.deps.micrometer.version>1.6.9</oap.deps.micrometer.version>
 
-        <oap.deps.fastutil.version>8.5.9</oap.deps.fastutil.version>
+        <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
         <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
         <oap.deps.lz4.version>1.8.0</oap.deps.lz4.version>
         <oap.deps.fst.version>3.0.3-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
-        <oap.deps.disruptor.version>1.2.19</oap.deps.disruptor.version>
+        <oap.deps.disruptor.version>1.2.21</oap.deps.disruptor.version>
 
         <oap.deps.maven.plexus-utils.version>3.4.1</oap.deps.maven.plexus-utils.version>
         <oap.deps.maven.plugin-build-helper.version>1.10</oap.deps.maven.plugin-build-helper.version>
@@ -107,12 +107,12 @@
         <oap.deps.maven.plugin-plugin.version>3.6.4</oap.deps.maven.plugin-plugin.version>
         <oap.deps.plugins.antlr4.version>4.11.1</oap.deps.plugins.antlr4.version>
 
-        <oap.deps.aws-java-sdk.version>1.12.315</oap.deps.aws-java-sdk.version>
+        <oap.deps.aws-java-sdk.version>1.12.495</oap.deps.aws-java-sdk.version>
         <oap.deps.s3mock.version>0.2.6</oap.deps.s3mock.version>
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
         <oap.deps.undertow.version>2.2.19.Final</oap.deps.undertow.version>
-        <oap.deps.affinity>3.23.2</oap.deps.affinity>
+        <oap.deps.affinity>3.23.3</oap.deps.affinity>
     </properties>
 </project>
