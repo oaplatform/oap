@@ -25,3 +25,10 @@ See Github [wiki pages](https://github.com/oaplatform/oap/wiki).
   * [Motivation](oap-template/README.md#motivation)
   * [Use cases](oap-template/README.md#use-cases)
   * [Macro examples](oap-template/README.md#macro-examples)
+  
+## OAP dependencies
+* oap -> oap-aerospike
+* oap -> oap-mail         -> oap-ws
+* oap -> oap-storage      -> oap-ws, oap-statsdb
+* oap -> oap-tree
+* oap -> oap-tsv          -> oap-logstream
