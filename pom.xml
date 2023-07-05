@@ -36,7 +36,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>18.11.5.22</oap.project.version>
+        <oap.project.version>18.11.5.23</oap.project.version>
 
         <oap.deps.testng.version>7.7.1</oap.deps.testng.version>
         <oap.deps.assertj.version>3.23.1</oap.deps.assertj.version>
@@ -49,7 +49,7 @@
 
         <oap.deps.mockito.version>4.10.0</oap.deps.mockito.version>
 
-        <oap.deps.okhttp.version>4.10.0</oap.deps.okhttp.version>
+        <oap.deps.okhttp.version>4.11.0</oap.deps.okhttp.version>
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
@@ -94,7 +94,7 @@
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
         <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
         <oap.deps.lz4.version>1.8.0</oap.deps.lz4.version>
-        <oap.deps.fst.version>3.0.3-jdk17</oap.deps.fst.version>
+        <oap.deps.fst.version>3.0.4-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
         <oap.deps.disruptor.version>1.2.21</oap.deps.disruptor.version>
