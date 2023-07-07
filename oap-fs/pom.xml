@@ -22,11 +22,8 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>oap</groupId>
@@ -34,29 +31,31 @@
         <version>${oap.project.version}</version>
     </parent>
 
+    <modelVersion>4.0.0</modelVersion>
     <artifactId>oap-fs</artifactId>
 
+    <properties>
+        <oap.deps.akka-stream_2.12.version>2.6.19</oap.deps.akka-stream_2.12.version>
+        <oap.deps.aws-java-sdk-simpleworkflow.version>1.12.286</oap.deps.aws-java-sdk-simpleworkflow.version>
+    </properties>
+
     <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${oap.deps.guava.version}</version>
-        </dependency>
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <!--        convergence error for aws -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${oap.deps.slf4j.version}</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-simpleworkflow</artifactId>
+            <version>${oap.deps.aws-java-sdk-simpleworkflow.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -89,15 +88,24 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--        convergence error for aws -->
         <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-simpleworkflow</artifactId>
-            <version>1.12.286</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${oap.deps.guava.version}</version>
+        </dependency>
+        <!--        resolving dependency convergence for s3mock -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_2.12</artifactId>
+            <version>${oap.deps.akka-stream_2.12.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.typesafe</groupId>
+                    <artifactId>config</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -126,24 +134,16 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--        resolving dependency convergence for s3mock -->
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-stream_2.12</artifactId>
-            <version>2.6.19</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.typesafe</groupId>
-                    <artifactId>config</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${oap.deps.lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
-        <!--        // -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${oap.deps.slf4j.version}</version>
+        </dependency>
     </dependencies>
-
-
 </project>
