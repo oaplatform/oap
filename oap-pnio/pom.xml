@@ -14,10 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
-            <scope>provided</scope>
+            <groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><version>1.18.24</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>

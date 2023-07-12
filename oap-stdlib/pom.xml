@@ -36,6 +36,9 @@
         <artifactId>oap</artifactId>
         <version>${oap.project.version}</version>
     </parent>
+    <properties>
+        <oap.lombok.version>1.18.26</oap.lombok.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -108,7 +111,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
+            <version>${oap.lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -37,6 +37,9 @@
     <properties>
         <oap.deps.akka-stream_2.12.version>2.6.19</oap.deps.akka-stream_2.12.version>
         <oap.deps.aws-java-sdk-simpleworkflow.version>1.12.286</oap.deps.aws-java-sdk-simpleworkflow.version>
+        <oap.deps.lombok>
+            1.18.22
+        </oap.deps.lombok>
     </properties>
 
     <dependencies>
@@ -137,7 +140,9 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
+            <version>
+                ${oap.deps.lombok}
+            </version>
             <scope>provided</scope>
         </dependency>
         <dependency>
