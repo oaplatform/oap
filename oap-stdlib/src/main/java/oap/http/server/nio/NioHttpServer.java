@@ -79,7 +79,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     public final List<Bandwidth> bandwidths = Lists.of( defaultLimit );
-    private final int defaultPort;
+    public final int defaultPort;
 
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
     private final Map<Integer, Holder> servers = new HashMap<>();

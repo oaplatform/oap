@@ -44,7 +44,7 @@ import static oap.util.Pair.__;
 
 @Slf4j
 class ModuleHelper {
-    public static final Pattern MODULE_SERVICE_NAME_PATTERN = Pattern.compile( "^[A-Za-z\\-_0-9]+$" );
+    public static final Pattern MODULE_SERVICE_NAME_PATTERN = Pattern.compile( "^[A-Za-z\\-_0-9]++$" );
 
     private ModuleHelper() {
     }
@@ -60,8 +60,8 @@ class ModuleHelper {
                                        LinkedHashSet<String> profiles,
                                        LinkedHashSet<String> main,
                                        Kernel kernel ) throws ApplicationException {
+        log.trace( "Init modules: {}, profiles: {}, main: {}", modules, profiles, main );
         var map = init( modules, profiles );
-
         loadOnlyMainModuleAndDependsOn( map, main, profiles );
 
         validateModuleName( map );
@@ -224,7 +224,7 @@ class ModuleHelper {
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main, LinkedHashSet<String> profiles ) {
         var modules = map.clone();
-        log.info( "loading main modules: {}", main );
+        log.info( "loading main modules: {} with profiles: {}", main, profiles );
         loadOnlyMainModuleAndDependsOn( modules, main, profiles, new LinkedHashSet<>() );
 
         for( var moduleItem : modules.values() ) {
@@ -234,9 +234,9 @@ class ModuleHelper {
     }
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules,
-                                                        LinkedHashSet<String> main,
-                                                        LinkedHashSet<String> profiles,
-                                                        LinkedHashSet<String> loaded ) {
+                                                        final LinkedHashSet<String> main,
+                                                        final LinkedHashSet<String> profiles,
+                                                        final LinkedHashSet<String> loaded ) {
         for( var module : main ) {
             var moduleItem = modules.get( module );
 
@@ -244,21 +244,21 @@ class ModuleHelper {
                 throw new ApplicationException( "main.boot: unknown module name '" + module + "', already loaded: " + loaded );
 
             if( moduleItem != null ) {
+                log.trace( "Loading module: {}, already loaded: {}", moduleItem.getName(), loaded );
                 moduleItem.setLoad();
                 loaded.add( moduleItem.getName() );
 
                 modules.remove( module );
 
                 var dependsOn = new LinkedHashSet<String>();
-                for( var d : moduleItem.module.dependsOn ) {
-                    if( KernelHelper.profileEnabled( d.profiles, profiles ) ) {
-                        log.trace( "dependant module {} enabled for module {}", d.name, module );
-                        dependsOn.add( d.name );
+                for( var depends : moduleItem.module.dependsOn ) {
+                    if( KernelHelper.profileEnabled( depends.profiles, profiles ) ) {
+                        log.trace( "dependant module {} enabled for module {}", depends.name, module );
+                        dependsOn.add( depends.name );
                     } else {
-                        log.trace( "dependant module {} disabled for module {}", d.name, module );
+                        log.trace( "dependant module {} disabled for module {}", depends.name, module );
                     }
                 }
-
                 loadOnlyMainModuleAndDependsOn( modules, dependsOn, profiles, loaded );
             }
         }
@@ -352,15 +352,10 @@ class ModuleHelper {
     }
 
     private static void sortModules( ModuleItemTree map ) {
-        log.trace( "modules: before sort: \n{}",
-            String.join( "\n", Lists.map( map.entrySet(), e -> "  " + e.getKey() + ": " + e.getValue().getDependsOn() ) )
-        );
-
         var graph = new LinkedList<>( map.values() );
 
         var newMap = new LinkedHashMap<String, ModuleItem>();
         var noIncomingEdges = new LinkedList<ModuleItem>();
-
 
         graph.removeIf( moduleItem -> {
             if( moduleItem.getDependsOn().isEmpty() ) {
@@ -397,21 +392,16 @@ class ModuleHelper {
         }
 
         map.set( newMap );
-        log.trace( "modules: after sort: \n{}",
+        log.trace( "modules after sort: \n{}",
             String.join( "\n", Lists.map( map.keySet(), e -> "  " + e ) )
         );
     }
 
     private static void sortServices( ModuleItemTree map ) {
-        log.trace( "services: before sort: \n{}",
-            String.join( "\n", Lists.map( map.services, e -> "  " + e.getModuleName() + "." + e.serviceName + " dependsOn " + Lists.map( e.dependsOn, d -> d.serviceItem.moduleItem.getName() + "." + d.serviceItem.serviceName ) ) )
-        );
-
         var graph = new LinkedList<>( map.services );
 
         var newMap = new LinkedHashMap<Reference, ModuleItem.ServiceItem>();
         var noIncomingEdges = new LinkedList<ModuleItem.ServiceItem>();
-
 
         graph.removeIf( serviceItem -> {
             if( serviceItem.dependsOn.isEmpty() ) {
@@ -449,7 +439,7 @@ class ModuleHelper {
         }
 
         map.setServices( newMap.values() );
-        log.trace( "services: after sort: \n{}",
+        log.trace( "services after sort: \n{}",
             String.join( "\n", Lists.map( map.services, e -> "  " + e ) )
         );
     }

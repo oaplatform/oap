@@ -55,6 +55,10 @@ public class ModuleItem {
         load = true;
     }
 
+    final void setNotLoad() {
+        load = false;
+    }
+
     public final boolean isEnabled() {
         return this.enabled == ServiceEnabledStatus.ENABLED && load;
     }

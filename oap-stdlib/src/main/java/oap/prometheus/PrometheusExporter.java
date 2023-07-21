@@ -58,9 +58,7 @@ public class PrometheusExporter implements HttpHandler {
     }
 
     public PrometheusExporter( NioHttpServer server, int port ) {
-        server.bind( "/metrics", this, port );
-        registeredInstances.put( UUID.randomUUID().toString(), this );
-        Metrics.addRegistry( prometheusRegistry );
+        this( server, port, UUID.randomUUID().toString() );
     }
 
     public PrometheusExporter( NioHttpServer server, int port, String uuid ) {
