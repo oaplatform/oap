@@ -1,5 +1,4 @@
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -36,7 +35,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>18.11.5.26</oap.project.version>
+        <oap.project.version>18.11.5.27</oap.project.version>
 
         <oap.deps.testng.version>7.8.0</oap.deps.testng.version>
         <oap.deps.assertj.version>3.24.2</oap.deps.assertj.version>
@@ -47,7 +46,7 @@
         <oap.deps.logback.version>1.4.8</oap.deps.logback.version>
         <oap.deps.slf4j.version>2.0.7</oap.deps.slf4j.version>
 
-        <oap.deps.mockito.version>4.11.0</oap.deps.mockito.version>
+        <oap.deps.mockito.version>5.3.1</oap.deps.mockito.version>
 
         <oap.deps.okhttp.version>4.11.0</oap.deps.okhttp.version>
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
@@ -113,6 +112,6 @@
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
         <oap.deps.undertow.version>2.3.7.Final</oap.deps.undertow.version>
-        <oap.deps.affinity>3.23.3</oap.deps.affinity>
+        <oap.deps.affinity>3.21ea82</oap.deps.affinity>
     </properties>
 </project>
