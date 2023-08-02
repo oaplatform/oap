@@ -22,35 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
 import lombok.ToString;
 
-import java.util.function.Supplier;
+@ToString
+public class Math {
+    public final String operation;
+    public final String value;
 
-@ToString( callSuper = true )
-public class AstNullable extends AstIfElse {
-    AstNullable( TemplateType type ) {
-        super( type );
-    }
-
-    @Override
-    protected String getTrue() {
-        return " != null";
-    }
-
-    @Override
-    protected String getFalseToString() {
-        return "NULL";
-    }
-
-    @Override
-    protected String getInnerVariable( Supplier<String> newVariable ) {
-        return null;
-    }
-
-    @Override
-    protected String getInnerVariableSetter( String variableName, Render render ) {
-        return null;
+    public Math( String operation, String value ) {
+        this.operation = operation;
+        this.value = value;
     }
 }

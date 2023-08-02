@@ -24,31 +24,6 @@
 
 package oap.template;
 
-import lombok.ToString;
-
-import java.util.List;
-
-@ToString( callSuper = true )
-public class AstMethod extends Ast {
-    private final String methodName;
-    private final List<String> arguments;
-
-    public AstMethod( String methodName, TemplateType methodType, List<String> arguments ) {
-        super( methodType );
-
-        this.methodName = methodName;
-        this.arguments = arguments;
-    }
-
-    @Override
-    void render( Render render ) {
-        var variableName = render.newVariable();
-
-        render.ntab().append( "%s %s = %s.%s(%s);",
-            type.getTypeName(), variableName,
-            render.field, methodName, String.join( ",", arguments ) );
-
-        var newRender = render.withField( variableName ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
-    }
+public enum TestTemplateEnumWithoutDefaultValue {
+    VAL1, VAL2
 }

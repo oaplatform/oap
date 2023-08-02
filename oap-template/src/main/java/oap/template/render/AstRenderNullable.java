@@ -22,40 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Supplier;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
-
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+@ToString( callSuper = true )
+public class AstRenderNullable extends AstRenderIfElse {
+    public AstRenderNullable( TemplateType type ) {
+        super( type );
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
+    @Override
+    protected String getTrue() {
+        return " != null";
     }
 
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
+    @Override
+    protected String getFalseToString() {
+        return "NULL";
     }
 
+    @Override
+    protected String getInnerVariable( Supplier<String> newVariable ) {
+        return null;
+    }
 
-    @ToString
-    static class Function {
-        public final String name;
-
-        Function( String name ) {
-            this.name = name;
-        }
+    @Override
+    protected String getInnerVariableSetter( String variableName, Render render ) {
+        return null;
     }
 }

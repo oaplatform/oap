@@ -22,13 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-public class AstRoot extends Ast {
-    AstRoot( TemplateType parentType ) {
+public class AstRenderRoot extends AstRender {
+    public AstRenderRoot( TemplateType parentType ) {
         super( parentType );
     }
 
@@ -37,17 +37,18 @@ public class AstRoot extends Ast {
         var className = type.getTypeName().replace( '$', '.' );
 
         var templateAccumulatorClassName = render.templateAccumulator.getClass().getTypeName().replace( '$', '.' );
-        render.append( "package " ).append( getClass().getPackage().getName() ).append( """
-            ;
+        render.append( """
+                package oap.template;
 
-            import oap.util.Strings;
+                import oap.util.Strings;
 
-            import java.util.*;
-            import oap.util.function.TriConsumer;
-            import java.util.function.Supplier;
-            import com.google.common.base.CharMatcher;
+                import java.util.*;
+                import oap.util.function.TriConsumer;
+                import java.util.function.Supplier;
+                import java.util.function.BooleanSupplier;
+                import com.google.common.base.CharMatcher;
 
-            public class\s""" ).append( render.nameEscaped() )
+                public class\s""" ).append( render.nameEscaped() )
             .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, templateAccumulatorClassName )
             .append( """
                 {
@@ -56,6 +57,7 @@ public class AstRoot extends Ast {
                  public void accept(\s""".indent( 1 ) ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {\n" );
 
         Render childRender = render.tabInc().tabInc().tabInc().withField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
+
         children.forEach( child -> child.render( childRender ) );
 
         render.append( """

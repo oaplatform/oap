@@ -22,32 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
 
+import java.lang.reflect.Method;
+import java.util.List;
+
 @ToString( callSuper = true )
-public class AstRunnable extends Ast {
-    AstRunnable( TemplateType type ) {
+public class AstRenderFunction extends AstRender {
+    final Method method;
+    final List<String> parameters;
+
+    public AstRenderFunction( TemplateType type, Method method, List<String> parameters ) {
         super( type );
+        this.method = method;
+        this.parameters = parameters;
     }
 
     @Override
-    void render( Render render ) {
-        var newFunctionId = render.newVariable();
-        var templateAccumulatorName = "acc_" + newFunctionId;
+    public void render( Render render ) {
+        var funcVariable = render.newVariable();
 
-        render( newFunctionId, templateAccumulatorName, render );
-    }
+        render.ntab().append( "%s %s = %s.%s( %s",
+            method.getGenericReturnType().getTypeName(), funcVariable,
+            method.getDeclaringClass().getName(), method.getName(), render.field );
+        if( !parameters.isEmpty() ) render.append( ", " );
+        render.append( String.join( ", ", parameters ) ).append( " );" );
 
-    void render( String newFunctionId, String templateAccumulatorName, Render render ) {
-        render
-            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName )
-            .ntab().append( "Runnable %s = () -> {", newFunctionId );
-
-        var newRender = render.withParentType( type ).withTemplateAccumulatorName( templateAccumulatorName ).tabInc();
-        children.forEach( ast -> ast.render( newRender ) );
-
-        render.ntab().append( "};" );
+        var newRender = render.withField( funcVariable ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

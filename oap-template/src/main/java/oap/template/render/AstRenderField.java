@@ -22,18 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
-import oap.template.LogConfiguration.FieldType;
 
 @ToString( callSuper = true )
-public class AstField extends Ast {
+public class AstRenderField extends AstRender {
     final String fieldName;
     final boolean forceCast;
     final FieldType castType;
 
-    public AstField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
+    public AstRenderField( String fieldName, TemplateType fieldType, boolean forceCast, FieldType castType ) {
         super( fieldType );
 
         this.fieldName = fieldName;
@@ -42,7 +41,7 @@ public class AstField extends Ast {
     }
 
     @Override
-    void render( Render render ) {
+    public void render( Render render ) {
         if( castType != null ) {
             var targetType = type;
             if( type.isOptional() ) targetType = type.getActualTypeArguments0();
@@ -52,22 +51,19 @@ public class AstField extends Ast {
             }
         }
 
-        var variableName = render.newVariable();
+        var variableName = render.newVariable( fieldName );
 
-        render.ntab()
-            .append( "%s %s = ", type.getTypeName(), variableName );
+        if( variableName.isNew ) {
+            render
+                .ntab()
+                .append( "%s %s = ", type.getTypeName(), variableName.name );
 
-        if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
+            if( forceCast ) render.append( "( %s ) ", type.getTypeName() );
 
-        render.append( "%s.%s;", render.field, fieldName );
+            render.append( "%s.%s;", render.field, fieldName );
+        }
 
-        var newRender = render.withField( variableName ).withParentType( type );
+        var newRender = render.withField( variableName.name ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
-    }
-
-    @Override
-    protected boolean equalsAst( Ast ast ) {
-        if( !( ast instanceof AstField ) ) return false;
-        return ( ( AstField ) ast ).fieldName.equals( fieldName );
     }
 }

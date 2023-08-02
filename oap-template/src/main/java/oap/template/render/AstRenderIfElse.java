@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
 
@@ -30,20 +30,15 @@ import java.util.function.Supplier;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 @ToString( callSuper = true )
-public abstract class AstIfElse extends Ast {
-    public Ast elseAst = null;
+public abstract class AstRenderIfElse extends AstRender {
+    public AstRender elseAstRender = null;
 
-    AstIfElse( TemplateType type ) {
+    public AstRenderIfElse( TemplateType type ) {
         super( type );
     }
 
     @Override
-    protected boolean equalsAst( Ast ast ) {
-        return getClass().equals( ast.getClass() );
-    }
-
-    @Override
-    void render( Render render ) {
+    public void render( Render render ) {
         render
             .ntab().append( "if ( %s%s ) {", render.field, getTrue() );
 
@@ -55,27 +50,28 @@ public abstract class AstIfElse extends Ast {
         var newRender = render.withParentType( type ).tabInc();
         if( iv != null ) newRender = newRender.withField( iv );
         for( var c : children ) {
-            c.render( newRender );
+            c.render( newRender.newBlock() );
         }
 
         render.ntab().append( "}" );
 
-        if( elseAst != null ) {
+        if( elseAstRender != null ) {
             var nRender = render.append( " else {" )
                 .tabInc();
-            elseAst.render( nRender );
+            if( nRender.tryVariable != null ) nRender.ntab().append( "%s = true;", nRender.tryVariable );
+            elseAstRender.render( nRender.newBlock() );
             render.ntab().append( "}" );
         }
     }
 
     @Override
-    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
-        if( elseAst != null ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+        if( elseAstRender != null ) {
             printTop( buffer, prefix );
             buffer.append( childrenPrefix ).append( "│" ).append( getFalseToString() );
             buffer.append( '\n' );
 
-            elseAst.print( buffer, childrenPrefix + "│" + "└── ", childrenPrefix + "│" + "    " );
+            elseAstRender.print( buffer, childrenPrefix + "│" + "└── ", childrenPrefix + "│" + "    " );
 
             printChildren( buffer, childrenPrefix, children );
         } else {

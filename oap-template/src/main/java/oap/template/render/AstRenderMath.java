@@ -22,40 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
+@ToString( callSuper = true )
+public class AstRenderMath extends AstRender {
+    public final String operation;
+    public final String number;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
-
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+    public AstRenderMath( TemplateType type, String operation, String number ) {
+        super( type );
+        this.operation = operation;
+        this.number = number;
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
-    }
+    @Override
+    public void render( Render render ) {
+        var mathVariable = render.newVariable();
 
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
-    }
+        render.ntab().append( "var %s = %s %s %s;", mathVariable, render.field, operation, number );
 
-
-    @ToString
-    static class Function {
-        public final String name;
-
-        Function( String name ) {
-            this.name = name;
-        }
+        var newRender = render.withField( mathVariable ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

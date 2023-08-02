@@ -22,28 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
+import org.apache.commons.text.StringEscapeUtils;
+
+import java.util.ArrayList;
 
 @ToString( callSuper = true )
-class AstPathNotFound extends Ast {
-    final String description;
+public class AstRenderExpression extends AstRender {
+    final ArrayList<String> content = new ArrayList<>();
 
-    AstPathNotFound( String description ) {
-        super( new TemplateType( String.class ) );
-        this.description = description;
+    public AstRenderExpression( AstRender astRender, String content ) {
+        super( astRender.type );
+        this.children.add( astRender );
+        this.content.add( content );
     }
 
     @Override
-    void render( Render render ) {
-        var newVariable = render.newVariable();
-
-        render
-            .ntab().append( "// %s", description )
-            .ntab().append( "var %s = \"\";", newVariable );
-
-        var newRender = render.withField( newVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+    public void render( Render render ) {
+        for( String c : content ) {
+            render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
+        }
+        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
     }
 }

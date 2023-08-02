@@ -22,40 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
+@ToString( callSuper = true )
+public class AstRenderMap extends AstRender {
+    private final String key;
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
+    public AstRenderMap( String key, TemplateType valueType ) {
+        super( valueType );
 
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+        this.key = key;
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
-    }
+    @Override
+    public void render( Render render ) {
+        var mapVariable = render.newVariable();
 
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
-    }
+        render.ntab().append( "%s %s = %s.get( \"%s\" );",
+            type.getTypeName(), mapVariable,
+            render.field, render.escapeJava( key ) );
 
-
-    @ToString
-    static class Function {
-        public final String name;
-
-        Function( String name ) {
-            this.name = name;
-        }
+        var newRender = render.withField( mapVariable ).withParentType( type );
+        children.forEach( a -> a.render( newRender ) );
     }
 }

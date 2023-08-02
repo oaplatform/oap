@@ -22,27 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
 import lombok.ToString;
 
-@ToString( callSuper = true )
-public class AstText extends Ast {
-    public final String text;
+import java.util.ArrayList;
+import java.util.List;
 
-    public AstText( String text ) {
-        super( new TemplateType( String.class ) );
-        this.text = text;
+/**
+ * ${expression; &lt;function name&gt(args...)}
+ */
+@ToString
+public class Func {
+    public final String name;
+    public final ArrayList<String> arguments = new ArrayList<>();
+
+    public Func( String name, List<String> arguments ) {
+        this.name = name;
+        this.arguments.addAll( arguments );
     }
 
-    @Override
-    void render( Render render ) {
-        render.ntab()
-            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
-    }
-
-    @Override
-    protected boolean equalsAst( Ast ast ) {
-        return ast instanceof AstText;
+    public String print() {
+        return name + "(" + String.join( ", ", arguments ) + ")";
     }
 }

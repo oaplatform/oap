@@ -24,27 +24,25 @@
 
 package oap.template;
 
-import lombok.ToString;
+import org.joda.time.DateTime;
+import org.testng.annotations.Test;
 
-@ToString( callSuper = true )
-public class AstMap extends Ast {
-    private final String key;
+import java.util.List;
 
-    public AstMap( String key, TemplateType valueType ) {
-        super( valueType );
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-        this.key = key;
+public class TemplateAccumulatorStringTest {
+    @Test
+    public void testAcceptDateTimeAsObject() {
+        TemplateAccumulatorString ta = new TemplateAccumulatorString( "yyyy--" );
+        ta.accept( new DateTime( 2022, 12, 16, 8, 44, 12 ) );
+        assertThat( ta.get() ).isEqualTo( "2022--" );
     }
 
-    @Override
-    void render( Render render ) {
-        var mapVariable = render.newVariable();
-
-        render.ntab().append( "%s %s = %s.get( \"%s\" );",
-            type.getTypeName(), mapVariable,
-            render.field, render.escapeJava( key ) );
-
-        var newRender = render.withField( mapVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+    @Test
+    public void testAcceptCollectionDateTimeAsObject() {
+        TemplateAccumulatorString ta = new TemplateAccumulatorString( "yyyy--" );
+        ta.accept( List.of( new DateTime( 2022, 12, 16, 8, 44, 12 ) ) );
+        assertThat( ta.get() ).isEqualTo( "['2022--']" );
     }
 }

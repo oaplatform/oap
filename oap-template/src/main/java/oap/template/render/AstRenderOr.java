@@ -22,64 +22,82 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
-import oap.template.TemplateGrammarAdaptor.MaxMin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @ToString( callSuper = true )
-public class AstOr extends Ast {
-    private final ArrayList<MaxMin> or = new ArrayList<>();
+public class AstRenderOr extends AstRenderIfElse {
+    public final ArrayList<AstRender> or = new ArrayList<>();
 
-    AstOr( TemplateType type ) {
+    public AstRenderOr( TemplateType type, List<AstRender> or ) {
         super( type );
-    }
 
-    public void addTry( List<MaxMin> asts ) {
-        for( var ast : asts ) {
-            var astRunnable = new AstRunnable( type );
-            astRunnable.addChild( ast.top );
-            or.add( new MaxMin( astRunnable, ast.bottom ) );
+        for( var ast : or ) {
+            AstRenderTryBlock astTryBlock = new AstRenderTryBlock( type );
+            astTryBlock.addChild( ast );
+            this.or.add( astTryBlock );
         }
     }
 
     @Override
-    protected void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
         printTop( buffer, prefix );
         buffer.append( childrenPrefix ).append( "│OR" );
         buffer.append( '\n' );
 
         for( var i = 0; i < or.size(); i++ ) {
             var cp = "│".repeat( or.size() - i );
-            or.get( i ).top.print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
+            or.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
         }
 
-        printChildren( buffer, childrenPrefix, children );
+        super.print( buffer, prefix, childrenPrefix );
     }
 
     @Override
-    void render( Render render ) {
+    protected String getTrue() {
+        return ".isNotEmpty()";
+    }
+
+    @Override
+    protected String getFalseToString() {
+        return "isEmpty()";
+    }
+
+    @Override
+    protected String getInnerVariable( Supplier<String> newVariable ) {
+        return null;
+    }
+
+    @Override
+    protected String getInnerVariableSetter( String variableName, Render render ) {
+        return null;
+    }
+
+    @Override
+    public void render( Render render ) {
         var orVariable = render.newVariable();
 
-        var minMax = or.get( 0 );
+        var ast = or.get( 0 );
 
         var r = render;
-        r.ntab().append( render.templateAccumulator.getTypeName() ).append( " " ).append( orVariable ).append( " = null;" );
+        r.ntab().append( render.templateAccumulator.getClass().getTypeName() ).append( " " ).append( orVariable ).append( " = acc.newInstance();" );
         for( var i = 0; i < or.size(); i++ ) {
-            minMax = or.get( i );
-            var astRunnable = ( AstRunnable ) minMax.top;
+            ast = or.get( i );
+            var astRunnable = ( AstRenderTryBlock ) ast;
 
             var newFunctionId = render.newVariable();
             var templateAccumulatorName = "acc_" + newFunctionId;
 
-            astRunnable.render( newFunctionId, templateAccumulatorName, render );
+            astRunnable.render( newFunctionId, templateAccumulatorName, r.newBlock() );
             r = r
-                .ntab().append( "%s.run();", newFunctionId )
-                .ntab().append( "if( !%s.isEmpty() ) { ", templateAccumulatorName )
-                .tabInc().ntab().append( "%s = %s.get();", orVariable, templateAccumulatorName )
+                .ntab().append( "boolean is_empty_%s = %s.getAsBoolean();", newFunctionId, newFunctionId )
+                .ntab().append( "if( !is_empty_%s ) { ", newFunctionId )
+                .tabInc().ntab().append( "%s = %s;", orVariable, templateAccumulatorName )
                 .tabDec();
 
             if( i < or.size() - 1 ) r = r.ntab().append( "} else {" ).tabInc();
@@ -87,7 +105,7 @@ public class AstOr extends Ast {
 
         for( var i = 0; i < or.size(); i++ ) r = r.tabDec().ntab().append( "}" );
 
-        var newRender = r.withField( orVariable ).withParentType( new TemplateType( Object.class ) );
-        children.forEach( a -> a.render( newRender ) );
+        var newRender = r.withField( orVariable );
+        super.render( newRender );
     }
 }

@@ -22,40 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
-import lombok.ToString;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
+import java.util.Iterator;
+import java.util.LinkedList;
 
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
+public class Chain {
+    private final LinkedList<AstRender> list = new LinkedList<>();
 
-@SuppressWarnings( "checkstyle:AbstractClassName" )
-abstract class TemplateGrammarAdaptor extends Parser {
-    Map<String, List<Method>> builtInFunction;
-    ErrorStrategy errorStrategy;
-
-    TemplateGrammarAdaptor( TokenStream input ) {
-        super( input );
+    public AstRender head() {
+        return list.peekFirst();
     }
 
-    String sStringToDString( String sstr ) {
-        return '"' + sdStringToString( sstr ) + '"';
+    public AstRender bottom() {
+        return list.peekLast();
     }
 
-    String sdStringToString( String sstr ) {
-        return sstr.substring( 1, sstr.length() - 1 );
+    public void add( AstRender astRender ) {
+        if( !list.isEmpty() ) bottom().addChild( astRender );
+        list.add( astRender );
     }
 
-
-    @ToString
-    static class Function {
-        public final String name;
-
-        Function( String name ) {
-            this.name = name;
-        }
+    public Iterator<AstRender> iterator() {
+        return list.iterator();
     }
 }

@@ -22,35 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.function.Supplier;
-
 @ToString( callSuper = true )
-public class AstOptional extends AstIfElse {
-    AstOptional( TemplateType type ) {
+public class AstRenderPrintField extends AstRender {
+    public AstRenderPrintField( TemplateType type ) {
         super( type );
     }
 
     @Override
-    protected String getTrue() {
-        return ".isPresent()";
-    }
-
-    @Override
-    protected String getFalseToString() {
-        return "isEmpty()";
-    }
-
-    @Override
-    protected String getInnerVariable( Supplier<String> newVariable ) {
-        return newVariable.get();
-    }
-
-    @Override
-    protected String getInnerVariableSetter( String variableName, Render render ) {
-        return "%s %s = %s.get();".formatted( type.getTypeName(), variableName, render.field );
+    public void render( Render render ) {
+        var r = render.ntab();
+        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
     }
 }

@@ -22,28 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
-import org.apache.commons.text.StringEscapeUtils;
-
-import java.util.ArrayList;
 
 @ToString( callSuper = true )
-public class AstExpression extends Ast {
-    final ArrayList<String> content = new ArrayList<>();
+public class AstRenderText extends AstRender {
+    public final String text;
 
-    AstExpression( Ast ast, String content ) {
-        super( ast.type );
-        this.children.add( ast );
-        this.content.add( content );
+    public AstRenderText( String text ) {
+        super( new TemplateType( String.class ) );
+        this.text = text;
     }
 
     @Override
-    void render( Render render ) {
-        for( String c : content ) {
-            render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
-        }
-        children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
+    public void render( Render render ) {
+        render.ntab()
+            .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
     }
+
 }

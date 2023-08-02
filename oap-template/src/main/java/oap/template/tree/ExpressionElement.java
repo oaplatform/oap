@@ -22,35 +22,22 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
-import java.lang.reflect.Method;
-import java.util.List;
+@ToString
+@Slf4j
+public class ExpressionElement implements Element {
+    public final String expression;
 
-@ToString( callSuper = true )
-class AstFunction extends Ast {
-    final Method method;
-    final List<String> parameters;
-
-    AstFunction( TemplateType type, Method method, List<String> parameters ) {
-        super( type );
-        this.method = method;
-        this.parameters = parameters;
+    public ExpressionElement( String expression ) {
+        this.expression = expression;
     }
 
     @Override
-    void render( Render render ) {
-        var funcVariable = render.newVariable();
-
-        render.ntab().append( "%s %s = %s.%s( %s",
-            method.getGenericReturnType().getTypeName(), funcVariable,
-            method.getDeclaringClass().getName(), method.getName(), render.field );
-        if( !parameters.isEmpty() ) render.append( ", " );
-        render.append( String.join( ", ", parameters ) ).append( " );" );
-
-        var newRender = render.withField( funcVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+    public String print() {
+        return "EXPR " + expression;
     }
 }

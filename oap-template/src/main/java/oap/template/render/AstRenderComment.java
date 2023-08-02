@@ -22,28 +22,24 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
 import lombok.ToString;
 
 @ToString( callSuper = true )
-class AstMath extends Ast {
-    final String operation;
-    final String number;
+class AstRenderComment extends AstRender {
+    final String comment;
 
-    AstMath( TemplateType type, String operation, String number ) {
+    AstRenderComment( TemplateType type, String comment ) {
         super( type );
-        this.operation = operation;
-        this.number = number;
+
+        this.comment = comment;
     }
 
     @Override
-    void render( Render render ) {
-        var mathVariable = render.newVariable();
+    public void render( Render render ) {
+        render.ntab().append( comment );
 
-        render.ntab().append( "var %s = %s %s %s;", mathVariable, render.field, operation, number );
-
-        var newRender = render.withField( mathVariable ).withParentType( type );
-        children.forEach( a -> a.render( newRender ) );
+        children.forEach( a -> a.render( render ) );
     }
 }

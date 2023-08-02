@@ -22,33 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
-import lombok.ToString;
-
-import java.util.List;
-
-@ToString( callSuper = true )
-public class AstConcatenation extends Ast {
-    final List<Ast> items;
-
-    AstConcatenation( TemplateType type, List<Ast> items ) {
-        super( type );
-
-        this.items = items;
-    }
-
-    @Override
-    void render( Render render ) {
-        var templateAccumulatorName = "acc_" + render.newVariable();
-        render
-            .ntab().append( "var %s = acc.newInstance();", templateAccumulatorName );
-
-        for( var item : items ) {
-            item.render( render.withTemplateAccumulatorName( templateAccumulatorName ) );
-        }
-
-        var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
-        children.forEach( a -> a.render( newRender ) );
-    }
+/**
+ * text1${expr1}text2${exp2} - {@link Elements}
+ * text1 - {@link TextElement}
+ * exp1 - {@link Expression}
+ * text2 - {@link TextElement}
+ * exp2 - {@link Expression}
+ *
+ * @see Expression
+ * @see TextElement
+ */
+public interface Node {
+    String print();
 }

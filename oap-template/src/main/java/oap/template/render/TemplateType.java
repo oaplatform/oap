@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.render;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Lists;
 
@@ -32,17 +33,18 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 
+@EqualsAndHashCode
 @ToString
-class TemplateType {
+public class TemplateType {
     public final Type type;
     public final boolean nullable;
 
-    TemplateType( Type type, boolean nullable ) {
+    public TemplateType( Type type, boolean nullable ) {
         this.type = type;
         this.nullable = nullable;
     }
 
-    TemplateType( Type type ) {
+    public TemplateType( Type type ) {
         this( type, false );
     }
 
@@ -50,16 +52,16 @@ class TemplateType {
      * this doesnt work with TypeVariables
      * todo rewrite on TypeRef based type resolution
      */
-    static Class<?> getTypeClass( Type type ) {
+    public static Class<?> getTypeClass( Type type ) {
         if( type instanceof ParameterizedType ) return getTypeClass( ( ( ParameterizedType ) type ).getRawType() );
         return ( Class<?> ) type;
     }
 
-    Class<?> getTypeClass() {
+    public Class<?> getTypeClass() {
         return getTypeClass( type );
     }
 
-    String getTypeName() {
+    public String getTypeName() {
         return type.getTypeName().replace( '$', '.' );
     }
 
@@ -72,7 +74,11 @@ class TemplateType {
     }
 
     public TemplateType getActualTypeArguments1() {
-        return new TemplateType( ( ( ParameterizedType ) type ).getActualTypeArguments()[1] );
+        return getActualTypeArguments1( false );
+    }
+
+    public TemplateType getActualTypeArguments1( boolean nullable ) {
+        return new TemplateType( ( ( ParameterizedType ) type ).getActualTypeArguments()[1], nullable );
     }
 
     public List<TemplateType> getActualArguments() {

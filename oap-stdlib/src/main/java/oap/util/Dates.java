@@ -40,31 +40,47 @@ import org.joda.time.format.PeriodFormatterBuilder;
  * The Dates class provides utility methods for working with dates and times.
  */
 public class Dates {
+    /**
+     * The standard SQL date format with milliseconds.
+     */
+    public static final String PATTERN_FORMAT_MILLIS = "yyyy-MM-dd'T'HH:mm:ss.SSS";
+    /**
+     * The standard SQL date format.
+     */
+    public static final String PATTERN_FORMAT_SIMPLE = "yyyy-MM-dd'T'HH:mm:ss";
+    /**
+     * The clean simple date format.
+     */
+    public static final String PATTERN_FORMAT_SIMPLE_CLEAN = "yyyy-MM-dd HH:mm:ss";
+    /**
+     * The date format.
+     */
+    public static final String PATTERN_FORMAT_DATE = "yyyy-MM-dd";
 
     /**
      * The standard SQL date format with milliseconds.
      */
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
-        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
+        .forPattern( PATTERN_FORMAT_MILLIS )
         .withZoneUTC();
 
     /**
      * The standard SQL date format.
      */
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
-        .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
+        .forPattern( PATTERN_FORMAT_SIMPLE )
         .withZoneUTC();
     /**
      * The clean simple date format.
      */
     public static final DateTimeFormatter FORMAT_SIMPLE_CLEAN = DateTimeFormat
-        .forPattern( "yyyy-MM-dd HH:mm:ss" )
+        .forPattern( PATTERN_FORMAT_SIMPLE_CLEAN )
         .withZoneUTC();
     /**
      * The date format.
      */
     public static final DateTimeFormatter FORMAT_DATE = DateTimeFormat
-        .forPattern( "yyyy-MM-dd" )
+        .forPattern( PATTERN_FORMAT_DATE )
         .withZoneUTC();
 
     public static final DateTimeFormatter PARSER_MULTIPLE_DATETIME = new DateTimeFormatterBuilder()

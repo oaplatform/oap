@@ -22,30 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.template;
+package oap.template.tree;
 
 import lombok.ToString;
 
-@ToString( callSuper = true )
-public class AstPrint extends Ast {
-    final String defaultValue;
+import java.util.ArrayList;
 
-    AstPrint( TemplateType type, String defaultValue ) {
-        super( type );
-        this.defaultValue = defaultValue;
-    }
+@ToString
+public class Elements implements Node {
+    public final ArrayList<Element> elements = new ArrayList<>();
 
-    @Override
-    void render( Render render ) {
-        var r = render.ntab();
-        var checkNull = defaultValue != null && !r.parentType.isPrimitiveType();
-        if( checkNull ) r = r
-            .append( "if( %s == null ) {", r.field )
-            .tabInc().ntab().append( "%s.acceptText( \"%s\" );", r.templateAccumulatorName, defaultValue )
-            .tabDec().ntab().append( "} else {" ).tabInc();
+    public String print() {
+        StringBuilder sb = new StringBuilder( "LIST\n" );
+        var it = elements.iterator();
+        while( it.hasNext() ) {
+            var item = it.next();
 
-        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
+            sb
+                .append( it.hasNext() ? "├── " : "└── " )
+                .append( item.print() )
+                .append( '\n' );
+        }
 
-        if( checkNull ) r.tabDec().ntab().append( "}" );
+        return sb.toString();
     }
 }
