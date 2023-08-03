@@ -24,8 +24,36 @@
 
 package oap.template;
 
-public final class TemplateAccumulators {
-    public static final TemplateAccumulatorBinary BINARY = new TemplateAccumulatorBinary();
-    public static final TemplateAccumulatorString STRING = new TemplateAccumulatorString();
-    public static final TemplateAccumulatorObject OBJECT = new TemplateAccumulatorObject();
+import com.google.common.base.Preconditions;
+
+public enum Types {
+    EOL( 0 ),
+    RAW( 1 ),
+    DATETIME( 2 ),
+    DATE( 3 ),
+    BOOLEAN( 4 ),
+    BYTE( 5 ),
+    SHORT( 6 ),
+    INTEGER( 7 ),
+    LONG( 8 ),
+    FLOAT( 9 ),
+    DOUBLE( 10 ),
+    STRING( 11 ),
+    LIST( 12 );
+
+    public final byte id;
+
+    Types( int id ) {
+        Preconditions.checkArgument( id == ( id & 0xFF ) );
+
+        this.id = ( byte ) id;
+    }
+
+    public static Types valueOf( byte type ) {
+        for( var v : values() ) {
+            if( v.id == type ) return v;
+        }
+
+        throw new IllegalArgumentException( "Unknown id " + type );
+    }
 }
