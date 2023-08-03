@@ -27,6 +27,7 @@ package oap.util;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 
 import java.io.InputStream;
+import java.util.Arrays;
 
 public class FastByteArrayOutputStream extends it.unimi.dsi.fastutil.io.FastByteArrayOutputStream {
     public FastByteArrayOutputStream() {
@@ -53,5 +54,9 @@ public class FastByteArrayOutputStream extends it.unimi.dsi.fastutil.io.FastByte
     @Override
     public String toString() {
         return new String( array, 0, length );
+    }
+
+    public byte[] toByteArray() {
+        return Arrays.copyOfRange( array, 0, ( int ) position() );
     }
 }
