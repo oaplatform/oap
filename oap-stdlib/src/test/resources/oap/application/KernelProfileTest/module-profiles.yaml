@@ -3,5 +3,10 @@ services:
   profile:
     profiles:
       - profile-name1
-      - -profile-name2
+      - profile-name2
+    implementation: "oap.application.KernelProfileTest$TestProfile1"
+  disabledProfile:
+    profiles:
+      - profile-name1
+      - disabled
     implementation: "oap.application.KernelProfileTest$TestProfile1"

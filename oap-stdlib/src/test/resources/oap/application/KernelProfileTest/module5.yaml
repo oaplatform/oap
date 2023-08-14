@@ -5,22 +5,17 @@ dependsOn:
 services:
   profile2:
     profiles:
-      - -profile-name
       - run
     implementation: oap.application.KernelProfileTest$TestProfile2
     name: profile
 
   profile1:
     profiles:
-      - -profile-name
-      - -run
+      - disabled
     implementation: oap.application.KernelProfileTest$TestProfile1
     name: profile
 
   container2:
-    profiles:
-      - -profile-name
-      - run
     name: container
     implementation: oap.application.KernelProfileTest$TestContainer3
     parameters:

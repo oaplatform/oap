@@ -22,3 +22,4 @@ kotlinc.xml
 /.idea/runConfigurations.xml
 /.idea/sonarlint/*
 /codemr/*
+.DS_Store

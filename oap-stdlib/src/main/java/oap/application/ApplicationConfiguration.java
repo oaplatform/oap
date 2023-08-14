@@ -154,7 +154,6 @@ public final class ApplicationConfiguration {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public synchronized Set<String> getProfiles() {
         if( profilesCache != null ) return profilesCache;
         var p = new ArrayList<String>();
@@ -163,8 +162,7 @@ public final class ApplicationConfiguration {
             else if( profile instanceof Map<?, ?> ) {
                 String profileJson = Binder.json.marshal( profile );
                 var conf = Binder.json.unmarshal( ProfileMap.class, profileJson );
-                if( conf.enabled )
-                    p.add( conf.name );
+                p.add( conf.name );
             }
         }
         addProfiles( p, System.getenv() );
@@ -237,7 +235,6 @@ public final class ApplicationConfiguration {
 
     public static class ProfileMap {
         public final String name;
-        public boolean enabled = true;
 
         @JsonCreator
         public ProfileMap( String name ) {

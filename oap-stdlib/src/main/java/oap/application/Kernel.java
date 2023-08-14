@@ -191,7 +191,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
     private void checkForUnknownServices( Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {
         services.forEach( ( moduleName, conf ) -> {
-            if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) && conf.isEnabled() )
+            if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) )
                 throw new ApplicationException( "unknown application configuration module: " + moduleName );
         } );
 

@@ -24,14 +24,12 @@
 
 package oap.application;
 
-import com.typesafe.config.impl.ConfigImpl;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,11 +51,15 @@ public class KernelProfileTest {
 
         try( var kernel = new Kernel( modules ) ) {
             startWithProfile( kernel, "test-profile", "profile-name1" );
+            assertThat( kernel.<TestProfile1>service( "*.profile" ) ).isNotPresent();
+        }
+        try( var kernel = new Kernel( modules ) ) {
+            startWithProfile( kernel, "test-profile", "profile-name1", "profile-name2" );
             assertThat( kernel.<TestProfile1>service( "*.profile" ) ).isPresent();
         }
         try( var kernel = new Kernel( modules ) ) {
             startWithProfile( kernel, "test-profile", "profile-name1", "profile-name2" );
-            assertThat( kernel.<TestProfile1>service( "*.profile" ) ).isNotPresent();
+            assertThat( kernel.<TestProfile1>service( "*.disabledProfile" ) ).isNotPresent();
         }
         try( var kernel = new Kernel( modules ) ) {
             startWithProfile( kernel, "test-profile", "profile-name2" );
@@ -81,7 +83,7 @@ public class KernelProfileTest {
             startWithProfile( kernel, "test-profile", "profile-name-2" );
 
             assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isNotPresent();
-            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
+            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isNotPresent();
             assertThat( kernel.<TestProfile3>service( "*.profile3" ) ).isPresent();
         }
     }
@@ -130,35 +132,6 @@ public class KernelProfileTest {
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
             startWithProfile( kernel, "test-module-profile" );
             assertThat( kernel.service( "*.module-profile" ) ).isNotPresent();
-        }
-    }
-
-    @Test
-    public void testDynamicProfile() {
-        ConfigImpl.reloadSystemPropertiesConfig();
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
-            kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
-
-            assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isPresent();
-            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
-        }
-
-        System.setProperty( "ENABLE_TEST_PROFILE", "true" );
-        ConfigImpl.reloadSystemPropertiesConfig();
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
-            kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
-
-            assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isPresent();
-            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
-        }
-
-        System.setProperty( "ENABLE_TEST_PROFILE", "false" );
-        ConfigImpl.reloadSystemPropertiesConfig();
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
-            kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
-
-            assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isNotPresent();
-            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
     }
 

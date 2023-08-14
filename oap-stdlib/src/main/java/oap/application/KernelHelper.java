@@ -133,23 +133,23 @@ public class KernelHelper {
         return new ServiceConfigurationParameter( value, false );
     }
 
-    public static boolean profileEnabled( LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles ) {
-        for( var profile : moduleProfiles ) {
-            if( profile.startsWith( "-" ) ) {
-                if( systemProfiles.contains( profile.substring( 1 ) ) ) return false;
-            } else {
-                if( !systemProfiles.contains( profile ) ) return false;
-            }
+    public static boolean profileEnabled(LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles) {
+        for (var profile : moduleProfiles) {
+            if (!systemProfiles.contains(profile)) return false;
         }
         return true;
     }
 
     public static boolean isModuleEnabled( Module module, LinkedHashSet<String> systemProfiles ) {
-        return profileEnabled( module.profiles, systemProfiles );
+        return profileEnabled( module.profiles, systemProfiles ) && !hasDisabledProfile( module.profiles );
     }
 
     public static boolean isServiceEnabled( Service service, LinkedHashSet<String> systemProfiles ) {
-        return profileEnabled( service.profiles, systemProfiles );
+        return profileEnabled( service.profiles, systemProfiles ) && !hasDisabledProfile( service.profiles );
+    }
+
+    public static boolean hasDisabledProfile(LinkedHashSet<String> profiles) {
+        return profiles.contains("disabled");
     }
 
     public static void setThreadNameSuffix( String suffix ) {
