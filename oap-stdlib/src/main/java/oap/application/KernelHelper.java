@@ -133,9 +133,9 @@ public class KernelHelper {
         return new ServiceConfigurationParameter( value, false );
     }
 
-    public static boolean profileEnabled(LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles) {
-        for (var profile : moduleProfiles) {
-            if (!systemProfiles.contains(profile)) return false;
+    public static boolean profileEnabled( LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles ) {
+        for ( var profile : moduleProfiles ) {
+            if ( !systemProfiles.contains( profile ) ) return false;
         }
         return true;
     }
@@ -148,8 +148,8 @@ public class KernelHelper {
         return profileEnabled( service.profiles, systemProfiles ) && !hasDisabledProfile( service.profiles );
     }
 
-    public static boolean hasDisabledProfile(LinkedHashSet<String> profiles) {
-        return profiles.contains("disabled");
+    public static boolean hasDisabledProfile( LinkedHashSet<String> profiles ) {
+        return profiles.contains( "disabled" );
     }
 
     public static void setThreadNameSuffix( String suffix ) {
