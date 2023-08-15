@@ -146,10 +146,7 @@ public final class ApplicationConfiguration {
 
         var it = profiles.listIterator( profiles.size() );
         while( it.hasPrevious() ) {
-            var profile = it.previous();
-
-            if( cache.contains( profile ) ) it.remove();
-            else cache.add( profile );
+            cache.add( it.previous() );
         }
     }
 
@@ -179,15 +176,10 @@ public final class ApplicationConfiguration {
     private void addProfiles( List<String> ret, Map<?, ?> env ) {
         env.forEach( ( nameObj, valueObj ) -> {
             var name = ( String ) nameObj;
-            var value = ( String ) valueObj;
             if( name.startsWith( OAP_PROFILE_PREFIX ) ) {
                 var profileName = name.substring( OAP_PROFILE_PREFIX.length() );
-                var profileValue = value.trim().toUpperCase();
                 profileName = profileEscape( profileName );
-                var enabled = "1".equals( profileValue ) || "ON".equals( profileValue ) || "TRUE".equals( profileValue );
-
-//                ret.remove( ( enabled ? "-" : "" ) + profileName );
-//                ret.add( ( enabled ? "" : "-" ) + profileName );
+                ret.add( profileName );
             }
         } );
     }

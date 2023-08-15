@@ -70,14 +70,13 @@ public class ApplicationConfigurationTest {
         assertThat( ac.getProfiles() ).isEmpty();
         ac.reset();
 
-        ac.profiles.add( "-with-file" );
         ac.profiles.add( "test" );
 
         System.setProperty( "OAP_PROFILE_with__file", "1" );
         Env.set( "OAP_PROFILE_with_2Dfile", "on" );
         Env.set( "OAP_PROFILE_test", "false" );
 
-        assertThat( ac.getProfiles() ).containsOnly( "with_file", "with-file", "-test" );
+        assertThat( ac.getProfiles() ).containsOnly( "test", "with_file", "with-file" );
     }
 
     @Test
@@ -90,12 +89,11 @@ public class ApplicationConfigurationTest {
         assertThat( ac.getProfiles() ).containsExactly( "test" );
         ac.reset();
 
-        ac.profiles.add( "-test" );
         ac.profiles.add( "b" );
-        assertThat( ac.getProfiles() ).containsExactly( "-test", "b" );
+        assertThat( ac.getProfiles() ).containsExactly( "test", "b" );
         ac.reset();
 
         ac.profiles.add( "test" );
-        assertThat( ac.getProfiles() ).containsExactly( "b", "test" );
+        assertThat( ac.getProfiles() ).containsExactly( "test", "b" );
     }
 }
