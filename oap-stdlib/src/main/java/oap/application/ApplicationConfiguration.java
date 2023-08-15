@@ -148,7 +148,6 @@ public final class ApplicationConfiguration {
         while( it.hasPrevious() ) {
             var profile = it.previous();
 
-            if( profile.startsWith( "-" ) ) profile = profile.substring( 1 );
             if( cache.contains( profile ) ) it.remove();
             else cache.add( profile );
         }
@@ -177,7 +176,7 @@ public final class ApplicationConfiguration {
         profilesCache = null;
     }
 
-    private void addProfiles( List<String> ret, Map<? extends Object, ? extends Object> env ) {
+    private void addProfiles( List<String> ret, Map<?, ?> env ) {
         env.forEach( ( nameObj, valueObj ) -> {
             var name = ( String ) nameObj;
             var value = ( String ) valueObj;
@@ -187,8 +186,8 @@ public final class ApplicationConfiguration {
                 profileName = profileEscape( profileName );
                 var enabled = "1".equals( profileValue ) || "ON".equals( profileValue ) || "TRUE".equals( profileValue );
 
-                ret.remove( ( enabled ? "-" : "" ) + profileName );
-                ret.add( ( enabled ? "" : "-" ) + profileName );
+//                ret.remove( ( enabled ? "-" : "" ) + profileName );
+//                ret.add( ( enabled ? "" : "-" ) + profileName );
             }
         } );
     }
