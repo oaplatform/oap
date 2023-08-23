@@ -244,12 +244,11 @@ public class Kernel implements Closeable, AutoCloseable {
                     instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
                 }
                 retModules.put( serviceItem, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
-            } catch( ReflectException e ) {
+            } catch( Exception e ) {
                 log.info( "service name = {}.{}, remote = {}, profiles = {}",
                     moduleName, implName, service.remote, service.profiles );
                 throw new ApplicationException( e );
             }
-
         }
 
         return retModules;
