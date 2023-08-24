@@ -24,8 +24,11 @@
 
 package oap.application.remote;
 
+import lombok.ToString;
+
 import java.net.URI;
 
+@ToString
 public class RemoteLocation {
     public static final long DEFAULT_TIMEOUT = 5000L;
     public URI url;
