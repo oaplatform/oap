@@ -23,6 +23,7 @@
  */
 package oap.application.remote;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.micrometer.core.instrument.Counter;
@@ -106,6 +107,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         this.timeout = timeout;
         this.fst = new FST( serialization );
         this.retry = retry;
+
+        Preconditions.checkNotNull( uri );
+        Preconditions.checkNotNull( service );
 
         timeoutMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "timeout" ) );
         errorMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "error" ) );
