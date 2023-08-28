@@ -62,12 +62,19 @@ public class Remote implements HttpHandler {
     private final Kernel kernel;
 
     public Remote( FST.SerializationMethod serialization, String context, Kernel kernel, NioHttpServer server ) {
+        this( serialization, context, kernel, server, -1 );
+    }
+
+    public Remote( FST.SerializationMethod serialization, String context, Kernel kernel, NioHttpServer server, int port ) {
         this.serialization = serialization;
         this.context = context;
         this.kernel = kernel;
 
-        server.bind( context, this );
-
+        if( port > 0 ) {
+            server.bind( context, this, port );
+        } else {
+            server.bind( context, this );
+        }
 
         errorMetrics = Metrics.counter( "remote_server", Tags.of( "status", "error" ) );
         successMetrics = Metrics.counter( "remote_server", Tags.of( "status", "success" ) );
@@ -111,19 +118,19 @@ public class Remote implements HttpHandler {
                 int status = HTTP_OK;
                 try {
                     Object invokeResult = service.getClass()
-                            .getMethod( invocation.method, invocation.types() )
-                            .invoke( service, invocation.values() );
+                        .getMethod( invocation.method, invocation.types() )
+                        .invoke( service, invocation.values() );
                     r = Result.success( invokeResult );
                 } catch( NoSuchMethodException | IllegalAccessException e ) {
                     errorMetrics.increment();
                     // transport error - illegal setup
                     // wrapping into RIE to be handled at client's properly
                     log.error( "method [{}#{}] doesn't exist or access isn't allowed",
-                            service.getClass().getCanonicalName(), invocation.method, e );
+                        service.getClass().getCanonicalName(), invocation.method, e );
                     log.debug( "method '{}' types {} parameters {}",
-                            invocation.method,
-                            invocation.types() != null ? List.of( invocation.types() ) : null,
-                            invocation.values() != null ? List.of( invocation.values() ) : null );
+                        invocation.method,
+                        invocation.types() != null ? List.of( invocation.types() ) : null,
+                        invocation.values() != null ? List.of( invocation.values() ) : null );
                     status = HTTP_NOT_FOUND;
                     r = Result.failure( new RemoteInvocationException( e ) );
                 } catch( InvocationTargetException e ) {
@@ -131,11 +138,11 @@ public class Remote implements HttpHandler {
                     // application error
                     r = Result.failure( e.getCause() );
                     log.debug( "{} occurred on call to method [{}#{}]",
-                            e.getCause().getClass().getCanonicalName(), service.getClass().getCanonicalName(), invocation.method, e );
+                        e.getCause().getClass().getCanonicalName(), service.getClass().getCanonicalName(), invocation.method, e );
                     log.debug( "method '{}' types {} parameters {}",
-                            invocation.method,
-                            invocation.types() != null ? List.of( invocation.types() ) : null,
-                            invocation.values() != null ? List.of( invocation.values() ) : null );
+                        invocation.method,
+                        invocation.types() != null ? List.of( invocation.types() ) : null,
+                        invocation.values() != null ? List.of( invocation.values() ) : null );
                 }
                 exchange.setStatusCode( status );
                 exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
@@ -144,20 +151,20 @@ public class Remote implements HttpHandler {
                 try( var outputStream = exchange.getOutputStream();
                      var bos = new BufferedOutputStream( outputStream );
                      var dos = new DataOutputStream( bos ) ) {
-                     dos.writeBoolean( result.isSuccess() );
+                    dos.writeBoolean( result.isSuccess() );
 
-                     if( !result.isSuccess() ) {
-                         fst.writeObjectWithSize( dos, result.failureValue );
-                     } else if( result.successValue instanceof Stream<?> ) {
+                    if( !result.isSuccess() ) {
+                        fst.writeObjectWithSize( dos, result.failureValue );
+                    } else if( result.successValue instanceof Stream<?> ) {
                         dos.writeBoolean( true );
 
                         ( ( Stream<?> ) result.successValue ).forEach( Try.consume( obj ->
                             fst.writeObjectWithSize( dos, obj ) ) );
                         dos.writeInt( 0 );
-                     } else {
+                    } else {
                         dos.writeBoolean( false );
                         fst.writeObjectWithSize( dos, result.successValue );
-                     }
+                    }
                 }
                 if( result.isSuccess() ) {
                     successMetrics.increment();

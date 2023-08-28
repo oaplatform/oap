@@ -22,7 +22,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>${oap.project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
     </dependencies>
 </project>

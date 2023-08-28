@@ -219,6 +219,24 @@ public interface ContentReader<R> {
         };
     }
 
+    static <R> ContentReader<R> ofYaml( Class<R> clazz ) {
+        return new ContentReader<>() {
+            @Override
+            public R read( InputStream is ) {
+                return Binder.yaml.unmarshal( clazz, is );
+            }
+        };
+    }
+
+    static <R> ContentReader<R> ofYaml( TypeRef<R> typeRef ) {
+        return new ContentReader<>() {
+            @Override
+            public R read( InputStream is ) {
+                return Binder.yaml.unmarshal( typeRef, is );
+            }
+        };
+    }
+
     static <R> ContentReader<R> ofHocon( Class<R> clazz ) {
         return new ContentReader<>() {
             @Override
