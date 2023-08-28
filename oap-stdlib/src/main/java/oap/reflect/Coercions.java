@@ -69,13 +69,13 @@ public final class Coercions {
 
     static {
         functions.put( "path", Try.biMap( ( path, reflection ) ->
-            Binder.hoconWithoutSystemProperties.unmarshal( reflection, Path.of( path ) ) ) );
+                Binder.Format.of( path, true ).binder.unmarshal( reflection, Path.of( path ) ) ) );
         functions.put( "file", Try.biMap( ( path, reflection ) ->
-            Binder.hoconWithoutSystemProperties.unmarshal( reflection, Path.of( path ) ) ) );
+            Binder.Format.of( path, true ).binder.unmarshal( reflection, Path.of( path ) ) ) );
         functions.put( "url", Try.biMap( ( url, reflection ) ->
-            Binder.hoconWithoutSystemProperties.unmarshal( reflection, new URL( url ) ) ) );
+            Binder.Format.of( url, true ).binder.unmarshal( reflection, new URL( url ) ) ) );
         functions.put( "classpath", Try.biMap( ( cp, reflection ) ->
-            Binder.hoconWithoutSystemProperties.unmarshal( reflection, Coercions.class.getResource( cp ) ) ) );
+            Binder.Format.of( cp, true ).binder.unmarshal( reflection, Coercions.class.getResource( cp ) ) ) );
         functions.put( "str", Try.biMap( ( str, reflection ) ->
             Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ) );
         functions.put( "hocon", Try.biMap( ( str, reflection ) ->
