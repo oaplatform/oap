@@ -26,27 +26,26 @@ package oap.application.link;
 
 import java.util.ListIterator;
 
-public class ListLinkReflection implements LinkReflection {
-    private final ListIterator<Object> iterator;
-    private Object value = null;
+public class ListLinkReflection<T> implements LinkReflection<T> {
+    private final ListIterator<T> iterator;
+    private T value = null;
     private boolean init = false;
 
-    public ListLinkReflection( ListIterator<Object> iterator ) {
+    public ListLinkReflection( ListIterator<T> iterator ) {
         this.iterator = iterator;
     }
 
     @Override
-    public boolean set( Object value ) {
+    public boolean set( T value ) {
         if( value == null ) {
             return false;
-        } else {
-            iterator.add( value );
-            return true;
         }
+        iterator.add( value );
+        return true;
     }
 
     @Override
-    public Object get() {
+    public T get() {
         if( init ) return value;
         value = iterator.next();
         init = true;

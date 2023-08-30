@@ -24,5 +24,8 @@
 
 package oap.jpath;
 
-public class PathNotFound extends RuntimeException {
+public class PathNotFoundException extends RuntimeException {
+    public PathNotFoundException( String message ) {
+        super( message );
+    }
 }

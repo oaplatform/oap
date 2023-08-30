@@ -77,7 +77,7 @@ class ModuleItemTree extends AbstractMap<String, ModuleItem> implements ServiceS
         return map.entrySet();
     }
 
-    public void set( LinkedHashMap<String, ModuleItem> newMap ) {
+    public void set( Map<String, ModuleItem> newMap ) {
         map.clear();
         services.clear();
         map.putAll( newMap );

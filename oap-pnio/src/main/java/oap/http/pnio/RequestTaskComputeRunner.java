@@ -41,14 +41,13 @@ class RequestTaskComputeRunner<WorkflowState> implements Runnable {
                 PnioExchange<WorkflowState> pnioExchange = queue.take();
                 try {
                     pnioExchange.runTasks( COMPUTE );
-
                     pnioExchange.completeFuture();
                 } catch( Throwable e ) {
                     pnioExchange.completeWithFail( e );
                 }
             } catch( InterruptedException e ) {
                 Thread.currentThread().interrupt();
-                done = true;
+                interrupt();
                 break;
             }
         }

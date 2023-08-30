@@ -49,9 +49,7 @@ public class CronScheduledService extends AbstractScheduledService {
     private static CronInfo parse( String cron ) {
         var m = JITTER.matcher( cron );
         if( m.matches() ) {
-            return new CronInfo(
-                    m.group( 1 ).trim(),
-                    Numbers.parseLongWithUnits( m.group( 2 ) ) );
+            return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
         }
 
         return new CronInfo( cron.trim(), 0L );

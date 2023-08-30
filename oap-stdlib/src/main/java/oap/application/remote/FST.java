@@ -85,8 +85,6 @@ public class FST {
         };
 
         public abstract FSTConfiguration configuration();
-
-
     }
 
     private static class FSTOptionalSerializer extends FSTBasicObjectSerializer {
