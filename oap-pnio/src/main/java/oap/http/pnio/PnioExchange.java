@@ -33,7 +33,7 @@ public class PnioExchange<WorkflowState> {
     public final PnioBuffer requestBuffer;
     public final PnioBuffer responseBuffer;
 
-    public CompletableFuture<Void> future;
+    public volatile CompletableFuture<Void> future;
     public Throwable throwable;
     public volatile ProcessState processState = ProcessState.RUNNING;
 
@@ -71,15 +71,15 @@ public class PnioExchange<WorkflowState> {
         return currentTaskNode.handler.getClass().getSimpleName();
     }
 
-    private void readFully(InputStream body) {
+    private void readFully( InputStream body ) {
         try {
-            requestBuffer.copyFrom(body);
-        } catch (BufferOverflowException e) {
-            completeWithBufferOverflow(true);
-        } catch (SocketException e) {
-            completeWithConnectionClosed(e);
-        } catch (Exception e) {
-            completeWithFail(e);
+            requestBuffer.copyFrom( body );
+        } catch ( BufferOverflowException e ) {
+            completeWithBufferOverflow( true );
+        } catch ( SocketException e ) {
+            completeWithConnectionClosed( e );
+        } catch ( Exception e ) {
+            completeWithFail( e );
         }
     }
 
@@ -89,43 +89,37 @@ public class PnioExchange<WorkflowState> {
 
     public void completeWithBufferOverflow(boolean request) {
         processState = request ? ProcessState.REQUEST_BUFFER_OVERFLOW : ProcessState.RESPONSE_BUFFER_OVERFLOW;
-
         completeFuture();
     }
 
     public void completeWithTimeout() {
         processState = ProcessState.TIMEOUT;
-
         completeFuture();
     }
 
     public void completeWithConnectionClosed(Throwable throwable) {
         this.throwable = throwable;
         this.processState = ProcessState.CONNECTION_CLOSED;
-
         completeFuture();
     }
 
     void completeFuture() {
-        if (future != null) future.complete(null);
+        if (future != null) future.complete( null );
     }
 
     public void completeWithInterrupted() {
         processState = ProcessState.INTERRUPTED;
-
         completeFuture();
     }
 
     public void completeWithFail(Throwable throwable) {
         this.throwable = throwable;
         this.processState = ProcessState.EXCEPTION;
-
         completeFuture();
     }
 
     public void completeWithRejected() {
         processState = ProcessState.REJECTED;
-
         completeFuture();
     }
 
@@ -189,9 +183,9 @@ public class PnioExchange<WorkflowState> {
 
     public long getTimeLeft() {
         long now = System.nanoTime();
-        long duration = (now - startTimeNano) / 1000000;
+        long durationInMillis = (now - startTimeNano) / 1_000_000;
 
-        return timeout - duration;
+        return timeout - durationInMillis;
     }
 
     public void runTasks(@Nullable PnioRequestHandler.Type type) {

@@ -49,8 +49,9 @@ public class S3FileManager extends AbstractFileManager  {
         super( buckets );
         this.region = region;
         log.info( "Init s3-file-manager" );
-        var s3Client = AmazonS3ClientBuilder.standard().withRegion( this.region ).withCredentials( new ProfileCredentialsProvider() ).build();
-        if( this.s3client == null ) this.s3client = s3Client;
+        if( this.s3client == null ) {
+            this.s3client = AmazonS3ClientBuilder.standard().withRegion( this.region ).withCredentials( new ProfileCredentialsProvider() ).build();
+        }
         transferManager = TransferManagerBuilder.standard().withS3Client( this.s3client ).build();
     }
 
@@ -79,5 +80,6 @@ public class S3FileManager extends AbstractFileManager  {
     }
 
     public void copyFromTo( String src, String dist ) {
+        log.warn( "Not implemented for S3" );
     }
 }

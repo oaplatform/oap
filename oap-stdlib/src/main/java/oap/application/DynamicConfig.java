@@ -45,7 +45,7 @@ public class DynamicConfig<T> {
     @JsonIgnore
     private final EventListenerSupport<Listener> listeners = EventListenerSupport.create( Listener.class );
     @JsonIgnore
-    private String md5;
+    private String digest;
     @JsonIgnore
     public T value;
 
@@ -68,20 +68,21 @@ public class DynamicConfig<T> {
         this.control = isUpdateable() ? new Control( refreshInterval ) : null;
     }
 
-    public boolean isUpdateable() {
+    private boolean isUpdateable() {
         return updateLocation != null;
     }
 
     private void loadConfiguration( URL location ) {
         String string = ContentReader.read( location, ContentReader.ofString() );
         this.value = Binder.hocon.unmarshal( implementation, string );
-        this.md5 = Hash.md5( string );
+        this.digest = Hash.md5( string );
     }
 
     public void addListener( Listener listener ) {
         this.listeners.addListener( listener );
     }
 
+    @FunctionalInterface
     public interface Listener {
         void configChanged();
     }
@@ -97,7 +98,6 @@ public class DynamicConfig<T> {
         public void start() {
             if( refreshInterval > 0 )
                 this.scheduled = Scheduler.scheduleWithFixedDelay( refreshInterval, TimeUnit.MILLISECONDS, this::sync );
-
         }
 
         public void stop() {
@@ -106,9 +106,9 @@ public class DynamicConfig<T> {
 
         void sync() {
             try {
-                String oldmd5 = md5;
+                String oldDigest = digest;
                 loadConfiguration( updateLocation );
-                if( !oldmd5.equals( md5 ) ) {
+                if( !oldDigest.equals( digest ) ) {
                     listeners.fire().configChanged();
                     log.debug( "configuration updated from " + updateLocation );
                 } else log.debug( "remote config is not changed" );
@@ -116,7 +116,5 @@ public class DynamicConfig<T> {
                 log.warn( "error updating configuration: " + e.getMessage() );
             }
         }
-
-
     }
 }

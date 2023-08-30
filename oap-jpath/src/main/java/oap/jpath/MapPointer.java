@@ -39,6 +39,7 @@ public class MapPointer extends ObjectPointer<Map<Object, Object>> {
         if( n.type == PathType.FIELD ) {
             var ret = v.get( n.name );
             return ret != null ? Pointer.get( ret ) : NullPointer.INSTANCE;
-        } else return super.resolve( n );
+        }
+        return super.resolve( n );
     }
 }

@@ -27,6 +27,7 @@ package oap.http.pnio;
 import com.google.common.io.ByteStreams;
 import oap.io.FixedLengthArrayOutputStream;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@NotThreadSafe
 public class PnioBuffer {
     byte[] buffer;
     public int length;
@@ -46,7 +48,7 @@ public class PnioBuffer {
     }
 
     public final void copyFrom( InputStream inputStream ) throws IOException, BufferOverflowException {
-        FixedLengthArrayOutputStream to = new FixedLengthArrayOutputStream( buffer );
+        var to = new FixedLengthArrayOutputStream( buffer );
         ByteStreams.copy( inputStream, to );
         length = to.size();
     }

@@ -43,7 +43,7 @@ public class BlockingMessageStream<Message> implements MessageStream<Message> {
         try {
             guaranteedDeliveryTransport.send( p, transport );
         } catch( Exception e ) {
-            log.error( "Unexpected exception", e );
+            log.error( "Cannot send a message: ", p, e );
         }
     }
 }

@@ -36,10 +36,10 @@ public class PathNodeField extends AbstractPathNode {
     }
 
     @Override
-    public Object evaluate( Object v, Reflection reflect ) throws PathNotFound {
+    public Object evaluate( Object v, Reflection reflect ) throws PathNotFoundException {
         log.trace( "field -> {}", name );
         var field = reflect.field( name ).orElse( null );
-        if( field == null ) throw new PathNotFound();
+        if( field == null ) throw new PathNotFoundException( "Field not found: " + name );
         return field.get( v );
     }
 }

@@ -36,7 +36,7 @@ public class Supervisor {
     private final LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
     private final LinkedHashMap<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
 
-    private volatile boolean stopped = false;
+    private boolean stopped = false;
 
     public synchronized void startSupervised( String name, Object service,
                                               List<String> preStartWith, List<String> startWith,

@@ -38,6 +38,7 @@ import java.util.Map;
 
 @ToString
 public class Configuration<T> {
+    public static final String META_INF = "META-INF/";
     private final Class<T> clazz;
     private final String name;
 
@@ -52,10 +53,10 @@ public class Configuration<T> {
 
     public List<URL> urlsFromClassPath() {
         var ret = new ArrayList<URL>();
-        ret.addAll( Resources.urls( "META-INF/" + name + ".json" ) );
-        ret.addAll( Resources.urls( "META-INF/" + name + ".conf" ) );
-        ret.addAll( Resources.urls( "META-INF/" + name + ".yaml" ) );
-        ret.addAll( Resources.urls( "META-INF/" + name + ".yml" ) );
+        ret.addAll( Resources.urls( META_INF + name + ".json" ) );
+        ret.addAll( Resources.urls( META_INF + name + ".conf" ) );
+        ret.addAll( Resources.urls( META_INF + name + ".yaml" ) );
+        ret.addAll( Resources.urls( META_INF + name + ".yml" ) );
 
         return ret;
     }

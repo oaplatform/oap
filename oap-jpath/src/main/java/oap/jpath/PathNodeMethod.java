@@ -44,8 +44,12 @@ public class PathNodeMethod extends AbstractPathNode {
     public Object evaluate( Object v, Reflection reflect ) {
         log.trace( "method -> {}", name );
         var method = reflect.method( m -> m.name().equals( name ) && equals( m.parameters, arguments ) ).orElse( null );
-        if( method == null ) throw new PathNotFound();
-        method.underlying.setAccessible( true );
+        if( method == null ) throw new PathNotFoundException( "method " + name + " not found on object of class " + v.getClass().getCanonicalName() );
+        try {
+            method.underlying.setAccessible( true );
+        } catch ( Exception ex ) {
+            throw new ReflectionException( ex );
+        }
         return method.invoke( v, arguments.toArray( new Object[0] ) );
     }
 

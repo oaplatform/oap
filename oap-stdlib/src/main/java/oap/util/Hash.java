@@ -51,7 +51,7 @@ public final class Hash {
 
             return Strings.toHexString( hashedInput );
         } catch( NoSuchAlgorithmException e ) {
-            throw new RuntimeException( e );
+            throw new RuntimeException( algorithm + " is not known", e );
         }
     }
 

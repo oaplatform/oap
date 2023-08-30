@@ -38,6 +38,6 @@ public class StringBuilderJPathOutput implements JPathOutput {
     }
 
     public void reset() {
-        sb.delete( 0, sb.length() );
+        sb.setLength( 0 );
     }
 }

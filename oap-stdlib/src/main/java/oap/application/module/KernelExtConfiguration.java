@@ -32,7 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
-public class KernelExtConfiguration extends Configuration<KernelExt> {
+public final class KernelExtConfiguration extends Configuration<KernelExt> {
     private static KernelExtConfiguration instance;
 
     private Map<String, KernelExt.ItemExt> modules = new LinkedHashMap<>();

@@ -40,8 +40,11 @@ public class RemoteLocation {
     public RemoteLocation() {
     }
 
-    public RemoteLocation( URI url, String name,
-                           long timeout, FST.SerializationMethod serialization, int retry ) {
+    public RemoteLocation( URI url,
+                           String name,
+                           long timeout,
+                           FST.SerializationMethod serialization,
+                           int retry ) {
         this.url = url;
         this.name = name;
         this.timeout = timeout;

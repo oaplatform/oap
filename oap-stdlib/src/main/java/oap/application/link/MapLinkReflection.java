@@ -26,17 +26,17 @@ package oap.application.link;
 
 import java.util.Map;
 
-public class MapLinkReflection implements LinkReflection {
-    private final Map<Object, Object> map;
-    private final Object key;
+public class MapLinkReflection<K, V> implements LinkReflection<V> {
+    private final Map<K, V> map;
+    private final K key;
 
-    public MapLinkReflection( Map<Object, Object> map, Object key ) {
+    public MapLinkReflection( Map<K, V> map, K key ) {
         this.map = map;
         this.key = key;
     }
 
     @Override
-    public boolean set( Object value ) {
+    public boolean set( V value ) {
         if( value == null ) {
             map.remove( key );
             return false;
@@ -47,7 +47,7 @@ public class MapLinkReflection implements LinkReflection {
     }
 
     @Override
-    public Object get() {
+    public V get() {
         return map.get( key );
     }
 }

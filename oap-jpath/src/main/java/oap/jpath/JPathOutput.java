@@ -24,6 +24,7 @@
 
 package oap.jpath;
 
+@FunctionalInterface
 public interface JPathOutput {
     void write( Pointer pointer );
 }

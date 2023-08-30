@@ -46,14 +46,11 @@ public class RequestWorkflow<WorkflowState> {
 
     public <T> List<T> map( Function<PnioRequestHandler<WorkflowState>, T> mapFunc ) {
         var ret = new ArrayList<T>();
-
         var current = root;
-
         while( current != null ) {
             ret.add( mapFunc.apply( current.handler ) );
             current = current.next;
         }
-
         return ret;
     }
 

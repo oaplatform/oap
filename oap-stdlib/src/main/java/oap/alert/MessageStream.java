@@ -24,6 +24,7 @@
 
 package oap.alert;
 
+@FunctionalInterface
 public interface MessageStream<Message> extends MessageTransport<Message> {
 
 }

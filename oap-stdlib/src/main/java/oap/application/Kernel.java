@@ -335,7 +335,9 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     @SuppressWarnings( "unchecked" )
-    private void linkService( LinkReflection lRef, Object parameterValue, ServiceInitialization si,
+    private void linkService( LinkReflection lRef,
+                              Object parameterValue,
+                              ServiceInitialization si,
                               boolean failIfNotFound ) throws ApplicationException {
         if( parameterValue instanceof List<?> ) {
             var parameterList = ( List<?> ) parameterValue;
