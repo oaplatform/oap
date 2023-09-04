@@ -1,13 +1,19 @@
 package oap.hadoop;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
 
 public enum OapFileSystemType {
     FILE( "file://" ) {
         @Override
         public String root( Configuration configuration ) {
-            return null;
+            String root = configuration.get( "fs.file.root" );
+
+            Preconditions.checkNotNull( root, "fs.file.root" );
+            root = FilenameUtils.separatorsToUnix( root );
+            if( root.startsWith( "/" ) ) root = root.substring( 1 );
+            return fsDefaultFS + root;
         }
     },
     /**
