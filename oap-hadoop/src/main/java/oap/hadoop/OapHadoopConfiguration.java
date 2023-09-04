@@ -81,6 +81,11 @@ public class OapHadoopConfiguration extends Configuration {
         return new Path( fileSystemType.root( this ), path );
     }
 
+    public Path getPath( java.nio.file.Path path ) {
+        // windows: hadoop.Path.toString() != hadoop.Path.toUri().toString()
+        return getPath( path.toUri().toString() );
+    }
+
     public FileSystem getFileSystem() throws UncheckedIOException {
         try {
             return FileSystem.get( this );
