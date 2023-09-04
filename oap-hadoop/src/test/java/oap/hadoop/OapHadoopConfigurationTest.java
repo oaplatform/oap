@@ -1,10 +1,7 @@
 package oap.hadoop;
 
-import oap.io.Paths;
-import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
