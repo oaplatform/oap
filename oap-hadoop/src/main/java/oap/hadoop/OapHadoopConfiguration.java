@@ -11,6 +11,7 @@ import org.apache.hadoop.fs.Path;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
@@ -18,7 +19,7 @@ import java.util.Map;
 public class OapHadoopConfiguration extends Configuration {
     private final OapFileSystemType fileSystemType;
 
-    public OapHadoopConfiguration( OapFileSystemType fileSystemType, Map<String, String> configuration ) {
+    public OapHadoopConfiguration( OapFileSystemType fileSystemType, Map<String, Object> configuration ) {
         super( false );
         this.fileSystemType = fileSystemType;
 
@@ -26,8 +27,39 @@ public class OapHadoopConfiguration extends Configuration {
 
         Preconditions.checkArgument( !configuration.containsKey( "fs.defaultFS" ) );
 
-        configuration.forEach( this::set );
+        // No way to declare key/values (containing dots) sharing a part of the "path"
+        // https://github.com/lightbend/config/issues/493
+        Map<String, String> configurationFixed = fixMap( configuration );
+
+        configurationFixed.forEach( this::set );
         set( "fs.defaultFS", fileSystemType.fsDefaultFS );
+    }
+
+    private Map<String, String> fixMap( Map<String, Object> configuration ) {
+        var result = new LinkedHashMap<String, String>();
+
+        fixMap( configuration, "", result );
+
+        return result;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void fixMap( Map<String, Object> configuration, String prefixKey, LinkedHashMap<String, String> result ) {
+        configuration.forEach( ( k, v ) -> {
+            String key = concat( prefixKey, k );
+
+            if( v instanceof Map ) {
+                fixMap( ( Map<String, Object> ) v, key, result );
+            } else {
+                result.put( key, String.valueOf( v ) );
+            }
+        } );
+    }
+
+    private String concat( String left, String right ) {
+        if( left.isEmpty() ) return right;
+
+        return left + '.' + right;
     }
 
     public InputStream getInputStream( String path, boolean decode ) throws UncheckedIOException {
