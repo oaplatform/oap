@@ -12,8 +12,8 @@ public enum OapFileSystemType {
             String root = configuration.get( "fs.file.root" );
 
             Preconditions.checkNotNull( root, "fs.file.root" );
+            Preconditions.checkNotNull( root.startsWith( "/" ), "The path must start with a '/', but " + root );
             root = FilenameUtils.separatorsToUnix( root );
-            if( root.startsWith( "/" ) ) root = root.substring( 1 );
             return StringUtils.chop( fsDefaultFS ) + root;
         }
     },

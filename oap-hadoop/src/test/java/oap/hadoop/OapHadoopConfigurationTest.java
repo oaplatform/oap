@@ -1,10 +1,7 @@
 package oap.hadoop;
 
-import oap.testng.TestDirectoryFixture;
-import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,12 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OapHadoopConfigurationTest {
     @Test
     public void testGetPathFile() {
-        Path root = TestDirectoryFixture.testPath( "/root" );
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.FILE,
-            Map.of( "fs.file.root", root.toString() ) );
+            Map.of( "fs.file.root", "/tmp/root" ) );
 
-        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "file:/" + FilenameUtils.separatorsToUnix( root.toString() ) + "/folder/file.txt" );
+        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ) )
+            .isEqualTo( new org.apache.hadoop.fs.Path( "file:///tmp/root/folder/file.txt" ) );
     }
 
     @Test
