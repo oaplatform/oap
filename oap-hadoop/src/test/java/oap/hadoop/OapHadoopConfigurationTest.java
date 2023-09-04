@@ -1,9 +1,7 @@
 package oap.hadoop;
 
 import oap.testng.TestDirectoryFixture;
-import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.hadoop.fs.FileSystem;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
