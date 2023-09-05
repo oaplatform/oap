@@ -21,6 +21,7 @@ See Github [wiki pages](https://github.com/oaplatform/oap/wiki).
 * [OAP FS](oap-fs/README.md#OAP-FS)
 * [OAP JPath](oap-jpath/README.md#OAP-JPath)
 * [OAP StdLib](oap-stdlib/README.md#OAP-StdLib)
+* [OAP PNIO](oap-pnio/README.md#OAP-PNIO)
 * [OAP Template](oap-template/README.md#OAP-template)
   * [Motivation](oap-template/README.md#motivation)
   * [Use cases](oap-template/README.md#use-cases)
