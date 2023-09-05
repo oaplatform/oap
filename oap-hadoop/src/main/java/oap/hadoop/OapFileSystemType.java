@@ -1,6 +1,7 @@
 package oap.hadoop;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
@@ -12,7 +13,8 @@ public enum OapFileSystemType {
 
             Preconditions.checkNotNull( root, "fs.file.root" );
             Preconditions.checkNotNull( root.startsWith( "/" ), "The path must start with a '/', but " + root );
-            return StringUtils.chop( fsDefaultFS ) + root;
+
+            return StringUtils.chop( fsDefaultFS ) + FilenameUtils.separatorsToUnix( root );
         }
     },
     /**

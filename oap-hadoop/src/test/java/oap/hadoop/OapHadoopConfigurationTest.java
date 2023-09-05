@@ -13,7 +13,7 @@ public class OapHadoopConfigurationTest {
             Map.of( "fs.file.root", "/tmp/root" ) );
 
         assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ) )
-            .isEqualTo( new org.apache.hadoop.fs.Path( "file:///tmp/root/folder/file.txt" ) );
+            .isEqualTo( "file:///tmp/root/folder/file.txt" );
     }
 
     @Test

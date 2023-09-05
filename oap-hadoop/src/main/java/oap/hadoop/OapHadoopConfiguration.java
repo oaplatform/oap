@@ -4,9 +4,9 @@ import com.google.common.base.Preconditions;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +66,7 @@ public class OapHadoopConfiguration extends Configuration {
         try {
             FileSystem fileSystem = getFileSystem();
 
-            org.apache.hadoop.fs.Path hadoopPath = getPath( path );
+            org.apache.hadoop.fs.Path hadoopPath = new org.apache.hadoop.fs.Path( getPath( path ) );
 
             InputStream rawStream = fileSystem.open( hadoopPath );
             return decode
@@ -77,13 +77,16 @@ public class OapHadoopConfiguration extends Configuration {
         }
     }
 
-    public Path getPath( String path ) {
-        return new Path( fileSystemType.root( this ), path );
-    }
+    public String getPath( String path ) {
+        var root = fileSystemType.root( this );
 
-    public Path getPath( java.nio.file.Path path ) {
-        // windows: hadoop.Path.toString() != hadoop.Path.toUri().toString()
-        return getPath( path.toUri().toString() );
+        var isRootES = root.endsWith( "/" );
+        var isPathSS = path.startsWith( "/" );
+
+        if( !isRootES && !isPathSS ) root = root + '/';
+        else if( isRootES && isPathSS ) root = StringUtils.chop( root );
+
+        return root + path;
     }
 
     public FileSystem getFileSystem() throws UncheckedIOException {
