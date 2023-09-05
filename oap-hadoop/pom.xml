@@ -43,13 +43,11 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-aws</artifactId>
             <version>${oap.deps.hadoop.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-bundle</artifactId>
             <version>1.12.543</version>
-            <scope>test</scope>
         </dependency>
 
 
