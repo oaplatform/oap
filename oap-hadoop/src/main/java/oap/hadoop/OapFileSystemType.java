@@ -3,6 +3,9 @@ package oap.hadoop;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public enum OapFileSystemType {
     FILE( "file://" ) {
         @Override
@@ -22,11 +25,18 @@ public enum OapFileSystemType {
     SFTP( "sftp://" ) {
         @Override
         public String root( Configuration configuration ) {
-            String host = configuration.get( "fs.sftp.hostname" );
-            String port = configuration.get( "fs.sftp.port" );
+            try {
+                String host = configuration.get( "fs.sftp.hostname" );
+                String port = configuration.get( "fs.sftp.port" );
+                String user = configuration.get( "fs.sftp.user" );
 
-            Preconditions.checkNotNull( host, "fs.sftp.hostname" );
-            return fsDefaultFS + host + ( port != null ? ":" + port : "" ) + "/";
+                Preconditions.checkNotNull( host, "fs.sftp.hostname" );
+                Preconditions.checkNotNull( user, "fs.sftp.user" );
+                URI uri = new URI( "sftp", user, host, port != null ? Integer.parseInt( port ) : -1, "/", null, null );
+                return uri.toString();
+            } catch( URISyntaxException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
     },
@@ -52,7 +62,7 @@ public enum OapFileSystemType {
         }
     };
 
-    public final String fsDefaultFS;
+    protected final String fsDefaultFS;
 
     OapFileSystemType( String fsDefaultFS ) {
         this.fsDefaultFS = fsDefaultFS;

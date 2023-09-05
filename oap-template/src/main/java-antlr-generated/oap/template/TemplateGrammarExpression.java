@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from TemplateGrammarExpression.g4 by ANTLR 4.13.0
 
 package oap.template;
 
@@ -18,7 +18,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
-	static { RuntimeMetaData.checkVersion("4.11.1", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.13.0", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -92,7 +92,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 	}
 
 	@Override
-	public String getGrammarFileName() { return "java-escape"; }
+	public String getGrammarFileName() { return "TemplateGrammarExpression.g4"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }
@@ -219,9 +219,9 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			          _localctx.ast.addToBottomChildrenAndSet( ((ExpressionContext)_localctx).function.func );
 			        }
 
-			        java.util.function.Function<Ast, AstText> printDefautlValueAst = ast -> new AstText(((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null );
-
 			        _localctx.ast.addLeafs( () -> getAst(_localctx.ast.bottom.type, null, false, ((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null, null ).top );
+
+			        java.util.function.Function<Ast, AstText> printDefautlValueAst = ast -> new AstText(((ExpressionContext)_localctx).defaultValue != null ? ((ExpressionContext)_localctx).defaultValue.v : null );
 			        _localctx.ast.update( ast -> ast instanceof AstNullable, ast -> ((AstNullable)ast).elseAst = printDefautlValueAst.apply( ast ) );
 			        _localctx.ast.update( ast -> ast instanceof AstOptional, ast -> ((AstOptional)ast).elseAst = printDefautlValueAst.apply( ast ) );
 
@@ -331,7 +331,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				{
 				setState(56);
 				((DefaultValueTypeContext)_localctx).SSTRING = match(SSTRING);
-				 ((DefaultValueTypeContext)_localctx).v =  sdStringToString( (((DefaultValueTypeContext)_localctx).SSTRING!=null?((DefaultValueTypeContext)_localctx).SSTRING.getText():null) );
+				 ((DefaultValueTypeContext)_localctx).v =  sdStringToString( (((DefaultValueTypeContext)_localctx).SSTRING!=null?((DefaultValueTypeContext)_localctx).SSTRING.getText():null) ); 
 				}
 				break;
 			case DSTRING:
@@ -339,7 +339,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				{
 				setState(58);
 				((DefaultValueTypeContext)_localctx).DSTRING = match(DSTRING);
-				 ((DefaultValueTypeContext)_localctx).v =  sdStringToString( (((DefaultValueTypeContext)_localctx).DSTRING!=null?((DefaultValueTypeContext)_localctx).DSTRING.getText():null) );
+				 ((DefaultValueTypeContext)_localctx).v =  sdStringToString((((DefaultValueTypeContext)_localctx).DSTRING!=null?((DefaultValueTypeContext)_localctx).DSTRING.getText():null)); 
 				}
 				break;
 			case MINUS:
@@ -374,7 +374,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				match(LBRACK);
 				setState(68);
 				match(RBRACK);
-				 ((DefaultValueTypeContext)_localctx).v =  "[]";
+				 ((DefaultValueTypeContext)_localctx).v =  "[]"; 
 				}
 				break;
 			default:
@@ -484,7 +484,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			setState(81);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (((_la) & ~0x3f) == 0 && ((1L << _la) & 16252928L) != 0) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 16252928L) != 0)) {
 				{
 				setState(80);
 				((FunctionContext)_localctx).functionArgs = functionArgs();
@@ -839,7 +839,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				setState(133);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0)) {
 					{
 					setState(132);
 					((ExpsContext)_localctx).math = math(_localctx.ast.bottom.type);
@@ -909,7 +909,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				setState(160);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0)) {
 					{
 					setState(159);
 					((ExpsContext)_localctx).math = math(_localctx.ast.bottom.type);
@@ -971,7 +971,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				setState(184);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0)) {
 					{
 					setState(183);
 					((ExpsContext)_localctx).math = math(_localctx.ast.bottom.type);
@@ -1053,7 +1053,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				setState(196);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((_la) & ~0x3f) == 0 && ((1L << _la) & 16252928L) != 0) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 16252928L) != 0)) {
 					{
 					setState(195);
 					((ExpContext)_localctx).functionArgs = functionArgs();
@@ -1455,7 +1455,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			{
 			setState(242);
 			_la = _input.LA(1);
-			if ( !(((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1015808L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {

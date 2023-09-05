@@ -32,7 +32,8 @@ public class OapHadoopConfiguration extends Configuration {
         Map<String, String> configurationFixed = fixMap( configuration );
 
         configurationFixed.forEach( this::set );
-        set( "fs.defaultFS", fileSystemType.fsDefaultFS );
+        set( "fs.defaultFS", fileSystemType.root( this ) );
+        set( "fs.sftp.impl", "org.apache.hadoop.fs.sftp.SFTPFileSystem" );
     }
 
     private Map<String, String> fixMap( Map<String, Object> configuration ) {
