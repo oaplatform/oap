@@ -44,21 +44,19 @@ public enum OapFileSystemType {
     /**
      * fs.s3a.access.key = access key
      * fs.s3a.secret.key = secret key
-     * fs.s3a.backet = backet name
+     * fs.s3a.endpoint = s3a://s3-website.{REGION}.amazonaws.com/{BUCKET}
      * fs.s3a.region = region
      * fs.s3a.aws.credentials.provider = provider
      */
     S3A( "s3a://" ) {
         @Override
         public String root( Configuration configuration ) {
-            String region = configuration.get( "fs.s3a.region" );
-            String bucket = configuration.get( "fs.s3a.bucket" );
+            String endpoint = configuration.get( "fs.s3a.endpoint" );
 
-            Preconditions.checkNotNull( region, "fs.s3a.region" );
-            Preconditions.checkNotNull( configuration.get( bucket, "fs.s3a.bucket" ) );
+            Preconditions.checkNotNull( endpoint, "fs.s3a.endpoint" );
 
 
-            return fsDefaultFS + "s3." + region + ".amazonaws.com/" + bucket;
+            return endpoint;
         }
     };
 

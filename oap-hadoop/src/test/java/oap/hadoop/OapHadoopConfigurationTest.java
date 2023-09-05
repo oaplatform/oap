@@ -23,10 +23,10 @@ public class OapHadoopConfigurationTest {
     @Test
     public void testGetPathS3a() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs.s3a.region", "us-east-1", "fs.s3a.bucket", "my-bucket" ) );
+            Map.of( "fs.s3a.endpoint", "s3a://s3-website.us-east-1.amazonaws.com/my-bucket" ) );
 
         assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "s3a://s3.us-east-1.amazonaws.com/my-bucket/folder/file.txt" );
+            .isEqualTo( "s3a://s3-website.us-east-1.amazonaws.com/my-bucket/folder/file.txt" );
 
         assertThatCode( () -> FileSystem.get( oapHadoopConfiguration ) ).doesNotThrowAnyException();
     }
@@ -52,9 +52,9 @@ public class OapHadoopConfigurationTest {
     @Test
     public void testMapOfMap() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs", Map.of( "s3a", Map.of( "region", "us-east-1", "bucket", "my-bucket" ) ) ) );
+            Map.of( "fs.s3a.endpoint", "s3a://s3-website.us-east-1.amazonaws.com/my-bucket" ) );
 
         assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "s3a://s3.us-east-1.amazonaws.com/my-bucket/folder/file.txt" );
+            .isEqualTo( "s3a://s3-website.us-east-1.amazonaws.com/my-bucket/folder/file.txt" );
     }
 }
