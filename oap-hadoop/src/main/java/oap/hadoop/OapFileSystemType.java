@@ -2,20 +2,13 @@ package oap.hadoop;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
-
-import java.net.URI;
-import java.net.URISyntaxException;
+import org.apache.hadoop.fs.Path;
 
 public enum OapFileSystemType {
     FILE( "file://" ) {
         @Override
-        public String root( Configuration configuration ) {
-            String root = configuration.get( "fs.file.root" );
-
-            Preconditions.checkNotNull( root, "fs.file.root" );
-            Preconditions.checkNotNull( root.startsWith( "/" ), "The path must start with a '/', but " + root );
-
-            return fsDefaultFS + root;
+        public Path getPath( String name, Configuration configuration ) {
+            return new Path( fsDefaultFS + ( name.startsWith( "/" ) ? "" : "/" ) + name );
         }
     },
     /**
@@ -24,19 +17,16 @@ public enum OapFileSystemType {
      */
     SFTP( "sftp://" ) {
         @Override
-        public String root( Configuration configuration ) {
-            try {
-                String host = configuration.get( "fs.sftp.hostname" );
-                String port = configuration.get( "fs.sftp.port" );
-                String user = configuration.get( "fs.sftp.user" );
+        public Path getPath( String name, Configuration configuration ) {
+            String host = configuration.get( "fs.sftp.host" );
 
-                Preconditions.checkNotNull( host, "fs.sftp.hostname" );
-                Preconditions.checkNotNull( user, "fs.sftp.user" );
-                URI uri = new URI( "sftp", user, host, port != null ? Integer.parseInt( port ) : -1, "/", null, null );
-                return uri.toString();
-            } catch( URISyntaxException e ) {
-                throw new RuntimeException( e );
-            }
+            Preconditions.checkNotNull( host, "fs.sftp.host" );
+
+            String user = configuration.get( "fs.sftp.user." + host );
+
+            Preconditions.checkNotNull( user, "fs.sftp.user." + host );
+
+            return new Path( fsDefaultFS + host + ( name.startsWith( "/" ) ? "" : "/" ) + name );
         }
 
     },
@@ -48,13 +38,16 @@ public enum OapFileSystemType {
      */
     S3A( "s3a://" ) {
         @Override
-        public String root( Configuration configuration ) {
+        public Path getPath( String name, Configuration configuration ) {
             String endpoint = configuration.get( "fs.s3a.endpoint" );
 
             Preconditions.checkNotNull( endpoint, "fs.s3a.endpoint" );
 
 
-            return endpoint;
+            String strPath = endpoint;
+            if( endpoint.endsWith( "/" ) ) strPath = strPath.substring( 1 );
+
+            return new Path( strPath + ( name.startsWith( "/" ) ? "" : "/" ) + name );
         }
     };
 
@@ -64,5 +57,5 @@ public enum OapFileSystemType {
         this.fsDefaultFS = fsDefaultFS;
     }
 
-    public abstract String root( Configuration configuration );
+    public abstract Path getPath( String name, Configuration configuration );
 }

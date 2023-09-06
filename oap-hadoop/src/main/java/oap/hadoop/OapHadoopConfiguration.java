@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -58,5 +59,9 @@ public class OapHadoopConfiguration extends Configuration {
         if( left.isEmpty() ) return right;
 
         return left + '.' + right;
+    }
+
+    public Path getPath( String name ) {
+        return fileSystemType.getPath( name, this );
     }
 }
