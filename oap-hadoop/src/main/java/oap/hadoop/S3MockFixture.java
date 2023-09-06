@@ -1,5 +1,9 @@
 package oap.hadoop;
 
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
@@ -62,5 +66,25 @@ public class S3MockFixture extends AbstractEnvFixture<S3MockFixture> {
             container.stop();
         }
         super.after();
+    }
+
+    public void createBucket( String bucket ) {
+        s3().createBucket( bucket );
+    }
+
+    public void deleteBucket( String bucket ) {
+        s3().deleteBucket( bucket );
+    }
+
+    public String readFile( String bucket, String name ) {
+        return s3().getObjectAsString( bucket, name );
+    }
+
+    private AmazonS3 s3() {
+        return AmazonS3ClientBuilder
+            .standard()
+            .withEndpointConfiguration( new AwsClientBuilder.EndpointConfiguration( "http://localhost:" + port, Regions.DEFAULT_REGION.getName() ) )
+            .withPathStyleAccessEnabled( true )
+            .build();
     }
 }
