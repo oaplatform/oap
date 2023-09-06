@@ -50,9 +50,10 @@ public enum OapFileSystemType {
                 if( bucket == null ) {
                     bucket = new URI( endpoint ).getPath();
                 }
+                Preconditions.checkNotNull( bucket, "fs.s3a.bucket" );
 
                 return new Path( fsDefaultFS
-                    + ( bucket.startsWith( "/" ) ? bucket.substring( 1 ) : "" )
+                    + ( bucket.startsWith( "/" ) ? bucket.substring( 1 ) : bucket )
                     + ( name.startsWith( "/" ) ? "" : "/" )
                     + name );
             } catch( URISyntaxException e ) {

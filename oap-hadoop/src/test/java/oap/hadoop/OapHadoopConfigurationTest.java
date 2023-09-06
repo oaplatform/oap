@@ -26,12 +26,25 @@ public class OapHadoopConfigurationTest extends Fixtures {
     }
 
     @Test
-    public void testGetFileSystemS3a() {
+    public void testGetFileSystemS3aEndpointWithBucket() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com" ) );
+            Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com/bucket1", "fs.s3a.path.style.access", "true" ) );
 
         Path path = oapHadoopConfiguration.getPath( "folder/file.txt" );
-        assertThat( path ).isEqualTo( new Path( "https://s3.us-east-1.awsamazon.com/folder/file.txt" ) );
+        assertThat( path ).isEqualTo( new Path( "s3a://bucket1/folder/file.txt" ) );
+
+        assertThatCode( () -> path.getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
+    }
+
+    @Test
+    public void testGetFileSystemS3aEndpointWithoutBucket() {
+        OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
+            Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com",
+                "fs.s3a.bucket", "bucket2",
+                "fs.s3a.path.style.access", "true" ) );
+
+        Path path = oapHadoopConfiguration.getPath( "folder/file.txt" );
+        assertThat( path ).isEqualTo( new Path( "s3a://bucket2/folder/file.txt" ) );
 
         assertThatCode( () -> path.getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
     }
