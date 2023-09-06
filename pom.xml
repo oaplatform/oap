@@ -64,6 +64,7 @@
         <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
 
         <oap.deps.hadoop.version>3.3.1</oap.deps.hadoop.version>
+        <oap.deps.aws-java-sdk-bundle.version>1.12.543</oap.deps.aws-java-sdk-bundle.version>
         <oap.deps.testcontainers.version>1.19.0</oap.deps.testcontainers.version>
 
         <oap.deps.joda.version>2.12.5</oap.deps.joda.version>
@@ -111,7 +112,6 @@
         <oap.deps.maven.plugin-plugin.version>3.6.4</oap.deps.maven.plugin-plugin.version>
         <oap.deps.plugins.antlr4.version>4.13.0</oap.deps.plugins.antlr4.version>
 
-        <oap.deps.aws-java-sdk.version>1.12.506</oap.deps.aws-java-sdk.version>
         <oap.deps.s3mock.version>0.2.6</oap.deps.s3mock.version>
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>

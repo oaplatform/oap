@@ -36,7 +36,7 @@
 
     <properties>
         <oap.deps.akka-stream_2.12.version>2.6.19</oap.deps.akka-stream_2.12.version>
-        <oap.deps.aws-java-sdk-simpleworkflow.version>1.12.286</oap.deps.aws-java-sdk-simpleworkflow.version>
+        <oap.deps.aws-java-sdk-simpleworkflow.version>${oap.deps.aws-java-sdk-bundle.version}</oap.deps.aws-java-sdk-simpleworkflow.version>
     </properties>
 
     <dependencies>
@@ -59,34 +59,8 @@
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk</artifactId>
-            <version>${oap.deps.aws-java-sdk.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>joda-time</groupId>
-                    <artifactId>joda-time</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.amazonaws</groupId>
-                    <artifactId>aws-java-sdk-simpleworkflow</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>aws-java-sdk-bundle</artifactId>
+            <version>${oap.deps.aws-java-sdk-bundle.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
