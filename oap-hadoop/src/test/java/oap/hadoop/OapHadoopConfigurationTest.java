@@ -28,9 +28,9 @@ public class OapHadoopConfigurationTest extends Fixtures {
     @Test
     public void testGetFileSystemS3a() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com", "fs.s3a.path.style.access", "true" ) );
+            Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com", "fs.s3a.bucket", "bucket1" ) );
 
-        Path path = oapHadoopConfiguration.getPath( "bucket1/folder/file.txt" );
+        Path path = oapHadoopConfiguration.getPath( "folder/file.txt" );
         assertThat( path ).isEqualTo( new Path( "s3a://bucket1/folder/file.txt" ) );
 
         assertThatCode( () -> path.getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
@@ -41,7 +41,7 @@ public class OapHadoopConfigurationTest extends Fixtures {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.SFTP,
             Map.of( "fs.sftp.host", "hostname", "fs.sftp.user.hostname", "user1" ) );
 
-        Path path = oapHadoopConfiguration.getPath( "hostname/folder/file.txt" );
+        Path path = oapHadoopConfiguration.getPath( "folder/file.txt" );
         assertThat( path ).isEqualTo( new Path( "sftp://hostname/folder/file.txt" ) );
 
         assertThatCode( () -> path.getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
@@ -52,7 +52,7 @@ public class OapHadoopConfigurationTest extends Fixtures {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.SFTP,
             Map.of( "fs.sftp.host", "hostname", "fs", Map.of( "sftp", Map.of( "user", Map.of( "hostname", "user1" ) ) ) ) );
 
-        Path path = oapHadoopConfiguration.getPath( "hostname/folder/file.txt" );
+        Path path = oapHadoopConfiguration.getPath( "folder/file.txt" );
         assertThat( path ).isEqualTo( new Path( "sftp://hostname/folder/file.txt" ) );
 
         assertThatCode( () -> path.getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();

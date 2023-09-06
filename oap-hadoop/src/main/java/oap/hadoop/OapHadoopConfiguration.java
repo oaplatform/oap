@@ -29,6 +29,7 @@ public class OapHadoopConfiguration extends Configuration {
         configurationFixed.forEach( this::set );
 
         set( "fs.sftp.impl", "org.apache.hadoop.fs.sftp.SFTPFileSystem" );
+        set( "fs.s3a.path.style.access", "true" );
         set( "hadoop.tmp.dir", "/tmp" );
 
         log.info( "filesystem {} fs.defaultFS {}", fileSystemType.name(), this.get( "fs.defaultFS" ) );
