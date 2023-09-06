@@ -18,7 +18,6 @@
         <module>oap-stdlib</module>
         <module>oap-template</module>
         <module>oap-alert-slack</module>
-        <module>oap-fs</module>
         <module>oap-jpath</module>
         <module>oap-pnio</module>
         <module>oap-hadoop</module>
