@@ -1,13 +1,16 @@
 package oap.hadoop;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+
+import static oap.io.Resources.IS_WINDOWS;
 
 public enum OapFileSystemType {
     FILE( "file://" ) {
         @Override
-        public Path getPath( String name, Configuration configuration ) {
+        public Path _getPath( String name, Configuration configuration ) {
             return new Path( fsDefaultFS + ( name.startsWith( "/" ) ? "" : "/" ) + name );
         }
     },
@@ -17,7 +20,7 @@ public enum OapFileSystemType {
      */
     SFTP( "sftp://" ) {
         @Override
-        public Path getPath( String name, Configuration configuration ) {
+        public Path _getPath( String name, Configuration configuration ) {
             String host = configuration.get( "fs.sftp.host" );
 
             Preconditions.checkNotNull( host, "fs.sftp.host" );
@@ -39,7 +42,7 @@ public enum OapFileSystemType {
      */
     S3A( "s3a://" ) {
         @Override
-        public Path getPath( String name, Configuration configuration ) {
+        public Path _getPath( String name, Configuration configuration ) {
             String bucket = configuration.get( "fs.s3a.bucket" );
 
             Preconditions.checkNotNull( bucket, "fs.s3a.bucket" );
@@ -53,5 +56,15 @@ public enum OapFileSystemType {
         this.fsDefaultFS = fsDefaultFS;
     }
 
-    public abstract Path getPath( String name, Configuration configuration );
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    public final Path getPath( String name, Configuration configuration ) {
+        if( IS_WINDOWS ) {
+            name = FilenameUtils.separatorsToUnix( name );
+        }
+
+        return _getPath( name, configuration );
+    }
+
+    @SuppressWarnings( "checkstyle:MethodName" )
+    protected abstract Path _getPath( String name, Configuration configuration );
 }
