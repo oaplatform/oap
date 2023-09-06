@@ -24,7 +24,7 @@ public class OapHadoopConfigurationTest extends Fixtures {
     @Test
     public void testGetFileSystemS3a() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of("fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com") );
+            Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com" ) );
 
         assertThatCode( () -> new Path( "s3a://s3.us-east-1.awsamazon.com/mybucket/file.txt" ).getFileSystem( oapHadoopConfiguration ) )
             .doesNotThrowAnyException();
