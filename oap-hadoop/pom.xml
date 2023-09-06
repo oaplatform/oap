@@ -49,6 +49,11 @@
             <artifactId>aws-java-sdk-bundle</artifactId>
             <version>1.12.543</version>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${oap.deps.testcontainers.version}</version>
+        </dependency>
 
 
         <dependency>

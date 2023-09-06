@@ -63,7 +63,8 @@
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
 
-        <oap.deps.hadoop.version>3.3.6</oap.deps.hadoop.version>
+        <oap.deps.hadoop.version>3.3.1</oap.deps.hadoop.version>
+        <oap.deps.testcontainers.version>1.19.0</oap.deps.testcontainers.version>
 
         <oap.deps.joda.version>2.12.5</oap.deps.joda.version>
 

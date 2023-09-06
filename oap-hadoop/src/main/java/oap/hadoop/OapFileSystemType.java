@@ -45,8 +45,6 @@ public enum OapFileSystemType {
      * fs.s3a.access.key = access key
      * fs.s3a.secret.key = secret key
      * fs.s3a.endpoint = s3a://s3-website.{REGION}.amazonaws.com/{BUCKET}
-     * fs.s3a.region = region
-     * fs.s3a.aws.credentials.provider = provider
      */
     S3A( "s3a://" ) {
         @Override

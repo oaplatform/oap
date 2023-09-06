@@ -1,60 +1,48 @@
 package oap.hadoop;
 
-import org.apache.hadoop.fs.FileSystem;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
+import org.apache.hadoop.fs.Path;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-public class OapHadoopConfigurationTest {
-    @Test
-    public void testGetPathFile() {
-        OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.FILE,
-            Map.of( "fs.file.root", "/tmp/root" ) );
-
-        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ) )
-            .isEqualTo( "file:///tmp/root/folder/file.txt" );
-
-        assertThatCode( () -> FileSystem.get( oapHadoopConfiguration ) ).doesNotThrowAnyException();
+public class OapHadoopConfigurationTest extends Fixtures {
+    public OapHadoopConfigurationTest() {
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
-    public void testGetPathS3a() {
+    public void testGetFileSystemFile() {
+        OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.FILE, Map.of() );
+
+        assertThatCode( () -> new Path( "file:///tmp" ).getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
+    }
+
+    @Test
+    public void testGetFileSystemS3a() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs.s3a.endpoint", "s3a://s3-website.us-east-1.amazonaws.com/my-bucket" ) );
+            Map.of() );
 
-        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "s3a://s3-website.us-east-1.amazonaws.com/my-bucket/folder/file.txt" );
-
-        assertThatCode( () -> FileSystem.get( oapHadoopConfiguration ) ).doesNotThrowAnyException();
+        assertThatCode( () -> new Path( "s3a://s3-us-east-1.awsamazon.com/mybucket/file.txt" ).getFileSystem( oapHadoopConfiguration ) )
+            .doesNotThrowAnyException();
     }
 
     @Test
-    public void testGetPathSftp() {
+    public void testGetFileSystemSftp() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.SFTP,
-            Map.of( "fs.sftp.hostname", "hostname", "fs.sftp.user", "user1" ) );
+            Map.of( "fs.sftp.host", "hostname", "fs.sftp.user.hostname", "user1" ) );
 
-        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "sftp://user1@hostname/folder/file.txt" );
-
-        oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.SFTP,
-            Map.of( "fs.sftp.hostname", "hostname", "fs.sftp.user", "user1", "fs.sftp.port", "33" ) );
-
-        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "sftp://user1@hostname:33/folder/file.txt" );
-
-        OapHadoopConfiguration finalOapHadoopConfiguration = oapHadoopConfiguration;
-        assertThatCode( () -> FileSystem.get( finalOapHadoopConfiguration ) ).doesNotThrowAnyException();
+        assertThatCode( () -> new Path( "sftp://hostname/folder/file1" ).getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
     }
 
     @Test
     public void testMapOfMap() {
-        OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs.s3a.endpoint", "s3a://s3-website.us-east-1.amazonaws.com/my-bucket" ) );
+        OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.SFTP,
+            Map.of( "fs.sftp.host", "hostname", "fs", Map.of( "sftp", Map.of( "user", Map.of( "hostname", "user1" ) ) ) ) );
 
-        assertThat( oapHadoopConfiguration.getPath( "folder/file.txt" ).toString() )
-            .isEqualTo( "s3a://s3-website.us-east-1.amazonaws.com/my-bucket/folder/file.txt" );
+        assertThatCode( () -> new Path( "sftp://hostname/folder/file1" ).getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
     }
 }
