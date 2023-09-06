@@ -25,8 +25,7 @@ public class FileSystemTest extends Fixtures {
     @Test
     public void testCopy() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
-            Map.of( "fs.s3a.endpoint", "http://localhost:" + s3MockFixture.getPort(),
-                "fs.s3a.attempts.maximum", "1",
+            Map.of( "fs.s3a.endpoint", "http://localhost:" + s3MockFixture.getPort() + "/test-bucket",
                 "fs.s3a.path.style.access", "true",
                 "fs.s3a.access.key", "foo",
                 "fs.s3a.secret.key", "bar",
@@ -37,7 +36,8 @@ public class FileSystemTest extends Fixtures {
         Path inFile = TestDirectoryFixture.testPath( "folder/file.txt" );
         Path outFile = TestDirectoryFixture.testPath( "file-out.txt" );
         oap.io.Files.write( inFile, IoStreams.Encoding.PLAIN, "txt", ContentWriter.ofString() );
-        var s3File = new org.apache.hadoop.fs.Path( "s3a://test-bucket/folder/file.txt" );
+        var s3File = oapHadoopConfiguration.getPath( "folder/file.txt" );
+        assertThat( s3File ).isEqualTo( new org.apache.hadoop.fs.Path( "s3a://test-bucket/folder/file.txt" ) );
 
         assertThat( fileSystem.exists( s3File ) ).isFalse();
         fileSystem.copy( inFile, s3File, false );

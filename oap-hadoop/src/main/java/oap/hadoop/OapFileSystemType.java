@@ -4,6 +4,9 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public enum OapFileSystemType {
     FILE( "file://" ) {
         @Override
@@ -39,15 +42,22 @@ public enum OapFileSystemType {
     S3A( "s3a://" ) {
         @Override
         public Path getPath( String name, Configuration configuration ) {
-            String endpoint = configuration.get( "fs.s3a.endpoint" );
+            try {
+                String endpoint = configuration.get( "fs.s3a.endpoint" );
+                String bucket = configuration.get( "fs.s3a.bucket" );
 
-            Preconditions.checkNotNull( endpoint, "fs.s3a.endpoint" );
+                Preconditions.checkNotNull( endpoint, "fs.s3a.endpoint" );
+                if( bucket == null ) {
+                    bucket = new URI( endpoint ).getPath();
+                }
 
-
-            String strPath = endpoint;
-            if( endpoint.endsWith( "/" ) ) strPath = strPath.substring( 1 );
-
-            return new Path( strPath + ( name.startsWith( "/" ) ? "" : "/" ) + name );
+                return new Path( fsDefaultFS
+                    + ( bucket.startsWith( "/" ) ? bucket.substring( 1 ) : "" )
+                    + ( name.startsWith( "/" ) ? "" : "/" )
+                    + name );
+            } catch( URISyntaxException e ) {
+                throw new RuntimeException( e );
+            }
         }
     };
 
