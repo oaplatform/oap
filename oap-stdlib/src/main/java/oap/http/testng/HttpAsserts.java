@@ -33,7 +33,6 @@ import oap.json.testng.JsonAsserts;
 import oap.util.BiStream;
 import oap.util.Pair;
 import oap.util.Stream;
-import okhttp3.RequestBody;
 import org.joda.time.DateTime;
 
 import java.io.InputStream;
@@ -117,13 +116,13 @@ public class HttpAsserts {
         return assertHttpResponse( client.post( uri, content, contentType, headers ) );
     }
 
-    public static HttpAssertion assertUploadFile( String uri, RequestBody body ) {
-        return new HttpAssertion( client.uploadFile( uri, body, Map.of() ) );
-    }
+//    public static HttpAssertion assertUploadFile( String uri, RequestBody body ) {
+//        return new HttpAssertion( client.uploadFile( uri, body, Map.of() ) );
+//    }
 
-    public static HttpAssertion assertUploadFile( String uri, RequestBody body, Map<String, Object> headers ) {
-        return new HttpAssertion( client.uploadFile( uri, body, headers ) );
-    }
+//    public static HttpAssertion assertUploadFile( String uri, RequestBody body, Map<String, Object> headers ) {
+//        return new HttpAssertion( client.uploadFile( uri, body, headers ) );
+//    }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType ) {
         return assertHttpResponse( client.put( uri, content, contentType ) );
