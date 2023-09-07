@@ -43,8 +43,6 @@ import oap.util.Stream;
 import oap.util.Throwables;
 import oap.util.function.Try;
 import oap.util.function.Try.ThrowingRunnable;
-import okhttp3.RequestBody;
-import okio.Buffer;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -309,12 +307,12 @@ public final class Client implements Closeable, AutoCloseable {
             .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
     }
 
-    @SneakyThrows
-    public Response uploadFile( String uri, RequestBody body, Map<String, Object> headers ) {
-        Buffer sink = new Buffer();
-        body.writeTo( sink );
-        return post( uri, sink.readByteArray(), ContentType.MULTIPART_FORM_DATA.getMimeType(), headers );
-    }
+//    @SneakyThrows
+//    public Response uploadFile( String uri, okhttp3.RequestBody body, Map<String, Object> headers ) {
+//        okio.Buffer sink = new okio.Buffer();
+//        body.writeTo( sink );
+//        return post( uri, sink.readByteArray(), ContentType.MULTIPART_FORM_DATA.getMimeType(), headers );
+//    }
 
     private Optional<Response> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
         try {
