@@ -310,10 +310,10 @@ public final class Client implements Closeable, AutoCloseable {
     }
 
     @SneakyThrows
-    public Response uploadFile( String uri, RequestBody body, Map<String, Object> givenHeaders ) {
+    public Response uploadFile( String uri, RequestBody body, Map<String, Object> headers ) {
         Buffer sink = new Buffer();
         body.writeTo( sink );
-        return post( uri, sink.readByteArray(), ContentType.MULTIPART_FORM_DATA.getMimeType(), givenHeaders );
+        return post( uri, sink.readByteArray(), ContentType.MULTIPART_FORM_DATA.getMimeType(), headers );
     }
 
     private Optional<Response> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
