@@ -43,8 +43,8 @@ import oap.util.Stream;
 import oap.util.Throwables;
 import oap.util.function.Try;
 import oap.util.function.Try.ThrowingRunnable;
-import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
+import okio.Buffer;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -310,23 +310,10 @@ public final class Client implements Closeable, AutoCloseable {
     }
 
     @SneakyThrows
-    public Response uploadFile( String uri, RequestBody body, Map<String, Object> givenHeaders ) {
-        OkHttpClient client = new OkHttpClient();
-        okhttp3.Request.Builder requestBuilder = new okhttp3.Request.Builder()
-                .url( uri )
-                .post( body );
-        givenHeaders.forEach( ( name, value ) -> requestBuilder.addHeader( name, value == null ? "" : value.toString() ) );
-
-        var response = client.newCall( requestBuilder.build() ).execute();
-
-        var headers = response.headers();
-        final Stream<String> stream = Stream.of( headers.names() );
-        final List<Pair<String, String>> headersMap = stream.map( headerName -> Pair.__( headerName, headers.get( headerName ) ) ).toList();
-        var responseBody = response.body();
-        ContentType contentType = Optional.ofNullable( responseBody.contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ).orElseThrow();
-        return new Response( response.code(), response.message(), headersMap,
-                contentType.toString(),
-                responseBody.byteStream() );
+    public Response uploadFile( String uri, RequestBody body, Map<String, Object> headers ) {
+        Buffer sink = new Buffer();
+        body.writeTo( sink );
+        return post( uri, sink.readByteArray(), ContentType.MULTIPART_FORM_DATA.getMimeType(), headers );
     }
 
     private Optional<Response> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
