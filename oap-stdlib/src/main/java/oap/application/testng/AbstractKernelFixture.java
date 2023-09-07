@@ -35,6 +35,7 @@ import oap.reflect.TypeRef;
 import oap.testng.AbstractEnvFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Pair;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
 import java.io.UncheckedIOException;
@@ -111,7 +112,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     protected void defineDefaults() {
         var testHttpPort = portFor( TEST_HTTP_PORT );
         define( TEST_HTTP_PORT, testHttpPort );
-        define( TEST_DIRECTORY, testDirectory() );
+        define( TEST_DIRECTORY, FilenameUtils.separatorsToUnix( testDirectory().toString() ) );
         String resourcePath = Resources.path( getClass(), "/" ).orElseThrow();
         define( TEST_RESOURCE_PATH, resourcePath );
         define( TEST_HTTP_PREFIX, httpPrefix( testHttpPort ) );

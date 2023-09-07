@@ -74,6 +74,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public static final String WORKER = "worker";
 
     private static Bandwidth defaultLimit;
+
     static {
         defaultLimit = Bandwidth.simple( 1_000_000L, Duration.ofSeconds( 1 ) );
     }
@@ -139,7 +140,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     private void startNewPort( int port, PathHandler portPathHandler ) {
         Preconditions.checkNotNull( portPathHandler );
 
-        log.info( "starting server on port: {} with {} ...", port, portPathHandler.toString() );
+        log.info( "starting server on port: {} with {} ...", port, portPathHandler );
         long time = System.currentTimeMillis();
         Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServer( port, portPathHandler ) ) ).server;
 
@@ -206,9 +207,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         if( readTimeout > 0 ) {
             handler = BlockingReadTimeoutHandler.builder()
-                    .readTimeout( Duration.ofMillis( readTimeout ) )
-                    .nextHandler( handler )
-                    .build();
+                .readTimeout( Duration.ofMillis( readTimeout ) )
+                .nextHandler( handler )
+                .build();
         }
         handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
@@ -230,7 +231,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         io.undertow.server.HttpHandler httpHandler = exchange -> {
             HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
             ConsumptionProbe probe = bucket != null ? bucket.tryConsumeAndReturnRemaining( 1 ) : null;
-            if ( probe == null || probe.isConsumed() ) {
+            if( probe == null || probe.isConsumed() ) {
                 // allowed
                 handler.handleRequest( serverExchange );
             } else {
@@ -267,7 +268,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             try {
                 server.stop();
             } catch( Exception ex ) {
-               log.error( "Cannot stop server", ex );
+                log.error( "Cannot stop server", ex );
             }
         }
         pathHandler.clear();
