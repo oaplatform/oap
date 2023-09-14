@@ -51,7 +51,7 @@ public class FileSystemTest extends Fixtures {
     }
 
     @Test
-    public void testgetInputStreamFileNotFound() {
+    public void testGetInputStreamFileNotFound() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.S3A,
             Map.of( "fs.s3a.endpoint", "http://localhost:" + s3MockFixture.getPort(),
                 "fs.s3a.bucket", "test-bucket",
@@ -63,6 +63,6 @@ public class FileSystemTest extends Fixtures {
 
         FileSystem fileSystem = new FileSystem( oapHadoopConfiguration );
 
-        assertThat( fileSystem.getInputStream( new org.apache.hadoop.fs.Path( "s3a://test-bucket/folder/file.txt" ) ) ).isNull();
+        assertThat( fileSystem.getInputStream( new org.apache.hadoop.fs.Path( "s3a://test-bucket/testGetInputStreamFileNotFound.txt" ) ) ).isNull();
     }
 }
