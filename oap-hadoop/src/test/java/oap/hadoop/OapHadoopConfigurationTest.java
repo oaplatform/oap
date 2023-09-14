@@ -31,7 +31,7 @@ public class OapHadoopConfigurationTest extends Fixtures {
             Map.of( "fs.s3a.endpoint", "https://s3.us-east-1.awsamazon.com", "fs.s3a.bucket", "bucket1" ) );
 
         Path path = oapHadoopConfiguration.getPath( "folder/file.txt" );
-        assertThat( path ).isEqualTo( new Path( "s3a://bucket1/folder/file.txt" ) );
+        assertThat( path ).isEqualTo( new Path( "s3://bucket1/folder/file.txt" ) );
 
         assertThatCode( () -> path.getFileSystem( oapHadoopConfiguration ) ).doesNotThrowAnyException();
     }
