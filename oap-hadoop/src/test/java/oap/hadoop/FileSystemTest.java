@@ -38,7 +38,7 @@ public class FileSystemTest extends Fixtures {
         Path outFile = TestDirectoryFixture.testPath( "file-out.txt" );
         oap.io.Files.write( inFile, IoStreams.Encoding.PLAIN, "txt", ContentWriter.ofString() );
         var s3File = oapHadoopConfiguration.getPath( "folder/file.txt" );
-        assertThat( s3File ).isEqualTo( new org.apache.hadoop.fs.Path( "s3a://test-bucket/folder/file.txt" ) );
+        assertThat( s3File ).isEqualTo( new org.apache.hadoop.fs.Path( "s3://test-bucket/folder/file.txt" ) );
 
         assertThat( fileSystem.exists( s3File ) ).isFalse();
         fileSystem.copy( inFile, s3File, false );
@@ -63,6 +63,6 @@ public class FileSystemTest extends Fixtures {
 
         FileSystem fileSystem = new FileSystem( oapHadoopConfiguration );
 
-        assertThat( fileSystem.getInputStream( new org.apache.hadoop.fs.Path( "s3a://test-bucket/testGetInputStreamFileNotFound.txt" ) ) ).isNull();
+        assertThat( fileSystem.getInputStream( new org.apache.hadoop.fs.Path( "s3://test-bucket/testGetInputStreamFileNotFound.txt" ) ) ).isNull();
     }
 }

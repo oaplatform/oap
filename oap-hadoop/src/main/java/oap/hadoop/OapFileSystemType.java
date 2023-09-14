@@ -38,9 +38,9 @@ public enum OapFileSystemType {
      * fs.s3a.access.key = access key
      * fs.s3a.secret.key = secret key
      * fs.s3a.bucket = bucket
-     * fs.s3a.endpoint = s3a://s3.{REGION}.amazonaws.com}
+     * fs.s3a.endpoint = s3://s3.{REGION}.amazonaws.com}
      */
-    S3A( "s3a://" ) {
+    S3A( "s3://" ) {
         @Override
         public Path _getPath( String name, Configuration configuration ) {
             String bucket = configuration.get( "fs.s3a.bucket" );
