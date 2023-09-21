@@ -550,7 +550,7 @@ public final class Client implements Closeable, AutoCloseable {
         Closeables.close( client );
     }
 
-    @ToString( exclude = { "inputStream", "content" } )
+    @ToString( exclude = { "inputStream", "content" }, doNotUseGetters = true )
     public static class Response implements Closeable, AutoCloseable {
         public final int code;
         public final String reasonPhrase;
@@ -818,7 +818,7 @@ public final class Client implements Closeable, AutoCloseable {
                 pos.flush();
                 pos.close();
                 Response result = getResponse( request, timeout, completableFuture )
-                        .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
+                    .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
                 response = result;
                 return result;
             } catch( IOException e ) {
