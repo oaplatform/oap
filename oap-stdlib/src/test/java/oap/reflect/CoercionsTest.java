@@ -24,6 +24,7 @@
 
 package oap.reflect;
 
+import oap.json.JsonException;
 import oap.util.BitSet;
 import org.testng.annotations.Test;
 
@@ -35,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class CoercionsTest {
     @Test
@@ -76,4 +78,17 @@ public class CoercionsTest {
             .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
     }
 
+    @Test
+    public void testWithFunctions() {
+        var coercions = Coercions.basic().withStringToObject();
+
+        assertThat( coercions.cast( Reflect.reflect( String.class ), "text" ) ).isEqualTo( "text" );
+        assertThat( coercions.cast( Reflect.reflect( String.class ), "text(text)" ) ).isEqualTo( "text" );
+        assertThat( coercions.cast( Reflect.reflect( String.class ), "str(text)" ) ).isEqualTo( "text" );
+        assertThat( coercions.cast( Reflect.reflect( String.class ), "plain(text)" ) ).isEqualTo( "text" );
+
+        assertThat( coercions.cast( Reflect.reflect( String.class ), "classpath(/oap/reflect/test.file)" ) ).isEqualTo( "test content" );
+
+        assertThatCode( () -> coercions.cast( Reflect.reflect( String.class ), "json(text)" ) ).isInstanceOf( JsonException.class );
+    }
 }
