@@ -232,10 +232,10 @@ public final class Coercions {
     public Coercions withStringToObject() {
         ignoreDirect.add( String.class );
 
-        return with( ( r, v ) -> v instanceof String, this::castFunction );
+        return with( ( r, v ) -> v instanceof String, Coercions::castFunction );
     }
 
-    private Object castFunction( Reflection r, Object value ) {
+    public static Object castFunction( Reflection r, Object value ) {
         var str = ( ( String ) value ).trim();
         var sv = str.indexOf( '(' );
         if( sv > 0 && str.endsWith( ")" ) ) {
