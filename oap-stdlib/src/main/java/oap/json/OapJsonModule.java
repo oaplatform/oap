@@ -72,7 +72,6 @@ public class OapJsonModule extends Module {
         deserializers.addDeserializer( Long.TYPE, new LongDeserializer( Long.TYPE, 0L ) );
         deserializers.addDeserializer( Long.class, new LongDeserializer( Long.class, null ) );
 
-        deserializers.addDeserializer( String.class, new StringDeserializer() );
         context.addDeserializers( deserializers );
     }
 
@@ -93,7 +92,7 @@ public class OapJsonModule extends Module {
         }
     }
 
-    static class StringDeserializer extends StdScalarDeserializer<String> {
+    public static class StringDeserializer extends StdScalarDeserializer<String> {
         static final Reflection STRING_REFLECTION = Reflect.reflect( String.class );
 
         protected StringDeserializer() {
