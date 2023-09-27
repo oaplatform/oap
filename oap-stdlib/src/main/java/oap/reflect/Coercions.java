@@ -46,7 +46,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,7 +66,6 @@ import static oap.util.Pair.__;
 public final class Coercions {
 
     private static final HashMap<String, BiFunction<String, Reflection, Object>> functions = new HashMap<>();
-    private final HashSet<Class<?>> ignoreDirect = new HashSet<>();
 
     private static final HashMap<Class<?>, Function<Object, Object>> convertors = new HashMap<>();
 
@@ -195,26 +193,15 @@ public final class Coercions {
         try {
             if( target.assignableFrom( value.getClass() )
                 && !target.assignableTo( Collection.class )
-                && !target.assignableTo( Map.class )
-                && !ignoreDirect.contains( target.underlying ) )
+                && !target.assignableTo( Map.class ) )
                 return value;
 
-
-            Function<Object, Object> ff = null;
-            if( !ignoreDirect.contains( target.underlying ) ) {
-                ff = convertors.get( target.underlying );
-            }
-
-            if( ff == null ) {
-                for( Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>> coersion : coersions ) {
+            Function<Object, Object> ff = convertors.getOrDefault( target.underlying, v -> {
+                for( Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>> coersion : coersions )
                     if( coersion._1.test( target, value ) ) return coersion._2.apply( target, value );
-                }
-
                 throw new ReflectException( "cannot cast " + value + " to " + target );
-            } else {
-                return ff.apply( value );
-            }
-
+            } );
+            return ff.apply( value );
         } catch( ClassCastException | NumberFormatException e ) {
             throw new ReflectException( e );
         }
@@ -230,9 +217,9 @@ public final class Coercions {
     }
 
     public Coercions withStringToObject() {
-        ignoreDirect.add( String.class );
-
-        return with( ( r, v ) -> v instanceof String, Coercions::castFunction );
+        return with( ( r, v ) -> v instanceof String, ( r, value ) -> {
+            return castFunction( r, value );
+        } );
     }
 
     public static Object castFunction( Reflection r, Object value ) {
