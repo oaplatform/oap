@@ -86,7 +86,7 @@ public final class Coercions {
                 : Binder.Format.of( path, false ).binder.unmarshal( reflection, new URL( path ) ) ),
             "url" );
         addFunction( Try.biMap( ( cp, reflection ) -> reflection.assignableTo( String.class )
-                ? IOUtils.resourceToString( cp, UTF_8 )
+                ? IOUtils.resourceToString( cp, UTF_8, Coercions.class.getClassLoader() )
                 : Binder.Format.of( cp, false ).binder.unmarshal( reflection, Coercions.class.getResource( cp ) ) ),
             "classpath" );
         addFunction( Try.biMap( ( str, reflection ) -> str ),
