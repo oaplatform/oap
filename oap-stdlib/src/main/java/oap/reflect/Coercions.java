@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.google.common.base.Preconditions;
 import oap.json.Binder;
 import oap.util.BiStream;
 import oap.util.BitSet;
@@ -34,6 +35,7 @@ import oap.util.Pair;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.function.Try;
+import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;
@@ -67,23 +69,33 @@ public final class Coercions {
 
     private static final HashMap<Class<?>, Function<Object, Object>> convertors = new HashMap<>();
 
+    private static void addFunction( BiFunction<String, Reflection, Object> func, String... names ) {
+        for( var name : names ) {
+            functions.put( name, func );
+        }
+    }
+
     static {
-        functions.put( "path", Try.biMap( ( path, reflection ) ->
-                Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( path ) ) ) );
-        functions.put( "file", Try.biMap( ( path, reflection ) ->
-            Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( path ) ) ) );
-        functions.put( "url", Try.biMap( ( url, reflection ) ->
-            Binder.Format.of( url, false ).binder.unmarshal( reflection, new URL( url ) ) ) );
-        functions.put( "classpath", Try.biMap( ( cp, reflection ) ->
-            Binder.Format.of( cp, false ).binder.unmarshal( reflection, Coercions.class.getResource( cp ) ) ) );
-        functions.put( "str", Try.biMap( ( str, reflection ) ->
-            Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ) );
-        functions.put( "hocon", Try.biMap( ( str, reflection ) ->
-            Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ) );
-        functions.put( "json", Try.biMap( ( str, reflection ) ->
-            Binder.json.unmarshal( reflection, str ) ) );
-        functions.put( "yaml", Try.biMap( ( str, reflection ) ->
-            Binder.yaml.unmarshal( reflection, str ) ) );
+        addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
+                ? java.nio.file.Files.readString( Path.of( path ), UTF_8 )
+                : Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( path ) ) ),
+            "path" );
+        addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
+                ? IOUtils.toString( new URL( path ), UTF_8 )
+                : Binder.Format.of( path, false ).binder.unmarshal( reflection, new URL( path ) ) ),
+            "url" );
+        addFunction( Try.biMap( ( cp, reflection ) -> reflection.assignableTo( String.class )
+                ? IOUtils.toString( Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp ), UTF_8 )
+                : Binder.Format.of( cp, false ).binder.unmarshal( reflection, Coercions.class.getResource( cp ) ) ),
+            "classpath" );
+        addFunction( Try.biMap( ( str, reflection ) -> str ),
+            "str", "text", "plain" );
+        addFunction( Try.biMap( ( str, reflection ) -> Binder.hoconWithoutSystemProperties.unmarshal( reflection, str ) ),
+            "hocon" );
+        addFunction( Try.biMap( ( str, reflection ) -> Binder.json.unmarshal( reflection, str ) ),
+            "json" );
+        addFunction( Try.biMap( ( str, reflection ) -> Binder.yaml.unmarshal( reflection, str ) ),
+            "yaml" );
 
         convertors.put( Object.class, value -> value );
 
@@ -210,7 +222,7 @@ public final class Coercions {
         } );
     }
 
-    private Object castFunction( Reflection r, Object value ) {
+    public static Object castFunction( Reflection r, Object value ) {
         var str = ( ( String ) value ).trim();
         var sv = str.indexOf( '(' );
         if( sv > 0 && str.endsWith( ")" ) ) {
@@ -223,7 +235,11 @@ public final class Coercions {
 
             throw new ReflectException( "Unknown function '" + funcName + "'" );
         }
-        throw new ReflectException( "cannot cast " + value + " to " + r );
+        if( r.assignableFrom( String.class ) ) {
+            return value;
+        } else {
+            throw new ReflectException( "cannot cast " + value + " to " + r );
+        }
     }
 
     public Coercions withIdentity() {

@@ -45,6 +45,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
@@ -76,9 +77,13 @@ public final class Asserts {
             else throw new AssertionError( "timeout" );
     }
 
-    @SneakyThrows
     public static void assertEventually( long retryTimeout, int retries, oap.util.function.Try.ThrowingRunnable asserts ) {
         eventually( retryTimeout, retries, asserts );
+    }
+
+    public static void assertEventually( Duration duration, Duration retryInterval, oap.util.function.Try.ThrowingRunnable asserts ) {
+        int retries = ( int ) ( duration.toMillis() / retryInterval.toMillis() );
+        eventually( retryInterval.toMillis(), retries, asserts );
     }
 
     @Deprecated

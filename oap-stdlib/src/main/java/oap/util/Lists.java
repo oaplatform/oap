@@ -151,14 +151,6 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    @Deprecated( forRemoval = true )
-    /**
-     * Typo in name! Use filterThenMap instead
-     */
-    public static <E, R> List<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
-        return filterThenMap( list, predicate, mapper );
-    }
-
     public static <E> List<E> filter( Collection<E> list, Predicate<E> predicate ) {
         var result = new ArrayList<E>();
 
@@ -168,7 +160,8 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> Optional<E> random( List<E> list ) {
-        return Optional.ofNullable( list.isEmpty() ? null : list.get( ThreadLocalRandom.current().nextInt( list.size() ) ) );
+        return Optional.ofNullable(
+            list.isEmpty() ? null : list.get( ThreadLocalRandom.current().nextInt( list.size() ) ) );
     }
 
     @Deprecated

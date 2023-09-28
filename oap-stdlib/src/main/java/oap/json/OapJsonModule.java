@@ -24,6 +24,7 @@
 
 package oap.json;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.Version;
@@ -33,6 +34,9 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleDeserializers;
+import oap.reflect.Coercions;
+import oap.reflect.Reflect;
+import oap.reflect.Reflection;
 import oap.util.Numbers;
 
 import java.io.IOException;
@@ -67,6 +71,7 @@ public class OapJsonModule extends Module {
         SimpleDeserializers deserializers = new SimpleDeserializers();
         deserializers.addDeserializer( Long.TYPE, new LongDeserializer( Long.TYPE, 0L ) );
         deserializers.addDeserializer( Long.class, new LongDeserializer( Long.class, null ) );
+
         context.addDeserializers( deserializers );
     }
 
@@ -84,6 +89,21 @@ public class OapJsonModule extends Module {
             return p.hasToken( JsonToken.VALUE_STRING )
                 ? Numbers.parseLongWithUnits( p.getText().trim() )
                 : deserializer.deserialize( p, ctxt );
+        }
+    }
+
+    public static class StringDeserializer extends StdScalarDeserializer<String> {
+        static final Reflection STRING_REFLECTION = Reflect.reflect( String.class );
+
+        protected StringDeserializer() {
+            super( String.class );
+        }
+
+        @Override
+        public String deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException, JacksonException {
+            String s = com.fasterxml.jackson.databind.deser.std.StringDeserializer.instance.deserialize( jsonParser, deserializationContext );
+
+            return ( String ) Coercions.castFunction( STRING_REFLECTION, s );
         }
     }
 }
