@@ -34,8 +34,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings( "unused" )
 public class ExtDeserializerTest {
     @Test
-    public void ext() {
+    public void extOk() {
         var aaa = new Bean( TestExt.newExt( "aaa" ) );
+        var json = "{\"ext\":{\"value\":\"aaa\"}}";
+        assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
+        assertThat( Binder.json.unmarshal( Bean.class, json ) )
+                .isEqualTo( aaa );
+    }
+
+    @Test
+    public void extOverwritten() {
+        var aaa = new Bean( TestExtOverwritten.newExt( "aaa" ) );
         var json = "{\"ext\":{\"value\":\"aaa\"}}";
         assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
         assertThat( Binder.json.unmarshal( Bean.class, json ) )
@@ -70,6 +79,28 @@ public class ExtDeserializerTest {
     @ToString
     public abstract static class Ext2 extends Ext {
 
+    }
+
+
+    @EqualsAndHashCode( callSuper = true )
+    @ToString
+    public static class TestExtOverwritten extends TestExt {
+        String valueNew;
+
+        public TestExtOverwritten() {
+        }
+
+        public TestExtOverwritten( String value ) {
+            this.valueNew = value;
+        }
+
+        public static TestExt newExt() {
+            return newExt( Bean.class, "ext", new Class[0], new Object[0] );
+        }
+
+        public static TestExt newExt( String value ) {
+            return newExt( Bean.class, "ext", new Class[] { String.class }, new Object[] { value } );
+        }
     }
 
     @EqualsAndHashCode( callSuper = true )
