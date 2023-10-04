@@ -69,8 +69,9 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
 
                 for( var cc : conf.ext ) {
                     String key = extensionKey( cc.clazz, cc.field );
+                    var oldConf = extmap.get( key );
+                    if ( oldConf != null && oldConf.disableOverwrite ) continue;
                     extmap.put( key, cc );
-
                     log.debug( "add ext rule: {} = {}", key, cc.implementation );
                 }
             }
@@ -138,6 +139,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
             @JsonDeserialize( using = ClassDeserializer.class )
             public Class<?> clazz;
             public String field;
+            public boolean disableOverwrite;
             @JsonDeserialize( using = ClassDeserializer.class )
             public Class<?> implementation;
             @JsonProperty( "abstract" )
