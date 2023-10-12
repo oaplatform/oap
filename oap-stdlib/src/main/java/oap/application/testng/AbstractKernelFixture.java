@@ -25,6 +25,7 @@
 package oap.application.testng;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
 import oap.application.module.Module;
@@ -52,6 +53,7 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 import static oap.util.Pair.__;
 
+@Slf4j
 public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractEnvFixture<Self> {
     public static final String ANY = "*";
     public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
@@ -198,15 +200,25 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
         for( var cd : confd ) {
             Resources.filePaths( cd._1, cd._2 )
-                .forEach( path -> oap.io.Files.copyDirectory( path, this.confdPath ) );
+                .forEach( path -> {
+                    if( path.toFile().exists() && path.toFile().isDirectory() ) {
+                        log.info( "Copy directory " + path + " -> " + confdPath );
+                        oap.io.Files.copyDirectory( path, confdPath );
+                    } else {
+                        if ( !path.toFile().exists() ) log.warn( "Configuration directory " + path + " is not found" );
+                        else log.warn( "Configuration directory " + path + " is not a directory" );
+                    }
+                } );
         }
-
 
         for( var cd : conf ) {
-            Resources.filePath( cd._1, cd._2 )
-                .ifPresent( path -> oap.io.Files.copy( path, PLAIN, this.confdPath.resolve( path.getFileName() ), PLAIN ) );
+            var p = Resources.filePath( cd._1, cd._2 );
+            p.ifPresentOrElse( path -> {
+                    Path destPath = confdPath.resolve( path.getFileName() );
+                    log.info( "Copying file " + path + " -> " + destPath );
+                    oap.io.Files.copy( path, PLAIN, destPath, PLAIN );
+                }, () -> log.warn( "Configuration file " + cd + " is not found" ) );
         }
-
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
