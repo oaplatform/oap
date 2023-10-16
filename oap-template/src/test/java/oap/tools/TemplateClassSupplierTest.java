@@ -12,46 +12,47 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class TemplateClassSupplierTest {
     private static String sourceA = """
-            import java.util.random.RandomGenerator;
-            public class A {
-                public int getRandomNumber() {
-                    RandomGenerator.StreamableGenerator.of("L128X256MixRandom").nextInt();
-                    return 5;
-                }
+        import java.util.random.RandomGenerator;
+        public class A {
+            public int getRandomNumber() {
+                RandomGenerator.StreamableGenerator.of("L128X256MixRandom").nextInt();
+                return 5;
             }
-            """;
+        }
+        """;
 
     private static String sourceB = """
-            import java.util.random.RandomGenerator;
-            public class B {
-                     public static class InnerB extends B {
-                         @Override
-                         public double getRandomNumber() {
-                             return 0.0;
-                         }
-                     }
+        import java.util.random.RandomGenerator;
+        public class B {
+                 public static class InnerB extends B {
+                     @Override
                      public double getRandomNumber() {
-                         return RandomGenerator.StreamableGenerator.of("Xoroshiro128PlusPlus").nextDouble();
-                     }
-                     public static void main(String[] args) {
-                         System.err.println( new B().getRandomNumber() );
+                         return 0.0;
                      }
                  }
-            """;
+                 public double getRandomNumber() {
+                     return RandomGenerator.StreamableGenerator.of("Xoroshiro128PlusPlus").nextDouble();
+                 }
+                 public static void main(String[] args) {
+                     System.err.println( new B().getRandomNumber() );
+                 }
+             }
+        """;
     private static String sourceC = """
-            public class C {
-                public String get() {
-                    return "OK";
-                }
+        public class C {
+            public String get() {
+                return "OK";
             }
-            """;
+        }
+        """;
+
     @Test
     public void compileAndRunClassA() throws Exception {
-        var compiler = new TemplateClassCompiler();
+        var compiler = new TemplateClassCompiler( null );
         compiler.compile(
-                Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA )
-                )
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
+            )
         );
 
         var supplier = new TemplateClassSupplier( compiler.compiledJavaFiles );
@@ -65,11 +66,11 @@ public class TemplateClassSupplierTest {
 
     @Test
     public void compileAndRunClassInnerB() throws Exception {
-        var compiler = new TemplateClassCompiler();
+        var compiler = new TemplateClassCompiler( null );
         compiler.compile(
-                Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB )
-                )
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "B", sourceB )
+            )
         );
 
         var supplier = new TemplateClassSupplier( compiler.compiledJavaFiles );
@@ -83,13 +84,13 @@ public class TemplateClassSupplierTest {
 
     @Test
     public void compileAndRunClassBAndInnerBWithinSingleClassLoader() throws Exception {
-        var compiler = new TemplateClassCompiler();
+        var compiler = new TemplateClassCompiler( null );
         compiler.compile(
-                Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA ),
-                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB ),
-                        new TemplateClassCompiler.SourceJavaFile(  "C", sourceC )
-                )
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "A", sourceA ),
+                new TemplateClassCompiler.SourceJavaFile( "B", sourceB ),
+                new TemplateClassCompiler.SourceJavaFile( "C", sourceC )
+            )
         );
 
         var classLoader = new TemplateClassSupplier.TemplateClassLoader( compiler.compiledJavaFiles );
@@ -115,17 +116,17 @@ public class TemplateClassSupplierTest {
 
     @Test
     public void compile2TimesAndLoadIntoSingleClassLoader() {
-        var compiler = new TemplateClassCompiler();
+        var compiler = new TemplateClassCompiler( null );
         var result1 = compiler.compile(
-                Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "A", sourceA )
-                )
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
+            )
         ).getSuccessValue();
         var result2 = compiler.compile(
-                Lists.of(
-                        new TemplateClassCompiler.SourceJavaFile(  "B", sourceB ),
-                        new TemplateClassCompiler.SourceJavaFile(  "C", sourceC )
-                )
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "B", sourceB ),
+                new TemplateClassCompiler.SourceJavaFile( "C", sourceC )
+            )
         ).getSuccessValue();
 
         Map<String, TemplateClassCompiler.CompiledJavaFile> allCompiledClasses = new HashMap<>( result1 );
