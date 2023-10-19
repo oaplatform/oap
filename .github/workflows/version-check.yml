@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: checkout
+        uses: actions/checkout@v3
       - uses: avides/actions-project-version-check@v1.4.0
         id: actions_project_version_check
         with:
