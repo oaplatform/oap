@@ -1,7 +1,9 @@
 name: Version Check
-on: [pull_request]
+on:
+  pull_request:
+    branches: [ main, master ]
 jobs:
-  on_merge:
+  on_pr:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
