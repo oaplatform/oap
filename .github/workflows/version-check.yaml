@@ -1,0 +1,15 @@
+name: Version Check
+on: [pull_request]
+jobs:
+  on_merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: avides/actions-project-version-check@latest
+        id: actions_project_version_check
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          file-to-check: pom.xml
+      - name: use-version-from-check
+        run:
+          echo "New version is: " ${{ steps.actions_project_version_check.outputs.version }}
