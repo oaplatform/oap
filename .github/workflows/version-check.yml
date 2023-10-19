@@ -9,8 +9,17 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
-      - uses: avides/actions-project-version-check@v1.4.0
+
+      - name: project-version-check
+        uses: avides/actions-project-version-check@v1.4.0
         id: actions_project_version_check
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           file-to-check: pom.xml
+
+      - name: project-version-output-check
+        run: |
+          if [ -z "${{ steps.actions_project_version_check.outputs.version }}" ] 
+          then
+            exit 1
+          fi
