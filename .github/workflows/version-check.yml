@@ -10,6 +10,3 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           file-to-check: pom.xml
-      - name: use-version-from-check
-        run:
-          echo "New version is: ${{ steps.actions_project_version_check.outputs.version }}"
