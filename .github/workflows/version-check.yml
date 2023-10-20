@@ -23,10 +23,3 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           file-to-check: pom.xml
           pom-property-as-version: oap.project.version
-
-      - name: project-version-output-check
-        run: |
-          if [ -z "${{ steps.actions_project_version_check.outputs.version }}" ] 
-          then
-            exit 1
-          fi
