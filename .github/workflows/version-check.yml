@@ -1,0 +1,25 @@
+name: Version Check
+on:
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  on_pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: Check out actions-project-version-check repository
+        uses: actions/checkout@v4
+        with:
+          repository: oaplatform/actions-project-version-check
+          path: ./.github/actions/actions-project-version-check
+
+      - name: project-version-check
+        uses: ./.github/actions/actions-project-version-check
+        id: actions_project_version_check
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          file-to-check: pom.xml
+          pom-property-as-version: oap.project.version
