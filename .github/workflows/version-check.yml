@@ -21,7 +21,8 @@ jobs:
         id: actions_project_version_check
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          file-to-check: .flattened-pom.xml
+          file-to-check: pom.xml
+          pom-property-as-version: oap.project.version
 
       - name: project-version-output-check
         run: |
