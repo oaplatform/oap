@@ -8,14 +8,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: mvn flatten:flatten
-        run: |
-          mvn flatten:flatten
+      - name: Check out actions-project-version-check repository
+        uses: actions/checkout@v4
+        with:
+          repository: oaplatform/actions-project-version-check
+          path: ./.github/actions/actions-project-version-check
 
       - name: project-version-check
-        uses: avides/actions-project-version-check@v1.4.0
+        uses: ./.github/actions/actions-project-version-check
         id: actions_project_version_check
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
