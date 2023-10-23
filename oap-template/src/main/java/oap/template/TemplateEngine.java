@@ -60,18 +60,22 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public class TemplateEngine implements Runnable, AutoCloseable {
-    public final Path tmpPath;
+    public final Path diskCache;
     public final long ttl;
     private final Map<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000L;
 
-    public TemplateEngine( Path tmpPath ) {
-        this( tmpPath, Dates.d( 30 ) );
+    public TemplateEngine() {
+        this( null );
     }
 
-    public TemplateEngine( Path tmpPath, long ttl ) {
-        this.tmpPath = tmpPath;
+    public TemplateEngine( Path diskCache ) {
+        this( diskCache, Dates.d( 30 ) );
+    }
+
+    public TemplateEngine( Path diskCache, long ttl ) {
+        this.diskCache = diskCache;
         this.ttl = ttl;
 
         templates = CacheBuilder.newBuilder()
@@ -161,7 +165,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                 if( postProcess != null )
                     postProcess.accept( ast );
 
-                var tf = new JavaTemplate<>( name + '_' + id, template, type, acc, ast );
+                var tf = new JavaTemplate<>( name + '_' + id, template, type, acc, ast, diskCache );
                 return new TemplateFunction( tf );
             } );
 
@@ -196,7 +200,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
     public void run() {
         templates.cleanUp();
         var now = System.currentTimeMillis();
-        try( Stream<Path> stream = Files.walk( tmpPath ) ) {
+        try( Stream<Path> stream = Files.walk( diskCache ) ) {
             stream
                 .forEach( path -> {
                     try {
@@ -210,7 +214,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                 } );
             log.info( "TemplateEngine has done its work in {} ms", System.currentTimeMillis() - now );
         } catch( IOException e ) {
-            log.error( "Could not walk through '{}'", tmpPath, e );
+            log.error( "Could not walk through '{}'", diskCache, e );
         }
     }
 
