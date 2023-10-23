@@ -223,7 +223,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
             var service = serviceItem.service;
             var implName = serviceItem.serviceName;
-            log.trace( "instantiate {}.{} as {}...", moduleName, implName, service.name );
+            log.trace( "instantiating {}.{} as {} class:{} ...", moduleName, implName, service.name, service.implementation );
             try {
                 var reflect = Reflect.reflect( service.implementation, Module.coersions );
                 Object instance;
@@ -238,15 +238,13 @@ public class Kernel implements Closeable, AutoCloseable {
                     setServiceName( reflect, instance, service.name );
 
                     service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
-
-//                    updateLoggerIfExists( instance, implName );
                 } else {
                     instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
                 }
                 retModules.put( serviceItem, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
             } catch( Exception e ) {
-                log.info( "service name = {}.{}, remote = {}, profiles = {}",
-                    moduleName, implName, service.remote, service.profiles );
+                log.error( "Cannot create/initialize service name = {}.{}, remote = {}, profiles = {}, class: {}",
+                    moduleName, implName, service.remote, service.profiles, service.implementation );
                 throw new ApplicationException( e );
             }
         }
