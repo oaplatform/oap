@@ -26,65 +26,64 @@ package oap.template;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
-import oap.tools.TemplateClassCompiler;
-import oap.tools.TemplateClassSupplier;
-import oap.util.Lists;
+import oap.template.render.AstRenderRoot;
+import oap.template.render.Render;
+import oap.template.render.TemplateType;
+import oap.tools.MemoryClassLoaderJava;
 import oap.util.function.TriConsumer;
-import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import static java.util.stream.Collectors.joining;
 
 @Slf4j
 public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
-    private final TriConsumer<TIn, Map<String, Supplier<String>>, TA> cons;
+    private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, String template, TypeRef<TIn> type, TA acc, AstRoot ast, Path diskCache ) {
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRenderRoot ast ) {
         this.acc = acc;
         try {
-            // generate jav file for template
-            Render render = generateSourceFileForTemplate( name, template, type, acc, ast );
+            var render = Render.init( name, template, new TemplateType( type.type() ), acc );
+            ast.render( render );
+
+            var line = new AtomicInteger( 0 );
+            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
+                .lines()
+                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
+                .collect( joining( "\n" ) )
+            );
+
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            // compile source of template into class
-            var compileResult = new TemplateClassCompiler( diskCache ).compile( Lists.of( new TemplateClassCompiler.SourceJavaFile( fullTemplateName, render.out() ) ) );
-            // instantiate class representing template
-            Class<?> clazz = new TemplateClassSupplier( compileResult.getSuccessValue() ).loadClasses( Lists.of( fullTemplateName ) ).get( fullTemplateName ).getSuccessValue();
-            cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TA> ) clazz
-                .getDeclaredConstructor()
-                .newInstance();
+            try( MemoryClassLoaderJava mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile ) ) {
+                cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
+                        .loadClass( fullTemplateName )
+                        .getDeclaredConstructor()
+                        .newInstance();
+            }
         } catch( Exception e ) {
             throw new TemplateException( e );
         }
     }
 
-    @NotNull
-    private Render generateSourceFileForTemplate( String name, String template, TypeRef<TIn> type, TA acc, AstRoot ast ) {
-        var render = Render.init( name, template, new TemplateType( type.type() ), acc );
-        ast.render( render );
-
-//            var line = new AtomicInteger( 0 );
-//            log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
-//                .lines()
-//                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
-//                .collect( joining( "\n" ) )
-//            );
-        return render;
-    }
-
-    public TOut render( TIn obj ) {
+    public TA render( TIn obj, boolean eol ) {
         var newAcc = acc.newInstance();
         cons.accept( obj, Map.of(), newAcc );
 
-        return newAcc.get();
+        return newAcc.addEol( eol );
     }
 
     @Override
-    public void render( TIn obj, TOutMutable tOut ) {
+    public TA render( TIn obj, boolean eol, TOutMutable tOut ) {
         var newAcc = acc.newInstance( tOut );
         cons.accept( obj, Map.of(), newAcc );
+
+        return newAcc.addEol( eol );
     }
 }

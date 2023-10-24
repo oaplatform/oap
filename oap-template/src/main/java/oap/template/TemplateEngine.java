@@ -29,17 +29,21 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.google.JodaTicker;
 import oap.io.Resources;
 import oap.reflect.TypeRef;
+import oap.template.render.AstRender;
+import oap.template.render.AstRenderRoot;
+import oap.template.render.TemplateAstUtils;
+import oap.template.render.TemplateType;
 import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -51,7 +55,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -59,23 +63,19 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
-public class TemplateEngine implements Runnable, AutoCloseable {
-    public final Path diskCache;
+public class TemplateEngine implements Runnable {
+    public final Path tmpPath;
     public final long ttl;
-    private final Map<String, List<Method>> builtInFunction = new HashMap<>();
+    private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
-    public long maxSize = 1_000_000L;
+    public long maxSize = 1_000_000;
 
-    public TemplateEngine() {
-        this( null );
+    public TemplateEngine( Path tmpPath ) {
+        this( tmpPath, Dates.d( 30 ) );
     }
 
-    public TemplateEngine( Path diskCache ) {
-        this( diskCache, Dates.d( 30 ) );
-    }
-
-    public TemplateEngine( Path diskCache, long ttl ) {
-        this.diskCache = diskCache;
+    public TemplateEngine( Path tmpPath, long ttl ) {
+        this.tmpPath = tmpPath;
         this.ttl = ttl;
 
         templates = CacheBuilder.newBuilder()
@@ -89,7 +89,7 @@ public class TemplateEngine implements Runnable, AutoCloseable {
 
         loadFunctions();
 
-        log.info( "functions '{}' loaded", builtInFunction.keySet() );
+        log.info( "functions {}", builtInFunction.keySet() );
 
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
@@ -127,30 +127,45 @@ public class TemplateEngine implements Runnable, AutoCloseable {
         }
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
-    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
-    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
-    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
     }
 
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
+        return getTemplate( name, type, template, acc, aliases, errorStrategy, ast -> {
+        } );
+    }
+
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
-    Template<TIn, TOut, TOutMutable, TA> getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<Ast> postProcess ) {
-        Objects.requireNonNull( template );
-        Objects.requireNonNull( acc );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+        assert template != null;
+        assert acc != null;
 
-        String id = getTemplateId( template, acc, aliases, postProcess );
+        Hasher hasher = Hashing.murmur3_128().newHasher();
+        hasher
+            .putString( template, UTF_8 )
+            .putString( acc.getClass().toString(), UTF_8 );
 
-//        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
+        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
+
+        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
+
+        var id = hasher.hash().toString();
+
+        log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
         try {
             TemplateFunction tFunc = templates.get( id, () -> {
@@ -160,36 +175,28 @@ public class TemplateEngine implements Runnable, AutoCloseable {
                     lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                     grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
-                var ast = grammar.template( new TemplateType( type.type() ), aliases ).rootAst;
-//                log.trace( "\n" + ast.print() );
+                var elements = grammar.elements( aliases ).ret;
+                log.trace( "\n" + elements.print() );
+
+
+                AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
+
                 if( postProcess != null )
                     postProcess.accept( ast );
 
-                var tf = new JavaTemplate<>( name + '_' + id, template, type, acc, ast, diskCache );
-                return new TemplateFunction( tf );
+                log.trace( "\n" + ast.print() );
+
+                var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
+                return new TemplateFunction( tf, new Exception().getStackTrace() );
             } );
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
-        } catch( Exception e ) {
-            if( e.getCause() instanceof TemplateException te ) {
-                throw te;
+        } catch( UncheckedExecutionException | ExecutionException e ) {
+            if( e.getCause() instanceof TemplateException ) {
+                throw ( TemplateException ) e.getCause();
             }
             throw new TemplateException( e.getCause() );
         }
-    }
-
-    @NotNull
-    private static <TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
-    String getTemplateId( String template, TA acc, Map<String, String> aliases, Consumer<Ast> postProcess ) {
-        Hasher hasher = Hashing.murmur3_128().newHasher();
-        hasher
-            .putString( template, UTF_8 )
-            .putString( acc.getClass().toString(), UTF_8 );
-
-        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
-        aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
-        var id = hasher.hash().toString();
-        return id;
     }
 
     public long getCacheSize() {
@@ -200,35 +207,31 @@ public class TemplateEngine implements Runnable, AutoCloseable {
     public void run() {
         templates.cleanUp();
         var now = System.currentTimeMillis();
-        try( Stream<Path> stream = Files.walk( diskCache ) ) {
+        try( Stream<Path> stream = Files.walk( tmpPath ) ) {
             stream
                 .forEach( path -> {
                     try {
                         if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {
-                            boolean deleted = Files.deleteIfExists( path );
-                            log.debug( "delete files at '{}': {}", deleted ? "done" : "failure", path );
+                            log.debug( "delete {}", path );
+                            Files.deleteIfExists( path );
                         }
                     } catch( IOException e ) {
-                        log.error( "Cannot delete files at '{}'", path, e );
+                        log.error( "Cannot delete {}", path, e );
                     }
                 } );
-            log.info( "TemplateEngine has done its work in {} ms", System.currentTimeMillis() - now );
         } catch( IOException e ) {
-            log.error( "Could not walk through '{}'", diskCache, e );
+            log.error( "Could not walk through " + tmpPath, e );
         }
-    }
-
-    @Override
-    public void close() throws Exception {
-        templates.cleanUp();
     }
 
     public static class TemplateFunction {
         @JsonIgnore
         public final Template<?, ?, ?, ?> template;
+        public final StackTraceElement[] stackTrace;
 
-        public TemplateFunction( Template<?, ?, ?, ?> template ) {
+        public TemplateFunction( Template<?, ?, ?, ?> template, StackTraceElement[] stackTrace ) {
             this.template = template;
+            this.stackTrace = stackTrace;
         }
     }
 }
