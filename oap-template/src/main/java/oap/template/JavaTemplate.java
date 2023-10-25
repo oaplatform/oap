@@ -47,7 +47,7 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path cacheFile, TA acc, AstRenderRoot ast ) {
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path diskCache, TA acc, AstRenderRoot ast ) {
         this.acc = acc;
         try {
             var render = Render.init( name, template, new TemplateType( type.type() ), acc );
@@ -61,7 +61,7 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
-            try( MemoryClassLoaderJava mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), cacheFile ) ) {
+            try( MemoryClassLoaderJava mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), diskCache ) ) {
                 cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
                         .loadClass( fullTemplateName )
                         .getDeclaredConstructor()

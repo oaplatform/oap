@@ -63,7 +63,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public class TemplateEngine implements Runnable {
-    public final Path tmpPath;
+    public final Path diskCache;
     public final long ttl;
     private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
@@ -73,8 +73,8 @@ public class TemplateEngine implements Runnable {
         this( null, ttl );
     }
 
-    public TemplateEngine( Path tmpPath, long ttl ) {
-        this.tmpPath = tmpPath;
+    public TemplateEngine( Path diskCache, long ttl ) {
+        this.diskCache = diskCache;
         this.ttl = ttl;
 
         templates = CacheBuilder.newBuilder()
@@ -185,7 +185,7 @@ public class TemplateEngine implements Runnable {
 
                 log.trace( "\n" + ast.print() );
 
-                var tf = new JavaTemplate<>( name + '_' + id, template, type, tmpPath, acc, ast );
+                var tf = new JavaTemplate<>( name + '_' + id, template, type, diskCache, acc, ast );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
             } );
 
@@ -206,7 +206,7 @@ public class TemplateEngine implements Runnable {
     public void run() {
         templates.cleanUp();
         var now = System.currentTimeMillis();
-        try( Stream<Path> stream = Files.walk( tmpPath ) ) {
+        try( Stream<Path> stream = Files.walk( diskCache ) ) {
             stream
                 .forEach( path -> {
                     try {
@@ -219,7 +219,7 @@ public class TemplateEngine implements Runnable {
                     }
                 } );
         } catch( IOException e ) {
-            log.error( "Could not walk through " + tmpPath, e );
+            log.error( "Could not walk through " + diskCache, e );
         }
     }
 
