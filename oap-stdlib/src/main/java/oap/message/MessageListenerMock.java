@@ -40,7 +40,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class MessageListenerMock implements MessageListener {
     public static final byte MESSAGE_TYPE = ( byte ) 0x7F;
     public static final byte MESSAGE_TYPE2 = ( byte ) 0x7E;
-    public static final byte MESSAGE_TYPE3 = ( byte ) 0x7D;
     public final AtomicLong accessCount = new AtomicLong();
     private final CopyOnWriteArrayList<TestMessage> messages = new CopyOnWriteArrayList<>();
     private final String infoPrefix;

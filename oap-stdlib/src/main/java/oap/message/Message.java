@@ -34,15 +34,17 @@ import java.util.Arrays;
 final class Message {
     public final ByteSequence md5;
     public final byte messageType;
+    public final short version;
     public final long clientId;
     public final byte[] data;
 
-    Message( long clientId, byte messageType, ByteSequence md5, byte[] data, int from, int length ) {
-        this( clientId, messageType, md5, Arrays.copyOfRange( data, from, from + length ) );
+    Message( long clientId, byte messageType, short version, ByteSequence md5, byte[] data, int from, int length ) {
+        this( clientId, messageType, version, md5, Arrays.copyOfRange( data, from, from + length ) );
     }
 
-    Message( long clientId, byte messageType, ByteSequence md5, byte[] data ) {
+    Message( long clientId, byte messageType, short version, ByteSequence md5, byte[] data ) {
         this.clientId = clientId;
+        this.version = version;
         this.md5 = md5;
         this.messageType = messageType;
         this.data = data;
