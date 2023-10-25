@@ -69,8 +69,8 @@ public class TemplateEngine implements Runnable {
     private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
 
-    public TemplateEngine() {
-        this( null, -1L );
+    public TemplateEngine( long ttl ) {
+        this( null, ttl );
     }
 
     public TemplateEngine( Path tmpPath, long ttl ) {

@@ -27,6 +27,7 @@ package oap.template;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Dates;
 import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
@@ -63,7 +64,7 @@ public class TemplateEngineTest extends Fixtures {
 
     @BeforeMethod
     public void beforeCMethod() {
-        engine = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        engine = new TemplateEngine( Dates.d( 10 ) );
     }
 
     @BeforeMethod
@@ -360,26 +361,27 @@ public class TemplateEngineTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field2}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "2" );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
     }
 
     @Test
     public void testDiskCacheChangeSourceCode() throws IOException {
+        engine = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
         var c1 = new TestTemplateClass();
         c1.field = "1";
         c1.field2 = "2";
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
-                .isEqualTo( "1" );
+            .isEqualTo( "1" );
 
         replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.class" );
         replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.java" );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
-                .isEqualTo( "1" );
+            .isEqualTo( "1" );
     }
 
     private static void replace( String fileName ) throws IOException {
@@ -525,7 +527,7 @@ public class TemplateEngineTest extends Fixtures {
 
         FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 20 ) );
 
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "12\t12" );

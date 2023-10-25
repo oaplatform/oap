@@ -27,6 +27,7 @@ package oap.template;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Dates;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -49,7 +50,7 @@ public class TemplateEngineOrTest extends Fixtures {
 
     @BeforeClass
     public void beforeClass() {
-        engine = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        engine = new TemplateEngine( Dates.d( 10 ) );
     }
 
     @BeforeMethod
