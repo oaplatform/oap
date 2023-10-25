@@ -40,7 +40,6 @@ import oap.template.render.AstRender;
 import oap.template.render.AstRenderRoot;
 import oap.template.render.TemplateAstUtils;
 import oap.template.render.TemplateType;
-import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -70,8 +69,8 @@ public class TemplateEngine implements Runnable {
     private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
 
-    public TemplateEngine( Path tmpPath ) {
-        this( tmpPath, Dates.d( 30 ) );
+    public TemplateEngine() {
+        this( null, -1L );
     }
 
     public TemplateEngine( Path tmpPath, long ttl ) {
