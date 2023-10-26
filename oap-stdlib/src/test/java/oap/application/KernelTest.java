@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -37,6 +38,7 @@ import oap.util.Lists;
 import oap.util.Maps;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -357,19 +359,18 @@ public class KernelTest {
 
     @Test
     public void testBeanFromJsonField() {
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testBeanFromJsonField.conf" ) );
+
         Env.set( "VAR_SERVICE3FIELD", "{\"name\":\"from resource\",\"timeout\":1234}" );
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "testBeanFromJsonField.conf" ) )
-        );
-        try {
+        ConfigFactory.invalidateCaches();
+
+        try( var kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "testBeanFromJsonField" ) );
             var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3Field ).isNotNull();
             assertThat( s3.service3Field.name ).isEqualTo( "from resource" );
             assertThat( s3.service3Field.timeout ).isEqualTo( 1234 );
-        } finally {
-            kernel.stop();
         }
     }
 
