@@ -356,6 +356,24 @@ public class KernelTest {
     }
 
     @Test
+    public void testBeanFromJsonField() {
+        Env.set( "VAR_SERVICE3FIELD", "{\"name\":\"from resource\",\"timeout\":1234}" );
+        var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "testBeanFromJsonField.conf" ) )
+        );
+        try {
+            kernel.start( Map.of( "boot.main", "testBeanFromJsonField" ) );
+            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            assertThat( s3.name ).isEqualTo( "a" );
+            assertThat( s3.service3Field ).isNotNull();
+            assertThat( s3.service3Field.name ).isEqualTo( "from resource" );
+            assertThat( s3.service3Field.timeout ).isEqualTo( 1234 );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
     public void testMapFromClasspath() {
         var kernel = new Kernel(
             List.of( urlOfTestResource( getClass(), "mapFromClasspath.conf" ) )
@@ -449,6 +467,7 @@ public class KernelTest {
     @EqualsAndHashCode
     public static class Service3 {
         public Service3 service3;
+        public Service3 service3Field;
         public String name;
         public int timeout;
 

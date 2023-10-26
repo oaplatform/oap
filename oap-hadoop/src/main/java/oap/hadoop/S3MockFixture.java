@@ -6,13 +6,13 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.util.IOUtils;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
+import oap.io.content.ContentReader;
 import oap.testng.AbstractEnvFixture;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -82,9 +82,9 @@ public class S3MockFixture extends AbstractEnvFixture<S3MockFixture> {
         s3().deleteBucket( bucketName );
     }
 
-    public String readFile( String bucketName, String key ) {
+    public <T> T readFile( String bucketName, String key, ContentReader<T> reader ) {
         try( S3Object object = s3().getObject( bucketName, key ) ) {
-            return IOUtils.toString( IoStreams.in( object.getObjectContent(), IoStreams.Encoding.from( key ) ) );
+            return reader.read( IoStreams.in( object.getObjectContent(), IoStreams.Encoding.from( key ) ) );
         } catch( IOException e ) {
             throw new SdkClientException( "Error streaming content from S3 during download", e );
         }
