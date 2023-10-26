@@ -40,6 +40,7 @@ import oap.template.render.AstRender;
 import oap.template.render.AstRenderRoot;
 import oap.template.render.TemplateAstUtils;
 import oap.template.render.TemplateType;
+import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -88,7 +89,7 @@ public class TemplateEngine implements Runnable {
 
         loadFunctions();
 
-        log.info( "functions {}", builtInFunction.keySet() );
+        log.info( "diskCache {} ttl {} functions {}", diskCache, Dates.durationToString( ttl ), builtInFunction.keySet() );
 
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
         Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
