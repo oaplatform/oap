@@ -59,7 +59,7 @@ public class HealthHttpHandler implements HttpHandler {
     }
 
     public void start() {
-        log.debug( "starting handler with prefix: '{}' and providers: {}", prefix, Lists.map( providers, HealthDataProvider::name ) );
+        log.debug( "starting handler with prefix {} port {} and providers {}", prefix, port, Lists.map( providers, HealthDataProvider::name ) );
     }
 
     @Override
