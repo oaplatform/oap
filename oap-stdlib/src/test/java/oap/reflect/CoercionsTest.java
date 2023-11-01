@@ -78,6 +78,11 @@ public class CoercionsTest {
     }
 
     @Test
+    public void testCastFunctionString() {
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "classpath(/oap/reflect/CoercionsTest/test.yaml)" ) ).isEqualTo( "a: b" );
+    }
+
+    @Test
     public void testUrl() throws MalformedURLException {
         var coercions = Coercions.basic().withIdentity();
 

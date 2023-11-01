@@ -220,9 +220,7 @@ public final class Coercions {
     }
 
     public Coercions withStringToObject() {
-        return with( ( r, v ) -> v instanceof String, ( r, value ) -> {
-            return castFunction( r, value );
-        } );
+        return with( ( r, v ) -> v instanceof String, Coercions::castFunction );
     }
 
     public static Object castFunction( Reflection r, Object value ) {
