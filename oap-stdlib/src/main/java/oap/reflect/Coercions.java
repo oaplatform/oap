@@ -84,9 +84,12 @@ public final class Coercions {
                 ? IOUtils.toString( new URL( path ), UTF_8 )
                 : Binder.Format.of( path, false ).binder.unmarshal( reflection, new URL( path ) ) ),
             "url" );
-        addFunction( Try.biMap( ( cp, reflection ) -> reflection.assignableTo( String.class )
-                ? IOUtils.toString( Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp ), UTF_8 )
-                : Binder.Format.of( cp, false ).binder.unmarshal( reflection, Coercions.class.getResource( cp ) ) ),
+        addFunction( Try.biMap( ( cp, reflection ) -> {
+                URL url = Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp );
+                return reflection.assignableTo( String.class )
+                        ? IOUtils.toString( url, UTF_8 )
+                        : Binder.Format.of( cp, false ).binder.unmarshal( reflection, url );
+            } ),
             "classpath" );
         addFunction( Try.biMap( ( str, reflection ) -> str ),
             "str", "text", "plain" );

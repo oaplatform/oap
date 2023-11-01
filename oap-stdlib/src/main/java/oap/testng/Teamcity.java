@@ -24,6 +24,7 @@
 package oap.testng;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 
 import java.util.function.Supplier;
 
@@ -124,6 +125,33 @@ public class Teamcity {
         if( buildNumber != null ) prefix += buildNumber;
 
         return prefix;
+    }
+
+    public static void testStarted( String testName ) {
+        if( isTeamcity() ) {
+            System.out.format( "##teamcity[testStarted name='%s' captureStandardOutput='true']\n", escape( testName ) );
+        }
+    }
+
+    public static void testFinished( String testName, long durationMs ) {
+        if( isTeamcity() ) {
+            System.out.format( "##teamcity[testFinished name='%s' duration='%s']\n", escape( testName ), durationMs );
+        }
+    }
+
+    public static void testIgnored( String testName, String reason ) {
+        if( isTeamcity() ) {
+            System.out.format( "##teamcity[testIgnored name='%s' message='%s']\n", escape( testName ), escape( reason ) );
+        }
+    }
+
+    public static void testFailed( String testName, Throwable throwable, long durationMs ) {
+        if( isTeamcity() ) {
+            System.out.format( "##teamcity[testFailed name='%s' message='%s' details='%s']\n",
+                escape( testName ), escape( throwable.getMessage() ),
+                escape( Throwables.getStackTraceAsString( throwable ) ) );
+        }
+        testFinished( testName, durationMs );
     }
 
     public enum MessageStatus {
