@@ -172,7 +172,6 @@
             <artifactId>assertj-core</artifactId>
             <version>${oap.deps.assertj.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.airlift/aircompressor -->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>aircompressor</artifactId>
