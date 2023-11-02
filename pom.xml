@@ -58,7 +58,6 @@
 
         <oap.deps.apache.lang.version>3.12.0</oap.deps.apache.lang.version>
         <oap.deps.apache.commons.text.version>1.10.0</oap.deps.apache.commons.text.version>
-        <oap.deps.apache.compress.version>1.23.0</oap.deps.apache.compress.version>
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
 
@@ -76,7 +75,6 @@
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.3.0</oap.deps.bucket4j.version>
-        <oap.deps.zstd-jni.version>1.5.5-7</oap.deps.zstd-jni.version>
         <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
         for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type
         and in later versions it is left unchanged so exception will arise.
@@ -97,7 +95,7 @@
         <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
         <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
-        <oap.deps.lz4.version>1.8.0</oap.deps.lz4.version>
+        <oap.deps.aircompressor.version>0.25</oap.deps.aircompressor.version>
         <oap.deps.fst.version>3.0.4-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
