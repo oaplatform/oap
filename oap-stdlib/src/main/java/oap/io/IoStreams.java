@@ -65,6 +65,10 @@ import static oap.util.function.Functions.empty.consume;
 @Slf4j
 public class IoStreams {
     public static final int DEFAULT_BUFFER = 8192;
+    public static final BZip2HadoopStreams BZIP2_HADOOP_STREAMS = new BZip2HadoopStreams();
+    public static final Lz4HadoopStreams LZ4_HADOOP_STREAMS = new Lz4HadoopStreams();
+    public static final ZstdHadoopStreams ZSTD_HADOOP_STREAMS = new ZstdHadoopStreams();
+    public static final JdkGzipHadoopStreams GZIP_HADOOP_STREAMS = new JdkGzipHadoopStreams();
 
     public static Stream<String> lines( URL url ) {
         return lines( url, Encoding.from( url ), consume() );
@@ -207,21 +211,21 @@ public class IoStreams {
             bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize )
                 : outputStream;
         return switch( encoding ) {
-            case GZIP -> {
-                OutputStream gzout = new JdkGzipHadoopStreams().createOutputStream( fos );
-                yield bufferSize > 0 ? new BufferedOutputStream( gzout, bufferSize ) : gzout;
-            }
+            case GZIP -> GZIP_HADOOP_STREAMS.createOutputStream( fos );
             case BZIP2 -> {
-                OutputStream gzout = new BZip2HadoopStreams().createOutputStream( fos );
-                yield bufferSize > 0 ? new BufferedOutputStream( gzout, bufferSize ) : gzout;
+                OutputStream os = BZIP2_HADOOP_STREAMS.createOutputStream( fos );
+                yield bufferSize > 0 ? new BufferedOutputStream( os, bufferSize ) : os;
             }
             case ZIP -> {
                 var zip = new ZipOutputStream( fos );
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                 yield zip;
             }
-            case LZ4 -> new Lz4HadoopStreams().createOutputStream( fos );
-            case ZSTD -> new ZstdHadoopStreams().createOutputStream( fos );
+            case LZ4 -> LZ4_HADOOP_STREAMS.createOutputStream( fos );
+            case ZSTD -> {
+                OutputStream os = ZSTD_HADOOP_STREAMS.createOutputStream( fos );
+                yield bufferSize > 0 ? new BufferedOutputStream( os, bufferSize ) : os;
+            }
             case PLAIN, ORC, PARQUET, AVRO -> fos;
         };
     }
@@ -285,13 +289,13 @@ public class IoStreams {
         switch( encoding ) {
             case GZIP:
                 try {
-                    return new JdkGzipHadoopStreams().createInputStream( stream );
+                    return GZIP_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                 }
             case BZIP2:
                 try {
-                    return new BZip2HadoopStreams().createInputStream( stream );
+                    return BZIP2_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                 }
@@ -308,14 +312,14 @@ public class IoStreams {
                 return stream;
             case LZ4:
                 try {
-                    return new Lz4HadoopStreams().createInputStream( stream );
+                    return LZ4_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                     throw e;
                 }
             case ZSTD:
                 try {
-                    return new ZstdHadoopStreams().createInputStream( stream );
+                    return ZSTD_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                     throw e;
