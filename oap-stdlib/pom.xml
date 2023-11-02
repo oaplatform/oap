@@ -178,6 +178,11 @@
             <version>${oap.deps.aircompressor.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.github.luben</groupId>
+            <artifactId>zstd-jni</artifactId>
+            <version>${oap.deps.luben-zstd-jni.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
             <version>${oap.deps.guava-retrying.version}</version>

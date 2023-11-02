@@ -96,6 +96,7 @@
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
         <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
         <oap.deps.aircompressor.version>0.25</oap.deps.aircompressor.version>
+        <oap.deps.luben-zstd-jni.version>1.5.5-7</oap.deps.luben-zstd-jni.version>
         <oap.deps.fst.version>3.0.4-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
