@@ -27,6 +27,10 @@ package oap.reflect;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.system.Env;
+import oap.testng.Fixture;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import oap.util.BitSet;
 import oap.util.LinkedHashMaps;
 import org.testng.annotations.Test;
@@ -41,7 +45,11 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CoercionsTest {
+public class CoercionsTest extends Fixtures {
+    public CoercionsTest() {
+        fixture( TestDirectoryFixture.FIXTURE.withDeployTestData( getClass() ) );
+    }
+
     @Test
     public void cast() {
         var coercions = Coercions.basic().withIdentity();
@@ -80,6 +88,13 @@ public class CoercionsTest {
     @Test
     public void testCastFunctionString() {
         assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "classpath(/oap/reflect/CoercionsTest/test.yaml)" ) ).isEqualTo( "a: b" );
+    }
+
+    @Test
+    public void testCastFunctionPathWithEnv() {
+        Env.set( "TEST_ENV", TestDirectoryFixture.testDirectory().toString() );
+
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "path(${ENV.TEST_ENV}/test.yaml)" ) ).isEqualTo( "a: b" );
     }
 
     @Test

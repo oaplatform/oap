@@ -36,6 +36,7 @@ import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringSubstitutor;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;
@@ -77,8 +78,8 @@ public final class Coercions {
 
     static {
         addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
-                ? java.nio.file.Files.readString( Path.of( path ), UTF_8 )
-                : Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( path ) ) ),
+                ? java.nio.file.Files.readString( Path.of( renderPathTemplate( path ) ), UTF_8 )
+                : Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( renderPathTemplate( path ) ) ) ),
             "path" );
         addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
                 ? IOUtils.toString( new URL( path ), UTF_8 )
@@ -87,8 +88,8 @@ public final class Coercions {
         addFunction( Try.biMap( ( cp, reflection ) -> {
                 URL url = Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp );
                 return reflection.assignableTo( String.class )
-                        ? IOUtils.toString( url, UTF_8 )
-                        : Binder.Format.of( cp, false ).binder.unmarshal( reflection, url );
+                    ? IOUtils.toString( url, UTF_8 )
+                    : Binder.Format.of( cp, false ).binder.unmarshal( reflection, url );
             } ),
             "classpath" );
         addFunction( Try.biMap( ( str, reflection ) -> str ),
@@ -150,6 +151,19 @@ public final class Coercions {
         convertors.put( Pattern.class, new PatternConvertor() );
         convertors.put( BitSet.class, new BitSetConvertor() );
         convertors.put( Class.class, Try.map( value -> Class.forName( ( String ) value ) ) );
+    }
+
+    private static String renderPathTemplate( String path ) {
+        return new StringSubstitutor( key -> {
+            String v = System.getProperty( key );
+            if( v == null ) {
+                v = System.getenv( key );
+            }
+            if( v == null ) {
+                v = key;
+            }
+            return v;
+        }, "${ENV.", "}", '\\' ).replace( path );
     }
 
     private List<Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>>> coersions = Lists.empty();
