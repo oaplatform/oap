@@ -62,9 +62,9 @@
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
 
-        <oap.deps.hadoop.version>3.3.1</oap.deps.hadoop.version>
+        <oap.deps.hadoop.version>3.3.6</oap.deps.hadoop.version>
         <oap.deps.aws-java-sdk-bundle.version>1.12.543</oap.deps.aws-java-sdk-bundle.version>
-        <oap.deps.testcontainers.version>1.19.0</oap.deps.testcontainers.version>
+        <oap.deps.testcontainers.version>1.19.1</oap.deps.testcontainers.version>
 
         <oap.deps.joda.version>2.12.5</oap.deps.joda.version>
 
@@ -76,7 +76,7 @@
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.3.0</oap.deps.bucket4j.version>
-        <oap.deps.zstd-jni.version>1.5.5-5</oap.deps.zstd-jni.version>
+        <oap.deps.zstd-jni.version>1.5.5-7</oap.deps.zstd-jni.version>
         <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
         for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type
         and in later versions it is left unchanged so exception will arise.
@@ -115,7 +115,7 @@
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
-        <oap.deps.undertow.version>2.3.7.Final</oap.deps.undertow.version>
+        <oap.deps.undertow.version>2.3.10.Final</oap.deps.undertow.version>
         <oap.deps.affinity>3.23.3</oap.deps.affinity>
     </properties>
 </project>
