@@ -65,7 +65,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     @SuppressWarnings( "unchecked" )
     public <T> T getProperty( String name ) {
-        return ( T ) properties.get( name );
+        return ( T ) properties.get( prefix + name );
     }
 
     public Self definePort( String property ) throws UncheckedIOException {
