@@ -28,7 +28,6 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.system.Env;
-import oap.testng.Fixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.BitSet;
