@@ -2,8 +2,10 @@ package oap.hadoop;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Throwables;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 
 import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
@@ -22,7 +24,7 @@ public class FileSystem {
 
     @Nullable
     public InputStream getInputStream( Path path ) throws UncheckedIOException {
-        log.trace( "getInputStream {}", path );
+        log.trace( "getting InputStream {}...", path );
         try {
             org.apache.hadoop.fs.FileSystem fileSystem = path.getFileSystem( configuration );
             return fileSystem.open( path );
@@ -35,10 +37,9 @@ public class FileSystem {
     }
 
     public OutputStream getOutputStream( Path path, boolean overwrite ) throws UncheckedIOException {
-        log.trace( "getOutputStream {} overwrite {}", path, overwrite );
+        log.trace( "getting OutputStream {}, overwrite {}...", path, overwrite );
         try {
             org.apache.hadoop.fs.FileSystem fileSystem = path.getFileSystem( configuration );
-
             return fileSystem.create( path, overwrite );
         } catch( IOException e ) {
             throw Throwables.propagate( e );
@@ -46,10 +47,9 @@ public class FileSystem {
     }
 
     public boolean exists( Path path ) throws UncheckedIOException {
-        log.trace( "exists {}", path );
+        log.trace( "checking existence {}...", path );
         try {
             org.apache.hadoop.fs.FileSystem fileSystem = path.getFileSystem( configuration );
-
             return fileSystem.exists( path );
         } catch( IOException e ) {
             throw Throwables.propagate( e );
@@ -65,8 +65,7 @@ public class FileSystem {
     }
 
     public void copy( Path src, Path dst, boolean overwrite ) throws UncheckedIOException {
-        log.trace( "copy src {} dst {} overwrite {}", src, dst, overwrite );
-
+        log.trace( "copying {} -> {} overwrite {}...", src, dst, overwrite );
         try {
             FileUtil.copy( src.getFileSystem( configuration ), src, dst.getFileSystem( configuration ), dst, false, overwrite, configuration );
         } catch( IOException e ) {
@@ -75,10 +74,9 @@ public class FileSystem {
     }
 
     public void delete( Path path ) throws UncheckedIOException {
-        log.trace( "delete {}", path );
+        log.trace( "deleting {}...", path );
         try {
             org.apache.hadoop.fs.FileSystem fileSystem = path.getFileSystem( configuration );
-
             fileSystem.delete( path, true );
         } catch( IOException e ) {
             throw Throwables.propagate( e );
@@ -86,8 +84,18 @@ public class FileSystem {
     }
 
     public void move( Path src, Path dst, boolean overwrite ) throws UncheckedIOException {
-        log.trace( "move src {} dst {} overwrite {}", src, dst, overwrite );
+        log.trace( "moving {} -> {}, overwrite {}...", src, dst, overwrite );
         copy( src, dst, overwrite );
         delete( src );
+    }
+
+    public FileStatus[] list( Path path, PathFilter filter ) throws UncheckedIOException {
+        log.trace( "listing src {}...", path );
+        try {
+            org.apache.hadoop.fs.FileSystem fileSystem = path.getFileSystem( configuration );
+            return fileSystem.listStatus( path, filter );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 }

@@ -170,12 +170,10 @@ public class Kernel implements Closeable, AutoCloseable {
             }
             this.modules.add( new ModuleWithLocation( module, moduleConfiguration ) );
         }
-        log.debug( "modules = {}, profiles = {}", Sets.map( this.modules, m -> m.module.name ), profiles );
-        log.trace( "modules configs = {}", this.modules );
+        log.debug( "init modules: {} with profiles: {}, from main: {}", Sets.map( this.modules, m -> m.module.name ), profiles, config.boot.main );
 
         checkForUnknownServices( config.services );
 
-        log.debug( "init modules from main: {}", config.boot.main );
         var map = ModuleHelper.init( this.modules, this.profiles, config.boot.main, this );
 
         var servicesMap = instantiateServices( map );
