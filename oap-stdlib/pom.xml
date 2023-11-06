@@ -55,11 +55,6 @@
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>${oap.deps.apache.compress.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${oap.deps.apache.lang.version}</version>
         </dependency>
@@ -178,9 +173,14 @@
             <version>${oap.deps.assertj.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-            <version>${oap.deps.lz4.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor</artifactId>
+            <version>${oap.deps.aircompressor.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.luben</groupId>
+            <artifactId>zstd-jni</artifactId>
+            <version>${oap.deps.luben-zstd-jni.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.rholder</groupId>
@@ -446,11 +446,6 @@
                     <artifactId>jackson-annotations</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.github.luben</groupId>
-            <artifactId>zstd-jni</artifactId>
-            <version>${oap.deps.zstd-jni.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jol</groupId>

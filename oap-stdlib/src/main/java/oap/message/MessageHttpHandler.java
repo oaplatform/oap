@@ -117,11 +117,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     }
 
     public void preStart() {
-        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}'",
+        log.info( "controlStatePath '{}' listeners {} hashTtl {} clientHashCacheSize {} http context '{}' port {}",
             controlStatePath, Lists.map( listeners, MessageListener::getClass ), Dates.durationToString( hashTtl ),
-            clientHashCacheSize, context );
-
-        log.info( "custom status = {}", MessageProtocol.printMapping() );
+            clientHashCacheSize, context, port );
 
         hashes = new MessageHashStorage( clientHashCacheSize );
         Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
@@ -140,15 +138,19 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         }
 
         for( var listener : listeners ) {
+            log.info( "Listener type {} info {}", listener.getId(), listener.getInfo() );
+
             var d = this.map.put( listener.getId(), listener );
-            if( d != null )
-                throw new IllegalArgumentException( "duplicate listener [" + listener.getId() + ":" + listener.getInfo()
-                        + ", " + d.getId() + ":" + d.getInfo() + "]" );
+            if( d != null ) {
+                throw new IllegalArgumentException( "duplicate [" + listener.getInfo() + ", " + d.getInfo() + "]" );
+            }
         }
     }
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        log.trace( "new message {}", exchange );
+
         try( var in = new DataInputStream( exchange.getInputStream() ) ) {
             InetSocketAddress peerAddress = ( InetSocketAddress ) exchange.exchange.getConnection().getPeerAddress();
             var hostName = peerAddress.getHostName();
@@ -156,53 +158,61 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             String clientHostPort = hostName + ":" + port;
 
             var messageType = in.readByte();
+            log.trace( "new message from {}", clientHostPort );
 
             var messageVersion = in.readShort();
             var clientId = in.readLong();
-            var md5 = Hex.encodeHexString( in.readNBytes( MD5_LENGTH ) ).intern();
+            final var md5 = Hex.encodeHexString( in.readNBytes( MD5_LENGTH ) ).intern();
 
             in.skipBytes( 8 ); // reserved
             var size = in.readInt();
 
-            log.trace( "new message from [{}], type {}, version {}, clientId {}, md5 {}, size '{}'",
+            log.trace( "[{}] type {} version {} clientId {} md5 {} size '{}'",
                 clientHostPort, messageTypeToString( messageType ), messageVersion, clientId, md5, FileUtils.byteCountToDisplaySize( size ) );
 
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized( md5 ) {
-                if ( hashes.contains( messageType, md5 ) ) {
+                if( !hashes.contains( messageType, md5 ) ) {
+                    var listener = map.get( messageType );
+                    if( listener == null ) {
+                        log.error( "[{}] Unknown message type {}", clientHostPort, messageType );
+                        in.skipNBytes( size );
+                        writeResponse( exchange, STATUS_UNKNOWN_MESSAGE_TYPE, clientId, md5 );
+                    } else {
+                        var data = in.readNBytes( size );
+                        short status;
+                        try {
+                            log.trace( "handler {}...", listener.getId() );
+                            status = listener.run( messageVersion, hostName, size, data, md5 );
+                            log.trace( "handler {}... Done. Status {}", listener.getId(), status );
+
+                            writeResponse( exchange, status, clientId, md5 );
+                            if( status == STATUS_OK ) {
+                                hashes.add( messageType, clientId, md5 );
+                                Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
+                            } else {
+                                log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
+                                    clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
+                            }
+                        } catch( Throwable e ) {
+                            log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
+                            Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
+                            writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
+                        }
+                    }
+                } else {
                     log.warn( "[{}/{}] buffer ({}, {}) already written.)", clientHostPort, clientId, md5, size );
                     Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_ALREADY_WRITTEN ) ) ).increment();
 
                     in.skipNBytes( size );
 
                     writeResponse( exchange, STATUS_ALREADY_WRITTEN, clientId, md5 );
-                    return;
-                }
-                var listener = map.get( messageType );
-                if( listener == null ) {
-                    log.error( "[{}] Unknown message type {}", clientHostPort, messageType );
-                    in.skipNBytes( size );
-                    writeResponse( exchange, STATUS_UNKNOWN_MESSAGE_TYPE, clientId, md5 );
-                    return;
-                }
-                var data = in.readNBytes( size );
-                short status;
-                try {
-                    status = listener.run( messageVersion, hostName, size, data, md5 );
-                    if( status == STATUS_OK ) {
-                        hashes.add( messageType, clientId, md5 );
-                    } else {
-                        log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
-                                clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
-                    }
-                    Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
-                    writeResponse( exchange, status, clientId, md5 );
-                } catch( Exception e ) {
-                    log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
-                    Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
-                    writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
                 }
             }
+        } catch( Throwable e ) {
+            log.error( e.getMessage(), e );
+            log.error( "exchange {}: {}", exchange, e.getMessage() );
+            throw e;
         }
     }
 

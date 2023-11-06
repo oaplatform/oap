@@ -24,7 +24,14 @@
 
 package oap.reflect;
 
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.system.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import oap.util.BitSet;
+import oap.util.LinkedHashMaps;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.RetentionPolicy;
@@ -32,11 +39,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CoercionsTest {
+public class CoercionsTest extends Fixtures {
+    public CoercionsTest() {
+        fixture( TestDirectoryFixture.FIXTURE.withDeployTestData( getClass() ) );
+    }
+
     @Test
     public void cast() {
         var coercions = Coercions.basic().withIdentity();
@@ -60,9 +72,28 @@ public class CoercionsTest {
     }
 
     @Test
+    public void testJsonFunction() {
+        var coercions = Coercions.basic().withIdentity();
+        assertThat( coercions.cast( Reflect.reflect( new TypeRef<Map<String, TestConfiguration>>() {} ), "json({\"k\":{\"key1\":\"1\",\"key2\":\"2\"}})" ) )
+            .isEqualTo( LinkedHashMaps.of( "k", new TestConfiguration( "1", "2" ) ) );
+    }
+
+    @Test
     public void testCastOptional() {
         var coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( new TypeRef<Optional<String>>() {} ), "va" ) ).isEqualTo( Optional.of( "va" ) );
+    }
+
+    @Test
+    public void testCastFunctionString() {
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "classpath(/oap/reflect/CoercionsTest/test.yaml)" ) ).isEqualTo( "a: b" );
+    }
+
+    @Test
+    public void testCastFunctionPathWithEnv() {
+        Env.set( "TEST_ENV", TestDirectoryFixture.testDirectory().toString() );
+
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "path(${ENV.TEST_ENV}/test.yaml)" ) ).isEqualTo( "a: b" );
     }
 
     @Test
@@ -76,4 +107,11 @@ public class CoercionsTest {
             .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
     }
 
+    @ToString
+    @AllArgsConstructor
+    @EqualsAndHashCode
+    public static class TestConfiguration {
+        public final String key1;
+        public final String key2;
+    }
 }

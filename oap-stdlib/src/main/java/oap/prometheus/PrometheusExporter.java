@@ -27,58 +27,26 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.CollectorRegistry;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
-import oap.util.Pair;
 import org.apache.http.entity.ContentType;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Slf4j
-@EqualsAndHashCode
 public class PrometheusExporter implements HttpHandler {
-    private static final Map<String, PrometheusExporter> registeredInstances = new ConcurrentHashMap<>();
-    public PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+    public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
 
     static {
-        CollectorRegistry.defaultRegistry.clear();
+        Metrics.addRegistry( prometheusRegistry );
     }
 
     public PrometheusExporter( NioHttpServer server ) {
         server.bind( "/metrics", this );
-        registeredInstances.put( UUID.randomUUID().toString(), this );
-        Metrics.addRegistry( prometheusRegistry );
     }
 
     public PrometheusExporter( NioHttpServer server, int port ) {
-        this( server, port, UUID.randomUUID().toString() );
-    }
-
-    public PrometheusExporter( NioHttpServer server, int port, String uuid ) {
         server.bind( "/metrics", this, port );
-        registeredInstances.put( uuid, this );
-        Metrics.addRegistry( prometheusRegistry );
-    }
-
-    public static void removeInstance( String uuid ) {
-        registeredInstances.remove( uuid );
-    }
-
-    public static Pair<String, PrometheusExporter> getInstance( Set<String> usedUuid ) {
-        var entry = registeredInstances.entrySet()
-                .stream()
-                .filter( e -> !usedUuid.contains( e.getKey() ) )
-                .findFirst()
-                .orElse( null );
-        if ( entry != null ) return Pair.__( entry.getKey(), entry.getValue() );
-        return Pair.__( null, null );
     }
 
     @Override

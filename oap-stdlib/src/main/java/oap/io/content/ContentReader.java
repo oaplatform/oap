@@ -47,40 +47,50 @@ import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public interface ContentReader<R> {
+@SuppressWarnings( "checkstyle:AbstractClassName" )
+public abstract class ContentReader<R> {
+    public final boolean closeable;
 
-    static <R> R read( String data, ContentReader<R> reader ) {
+    protected ContentReader( boolean closeable ) {
+        this.closeable = closeable;
+    }
+
+    protected ContentReader() {
+        this( false );
+    }
+
+    public static <R> R read( String data, ContentReader<R> reader ) {
         return reader.read( data.getBytes( UTF_8 ) );
     }
 
-    static <R> R read( byte[] bytes, ContentReader<R> reader ) {
+    public static <R> R read( byte[] bytes, ContentReader<R> reader ) {
         return reader.read( bytes );
     }
 
-    static <R> R read( byte[] bytes, int offset, int length, ContentReader<R> reader ) {
+    public static <R> R read( byte[] bytes, int offset, int length, ContentReader<R> reader ) {
         return reader.read( new ByteArrayInputStream( bytes, offset, length ) );
     }
 
-    static <R> R read( InputStream is, ContentReader<R> reader ) {
+    public static <R> R read( InputStream is, ContentReader<R> reader ) {
         return reader.read( is );
     }
 
     @SneakyThrows
-    static <R> R read( URL url, ContentReader<R> reader ) {
+    public static <R> R read( URL url, ContentReader<R> reader ) {
         return read( new AutoCloseInputStream( url.openStream() ), reader );
     }
 
-    default R read( byte[] bytes ) {
+    public R read( byte[] bytes ) {
         return read( new ByteArrayInputStream( bytes ) );
     }
 
     @SneakyThrows
-    default R read( InputStream is ) {
+    public R read( InputStream is ) {
         return read( ByteStreams.toByteArray( is ) );
     }
 
-    default <T> ContentReader<T> andThen( Function<R, T> then ) {
-        return new ContentReader<T>() {
+    public <T> ContentReader<T> andThen( Function<R, T> then ) {
+        return new ContentReader<T>( closeable ) {
             @Override
             public T read( byte[] bytes ) {
                 return then.apply( ContentReader.this.read( bytes ) );
@@ -94,7 +104,7 @@ public interface ContentReader<R> {
     }
 
 
-    static ContentReader<String> ofString() {
+    public static ContentReader<String> ofString() {
         return new ContentReader<>() {
             @Override
             public String read( byte[] bytes ) {
@@ -103,11 +113,11 @@ public interface ContentReader<R> {
         };
     }
 
-    static ContentReader<List<String>> ofLines() {
+    public static ContentReader<List<String>> ofLines() {
         return ofLines( new ArrayList<>() );
     }
 
-    static ContentReader<List<String>> ofLines( List<String> lines ) {
+    public static ContentReader<List<String>> ofLines( List<String> lines ) {
         return new ContentReader<>() {
             @Override
             public List<String> read( InputStream is ) {
@@ -116,8 +126,8 @@ public interface ContentReader<R> {
         };
     }
 
-    static ContentReader<Stream<String>> ofLinesStream() {
-        return new ContentReader<>() {
+    public static ContentReader<Stream<String>> ofLinesStream() {
+        return new ContentReader<>( true ) {
             @Override
             public Stream<String> read( InputStream is ) {
                 return IoStreams.lines( is, true );
@@ -125,7 +135,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static ContentReader<Try.ThrowingConsumer<String>> ofLinesConsumer( Try.ThrowingConsumer<String> consumer ) {
+    public static ContentReader<Try.ThrowingConsumer<String>> ofLinesConsumer( Try.ThrowingConsumer<String> consumer ) {
         return new ContentReader<>() {
             @Override
             public Try.ThrowingConsumer<String> read( InputStream is ) {
@@ -136,16 +146,16 @@ public interface ContentReader<R> {
         };
     }
 
-    static ContentReader<InputStream> ofInputStream() {
-        return new ContentReader<>() {
+    public static ContentReader<InputStream> ofInputStream() {
+        return new ContentReader<>( true ) {
             @Override
             public InputStream read( InputStream is ) {
-                return is;
+                return new AutoCloseInputStream( is );
             }
         };
     }
 
-    static ContentReader<byte[]> ofBytes() {
+    public static ContentReader<byte[]> ofBytes() {
         return new ContentReader<>() {
             @Override
             public byte[] read( byte[] bytes ) {
@@ -154,8 +164,8 @@ public interface ContentReader<R> {
         };
     }
 
-    static ContentReader<Try.ThrowingIntConsumer> ofBytes( byte[] buffer, Try.ThrowingIntConsumer consumer ) {
-        return new ContentReader<>() {
+    public static ContentReader<Try.ThrowingIntConsumer> ofBytes( byte[] buffer, Try.ThrowingIntConsumer consumer ) {
+        return new ContentReader<>( true ) {
             @Override
             public Try.ThrowingIntConsumer read( InputStream inputStream ) {
                 try {
@@ -173,7 +183,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofObject() {
+    public static <R> ContentReader<R> ofObject() {
         return new ContentReader<>() {
             @Override
             @SuppressWarnings( "unchecked" )
@@ -186,11 +196,11 @@ public interface ContentReader<R> {
         };
     }
 
-    static ContentReader<Properties> ofProperties() {
+    public static ContentReader<Properties> ofProperties() {
         return ofProperties( new Properties() );
     }
 
-    static ContentReader<Properties> ofProperties( Properties properties ) {
+    public static ContentReader<Properties> ofProperties( Properties properties ) {
         return new ContentReader<>() {
             @SneakyThrows
             @Override
@@ -201,7 +211,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofJson( Class<R> clazz ) {
+    public static <R> ContentReader<R> ofJson( Class<R> clazz ) {
         return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
@@ -210,7 +220,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofJson( TypeRef<R> typeRef ) {
+    public static <R> ContentReader<R> ofJson( TypeRef<R> typeRef ) {
         return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
@@ -219,7 +229,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofYaml( Class<R> clazz ) {
+    public static <R> ContentReader<R> ofYaml( Class<R> clazz ) {
         return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
@@ -228,7 +238,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofYaml( TypeRef<R> typeRef ) {
+    public static <R> ContentReader<R> ofYaml( TypeRef<R> typeRef ) {
         return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
@@ -237,7 +247,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofHocon( Class<R> clazz ) {
+    public static <R> ContentReader<R> ofHocon( Class<R> clazz ) {
         return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
@@ -246,7 +256,7 @@ public interface ContentReader<R> {
         };
     }
 
-    static <R> ContentReader<R> ofHocon( TypeRef<R> typeRef ) {
+    public static <R> ContentReader<R> ofHocon( TypeRef<R> typeRef ) {
         return new ContentReader<>() {
             @Override
             public R read( InputStream is ) {
@@ -254,5 +264,4 @@ public interface ContentReader<R> {
             }
         };
     }
-
 }

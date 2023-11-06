@@ -1,6 +1,8 @@
-// Generated from TemplateGrammar.g4 by ANTLR 4.13.0
+// Generated from java-escape by ANTLR 4.11.1
 
 package oap.template;
+
+import oap.template.tree.*;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -14,16 +16,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link TemplateGrammar}.
  */
 public interface TemplateGrammarListener extends ParseTreeListener {
-	/**
-	 * Enter a parse tree produced by {@link TemplateGrammar#template}.
-	 * @param ctx the parse tree
-	 */
-	void enterTemplate(TemplateGrammar.TemplateContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link TemplateGrammar#template}.
-	 * @param ctx the parse tree
-	 */
-	void exitTemplate(TemplateGrammar.TemplateContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammar#elements}.
 	 * @param ctx the parse tree

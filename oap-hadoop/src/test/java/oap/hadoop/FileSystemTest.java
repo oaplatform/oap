@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileSystemTest extends Fixtures {
@@ -43,7 +44,7 @@ public class FileSystemTest extends Fixtures {
         assertThat( fileSystem.exists( s3File ) ).isFalse();
         fileSystem.copy( inFile, s3File, false );
         assertThat( fileSystem.exists( s3File ) ).isTrue();
-        assertThat( s3MockFixture.readFile( "test-bucket", "folder/file.txt" ) ).isEqualTo( "txt" );
+        assertThat( s3MockFixture.readFile( "test-bucket", "folder/file.txt", ofString() ) ).isEqualTo( "txt" );
 
         fileSystem.copy( s3File, outFile, false );
 
