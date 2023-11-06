@@ -100,7 +100,6 @@ public class JsonSchema {
     private Object parseWithTemplate( String schema, SchemaStorage storage ) {
         var obj = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, schema );
         resolveTemplates( obj, storage );
-        log.trace( "schema = {}", Binder.json.marshal( obj ) );
         return obj;
     }
 
