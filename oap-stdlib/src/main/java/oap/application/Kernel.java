@@ -156,7 +156,7 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public void start( ApplicationConfiguration config ) throws ApplicationException {
-        log.debug( "initializing application kernel  {} with config {}", name, config );
+        log.debug( "initializing application kernel: {} with config boot: {}", name, config.boot );
 
         this.profiles.addAll( config.getProfiles() );
 
