@@ -451,7 +451,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     private boolean isGlobalIoRetryTimeout( long now ) {
-        return globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
+        return ioExceptionStartRetryTimeout > 0 && globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
     }
 
     private long currentPeriod( long time ) {
