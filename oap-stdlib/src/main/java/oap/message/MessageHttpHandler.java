@@ -185,19 +185,20 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                             log.trace( "handler {}...", listener.getId() );
                             status = listener.run( messageVersion, hostName, size, data, md5 );
                             log.trace( "handler {}... Done. Status {}", listener.getId(), status );
-
-                            writeResponse( exchange, status, clientId, md5 );
-                            if( status == STATUS_OK ) {
-                                hashes.add( messageType, clientId, md5 );
-                                Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
-                            } else {
-                                log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
-                                    clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
-                            }
                         } catch( Throwable e ) {
                             log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
                             Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
                             writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
+
+                            return;
+                        }
+                        writeResponse( exchange, status, clientId, md5 );
+                        if( status == STATUS_OK ) {
+                            hashes.add( messageType, clientId, md5 );
+                            Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
+                        } else {
+                            log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
+                                clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
                         }
                     }
                 } else {
