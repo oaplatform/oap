@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -18,7 +19,7 @@ public class OapHadoopConfiguration extends Configuration {
         super( false );
         this.fileSystemType = fileSystemType;
 
-        log.info( "hadoop filesystem {} conf {}", fileSystemType, configuration );
+        log.info( "hadoop filesystem {} conf {}", fileSystemType, new SafeConfiguration( configuration ).getSafeConfiguration() );
 
         Preconditions.checkArgument( !configuration.containsKey( "fs.defaultFS" ) );
 
@@ -35,6 +36,22 @@ public class OapHadoopConfiguration extends Configuration {
         set( "hadoop.tmp.dir", "/tmp" );
 
         log.info( "filesystem {} fs.defaultFS {}", fileSystemType.name(), this.get( "fs.defaultFS" ) );
+    }
+
+    private static class SafeConfiguration {
+        private Map<String, Object> configuration = new HashMap<>();
+
+        public SafeConfiguration( Map<String, Object> configuration ) {
+            configuration.forEach( ( k, v ) -> {
+                if ( k.equals( "fs.s3a.secret.key" ) || k.equals( "fs.s3a.access.key" ) ) {
+                    this.configuration.put( k, "******" );
+                } else this.configuration.put( k, v );
+            } );
+        }
+
+        public Map<String, Object> getSafeConfiguration() {
+            return configuration;
+        }
     }
 
     private Map<String, String> fixMap( Map<String, Object> configuration ) {
