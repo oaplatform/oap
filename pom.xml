@@ -104,11 +104,11 @@
         <oap.deps.disruptor.version>1.2.21</oap.deps.disruptor.version>
 
         <oap.deps.maven.plexus-utils.version>4.0.0</oap.deps.maven.plexus-utils.version>
-        <oap.deps.maven.plugin-build-helper.version>1.12</oap.deps.maven.plugin-build-helper.version>
-        <oap.deps.maven.plugin-api.version>3.9.3</oap.deps.maven.plugin-api.version>
+        <oap.deps.maven.plugin-build-helper.version>3.4.0</oap.deps.maven.plugin-build-helper.version>
+        <oap.deps.maven.plugin-api.version>3.9.5</oap.deps.maven.plugin-api.version>
         <oap.deps.maven.version>3.0-alpha-2</oap.deps.maven.version>
-        <oap.deps.maven.plugin-annotations.version>3.9.0</oap.deps.maven.plugin-annotations.version>
-        <oap.deps.maven.plugin-plugin.version>3.6.4</oap.deps.maven.plugin-plugin.version>
+        <oap.deps.maven.plugin-annotations.version>3.10.2</oap.deps.maven.plugin-annotations.version>
+        <oap.deps.maven.plugin-plugin.version>3.10.2</oap.deps.maven.plugin-plugin.version>
         <oap.deps.plugins.antlr4.version>4.13.0</oap.deps.plugins.antlr4.version>
 
         <oap.deps.s3mock.version>0.2.6</oap.deps.s3mock.version>
