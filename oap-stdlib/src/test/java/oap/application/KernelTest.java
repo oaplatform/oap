@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static oap.application.KernelTest.Enum.ONE;
 import static oap.application.KernelTest.Enum.TWO;
