@@ -129,8 +129,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
     }
 
     public <T> T newInstance( Map<String, Object> args, Set<String> ignoreCast ) {
-        for( Constructor constructor : constructors )
-            if( constructor.nameMatch( args ) ) return constructor.invoke( args, ignoreCast );
+        for( Constructor constructor : constructors ) {
+            if( constructor.nameMatch( args ) ) {
+                return constructor.invoke( args, ignoreCast );
+            }
+        }
 
         throw constructorNotFound( args );
     }

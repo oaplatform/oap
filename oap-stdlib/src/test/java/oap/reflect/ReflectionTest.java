@@ -45,6 +45,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SequencedCollection;
+import java.util.SequencedSet;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
@@ -164,6 +166,7 @@ public class ReflectionTest {
             .containsOnly(
                 StringAssocList.class, AssocList.class, LinkedHashSet.class, Set.class,
                 Collection.class, Iterable.class, HashSet.class, Cloneable.class,
+                SequencedCollection.class, SequencedSet.class,
                 Serializable.class, AbstractSet.class, AbstractCollection.class, Object.class );
     }
 

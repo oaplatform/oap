@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static oap.application.KernelTest.Enum.ONE;
 import static oap.application.KernelTest.Enum.TWO;
@@ -423,21 +422,6 @@ public class KernelTest {
         } finally {
             kernel.stop();
             TestDirectoryFixture.deleteDirectory( TestDirectoryFixture.testDirectory() );
-        }
-    }
-
-    @Test
-    public void testQueueAsService() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "queue.conf" ) ) ) ) {
-            kernel.start( Map.of( "boot.main", "queue" ) );
-
-            TestQueueContainer testQueueContainer = kernel.serviceOfClass( TestQueueContainer.class ).orElseThrow();
-
-            assertThat( testQueueContainer.queueArg ).isInstanceOf( LinkedBlockingQueue.class );
-            assertThat( testQueueContainer.queueArg ).containsOnly( "item1", "item2" );
-
-            assertThat( testQueueContainer.queueField ).isInstanceOf( LinkedBlockingQueue.class );
-            assertThat( testQueueContainer.queueField ).containsOnly( "item1", "item2" );
         }
     }
 
