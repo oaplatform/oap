@@ -224,7 +224,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>config</artifactId>
-            <version>${oap.deps.typesafe-config.version}</version>
+            <version>${oap.deps.config.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
