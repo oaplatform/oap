@@ -46,7 +46,7 @@ public class NioHttpServerTest extends Fixtures {
     public void testResponseHeaders() throws IOException {
         int port = fixture.portFor( getClass() );
 
-        try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.start();
 
             Client.Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
@@ -57,7 +57,7 @@ public class NioHttpServerTest extends Fixtures {
                 .containsKey( CONNECTION );
         }
 
-        try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.alwaysSetDate = false;
             httpServer.alwaysSetKeepAlive = false;
             httpServer.start();
@@ -77,11 +77,15 @@ public class NioHttpServerTest extends Fixtures {
         int testPort = fixture.portFor( getClass() + "test" );
         int testPort2 = fixture.portFor( getClass() + "test2" );
 
-        try( NioHttpServer httpServer = new NioHttpServer( port ) ) {
-            httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), testPort );
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+            httpServer.additionalHttpPorts.put( "test", testPort );
+            httpServer.additionalHttpPorts.put( "test2", testPort2 );
+
+            httpServer.bind( "/test", exchange -> exchange.responseOk( "test", Http.ContentType.TEXT_PLAIN ), "test" );
+            httpServer.bind( "/test2", exchange -> exchange.responseOk( "test2", Http.ContentType.TEXT_PLAIN ), "test2" );
+
             httpServer.start();
-            httpServer.bind( "/test2", exchange -> exchange.responseOk( "test2", Http.ContentType.TEXT_PLAIN ), testPort2 );
-            httpServer.bind( "/test3", exchange -> exchange.responseOk( "test3", Http.ContentType.TEXT_PLAIN ), testPort2 );
+            httpServer.bind( "/test3", exchange -> exchange.responseOk( "test3", Http.ContentType.TEXT_PLAIN ), "test2" );
 
             assertThat( Client.DEFAULT.get( "http://localhost:" + testPort + "/test" ).contentString() ).isEqualTo( "test" );
             assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test2" ).contentString() ).isEqualTo( "test2" );

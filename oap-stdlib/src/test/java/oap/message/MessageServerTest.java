@@ -76,7 +76,7 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", testPath( "controlStatePath.st" ), List.of( listener1, listener2 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -94,7 +94,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
             try( var client1 = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 );
@@ -140,7 +140,7 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -175,7 +175,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -207,7 +207,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.poolSize = 1;
@@ -240,7 +240,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -268,7 +268,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -300,7 +300,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -339,7 +339,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), hashTtl );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
 
@@ -391,7 +391,7 @@ public class MessageServerTest extends Fixtures {
             client.globalIoRetryTimeout = 100;
             client.start();
 
-            try( var server = new NioHttpServer( port );
+            try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
                  var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
                 server.bind( "/messages", messageHttpHandler );
@@ -415,7 +415,7 @@ public class MessageServerTest extends Fixtures {
 
             listener1.reset();
 
-            try( var server = new NioHttpServer( port );
+            try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
                  var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
                 server.bind( "/messages", messageHttpHandler );
@@ -446,7 +446,7 @@ public class MessageServerTest extends Fixtures {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1, listener2 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
@@ -514,7 +514,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
@@ -572,7 +572,7 @@ public class MessageServerTest extends Fixtures {
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( port );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 ) ) {
             client.retryTimeout = 100;

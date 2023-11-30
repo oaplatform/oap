@@ -45,7 +45,7 @@ public class PrometheusExporter implements HttpHandler {
         server.bind( "/metrics", this );
     }
 
-    public PrometheusExporter( NioHttpServer server, int port ) {
+    public PrometheusExporter( NioHttpServer server, String port ) {
         server.bind( "/metrics", this, port );
     }
 

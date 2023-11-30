@@ -62,15 +62,15 @@ public class Remote implements HttpHandler {
     private final Kernel kernel;
 
     public Remote( FST.SerializationMethod serialization, String context, Kernel kernel, NioHttpServer server ) {
-        this( serialization, context, kernel, server, -1 );
+        this( serialization, context, kernel, server, null );
     }
 
-    public Remote( FST.SerializationMethod serialization, String context, Kernel kernel, NioHttpServer server, int port ) {
+    public Remote( FST.SerializationMethod serialization, String context, Kernel kernel, NioHttpServer server, String port ) {
         this.serialization = serialization;
         this.context = context;
         this.kernel = kernel;
 
-        if( port > 0 ) {
+        if( port != null ) {
             server.bind( context, this, port );
         } else {
             server.bind( context, this );

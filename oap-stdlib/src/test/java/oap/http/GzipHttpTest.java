@@ -57,7 +57,7 @@ public class GzipHttpTest extends Fixtures {
 
     @BeforeMethod
     public void beforeMethod() {
-        server = new NioHttpServer( envFixture.portFor( getClass() ) );
+        server = new NioHttpServer( new NioHttpServer.DefaultPort( envFixture.portFor( getClass() ) ) );
     }
 
     @AfterMethod

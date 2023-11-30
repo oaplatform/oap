@@ -41,16 +41,16 @@ public class HealthHttpHandler implements HttpHandler {
     private final List<HealthDataProvider<?>> providers = new ArrayList<>();
     private final String secret;
     private final String prefix;
-    private final int port;
+    private final String port;
 
-    public HealthHttpHandler( NioHttpServer server, String prefix, int port, String secret ) {
+    public HealthHttpHandler( NioHttpServer server, String prefix, String port, String secret ) {
         this.secret = secret;
         this.prefix = prefix;
         this.port = port;
         server.bind( prefix, this, port );
     }
 
-    public HealthHttpHandler( NioHttpServer server, String prefix, int port ) {
+    public HealthHttpHandler( NioHttpServer server, String prefix, String port ) {
         this( server, prefix, port, null );
     }
 
