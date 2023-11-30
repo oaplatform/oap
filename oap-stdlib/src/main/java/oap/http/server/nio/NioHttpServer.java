@@ -95,6 +95,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public final List<Bandwidth> bandwidths = Lists.of( defaultLimit );
     public final DefaultPort defaultPort;
+    public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
 
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
@@ -123,9 +124,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
-        additionalHttpPorts.put( DEFAULT_HTTP_PORT, defaultPort.httpPort );
+        defaultPorts.put( DEFAULT_HTTP_PORT, defaultPort.httpPort );
         if( defaultPort.httpsPort > 0 ) {
-            additionalHttpPorts.put( DEFAULT_HTTPS_PORT, defaultPort.httpsPort );
+            defaultPorts.put( DEFAULT_HTTPS_PORT, defaultPort.httpsPort );
         }
 
         if( defaultPort.httpsPort > 0 ) {
@@ -163,9 +164,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public void start() {
         additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new PathHandler() ) );
-
-        additionalHttpPorts.put( DEFAULT_HTTP_PORT, defaultPort.httpPort );
-        additionalHttpPorts.put( DEFAULT_HTTPS_PORT, defaultPort.httpsPort );
 
         pathHandler.forEach( this::startNewPort );
         LocalBucketBuilder builder = Bucket.builder();
@@ -274,11 +272,14 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
-        if( !additionalHttpPorts.containsKey( portName ) ) {
+        if( !defaultPorts.containsKey( portName ) && !additionalHttpPorts.containsKey( portName ) ) {
             throw new IllegalArgumentException( "Unknown port " + portName );
         }
 
-        int port = additionalHttpPorts.get( portName );
+        int port = defaultPorts.getOrDefault( portName, -1 );
+        if( port <= 0 ) {
+            port = additionalHttpPorts.get( portName );
+        }
 
         log.debug( "binding '{}' on port: {}:{} ...", prefix, portName, port );
         io.undertow.server.HttpHandler httpHandler = exchange -> {
