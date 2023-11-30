@@ -27,12 +27,15 @@ package oap.http.server.nio;
 import oap.application.testng.KernelFixture;
 import oap.http.Client;
 import oap.http.Http;
+import oap.io.Resources;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.http.Http.Headers.CONNECTION;
@@ -102,7 +105,7 @@ public class NioHttpServerTest extends Fixtures {
      * keytool -genkey -alias ssl -keyalg RSA -keysize 2048 -dname "CN=localhost,OU=IT" -keystore master.jks -storepass 1234567 -keypass 1234567
      */
     @Test
-    public void testHttps() {
+    public void testHttps() throws URISyntaxException {
         TestDirectoryFixture.deployTestData( getClass() );
 
         var kernelFixture = new KernelFixture( urlOfTestResource( getClass(), "test-application.conf" ),
@@ -115,7 +118,7 @@ public class NioHttpServerTest extends Fixtures {
         int httpsPort = kernelFixture.portFor( "TEST_HTTPS_PORT" );
 
         try( Client client = Client
-            .custom( TestDirectoryFixture.testPath( "master.jks" ), "1234567", 10000, 10000 )
+            .custom( Paths.get(Resources.url( getClass(), "/oap/http/test_https.jks" ).get().toURI()), "1234567", 10000, 10000 )
             .build() ) {
 
             kernelFixture.beforeMethod();

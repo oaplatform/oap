@@ -392,22 +392,28 @@ public final class Coercions {
     private static class URLConvertor implements Function<Object, Object> {
         @Override
         public Object apply( Object value ) {
-            if( value instanceof URL ) return value;
-            else if( value instanceof String ) {
-                try {
-
-                    return new URL( ( String ) value );
-                } catch( MalformedURLException e ) {
-                    var url = getClass().getResource( ( String ) value );
-                    if( url != null ) return url;
-
+            return switch( value ) {
+                case URL url -> url;
+                case String str -> {
                     try {
-                        return Paths.get( ( String ) value ).toUri().toURL();
-                    } catch( MalformedURLException malformedURLException ) {
-                        throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                        yield new URL( str );
+                    } catch( MalformedURLException e ) {
+                        if( str.startsWith( "classpath(" ) ) {
+                            str = str.substring( 10, str.length() - 1 );
+                        }
+
+                        var url = getClass().getResource( str );
+                        if( url != null ) yield url;
+
+                        try {
+                            yield Paths.get( str ).toUri().toURL();
+                        } catch( MalformedURLException malformedURLException ) {
+                            throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                        }
                     }
                 }
-            } else throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                default -> throw new ReflectException( "cannot cast " + value + " to URL.class" );
+            };
         }
     }
 

@@ -61,8 +61,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -343,10 +342,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public static class DefaultPort {
         public final int httpPort;
         public final int httpsPort;
-        public final Path keyStore;
+        public final URL keyStore;
         public final String password;
 
-        public DefaultPort( int httpPort, int httpsPort, Path keyStore, String password ) {
+        public DefaultPort( int httpPort, int httpsPort, URL keyStore, String password ) {
             this.httpPort = httpPort;
             this.httpsPort = httpsPort;
             this.keyStore = keyStore;
@@ -359,7 +358,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     @SneakyThrows
-    private static KeyStore loadKeyStore( Path keyStoreLocation, String storePassword ) {
+    private static KeyStore loadKeyStore( URL keyStoreLocation, String storePassword ) {
         final KeyStore loadedKeystore;
         final String type = "JKS";
         try {
@@ -368,7 +367,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             log.error( "loadKeyStore KeyStore.getInstance({}) exception: {}", type, ex.toString() );
             throw ex;
         }
-        try( InputStream stream = Files.newInputStream( keyStoreLocation ) ) {
+        try( InputStream stream = keyStoreLocation.openStream() ) {
             loadedKeystore.load( stream, storePassword.toCharArray() );
             return loadedKeystore;
         } catch( NoSuchAlgorithmException | CertificateException | IOException ex ) {
@@ -397,7 +396,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     @SneakyThrows
-    private static KeyManager[] makeKeyManagers( Path keyStoreLocation, final String password ) {
+    private static KeyManager[] makeKeyManagers( URL keyStoreLocation, final String password ) {
         KeyStore keyStore = loadKeyStore( keyStoreLocation, password );
         KeyManager[] managers = getKeyManagers( keyStore, password );
         log.info( "makeKeyManagers({}, {}) created KeyManagers {}", keyStoreLocation, password.length(), managers );
