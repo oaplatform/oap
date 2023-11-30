@@ -130,7 +130,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
 
         if( defaultPort.httpsPort > 0 ) {
-            keyManagers = makeKeyManagers( defaultPort.jksLocation, defaultPort.password );
+            keyManagers = makeKeyManagers( defaultPort.keyStore, defaultPort.password );
         } else {
             keyManagers = null;
         }
@@ -343,13 +343,13 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public static class DefaultPort {
         public final int httpPort;
         public final int httpsPort;
-        public final Path jksLocation;
+        public final Path keyStore;
         public final String password;
 
-        public DefaultPort( int httpPort, int httpsPort, Path jksLocation, String password ) {
+        public DefaultPort( int httpPort, int httpsPort, Path keyStore, String password ) {
             this.httpPort = httpPort;
             this.httpsPort = httpsPort;
-            this.jksLocation = jksLocation;
+            this.keyStore = keyStore;
             this.password = password;
         }
 
@@ -359,7 +359,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     @SneakyThrows
-    private static KeyStore loadKeyStore( Path location, String storePassword ) {
+    private static KeyStore loadKeyStore( Path keyStoreLocation, String storePassword ) {
         final KeyStore loadedKeystore;
         final String type = "JKS";
         try {
@@ -368,17 +368,17 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             log.error( "loadKeyStore KeyStore.getInstance({}) exception: {}", type, ex.toString() );
             throw ex;
         }
-        try( InputStream stream = Files.newInputStream( location ) ) {
+        try( InputStream stream = Files.newInputStream( keyStoreLocation ) ) {
             loadedKeystore.load( stream, storePassword.toCharArray() );
             return loadedKeystore;
         } catch( NoSuchAlgorithmException | CertificateException | IOException ex ) {
-            log.error( "loadKeyStore KeyStore.load({}, {}) as {} exception: {}", location, storePassword.length(), type, ex.toString() );
+            log.error( "loadKeyStore KeyStore.load({}, {}) as {} exception: {}", keyStoreLocation, storePassword.length(), type, ex.toString() );
             throw ex;
         }
     }
 
     @SneakyThrows
-    private static KeyManager[] getKeyManagers( final KeyStore keyStore, final String storePassword ) {
+    private static KeyManager[] getKeyManagers( KeyStore keyStore, final String storePassword ) {
         final KeyManagerFactory keyManagerFactory;
         try {
             keyManagerFactory = KeyManagerFactory.getInstance( KeyManagerFactory.getDefaultAlgorithm() );
@@ -397,10 +397,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     @SneakyThrows
-    private static KeyManager[] makeKeyManagers( Path location, final String password ) {
-        KeyStore keyStore = loadKeyStore( location, password );
+    private static KeyManager[] makeKeyManagers( Path keyStoreLocation, final String password ) {
+        KeyStore keyStore = loadKeyStore( keyStoreLocation, password );
         KeyManager[] managers = getKeyManagers( keyStore, password );
-        log.info( "makeKeyManagers({}, {}) created KeyManagers {}", location, password.length(), managers );
+        log.info( "makeKeyManagers({}, {}) created KeyManagers {}", keyStoreLocation, password.length(), managers );
         return managers;
     }
 }
