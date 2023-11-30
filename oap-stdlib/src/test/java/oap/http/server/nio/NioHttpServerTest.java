@@ -118,7 +118,7 @@ public class NioHttpServerTest extends Fixtures {
         int httpsPort = kernelFixture.portFor( "TEST_HTTPS_PORT" );
 
         try( Client client = Client
-            .custom( Paths.get(Resources.url( getClass(), "/oap/http/test_https.jks" ).get().toURI()), "1234567", 10000, 10000 )
+            .custom( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get(), "1234567", 10000, 10000 )
             .build() ) {
 
             kernelFixture.beforeMethod();
