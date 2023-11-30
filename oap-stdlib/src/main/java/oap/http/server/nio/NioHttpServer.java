@@ -123,6 +123,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
+        additionalHttpPorts.put( DEFAULT_HTTP_PORT, defaultPort.httpPort );
+        if( defaultPort.httpsPort > 0 ) {
+            additionalHttpPorts.put( DEFAULT_HTTPS_PORT, defaultPort.httpsPort );
+        }
 
         if( defaultPort.httpsPort > 0 ) {
             keyManagers = makeKeyManagers( defaultPort.jksLocation, defaultPort.password );
@@ -304,7 +308,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public void bind( String prefix, HttpHandler handler ) {
         bind( prefix, handler, DEFAULT_HTTP_PORT );
-        bind( prefix, handler, DEFAULT_HTTPS_PORT );
+        if( defaultPort.httpsPort > 0 ) {
+            bind( prefix, handler, DEFAULT_HTTPS_PORT );
+        }
     }
 
     public void bind( String prefix, HttpHandler handler, String port ) {
