@@ -34,8 +34,6 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.http.Http.Headers.CONNECTION;
@@ -105,7 +103,7 @@ public class NioHttpServerTest extends Fixtures {
      * keytool -genkey -alias ssl -keyalg RSA -keysize 2048 -dname "CN=localhost,OU=IT" -keystore master.jks -storepass 1234567 -keypass 1234567
      */
     @Test
-    public void testHttps() throws URISyntaxException {
+    public void testHttps() {
         TestDirectoryFixture.deployTestData( getClass() );
 
         var kernelFixture = new KernelFixture( urlOfTestResource( getClass(), "test-application.conf" ),
