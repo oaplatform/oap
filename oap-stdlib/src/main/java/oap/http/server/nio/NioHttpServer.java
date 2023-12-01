@@ -124,11 +124,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
         defaultPorts.put( DEFAULT_HTTP_PORT, defaultPort.httpPort );
-        if( defaultPort.httpsPort > 0 ) {
+        if( isHttpsEnabled() ) {
             defaultPorts.put( DEFAULT_HTTPS_PORT, defaultPort.httpsPort );
         }
 
-        if( defaultPort.httpsPort > 0 ) {
+        if( isHttpsEnabled() ) {
             keyManagers = makeKeyManagers( defaultPort.keyStore, defaultPort.password );
         } else {
             keyManagers = null;
@@ -136,13 +136,17 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
 
         pathHandler.put( defaultPort.httpPort, new PathHandler() );
-        if( defaultPort.httpsPort > 0 ) {
+        if( isHttpsEnabled() ) {
             pathHandler.put( defaultPort.httpsPort, new PathHandler() );
         }
 
         contentEncodingRepository = new ContentEncodingRepository();
         contentEncodingRepository.addEncodingHandler( GZIP, new GzipEncodingProvider(), 100 );
         contentEncodingRepository.addEncodingHandler( DEFLATE, new DeflateEncodingProvider(), 50 );
+    }
+
+    private boolean isHttpsEnabled() {
+        return defaultPort.httpsPort > 0;
     }
 
     @ToString( exclude = { "server" } )
@@ -261,7 +265,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             bind( prefix, handler, compressionSupport, DEFAULT_HTTP_PORT );
         }
 
-        if( types.isEmpty() || types.contains( PortType.HTTPS ) ) {
+        if( isHttpsEnabled() && ( types.isEmpty() || types.contains( PortType.HTTPS ) ) ) {
             bind( prefix, handler, compressionSupport, DEFAULT_HTTPS_PORT );
         }
     }
@@ -308,7 +312,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public void bind( String prefix, HttpHandler handler ) {
         bind( prefix, handler, DEFAULT_HTTP_PORT );
-        if( defaultPort.httpsPort > 0 ) {
+        if( isHttpsEnabled() ) {
             bind( prefix, handler, DEFAULT_HTTPS_PORT );
         }
     }
