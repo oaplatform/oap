@@ -176,7 +176,7 @@ public class PnioHttpHandlerTest extends Fixtures {
                 .cpuAffinityFirstCpu( -1 )
                 .build();
         try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, this::errorResponse );
-             NioHttpServer httpServer = new NioHttpServer( port ) ) {
+             NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 

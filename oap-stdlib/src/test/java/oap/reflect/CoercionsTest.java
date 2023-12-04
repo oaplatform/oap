@@ -105,6 +105,8 @@ public class CoercionsTest extends Fixtures {
 
         assertThat( coercions.cast( Reflect.reflect( URL.class ), "/oap/reflect/CoercionsTest.class" ) )
             .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
+        assertThat( coercions.cast( Reflect.reflect( URL.class ), "classpath(/oap/reflect/CoercionsTest.class)" ) )
+            .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
     }
 
     @ToString
