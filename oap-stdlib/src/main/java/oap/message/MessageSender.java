@@ -410,7 +410,8 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
-        log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
+        if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
+            log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
             name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
