@@ -49,7 +49,6 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
 import static oap.http.Http.ContentType.TEXT_PLAIN;
 import static oap.http.Http.Headers.CONTENT_TYPE;
-import static oap.http.Http.StatusCode.BAD_REQUEST;
 import static oap.http.Http.StatusCode.NOT_FOUND;
 
 
@@ -99,10 +98,10 @@ public class Remote implements HttpHandler {
 
         Object service;
         if( !invocation.service.contains( "." ) ) {
-            log.trace( "Looking up service: {}", invocation.service );
+            log.trace( "Looking up service: {} in {}", invocation.service, kernel );
             var services = kernel.services( "*", invocation.service );
             if( services.size() > 1 ) {
-                log.error( "There are multiple services for service: {}", invocation.service );
+                log.error( "There are multiple services for service: {} in {}", invocation.service, kernel );
                 errorMetrics.increment();
                 exchange.setStatusCode( NOT_FOUND );
                 exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
@@ -115,69 +114,70 @@ public class Remote implements HttpHandler {
             service = kernel.service( invocation.service ).orElse( null );
         }
 
-        if( service != null ) {
-            try {
-                Result<Object, Throwable> result;
-                int status = HTTP_OK;
-                try {
-                    Object invokeResult = service.getClass()
-                        .getMethod( invocation.method, invocation.types() )
-                        .invoke( service, invocation.values() );
-                    result = Result.success( invokeResult );
-                } catch( NoSuchMethodException | IllegalAccessException e ) {
-                    result = processError( e, service, invocation );
-                    status = HTTP_NOT_FOUND;
-                } catch( InvocationTargetException e ) {
-                    result = processError( e, service, invocation );
-                    status = BAD_REQUEST;
-                }
-                exchange.setStatusCode( status );
-                exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
-
-                try( var outputStream = exchange.getOutputStream();
-                     var bos = new BufferedOutputStream( outputStream );
-                     var dos = new DataOutputStream( bos ) ) {
-                    dos.writeBoolean( result.isSuccess() );
-
-                    if( !result.isSuccess() ) {
-                        fst.writeObjectWithSize( dos, result.failureValue );
-                        errorMetrics.increment();
-                    } else if( result.successValue instanceof Stream<?> ) {
-                        dos.writeBoolean( true );
-
-                        ( ( Stream<?> ) result.successValue ).forEach( Try.consume( obj ->
-                            fst.writeObjectWithSize( dos, obj ) ) );
-                        dos.writeInt( 0 );
-                        successMetrics.increment();
-                    } else {
-                        dos.writeBoolean( false );
-                        fst.writeObjectWithSize( dos, result.successValue );
-                        errorMetrics.increment();
-                    }
-                }
-            } catch( Throwable e ) {
-                log.error( "invocation = {}", invocation, e );
-                errorMetrics.increment();
-            }
-        } else {
+        if ( service == null ) {
             errorMetrics.increment();
             exchange.setStatusCode( HTTP_NOT_FOUND );
             exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
-            exchange.setReasonPhrase( invocation.service + " not found among services of " + kernel + " all services: " + kernel.services.keySet() );
+            exchange.setReasonPhrase( invocation.service + " not found among " + kernel.services.keySet() + " in " + kernel );
         }
-    }
+        try {
+            Result<Object, Throwable> result;
+            int status = HTTP_OK;
+            try {
+                Object invokeResult = service.getClass()
+                    .getMethod( invocation.method, invocation.types() )
+                    .invoke( service, invocation.values() );
+                result = Result.success( invokeResult );
+            } catch( NoSuchMethodException | IllegalAccessException e ) {
+                // transport error - illegal setup
+                // wrapping into RIE to be handled at client's properly
+                log.error( "method [{}#{}] doesn't exist or access isn't allowed",
+                    service.getClass().getCanonicalName(), invocation.method, e );
+                log.debug( "method '{}' types {} parameters {}",
+                    invocation.method,
+                    invocation.types() != null ? List.of( invocation.types() ) : null,
+                    invocation.values() != null ? List.of( invocation.values() ) : null );
+                status = HTTP_NOT_FOUND;
+                result = Result.failure( new RemoteInvocationException( e ) );
+            } catch( InvocationTargetException e ) {
+                // application error
+                result = Result.failure( e.getCause() );
+                log.warn( "{} occurred on call to method [{}#{}]",
+                    e.getCause().getClass().getCanonicalName(), service.getClass().getCanonicalName(), invocation.method, e );
+                log.debug( "method '{}' types {} parameters {}",
+                    invocation.method,
+                    invocation.types() != null ? List.of( invocation.types() ) : null,
+                    invocation.values() != null ? List.of( invocation.values() ) : null );
+            }
+            exchange.setStatusCode( status );
+            exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
-    private Result<Object, Throwable> processError( ReflectiveOperationException e, Object service, RemoteInvocation invocation ) {
-        errorMetrics.increment();
-        // transport error - illegal setup
-        // wrapping into RIE to be handled at client's properly
-        log.error( "method [{}#{}] doesn't exist or access isn't allowed, or other error caught",
-            service.getClass().getCanonicalName(), invocation.method, e );
-        log.debug( "method '{}' types {} parameters {}",
-            invocation.method,
-            invocation.types() != null ? List.of( invocation.types() ) : null,
-            invocation.values() != null ? List.of( invocation.values() ) : null );
-        return Result.failure( e.getCause() );
+            try( var outputStream = exchange.getOutputStream();
+                 var bos = new BufferedOutputStream( outputStream );
+                 var dos = new DataOutputStream( bos ) ) {
+                dos.writeBoolean( result.isSuccess() );
+
+                if( !result.isSuccess() ) {
+                    fst.writeObjectWithSize( dos, result.failureValue );
+                } else if( result.successValue instanceof Stream<?> ) {
+                    dos.writeBoolean( true );
+
+                    ( ( Stream<?> ) result.successValue ).forEach( Try.consume( obj ->
+                        fst.writeObjectWithSize( dos, obj ) ) );
+                    dos.writeInt( 0 );
+                } else {
+                    dos.writeBoolean( false );
+                    fst.writeObjectWithSize( dos, result.successValue );
+                }
+            }
+            if( result.isSuccess() ) {
+                successMetrics.increment();
+            } else {
+                errorMetrics.increment();
+            }
+        } catch( Throwable e ) {
+            log.error( "invocation = {}", invocation, e );
+        }
     }
 
     @SneakyThrows

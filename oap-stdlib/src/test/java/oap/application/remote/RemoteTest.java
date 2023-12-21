@@ -59,7 +59,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            Optional<RemoteClient> service = kernel.<RemoteClient>service( "*.remote-client" );
+            Optional<RemoteClient> service = kernel.service( "*.remote-client" );
             assertThat( service ).isPresent();
             assertThat( service )
                 .get()
