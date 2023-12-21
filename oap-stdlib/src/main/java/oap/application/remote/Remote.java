@@ -172,7 +172,7 @@ public class Remote implements HttpHandler {
         // transport error - illegal setup
         // wrapping into RIE to be handled at client's properly
         log.error( "method [{}#{}] doesn't exist or access isn't allowed, or other error caught",
-            service.getClass().getCanonicalName(), invocation.method, e);
+            service.getClass().getCanonicalName(), invocation.method, e );
         log.debug( "method '{}' types {} parameters {}",
             invocation.method,
             invocation.types() != null ? List.of( invocation.types() ) : null,

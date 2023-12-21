@@ -165,7 +165,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 OkHttpClient requestClient = createClient();
 
                 Request request = new Request.Builder()
-                    .post(RequestBody.create( invocationB ))
+                    .post( RequestBody.create( invocationB ) )
                     .url( uri.toURL() )
                     .build();
                 call = requestClient.newCall( request );
@@ -210,7 +210,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
     @NotNull
     private Result<Object, Throwable> processResult( Method method, Response response ) throws TimeoutException, ExecutionException, IOException {
-        if (response.code() != HTTP_OK || response.body() == null) {
+        if ( response.code() != HTTP_OK || response.body() == null ) {
             throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
                 + " code " + response.code()
                 + " body '" + response.body().string() + "'" );
@@ -232,7 +232,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             var stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
             if( Boolean.TRUE.equals( stream ) ) {
                 var it = new ChainIterator( dis );
-                return Result.success( Stream.of( it ).onClose( Try.run(() -> {
+                return Result.success( Stream.of( it ).onClose( Try.run( () -> {
                     dis.close();
                     successMetrics.increment();
                 } ) ) );
@@ -248,8 +248,8 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         try ( var baos = new ByteArrayOutputStream();
               var dos = new DataOutputStream( baos ) ) {
 
-            dos.writeInt(RemoteInvocation.VERSION);
-            fst.writeObjectWithSize(dos, new RemoteInvocation(service, method.getName(), arguments));
+            dos.writeInt( RemoteInvocation.VERSION );
+            fst.writeObjectWithSize( dos, new RemoteInvocation( service, method.getName(), arguments ) );
             baos.flush();
 
             return baos.toByteArray();
@@ -266,7 +266,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         private Object obj;
         private boolean end;
 
-        public ChainIterator( DataInputStream dis ) {
+        ChainIterator( DataInputStream dis ) {
             this.dis = dis;
             obj = null;
             end = false;
@@ -283,7 +283,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 try {
                     var next = dis.readInt();
                     if( next > 0 ) {
-                        obj = fst.readObject(dis, next );
+                        obj = fst.readObject( dis, next );
                     } else {
                         end = true;
                         obj = null;
