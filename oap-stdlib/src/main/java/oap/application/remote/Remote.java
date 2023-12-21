@@ -119,6 +119,7 @@ public class Remote implements HttpHandler {
             exchange.setStatusCode( HTTP_NOT_FOUND );
             exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
             exchange.setReasonPhrase( invocation.service + " not found among " + kernel.services.keySet() + " in " + kernel );
+            return;
         }
         try {
             Result<Object, Throwable> result;
