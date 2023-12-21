@@ -162,34 +162,77 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
             Call call = null;
             try {
-                OkHttpClient requestClient = createClient();
-
                 Request request = new Request.Builder()
                     .post( RequestBody.create( invocationB ) )
                     .url( uri.toURL() )
                     .build();
-                call = requestClient.newCall( request );
+                call = createClient().newCall( request );
                 CallbackFuture callbackFuture = new CallbackFuture();
                 call.enqueue( callbackFuture );
 
                 Response response = callbackFuture.future.get( timeout, MILLISECONDS );
 
-                return processResult( method, response );
+                if( response.code() == HTTP_OK && response.body() != null ) {
+                    var inputStream = response.body().byteStream();
+                    var bis = new BufferedInputStream( inputStream );
+                    var dis = new DataInputStream( bis );
+                    var success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
+
+                    try {
+                        if( Boolean.FALSE.equals( success ) ) {
+                            try {
+                                var throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
+                                    () -> ( Throwable ) fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
+
+                                if( throwable instanceof RemoteInvocationException riex ) {
+                                    errorMetrics.increment();
+                                    throw riex;
+                                }
+
+                                var failure = Result.failure( throwable );
+                                errorMetrics.increment();
+                                return failure;
+                            } finally {
+                                dis.close();
+                            }
+                        } else {
+                            var stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
+                            if( Boolean.TRUE.equals( stream ) ) {
+                                var it = new ChainIterator( dis );
+
+                                return Result.success( Stream.of( it ).onClose( Try.run( () -> {
+                                    dis.close();
+                                    successMetrics.increment();
+                                } ) ) );
+                            } else {
+                                try {
+                                    var ret = Result.<Object, Throwable>success( fst.readObjectWithSize( dis ) );
+                                    successMetrics.increment();
+                                    return ret;
+                                } finally {
+                                    dis.close();
+                                }
+                            }
+                        }
+                    } catch( Exception e ) {
+                        dis.close();
+                        throw e;
+                    }
+                } else
+                    throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
+                        + " code " + response.code()
+                        + " body '" + response.body().string() + "'" );
             } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();
                 lastException = e;
+
                 if( call != null ) call.cancel();
-            } catch ( InterruptedException e ) {
-                Thread.currentThread().interrupt();
-                LogConsolidated.log( log, Level.WARN, s( 5 ), "error invoking " + this + "#" + method.getName() + ": " + e.getMessage(), null );
-                errorMetrics.increment();
-                lastException = e;
-                call.cancel();
             } catch( Exception e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "error invoking " + this + "#" + method.getName() + ": " + e.getMessage(), null );
                 errorMetrics.increment();
                 lastException = e;
+
                 if( call != null ) call.cancel();
             }
         }
@@ -208,52 +251,15 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         return requestClient;
     }
 
-    @NotNull
-    private Result<Object, Throwable> processResult( Method method, Response response ) throws TimeoutException, ExecutionException, IOException {
-        if ( response.code() != HTTP_OK || response.body() == null ) {
-            throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
-                + " code " + response.code()
-                + " body '" + response.body().string() + "'" );
-        }
-        var inputStream = response.body().byteStream();
-
-        try ( var bis = new BufferedInputStream( inputStream );
-              var dis = new DataInputStream( bis ) ) {
-            var success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
-            if( Boolean.FALSE.equals( success ) ) {
-                var throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
-                    () -> ( Throwable ) fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
-
-                if( throwable instanceof RemoteInvocationException riex ) throw riex;
-                var failure = Result.failure( throwable );
-                errorMetrics.increment();
-                return failure;
-            }
-            var stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
-            if( Boolean.TRUE.equals( stream ) ) {
-                var it = new ChainIterator( dis );
-                return Result.success( Stream.of( it ).onClose( Try.run( () -> {
-                    dis.close();
-                    successMetrics.increment();
-                } ) ) );
-            }
-            var ret = Result.<Object, Throwable>success( fst.readObjectWithSize( dis ) );
-            successMetrics.increment();
-            return ret;
-        }
-    }
-
     @SneakyThrows
     private byte[] getInvocation( Method method, List<RemoteInvocation.Argument> arguments ) {
-        try ( var baos = new ByteArrayOutputStream();
-              var dos = new DataOutputStream( baos ) ) {
+        var baos = new ByteArrayOutputStream();
+        var dos = new DataOutputStream( baos );
+        dos.writeInt( RemoteInvocation.VERSION );
+        fst.writeObjectWithSize( dos, new RemoteInvocation( service, method.getName(), arguments ) );
+        baos.close();
 
-            dos.writeInt( RemoteInvocation.VERSION );
-            fst.writeObjectWithSize( dos, new RemoteInvocation( service, method.getName(), arguments ) );
-            baos.flush();
-
-            return baos.toByteArray();
-        }
+        return baos.toByteArray();
     }
 
     @Override
