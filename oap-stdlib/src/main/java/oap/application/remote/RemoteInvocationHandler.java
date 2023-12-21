@@ -221,7 +221,8 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 } else
                     throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
                         + " code " + response.code()
-                        + " body '" + response.body().string() + "'" );
+                        + " body '" + response.body().string() + "'"
+                        + " message '" + response.message() + "'" );
             } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();
