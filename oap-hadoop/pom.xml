@@ -66,6 +66,19 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-core</artifactId>
+            <version>3.3.4</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.github.docker-java/docker-java-transport-zerodep -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-zerodep</artifactId>
+            <version>3.3.4</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>com.hierynomus</groupId>
