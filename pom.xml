@@ -126,6 +126,11 @@
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
         <oap.deps.undertow.version>2.3.10.Final</oap.deps.undertow.version>
-        <oap.deps.affinity>3.23.3</oap.deps.affinity>
+        <oap.deps.affinity.version>3.23.3</oap.deps.affinity.version>
+
+        <oap.deps.docker-java.version>3.3.4</oap.deps.docker-java.version>
+        <oap.deps.eddsa.version>0.2.0</oap.deps.eddsa.version>
+        <oap.deps.jsch.version>0.1.54</oap.deps.jsch.version>
+        <oap.deps.sshj.version>0.24.0</oap.deps.sshj.version>
     </properties>
 </project>
