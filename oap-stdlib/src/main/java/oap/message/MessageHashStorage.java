@@ -38,12 +38,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MessageHashStorage {
-    final ConcurrentMap<Byte, ClientInfo> map = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Byte, ClientInfo> map = new ConcurrentHashMap<>();
     private final int size;
 
     public MessageHashStorage( int size ) {

@@ -47,7 +47,7 @@ public class PrometheusExporterTest extends Fixtures {
     @Test
     public void server() throws IOException {
         var port = envFixture.portFor( "prometheus" );
-        try( var server = new NioHttpServer( port ) ) {
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             var exporter = new PrometheusExporter( server );
             server.start();
 

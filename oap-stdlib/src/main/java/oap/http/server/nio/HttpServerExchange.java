@@ -88,7 +88,7 @@ public class HttpServerExchange {
 
         if( values != null ) return values.getFirst();
 
-        return hsExchange.getDestinationAddress().getAddress().getHostAddress();
+        return hsExchange.getSourceAddress().getAddress().getHostAddress();
     }
 
     public static boolean gzipSupported( io.undertow.server.HttpServerExchange hsExchange ) {

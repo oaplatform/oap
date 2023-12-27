@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -46,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static oap.application.KernelTest.Enum.ONE;
 import static oap.application.KernelTest.Enum.TWO;
@@ -356,6 +356,23 @@ public class KernelTest {
     }
 
     @Test
+    public void testBeanFromJsonField() {
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testBeanFromJsonField.conf" ) );
+
+        Env.set( "VAR_SERVICE3FIELD", "{\"name\":\"from resource\",\"timeout\":1234}" );
+        ConfigFactory.invalidateCaches();
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot.main", "testBeanFromJsonField" ) );
+            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            assertThat( s3.name ).isEqualTo( "a" );
+            assertThat( s3.service3Field ).isNotNull();
+            assertThat( s3.service3Field.name ).isEqualTo( "from resource" );
+            assertThat( s3.service3Field.timeout ).isEqualTo( 1234 );
+        }
+    }
+
+    @Test
     public void testMapFromClasspath() {
         var kernel = new Kernel(
             List.of( urlOfTestResource( getClass(), "mapFromClasspath.conf" ) )
@@ -408,21 +425,6 @@ public class KernelTest {
         }
     }
 
-    @Test
-    public void testQueueAsService() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "queue.conf" ) ) ) ) {
-            kernel.start( Map.of( "boot.main", "queue" ) );
-
-            TestQueueContainer testQueueContainer = kernel.serviceOfClass( TestQueueContainer.class ).orElseThrow();
-
-            assertThat( testQueueContainer.queueArg ).isInstanceOf( LinkedBlockingQueue.class );
-            assertThat( testQueueContainer.queueArg ).containsOnly( "item1", "item2" );
-
-            assertThat( testQueueContainer.queueField ).isInstanceOf( LinkedBlockingQueue.class );
-            assertThat( testQueueContainer.queueField ).containsOnly( "item1", "item2" );
-        }
-    }
-
     public enum Enum {
         ONE, TWO
     }
@@ -449,6 +451,7 @@ public class KernelTest {
     @EqualsAndHashCode
     public static class Service3 {
         public Service3 service3;
+        public Service3 service3Field;
         public String name;
         public int timeout;
 

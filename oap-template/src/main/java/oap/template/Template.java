@@ -24,19 +24,16 @@
 
 package oap.template;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TOut render( TIn obj );
+    TA render( TIn obj, boolean eol );
 
-    void render( TIn obj, TOutMutable out );
+    default TA render( TIn obj ) {
+        return render( obj, false );
+    }
 
-    /**
-     * @see javax.annotation.Nullable
-     */
-    @Deprecated( forRemoval = true )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface Nullable {
+    TA render( TIn obj, boolean eol, TOutMutable out );
+
+    default TA render( TIn obj, TOutMutable out ) {
+        return render( obj, false, out );
     }
 }

@@ -39,7 +39,7 @@ import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.testng.Asserts.urlOfTestResource;
 
 public class HealthHttpHandlerTest extends Fixtures {
-    {
+    public HealthHttpHandlerTest() {
         fixture( new KernelFixture(
             urlOfTestResource( getClass(), "application.test.conf" ),
             Lists.concat(

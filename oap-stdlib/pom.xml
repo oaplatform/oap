@@ -55,11 +55,6 @@
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>${oap.deps.apache.compress.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${oap.deps.apache.lang.version}</version>
         </dependency>
@@ -67,6 +62,11 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${oap.deps.apache.io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${oap.deps.apache.commons.codec.version}</version>
         </dependency>
         <dependency>
             <groupId>joda-time</groupId>
@@ -178,9 +178,14 @@
             <version>${oap.deps.assertj.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-            <version>${oap.deps.lz4.version}</version>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor</artifactId>
+            <version>${oap.deps.aircompressor.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.luben</groupId>
+            <artifactId>zstd-jni</artifactId>
+            <version>${oap.deps.luben-zstd-jni.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.rholder</groupId>
@@ -219,7 +224,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>config</artifactId>
-            <version>${oap.deps.typesafe-config.version}</version>
+            <version>${oap.deps.config.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -401,7 +406,7 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>affinity</artifactId>
-            <version>${oap.deps.affinity}</version>
+            <version>${oap.deps.affinity.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mock-server</groupId>
@@ -446,11 +451,6 @@
                     <artifactId>jackson-annotations</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.github.luben</groupId>
-            <artifactId>zstd-jni</artifactId>
-            <version>${oap.deps.zstd-jni.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jol</groupId>

@@ -41,33 +41,27 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
-import static oap.io.content.ContentWriter.ofBytes;
 import static oap.io.content.ContentWriter.ofString;
 
-/**
- * Deprecated as templates now use TemplateClassCompiler / TemplateClassSupplier
- */
-@Deprecated( forRemoval = true )
 @Slf4j
-public class MemoryClassLoaderJava extends ClassLoader {
+public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
     private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
     private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
     private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
 
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-
-    private ConcurrentMap<String, Output> compiledTemplatesClasses = new ConcurrentHashMap<>();
+    private final MemoryFileManager manager = new MemoryFileManager( compiler );
 
     public MemoryClassLoaderJava( String classname, String filecontent, Path diskCache ) {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -76,12 +70,11 @@ public class MemoryClassLoaderJava extends ClassLoader {
         if( diskCache != null ) {
             var sourceFile = diskCache.resolve( classname + ".java" );
             var classFile = diskCache.resolve( classname + ".class" );
-            if( Files.exists( classFile ) ) {
-
-//                log.trace( "found: {}", classname );
+            if( Files.exists( classFile ) && Files.exists( sourceFile ) && sourceContentEquals( sourceFile, filecontent ) ) {
+                log.trace( "found: {}", classname );
 
                 var bytes = oap.io.Files.read( classFile, ContentReader.ofBytes() );
-                compiledTemplatesClasses.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
+                manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
                 oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
@@ -102,62 +95,74 @@ public class MemoryClassLoaderJava extends ClassLoader {
                 log.trace( e.getMessage(), e );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             } catch( ClassNotFoundException ignored ) {
-                log.warn( "Cannot generate|compile|find {}", list );
             }
         }
 
         if( !list.isEmpty() ) {
             var out = new StringWriter();
-            //NOTE: MemoryFileManager
-            // should have been closed after in order to prevent memory leak
-            MemoryFileManager manager = new MemoryFileManager( compiledTemplatesClasses, compiler );
-            try {
-                var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
-                if ( task.call() ) {
-                    METRICS_COMPILE.increment();
-                    if ( diskCache != null ) {
-                        for ( var source : list ) {
-                            var javaFile = diskCache.resolve( source.originalName + ".java" );
-                            var classFile = diskCache.resolve( source.originalName + ".class" );
+            var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
+            if( task.call() ) {
+                METRICS_COMPILE.increment();
+                if( diskCache != null ) {
+                    for( var source : list ) {
+                        var javaFile = diskCache.resolve( source.originalName + ".java" );
+                        var classFile = diskCache.resolve( source.originalName + ".class" );
 
-                            try {
-                                oap.io.Files.write( javaFile, source.content, ofString() );
-                                var bytes = compiledTemplatesClasses.get( source.originalName ).toByteArray();
-                                oap.io.Files.write( classFile, bytes, ofBytes() );
-                            } catch ( Exception e ) {
-                                oap.io.Files.delete( javaFile );
-                                oap.io.Files.delete( classFile );
-                            }
+                        try {
+                            oap.io.Files.write( javaFile, source.content, ofString() );
+                            var bytes = manager.map.get( source.originalName ).toByteArray();
+                            oap.io.Files.write( classFile, bytes );
+                        } catch( Exception e ) {
+                            oap.io.Files.delete( javaFile );
+                            oap.io.Files.delete( classFile );
                         }
                     }
-                    if ( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
-                } else {
-                    METRICS_ERROR.increment();
-                    diagnostics.getDiagnostics().forEach( a -> {
-                        if ( a.getKind() == Diagnostic.Kind.ERROR ) {
-                            log.error( "Could not compile {}: {}", list, a );
-                        }
-                    } );
-                    if ( out.toString().length() > 0 ) log.error( out.toString() );
                 }
-            } finally {
-                try {
-                    manager.close();
-                } catch ( IOException e ) {
-                    throw new RuntimeException( e );
-                }
+                if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+            } else {
+                METRICS_ERROR.increment();
+                diagnostics.getDiagnostics().forEach( a -> {
+                    if( a.getKind() == Diagnostic.Kind.ERROR ) {
+                        System.err.println( a );
+                        log.error( "{}", a );
+                    }
+                } );
+                if( out.toString().length() > 0 ) log.error( out.toString() );
             }
         }
     }
 
+    private boolean sourceContentEquals( Path sourceFile, String filecontent ) {
+        var source = oap.io.Files.read( sourceFile, ContentReader.ofString() );
+        boolean res = filecontent.equals( source );
+        if( !res ) {
+            log.warn( "{}: file content != template content", sourceFile );
+        }
+
+        return res;
+    }
+
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        var mc = compiledTemplatesClasses.remove( name );
-        if( mc != null ) {
-            var array = mc.toByteArray();
-            return defineClass( name, array, 0, array.length );
+        synchronized( manager ) {
+            var mc = manager.map.remove( name );
+            if( mc != null ) {
+                var array = mc.toByteArray();
+                return defineClass( name, array, 0, array.length );
+            }
         }
         return super.findClass( name );
+    }
+
+    /**
+     * Closing FileManager is very important!
+     * That prevents:
+     * - from memory holding (GC cannot freeing it)
+     * - from stuck in file pointers (every used JAR is left opened)
+     */
+    @Override
+    public void close() throws IOException {
+        manager.close();
     }
 
     private static class Source extends SimpleJavaFileObject {
@@ -176,7 +181,7 @@ public class MemoryClassLoaderJava extends ClassLoader {
         }
     }
 
-    static class Output extends SimpleJavaFileObject {
+    private static class Output extends SimpleJavaFileObject {
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         Output( String name, Kind kind ) {
@@ -201,17 +206,16 @@ public class MemoryClassLoaderJava extends ClassLoader {
     }
 
     private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-        private final Map<String, Output> compiledClasses;
+        private final Map<String, Output> map = new HashMap<>();
 
-        MemoryFileManager( Map<String, Output> map, JavaCompiler compiler ) {
+        MemoryFileManager( JavaCompiler compiler ) {
             super( compiler.getStandardFileManager( null, null, null ) );
-            this.compiledClasses = map;
         }
 
         @Override
         public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
             var mc = new Output( name, kind );
-            compiledClasses.put( name, mc );
+            this.map.put( name, mc );
             return mc;
         }
     }

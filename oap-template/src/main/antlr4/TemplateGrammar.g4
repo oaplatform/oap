@@ -9,6 +9,8 @@ options {
 @header {
 package oap.template;
 
+import oap.template.tree.*;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,37 +27,14 @@ import java.util.Map;
 
 }
 
-template[TemplateType parentType, Map<String,String> aliases] returns [AstRoot rootAst]
-	: elements[parentType, aliases] { $rootAst = new AstRoot($parentType); $rootAst.addChildren($elements.list); } EOF
+elements[Map<String,String> aliases] returns [Elements ret = new Elements()]
+	: (element[aliases] { $ret.elements.add( $element.ret ); })* EOF
 	;
 
-elements[TemplateType parentType, Map<String,String> aliases] returns [ArrayList<Ast> list = new ArrayList<>()]
-	: (element[parentType, aliases] { $list.add($element.ast); })*
-	;
-
-element[TemplateType parentType, Map<String,String> aliases] returns [Ast ast]
-	: t=text { $ast = new AstText($t.text); }
-	| comment { $ast = new AstText($comment.text.substring(1));}
-	| expression[aliases] {
-        var lexerExp = new TemplateLexerExpression( CharStreams.fromString( $expression.content ) );
-        var grammarExp = new TemplateGrammarExpression( new BufferedTokenStream( lexerExp ), builtInFunction, errorStrategy );
-        if( errorStrategy == ErrorStrategy.ERROR ) {
-            lexerExp.addErrorListener( ThrowingErrorListener.INSTANCE );
-            grammarExp.addErrorListener( ThrowingErrorListener.INSTANCE );
-        }
-        
-	    try { 
-            $ast = new AstExpression(grammarExp.expression( $parentType ).ast.top, $expression.content);
-        } catch ( TemplateException e ) {
-            var newException = new TemplateException( $expression.content, e.getCause() );
-            newException.setStackTrace( e.getStackTrace() );
-            throw newException;
-        } catch ( Exception e ) {
-            var newException = new TemplateException( $expression.content, e );
-            newException.setStackTrace( e.getStackTrace() );
-            throw newException;
-        }
-	 }
+element[Map<String,String> aliases] returns [Element ret]
+	: t=text { $ret = new TextElement( $t.text ); }
+	| comment { $ret = new TextElement( $comment.text.substring(1) ); }
+	| expression[aliases] { $ret = new ExpressionElement( $expression.ret ); }
 	;
 
 text
@@ -66,11 +45,11 @@ comment
     : STARTESCEXPR expressionContent RBRACE;
 
 
-expression[Map<String,String> aliases] returns [String content]
+expression[Map<String,String> aliases] returns [String ret]
     : STARTEXPR expressionContent RBRACE { 
-        $content = $expressionContent.text;
-        var alias = aliases.get( $content );
-        if( alias != null ) $content = alias;  
+        $ret = $expressionContent.text;
+        var alias = aliases.get( $expressionContent.text );
+        if( alias != null ) $ret = alias;
     };
 
 expressionContent

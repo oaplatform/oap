@@ -59,7 +59,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            Optional<RemoteClient> service = kernel.<RemoteClient>service( "*.remote-client" );
+            Optional<RemoteClient> service = kernel.service( "*.remote-client" );
             assertThat( service ).isPresent();
             assertThat( service )
                 .get()
@@ -95,9 +95,12 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
 
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream( "1", "2", "3" ) )
+            RemoteClient remoteClientOne = kernel.<RemoteClient>service( "*.remote-client" ).get();
+            assertThat( remoteClientOne.testStream( "1", "2", "3" ) )
                 .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
-            assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream( "1", "2", "3" ) )
+
+            RemoteClient remoteClientTwo = kernel.<RemoteClient>service( "*.remote-client" ).get();
+            assertThat( remoteClientTwo.testStream( "1", "2", "3" ) )
                 .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
         }
     }

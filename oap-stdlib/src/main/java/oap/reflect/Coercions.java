@@ -36,6 +36,7 @@ import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringSubstitutor;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;
@@ -77,16 +78,19 @@ public final class Coercions {
 
     static {
         addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
-                ? java.nio.file.Files.readString( Path.of( path ), UTF_8 )
-                : Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( path ) ) ),
+                ? java.nio.file.Files.readString( Path.of( renderPathTemplate( path ) ), UTF_8 )
+                : Binder.Format.of( path, false ).binder.unmarshal( reflection, Path.of( renderPathTemplate( path ) ) ) ),
             "path" );
         addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
                 ? IOUtils.toString( new URL( path ), UTF_8 )
                 : Binder.Format.of( path, false ).binder.unmarshal( reflection, new URL( path ) ) ),
             "url" );
-        addFunction( Try.biMap( ( cp, reflection ) -> reflection.assignableTo( String.class )
-                ? IOUtils.toString( Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp ), UTF_8 )
-                : Binder.Format.of( cp, false ).binder.unmarshal( reflection, Coercions.class.getResource( cp ) ) ),
+        addFunction( Try.biMap( ( cp, reflection ) -> {
+                URL url = Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp );
+                return reflection.assignableTo( String.class )
+                    ? IOUtils.toString( url, UTF_8 )
+                    : Binder.Format.of( cp, false ).binder.unmarshal( reflection, url );
+            } ),
             "classpath" );
         addFunction( Try.biMap( ( str, reflection ) -> str ),
             "str", "text", "plain" );
@@ -147,6 +151,19 @@ public final class Coercions {
         convertors.put( Pattern.class, new PatternConvertor() );
         convertors.put( BitSet.class, new BitSetConvertor() );
         convertors.put( Class.class, Try.map( value -> Class.forName( ( String ) value ) ) );
+    }
+
+    private static String renderPathTemplate( String path ) {
+        return new StringSubstitutor( key -> {
+            String v = System.getProperty( key );
+            if( v == null ) {
+                v = System.getenv( key );
+            }
+            if( v == null ) {
+                v = key;
+            }
+            return v;
+        }, "${ENV.", "}", '\\' ).replace( path );
     }
 
     private List<Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>>> coersions = Lists.empty();
@@ -217,9 +234,7 @@ public final class Coercions {
     }
 
     public Coercions withStringToObject() {
-        return with( ( r, v ) -> v instanceof String, ( r, value ) -> {
-            return castFunction( r, value );
-        } );
+        return with( ( r, v ) -> v instanceof String, Coercions::castFunction );
     }
 
     public static Object castFunction( Reflection r, Object value ) {
@@ -377,22 +392,28 @@ public final class Coercions {
     private static class URLConvertor implements Function<Object, Object> {
         @Override
         public Object apply( Object value ) {
-            if( value instanceof URL ) return value;
-            else if( value instanceof String ) {
-                try {
-
-                    return new URL( ( String ) value );
-                } catch( MalformedURLException e ) {
-                    var url = getClass().getResource( ( String ) value );
-                    if( url != null ) return url;
-
+            return switch( value ) {
+                case URL url -> url;
+                case String str -> {
                     try {
-                        return Paths.get( ( String ) value ).toUri().toURL();
-                    } catch( MalformedURLException malformedURLException ) {
-                        throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                        yield new URL( str );
+                    } catch( MalformedURLException e ) {
+                        if( str.startsWith( "classpath(" ) ) {
+                            str = str.substring( 10, str.length() - 1 );
+                        }
+
+                        var url = getClass().getResource( str );
+                        if( url != null ) yield url;
+
+                        try {
+                            yield Paths.get( str ).toUri().toURL();
+                        } catch( MalformedURLException malformedURLException ) {
+                            throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                        }
                     }
                 }
-            } else throw new ReflectException( "cannot cast " + value + " to URL.class" );
+                default -> throw new ReflectException( "cannot cast " + value + " to URL.class" );
+            };
         }
     }
 
