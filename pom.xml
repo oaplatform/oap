@@ -1,5 +1,4 @@
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -45,7 +44,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.1.6</oap.project.version>
+        <oap.project.version>21.1.7</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
 
@@ -58,7 +57,7 @@
         <oap.deps.logback.version>1.4.14</oap.deps.logback.version>
         <oap.deps.slf4j.version>2.0.9</oap.deps.slf4j.version>
 
-        <oap.deps.mockito.version>4.11.0</oap.deps.mockito.version>
+        <oap.deps.mockito.version>5.3.1</oap.deps.mockito.version>
 
         <oap.deps.okhttp.version>4.11.0</oap.deps.okhttp.version>
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
@@ -85,7 +84,7 @@
         <oap.deps.lombok.version>1.18.30</oap.deps.lombok.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
-        <oap.deps.bucket4j.version>8.3.0</oap.deps.bucket4j.version>
+        <oap.deps.bucket4j.version>8.7.0</oap.deps.bucket4j.version>
         <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
         for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type
         and in later versions it is left unchanged so exception will arise.
