@@ -20,7 +20,7 @@
         <module>oap-jpath</module>
         <module>oap-pnio</module>
         <module>oap-hadoop</module>
-        <module>maven</module>
+        <module>oap-maven-plugin</module>
     </modules>
 
     <repositories>
