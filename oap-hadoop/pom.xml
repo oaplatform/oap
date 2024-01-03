@@ -23,7 +23,6 @@
             <version>${oap.deps.docker-java.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.github.docker-java/docker-java-transport-zerodep -->
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-transport-zerodep</artifactId>
