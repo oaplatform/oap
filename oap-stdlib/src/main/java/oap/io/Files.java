@@ -23,11 +23,11 @@
  */
 package oap.io;
 
-import com.github.rholder.retry.RetryException;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
+import io.github.itning.retry.RetryException;
+import io.github.itning.retry.RetryerBuilder;
+import io.github.itning.retry.strategy.stop.StopStrategies;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;

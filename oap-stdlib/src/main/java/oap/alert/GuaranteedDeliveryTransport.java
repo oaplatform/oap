@@ -24,13 +24,13 @@
 
 package oap.alert;
 
-import com.github.rholder.retry.Attempt;
-import com.github.rholder.retry.RetryException;
-import com.github.rholder.retry.RetryListener;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
-import com.github.rholder.retry.WaitStrategies;
+import io.github.itning.retry.Attempt;
+import io.github.itning.retry.RetryException;
+import io.github.itning.retry.Retryer;
+import io.github.itning.retry.RetryerBuilder;
+import io.github.itning.retry.listener.RetryListener;
+import io.github.itning.retry.strategy.stop.StopStrategies;
+import io.github.itning.retry.strategy.wait.WaitStrategies;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ExecutionException;
