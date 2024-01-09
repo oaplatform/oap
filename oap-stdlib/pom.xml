@@ -171,6 +171,7 @@
                     <artifactId>snakeyaml</artifactId>
                 </exclusion>
             </exclusions>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
