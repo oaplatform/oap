@@ -45,7 +45,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.1.9</oap.project.version>
+        <oap.project.version>21.2.0</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
 
