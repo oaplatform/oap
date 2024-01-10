@@ -14,20 +14,29 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>${project.parent.groupId}</groupId>
+            <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-stdlib-test</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
             <version>${oap.deps.plugins.antlr4.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${oap.deps.lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
