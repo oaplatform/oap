@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.message.message;
+package oap.message;
 
 import oap.application.testng.KernelFixture;
 import oap.http.server.nio.NioHttpServer;

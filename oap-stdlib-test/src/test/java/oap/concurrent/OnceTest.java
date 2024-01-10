@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.concurrent;
+package oap.concurrent;
 
 import oap.concurrent.Once;
 import org.testng.annotations.Test;

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.message.message;
+package oap.message;
 
 import oap.message.MessageHashStorage;
 import oap.testng.Fixtures;

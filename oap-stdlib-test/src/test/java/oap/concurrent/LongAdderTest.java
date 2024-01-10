@@ -22,30 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.dictionary.dictionary;
+package oap.concurrent;
 
-import oap.dictionary.DictionaryLeaf;
-import oap.json.Binder;
+import oap.concurrent.LongAdder;
 import org.testng.annotations.Test;
 
-import java.util.Map;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DictionaryLeafTest {
-    @Test
-    public void serializeProperties() {
-        var dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Map.of( "p1", "v1" ) );
-        assertThat( Binder.json.marshal( dictionaryLeaf ) )
-            .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"properties\":{\"p1\":\"v1\"}}" );
-    }
 
+public class LongAdderTest {
     @Test
-    public void serializeEnabled() {
-        var dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
-        assertThat( Binder.json.marshal( dictionaryLeaf ) )
-            .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"enabled\":false}" );
-    }
+    public void serializarion() throws IOException, ClassNotFoundException {
+        var bot = new ByteArrayOutputStream();
+        try( var oos = new ObjectOutputStream( bot ) ) {
+            var la = new LongAdder();
+            la.increment();
+            oos.writeObject( la );
+        }
 
+        try( var bis = new ByteArrayInputStream( bot.toByteArray() );
+             var ois = new ObjectInputStream( bis ) ) {
+            var la = ( LongAdder ) ois.readObject();
+
+            assertThat( la.longValue() ).isEqualTo( 1L );
+        }
+    }
 }

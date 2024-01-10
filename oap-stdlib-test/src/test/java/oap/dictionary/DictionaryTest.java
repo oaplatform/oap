@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.dictionary.dictionary;
+package oap.dictionary;
 
 import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;

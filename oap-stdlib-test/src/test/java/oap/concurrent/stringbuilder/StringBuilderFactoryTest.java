@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.concurrent.stringbuilder;
+package oap.concurrent.stringbuilder;
 
 import oap.concurrent.Threads;
 import oap.concurrent.stringbuilder.ConcurrentStringBuilderFactory;

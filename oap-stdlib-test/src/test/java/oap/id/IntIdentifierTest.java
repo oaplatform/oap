@@ -22,35 +22,53 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.concurrent;
+package oap.id;
 
-import oap.concurrent.LongAdder;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.id.IntIdentifier;
+import oap.util.Lists;
 import org.testng.annotations.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
-public class LongAdderTest {
+public class IntIdentifierTest {
     @Test
-    public void serializarion() throws IOException, ClassNotFoundException {
-        var bot = new ByteArrayOutputStream();
-        try( var oos = new ObjectOutputStream( bot ) ) {
-            var la = new LongAdder();
-            la.increment();
-            oos.writeObject( la );
+    public void forId() {
+        var identifier = IntIdentifier.<Bean>forId( b -> b.id ).build();
+        assertThat( identifier.get( new Bean( 1, "aaaa" ) ) ).isEqualTo( 1 );
+        assertThat( identifier.get( new Bean( 2, "bbbb" ) ) ).isEqualTo( 2 );
+    }
+
+    @Test
+    public void forIdWithSetter() {
+        var identifier = IntIdentifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
+            .build();
+        var a = new Bean( "aaaa" );
+        var b = new Bean( "aaaa" );
+        var conflicts = Lists.of( 1, 3 );
+        assertThat( identifier.getOrInit( a, conflicts::contains ) ).isEqualTo( 2 );
+        assertThat( a.id ).isEqualTo( 2 );
+        conflicts.add( 2 );
+        assertThat( identifier.getOrInit( b, conflicts::contains ) ).isEqualTo( 4 );
+        assertThat( b.id ).isEqualTo( 4 );
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class Bean {
+
+        public Integer id;
+        public String s;
+
+        public Bean( Integer id, String s ) {
+            this.id = id;
+            this.s = s;
         }
 
-        try( var bis = new ByteArrayInputStream( bot.toByteArray() );
-             var ois = new ObjectInputStream( bis ) ) {
-            var la = ( LongAdder ) ois.readObject();
-
-            assertThat( la.longValue() ).isEqualTo( 1L );
+        public Bean( String s ) {
+            this( null, s );
         }
+
     }
 }

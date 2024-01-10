@@ -22,23 +22,44 @@
  * SOFTWARE.
  */
 
-package oap.net.net;
+package oap.prometheus;
 
-import oap.net.Inet;
-import oap.util.Strings;
-import org.assertj.core.api.Assertions;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import oap.http.Client;
+import oap.http.server.nio.NioHttpServer;
+import oap.prometheus.PrometheusExporter;
+import oap.testng.EnvFixture;
+import oap.testng.Fixtures;
 import org.testng.annotations.Test;
+
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class InetTest {
+public class PrometheusExporterTest extends Fixtures {
+    private static final Counter TEST_1 = Metrics.counter( "test1" );
+    private final EnvFixture envFixture;
+
+    public PrometheusExporterTest() {
+        envFixture = fixture( new EnvFixture() );
+    }
+
     @Test
-    public void toLong() {
-        Assertions.assertThat( Inet.toLong( "13.72.124.0" ) ).isEqualTo( 222854144L );
-        assertThat( Inet.toLong( "10.0.0.111" ) ).isEqualTo( 167772271L );
-        assertThat( Inet.toLong( "10.0.0.11" ) ).isEqualTo( 167772171L );
-        assertThat( Inet.toLong( "10.0.0.1" ) ).isEqualTo( 167772161L );
-        assertThat( Strings.toHexString( Inet.toLong( "10.0.0.1" ) ) ).isEqualTo( "A000001" );
+    public void server() throws IOException {
+        var port = envFixture.portFor( "prometheus" );
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+            var exporter = new PrometheusExporter( server );
+            server.start();
+
+            TEST_1.increment( 2 );
+            var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
+            assertThat( response ).contains( """
+                # HELP test1_total \s
+                # TYPE test1_total counter
+                test1_total 2.0
+                """ );
+        }
     }
 
 }

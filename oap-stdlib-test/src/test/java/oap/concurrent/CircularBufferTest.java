@@ -22,38 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.concurrent;
+package oap.concurrent;
 
-import oap.concurrent.Futures;
+import oap.concurrent.CircularBuffer;
 import org.testng.annotations.Test;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FuturesTest {
+public class CircularBufferTest {
 
     @Test
-    public void allOf() {
-        CompletableFuture<List<String>> future = Futures.allOf(
-            CompletableFuture.supplyAsync( () -> "a" ),
-            CompletableFuture.supplyAsync( () -> "b" ) );
-        future.join();
-        assertThat( future )
-            .isCompletedWithValue( List.of( "a", "b" ) );
-
-        CompletableFuture<List<String>> failed = Futures.allOf(
-            CompletableFuture.supplyAsync( () -> "a" ),
-            CompletableFuture.failedFuture( new RuntimeException( "fail" ) ) );
-        try {
-            assertThat( failed.join() ).isNotEqualTo( List.of( "a" ) );
-        } catch( CompletionException e ) {
-            assertThat( failed ).isCompletedExceptionally();
-            assertString( e.getCause().getMessage() ).isEqualTo( "fail" );
-        }
+    public void cycle() {
+        CircularBuffer<Integer> buffer = new CircularBuffer<>( Integer.class, 3 );
+        assertThat( buffer.getElements() ).containsExactly();
+        buffer.add( 1 );
+        buffer.add( 2 );
+        assertThat( buffer.getElements() ).containsExactly( 1, 2 );
+        buffer.add( 3 );
+        buffer.add( 4 );
+        assertThat( buffer.getElements() ).containsExactly( 2, 3, 4 );
+        buffer.add( 4 );
+        assertThat( buffer.getElements() ).containsExactly( 3, 4, 4 );
     }
 
 }

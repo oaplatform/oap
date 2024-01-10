@@ -22,22 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.compression.compression;
+package oap.net;
 
-import oap.compression.Compression;
-import oap.io.content.ContentReader;
-import oap.io.content.ContentWriter;
+import oap.net.Inet;
+import oap.util.Strings;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CompressionTest {
+public class InetTest {
     @Test
-    public void readWrite() {
-        byte[] compressed = ContentWriter.write( "test", Compression.ContentWriter.ofGzip() );
-        assertThat( compressed ).hasSize( 24 );
-
-        String string = ContentReader.read( compressed, Compression.ContentReader.ofBytes().andThen( String::new ) );
-        assertThat( string ).isEqualTo( "test" );
+    public void toLong() {
+        Assertions.assertThat( Inet.toLong( "13.72.124.0" ) ).isEqualTo( 222854144L );
+        assertThat( Inet.toLong( "10.0.0.111" ) ).isEqualTo( 167772271L );
+        assertThat( Inet.toLong( "10.0.0.11" ) ).isEqualTo( 167772171L );
+        assertThat( Inet.toLong( "10.0.0.1" ) ).isEqualTo( 167772161L );
+        assertThat( Strings.toHexString( Inet.toLong( "10.0.0.1" ) ) ).isEqualTo( "A000001" );
     }
+
 }

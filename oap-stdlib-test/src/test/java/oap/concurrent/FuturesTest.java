@@ -22,53 +22,38 @@
  * SOFTWARE.
  */
 
-package oap.id.id;
+package oap.concurrent;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.id.IntIdentifier;
-import oap.util.Lists;
+import oap.concurrent.Futures;
 import org.testng.annotations.Test;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IntIdentifierTest {
-    @Test
-    public void forId() {
-        var identifier = IntIdentifier.<Bean>forId( b -> b.id ).build();
-        assertThat( identifier.get( new Bean( 1, "aaaa" ) ) ).isEqualTo( 1 );
-        assertThat( identifier.get( new Bean( 2, "bbbb" ) ) ).isEqualTo( 2 );
-    }
+public class FuturesTest {
 
     @Test
-    public void forIdWithSetter() {
-        var identifier = IntIdentifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
-            .build();
-        var a = new Bean( "aaaa" );
-        var b = new Bean( "aaaa" );
-        var conflicts = Lists.of( 1, 3 );
-        assertThat( identifier.getOrInit( a, conflicts::contains ) ).isEqualTo( 2 );
-        assertThat( a.id ).isEqualTo( 2 );
-        conflicts.add( 2 );
-        assertThat( identifier.getOrInit( b, conflicts::contains ) ).isEqualTo( 4 );
-        assertThat( b.id ).isEqualTo( 4 );
+    public void allOf() {
+        CompletableFuture<List<String>> future = Futures.allOf(
+            CompletableFuture.supplyAsync( () -> "a" ),
+            CompletableFuture.supplyAsync( () -> "b" ) );
+        future.join();
+        assertThat( future )
+            .isCompletedWithValue( List.of( "a", "b" ) );
+
+        CompletableFuture<List<String>> failed = Futures.allOf(
+            CompletableFuture.supplyAsync( () -> "a" ),
+            CompletableFuture.failedFuture( new RuntimeException( "fail" ) ) );
+        try {
+            assertThat( failed.join() ).isNotEqualTo( List.of( "a" ) );
+        } catch( CompletionException e ) {
+            assertThat( failed ).isCompletedExceptionally();
+            assertString( e.getCause().getMessage() ).isEqualTo( "fail" );
+        }
     }
 
-    @ToString
-    @EqualsAndHashCode
-    public static class Bean {
-
-        public Integer id;
-        public String s;
-
-        public Bean( Integer id, String s ) {
-            this.id = id;
-            this.s = s;
-        }
-
-        public Bean( String s ) {
-            this( null, s );
-        }
-
-    }
 }

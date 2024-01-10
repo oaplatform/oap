@@ -22,27 +22,30 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.concurrent;
+package oap.dictionary;
 
-import oap.concurrent.CircularBuffer;
+import oap.dictionary.DictionaryLeaf;
+import oap.json.Binder;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CircularBufferTest {
+public class DictionaryLeafTest {
+    @Test
+    public void serializeProperties() {
+        var dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Map.of( "p1", "v1" ) );
+        assertThat( Binder.json.marshal( dictionaryLeaf ) )
+            .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"properties\":{\"p1\":\"v1\"}}" );
+    }
 
     @Test
-    public void cycle() {
-        CircularBuffer<Integer> buffer = new CircularBuffer<>( Integer.class, 3 );
-        assertThat( buffer.getElements() ).containsExactly();
-        buffer.add( 1 );
-        buffer.add( 2 );
-        assertThat( buffer.getElements() ).containsExactly( 1, 2 );
-        buffer.add( 3 );
-        buffer.add( 4 );
-        assertThat( buffer.getElements() ).containsExactly( 2, 3, 4 );
-        buffer.add( 4 );
-        assertThat( buffer.getElements() ).containsExactly( 3, 4, 4 );
+    public void serializeEnabled() {
+        var dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
+        assertThat( Binder.json.marshal( dictionaryLeaf ) )
+            .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"enabled\":false}" );
     }
 
 }

@@ -22,44 +22,22 @@
  * SOFTWARE.
  */
 
-package oap.prometheus.prometheus;
+package oap.compression;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Metrics;
-import oap.http.Client;
-import oap.http.server.nio.NioHttpServer;
-import oap.prometheus.PrometheusExporter;
-import oap.testng.EnvFixture;
-import oap.testng.Fixtures;
+import oap.compression.Compression;
+import oap.io.content.ContentReader;
+import oap.io.content.ContentWriter;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PrometheusExporterTest extends Fixtures {
-    private static final Counter TEST_1 = Metrics.counter( "test1" );
-    private final EnvFixture envFixture;
-
-    public PrometheusExporterTest() {
-        envFixture = fixture( new EnvFixture() );
-    }
-
+public class CompressionTest {
     @Test
-    public void server() throws IOException {
-        var port = envFixture.portFor( "prometheus" );
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            var exporter = new PrometheusExporter( server );
-            server.start();
+    public void readWrite() {
+        byte[] compressed = ContentWriter.write( "test", Compression.ContentWriter.ofGzip() );
+        assertThat( compressed ).hasSize( 24 );
 
-            TEST_1.increment( 2 );
-            var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertThat( response ).contains( """
-                # HELP test1_total \s
-                # TYPE test1_total counter
-                test1_total 2.0
-                """ );
-        }
+        String string = ContentReader.read( compressed, Compression.ContentReader.ofBytes().andThen( String::new ) );
+        assertThat( string ).isEqualTo( "test" );
     }
-
 }

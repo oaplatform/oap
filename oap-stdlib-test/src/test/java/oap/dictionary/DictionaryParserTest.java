@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.dictionary.dictionary;
+package oap.dictionary;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import oap.dictionary.Dictionaries;

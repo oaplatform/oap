@@ -1,4 +1,4 @@
-package oap.time.time;
+package oap.time;
 
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

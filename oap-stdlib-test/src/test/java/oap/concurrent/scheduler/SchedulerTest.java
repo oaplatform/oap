@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.concurrent.scheduler;
+package oap.concurrent.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Executors;
