@@ -24,8 +24,6 @@
 
 package oap.io;
 
-import oap.io.Files;
-import oap.io.SafeFileOutputStream;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;

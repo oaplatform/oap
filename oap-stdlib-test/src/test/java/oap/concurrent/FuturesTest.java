@@ -24,7 +24,6 @@
 
 package oap.concurrent;
 
-import oap.concurrent.Futures;
 import org.testng.annotations.Test;
 
 import java.util.List;

@@ -24,7 +24,6 @@
 
 package oap.io.content;
 
-import oap.io.content.ContentWriter;
 import oap.json.Binder;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;

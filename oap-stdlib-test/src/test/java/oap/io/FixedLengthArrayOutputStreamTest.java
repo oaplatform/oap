@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import oap.io.FixedLengthArrayOutputStream;
 import org.testng.annotations.Test;
 
 import java.nio.BufferOverflowException;

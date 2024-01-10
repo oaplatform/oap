@@ -26,7 +26,6 @@ package oap.io.content;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.io.content.ContentReader;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 

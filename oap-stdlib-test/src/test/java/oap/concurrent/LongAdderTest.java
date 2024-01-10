@@ -24,7 +24,6 @@
 
 package oap.concurrent;
 
-import oap.concurrent.LongAdder;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;

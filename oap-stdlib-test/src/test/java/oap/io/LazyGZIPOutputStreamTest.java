@@ -25,9 +25,6 @@
 package oap.io;
 
 import lombok.SneakyThrows;
-import oap.io.Files;
-import oap.io.LazyFileOutputStream;
-import oap.io.LazyGZIPOutputStream;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.assertj.core.api.Assertions;

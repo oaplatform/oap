@@ -24,7 +24,6 @@
 
 package oap.compression;
 
-import oap.compression.Compression;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
 import org.testng.annotations.Test;

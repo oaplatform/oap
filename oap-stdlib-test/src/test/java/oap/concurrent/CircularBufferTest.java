@@ -24,7 +24,6 @@
 
 package oap.concurrent;
 
-import oap.concurrent.CircularBuffer;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

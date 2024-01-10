@@ -25,9 +25,6 @@
 package oap.concurrent.stringbuilder;
 
 import oap.concurrent.Threads;
-import oap.concurrent.stringbuilder.ConcurrentStringBuilderFactory;
-import oap.concurrent.stringbuilder.StringBuilderFactory;
-import oap.concurrent.stringbuilder.ThreadLocalStringBuilderFactory;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

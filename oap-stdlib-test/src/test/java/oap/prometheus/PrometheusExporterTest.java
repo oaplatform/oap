@@ -28,7 +28,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
-import oap.prometheus.PrometheusExporter;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;

@@ -24,8 +24,6 @@
 
 package oap.concurrent;
 
-import oap.concurrent.LimitedTimeExecutor;
-import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;

@@ -1,7 +1,6 @@
 package oap.io;
 
 
-import oap.io.GZIPCompressingInputStream;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
@@ -34,16 +33,16 @@ public class GZIPCompressingInputStreamTest {
     }
 
     protected void compressor( String dataInfo, byte[] data ) throws IOException {
-        try ( InputStream uncompressedIn = new ByteArrayInputStream( data );
-              InputStream compressedIn = new GZIPCompressingInputStream( uncompressedIn );
-              InputStream uncompressedOut = new GZIPInputStream( compressedIn ) ) {
+        try( InputStream uncompressedIn = new ByteArrayInputStream( data );
+             InputStream compressedIn = new GZIPCompressingInputStream( uncompressedIn );
+             InputStream uncompressedOut = new GZIPInputStream( compressedIn ) ) {
 
 
             byte[] result = IOUtils.toByteArray( uncompressedOut );
 
             assertThat( result )
-                    .withFailMessage( "Test failed for: " + dataInfo )
-                    .containsExactly( data );
+                .withFailMessage( "Test failed for: " + dataInfo )
+                .containsExactly( data );
         }
     }
 }

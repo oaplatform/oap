@@ -26,7 +26,6 @@ package oap.id;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.id.IntIdentifier;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 

@@ -25,8 +25,6 @@
 package oap.io;
 
 import lombok.SneakyThrows;
-import oap.io.AbstractFileSync;
-import oap.io.Files;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;

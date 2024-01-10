@@ -25,11 +25,6 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import oap.dictionary.Dictionaries;
-import oap.dictionary.Dictionary;
-import oap.dictionary.DictionaryError;
-import oap.dictionary.DictionaryParser;
-import oap.dictionary.DictionaryRoot;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.json.Binder;

@@ -1,8 +1,5 @@
 package oap.io;
 
-import oap.io.FileWalker;
-import oap.io.FileWalkerCache;
-import oap.io.Files;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.BeforeMethod;

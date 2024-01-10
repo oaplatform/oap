@@ -27,8 +27,6 @@ package oap.concurrent.scheduler;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Executors;
 import oap.concurrent.Threads;
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
 import oap.util.function.Try;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;

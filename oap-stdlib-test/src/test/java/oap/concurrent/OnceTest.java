@@ -24,7 +24,6 @@
 
 package oap.concurrent;
 
-import oap.concurrent.Once;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;

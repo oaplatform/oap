@@ -23,10 +23,6 @@
  */
 package oap.io;
 
-import oap.io.Files;
-import oap.io.InvalidFileEncodingException;
-import oap.io.IoStreams;
-import oap.io.Resources;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;

@@ -24,8 +24,6 @@
 package oap.cli;
 
 
-import oap.cli.CliLexer;
-import oap.cli.CliParser;
 import oap.util.Pair;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;

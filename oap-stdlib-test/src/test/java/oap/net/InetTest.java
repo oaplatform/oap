@@ -24,7 +24,6 @@
 
 package oap.net;
 
-import oap.net.Inet;
 import oap.util.Strings;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;

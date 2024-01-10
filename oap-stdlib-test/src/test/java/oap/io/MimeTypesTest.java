@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import oap.io.MimeTypes;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 

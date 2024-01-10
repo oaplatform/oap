@@ -25,8 +25,6 @@ package oap.io;
 
 import lombok.SneakyThrows;
 import oap.concurrent.Times;
-import oap.io.Files;
-import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;
 import oap.testng.Fixtures;

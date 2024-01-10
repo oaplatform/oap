@@ -1,6 +1,5 @@
 package oap.io;
 
-import oap.io.StringStreamInputStream;
 import oap.util.Stream;
 import org.testng.annotations.Test;
 
@@ -28,7 +27,7 @@ public class StringStreamInputStreamTest {
     public void withDelimiter() {
         assertThat( new StringStreamInputStream( Stream.of( "a", "bbb", "cc", "ddd" ), "," ) )
             .hasContent( "a,bbb,cc,ddd" );
-        assertThat(  new StringStreamInputStream( Stream.of( "a" ), "," ) )
+        assertThat( new StringStreamInputStream( Stream.of( "a" ), "," ) )
             .hasContent( "a" );
     }
 }

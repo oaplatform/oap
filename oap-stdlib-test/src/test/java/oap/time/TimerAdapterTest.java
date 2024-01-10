@@ -2,7 +2,6 @@ package oap.time;
 
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import oap.time.TimerAdapter;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;

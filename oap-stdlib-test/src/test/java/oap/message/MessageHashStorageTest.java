@@ -24,7 +24,6 @@
 
 package oap.message;
 
-import oap.message.MessageHashStorage;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.apache.commons.codec.DecoderException;

@@ -24,9 +24,6 @@
 package oap.cli;
 
 
-import oap.cli.Cli;
-import oap.cli.Option;
-import oap.cli.ValueParser;
 import oap.util.Result;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
