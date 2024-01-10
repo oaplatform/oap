@@ -75,7 +75,7 @@ class Messages {
         var now = DateTimeUtils.currentTimeMillis();
 
         log.trace( "ready {} retry {} now {}",
-                getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
+            getReadyMessages(), getRetryMessages(), Dates.formatDateWithMillis( now ) );
 
         var it = retry.iterator();
         while( it.hasNext() ) {

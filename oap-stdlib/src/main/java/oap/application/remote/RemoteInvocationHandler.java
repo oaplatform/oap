@@ -43,6 +43,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.event.Level;
 
 import java.io.BufferedInputStream;
@@ -129,7 +130,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     private RemoteInvocationException throwException( String methodName, Throwable throwable ) {
-        if( throwable instanceof RemoteInvocationException ) return ( RemoteInvocationException ) throwable;
+        if( throwable instanceof RemoteInvocationException riex ) return riex;
         else if( throwable instanceof ExecutionException ) return throwException( methodName, throwable.getCause() );
         else return new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + methodName, throwable );
     }
@@ -161,20 +162,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
             Call call = null;
             try {
-                OkHttpClient requestClient = client
-                    .newBuilder()
-                    .connectTimeout( timeout, MILLISECONDS )
-                    .readTimeout( timeout, MILLISECONDS )
-                    .writeTimeout( timeout, MILLISECONDS )
-                    .build();
-
-                RequestBody requestBody = RequestBody.create( invocationB );
-
                 Request request = new Request.Builder()
-                    .post( requestBody )
+                    .post( RequestBody.create( invocationB ) )
                     .url( uri.toURL() )
                     .build();
-                call = requestClient.newCall( request );
+                call = createClient().newCall( request );
                 CallbackFuture callbackFuture = new CallbackFuture();
                 call.enqueue( callbackFuture );
 
@@ -187,61 +179,26 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     var success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
 
                     try {
-                        if( !success ) {
+                        if( Boolean.FALSE.equals( success ) ) {
                             try {
                                 var throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
                                     () -> ( Throwable ) fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
 
-                                if( throwable instanceof RemoteInvocationException )
-                                    throw ( RemoteInvocationException ) throwable;
+                                if( throwable instanceof RemoteInvocationException riex ) {
+                                    errorMetrics.increment();
+                                    throw riex;
+                                }
 
                                 var failure = Result.failure( throwable );
-                                successMetrics.increment();
+                                errorMetrics.increment();
                                 return failure;
                             } finally {
                                 dis.close();
                             }
                         } else {
                             var stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
-                            if( stream ) {
-                                var it = new Iterator<>() {
-                                    private Object obj = null;
-                                    private boolean end = false;
-
-                                    @SneakyThrows
-                                    @Override
-                                    public boolean hasNext() {
-                                        if( end ) return false;
-
-                                        if( obj != null ) return true;
-
-                                        SIMPLE_TIME_LIMITER.runWithTimeout( () -> {
-                                            try {
-                                                var next = dis.readInt();
-                                                if( next > 0 ) {
-                                                    obj = fst.readObject( dis, next );
-                                                } else {
-                                                    end = true;
-                                                    obj = null;
-                                                    dis.close();
-                                                }
-                                            } catch( IOException e ) {
-                                                throw new UncheckedIOException( e );
-                                            }
-                                        }, timeout, MILLISECONDS );
-
-                                        return obj != null;
-                                    }
-
-                                    @SneakyThrows
-                                    @Override
-                                    public Object next() {
-                                        var o = obj;
-                                        obj = null;
-                                        hasNext();
-                                        return o;
-                                    }
-                                };
+                            if( Boolean.TRUE.equals( stream ) ) {
+                                var it = new ChainIterator( dis );
 
                                 return Result.success( Stream.of( it ).onClose( Try.run( () -> {
                                     dis.close();
@@ -264,7 +221,8 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 } else
                     throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
                         + " code " + response.code()
-                        + " body '" + response.body().string() + "'" );
+                        + " body '" + response.body().string() + "'"
+                        + " message '" + response.message() + "'" );
             } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
                 timeoutMetrics.increment();
@@ -283,6 +241,17 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         throw throwException( method.getName(), lastException );
     }
 
+    @NotNull
+    private OkHttpClient createClient() {
+        OkHttpClient requestClient = client
+            .newBuilder()
+            .connectTimeout( timeout, MILLISECONDS )
+            .readTimeout( timeout, MILLISECONDS )
+            .writeTimeout( timeout, MILLISECONDS )
+            .build();
+        return requestClient;
+    }
+
     @SneakyThrows
     private byte[] getInvocation( Method method, List<RemoteInvocation.Argument> arguments ) {
         var baos = new ByteArrayOutputStream();
@@ -297,5 +266,51 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     @Override
     public String toString() {
         return "remote:" + service + "(retry=" + retry + ")@" + uri;
+    }
+
+    private class ChainIterator implements Iterator<Object> {
+        private final DataInputStream dis;
+        private Object obj;
+        private boolean end;
+
+        ChainIterator( DataInputStream dis ) {
+            this.dis = dis;
+            obj = null;
+            end = false;
+        }
+
+        @SneakyThrows
+        @Override
+        public boolean hasNext() {
+            if( end ) return false;
+
+            if( obj != null ) return true;
+
+            SIMPLE_TIME_LIMITER.runWithTimeout( () -> {
+                try {
+                    var next = dis.readInt();
+                    if( next > 0 ) {
+                        obj = fst.readObject( dis, next );
+                    } else {
+                        end = true;
+                        obj = null;
+                        dis.close();
+                    }
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+            }, timeout, MILLISECONDS );
+
+            return obj != null;
+        }
+
+        @SneakyThrows
+        @Override
+        public Object next() {
+            var o = obj;
+            obj = null;
+            hasNext();
+            return o;
+        }
     }
 }

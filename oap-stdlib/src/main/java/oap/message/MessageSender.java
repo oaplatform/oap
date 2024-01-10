@@ -66,6 +66,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,7 +75,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
@@ -195,16 +195,24 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
+        return send( messageType, ( short ) 1, data, writer );
+    }
+
+    public <T> MessageSender send( byte messageType, short version, T data, ContentWriter<T> writer ) {
         byte[] bytes = writer.write( data );
-        return send( messageType, bytes, 0, bytes.length );
+        return send( messageType, version, bytes, 0, bytes.length );
     }
 
     public MessageSender send( byte messageType, byte[] data, int offset, int length ) {
+        return send( messageType, ( short ) 1, data, offset, length );
+    }
+
+    public MessageSender send( byte messageType, short version, byte[] data, int offset, int length ) {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
         var md5 = DigestUtils.getMd5Digest().digest( data );
-        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data, offset, length );
+        var message = new Message( clientId, messageType, version, ByteSequence.of( md5 ), data, offset, length );
         messages.add( message );
 
         return this;
@@ -221,11 +229,18 @@ public class MessageSender implements Closeable, AutoCloseable {
 
         int count = 0;
         while( count < 100 && !messages.inProgress.isEmpty() ) {
-            LockSupport.parkNanos( 100_000_000 );
-            count++;
+            try {
+                Thread.sleep( 100 );
+                count++;
+            } catch( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
+
         httpClient.dispatcher().executorService().shutdown();
         httpClient.connectionPool().evictAll();
+
         saveMessagesToDirectory( directory );
     }
 
@@ -246,14 +261,14 @@ public class MessageSender implements Closeable, AutoCloseable {
             var parentDirectory = directory
                 .resolve( Long.toHexString( clientId ) )
                 .resolve( String.valueOf( Byte.toUnsignedInt( message.messageType ) ) );
-            var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + ".bin.tmp" );
+            var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin.tmp" );
             log.debug( "[{}] writing unsent message to {}", name, tmpMsgPath );
             try {
                 Files.write( tmpMsgPath, message.data, ContentWriter.ofBytes() );
-                var msgPath = parentDirectory.resolve( message.getHexMd5() + ".bin" );
+                var msgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
-                log.error( "Could not save message. [{}] type: {}, md5: {}, data: {}",
+                log.error( "[{}] type: {}, md5: {}, data: {}",
                     name, message.messageType, message.getHexMd5(), message.getHexData(), e );
             }
         }
@@ -278,7 +293,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
                  DataOutputStream out = new DataOutputStream( buf ) ) {
                 out.writeByte( message.messageType );
-                out.writeShort( PROTOCOL_VERSION_1 );
+                out.writeShort( message.version );
                 out.writeLong( message.clientId );
 
                 out.write( message.md5.bytes );
@@ -295,12 +310,12 @@ public class MessageSender implements Closeable, AutoCloseable {
                     .build();
                 Call call = httpClient.newCall( request );
                 var response = call.execute();
-                if ( response.code() >= 300 || response.code() < 200 ) {
+                if( response.code() >= 300 || response.code() < 200 ) {
                     throw new IOException( "Not OK (" + response.code() + ") response code returned for url: " + messageUrl );
                 }
                 return onOkRespone( messageInfo, response, now );
 
-            } catch( IOException e ) {
+            } catch( UnknownHostException e ) {
                 processException( messageInfo, now, message, e, true );
 
                 ioExceptionStartRetryTimeout = now;
@@ -395,15 +410,20 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
-        if ( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 ) {
-            log.trace( "[{}] sync (ready: {}, retry: {}, inprogress: {}) ...",
-                    name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
-        }
+        if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
+            log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
+            name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
+
         long now = DateTimeUtils.currentTimeMillis();
+
         if( isGlobalIoRetryTimeout( now ) ) return;
+
         long period = currentPeriod( now );
+
         Messages.MessageInfo messageInfo = null;
+
         messages.retry();
+
         do {
             now = DateTimeUtils.currentTimeMillis();
 
@@ -432,7 +452,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     private boolean isGlobalIoRetryTimeout( long now ) {
-        return globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
+        return ioExceptionStartRetryTimeout > 0 && globalIoRetryTimeout > 0 && ioExceptionStartRetryTimeout + globalIoRetryTimeout > now;
     }
 
     private long currentPeriod( long time ) {
@@ -445,29 +465,26 @@ public class MessageSender implements Closeable, AutoCloseable {
 
         try( DirectoryStream<Path> clientIdStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             for( var clientIdPath : clientIdStream ) {
-                Pair<Boolean, Long> isValidClientId = getValidClientId( clientIdPath );
-                if( !isValidClientId._1 ) {
+                if( !isValidClientId( clientIdPath ) ) {
                     log.warn( "invalid client id {}", clientIdPath );
                     Files.deleteSafely( clientIdPath );
                     continue;
                 }
 
-                var msgClientId = isValidClientId._2;
+                var msgClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
                 try( DirectoryStream<Path> messageTypeStream = java.nio.file.Files.newDirectoryStream( clientIdPath ) ) {
                     for( var messageTypePath : messageTypeStream ) {
-                        Pair<Boolean, Byte> validMessageType = getValidMessageType( messageTypePath );
-                        if( !validMessageType._1 ) {
+                        if( !isValidMessageType( messageTypePath ) ) {
                             log.warn( "invalid message type {}", messageTypePath );
                             Files.deleteSafely( messageTypePath );
                             continue;
                         }
 
-                        var messageType = validMessageType._2;
+                        var messageType = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
 
                         try( DirectoryStream<Path> messageStream = java.nio.file.Files.newDirectoryStream( messageTypePath ) ) {
                             for( var messagePath : messageStream ) {
-                                Pair<Boolean, ByteSequence> validMessage = getValidMessage( messagePath );
-                                if( !validMessage._1 ) {
+                                if( !isValidMessage( messagePath ) ) {
                                     log.warn( "invalid message {}", messagePath );
                                     Files.deleteSafely( messagePath );
                                     continue;
@@ -479,9 +496,22 @@ public class MessageSender implements Closeable, AutoCloseable {
                                         log.warn( "invalid lock file {}", messagePath );
                                         Files.deleteSafely( messagePath );
                                     }
+
                                     continue;
                                 }
-                                var md5 = validMessage._2;
+
+                                String md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+                                String md5Hex;
+                                short version;
+                                var versionStart = md5HexWithVersion.lastIndexOf( '-' );
+                                if( versionStart > 0 ) {
+                                    version = Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
+                                    md5Hex = md5HexWithVersion.substring( 0, versionStart );
+                                } else {
+                                    version = 1;
+                                    md5Hex = md5HexWithVersion;
+                                }
+                                var md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
 
                                 Path lockFile;
 
@@ -489,14 +519,14 @@ public class MessageSender implements Closeable, AutoCloseable {
                                     if( closed ) return this;
 
                                     if( ( lockFile = lock( messagePath, storageLockExpiration ) ) != null ) {
-                                        log.trace( "[{}] reading unsent message {}", name, messagePath );
+                                        log.info( "[{}] reading unsent message {}", name, messagePath );
                                         try {
                                             var data = Files.read( messagePath, ContentReader.ofBytes() );
 
                                             log.info( "[{}] client id {} message type {} md5 {}",
-                                                name, msgClientId, messageTypeToString( messageType ), md5.toString() );
+                                                name, msgClientId, messageTypeToString( messageType ), md5Hex );
 
-                                            var message = new Message( clientId, messageType, md5, data );
+                                            var message = new Message( clientId, messageType, version, md5, data );
                                             messages.add( message );
 
                                             Files.delete( messagePath );
@@ -519,35 +549,40 @@ public class MessageSender implements Closeable, AutoCloseable {
         return this;
     }
 
-    private Pair<Boolean, ByteSequence> getValidMessage( Path messagePath ) {
+    private boolean isValidMessage( Path messagePath ) {
         try {
-            String name = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
-            ByteSequence byteSequence = ByteSequence.of( Hex.decodeHex( name ) );
-            return Pair.__( !java.nio.file.Files.isDirectory( messagePath )
-                && ( messagePath.toString().endsWith( ".bin" ) || messagePath.toString().endsWith( ".lock" ) )
-                && byteSequence != null, byteSequence );
-        } catch( DecoderException e ) {
-            return Pair.__( false, null );
+            if( java.nio.file.Files.isDirectory( messagePath ) ) return false;
+            String messageFile = messagePath.toString();
+            if( !messageFile.endsWith( ".bin" ) && !messageFile.endsWith( ".lock" ) ) return false;
+
+            var md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+            var versionStart = md5HexWithVersion.lastIndexOf( '-' );
+            if( versionStart > 0 ) {
+                Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
+                ByteSequence.of( Hex.decodeHex( md5HexWithVersion.substring( 0, versionStart ) ) );
+            } else {
+                ByteSequence.of( Hex.decodeHex( md5HexWithVersion ) );
+            }
+
+            return true;
+        } catch( DecoderException | NumberFormatException e ) {
+            return false;
         }
     }
 
-    private Pair<Boolean, Byte> getValidMessageType( Path messageTypePath ) {
+    private boolean isValidMessageType( Path messageTypePath ) {
         try {
-            boolean isDirectory = java.nio.file.Files.isDirectory( messageTypePath );
-            byte type = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
-            return Pair.__( isDirectory && type > 0, type );
+            return java.nio.file.Files.isDirectory( messageTypePath ) && ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) ) > 0;
         } catch( NumberFormatException e ) {
-            return Pair.__( false, ( byte ) 0 );
+            return false;
         }
     }
 
-    private Pair<Boolean, Long> getValidClientId( Path clientIdPath ) {
+    private boolean isValidClientId( Path clientIdPath ) {
         try {
-            boolean isDirectory = java.nio.file.Files.isDirectory( clientIdPath );
-            long messageClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
-            return Pair.__( isDirectory && messageClientId > 0, messageClientId );
+            return java.nio.file.Files.isDirectory( clientIdPath ) && Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 ) > 0;
         } catch( NumberFormatException e ) {
-            return Pair.__( false, 0L );
+            return false;
         }
     }
 

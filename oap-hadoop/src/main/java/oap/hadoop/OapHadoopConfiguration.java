@@ -1,5 +1,7 @@
 package oap.hadoop;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +15,11 @@ import java.util.Map;
 @Slf4j
 @ToString
 public class OapHadoopConfiguration extends Configuration {
-    private final OapFileSystemType fileSystemType;
+    public OapFileSystemType fileSystemType;
 
-    public OapHadoopConfiguration( OapFileSystemType fileSystemType, Map<String, Object> configuration ) {
+    @JsonCreator
+    public OapHadoopConfiguration( @JsonProperty OapFileSystemType fileSystemType,
+                                   @JsonProperty Map<String, Object> configuration ) {
         super( false );
         this.fileSystemType = fileSystemType;
 
@@ -83,5 +87,24 @@ public class OapHadoopConfiguration extends Configuration {
 
     public Path getPath( String name ) {
         return fileSystemType.getPath( name, this );
+    }
+
+    @JsonProperty
+    public Map<String, String> getConfiguration() {
+        var ret = new LinkedHashMap<String, String>();
+        getProps().forEach( ( k, v ) -> ret.put( ( String ) k, ( String ) v ) );
+        return ret;
+    }
+
+    public void set( OapHadoopConfiguration oapHadoopConfiguration ) {
+        reset();
+
+        this.fileSystemType = oapHadoopConfiguration.fileSystemType;
+
+        oapHadoopConfiguration.getConfiguration().forEach( this::set );
+    }
+
+    public void reset() {
+        reloadConfiguration();
     }
 }

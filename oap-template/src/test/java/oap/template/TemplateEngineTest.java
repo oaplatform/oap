@@ -27,39 +27,44 @@ package oap.template;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Dates;
+import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
-import org.testng.annotations.BeforeClass;
+import org.codehaus.plexus.util.StringUtils;
+import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.template.ErrorStrategy.ERROR;
+import static oap.template.ErrorStrategy.IGNORE;
+import static oap.template.TemplateAccumulators.BINARY;
+import static oap.template.TemplateAccumulators.OBJECT;
 import static oap.template.TemplateAccumulators.STRING;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateEngineTest extends Fixtures {
     private TemplateEngine engine;
-    private TemplateEngine engine2;
-    private TemplateEngine engine3;
     private String testMethodName;
 
     public TemplateEngineTest() {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    @BeforeClass
-    public void beforeClass() {
-        engine = new TemplateEngine( TestDirectoryFixture.testDirectory() );
-        engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
-        engine3 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+    @BeforeMethod
+    public void beforeCMethod() {
+        engine = new TemplateEngine( Dates.d( 10 ) );
     }
 
     @BeforeMethod
@@ -69,18 +74,23 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testRenderStringText() {
-        var template1 = engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
-        }, "sdkjf hdkfgj d$...{}", STRING, null );
-        var template2 = engine2.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
-        }, "doromet bulla ah sodoj trimac$...{}", STRING, null );
-        var template3sameAs2 = engine3.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {
-        }, "doromet bulla ah sodoj trimac$...{}", STRING, null );
-        assertThat( template1.render( null ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ).get() )
             .isEqualTo( "sdkjf hdkfgj d$...{}" );
-        assertThat( template2.render( null ) )
-                .isEqualTo( "doromet bulla ah sodoj trimac$...{}" );
-        assertThat( template3sameAs2.render( null ) )
-                .isEqualTo( "doromet bulla ah sodoj trimac$...{}" );
+    }
+
+    @Test
+    public void testWithoutDefaultValue() {
+        var c = new TestTemplateClass();
+        c.childNullable = new TestTemplateClass();
+        c.childNullable.longField = 0;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.longField}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( 0L );
+    }
+
+    @Test
+    public void testRenderUNKNOWNStringTextAsBinary() throws IOException {
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, Strings.UNKNOWN, BINARY, null ).render( null ).get() ) )
+            .isEqualTo( List.of( List.of( "" ) ) );
     }
 
     @Test
@@ -89,7 +99,7 @@ public class TemplateEngineTest extends Fixtures {
         c.field = "1";
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
-            .render( c ) ).isEqualTo( "12\t12" );
+            .render( c ).get() ).isEqualTo( "12\t12" );
     }
 
     @Test
@@ -98,18 +108,18 @@ public class TemplateEngineTest extends Fixtures {
         c.field = "1";
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "$${field}", new TestTemplateAccumulatorString(), null )
-            .render( c ) ).isEqualTo( "${field}" );
+            .render( c ).get() ).isEqualTo( "${field}" );
     }
 
     @Test
     public void testMapProperty() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${prop}", STRING, null ).render( Map.of( "prop", "val" ) ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${prop}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
             .isEqualTo( "val" );
     }
 
     @Test
     public void testEscapeClassName() {
-        assertThat( engine.getTemplate( "111-" + testMethodName + "-? ()?пп1", new TypeRef<Map<String, String>>() {}, "${prop}", STRING, null ).render( Map.of( "prop", "val" ) ) )
+        assertThat( engine.getTemplate( "111-" + testMethodName + "-? ()?пп1", new TypeRef<Map<String, String>>() {}, "${prop}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
             .isEqualTo( "val" );
     }
 
@@ -117,7 +127,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testField() {
         var c = new TestTemplateClass();
         c.field = "val1";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
     }
 
@@ -125,9 +135,9 @@ public class TemplateEngineTest extends Fixtures {
     public void testFieldWithJsonProperty() {
         var c = new TestTemplateClass();
         c.jsonTest = "val1";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTest}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTest}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestNew}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestNew}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
     }
 
@@ -135,11 +145,11 @@ public class TemplateEngineTest extends Fixtures {
     public void testFieldWithJsonAlias() {
         var c = new TestTemplateClass();
         c.jsonTest = "val1";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTest}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTest}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestAlias1}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestAlias1}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestAlias2}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${jsonTestAlias2}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
     }
 
@@ -147,7 +157,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testEnumField() {
         var c = new TestTemplateClass();
         c.enumField = TestTemplateEnum.VAL1;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING, null ).render( c ).get() )
             .isEqualTo( "VAL1" );
     }
 
@@ -155,15 +165,22 @@ public class TemplateEngineTest extends Fixtures {
     public void testListField() {
         var c = new TestTemplateClass();
         c.list = List.of( 1, 2, 3 );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list}", STRING, null ).render( c ).get() )
             .isEqualTo( "[1,2,3]" );
+    }
+
+    @Test
+    public void testListFieldWithoutDefault() {
+        var c = new TestTemplateClass();
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list}", STRING, null ).render( c ).get() )
+            .isEqualTo( "[]" );
     }
 
     @Test
     public void testListString() {
         var c = new TestTemplateClass();
         c.listString = List.of( "1", "'", "\\" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listString}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listString}", STRING, null ).render( c ).get() )
             .isEqualTo( "['1','\\'','\\\\']" );
     }
 
@@ -171,7 +188,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testListEnum() {
         var c = new TestTemplateClass();
         c.listEnum = List.of( TestTemplateEnum.VAL2, TestTemplateEnum.VAL1 );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listEnum}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listEnum}", STRING, null ).render( c ).get() )
             .isEqualTo( "['VAL2','VAL1']" );
     }
 
@@ -179,7 +196,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testListFieldDefaultValue() {
         var c = new TestTemplateClass();
         c.list = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list??[]}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list??[]}", STRING, null ).render( c ).get() )
             .isEqualTo( "[]" );
     }
 
@@ -189,7 +206,7 @@ public class TemplateEngineTest extends Fixtures {
         var c2 = new TestTemplateClass();
         c1.child = c2;
         c2.field = "val3";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING, null ).render( c1 ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING, null ).render( c1 ).get() )
             .isEqualTo( "val3" );
     }
 
@@ -198,7 +215,7 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | field2}", STRING, null ).render( c ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -207,7 +224,7 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.list2 = List.of( 2, 3 );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list | list2}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list | list2}", STRING, null ).render( c ).get() )
             .isEqualTo( "[2,3]" );
     }
 
@@ -216,11 +233,11 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
 
         c.fieldOpt = Optional.of( "o" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldOpt}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldOpt}", STRING, null ).render( c ).get() )
             .isEqualTo( "o" );
 
         c.fieldOpt = Optional.empty();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldOpt}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldOpt}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -232,11 +249,11 @@ public class TemplateEngineTest extends Fixtures {
         c.intField = 10;
 
         cp.childOpt = Optional.of( c );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING, null ).render( cp ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}-${childOpt.intField}", STRING, Map.of(), IGNORE ).render( cp ).get() )
             .isEqualTo( "o-10" );
 
         cp.childOpt = Optional.empty();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}", STRING, null ).render( cp ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childOpt.fieldOpt}", STRING, null ).render( cp ).get() )
             .isEqualTo( "" );
     }
 
@@ -245,11 +262,11 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
 
         c.fieldNullable = "o";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldNullable}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldNullable}", STRING, null ).render( c ).get() )
             .isEqualTo( "o" );
 
         c.fieldNullable = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldNullable}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldNullable}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -260,23 +277,23 @@ public class TemplateEngineTest extends Fixtures {
         c.fieldNullable = "o";
 
         cp.childNullable = c;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable}", STRING, null ).render( cp ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable??''}", STRING, null ).render( cp ).get() )
             .isEqualTo( "o" );
 
         cp.childNullable = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable}", STRING, null ).render( cp ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.fieldNullable??''}", STRING, null ).render( cp ).get() )
             .isEqualTo( "" );
     }
 
     @Test
     public void testDefaultString() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${bbb??'test'}", STRING, null ).render( Map.of( "prop", "val" ) ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${bbb??'test'}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
             .isEqualTo( "test" );
     }
 
     @Test
     public void testDefaultInt() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "${bbb??-1}", STRING, null ).render( Map.of( "prop", 1 ) ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "${bbb??-1}", STRING, null ).render( Map.of( "prop", 1 ) ).get() )
             .isEqualTo( "-1" );
     }
 
@@ -286,21 +303,33 @@ public class TemplateEngineTest extends Fixtures {
         c.childNullable = null;
         c.childOpt = Optional.empty();
 
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childNullable.booleanObjectField??true}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childNullable.booleanObjectField??true}", STRING, null ).render( c ).get() )
             .isEqualTo( "true" );
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childOpt.booleanObjectField??true}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${childOpt.booleanObjectField??true}", STRING, Map.of(), IGNORE ).render( c ).get() )
             .isEqualTo( "true" );
     }
 
     @Test
     public void testDefaultDouble() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}", STRING, null ).render( Map.of( "prop", 1.1 ) ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}", STRING, null ).render( Map.of( "prop", 1.1 ) ).get() )
             .isEqualTo( "0.0" );
     }
 
     @Test
+    public void testDefaultDoubleBinary() throws IOException {
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "${bbb??0.0}", BINARY, null ).render( Map.of( "prop", 1.1 ) ).get() ) )
+            .isEqualTo( List.of( List.of( 0.0d ) ) );
+    }
+
+    @Test
+    public void testDefaultDateTime() throws IOException {
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${dateTimeOptional??'2023-01-04 18:09:11'}", BINARY, null ).render( new TestTemplateClass() ).get() ) )
+            .isEqualTo( List.of( List.of( new DateTime( 2023, 1, 4, 18, 9, 11, UTC ) ) ) );
+    }
+
+    @Test
     public void testMix() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-${prop}-${b}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-${prop}-${b}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ).get() )
             .isEqualTo( "-val-b1-" );
     }
 
@@ -316,7 +345,7 @@ public class TemplateEngineTest extends Fixtures {
         c3.field2 = "f2";
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child.field}", STRING,
-            Map.of( "child.field", "child2.field2" ), null ).render( c1 ) )
+            Map.of( "child.field", "child2.field2" ), ERROR ).render( c1 ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -326,15 +355,40 @@ public class TemplateEngineTest extends Fixtures {
         c1.field = "1";
         c1.field2 = "2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, Map.of(), null ).render( c1 ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field2}", STRING, Map.of(), null ).render( c1 ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field2}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "2" );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
-        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, Map.of(), null ).render( c1 ) )
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
+    }
+
+    @Test
+    public void testDiskCacheChangeSourceCode() throws IOException {
+        engine = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+        var c1 = new TestTemplateClass();
+        c1.field = "1";
+        c1.field2 = "2";
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
+            .isEqualTo( "1" );
+
+        replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.class" );
+        replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.java" );
+
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
+            .isEqualTo( "1" );
+    }
+
+    private static void replace( String fileName ) throws IOException {
+        File file = TestDirectoryFixture.testPath( fileName ).toFile();
+        String classStr = new String( FileUtils.readFileToByteArray( file ), ISO_8859_1 );
+        byte[] classBytes = StringUtils.replace( classStr, "TemplateAccumulator", "Fake____Accumulator" ).getBytes( ISO_8859_1 );
+        FileUtils.writeByteArrayToFile( file, classBytes );
     }
 
     @Test
@@ -347,7 +401,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testExt() {
         var c = new TestTemplateClass();
         c.ext2 = new TestTemplateClassExt( "ev" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a|ext2.a}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a|ext2.a}", STRING, null ).render( c ).get() )
             .isEqualTo( "ev" );
     }
 
@@ -357,7 +411,7 @@ public class TemplateEngineTest extends Fixtures {
         c.field = "f1";
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{field,\"x\",field2}}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{field,\"x\",field2}}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -369,7 +423,7 @@ public class TemplateEngineTest extends Fixtures {
         c1.field = "f1";
         c1.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child{field,\"x\",field2}}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child{field,\"x\",field2}}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -381,7 +435,7 @@ public class TemplateEngineTest extends Fixtures {
         c1.field2 = "f1";
         c1.field22 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child2.{field2,\"x\",field22}}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${child2.{field2,\"x\",field22}}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -390,17 +444,16 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.intField = 123;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45}", STRING, null ).render( c ).get() )
             .isEqualTo( "135.45" );
     }
 
     @Test
     public void testSumDefault() {
         var c = new TestTemplateClass();
-        c.intField = 123;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + 12.45 ?? 5}", STRING, null ).render( c ) )
-            .isEqualTo( "135.45" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intObjectField + 12.45 ?? 5}", STRING, null ).render( c ).get() )
+            .isEqualTo( "5" );
     }
 
     @Test
@@ -408,7 +461,7 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.intField = 123;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${/* intField */intField}", STRING, null ).render( c ) )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${/* intField */intField}", STRING, null ).render( c ).get() )
             .isEqualTo( "123" );
     }
 
@@ -430,10 +483,36 @@ public class TemplateEngineTest extends Fixtures {
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "booleanField:${booleanField},booleanObjectField:${booleanObjectField},intField:${intField},intObjectField:${intObjectField}",
-            templateAccumulator, ERROR, null ).render( templateClass );
+            templateAccumulator, ERROR, null ).render( templateClass ).get();
 
 
         assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
+    }
+
+    @SuppressWarnings( "checkstyle:NoWhitespaceBefore" )
+    @Test
+    public void testPrimitiveAsObjectDefaultValue() {
+        var templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        var templateClass = new TestTemplateClass();
+
+        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "booleanField:${booleanField??true},booleanObjectField:${booleanObjectField??true}"
+                + ",byteField:${byteField??1},byteObjectField:${byteObjectField??1}"
+                + ",shortField:${shortField??1},shortObjectField:${shortObjectField??1}"
+                + ",intField:${intField??1},intObjectField:${intObjectField??1}"
+                + ",longField:${longField??1},longObjectField:${longObjectField??1}"
+                + ",floatField:${floatField??1},floatObjectField:${floatObjectField??1}"
+                + ",doubleField:${doubleField??1},doubleObjectField:${doubleObjectField??1}"
+            , templateAccumulator, ERROR, null ).render( templateClass ).get();
+
+
+        assertString( str ).isEqualTo( "booleanField:false_b,booleanObjectField:true_b"
+            + ",byteField:0,byteObjectField:1"
+            + ",shortField:0,shortObjectField:1"
+            + ",intField:0_i,intObjectField:1_i"
+            + ",longField:0,longObjectField:1"
+            + ",floatField:0.0,floatObjectField:1.0"
+            + ",doubleField:0.0,doubleObjectField:1.0" );
     }
 
     @Test
@@ -444,14 +523,14 @@ public class TemplateEngineTest extends Fixtures {
         c.field = "1";
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
-            .render( c ) ).isEqualTo( "12\t12" );
+            .render( c ).get() ).isEqualTo( "12\t12" );
 
         FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory() );
+        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 20 ) );
 
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
-            .render( c ) ).isEqualTo( "12\t12" );
+            .render( c ).get() ).isEqualTo( "12\t12" );
     }
 
     public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {

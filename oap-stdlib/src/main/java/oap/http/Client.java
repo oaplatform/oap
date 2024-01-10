@@ -43,6 +43,7 @@ import oap.util.Stream;
 import oap.util.Throwables;
 import oap.util.function.Try;
 import oap.util.function.Try.ThrowingRunnable;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -118,7 +119,6 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Dates.m;
 import static oap.util.Pair.__;
-import static org.apache.commons.lang3.StringUtils.split;
 
 @Slf4j
 public final class Client implements Closeable, AutoCloseable {
@@ -844,5 +844,12 @@ public final class Client implements Closeable, AutoCloseable {
                 response.close();
             }
         }
+    }
+
+    private static String[] split( final String s ) {
+        if( StringUtils.isBlank( s ) ) {
+            return null;
+        }
+        return s.split( " *, *" );
     }
 }

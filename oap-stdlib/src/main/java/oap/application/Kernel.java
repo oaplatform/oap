@@ -156,7 +156,7 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public void start( ApplicationConfiguration config ) throws ApplicationException {
-        log.debug( "initializing application kernel  {} with config {}", name, config );
+        log.debug( "initializing application kernel {} with config boot {}, services {}", name, config.boot, config.services.keySet() );
 
         this.profiles.addAll( config.getProfiles() );
 
@@ -171,7 +171,6 @@ public class Kernel implements Closeable, AutoCloseable {
             this.modules.add( new ModuleWithLocation( module, moduleConfiguration ) );
         }
         log.debug( "modules = {}, profiles = {}", Sets.map( this.modules, m -> m.module.name ), profiles );
-        log.trace( "modules configs = {}", this.modules );
 
         checkForUnknownServices( config.services );
 

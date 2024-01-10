@@ -49,21 +49,17 @@ public final class MessageProtocol {
     private static final HashMap<Short, String> statusMap = new HashMap<>();
     private static final HashMap<Byte, String> typeMap = new HashMap<>();
 
-    private static final String TYPE_PREFIX = "type.";
-
-    private static final String MAP_PREFIX = "map.";
-
     static {
         var properties = Resources.readAllProperties( "META-INF/oap-messages.properties" );
         for( var propertyName : properties.stringPropertyNames() ) {
             var key = propertyName.trim();
-            if( key.startsWith( TYPE_PREFIX ) ) {
-                key = key.substring( TYPE_PREFIX.length() );
+            if( key.startsWith( "type." ) ) {
+                key = key.substring( 5 );
 
                 MessageProtocol.typeMap.put( Byte.decode( properties.getProperty( propertyName ) ), key );
                 continue;
-            } else if( key.startsWith( MAP_PREFIX ) ) {
-                key = key.substring( MAP_PREFIX.length() );
+            } else if( key.startsWith( "map." ) ) {
+                key = key.substring( 4 );
             }
 
             MessageProtocol.statusMap.put( Short.parseShort( properties.getProperty( propertyName ) ), key );

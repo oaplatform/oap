@@ -114,6 +114,7 @@ public class HttpServerExchangeStub {
         httpServerExchange.setRequestMethod( new HttpString( "GET" ) );
         httpServerExchange.setProtocol( Protocols.HTTP_1_1 );
         httpServerExchange.setDestinationAddress( new InetSocketAddress( 8081 ) );
+        httpServerExchange.setSourceAddress( new InetSocketAddress( 8081 ) );
 
         httpServerExchange.startBlocking( new BlockingHttpExchange() {
             @Override

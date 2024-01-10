@@ -24,19 +24,16 @@
 package oap.io;
 
 import com.google.common.io.ByteStreams;
+import io.airlift.compress.bzip2.BZip2HadoopStreams;
+import io.airlift.compress.gzip.JdkGzipHadoopStreams;
+import io.airlift.compress.lz4.Lz4HadoopStreams;
+import io.airlift.compress.zstd.ZstdHadoopStreams;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
-import net.jpountz.lz4.LZ4FrameInputStream;
-import net.jpountz.lz4.LZ4FrameOutputStream;
-import oap.compression.Compression;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.function.Try;
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -62,14 +59,16 @@ import java.util.zip.ZipOutputStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static net.jpountz.lz4.LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB;
-import static oap.compression.Compression.DEFAULT_BUFFER_SIZE;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.function.Functions.empty.consume;
 
 @Slf4j
 public class IoStreams {
     public static final int DEFAULT_BUFFER = 8192;
+    public static final BZip2HadoopStreams BZIP2_HADOOP_STREAMS = new BZip2HadoopStreams();
+    public static final Lz4HadoopStreams LZ4_HADOOP_STREAMS = new Lz4HadoopStreams();
+    public static final ZstdHadoopStreams ZSTD_HADOOP_STREAMS = new ZstdHadoopStreams();
+    public static final JdkGzipHadoopStreams GZIP_HADOOP_STREAMS = new JdkGzipHadoopStreams();
 
     public static Stream<String> lines( URL url ) {
         return lines( url, Encoding.from( url ), consume() );
@@ -208,20 +207,25 @@ public class IoStreams {
         OutputStream outputStream = safe
             ? new SafeFileOutputStream( path, append, encoding )
             : new FileOutputStream( path.toFile(), append );
-        OutputStream fos = bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
+        OutputStream fos =
+            bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize )
+                : outputStream;
         return switch( encoding ) {
-            case GZIP -> {
-                OutputStream gzout = Compression.gzip( fos, bufferSize > 0 ? bufferSize : DEFAULT_BUFFER_SIZE );
-                yield bufferSize > 0 ? new BufferedOutputStream( gzout, bufferSize ) : gzout;
+            case GZIP -> GZIP_HADOOP_STREAMS.createOutputStream( fos );
+            case BZIP2 -> {
+                OutputStream os = BZIP2_HADOOP_STREAMS.createOutputStream( fos );
+                yield bufferSize > 0 ? new BufferedOutputStream( os, bufferSize ) : os;
             }
             case ZIP -> {
                 var zip = new ZipOutputStream( fos );
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                 yield zip;
             }
-            case LZ4_BLOCK -> new LZ4BlockOutputStream( fos );
-            case LZ4 -> new LZ4FrameOutputStream( fos, SIZE_64KB );
-            case ZSTD -> new ZstdCompressorOutputStream( fos );
+            case LZ4 -> LZ4_HADOOP_STREAMS.createOutputStream( fos );
+            case ZSTD -> {
+                OutputStream os = ZSTD_HADOOP_STREAMS.createOutputStream( fos );
+                yield bufferSize > 0 ? new BufferedOutputStream( os, bufferSize ) : os;
+            }
             case PLAIN, ORC, PARQUET, AVRO -> fos;
         };
     }
@@ -285,7 +289,13 @@ public class IoStreams {
         switch( encoding ) {
             case GZIP:
                 try {
-                    return Compression.ungzip( stream );
+                    return GZIP_HADOOP_STREAMS.createInputStream( stream );
+                } catch( Exception e ) {
+                    stream.close();
+                }
+            case BZIP2:
+                try {
+                    return BZIP2_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                 }
@@ -300,23 +310,16 @@ public class IoStreams {
                 }
             case PLAIN, ORC, PARQUET, AVRO:
                 return stream;
-            case LZ4_BLOCK:
-                try {
-                    return new LZ4BlockInputStream( stream );
-                } catch( Exception e ) {
-                    stream.close();
-                    throw e;
-                }
             case LZ4:
                 try {
-                    return new LZ4FrameInputStream( stream );
+                    return LZ4_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                     throw e;
                 }
             case ZSTD:
                 try {
-                    return new ZstdCompressorInputStream( stream );
+                    return ZSTD_HADOOP_STREAMS.createInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                     throw e;
@@ -330,9 +333,9 @@ public class IoStreams {
         PLAIN( "", false, true, true ),
         ZIP( ".zip", true, false, true ),
         GZIP( ".gz", true, true, true ),
+        BZIP2( ".bz2", true, false, true ),
         ZSTD( ".zst", true, true, true ),
         LZ4( ".lz4", true, true, true ),
-        LZ4_BLOCK( ".lz4b", true, false, true ),
         ORC( ".orc", true, false, false ),
         PARQUET( ".parquet", true, false, false ),
         AVRO( ".avsc", true, false, false );
