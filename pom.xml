@@ -15,6 +15,7 @@
 
     <modules>
         <module>oap-stdlib</module>
+        <module>oap-stdlib-test</module>
         <module>oap-template</module>
         <module>oap-alert-slack</module>
         <module>oap-jpath</module>
