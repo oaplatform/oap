@@ -21,6 +21,7 @@
         <module>oap-jpath</module>
         <module>oap-pnio</module>
         <module>oap-hadoop</module>
+        <module>oap-hadoop-test</module>
         <module>oap-maven-plugin</module>
     </modules>
 
