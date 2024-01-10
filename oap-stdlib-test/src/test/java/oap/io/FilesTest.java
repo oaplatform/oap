@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.io.io;
+package oap.io;
 
 import oap.io.Files;
 import oap.io.InvalidFileEncodingException;

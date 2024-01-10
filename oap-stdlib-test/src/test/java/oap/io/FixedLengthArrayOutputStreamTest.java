@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.io.io;
+package oap.io;
 
 import oap.io.FixedLengthArrayOutputStream;
 import org.testng.annotations.Test;

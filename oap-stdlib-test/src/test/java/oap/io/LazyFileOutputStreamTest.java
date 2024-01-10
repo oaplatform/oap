@@ -22,56 +22,34 @@
  * SOFTWARE.
  */
 
-package oap.io.io;
+package oap.io;
 
 import lombok.SneakyThrows;
-import oap.io.AbstractFileSync;
-import oap.io.Files;
+import oap.io.LazyFileOutputStream;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import java.nio.file.Paths;
-
-import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FileSystemFileSyncTest extends Fixtures {
+public class LazyFileOutputStreamTest extends Fixtures {
     {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
     @SneakyThrows
-    public void sync() {
-        StringBuilder b = new StringBuilder();
+    public void write() {
+        var path = TestDirectoryFixture.testPath( "file1.txt" );
 
-        var remoteFile = TestDirectoryFixture.testPath( "rtest.file" ).toUri();
-        var localFile = TestDirectoryFixture.testPath( "ltest.file" );
+        new LazyFileOutputStream( path ).close();
 
-        Files.write( Paths.get( remoteFile ), "test", ofString() );
+        assertThat( path ).doesNotExist();
 
-        Files.setLastModifiedTime( Paths.get( remoteFile ), 10 );
+        try( var lfos = new LazyFileOutputStream( path ) ) {
+            lfos.write( '1' );
+        }
 
-        final AbstractFileSync fileSync = AbstractFileSync.create( remoteFile, localFile );
-        fileSync.addListener( path -> b.append( "f" ) );
-        fileSync.run();
-
-        assertThat( localFile ).hasContent( "test" );
-        assertThat( java.nio.file.Files.getLastModifiedTime( localFile ).toMillis() ).isEqualTo( 10L );
-        assertThat( b ).contains( "f" );
-
-        Files.write( Paths.get( remoteFile ), "test2", ofString() );
-        Files.setLastModifiedTime( Paths.get( remoteFile ), 10 );
-
-        fileSync.run();
-        assertThat( localFile ).hasContent( "test" );
-        assertThat( b ).contains( "f" );
-
-        Files.setLastModifiedTime( Paths.get( remoteFile ), 20L );
-        fileSync.run();
-        assertThat( localFile ).hasContent( "test2" );
-        assertThat( b ).contains( "ff" );
+        assertThat( path ).hasContent( "1" );
     }
-
 }

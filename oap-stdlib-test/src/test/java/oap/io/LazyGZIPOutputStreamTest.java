@@ -22,28 +22,38 @@
  * SOFTWARE.
  */
 
-package oap.io.io.content;
+package oap.io;
 
-import oap.io.content.ContentWriter;
-import oap.json.Binder;
+import lombok.SneakyThrows;
+import oap.io.Files;
+import oap.io.LazyFileOutputStream;
+import oap.io.LazyGZIPOutputStream;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static oap.io.content.ContentWriter.ofJson;
-import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ContentWriterTest {
-    @Test
-    public void write() {
-        Assertions.assertThat( ContentWriter.write( "string", ofString() ) )
-            .isEqualTo( "string".getBytes( UTF_8 ) );
-        assertThat( ContentWriter.write( new Bean(), ofJson() ) )
-            .isEqualTo( Binder.json.marshal( new Bean() ).getBytes( UTF_8 ) );
+public class LazyGZIPOutputStreamTest extends Fixtures {
+    {
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    public static class Bean {
-        String s = "aaa";
+    @Test
+    @SneakyThrows
+    public void gzip() {
+        var path = TestDirectoryFixture.testPath( "test.gz" );
+        new LazyGZIPOutputStream( new LazyFileOutputStream( path ) ).close();
+
+        assertThat( path ).doesNotExist();
+
+        try( var lfos = new LazyFileOutputStream( path );
+             var lgos = new LazyGZIPOutputStream( lfos ) ) {
+            lgos.write( '1' );
+        }
+
+        assertThat( path ).exists();
+        Assertions.assertThat( Files.readString( path ) ).isEqualTo( "1" );
     }
 }

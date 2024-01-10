@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.io.io.content;
+package oap.io.content;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

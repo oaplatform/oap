@@ -1,4 +1,4 @@
-package oap.io.io;
+package oap.io;
 
 import oap.io.StringStreamInputStream;
 import oap.util.Stream;

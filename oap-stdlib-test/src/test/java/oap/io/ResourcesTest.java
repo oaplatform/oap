@@ -22,9 +22,8 @@
  * SOFTWARE.
  */
 
-package oap.io.io;
+package oap.io;
 
-import oap.io.Resources;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
