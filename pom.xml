@@ -46,7 +46,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.2.0</oap.project.version>
+        <oap.project.version>21.2.1</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
 
@@ -70,6 +70,7 @@
 
         <oap.deps.apache.lang.version>3.14.0</oap.deps.apache.lang.version>
         <oap.deps.apache.commons.text.version>1.11.0</oap.deps.apache.commons.text.version>
+        <oap.deps.apache.commons.compress.version>1.25.0</oap.deps.apache.commons.compress.version>
         <oap.deps.apache.commons.codec.version>1.16.0</oap.deps.apache.commons.codec.version>
         <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
         <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
