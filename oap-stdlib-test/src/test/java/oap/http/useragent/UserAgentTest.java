@@ -26,7 +26,6 @@ package oap.http.useragent;
 
 import org.testng.annotations.Test;
 
-import static junit.framework.Assert.assertEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class UserAgentTest {
@@ -43,10 +42,11 @@ public class UserAgentTest {
 
     private static class Agent extends UserAgent {
         String version;
+
         Agent( String expectedBrowser, String versionAndAgentCsv ) {
             super( versionAndAgentCsv.replaceFirst( "^[^;]++;'(.*)'", "$1" ) );
             version = versionAndAgentCsv.replaceFirst( "^([^;]++);'.*'", "$1" );
-            assertEquals( expectedBrowser, browser.name() );
+            assertThat( expectedBrowser ).isEqualTo( browser.name() );
         }
     }
 
