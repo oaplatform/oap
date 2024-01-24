@@ -25,32 +25,18 @@
 package oap.http.server.nio;
 
 import com.google.common.base.Preconditions;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.ConsumptionProbe;
-import io.github.bucket4j.local.LocalBucketBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
-import io.undertow.conduits.GzipStreamSourceConduit;
-import io.undertow.conduits.InflatingStreamSourceConduit;
 import io.undertow.server.ConnectorStatistics;
 import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.BlockingReadTimeoutHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.server.handlers.encoding.ContentEncodingRepository;
-import io.undertow.server.handlers.encoding.DeflateEncodingProvider;
-import io.undertow.server.handlers.encoding.EncodingHandler;
-import io.undertow.server.handlers.encoding.GzipEncodingProvider;
-import io.undertow.server.handlers.encoding.RequestEncodingHandler;
-import io.undertow.util.HttpString;
-import io.undertow.util.StatusCodes;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Dates;
+import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.util.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.xnio.Options;
@@ -67,32 +53,22 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class NioHttpServer implements Closeable, AutoCloseable {
     public static final String DEFAULT_HTTP_PORT = "default-http";
     public static final String DEFAULT_HTTPS_PORT = "default-https";
-    public static final String DEFLATE = "deflate";
-    public static final String GZIP = "gzip";
     public static final String NIO_REQUESTS = "nio_requests";
     public static final String NIO_POOL_SIZE = "nio_pool_size";
     public static final String ACTIVE = "active";
     public static final String WORKER = "worker";
 
-    private static Bandwidth defaultLimit;
-
-    static {
-        defaultLimit = Bandwidth.simple( 1_000_000L, Duration.ofSeconds( 1 ) );
-    }
-
-    public final List<Bandwidth> bandwidths = Lists.of( defaultLimit );
     public final DefaultPort defaultPort;
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
@@ -100,7 +76,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
     private final Map<Integer, Holder> servers = new HashMap<>();
 
-    private final ContentEncodingRepository contentEncodingRepository;
     private final AtomicLong requestId = new AtomicLong();
     public int backlog = -1;
     public long idleTimeout = -1;
@@ -112,14 +87,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public int maxHeaders = -1; // default = 200
     public int maxHeaderSize = -1; // default = 1024 * 1024
     public boolean statistics = false;
-    public boolean forceCompressionSupport = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
-    public long readTimeout = Dates.s( 60 );
-
-    private Bucket bucket;
 
     private final KeyManager[] keyManagers;
+
+    public final ArrayList<NioHandler> handlers = new ArrayList<>();
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
@@ -139,10 +112,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         if( isHttpsEnabled() ) {
             pathHandler.put( defaultPort.httpsPort, new PathHandler() );
         }
-
-        contentEncodingRepository = new ContentEncodingRepository();
-        contentEncodingRepository.addEncodingHandler( GZIP, new GzipEncodingProvider(), 100 );
-        contentEncodingRepository.addEncodingHandler( DEFLATE, new DeflateEncodingProvider(), 50 );
     }
 
     private boolean isHttpsEnabled() {
@@ -169,9 +138,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new PathHandler() ) );
 
         pathHandler.forEach( this::startNewPort );
-        LocalBucketBuilder builder = Bucket.builder();
-        bandwidths.forEach( builder::addLimit );
-        bucket = builder.build();
     }
 
     private void startNewPort( int port, PathHandler portPathHandler ) {
@@ -235,19 +201,19 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         builder.setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, alwaysSetKeepAlive );
 
         io.undertow.server.HttpHandler handler = portPathHandler;
-        if( forceCompressionSupport ) {
-            handler = new EncodingHandler( handler, contentEncodingRepository );
-            handler = new RequestEncodingHandler( handler )
-                .addEncoding( GZIP, GzipStreamSourceConduit.WRAPPER )
-                .addEncoding( DEFLATE, InflatingStreamSourceConduit.WRAPPER );
+
+        for( int i = handlers.size() - 1; i >= 0; i-- ) {
+            NioHandler nioHandler = handlers.get( i );
+            if( nioHandler instanceof AbstractNioHandler comp ) {
+                comp.httpHandler = handler;
+                handler = comp;
+            } else if( nioHandler instanceof NioHandlerBuilder nioHandlerBuilder ) {
+                handler = nioHandlerBuilder.build( handler );
+            } else {
+                throw new IllegalArgumentException( "unknown handler type " + nioHandler.getClass() );
+            }
         }
 
-        if( readTimeout > 0 ) {
-            handler = BlockingReadTimeoutHandler.builder()
-                .readTimeout( Duration.ofMillis( readTimeout ) )
-                .nextHandler( handler )
-                .build();
-        }
         handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
@@ -287,23 +253,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         log.debug( "binding '{}' on port: {}:{} ...", prefix, portName, port );
         io.undertow.server.HttpHandler httpHandler = exchange -> {
             HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
-            ConsumptionProbe probe = bucket != null ? bucket.tryConsumeAndReturnRemaining( 1 ) : null;
-            if( probe == null || probe.isConsumed() ) {
-                // allowed
-                handler.handleRequest( serverExchange );
-            } else {
-                exchange.setStatusCode( StatusCodes.TOO_MANY_REQUESTS );
-                long nanosToRetry = TimeUnit.NANOSECONDS.toSeconds( probe.getNanosToWaitForRefill() );
-                exchange.getResponseHeaders().add( HttpString.tryFromString( "X-Rate-Limit-Retry-After-Seconds" ), nanosToRetry );
-                exchange.setReasonPhrase( "Too many requests" );
-            }
+            handler.handleRequest( serverExchange );
         };
 
-        if( !forceCompressionSupport && compressionSupport ) {
-            httpHandler = new EncodingHandler( httpHandler, contentEncodingRepository );
-            httpHandler = new RequestEncodingHandler( httpHandler )
-                .addEncoding( GZIP, GzipStreamSourceConduit.WRAPPER )
-                .addEncoding( DEFLATE, InflatingStreamSourceConduit.WRAPPER );
+        if( !hasHandler( CompressionNioHandler.class ) && compressionSupport ) {
+            httpHandler = new CompressionNioHandler().build( httpHandler );
         }
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
@@ -405,5 +359,9 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         KeyManager[] managers = getKeyManagers( keyStore, password );
         log.info( "makeKeyManagers({}, {}) created KeyManagers {}", keyStoreLocation, password.length(), managers );
         return managers;
+    }
+
+    private boolean hasHandler( Class<? extends NioHandler> handlerClass ) {
+        return Lists.anyMatch( handlers, h -> h.getClass().equals( handlerClass ) );
     }
 }
