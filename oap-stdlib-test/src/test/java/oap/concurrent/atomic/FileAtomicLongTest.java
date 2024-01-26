@@ -60,11 +60,11 @@ public class FileAtomicLongTest extends Fixtures {
 
     @Test
     public void testCompareAndSet() throws IOException {
-        assertThat( fileAtomicLong1.compareAndSet( -1,-12L ) ).isFalse();
+        assertThat( fileAtomicLong1.compareAndSet( -1, -12L ) ).isFalse();
         assertThat( fileAtomicLong2.get() ).isEqualTo( 0L );
-        assertThat( fileAtomicLong1.compareAndSet( 0,-12L ) ).isTrue();
+        assertThat( fileAtomicLong1.compareAndSet( 0, -12L ) ).isTrue();
         assertThat( fileAtomicLong2.get() ).isEqualTo( -12L );
-        assertThat( fileAtomicLong1.compareAndSet( -1,6L ) ).isFalse();
+        assertThat( fileAtomicLong1.compareAndSet( -1, 6L ) ).isFalse();
     }
 
     @Test
