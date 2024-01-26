@@ -43,7 +43,7 @@ import static oap.testng.Asserts.locationOfTestResource;
 @Slf4j
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
     public static final String NO_PREFIX = "";
-    public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/test/port.lock", 1, 10000 );
+    public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/port.lock", 1, 10000 );
     protected final String prefix;
     private final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
