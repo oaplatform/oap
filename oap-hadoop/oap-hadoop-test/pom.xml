@@ -47,7 +47,7 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-hadoop-parent</artifactId>
+            <artifactId>oap-hadoop</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
