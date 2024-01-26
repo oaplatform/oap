@@ -28,6 +28,7 @@ package oap.testng;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
+import oap.concurrent.atomic.FileAtomicLong;
 import oap.io.Sockets;
 import oap.util.Strings;
 
@@ -36,14 +37,13 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.testng.Asserts.locationOfTestResource;
 
 @Slf4j
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
     public static final String NO_PREFIX = "";
-    public static final AtomicInteger LAST_PORT = new AtomicInteger( 20000 );
+    public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/test/port.lock", 1, 10000 );
     protected final String prefix;
     private final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
@@ -108,7 +108,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
                 return ports.computeIfAbsent( prefix + key, k -> {
                     int port;
                     do {
-                        port = LAST_PORT.incrementAndGet();
+                        port = ( int ) LAST_PORT.updateAndGet( previousPort -> previousPort > 30000 ? 10000 : previousPort + 1 );
                     } while( !Sockets.isTcpPortAvailable( port ) );
 
                     log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, port );
