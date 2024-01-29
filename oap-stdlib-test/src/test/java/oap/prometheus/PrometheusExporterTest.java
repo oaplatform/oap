@@ -24,20 +24,20 @@
 
 package oap.prometheus;
 
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrometheusExporterTest extends Fixtures {
-    private static final Counter TEST_1 = Metrics.counter( "test1" );
     private final EnvFixture envFixture;
 
     public PrometheusExporterTest() {
@@ -49,16 +49,34 @@ public class PrometheusExporterTest extends Fixtures {
         var port = envFixture.portFor( "prometheus" );
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             var exporter = new PrometheusExporter( server );
+
+            var metric1 = Metrics.counter( "test1" );
+            var metric2 = Metrics.timer( "test2" );
+
             server.start();
 
-            TEST_1.increment( 2 );
+            metric1.increment( 2 );
+            metric2.record( 2, TimeUnit.SECONDS );
+
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
             assertThat( response ).contains( """
                 # HELP test1_total \s
                 # TYPE test1_total counter
                 test1_total 2.0
                 """ );
+            assertThat( response ).contains( "test2_seconds_count 1.0" );
+            assertThat( response ).contains( "test2_seconds_max 2.0" );
+            assertThat( response ).contains( "system_metrics_total 5.0" );
         }
     }
 
+    @AfterMethod
+    public void beforeMethod() {
+        PrometheusExporter.prometheusRegistry.getPrometheusRegistry().clear();
+    }
+
+    @AfterMethod
+    public void afterMethod() {
+        PrometheusExporter.prometheusRegistry.getPrometheusRegistry().clear();
+    }
 }

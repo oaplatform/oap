@@ -27,18 +27,21 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
-import org.apache.http.entity.ContentType;
 
 @Slf4j
 public class PrometheusExporter implements HttpHandler {
     public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+    private static long metricCount = 0L;
 
     static {
         Metrics.addRegistry( prometheusRegistry );
+
+        Metrics.gauge( "system_metrics_total", prometheusRegistry, pmr -> metricCount );
     }
 
     public PrometheusExporter( NioHttpServer server ) {
@@ -51,7 +54,19 @@ public class PrometheusExporter implements HttpHandler {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        metricCount = getMetricCount();
+
         var response = prometheusRegistry.scrape();
-        exchange.responseOk( response, ContentType.TEXT_PLAIN.getMimeType() );
+        exchange.responseOk( response, TextFormat.CONTENT_TYPE_004 );
+    }
+
+    private static long getMetricCount() {
+        long count = 0;
+        var en = prometheusRegistry.getPrometheusRegistry().metricFamilySamples();
+        while( en.hasMoreElements() ) {
+            var s = en.nextElement();
+            count += s.samples.size();
+        }
+        return count;
     }
 }
