@@ -1,0 +1,14 @@
+{
+  "columnsNumber": 3,
+  "validateInput": true,
+  "columns": [
+    {
+      "index": 0,
+      "name": "a"
+    },
+    {
+      "index": 1,
+      "name": "b"
+    }
+  ]
+}
