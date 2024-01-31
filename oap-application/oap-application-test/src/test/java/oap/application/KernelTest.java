@@ -30,6 +30,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceOne.Complex;
+import oap.application.module.Module;
 import oap.concurrent.Threads;
 import oap.system.Env;
 import oap.testng.TestDirectoryFixture;
@@ -511,8 +512,8 @@ public class KernelTest {
 
     public static class ServiceFinalParameter {
         public final String a = "test";
-        private final String extra;
         public final ArrayList<String> al = new ArrayList<>();
+        private final String extra;
 
         public ServiceFinalParameter( String extra ) {
             this.extra = extra;

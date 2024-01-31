@@ -27,6 +27,7 @@ package oap.application.remote;
 import oap.application.ApplicationConfiguration;
 import oap.application.ApplicationException;
 import oap.application.Kernel;
+import oap.application.module.Module;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
@@ -53,7 +54,7 @@ public class RemoteTest extends Fixtures {
     @Test
     public void invoke() {
         var port = envFixture.portFor( "HTTP_PORT" );
-        var modules = java.lang.Module.CONFIGURATION.urlsFromClassPath();
+        var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
@@ -88,7 +89,7 @@ public class RemoteTest extends Fixtures {
 
     @Test
     public void testStream() {
-        var modules = java.lang.Module.CONFIGURATION.urlsFromClassPath();
+        var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -106,7 +107,7 @@ public class RemoteTest extends Fixtures {
 
     @Test
     public void testEmptyStream() {
-        var modules = java.lang.Module.CONFIGURATION.urlsFromClassPath();
+        var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
