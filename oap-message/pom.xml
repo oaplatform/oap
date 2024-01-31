@@ -18,10 +18,21 @@
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-application-annotation</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-application-test</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>

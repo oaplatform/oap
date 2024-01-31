@@ -24,22 +24,19 @@
 
 package oap.http.server.nio;
 
-import oap.application.testng.KernelFixture;
 import oap.http.Client;
 import oap.http.Http;
+import oap.http.server.nio.health.HealthHttpHandler;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.List;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
 import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
@@ -103,31 +100,25 @@ public class NioHttpServerTest extends Fixtures {
      * keytool -genkey -alias ssl -keyalg RSA -keysize 2048 -dname "CN=localhost,OU=IT" -keystore master.jks -storepass 1234567 -keypass 1234567
      */
     @Test
-    public void testHttps() {
-        TestDirectoryFixture.deployTestData( getClass() );
+    public void testHttps() throws IOException {
+        int httpPort = fixture.portFor( "TEST_HTTP_PORT" );
+        int httpsPort = fixture.portFor( "TEST_HTTPS_PORT" );
 
-        var kernelFixture = new KernelFixture( urlOfTestResource( getClass(), "test-application.conf" ),
-            List.of( urlOfTestResource( getClass(), "test-oap-module.conf" ) ) )
-            .definePort( "TEST_HTTPS_PORT" )
-            .definePort( "TEST_HTTP2_PORT" )
-            .define( "TEST_PASSWORD", "1234567" );
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
+             Client client = Client
+                 .custom( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get(), "1234567", 10000, 10000 )
+                 .build() ) {
 
-        int httpPort = kernelFixture.portFor( "TEST_HTTP_PORT" );
-        int httpsPort = kernelFixture.portFor( "TEST_HTTPS_PORT" );
+            new TestHttpHandler( httpServer, "/test", "default-https" );
+            new HealthHttpHandler( httpServer, "/healtz", "default-http" ).start();
 
-        try( Client client = Client
-            .custom( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get(), "1234567", 10000, 10000 )
-            .build() ) {
-
-            kernelFixture.beforeMethod();
+            httpServer.start();
 
             assertThat( client.get( "https://localhost:" + httpsPort + "/test" )
                 .contentString() ).isEqualTo( "ok" );
 
             assertGet( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
 
-        } finally {
-            kernelFixture.afterMethod();
         }
     }
 
@@ -137,7 +128,7 @@ public class NioHttpServerTest extends Fixtures {
         }
 
         @Override
-        public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        public void handleRequest( HttpServerExchange exchange ) {
             exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
         }
     }

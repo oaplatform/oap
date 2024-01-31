@@ -512,8 +512,8 @@ public class KernelTest {
 
     public static class ServiceFinalParameter {
         public final String a = "test";
-        private final String extra;
         public final ArrayList<String> al = new ArrayList<>();
+        private final String extra;
 
         public ServiceFinalParameter( String extra ) {
             this.extra = extra;

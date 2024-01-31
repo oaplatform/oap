@@ -22,9 +22,8 @@
  * SOFTWARE.
  */
 
-package oap.application.supervision.supervision;
+package oap.application.supervision;
 
-import oap.application.supervision.CronScheduledService;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
