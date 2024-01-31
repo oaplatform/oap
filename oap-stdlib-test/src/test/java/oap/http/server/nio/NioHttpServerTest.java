@@ -30,7 +30,6 @@ import oap.http.server.nio.health.HealthHttpHandler;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
