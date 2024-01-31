@@ -25,7 +25,6 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.module.Module;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
@@ -39,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelSupervisionTest {
     @Test
     public void testSupervisionThread() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        var modules = java.lang.Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/thread.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -58,7 +57,7 @@ public class KernelSupervisionTest {
     @Test
     public void testSupervisionCron() {
         TestCron.str.setLength( 0 );
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        var modules = java.lang.Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/cron.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -78,7 +77,7 @@ public class KernelSupervisionTest {
     @Test
     public void testSupervisionCronWithSupervise() {
         TestCron.str.setLength( 0 );
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        var modules = java.lang.Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/cronWithSupervise.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {

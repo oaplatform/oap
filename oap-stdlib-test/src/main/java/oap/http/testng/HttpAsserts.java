@@ -26,7 +26,6 @@ package oap.http.testng;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.testng.KernelFixture;
 import oap.http.Client;
 import oap.http.Cookie;
 import oap.json.testng.JsonAsserts;
@@ -53,13 +52,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
+    public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
 
     private static final Client client = Client.custom()
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
     public static Optional<Integer> getTestHttpPort() {
-        return Optional.ofNullable( System.getProperty( KernelFixture.TEST_HTTP_PORT ) ).map( Integer::parseInt );
+        return Optional.ofNullable( System.getProperty( TEST_HTTP_PORT ) ).map( Integer::parseInt );
     }
 
     public static String httpPrefix( int port ) {

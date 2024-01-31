@@ -20,6 +20,7 @@
         <module>oap-alert-slack</module>
         <module>oap-jpath</module>
         <module>oap-message</module>
+        <module>oap-application</module>
         <module>oap-pnio</module>
         <module>oap-hadoop</module>
         <module>oap-formats</module>

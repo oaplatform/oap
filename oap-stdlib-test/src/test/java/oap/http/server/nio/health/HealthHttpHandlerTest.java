@@ -24,36 +24,50 @@
 
 package oap.http.server.nio.health;
 
-import oap.application.module.Module;
-import oap.application.testng.KernelFixture;
+//import oap.application.module.Module;
+//import oap.application.testng.KernelFixture;
+
+import oap.http.server.nio.NioHttpServer;
 import oap.http.testng.HttpAsserts;
+import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
-import oap.util.Lists;
 import org.testng.annotations.Test;
 
-import java.util.List;
+import java.io.IOException;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.testng.Asserts.urlOfTestResource;
 
 public class HealthHttpHandlerTest extends Fixtures {
+    private final EnvFixture fixture = fixture( new EnvFixture() );
+
     public HealthHttpHandlerTest() {
-        fixture( new KernelFixture(
-            urlOfTestResource( getClass(), "application.test.conf" ),
-            Lists.concat(
-                List.of( urlOfTestResource( getClass(), "oap-module.conf" ) ),
-                Module.CONFIGURATION.urlsFromClassPath()
-            )
-        ) );
+//        fixture( new KernelFixture(
+//            urlOfTestResource( getClass(), "application.test.conf" ),
+//            Lists.concat(
+//                List.of( urlOfTestResource( getClass(), "oap-module.conf" ) ),
+//                Module.CONFIGURATION.urlsFromClassPath()
+//            )
+//        ) );
     }
 
     @Test
-    public void health() {
-        assertGet( HttpAsserts.httpUrl( "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
-        assertGet( HttpAsserts.httpUrl( "/healtz?secret=secret" ) )
-            .respondedJson( "{\"test\":{\"k1\":1, \"k2\":2}}" );
+    public void health() throws IOException {
+        int httpPort = fixture.portFor( "TEST_HTTP_PORT" );
+
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort ) ) ) {
+            HealthHttpHandler healthHttpHandler = new HealthHttpHandler( httpServer, "/healtz", "default-http", "secret" );
+            healthHttpHandler.start();
+
+            healthHttpHandler.addProvider( new TestDataProvider() );
+
+            httpServer.start();
+
+            assertGet( HttpAsserts.httpUrl( httpPort, "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
+            assertGet( HttpAsserts.httpUrl( httpPort, "/healtz?secret=secret" ) )
+                .respondedJson( "{\"test\":{\"k1\":1, \"k2\":2}}" );
+        }
     }
 
     public static class TestDataProvider implements HealthDataProvider<Map<String, Integer>> {
