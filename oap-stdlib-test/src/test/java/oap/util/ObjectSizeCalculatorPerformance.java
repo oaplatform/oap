@@ -6,7 +6,7 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ObjectSizeCalculatorPerformanceTest {
+public class ObjectSizeCalculatorPerformance {
     public static final int SAMPLES = 10000;
     public static final int COUNT = 100;
 
