@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.cli;
+package oap.application.cli;
 
 public class CliException extends RuntimeException {
     public CliException( String message ) {

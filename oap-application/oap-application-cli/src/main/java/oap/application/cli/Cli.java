@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.cli;
+package oap.application.cli;
 
 
 import oap.util.Pair;
@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public class Cli {
-    private List<Group> groups = new ArrayList<>();
+    private final ArrayList<Group> groups = new ArrayList<>();
 
     public static Cli create() {
         return new Cli();
