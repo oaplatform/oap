@@ -24,7 +24,6 @@
 
 package oap.template;
 
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
 import java.io.EOFException;
@@ -167,7 +166,6 @@ public class BinaryInputStream extends InputStream {
         return _readDateTime();
     }
 
-    @NotNull
     @SuppressWarnings( "checkstyle:MethodName" )
     protected DateTime _readDateTime() throws IOException {
         return new DateTime( _readLong(), UTC );
@@ -181,7 +179,6 @@ public class BinaryInputStream extends InputStream {
 
     }
 
-    @NotNull
     @SuppressWarnings( { "checkstyle:MethodName", "checkstyle:OperatorWrap", "checkstyle:UnnecessaryParentheses" } )
     private String _readString() throws IOException {
         int utflen = readUnsignedShort();
@@ -256,7 +253,6 @@ public class BinaryInputStream extends InputStream {
     }
 
     @SuppressWarnings( "checkstyle:MethodName" )
-    @NotNull
     protected ArrayList<Object> _readList() throws IOException {
         ArrayList<Object> ret = new ArrayList<>();
 

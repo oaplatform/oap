@@ -7,7 +7,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.content.ContentReader;
 import oap.util.Result;
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTimeUtils;
 
 import javax.annotation.Nullable;
@@ -250,7 +249,6 @@ public class TemplateClassCompiler {
         return diagnostics;
     }
 
-    @NotNull
     private List<String> getCompilationOptions() {
         List<String> options = new ArrayList<>();
         // add classpath: options.addAll( Lists.of( "-classpath", "." ) );

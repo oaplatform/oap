@@ -12,7 +12,6 @@ package oap.util.serialization;
 import lombok.SneakyThrows;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -23,25 +22,25 @@ import java.util.Optional;
 /**
  * This class allows to use serialization mechanism for Optional fields in classes.
  * You have to implement OptionalSerializator and provide default methods read/write like below.
- *  Using this interface you may mitigate challenge for Optional in Serialization classes.
- *  See https://stackoverflow.com/questions/24547673/why-java-util-optional-is-not-serializable-how-to-serialize-the-object-with-suc
- *
+ * Using this interface you may mitigate challenge for Optional in Serialization classes.
+ * See https://stackoverflow.com/questions/24547673/why-java-util-optional-is-not-serializable-how-to-serialize-the-object-with-suc
+ * <p>
  * Usage:
  * public class Demo implements Serializable, OptionalSerializator {
- *     private Optional<String> field = Optional.empty();
- *
- *     private void writeObject( @NotNull ObjectOutputStream oos ) throws IOException {
- *         writeObjectTemplate( oos );
- *     }
- *
- *     private void readObject( @NotNull ObjectInputStream ois ) throws IOException, ClassNotFoundException {
- *         readObjectTemplate( ois );
- *     }
- *  }
- *
- *
- *  You may also implement your own fieldShouldBeSkipped and valueShouldBeSkipped to modify/extend serialization/deserialization mechanism.
- *  Note: if class contains any collection of Optional - you should implement it ser/deser manually in appropriate methods.
+ * private Optional<String> field = Optional.empty();
+ * <p>
+ * private void writeObject( @NotNull ObjectOutputStream oos ) throws IOException {
+ * writeObjectTemplate( oos );
+ * }
+ * <p>
+ * private void readObject( @NotNull ObjectInputStream ois ) throws IOException, ClassNotFoundException {
+ * readObjectTemplate( ois );
+ * }
+ * }
+ * <p>
+ * <p>
+ * You may also implement your own fieldShouldBeSkipped and valueShouldBeSkipped to modify/extend serialization/deserialization mechanism.
+ * Note: if class contains any collection of Optional - you should implement it ser/deser manually in appropriate methods.
  */
 public interface OptionalSerializator extends Serializable {
 
@@ -53,13 +52,13 @@ public interface OptionalSerializator extends Serializable {
         return false;
     }
 
-    default void writeObjectTemplate( @NotNull ObjectOutputStream oos ) throws IOException {
+    default void writeObjectTemplate( ObjectOutputStream oos ) throws IOException {
         Reflection reflectClass = Reflect.reflect( this.getClass() );
         reflectClass.fields.forEach( ( name, field ) -> {
-            if ( fieldShouldBeSkipped( field ) ) return;
+            if( fieldShouldBeSkipped( field ) ) return;
             Object innerObject = field.get( this );
-            if ( valueShouldBeSkipped( field, innerObject ) ) return;
-            if ( field.type().isOptional() ) {
+            if( valueShouldBeSkipped( field, innerObject ) ) return;
+            if( field.type().isOptional() ) {
                 innerObject = ( ( Optional ) innerObject ).orElse( null );
             }
             writeObject( oos, ( Serializable ) innerObject );
@@ -67,17 +66,17 @@ public interface OptionalSerializator extends Serializable {
     }
 
     @SneakyThrows
-    private void writeObject( @NotNull ObjectOutputStream oos, Serializable innerObject ) {
+    private void writeObject( ObjectOutputStream oos, Serializable innerObject ) {
         oos.writeObject( innerObject );
     }
 
-    default void readObjectTemplate( @NotNull ObjectInputStream ois ) throws IOException, ClassNotFoundException {
+    default void readObjectTemplate( ObjectInputStream ois ) throws IOException, ClassNotFoundException {
         Reflection reflectClass = Reflect.reflect( this.getClass() );
         reflectClass.fields.forEach( ( name, field ) -> {
-            if ( fieldShouldBeSkipped( field ) ) return;
+            if( fieldShouldBeSkipped( field ) ) return;
             Object innerObject = readInnerObject( ois );
-            if ( valueShouldBeSkipped( field, innerObject ) ) return;
-            if ( field.type().isOptional() ) {
+            if( valueShouldBeSkipped( field, innerObject ) ) return;
+            if( field.type().isOptional() ) {
                 field.set( this, Optional.ofNullable( innerObject ) );
             } else {
                 field.set( this, innerObject );
@@ -86,7 +85,7 @@ public interface OptionalSerializator extends Serializable {
     }
 
     @SneakyThrows
-    private Object readInnerObject( @NotNull ObjectInputStream ois ) {
+    private Object readInnerObject( ObjectInputStream ois ) {
         return ois.readObject();
     }
 }
