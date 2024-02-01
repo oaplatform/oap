@@ -38,7 +38,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.util.Lists;
-import org.jetbrains.annotations.NotNull;
 import org.xnio.Options;
 
 import javax.net.ssl.KeyManager;
@@ -180,7 +179,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
     }
 
-    @NotNull
     private Undertow createUndertowServer( int port, PathHandler portPathHandler ) {
         Undertow.Builder builder = Undertow.builder()
             .setSocketOption( Options.REUSE_ADDRESSES, true )

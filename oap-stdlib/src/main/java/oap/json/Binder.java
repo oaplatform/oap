@@ -68,7 +68,6 @@ import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
 import oap.util.function.Try;
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.ReadableInstant;
 
 import java.io.IOException;
@@ -639,13 +638,11 @@ public class Binder {
             this.binder = binder;
         }
 
-        @NotNull
         public static Format of( URL url, boolean withSystemProperties ) {
             var path = url.toString().toLowerCase();
             return of( path, withSystemProperties );
         }
 
-        @NotNull
         public static Format of( String path, boolean withSystemProperties ) {
             if( path.endsWith( "json" ) ) return JSON;
             else if( path.endsWith( "yaml" ) || path.endsWith( "yml" ) ) return YAML;

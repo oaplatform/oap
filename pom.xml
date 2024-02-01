@@ -48,7 +48,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.5.1</oap.project.version>
+        <oap.project.version>21.6.0</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
 
@@ -63,7 +63,6 @@
 
         <oap.deps.mockito.version>5.8.0</oap.deps.mockito.version>
 
-        <oap.deps.okhttp.version>4.11.0</oap.deps.okhttp.version>
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>

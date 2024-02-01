@@ -39,6 +39,7 @@ import oap.reflect.TypeRef;
 import oap.util.BiStream;
 import oap.util.Maps;
 import oap.util.Pair;
+import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Throwables;
 import oap.util.function.Try;
@@ -126,7 +127,7 @@ public final class Client implements Closeable, AutoCloseable {
         .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
         .onTimeout( c -> log.error( "timeout" ) )
         .build();
-
+    public static final String NO_RESPONSE = "no response";
     private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<>() {
         @Override
         public void completed( org.apache.http.HttpResponse result ) {
@@ -141,8 +142,6 @@ public final class Client implements Closeable, AutoCloseable {
         public void cancelled() {
         }
     };
-    public static final String NO_RESPONSE = "no response";
-
     private final BasicCookieStore basicCookieStore;
     private final ClientBuilder builder;
     private CloseableHttpAsyncClient client;
@@ -168,6 +167,13 @@ public final class Client implements Closeable, AutoCloseable {
             .toList();
     }
 
+    private static String[] split( final String s ) {
+        if( StringUtils.isBlank( s ) ) {
+            return null;
+        }
+        return s.split( " *, *" );
+    }
+
     public Response get( String uri ) {
         return get( uri, Map.of(), Map.of() );
     }
@@ -187,23 +193,23 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response get( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return get( uri, params, headers, builder.timeout )
-            .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response within timeout " + builder.timeout + " ms" ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response get( URI uri, Map<String, Object> headers ) {
         return get( uri, headers, builder.timeout )
-            .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
-    public Optional<Response> get( String uri, Map<String, Object> params, long timeout ) {
+    public Result<Response, Throwable> get( String uri, Map<String, Object> params, long timeout ) {
         return get( uri, params, Map.of(), timeout );
     }
 
-    public Optional<Response> get( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
+    public Result<Response, Throwable> get( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
         return get( Uri.uri( uri, params ), headers, timeout );
     }
 
-    public Optional<Response> get( URI uri, Map<String, Object> headers, long timeout ) {
+    public Result<Response, Throwable> get( URI uri, Map<String, Object> headers, long timeout ) {
         var request = new HttpGet( uri );
         return getResponse( request, timeout, execute( request, headers ) );
     }
@@ -214,14 +220,14 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response post( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return post( uri, params, headers, builder.timeout )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
-    public Optional<Response> post( String uri, Map<String, Object> params, long timeout ) {
+    public Result<Response, Throwable> post( String uri, Map<String, Object> params, long timeout ) {
         return post( uri, params, Map.of(), timeout );
     }
 
-    public Optional<Response> post( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
+    public Result<Response, Throwable> post( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
         try {
             var request = new HttpPost( uri );
             request.setEntity( new UrlEncodedFormEntity( Stream.of( params.entrySet() )
@@ -241,22 +247,28 @@ public final class Client implements Closeable, AutoCloseable {
 
     public Response post( String uri, String content, String contentType, Map<String, Object> headers ) {
         return post( uri, content, contentType, headers, builder.timeout )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
-    public Optional<Response> post( String uri, String content, String contentType, long timeout ) {
+    public Result<Response, Throwable> post( String uri, String content, String contentType, long timeout ) {
         return post( uri, content, contentType, Map.of(), timeout );
     }
 
-    public Optional<Response> post( String uri, String content, String contentType, Map<String, Object> headers, long timeout ) {
+    public Result<Response, Throwable> post( String uri, String content, String contentType, Map<String, Object> headers, long timeout ) {
         var request = new HttpPost( uri );
         request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, timeout, execute( request, headers ) );
     }
 
-    public Optional<Response> post( String uri, byte[] content, long timeout ) {
+    public Result<Response, Throwable> post( String uri, byte[] content, long timeout ) {
         var request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.APPLICATION_OCTET_STREAM ) );
+        return getResponse( request, timeout, execute( request, Map.of() ) );
+    }
+
+    public Result<Response, Throwable> post( String uri, byte[] content, int off, int length, long timeout ) {
+        var request = new HttpPost( uri );
+        request.setEntity( new ByteArrayEntity( content, off, length, ContentType.APPLICATION_OCTET_STREAM ) );
         return getResponse( request, timeout, execute( request, Map.of() ) );
     }
 
@@ -290,44 +302,37 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, Map.of() ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response post( String uri, InputStream content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response post( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
         var request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
-//    @SneakyThrows
-//    public Response uploadFile( String uri, okhttp3.RequestBody body, Map<String, Object> headers ) {
-//        okio.Buffer sink = new okio.Buffer();
-//        body.writeTo( sink );
-//        return post( uri, sink.readByteArray(), ContentType.MULTIPART_FORM_DATA.getMimeType(), headers );
-//    }
-
-    private Optional<Response> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
+    private Result<Response, Throwable> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
         try {
-            return Optional.of( timeout == 0 ? future.get() : future.get( timeout, MILLISECONDS ) );
+            return Result.success( timeout == 0 ? future.get() : future.get( timeout, MILLISECONDS ) );
         } catch( ExecutionException e ) {
             var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
             builder.onError.accept( this, newEx );
-            throw newEx;
+            return Result.failure( e.getCause() );
         } catch( TimeoutException e ) {
             this.builder.onTimeout.accept( this );
-            return Optional.empty();
+            return Result.failure( e );
         } catch( InterruptedException e ) {
             Thread.currentThread().interrupt();
             this.builder.onError.accept( this, e );
-            return Optional.empty();
+            return Result.failure( e );
         }
     }
 
@@ -335,7 +340,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response put( String uri, String content, String contentType ) {
@@ -346,7 +351,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPut( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response put( String uri, byte[] content, String contentType ) {
@@ -357,7 +362,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPut( uri );
         request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response put( String uri, InputStream is, String contentType ) {
@@ -368,7 +373,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPatch( uri );
         request.setEntity( new StringEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response patch( String uri, String content, String contentType ) {
@@ -379,9 +384,8 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPatch( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
-
 
     public Response patch( String uri, byte[] content, String contentType ) {
         return patch( uri, content, contentType, Map.of() );
@@ -391,7 +395,7 @@ public final class Client implements Closeable, AutoCloseable {
         var request = new HttpPatch( uri );
         request.setEntity( new InputStreamEntity( is, ContentType.parse( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public Response patch( String uri, InputStream is, String contentType ) {
@@ -413,7 +417,7 @@ public final class Client implements Closeable, AutoCloseable {
     public Response delete( String uri, Map<String, Object> headers, long timeout ) {
         var request = new HttpDelete( uri );
         return getResponse( request, Math.max( builder.timeout, timeout ), execute( request, headers ) )
-            .orElseThrow( () -> new RuntimeException( NO_RESPONSE ) );
+            .orElseThrow( Throwables::propagate );
     }
 
     public List<Cookie> getCookies() {
@@ -687,8 +691,8 @@ public final class Client implements Closeable, AutoCloseable {
         private final BasicCookieStore basicCookieStore;
         private final Path certificateLocation;
         private final String certificatePassword;
-        private final long connectTimeout;
         private final long timeout;
+        private long connectTimeout;
         private int maxConnTotal = 10000;
         private int maxConnPerRoute = 1000;
         private boolean redirectsEnabled = false;
@@ -741,6 +745,12 @@ public final class Client implements Closeable, AutoCloseable {
             } catch( IOReactorException e ) {
                 throw new UncheckedIOException( e );
             }
+        }
+
+        public ClientBuilder setConnectTimeout( long connectTimeout ) {
+            this.connectTimeout = connectTimeout;
+
+            return this;
         }
 
         public ClientBuilder setMaxConnTotal( int maxConnTotal ) {
@@ -818,7 +828,7 @@ public final class Client implements Closeable, AutoCloseable {
                 pos.flush();
                 pos.close();
                 Response result = getResponse( request, timeout, completableFuture )
-                    .orElseThrow( () -> new oap.concurrent.TimeoutException( NO_RESPONSE ) );
+                    .orElseThrow( Throwables::propagate );
                 response = result;
                 return result;
             } catch( IOException e ) {
@@ -844,12 +854,5 @@ public final class Client implements Closeable, AutoCloseable {
                 response.close();
             }
         }
-    }
-
-    private static String[] split( final String s ) {
-        if( StringUtils.isBlank( s ) ) {
-            return null;
-        }
-        return s.split( " *, *" );
     }
 }

@@ -36,6 +36,7 @@ import oap.application.ServiceName;
 import oap.concurrent.Executors;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.http.Client;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.content.ContentReader;
@@ -46,14 +47,6 @@ import oap.util.Dates;
 import oap.util.FastByteArrayOutputStream;
 import oap.util.Pair;
 import oap.util.Throwables;
-import okhttp3.Call;
-import okhttp3.ConnectionPool;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -65,6 +58,7 @@ import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
@@ -119,7 +113,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     private volatile boolean closed = false;
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
-    private OkHttpClient httpClient;
+    private Client httpClient;
     private ExecutorService executor;
     private long ioExceptionStartRetryTimeout = -1;
 
@@ -149,7 +143,8 @@ public class MessageSender implements Closeable, AutoCloseable {
         log.trace( "lock found {}, expiration = {}", lockFile,
             durationToString( Files.getLastModifiedTime( lockFile ) + storageLockExpiration - DateTimeUtils.currentTimeMillis() ) );
 
-        return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < DateTimeUtils.currentTimeMillis() ? lockFile : null;
+        return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < DateTimeUtils.currentTimeMillis()
+            ? lockFile : null;
     }
 
     public final long getClientId() {
@@ -170,21 +165,13 @@ public class MessageSender implements Closeable, AutoCloseable {
             poolSize > 0 ? poolSize : Runtime.getRuntime().availableProcessors(),
             new ThreadFactoryBuilder().setNameFormat( name + "-%d" ).build() );
 
-        Dispatcher dispatcher = new Dispatcher();
-        if( poolSize > 0 )
-            dispatcher.setMaxRequestsPerHost( poolSize );
+        Client.ClientBuilder clientBuilder = Client.custom().setConnectTimeout( connectionTimeout );
 
-        ConnectionPool connectionPool = poolSize > 0
-            ? new ConnectionPool( poolSize, keepAliveDuration, TimeUnit.MILLISECONDS )
-            : new ConnectionPool();
+        if( poolSize > 0 ) {
+            clientBuilder.setMaxConnPerRoute( poolSize ).setMaxConnTotal( poolSize );
+        }
 
-        httpClient = new OkHttpClient.Builder()
-            .connectTimeout( connectionTimeout, TimeUnit.MILLISECONDS )
-            .readTimeout( timeout, TimeUnit.MILLISECONDS )
-            .writeTimeout( timeout, TimeUnit.MILLISECONDS )
-            .dispatcher( dispatcher )
-            .connectionPool( connectionPool )
-            .build();
+        httpClient = clientBuilder.build();
 
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
@@ -237,9 +224,6 @@ public class MessageSender implements Closeable, AutoCloseable {
                 break;
             }
         }
-
-        httpClient.dispatcher().executorService().shutdown();
-        httpClient.connectionPool().evictAll();
 
         saveMessagesToDirectory( directory );
     }
@@ -302,16 +286,11 @@ public class MessageSender implements Closeable, AutoCloseable {
                 out.writeInt( message.data.length );
                 out.write( message.data );
 
-                RequestBody requestBody = RequestBody.create( buf.array, null, 0, buf.length );
+                Client.Response response = httpClient.post( messageUrl, buf.array, 0, buf.length, timeout )
+                    .orElseThrow( f -> f );
 
-                Request request = new Request.Builder()
-                    .url( messageUrl )
-                    .post( requestBody )
-                    .build();
-                Call call = httpClient.newCall( request );
-                var response = call.execute();
-                if( response.code() >= 300 || response.code() < 200 ) {
-                    throw new IOException( "Not OK (" + response.code() + ") response code returned for url: " + messageUrl );
+                if( response.code >= 300 || response.code < 200 ) {
+                    throw new IOException( "Not OK (" + response.code + ") response code returned for url: " + messageUrl );
                 }
                 return onOkRespone( messageInfo, response, now );
 
@@ -337,10 +316,10 @@ public class MessageSender implements Closeable, AutoCloseable {
         messages.retry( messageInfo, now + retryTimeout );
     }
 
-    private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Response response, long now ) {
+    private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Client.Response response, long now ) {
         Message message = messageInfo.message;
 
-        ResponseBody body = response.body();
+        InputStream body = response.getInputStream();
         if( body == null ) {
             Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "io_error" ).increment();
             log.error( "[{}] unknown error (BODY == null)", name );
@@ -349,7 +328,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             return messageInfo;
         }
 
-        try( var in = new DataInputStream( body.byteStream() ) ) {
+        try( var in = new DataInputStream( body ) ) {
             var version = in.readByte();
             if( version != PROTOCOL_VERSION_1 ) {
                 log.error( "[{}] Version mismatch, expected: {}, received: {}", name, PROTOCOL_VERSION_1, version );
@@ -412,7 +391,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     public void syncMemory() {
         if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
             log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
-            name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
+                name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
 

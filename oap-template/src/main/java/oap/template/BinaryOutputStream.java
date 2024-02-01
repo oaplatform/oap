@@ -26,7 +26,6 @@ package oap.template;
 
 import oap.dictionary.Dictionary;
 import oap.util.Strings;
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
@@ -37,13 +36,12 @@ import java.util.Date;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class BinaryOutputStream extends OutputStream {
+    protected final byte[] writeBuffer = new byte[9];
+    protected final OutputStream out;
     /**
      * bytearr is initialized on demand by writeUTF
      */
     private byte[] bytearr = null;
-    protected final byte[] writeBuffer = new byte[9];
-
-    protected final OutputStream out;
 
     public BinaryOutputStream( OutputStream out ) {
         this.out = out;
@@ -165,20 +163,20 @@ public class BinaryOutputStream extends OutputStream {
         _writeLong( jodaDateTime.getMillis() );
     }
 
-    public void writeEnum( @NotNull Enum<?> e ) throws IOException {
+    public void writeEnum( Enum<?> e ) throws IOException {
         writeString( e.name() );
     }
 
-    public void writeDictionary( @NotNull Dictionary d ) throws IOException {
+    public void writeDictionary( Dictionary d ) throws IOException {
         writeString( d.getId() );
     }
 
-    public void writeString( @NotNull String str ) throws IOException {
+    public void writeString( String str ) throws IOException {
         writeUTFWithType( Strings.UNKNOWN.equals( str ) ? "" : str, Types.STRING );
     }
 
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
-    private void writeUTFWithType( @NotNull String str, Types type ) throws IOException {
+    private void writeUTFWithType( String str, Types type ) throws IOException {
         final int strlen = str.length();
         int utflen = strlen; // optimized for ASCII
 
