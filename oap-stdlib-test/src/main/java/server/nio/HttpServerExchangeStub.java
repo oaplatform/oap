@@ -35,7 +35,8 @@ import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import io.undertow.util.Protocols;
 import lombok.SneakyThrows;
-import okhttp3.HttpUrl;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.xnio.OptionMap;
@@ -51,6 +52,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class HttpServerExchangeStub {
@@ -65,11 +68,10 @@ public class HttpServerExchangeStub {
         exchange.setRequestMethod( method );
         exchange.exchange.setQueryString( uri );
 
-        HttpUrl url = HttpUrl.parse( uri );
-        if( url != null ) {
-            for( var paramName : url.queryParameterNames() ) {
-                exchange.exchange.addQueryParam( paramName, url.queryParameter( paramName ) );
-            }
+        List<NameValuePair> params = URLEncodedUtils.parse( uri, StandardCharsets.UTF_8 );
+
+        for( var nvp : params ) {
+            exchange.exchange.addQueryParam( nvp.getName(), nvp.getValue() );
         }
 
         return exchange;
