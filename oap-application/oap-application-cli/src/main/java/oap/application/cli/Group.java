@@ -70,8 +70,8 @@ public class Group {
         LinkedHashMap<String, Object> result = new LinkedHashMap<>();
 
         for( Pair<String, String> parameter : parameters ) {
-            Option<?> option = options.get( parameter._2 );
-            Result<?, String> parsed = option.parse( parameter._1 );
+            Option<?> option = options.get( parameter._1 );
+            Result<?, String> parsed = option.parse( parameter._2 );
 
             if( !parsed.isSuccess() ) {
                 return Result.failure( parsed.failureValue );
