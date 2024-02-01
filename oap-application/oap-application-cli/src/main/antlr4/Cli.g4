@@ -1,7 +1,7 @@
 grammar Cli;
 
 @header {
-package oap.cli;
+package oap.application.cli;
 import java.util.List;
 import java.util.ArrayList;
 import oap.util.Pair;

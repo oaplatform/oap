@@ -21,13 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.cli;
+package oap.application.cli;
 
 
-import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Result;
-import oap.util.Stream;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -37,23 +35,22 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static oap.util.Pair.__;
 
 public class Group {
-    private final Map<String, Option<?>> options = new LinkedHashMap<>();
     public final String name;
+    private final LinkedHashMap<String, Option<?>> options = new LinkedHashMap<>();
     private final Consumer<Map<String, Object>> action;
 
     public Group( String name, Consumer<Map<String, Object>> action, Option<?>... options ) {
         this.name = name;
         this.action = action;
-        for( Option option : options ) this.options.put( option.name, option );
+        for( Option<?> option : options ) this.options.put( option.name, option );
     }
 
     boolean matches( List<Pair<String, String>> parameters ) {
         for( Pair<String, String> parameter : parameters ) {
             Option<?> option = options.get( parameter._1 );
-            if ( option != null && option.matches( parameter ) ) {
+            if( option != null && option.matches( parameter ) ) {
                 continue;
             }
             return false;
@@ -70,15 +67,20 @@ public class Group {
     }
 
     public Result<Void, String> act( List<Pair<String, String>> parameters ) {
-        Result<Map<String, Object>, String> r = Stream.of( parameters )
-            .tryMap( p -> options
-                .get( p._1 )
-                .parse( p._2 )
-                .mapSuccess( v -> __( p._1, v ) ) )
-            .mapSuccess( Maps::of );
-        if( r.isSuccess() ) {
-            action.accept( r.successValue );
-            return Result.success( null );
-        } else return Result.failure( r.failureValue );
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+
+        for( Pair<String, String> parameter : parameters ) {
+            Option<?> option = options.get( parameter._1 );
+            Result<?, String> parsed = option.parse( parameter._2 );
+
+            if( !parsed.isSuccess() ) {
+                return Result.failure( parsed.failureValue );
+            } else {
+                result.put( parameter._1, parsed.successValue );
+            }
+        }
+
+        action.accept( result );
+        return Result.success( null );
     }
 }

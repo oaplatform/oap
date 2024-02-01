@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.cli;
+package oap.application.cli;
 
 
 import oap.util.Pair;
@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static oap.cli.Option.__;
+import static oap.application.cli.Option.__;
 import static org.testng.Assert.assertEquals;
 
 public class CliParserTest {

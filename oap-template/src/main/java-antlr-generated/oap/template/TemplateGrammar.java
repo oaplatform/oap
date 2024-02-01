@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from TemplateGrammar.g4 by ANTLR 4.13.0
 
 package oap.template;
 
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue"})
 public class TemplateGrammar extends TemplateGrammarAdaptor {
-	static { RuntimeMetaData.checkVersion("4.11.1", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.13.0", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -82,7 +82,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	@Override
-	public String getGrammarFileName() { return "java-escape"; }
+	public String getGrammarFileName() { return "TemplateGrammar.g4"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }
@@ -145,7 +145,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			setState(17);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (((_la) & ~0x3f) == 0 && ((1L << _la) & 14L) != 0) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 14L) != 0)) {
 				{
 				{
 				setState(12);
@@ -458,7 +458,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 					{
 					setState(47);
 					_la = _input.LA(1);
-					if ( !(((_la) & ~0x3f) == 0 && ((1L << _la) & 112L) != 0) ) {
+					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 112L) != 0)) ) {
 					_errHandler.recoverInline(this);
 					}
 					else {
