@@ -145,20 +145,21 @@
         <oap.deps.sshj.version>0.24.0</oap.deps.sshj.version>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-teamcity-testng</artifactId>
+            <version>21.0.1.OAP-222-oap-teamcity.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M7</version>
-
-                <dependencies>
-                    <dependency>
-                        <groupId>oap</groupId>
-                        <artifactId>oap-teamcity-testng</artifactId>
-                        <version>21.0.1.OAP-222-oap-teamcity.3</version>
-                    </dependency>
-                </dependencies>
 
                 <configuration>
                     <properties>
@@ -185,7 +186,7 @@
                     <disableXmlReport>true</disableXmlReport>
                     <printSummary>true</printSummary>
                     <forkedProcessTimeoutInSeconds>4800</forkedProcessTimeoutInSeconds>
-                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <useSystemClassLoader>true</useSystemClassLoader>
                     <runOrder>balanced</runOrder>
                     <includes>
                         <include>**/*Test.*</include>
