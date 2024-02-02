@@ -25,6 +25,7 @@
 package oap.benchmark;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.teamcity.Teamcity;
 import oap.util.Lists;
 import oap.util.function.Try;
 
