@@ -182,11 +182,11 @@
                     <reuseForks>true</reuseForks>
                     <trimStackTrace>false</trimStackTrace>
                     <testFailureIgnore>true</testFailureIgnore>
-                    <useFile>true</useFile>
+                    <useFile>false</useFile>
                     <disableXmlReport>true</disableXmlReport>
-                    <printSummary>true</printSummary>
+                    <printSummary>false</printSummary>
                     <forkedProcessTimeoutInSeconds>4800</forkedProcessTimeoutInSeconds>
-                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <useSystemClassLoader>false</useSystemClassLoader>
                     <runOrder>balanced</runOrder>
                     <includes>
                         <include>**/*Test.*</include>
