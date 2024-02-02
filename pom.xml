@@ -4,7 +4,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>21.0.0</version>
+        <version>21.1.0</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -144,74 +144,4 @@
         <oap.deps.jsch.version>0.1.54</oap.deps.jsch.version>
         <oap.deps.sshj.version>0.24.0</oap.deps.sshj.version>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-teamcity-testng</artifactId>
-            <version>${oap.deps.oap-teamcity.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${oap.deps.maven.surefire.version}</version>
-
-                <configuration>
-                    <properties>
-                        <property>
-                            <name>junit</name>
-                            <value>false</value>
-                        </property>
-                        <property>
-                            <name>usedefaultlisteners</name>
-                            <value>false</value> <!-- disabling default listeners is optional -->
-                        </property>
-                        <property>
-                            <name>listener</name>
-                            <value>oap.teamcity.testng.TeamcityTestNGListener</value>
-                        </property>
-                    </properties>
-
-                    <argLine>
-                        -ea
-                        --add-opens=java.base/java.lang=ALL-UNNAMED
-                        --add-opens=java.base/java.math=ALL-UNNAMED
-                        --add-opens=java.base/java.util=ALL-UNNAMED
-                        --add-opens=java.base/java.util.stream=ALL-UNNAMED
-                        --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
-                        --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
-                        --add-opens=java.base/java.net=ALL-UNNAMED
-                        --add-opens=java.base/java.text=ALL-UNNAMED
-                        --add-opens=java.base/java.io=ALL-UNNAMED
-                        --add-opens=java.base/java.nio=ALL-UNNAMED
-                        --add-opens=java.sql/java.sql=ALL-UNNAMED
-                    </argLine>
-                    <forkCount>1</forkCount>
-                    <!-- Activate the use of TCP to transmit events to the plugin -->
-                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-                    <reuseForks>true</reuseForks>
-                    <trimStackTrace>false</trimStackTrace>
-                    <testFailureIgnore>true</testFailureIgnore>
-                    <useFile>false</useFile>
-                    <disableXmlReport>true</disableXmlReport>
-                    <printSummary>false</printSummary>
-                    <forkedProcessTimeoutInSeconds>4800</forkedProcessTimeoutInSeconds>
-                    <useSystemClassLoader>true</useSystemClassLoader>
-                    <runOrder>balanced</runOrder>
-                    <includes>
-                        <include>**/*Test.*</include>
-                    </includes>
-                    <excludes>
-                        <exclude>**/*Performance.*</exclude>
-                        <exclude>**/*Perf.*</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
