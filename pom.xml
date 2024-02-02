@@ -149,7 +149,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-teamcity-testng</artifactId>
-            <version>21.0.1.OAP-222-oap-teamcity.4</version>
+            <version>21.0.1.OAP-222-oap-teamcity.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
