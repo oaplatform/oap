@@ -58,7 +58,7 @@
         <oap.project.version>21.6.2</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
-        <oap.deps.oap-teamcity.version>21.0.1.OAP-222-oap-teamcity.20</oap.deps.oap-teamcity.version>
+        <oap.deps.oap-teamcity.version>21.0.1.OAP-222-oap-teamcity.21</oap.deps.oap-teamcity.version>
 
         <oap.deps.testng.version>7.8.0</oap.deps.testng.version>
         <oap.deps.assertj.version>3.24.2</oap.deps.assertj.version>
