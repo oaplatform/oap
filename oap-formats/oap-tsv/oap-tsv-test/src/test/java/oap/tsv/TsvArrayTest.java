@@ -24,14 +24,13 @@
 
 package oap.tsv;
 
-import junit.framework.TestCase;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TsvArrayTest extends TestCase {
+public class TsvArrayTest {
     @Test
     public void testPrint() {
         assertThat( TsvArray.print( List.of( 1, 2, 3 ), null ) )

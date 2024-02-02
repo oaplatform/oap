@@ -43,6 +43,11 @@
             <artifactId>oap-stdlib</artifactId>
             <version>${parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-teamcity</artifactId>
+            <version>${oap.deps.oap-teamcity.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.testng</groupId>

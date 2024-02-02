@@ -24,6 +24,8 @@
 
 package oap.testng;
 
+import oap.teamcity.Teamcity;
+
 public class Suite {
     private static final String UNIQUE_EXECUTION_ID = Teamcity.buildPrefix() + "_" + System.currentTimeMillis();
 
