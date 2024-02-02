@@ -197,7 +197,7 @@
                     <disableXmlReport>true</disableXmlReport>
                     <printSummary>false</printSummary>
                     <forkedProcessTimeoutInSeconds>4800</forkedProcessTimeoutInSeconds>
-                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <useSystemClassLoader>true</useSystemClassLoader>
                     <runOrder>balanced</runOrder>
                     <includes>
                         <include>**/*Test.*</include>
