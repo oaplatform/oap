@@ -47,8 +47,15 @@
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>oap</id>
+            <url>https://artifacts.oaplatform.org/repository/maven/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <properties>
-        <oap.project.version>21.6.1</oap.project.version>
+        <oap.project.version>21.6.2</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
 
@@ -136,4 +143,58 @@
         <oap.deps.jsch.version>0.1.54</oap.deps.jsch.version>
         <oap.deps.sshj.version>0.24.0</oap.deps.sshj.version>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M7</version>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>oap</groupId>
+                        <artifactId>oap-teamcity-testng</artifactId>
+                        <version>21.0.1.OAP-222-oap-teamcity.3</version>
+                    </dependency>
+                </dependencies>
+
+                <configuration>
+                    <properties>
+                        <property>
+                            <name>usedefaultlisteners</name>
+                            <value>false</value> <!-- disabling default listeners is optional -->
+                        </property>
+                        <property>
+                            <name>listener</name>
+                            <value>oap.teamcity.testng.TeamcityTestNGListener</value>
+                        </property>
+                    </properties>
+
+                    <argLine>
+                        -ea
+                    </argLine>
+                    <forkCount>1</forkCount>
+                    <!-- Activate the use of TCP to transmit events to the plugin -->
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                    <reuseForks>true</reuseForks>
+                    <trimStackTrace>false</trimStackTrace>
+                    <testFailureIgnore>true</testFailureIgnore>
+                    <useFile>true</useFile>
+                    <disableXmlReport>true</disableXmlReport>
+                    <printSummary>true</printSummary>
+                    <forkedProcessTimeoutInSeconds>4800</forkedProcessTimeoutInSeconds>
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <runOrder>balanced</runOrder>
+                    <includes>
+                        <include>**/*Test.*</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*Performance.*</exclude>
+                        <exclude>**/*Perf.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
