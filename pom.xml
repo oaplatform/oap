@@ -162,16 +162,16 @@
                 <version>3.0.0-M7</version>
 
                 <configuration>
-<!--                    <properties>-->
-<!--                        <property>-->
-<!--                            <name>usedefaultlisteners</name>-->
-<!--                            <value>false</value> &lt;!&ndash; disabling default listeners is optional &ndash;&gt;-->
-<!--                        </property>-->
-<!--                        <property>-->
-<!--                            <name>listener</name>-->
-<!--                            <value>oap.teamcity.testng.TeamcityTestNGListener</value>-->
-<!--                        </property>-->
-<!--                    </properties>-->
+                    <properties>
+                        <property>
+                            <name>usedefaultlisteners</name>
+                            <value>false</value> <!-- disabling default listeners is optional -->
+                        </property>
+                        <property>
+                            <name>listener</name>
+                            <value>oap.teamcity.testng.TeamcityTestNGListener</value>
+                        </property>
+                    </properties>
 
                     <argLine>
                         -ea
