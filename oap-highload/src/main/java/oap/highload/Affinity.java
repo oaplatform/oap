@@ -65,4 +65,8 @@ public class Affinity {
     public boolean isEnabled() {
         return cpus.length > 0;
     }
+
+    public int size() {
+        return cpus.length;
+    }
 }

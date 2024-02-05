@@ -82,7 +82,13 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         this.responseSize = settings.responseSize;
         this.queueTimeoutPercent = settings.queueTimeoutPercent;
 
-        this.threads = settings.cpuThreads > 0 ? settings.cpuThreads : Runtime.getRuntime().availableProcessors();
+        if( settings.cpuThreads > 0 ) {
+            this.threads = settings.cpuThreads;
+        } else if( settings.cpuAffinity.isEnabled() ) {
+            this.threads = settings.cpuAffinity.size();
+        } else {
+            this.threads = Runtime.getRuntime().availableProcessors();
+        }
         this.cpuAffinity = settings.cpuAffinity;
         this.ioAffinity = settings.ioAffinity;
         this.workflow = workflow;
