@@ -24,6 +24,7 @@
         <module>oap-pnio</module>
         <module>oap-hadoop</module>
         <module>oap-formats</module>
+        <module>oap-mail</module>
         <module>oap-maven-plugin</module>
     </modules>
 
@@ -48,7 +49,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.6.2</oap.project.version>
+        <oap.project.version>21.7.0</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
@@ -136,5 +137,11 @@
         <oap.deps.eddsa.version>0.2.0</oap.deps.eddsa.version>
         <oap.deps.jsch.version>0.1.54</oap.deps.jsch.version>
         <oap.deps.sshj.version>0.24.0</oap.deps.sshj.version>
+
+        <!--oap-mail-->
+        <oap.deps.javax.mail.version>1.6.2</oap.deps.javax.mail.version>
+        <oap.deps.apache.velocity.version>2.3</oap.deps.apache.velocity.version>
+        <oap.deps.apache.codec.version>1.16.0</oap.deps.apache.codec.version>
+        <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
     </properties>
 </project>
