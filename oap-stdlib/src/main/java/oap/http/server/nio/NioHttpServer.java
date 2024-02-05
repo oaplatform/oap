@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.util.Lists;
 import org.xnio.Options;
+import org.xnio.XnioWorker;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -71,11 +72,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public final DefaultPort defaultPort;
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
-
+    public final ArrayList<NioHandler> handlers = new ArrayList<>();
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
     private final Map<Integer, Holder> servers = new HashMap<>();
-
     private final AtomicLong requestId = new AtomicLong();
+    private final KeyManager[] keyManagers;
     public int backlog = -1;
     public long idleTimeout = -1;
     public boolean tcpNodelay = true;
@@ -88,10 +89,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean statistics = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
-
-    private final KeyManager[] keyManagers;
-
-    public final ArrayList<NioHandler> handlers = new ArrayList<>();
+    public XnioWorker xnioWorker;
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
@@ -110,206 +108,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         pathHandler.put( defaultPort.httpPort, new PathHandler() );
         if( isHttpsEnabled() ) {
             pathHandler.put( defaultPort.httpsPort, new PathHandler() );
-        }
-    }
-
-    private boolean isHttpsEnabled() {
-        return defaultPort.httpsPort > 0;
-    }
-
-    @ToString( exclude = { "server" } )
-    private static class Holder {
-        Undertow server;
-        int port;
-
-        Holder( int port, Undertow server ) {
-            this.port = port;
-            this.server = server;
-            server.start();
-        }
-
-        public void stop() {
-            server.stop();
-        }
-    }
-
-    public void start() {
-        additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new PathHandler() ) );
-
-        pathHandler.forEach( this::startNewPort );
-    }
-
-    private void startNewPort( int port, PathHandler portPathHandler ) {
-        Preconditions.checkNotNull( portPathHandler );
-
-        log.info( "starting server on port: {} with {} ...", port, portPathHandler );
-        long time = System.currentTimeMillis();
-        Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServer( port, portPathHandler ) ) ).server;
-
-        log.info( "server on port: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
-            port, statistics,
-            server.getWorker().getMXBean().getIoThreadCount(),
-            server.getWorker().getMXBean().getMaxWorkerPoolSize(),
-            System.currentTimeMillis() - time
-        );
-
-        if( statistics ) {
-            addStats( server );
-        }
-    }
-
-    private void addStats( Undertow server ) {
-        for( var listenerInfo : server.getListenerInfo() ) {
-            var sa = ( InetSocketAddress ) listenerInfo.getAddress();
-            var sPort = String.valueOf( sa.getPort() );
-
-            ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
-
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
-
-            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
-
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
-        }
-    }
-
-    private Undertow createUndertowServer( int port, PathHandler portPathHandler ) {
-        Undertow.Builder builder = Undertow.builder()
-            .setSocketOption( Options.REUSE_ADDRESSES, true )
-            .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
-            .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
-
-        if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
-        if( ioThreads > 0 ) builder.setIoThreads( ioThreads );
-        if( workerThreads > 0 ) builder.setWorkerThreads( workerThreads );
-        if( idleTimeout > 0 ) builder.setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) idleTimeout );
-        if( maxEntitySize > 0 ) builder.setServerOption( UndertowOptions.MAX_ENTITY_SIZE, maxEntitySize );
-        if( maxParameters > 0 ) builder.setServerOption( UndertowOptions.MAX_PARAMETERS, maxParameters );
-        if( maxHeaders > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADERS, maxHeaders );
-        if( maxHeaderSize > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADER_SIZE, maxHeaderSize );
-        if( statistics ) builder.setServerOption( UndertowOptions.ENABLE_STATISTICS, true );
-
-        builder.setServerOption( UndertowOptions.ALWAYS_SET_DATE, alwaysSetDate );
-        builder.setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, alwaysSetKeepAlive );
-
-        io.undertow.server.HttpHandler handler = portPathHandler;
-
-        for( int i = handlers.size() - 1; i >= 0; i-- ) {
-            NioHandler nioHandler = handlers.get( i );
-            if( nioHandler instanceof AbstractNioHandler comp ) {
-                comp.httpHandler = handler;
-                handler = comp;
-            } else if( nioHandler instanceof NioHandlerBuilder nioHandlerBuilder ) {
-                handler = nioHandlerBuilder.build( handler );
-            } else {
-                throw new IllegalArgumentException( "unknown handler type " + nioHandler.getClass() );
-            }
-        }
-
-        handler = new BlockingHandler( handler );
-        handler = new GracefulShutdownHandler( handler );
-
-        if( port == defaultPort.httpsPort ) {
-            builder.addHttpsListener( port, "0.0.0.0", keyManagers, null, handler );
-        } else {
-            builder.addHttpListener( port, "0.0.0.0", handler );
-        }
-
-        return builder.build();
-    }
-
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, List<PortType> types ) {
-        if( types.isEmpty() || types.contains( PortType.HTTP ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTP_PORT );
-        }
-
-        if( isHttpsEnabled() && ( types.isEmpty() || types.contains( PortType.HTTPS ) ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTPS_PORT );
-        }
-    }
-
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, String portName ) {
-        Preconditions.checkNotNull( portName );
-        Preconditions.checkNotNull( prefix );
-        Preconditions.checkArgument( !prefix.isEmpty() );
-
-        if( !defaultPorts.containsKey( portName ) && !additionalHttpPorts.containsKey( portName ) ) {
-            throw new IllegalArgumentException( "Unknown port " + portName );
-        }
-
-        int port = defaultPorts.getOrDefault( portName, -1 );
-        if( port <= 0 ) {
-            port = additionalHttpPorts.get( portName );
-        }
-
-        log.debug( "binding '{}' on port: {}:{} ...", prefix, portName, port );
-        io.undertow.server.HttpHandler httpHandler = exchange -> {
-            HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
-            handler.handleRequest( serverExchange );
-        };
-
-        if( !hasHandler( CompressionNioHandler.class ) && compressionSupport ) {
-            httpHandler = new CompressionNioHandler().build( httpHandler );
-        }
-
-        PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
-        assignedHandler.addPrefixPath( prefix, httpHandler );
-    }
-
-    public void bind( String prefix, HttpHandler handler ) {
-        bind( prefix, handler, DEFAULT_HTTP_PORT );
-        if( isHttpsEnabled() ) {
-            bind( prefix, handler, DEFAULT_HTTPS_PORT );
-        }
-    }
-
-    public void bind( String prefix, HttpHandler handler, String port ) {
-        bind( prefix, handler, true, port );
-    }
-
-    public void preStop() {
-        for( var server : servers.values() ) {
-            try {
-                server.stop();
-            } catch( Exception ex ) {
-                log.error( "Cannot stop server", ex );
-            }
-        }
-        pathHandler.clear();
-        servers.clear();
-    }
-
-    @Override
-    public void close() throws IOException {
-        preStop();
-    }
-
-    public enum PortType {
-        HTTP, HTTPS
-    }
-
-    @ToString
-    public static class DefaultPort {
-        public final int httpPort;
-        public final int httpsPort;
-        public final URL keyStore;
-        public final String password;
-
-        public DefaultPort( int httpPort, int httpsPort, URL keyStore, String password ) {
-            this.httpPort = httpPort;
-            this.httpsPort = httpsPort;
-            this.keyStore = keyStore;
-            this.password = password;
-        }
-
-        public DefaultPort( int httpPort ) {
-            this( httpPort, -1, null, null );
         }
     }
 
@@ -359,7 +157,217 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         return managers;
     }
 
+    private boolean isHttpsEnabled() {
+        return defaultPort.httpsPort > 0;
+    }
+
+    public void start() {
+        additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new PathHandler() ) );
+
+        pathHandler.forEach( this::startNewPort );
+    }
+
+    private void startNewPort( int port, PathHandler portPathHandler ) {
+        Preconditions.checkNotNull( portPathHandler );
+
+        log.info( "starting server on port: {} with {} ...", port, portPathHandler );
+        long time = System.currentTimeMillis();
+        Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServerAndStart( port, portPathHandler ) ) ).server;
+
+        log.info( "server on port: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
+            port, statistics,
+            server.getWorker().getMXBean().getIoThreadCount(),
+            server.getWorker().getMXBean().getMaxWorkerPoolSize(),
+            System.currentTimeMillis() - time
+        );
+
+        if( statistics ) {
+            addStats( server );
+        }
+    }
+
+    private void addStats( Undertow server ) {
+        for( var listenerInfo : server.getListenerInfo() ) {
+            var sa = ( InetSocketAddress ) listenerInfo.getAddress();
+            var sPort = String.valueOf( sa.getPort() );
+
+            ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
+
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+
+            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
+        }
+    }
+
+    private synchronized Undertow createUndertowServerAndStart( int port, PathHandler portPathHandler ) {
+        Undertow.Builder builder = Undertow.builder()
+            .setSocketOption( Options.REUSE_ADDRESSES, true )
+            .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
+            .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
+
+        if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
+        if( ioThreads > 0 ) builder.setIoThreads( ioThreads );
+        if( workerThreads > 0 ) builder.setWorkerThreads( workerThreads );
+        if( idleTimeout > 0 ) builder.setServerOption( UndertowOptions.IDLE_TIMEOUT, ( int ) idleTimeout );
+        if( maxEntitySize > 0 ) builder.setServerOption( UndertowOptions.MAX_ENTITY_SIZE, maxEntitySize );
+        if( maxParameters > 0 ) builder.setServerOption( UndertowOptions.MAX_PARAMETERS, maxParameters );
+        if( maxHeaders > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADERS, maxHeaders );
+        if( maxHeaderSize > 0 ) builder.setServerOption( UndertowOptions.MAX_HEADER_SIZE, maxHeaderSize );
+        if( statistics ) builder.setServerOption( UndertowOptions.ENABLE_STATISTICS, true );
+
+        builder.setServerOption( UndertowOptions.ALWAYS_SET_DATE, alwaysSetDate );
+        builder.setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, alwaysSetKeepAlive );
+
+        if( xnioWorker != null ) {
+            builder.setWorker( xnioWorker );
+        }
+
+        io.undertow.server.HttpHandler handler = portPathHandler;
+
+        for( int i = handlers.size() - 1; i >= 0; i-- ) {
+            NioHandler nioHandler = handlers.get( i );
+            if( nioHandler instanceof AbstractNioHandler comp ) {
+                comp.httpHandler = handler;
+                handler = comp;
+            } else if( nioHandler instanceof NioHandlerBuilder nioHandlerBuilder ) {
+                handler = nioHandlerBuilder.build( handler );
+            } else {
+                throw new IllegalArgumentException( "unknown handler type " + nioHandler.getClass() );
+            }
+        }
+
+        handler = new BlockingHandler( handler );
+        handler = new GracefulShutdownHandler( handler );
+
+        if( port == defaultPort.httpsPort ) {
+            builder.addHttpsListener( port, "0.0.0.0", keyManagers, null, handler );
+        } else {
+            builder.addHttpListener( port, "0.0.0.0", handler );
+        }
+
+        Undertow undertow = builder.build();
+        undertow.start();
+        if( xnioWorker == null ) {
+            xnioWorker = undertow.getWorker();
+        }
+        return undertow;
+    }
+
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, List<PortType> types ) {
+        if( types.isEmpty() || types.contains( PortType.HTTP ) ) {
+            bind( prefix, handler, compressionSupport, DEFAULT_HTTP_PORT );
+        }
+
+        if( isHttpsEnabled() && ( types.isEmpty() || types.contains( PortType.HTTPS ) ) ) {
+            bind( prefix, handler, compressionSupport, DEFAULT_HTTPS_PORT );
+        }
+    }
+
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, String portName ) {
+        Preconditions.checkNotNull( portName );
+        Preconditions.checkNotNull( prefix );
+        Preconditions.checkArgument( !prefix.isEmpty() );
+
+        if( !defaultPorts.containsKey( portName ) && !additionalHttpPorts.containsKey( portName ) ) {
+            throw new IllegalArgumentException( "Unknown port " + portName );
+        }
+
+        handler.init( xnioWorker );
+
+        int port = defaultPorts.getOrDefault( portName, -1 );
+        if( port <= 0 ) {
+            port = additionalHttpPorts.get( portName );
+        }
+
+        log.debug( "binding '{}' on port: {}:{} ...", prefix, portName, port );
+        io.undertow.server.HttpHandler httpHandler = exchange -> {
+            HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
+            handler.handleRequest( serverExchange );
+        };
+
+        if( !hasHandler( CompressionNioHandler.class ) && compressionSupport ) {
+            httpHandler = new CompressionNioHandler().build( httpHandler );
+        }
+
+        PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
+        assignedHandler.addPrefixPath( prefix, httpHandler );
+    }
+
+    public void bind( String prefix, HttpHandler handler ) {
+        bind( prefix, handler, DEFAULT_HTTP_PORT );
+        if( isHttpsEnabled() ) {
+            bind( prefix, handler, DEFAULT_HTTPS_PORT );
+        }
+    }
+
+    public void bind( String prefix, HttpHandler handler, String port ) {
+        bind( prefix, handler, true, port );
+    }
+
+    public void preStop() {
+        for( var server : servers.values() ) {
+            try {
+                server.stop();
+            } catch( Exception ex ) {
+                log.error( "Cannot stop server", ex );
+            }
+        }
+        pathHandler.clear();
+        servers.clear();
+    }
+
+    @Override
+    public void close() throws IOException {
+        preStop();
+    }
+
     private boolean hasHandler( Class<? extends NioHandler> handlerClass ) {
         return Lists.anyMatch( handlers, h -> h.getClass().equals( handlerClass ) );
+    }
+
+    public enum PortType {
+        HTTP, HTTPS
+    }
+
+    @ToString( exclude = { "server" } )
+    private static class Holder {
+        Undertow server;
+        int port;
+
+        Holder( int port, Undertow server ) {
+            this.port = port;
+            this.server = server;
+        }
+
+        public void stop() {
+            server.stop();
+        }
+    }
+
+    @ToString
+    public static class DefaultPort {
+        public final int httpPort;
+        public final int httpsPort;
+        public final URL keyStore;
+        public final String password;
+
+        public DefaultPort( int httpPort, int httpsPort, URL keyStore, String password ) {
+            this.httpPort = httpPort;
+            this.httpsPort = httpsPort;
+            this.keyStore = keyStore;
+            this.password = password;
+        }
+
+        public DefaultPort( int httpPort ) {
+            this( httpPort, -1, null, null );
+        }
     }
 }

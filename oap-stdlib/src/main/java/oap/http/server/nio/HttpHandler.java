@@ -25,6 +25,10 @@
 package oap.http.server.nio;
 
 
+import org.xnio.XnioWorker;
+
 public interface HttpHandler {
+    default void init( XnioWorker xnioWorker ) {}
+
     void handleRequest( HttpServerExchange exchange ) throws Exception;
 }
