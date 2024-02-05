@@ -372,11 +372,6 @@
             <version>${oap.deps.undertow.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>affinity</artifactId>
-            <version>${oap.deps.affinity.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.openjdk.jol</groupId>
             <artifactId>jol-core</artifactId>
             <version>${oap.deps.jol.version}</version>

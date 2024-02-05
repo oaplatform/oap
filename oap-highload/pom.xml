@@ -10,25 +10,19 @@
         <version>${oap.project.version}</version>
     </parent>
 
-    <artifactId>oap-pnio</artifactId>
+    <artifactId>oap-highload</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-highload</artifactId>
-            <version>${project.version}</version>
+            <groupId>net.openhft</groupId>
+            <artifactId>affinity</artifactId>
+            <version>${oap.deps.affinity.version}</version>
         </dependency>
 
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
-            <version>${project.parent.version}</version>
-            <scope>test</scope>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

@@ -24,12 +24,16 @@
 
 package oap.http.pnio;
 
+import oap.highload.Affinity;
 import oap.http.Http;
+import oap.http.server.nio.HttpHandler;
+import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.util.Dates;
 import org.testng.annotations.Test;
+import org.xnio.XnioWorker;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -168,20 +172,31 @@ public class PnioHttpHandlerTest extends Fixtures {
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = envFixture.portFor( "pnio" );
         var settings = PnioHttpHandler.PnioHttpSettings.builder()
-                .requestSize( requestSize )
-                .responseSize( responseSize )
-                .queueTimeoutPercent( 0.99 )
-                .cpuThreads( cpuThreads )
-                .cpuQueueFair( true )
-                .cpuAffinityFirstCpu( -1 )
-                .build();
+            .requestSize( requestSize )
+            .responseSize( responseSize )
+            .queueTimeoutPercent( 0.99 )
+            .cpuThreads( cpuThreads )
+            .cpuQueueFair( true )
+            .cpuAffinity( new Affinity( "0" ) )
+            .ioAffinity( new Affinity( "1+" ) )
+            .build();
         try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, this::errorResponse );
              NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
             httpServer.bind( "/test",
-                exchange -> httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() ) );
+                new HttpHandler() {
+                    @Override
+                    public void init( XnioWorker xnioWorker ) {
+                        httpHandler.init( xnioWorker );
+                    }
+
+                    @Override
+                    public void handleRequest( HttpServerExchange exchange ) throws Exception {
+                        httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
+                    }
+                } );
 
             cons.accept( port );
         }
