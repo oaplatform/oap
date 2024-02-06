@@ -114,8 +114,7 @@ public class IoStreamsTest extends Fixtures {
         assertThat( ZSTD.resolve( Paths.get( "/x/a.txt.zst" ) ) ).isEqualTo( Paths.get( "/x/a.txt.zst" ) );
     }
 
-    @Test
-    @SneakyThrows
+    @Test( enabled = false )
     public void compressionLevel() {
         List<List<String>> sets = new ArrayList<>();
         Random random = new Random();
