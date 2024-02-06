@@ -26,9 +26,9 @@ package oap.http.pnio;
 
 import oap.highload.Affinity;
 import oap.http.Http;
-import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
+import oap.http.server.nio.XnioHttpHandler;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.util.Dates;
@@ -186,7 +186,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.start();
 
             httpServer.bind( "/test",
-                new HttpHandler() {
+                new XnioHttpHandler() {
                     @Override
                     public void init( XnioWorker xnioWorker ) {
                         httpHandler.init( xnioWorker );
