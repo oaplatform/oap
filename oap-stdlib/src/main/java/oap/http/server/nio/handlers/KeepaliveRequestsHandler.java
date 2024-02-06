@@ -31,10 +31,12 @@ public class KeepaliveRequestsHandler extends AbstractNioHandler implements Serv
         } );
         long requests = count.incrementAndGet();
 
-        httpHandler.handleRequest( exchange );
-
-        if( requests >= keepaliveRequests ) {
-            connection.close();
+        try {
+            httpHandler.handleRequest( exchange );
+        } finally {
+            if( requests >= keepaliveRequests ) {
+                connection.close();
+            }
         }
     }
 
