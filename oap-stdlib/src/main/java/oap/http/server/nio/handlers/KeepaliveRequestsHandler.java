@@ -3,6 +3,7 @@ package oap.http.server.nio.handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
+import io.undertow.util.Headers;
 import oap.http.server.nio.AbstractNioHandler;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,9 @@ public class KeepaliveRequestsHandler extends AbstractNioHandler implements Serv
         long requests = count.incrementAndGet();
 
         try {
+            if( requests >= keepaliveRequests ) {
+                exchange.getResponseHeaders().put( Headers.CONNECTION, "close" );
+            }
             httpHandler.handleRequest( exchange );
         } finally {
             if( requests >= keepaliveRequests ) {
