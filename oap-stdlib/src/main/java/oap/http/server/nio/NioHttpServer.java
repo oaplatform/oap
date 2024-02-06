@@ -280,8 +280,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             throw new IllegalArgumentException( "Unknown port " + portName );
         }
 
-        handler.init( xnioWorker );
-
         int port = defaultPorts.getOrDefault( portName, -1 );
         if( port <= 0 ) {
             port = additionalHttpPorts.get( portName );

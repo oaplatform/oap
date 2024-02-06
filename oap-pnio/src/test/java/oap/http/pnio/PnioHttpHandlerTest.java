@@ -33,7 +33,6 @@ import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.util.Dates;
 import org.testng.annotations.Test;
-import org.xnio.XnioWorker;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -180,25 +179,22 @@ public class PnioHttpHandlerTest extends Fixtures {
             .cpuAffinity( new Affinity( "0" ) )
             .ioAffinity( new Affinity( "1+" ) )
             .build();
-        try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, this::errorResponse );
-             NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            httpServer.bind( "/test",
-                new HttpHandler() {
-                    @Override
-                    public void init( XnioWorker xnioWorker ) {
-                        httpHandler.init( xnioWorker );
-                    }
+            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, this::errorResponse ) ) {
 
-                    @Override
-                    public void handleRequest( HttpServerExchange exchange ) throws Exception {
-                        httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
-                    }
-                } );
+                httpServer.bind( "/test",
+                    new HttpHandler() {
+                        @Override
+                        public void handleRequest( HttpServerExchange exchange ) throws Exception {
+                            httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
+                        }
+                    } );
 
-            cons.accept( port );
+                cons.accept( port );
+            }
         }
     }
 }

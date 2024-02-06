@@ -19,6 +19,7 @@ import oap.LogConsolidated;
 import oap.highload.Affinity;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
+import oap.http.server.nio.NioHttpServer;
 import oap.util.Dates;
 import org.slf4j.event.Level;
 import org.xnio.XnioExecutor;
@@ -45,6 +46,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public final double queueTimeoutPercent;
     public final Affinity cpuAffinity;
     public final Affinity ioAffinity;
+    private final NioHttpServer server;
     private final ErrorResponse<WorkflowState> errorResponse;
     private final ThreadPoolExecutor pool;
     private final SynchronousQueue<PnioExchange<WorkflowState>> queue;
@@ -53,7 +55,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
     @Deprecated
     // use builder for settings
-    public PnioHttpHandler( int requestSize,
+    public PnioHttpHandler( NioHttpServer server,
+                            int requestSize,
                             int responseSize,
                             double queueTimeoutPercent,
                             int cpuThreads,
@@ -62,7 +65,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
                             Affinity ioAffinity,
                             RequestWorkflow<WorkflowState> workflow,
                             ErrorResponse<WorkflowState> errorResponse ) {
-        this( PnioHttpSettings.builder()
+        this( server,
+            PnioHttpSettings.builder()
                 .requestSize( requestSize )
                 .responseSize( responseSize )
                 .queueTimeoutPercent( queueTimeoutPercent )
@@ -75,9 +79,11 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
             errorResponse );
     }
 
-    public PnioHttpHandler( PnioHttpSettings settings,
+    public PnioHttpHandler( NioHttpServer server,
+                            PnioHttpSettings settings,
                             RequestWorkflow<WorkflowState> workflow,
                             ErrorResponse<WorkflowState> errorResponse ) {
+        this.server = server;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
         this.queueTimeoutPercent = settings.queueTimeoutPercent;
@@ -107,6 +113,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
             pool.submit( requestTaskComputeRunner );
             tasks.add( requestTaskComputeRunner );
         }
+
+        setupIoWorkers();
     }
 
     public int getPoolSize() {
@@ -122,7 +130,9 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     }
 
     @SneakyThrows
-    public void init( XnioWorker xnioWorker ) {
+    private void setupIoWorkers() {
+        XnioWorker xnioWorker = server.xnioWorker;
+
         Field workerThreadsField = xnioWorker.getClass().getDeclaredField( "workerThreads" );
         workerThreadsField.setAccessible( true );
         Object workerThreads = workerThreadsField.get( xnioWorker );
