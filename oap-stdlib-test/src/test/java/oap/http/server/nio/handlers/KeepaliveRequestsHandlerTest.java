@@ -38,11 +38,13 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
             } );
 
-            for( int i = 0; i < 5; i++ ) {
-                assertThat( Client.DEFAULT.get( "http://localhost:" + testHttpPort + "/test" ).contentString() ).isEqualTo( "ok" );
+            var client = Client.custom().setMaxConnTotal( 10 ).setMaxConnPerRoute( 10 ).build();
+
+            for( int i = 0; i < 101; i++ ) {
+                assertThat( client.get( "http://localhost:" + testHttpPort + "/test" ).contentString() ).isEqualTo( "ok" );
             }
 
-            assertThat( ids ).hasSize( 3 );
+            assertThat( ids ).hasSize( 51 );
             assertThat( keepaliveRequestsHandler.requests ).hasSize( 1 );
         }
     }
