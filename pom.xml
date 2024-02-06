@@ -26,6 +26,7 @@
         <module>oap-formats</module>
         <module>oap-storage</module>
         <module>oap-mail</module>
+        <module>oap-statsdb</module>
         <module>oap-highload</module>
         <module>oap-maven-plugin</module>
     </modules>
