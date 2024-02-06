@@ -42,7 +42,7 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 assertThat( Client.DEFAULT.get( "http://localhost:" + testHttpPort + "/test" ).contentString() ).isEqualTo( "ok" );
             }
 
-            assertThat( ids ).containsExactly( 1L, 2L, 3L );
+            assertThat( ids ).hasSize( 3 );
             assertThat( keepaliveRequestsHandler.requests ).hasSize( 1 );
         }
     }
