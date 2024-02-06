@@ -26,14 +26,13 @@ package oap.http.pnio;
 
 import oap.highload.Affinity;
 import oap.http.Http;
+import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
-import oap.http.server.nio.XnioHttpHandler;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import oap.util.Dates;
 import org.testng.annotations.Test;
-import org.xnio.XnioWorker;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -180,18 +179,14 @@ public class PnioHttpHandlerTest extends Fixtures {
             .cpuAffinity( new Affinity( "0" ) )
             .ioAffinity( new Affinity( "1+" ) )
             .build();
-        try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, this::errorResponse );
-             NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, this::errorResponse );
+        ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
             httpServer.bind( "/test",
-                new XnioHttpHandler() {
-                    @Override
-                    public void init( XnioWorker xnioWorker ) {
-                        httpHandler.init( xnioWorker );
-                    }
-
+                new HttpHandler() {
                     @Override
                     public void handleRequest( HttpServerExchange exchange ) throws Exception {
                         httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
