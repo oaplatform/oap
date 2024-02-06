@@ -179,21 +179,22 @@ public class PnioHttpHandlerTest extends Fixtures {
             .cpuAffinity( new Affinity( "0" ) )
             .ioAffinity( new Affinity( "1+" ) )
             .build();
-        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
-             PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, this::errorResponse );
-        ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            httpServer.bind( "/test",
-                new HttpHandler() {
-                    @Override
-                    public void handleRequest( HttpServerExchange exchange ) throws Exception {
-                        httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
-                    }
-                } );
+            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, this::errorResponse ) ) {
 
-            cons.accept( port );
+                httpServer.bind( "/test",
+                    new HttpHandler() {
+                        @Override
+                        public void handleRequest( HttpServerExchange exchange ) throws Exception {
+                            httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
+                        }
+                    } );
+
+                cons.accept( port );
+            }
         }
     }
 }

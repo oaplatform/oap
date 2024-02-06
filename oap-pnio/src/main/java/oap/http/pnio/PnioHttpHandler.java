@@ -40,13 +40,13 @@ import static oap.http.pnio.PnioRequestHandler.Type.IO;
 
 @Slf4j
 public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable {
-    private final NioHttpServer server;
     public final int requestSize;
     public final int responseSize;
     public final int threads;
     public final double queueTimeoutPercent;
     public final Affinity cpuAffinity;
     public final Affinity ioAffinity;
+    private final NioHttpServer server;
     private final ErrorResponse<WorkflowState> errorResponse;
     private final ThreadPoolExecutor pool;
     private final SynchronousQueue<PnioExchange<WorkflowState>> queue;
@@ -113,6 +113,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
             pool.submit( requestTaskComputeRunner );
             tasks.add( requestTaskComputeRunner );
         }
+
+        setupIoWorkers();
     }
 
     public int getPoolSize() {
@@ -128,7 +130,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     }
 
     @SneakyThrows
-    public void start() {
+    private void setupIoWorkers() {
         XnioWorker xnioWorker = server.xnioWorker;
 
         Field workerThreadsField = xnioWorker.getClass().getDeclaredField( "workerThreads" );
