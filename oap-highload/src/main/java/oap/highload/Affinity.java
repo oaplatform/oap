@@ -55,7 +55,7 @@ public class Affinity {
 
     public void set() {
         if( isEnabled() ) {
-            int cpuIndex = position.getAndUpdate( index -> index >= cpus.length ? 0 : index + 1 );
+            int cpuIndex = position.getAndUpdate( index -> index >= cpus.length - 1 ? 0 : index + 1 );
             int cpu = cpus[cpuIndex];
             log.trace( "affinity -> {}", cpu );
             net.openhft.affinity.Affinity.setAffinity( cpu );
