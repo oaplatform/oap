@@ -1,0 +1,90 @@
+import org.apache.hadoop.dynamodb.DynamoDBFibonacciRetryer;
+
+public TableDescription describeTable(String tableName) {
+    final DescribeTableRequest describeTablesRequest = new DescribeTableRequest()
+        .withTableName(tableName);
+    try {
+      RetryResult<DescribeTableResult> describeResult = getRetryDriver().runWithRetry(
+          new Callable<DescribeTableResult>() {
+            @Override
+            public DescribeTableResult call() {
+              DescribeTableResult result = dynamoDB.describeTable(describeTablesRequest);
+              log.info("Describe table output: " + result);
+              return result;
+            }
+          }, null, null);
+      return describeResult.result.getTable();
+    } catch (Exception e) {
+      throw new RuntimeException("Could not lookup table " + tableName + " in DynamoDB.", e);
+    }
+  }
+
+public RetryResult<ScanResult> scanTable(
+      String tableName, DynamoDBQueryFilter dynamoDBQueryFilter, Integer segment, Integer
+      totalSegments, Map<String, AttributeValue> exclusiveStartKey, long limit, Reporter reporter) {
+    final ScanRequest scanRequest = new ScanRequest(tableName)
+        .withExclusiveStartKey(exclusiveStartKey)
+        .withLimit(Ints.checkedCast(limit))
+        .withSegment(segment)
+        .withTotalSegments(totalSegments)
+        .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+
+    if (dynamoDBQueryFilter != null) {
+      Map<String, Condition> scanFilter = dynamoDBQueryFilter.getScanFilter();
+      if (!scanFilter.isEmpty()) {
+        scanRequest.setScanFilter(scanFilter);
+      }
+    }
+
+    RetryResult<ScanResult> retryResult = getRetryDriver().runWithRetry(new Callable<ScanResult>() {
+      @Override
+      public ScanResult call() {
+        log.debug("Executing DynamoDB scan: " + scanRequest);
+        return dynamoDB.scan(scanRequest);
+      }
+    }, reporter, PrintCounter.DynamoDBReadThrottle);
+    return retryResult;
+  }
+
+  public RetryResult<QueryResult> queryTable(
+      String tableName, DynamoDBQueryFilter dynamoDBQueryFilter, Map<String, AttributeValue>
+      exclusiveStartKey, long limit, Reporter reporter) {
+    final QueryRequest queryRequest = new QueryRequest()
+        .withTableName(tableName)
+        .withExclusiveStartKey(exclusiveStartKey)
+        .withKeyConditions(dynamoDBQueryFilter.getKeyConditions())
+        .withLimit(Ints.checkedCast(limit))
+        .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+
+    DynamoDBIndexInfo index = dynamoDBQueryFilter.getIndex();
+    if (index != null) {
+      log.debug("Using DynamoDB index: " + index.getIndexName());
+      queryRequest.setIndexName(index.getIndexName());
+    }
+
+    RetryResult<QueryResult> retryResult = getRetryDriver().runWithRetry(
+        new Callable<QueryResult>() {
+          @Override
+          public QueryResult call() {
+            log.debug("Executing DynamoDB query: " + queryRequest);
+            return dynamoDB.query(queryRequest);
+          }
+        }, reporter, PrintCounter.DynamoDBReadThrottle);
+    return retryResult;
+  }
+
+  private DynamoDBFibonacciRetryer getRetryDriver() {
+      return new DynamoDBFibonacciRetryer(Duration.standardMinutes(DEFAULT_RETRY_DURATION));
+    }
+
+  private void pauseExponentially(int retries) throws InterruptedException {
+    if (retries == 0) {
+      return;
+    }
+    long scaleFactor = 500 + new Random().nextInt(100);
+    long delay = (long) (Math.pow(2, retries) * scaleFactor) / 4;
+    delay = Math.min(delay, MAX_BACKOFF_IN_MILLISECONDS);
+    log.info("Pausing " + delay + " ms at retry " + retries);
+    Thread.sleep(delay);
+  }
+
