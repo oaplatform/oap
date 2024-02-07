@@ -26,6 +26,7 @@
         <module>oap-formats</module>
         <module>oap-storage</module>
         <module>oap-mail</module>
+        <module>oap-statsdb</module>
         <module>oap-highload</module>
         <module>oap-maven-plugin</module>
     </modules>
@@ -51,7 +52,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.9.1</oap.project.version>
+        <oap.project.version>21.10.0</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
