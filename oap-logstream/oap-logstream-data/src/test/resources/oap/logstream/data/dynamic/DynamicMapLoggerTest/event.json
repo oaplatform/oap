@@ -1,0 +1,8 @@
+{
+  "name": "event",
+  "value1": "value1",
+  "value2": 222,
+  "obj": {
+    "value3": 333
+  }
+}
