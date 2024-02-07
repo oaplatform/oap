@@ -1,0 +1,4 @@
+roles:
+  ADMIN: [ "generic:megatest", "generic:manage" ]
+  MEGADMIN: [ "generic:megatest", "generic:manage" ]
+  USER: [ "generic:manage" ]

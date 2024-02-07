@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>oap</groupId>
+        <artifactId>oap</artifactId>
+        <version>${oap.project.version}</version>
+    </parent>
+
+    <packaging>pom</packaging>
+    <artifactId>oap-ws-parent</artifactId>
+
+    <properties>
+        <oap.deps.javaassist.version>3.29.2-GA</oap.deps.javaassist.version>
+        <oap.deps.jwt.version>4.4.0</oap.deps.jwt.version>
+        <oap.deps.jwks.version>0.22.0</oap.deps.jwks.version>
+        <oap.deps.totp.version>1.0</oap.deps.totp.version>
+        <oap.deps.swagger.version>2.2.16</oap.deps.swagger.version>
+    </properties>
+
+    <modules>
+        <module>oap-ws</module>
+        <module>oap-ws-api-api</module>
+        <module>oap-ws-api-ws</module>
+        <module>oap-ws-test</module>
+        <module>oap-ws-admin-ws</module>
+        <module>oap-ws-sso-api</module>
+        <module>oap-ws-sso-api-default</module>
+        <module>oap-ws-sso</module>
+        <module>oap-ws-file-ws</module>
+        <module>oap-ws-openapi</module>
+        <module>oap-ws-openapi-ws</module>
+
+        <module>oap-ws-openapi-maven-plugin</module>
+    </modules>
+</project>
