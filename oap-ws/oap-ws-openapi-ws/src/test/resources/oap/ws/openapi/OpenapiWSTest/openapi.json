@@ -1,0 +1,4241 @@
+{
+  "components" : {
+    "requestBodies" : {
+      "Bean" : {
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/Bean"
+            }
+          }
+        }
+      },
+      "NewWsBean" : {
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/NewWsBean"
+            }
+          }
+        }
+      }
+    },
+    "schemas" : {
+      "AcmeCreativeSettings" : {
+        "properties" : {
+          "appStore" : {
+            "enum" : [ "UNKNOWN", "GOOGLE_PLAY", "APP_STORE", "AMAZON", "WEB" ],
+            "type" : "string"
+          },
+          "format" : {
+            "enum" : [ "VIDEO", "VIDEO_IEC", "VIDEO_PLAYABLE", "PLAYABLE" ],
+            "type" : "string"
+          },
+          "language" : {
+            "type" : "string"
+          },
+          "placements" : {
+            "items" : {
+              "enum" : [ "FS", "RV", "NATIVE" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponse" : {
+        "properties" : {
+          "content" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/MediaType"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              }
+            },
+            "type" : "object"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "headers" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Header"
+            },
+            "type" : "object"
+          },
+          "links" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Link"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponses" : {
+        "additionalProperties" : {
+          "$ref" : "#/components/schemas/ApiResponse"
+        },
+        "properties" : {
+          "default" : {
+            "$ref" : "#/components/schemas/ApiResponse"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          }
+        },
+        "type" : "object"
+      },
+      "Bean" : {
+        "properties" : {
+          "b2" : {
+            "$ref" : "#/components/schemas/oap_ws_openapi_TestWS_Bean2"
+          },
+          "dt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "ext" : {
+            "$ref" : "#/components/schemas/oap_json_ext_Ext"
+          },
+          "i" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "s" : {
+            "type" : "string"
+          },
+          "something" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Bean2" : {
+        "properties" : {
+          "overpriced" : {
+            "deprecated" : true,
+            "type" : "boolean"
+          },
+          "price" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "x" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Beans" : {
+        "items" : {
+          "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+          },
+          "last" : {
+            "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+          }
+        },
+        "type" : "array"
+      },
+      "Callback" : {
+        "additionalProperties" : {
+          "$ref" : "#/components/schemas/PathItem"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get$ref" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CampaignInfo" : {
+        "properties" : {
+          "field" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Components" : {
+        "properties" : {
+          "callbacks" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Callback"
+            },
+            "type" : "object"
+          },
+          "examples" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Example"
+            },
+            "type" : "object"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "headers" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Header"
+            },
+            "type" : "object"
+          },
+          "links" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Link"
+            },
+            "type" : "object"
+          },
+          "parameters" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Parameter"
+            },
+            "type" : "object"
+          },
+          "requestBodies" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/RequestBody"
+            },
+            "type" : "object"
+          },
+          "responses" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ApiResponse"
+            },
+            "type" : "object"
+          },
+          "schemas" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "object"
+          },
+          "securitySchemes" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/SecurityScheme"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
+      "Contact" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Content" : {
+        "additionalProperties" : {
+          "$ref" : "#/components/schemas/MediaType"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "Cookie" : {
+        "properties" : {
+          "delegate" : {
+            "$ref" : "#/components/schemas/io_undertow_server_handlers_Cookie"
+          },
+          "domain" : {
+            "type" : "string"
+          },
+          "expires" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "httpOnly" : {
+            "type" : "boolean"
+          },
+          "maxAge" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "path" : {
+            "type" : "string"
+          },
+          "sameSite" : {
+            "type" : "boolean"
+          },
+          "secure" : {
+            "type" : "boolean"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CreativeUniversal" : {
+        "properties" : {
+          "amazon" : {
+            "enum" : [ "UNKNOWN", "GOOGLE_PLAY", "APP_STORE", "AMAZON", "WEB" ],
+            "type" : "string"
+          },
+          "assets" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "settings" : {
+            "$ref" : "#/components/schemas/AcmeCreativeSettings"
+          },
+          "unknown" : {
+            "$ref" : "#/components/schemas/oap_dictionary_Dictionary"
+          }
+        },
+        "type" : "object"
+      },
+      "Dictionary" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "externalId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "properties" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "tags" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "values" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Dictionary"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "Discriminator" : {
+        "properties" : {
+          "mapping" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "propertyName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DynamicBeanExt" : {
+        "properties" : {
+          "databaseType" : {
+            "enum" : [ "STATIC", "DYNAMIC" ],
+            "type" : "string"
+          },
+          "extension" : {
+            "type" : "string"
+          },
+          "score" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Encoding" : {
+        "properties" : {
+          "allowReserved" : {
+            "type" : "boolean"
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "explode" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "headers" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Header"
+            },
+            "type" : "object"
+          },
+          "style" : {
+            "enum" : [ "form", "spaceDelimited", "pipeDelimited", "deepObject" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Example" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "externalValue" : {
+            "type" : "string"
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "summary" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
+      "Ext" : {
+        "type" : "object"
+      },
+      "ExternalDocumentation" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Header" : {
+        "properties" : {
+          "content" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/MediaType"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              }
+            },
+            "type" : "object"
+          },
+          "deprecated" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "example" : {
+            "type" : "object"
+          },
+          "examples" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Example"
+            },
+            "type" : "object"
+          },
+          "explode" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          },
+          "schema" : {
+            "$ref" : "#/components/schemas/Schema"
+          },
+          "style" : {
+            "enum" : [ "simple" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Info" : {
+        "properties" : {
+          "contact" : {
+            "$ref" : "#/components/schemas/Contact"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "license" : {
+            "$ref" : "#/components/schemas/License"
+          },
+          "termsOfService" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "License" : {
+        "properties" : {
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Link" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "headers" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Header"
+            },
+            "deprecated" : true,
+            "type" : "object"
+          },
+          "operationId" : {
+            "type" : "string"
+          },
+          "operationRef" : {
+            "type" : "string"
+          },
+          "parameters" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "requestBody" : {
+            "type" : "object"
+          },
+          "server" : {
+            "$ref" : "#/components/schemas/Server"
+          }
+        },
+        "type" : "object"
+      },
+      "MediaType" : {
+        "properties" : {
+          "encoding" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Encoding"
+            },
+            "type" : "object"
+          },
+          "example" : {
+            "type" : "object"
+          },
+          "examples" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Example"
+            },
+            "type" : "object"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "schema" : {
+            "$ref" : "#/components/schemas/Schema"
+          }
+        },
+        "type" : "object"
+      },
+      "NewWsBean" : {
+        "properties" : {
+          "b2" : {
+            "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+          },
+          "beans" : {
+            "items" : {
+              "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              },
+              "first" : {
+                "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+              },
+              "last" : {
+                "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+              }
+            },
+            "type" : "array"
+          },
+          "dt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "ext" : {
+            "$ref" : "#/components/schemas/DynamicBeanExt"
+          },
+          "i" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "intStream" : {
+            "items" : {
+              "items" : {
+                "format" : "int32",
+                "type" : "integer"
+              },
+              "type" : "array"
+            }
+          },
+          "map" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+            },
+            "type" : "object"
+          },
+          "s" : {
+            "deprecated" : true,
+            "type" : "string"
+          },
+          "something" : {
+            "type" : "string"
+          },
+          "stringStream" : {
+            "items" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          }
+        },
+        "type" : "object"
+      },
+      "NewWsBean2" : {
+        "properties" : {
+          "price" : {
+            "deprecated" : true,
+            "format" : "double",
+            "type" : "number"
+          },
+          "x" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OAuthFlow" : {
+        "properties" : {
+          "authorizationUrl" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "refreshUrl" : {
+            "type" : "string"
+          },
+          "scopes" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              },
+              "extensions" : {
+                "additionalProperties" : {
+                  "deprecated" : true,
+                  "type" : "object"
+                },
+                "deprecated" : true,
+                "type" : "object",
+                "writeOnly" : true
+              }
+            },
+            "type" : "object"
+          },
+          "tokenUrl" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OAuthFlows" : {
+        "properties" : {
+          "authorizationCode" : {
+            "$ref" : "#/components/schemas/OAuthFlow"
+          },
+          "clientCredentials" : {
+            "$ref" : "#/components/schemas/OAuthFlow"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "implicit" : {
+            "$ref" : "#/components/schemas/OAuthFlow"
+          },
+          "password" : {
+            "$ref" : "#/components/schemas/OAuthFlow"
+          }
+        },
+        "type" : "object"
+      },
+      "OpenAPI" : {
+        "properties" : {
+          "components" : {
+            "$ref" : "#/components/schemas/Components"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "externalDocs" : {
+            "$ref" : "#/components/schemas/ExternalDocumentation"
+          },
+          "info" : {
+            "$ref" : "#/components/schemas/Info"
+          },
+          "jsonSchemaDialect" : {
+            "type" : "string"
+          },
+          "openapi" : {
+            "type" : "string"
+          },
+          "paths" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/PathItem"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              },
+              "extensions" : {
+                "additionalProperties" : {
+                  "type" : "object"
+                },
+                "type" : "object",
+                "writeOnly" : true
+              }
+            },
+            "type" : "object"
+          },
+          "security" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SecurityRequirement"
+            },
+            "type" : "array"
+          },
+          "servers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Server"
+            },
+            "type" : "array"
+          },
+          "tags" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Tag"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "Operation" : {
+        "properties" : {
+          "callbacks" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Callback"
+            },
+            "type" : "object"
+          },
+          "deprecated" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "externalDocs" : {
+            "$ref" : "#/components/schemas/ExternalDocumentation"
+          },
+          "operationId" : {
+            "type" : "string"
+          },
+          "parameters" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Parameter"
+            },
+            "type" : "array"
+          },
+          "requestBody" : {
+            "$ref" : "#/components/schemas/RequestBody"
+          },
+          "responses" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ApiResponse"
+            },
+            "properties" : {
+              "default" : {
+                "$ref" : "#/components/schemas/ApiResponse"
+              },
+              "empty" : {
+                "type" : "boolean"
+              },
+              "extensions" : {
+                "additionalProperties" : {
+                  "type" : "object"
+                },
+                "type" : "object",
+                "writeOnly" : true
+              }
+            },
+            "type" : "object"
+          },
+          "security" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SecurityRequirement"
+            },
+            "type" : "array"
+          },
+          "servers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Server"
+            },
+            "type" : "array"
+          },
+          "summary" : {
+            "type" : "string"
+          },
+          "tags" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "Parameter" : {
+        "properties" : {
+          "allowEmptyValue" : {
+            "type" : "boolean"
+          },
+          "allowReserved" : {
+            "type" : "boolean"
+          },
+          "content" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/MediaType"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              }
+            },
+            "type" : "object"
+          },
+          "deprecated" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "example" : {
+            "type" : "object"
+          },
+          "examples" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Example"
+            },
+            "type" : "object"
+          },
+          "explode" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "in" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          },
+          "schema" : {
+            "$ref" : "#/components/schemas/Schema"
+          },
+          "style" : {
+            "enum" : [ "matrix", "label", "form", "simple", "spaceDelimited", "pipeDelimited", "deepObject" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PathItem" : {
+        "properties" : {
+          "delete" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "head" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "options" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "parameters" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Parameter"
+            },
+            "type" : "array"
+          },
+          "patch" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "post" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "put" : {
+            "$ref" : "#/components/schemas/Operation"
+          },
+          "servers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Server"
+            },
+            "type" : "array"
+          },
+          "summary" : {
+            "type" : "string"
+          },
+          "trace" : {
+            "$ref" : "#/components/schemas/Operation"
+          }
+        },
+        "type" : "object"
+      },
+      "Paths" : {
+        "additionalProperties" : {
+          "$ref" : "#/components/schemas/PathItem"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          }
+        },
+        "type" : "object"
+      },
+      "RequestBody" : {
+        "properties" : {
+          "content" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/MediaType"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              }
+            },
+            "type" : "object"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "required" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "Response" : {
+        "properties" : {
+          "body" : {
+            "type" : "object"
+          },
+          "code" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "cookies" : {
+            "items" : {
+              "$ref" : "#/components/schemas/oap_http_Cookie"
+            },
+            "type" : "array"
+          },
+          "headers" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "raw" : {
+            "type" : "boolean"
+          },
+          "reasonPhrase" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Schema" : {
+        "properties" : {
+          "additionalProperties" : {
+            "type" : "object"
+          },
+          "allOf" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "array"
+          },
+          "anyOf" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "array"
+          },
+          "default" : {
+            "type" : "object"
+          },
+          "deprecated" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "discriminator" : {
+            "$ref" : "#/components/schemas/Discriminator"
+          },
+          "enum" : {
+            "items" : {
+              "type" : "object"
+            },
+            "type" : "array"
+          },
+          "example" : {
+            "type" : "object"
+          },
+          "exclusiveMaximum" : {
+            "type" : "boolean"
+          },
+          "exclusiveMinimum" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "externalDocs" : {
+            "$ref" : "#/components/schemas/ExternalDocumentation"
+          },
+          "format" : {
+            "type" : "string"
+          },
+          "get$dynamicAnchor" : {
+            "type" : "string"
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "get$vocabulary" : {
+            "type" : "string"
+          },
+          "items" : {
+            "$ref" : "#/components/schemas/SchemaObject"
+          },
+          "maxItems" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxLength" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxProperties" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maximum" : {
+            "type" : "number"
+          },
+          "minItems" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minLength" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minProperties" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minimum" : {
+            "type" : "number"
+          },
+          "multipleOf" : {
+            "type" : "number"
+          },
+          "not" : {
+            "$ref" : "#/components/schemas/Schema"
+          },
+          "nullable" : {
+            "type" : "boolean"
+          },
+          "oneOf" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "array"
+          },
+          "pattern" : {
+            "type" : "string"
+          },
+          "properties" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "object"
+          },
+          "readOnly" : {
+            "type" : "boolean"
+          },
+          "required" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "uniqueItems" : {
+            "type" : "boolean"
+          },
+          "writeOnly" : {
+            "type" : "boolean"
+          },
+          "xml" : {
+            "$ref" : "#/components/schemas/XML"
+          }
+        },
+        "type" : "object"
+      },
+      "SchemaObject" : {
+        "properties" : {
+          "additionalProperties" : {
+            "type" : "object"
+          },
+          "allOf" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "array"
+          },
+          "anyOf" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "array"
+          },
+          "default" : {
+            "type" : "object"
+          },
+          "deprecated" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "discriminator" : {
+            "$ref" : "#/components/schemas/Discriminator"
+          },
+          "enum" : {
+            "items" : {
+              "type" : "object"
+            },
+            "type" : "array"
+          },
+          "example" : {
+            "type" : "object"
+          },
+          "exclusiveMaximum" : {
+            "type" : "boolean"
+          },
+          "exclusiveMinimum" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "externalDocs" : {
+            "$ref" : "#/components/schemas/ExternalDocumentation"
+          },
+          "format" : {
+            "type" : "string"
+          },
+          "get$dynamicAnchor" : {
+            "type" : "string"
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "get$vocabulary" : {
+            "type" : "string"
+          },
+          "items" : {
+            "$ref" : "#/components/schemas/SchemaObject"
+          },
+          "maxItems" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxLength" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxProperties" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maximum" : {
+            "type" : "number"
+          },
+          "minItems" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minLength" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minProperties" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minimum" : {
+            "type" : "number"
+          },
+          "multipleOf" : {
+            "type" : "number"
+          },
+          "not" : {
+            "$ref" : "#/components/schemas/Schema"
+          },
+          "nullable" : {
+            "type" : "boolean"
+          },
+          "oneOf" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "array"
+          },
+          "pattern" : {
+            "type" : "string"
+          },
+          "properties" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/Schema"
+            },
+            "type" : "object"
+          },
+          "readOnly" : {
+            "type" : "boolean"
+          },
+          "required" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "uniqueItems" : {
+            "type" : "boolean"
+          },
+          "writeOnly" : {
+            "type" : "boolean"
+          },
+          "xml" : {
+            "$ref" : "#/components/schemas/XML"
+          }
+        },
+        "type" : "object"
+      },
+      "Scopes" : {
+        "additionalProperties" : {
+          "type" : "string"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "deprecated" : true,
+              "type" : "object"
+            },
+            "deprecated" : true,
+            "type" : "object",
+            "writeOnly" : true
+          }
+        },
+        "type" : "object"
+      },
+      "SecurityRequirement" : {
+        "additionalProperties" : {
+          "items" : {
+            "type" : "string"
+          },
+          "type" : "array"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "SecurityScheme" : {
+        "properties" : {
+          "bearerFormat" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "flows" : {
+            "$ref" : "#/components/schemas/OAuthFlows"
+          },
+          "get$ref" : {
+            "type" : "string"
+          },
+          "in" : {
+            "enum" : [ "cookie", "header", "query" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "openIdConnectUrl" : {
+            "type" : "string"
+          },
+          "scheme" : {
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "apiKey", "http", "oauth2", "openIdConnect", "mutualTLS" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "Server" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "url" : {
+            "type" : "string"
+          },
+          "variables" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ServerVariable"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              },
+              "extensions" : {
+                "additionalProperties" : {
+                  "deprecated" : true,
+                  "type" : "object"
+                },
+                "deprecated" : true,
+                "type" : "object",
+                "writeOnly" : true
+              }
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
+      "ServerVariable" : {
+        "properties" : {
+          "default" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "enum" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          }
+        },
+        "type" : "object"
+      },
+      "ServerVariables" : {
+        "additionalProperties" : {
+          "$ref" : "#/components/schemas/ServerVariable"
+        },
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "deprecated" : true,
+              "type" : "object"
+            },
+            "deprecated" : true,
+            "type" : "object",
+            "writeOnly" : true
+          }
+        },
+        "type" : "object"
+      },
+      "StreamInteger" : {
+        "properties" : {
+          "parallel" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "StreamObject" : {
+        "properties" : {
+          "parallel" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "StreamString" : {
+        "properties" : {
+          "parallel" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "Tag" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "externalDocs" : {
+            "$ref" : "#/components/schemas/ExternalDocumentation"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "XML" : {
+        "properties" : {
+          "attribute" : {
+            "type" : "boolean"
+          },
+          "extensions" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object",
+            "writeOnly" : true
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "namespace" : {
+            "type" : "string"
+          },
+          "prefix" : {
+            "type" : "string"
+          },
+          "wrapped" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "io_undertow_server_handlers_Cookie" : {
+        "properties" : {
+          "comment" : {
+            "type" : "string"
+          },
+          "discard" : {
+            "type" : "boolean"
+          },
+          "domain" : {
+            "type" : "string"
+          },
+          "expires" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "httpOnly" : {
+            "type" : "boolean"
+          },
+          "maxAge" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "path" : {
+            "type" : "string"
+          },
+          "sameSite" : {
+            "type" : "boolean"
+          },
+          "sameSiteMode" : {
+            "type" : "string"
+          },
+          "secure" : {
+            "type" : "boolean"
+          },
+          "value" : {
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_dictionary_Dictionary" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "externalId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "properties" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "tags" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "values" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Dictionary"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_http_Cookie" : {
+        "properties" : {
+          "delegate" : {
+            "$ref" : "#/components/schemas/io_undertow_server_handlers_Cookie"
+          },
+          "domain" : {
+            "type" : "string"
+          },
+          "expires" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "httpOnly" : {
+            "type" : "boolean"
+          },
+          "maxAge" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "path" : {
+            "type" : "string"
+          },
+          "sameSite" : {
+            "type" : "boolean"
+          },
+          "secure" : {
+            "type" : "boolean"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_json_ext_Ext" : {
+        "type" : "object"
+      },
+      "oap_ws_openapi_ExampleNewWS_NewWsBean" : {
+        "properties" : {
+          "b2" : {
+            "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+          },
+          "beans" : {
+            "items" : {
+              "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+            },
+            "properties" : {
+              "empty" : {
+                "type" : "boolean"
+              },
+              "first" : {
+                "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+              },
+              "last" : {
+                "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+              }
+            },
+            "type" : "array"
+          },
+          "dt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "ext" : {
+            "$ref" : "#/components/schemas/oap_json_ext_Ext"
+          },
+          "i" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "intStream" : {
+            "$ref" : "#/components/schemas/StreamInteger"
+          },
+          "map" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/oap_ws_openapi_ExampleNewWS_NewWsBean2"
+            },
+            "type" : "object"
+          },
+          "s" : {
+            "deprecated" : true,
+            "type" : "string"
+          },
+          "something" : {
+            "type" : "string"
+          },
+          "stringStream" : {
+            "$ref" : "#/components/schemas/StreamString"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_ws_openapi_ExampleNewWS_NewWsBean2" : {
+        "properties" : {
+          "price" : {
+            "deprecated" : true,
+            "format" : "double",
+            "type" : "number"
+          },
+          "x" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_ws_openapi_TestWS_Bean" : {
+        "properties" : {
+          "b2" : {
+            "$ref" : "#/components/schemas/oap_ws_openapi_TestWS_Bean2"
+          },
+          "dt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "ext" : {
+            "$ref" : "#/components/schemas/oap_json_ext_Ext"
+          },
+          "i" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "s" : {
+            "type" : "string"
+          },
+          "something" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_ws_openapi_TestWS_Bean2" : {
+        "properties" : {
+          "overpriced" : {
+            "deprecated" : true,
+            "type" : "boolean"
+          },
+          "price" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "x" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      }
+    },
+    "securitySchemes" : {
+      "JWT" : {
+        "bearerFormat" : "JWT",
+        "description" : "In order to use the method you have to be authorised",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  },
+  "info" : {
+    "description" : "Test description",
+    "title" : "Test title",
+    "version" : "UNDEFINED (oap.ws.openapi.ExtTestWS, oap.ws.openapi.ExampleNewWS, oap.ws.openapi.IgnoredPermissionsTestWS, oap.ws.openapi.TestWS, oap.ws.openapi.OpenapiWS)"
+  },
+  "openapi" : "3.0.3",
+  "paths" : {
+    "/api/" : {
+      "get" : {
+        "description" : "Returns a simple word Two as a result.",
+        "operationId" : "test_GET",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/bean" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "bean_GET_Bean",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/Bean"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "bean_POST_Bean",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/Bean"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/bytes" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "bytes_GET_Bytes",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "format" : "byte",
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "bytes_POST_Bytes",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "format" : "byte",
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/code" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "code_GET_Code",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "code_POST_Code",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/en" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "en_GET_En",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "en_POST_En",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/getStream" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "getStream_GET_GetStream",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "getStream_POST_GetStream",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/id" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "id_GET_Id",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "id_POST_Id",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/json" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "json_GET_Json",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Bean"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Bean"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "json_POST_Json",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Bean"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Bean"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/req" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "req_GET_Req",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "req_POST_Req",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/string" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "string_GET_String",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "string_POST_String",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/sumab" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "sumab_GET_Sumab",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "sumab_POST_Sumab",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/sumabopt" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "sumabopt_GET_Sumabopt",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "sumabopt_POST_Sumabopt",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/test/sort/default" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "test2_GET_TestSortDefault",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/test/sort/{id}" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "test1_GET_TestSortId",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/test/sort={id}/test" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "testEqual_GET_TestSortIdTest",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/api/x" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "x_GET_X",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "x_POST_X",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/apiExt/campaignList" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "campaignList_GET_CampaignList",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CampaignInfo"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExtTestWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "campaignList_POST_CampaignList",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CampaignInfo"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExtTestWS" ]
+      }
+    },
+    "/apiExt/test/empty_optional_param/{id}" : {
+      "get" : {
+        "description" : "This method returns nothing (Void)",
+        "operationId" : "testVoid_GET_TestEmpty_optional_paramId",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Non obligatory limit, MIGHT be skipped",
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExtTestWS" ]
+      }
+    },
+    "/apiExt/test/empty_required_param/" : {
+      "get" : {
+        "deprecated" : true,
+        "description" : "This method returns nothing (Void)\n    Note: \n- security permissions: \n  - account:read\n  - permissions:read\n- realm: organizationId",
+        "operationId" : "testVoid_GET_TestEmpty_required_param",
+        "parameters" : [ {
+          "description" : "Required parameter, MUST be specified",
+          "in" : "query",
+          "name" : "limit",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.ExtTestWS" ]
+      }
+    },
+    "/apigeneric" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "mapbean_GET_Generic",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "items" : {
+                      "$ref" : "#/components/schemas/Bean"
+                    },
+                    "type" : "array"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.TestWS" ]
+      }
+    },
+    "/example/" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "test_GET",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/bean" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "bean_GET_Bean",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NewWsBean"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "bean_POST_Bean",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NewWsBean"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/bytesParam" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "bytesParam_GET_BytesParam",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "format" : "byte",
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "bytesParam_POST_BytesParam",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "format" : "byte",
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/bytesResult" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "bytesResult_GET_BytesResult",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "format" : "byte",
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "bytesResult_POST_BytesResult",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "format" : "byte",
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/code" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "code_GET_Code",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "code_POST_Code",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "code",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/deprecated" : {
+      "get" : {
+        "deprecated" : true,
+        "description" : "",
+        "operationId" : "deprecated_GET_Deprecated",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "deprecated" : true,
+        "description" : "",
+        "operationId" : "deprecated_POST_Deprecated",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/en" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "en_GET_En",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "en_POST_En",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/getCreativeUniversal" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "getCreativeUniversal_GET_GetCreativeUniversal",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreativeUniversal"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "getCreativeUniversal_POST_GetCreativeUniversal",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreativeUniversal"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/getOapStreamOfStrings" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "getOapStreamOfStrings_GET_GetOapStreamOfStrings",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "getOapStreamOfStrings_POST_GetOapStreamOfStrings",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/getVanillaStreamOfStrings" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "getVanillaStreamOfStrings_GET_GetVanillaStreamOfStrings",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "getVanillaStreamOfStrings_POST_GetVanillaStreamOfStrings",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/id" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "id_GET_Id",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "id_POST_Id",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/json" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "json_GET_Json",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewWsBean"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NewWsBean"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "json_POST_Json",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NewWsBean"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NewWsBean"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/list" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "list_GET_List",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "list_POST_List",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "items" : {
+                  "type" : "string"
+                },
+                "type" : "array"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/listOfBytesResult" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "listOfBytesResult_GET_ListOfBytesResult",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "listOfBytesResult_POST_ListOfBytesResult",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/req" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "req_GET_Req",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "req_POST_Req",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/response" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "response_GET_Response",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Response"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "response_POST_Response",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Response"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/stringParam" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "stringParam_GET_StringParam",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "stringParam_POST_StringParam",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/sum" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "sum_GET_Sum",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "realm",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : true
+        }, {
+          "in" : "query",
+          "name" : "c",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "rp",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "sum_POST_Sum",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "realm",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : true
+        }, {
+          "in" : "query",
+          "name" : "c",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "rp",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SOURCE", "CLASS", "RUNTIME" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/sumab" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "sumab_GET_Sumab",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "sumab_POST_Sumab",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/sumabopt" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "sumabopt_GET_Sumabopt",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "sumabopt_POST_Sumabopt",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "a",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "b",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/test/sort/default" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "test2_GET_TestSortDefault",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/test/sort/{id}" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "test1_GET_TestSortId",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/test/sort={id}/test" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "testEqual_GET_TestSortIdTest",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/example/x" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "x_GET_X",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      },
+      "post" : {
+        "description" : "",
+        "operationId" : "x_POST_X",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "i",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "s",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "format" : "int32",
+                  "type" : "integer"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.ExampleNewWS" ]
+      }
+    },
+    "/ignored-permissions/test/ignored/{id}" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "test_GET_TestIgnoredId",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "security" : [ {
+          "JWT" : [ ]
+        } ],
+        "tags" : [ "oap.ws.openapi.IgnoredPermissionsTestWS" ]
+      }
+    },
+    "/system/openapi/" : {
+      "get" : {
+        "description" : "Generates OpenAPI 3.0 json document",
+        "operationId" : "openapi_GET",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "skipDeprecated",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OpenAPI"
+                }
+              }
+            },
+            "description" : ""
+          }
+        },
+        "tags" : [ "oap.ws.openapi.OpenapiWS" ]
+      }
+    }
+  },
+  "tags" : [ {
+    "name" : "oap.ws.openapi.ExtTestWS"
+  }, {
+    "name" : "oap.ws.openapi.ExampleNewWS"
+  }, {
+    "name" : "oap.ws.openapi.IgnoredPermissionsTestWS"
+  }, {
+    "name" : "oap.ws.openapi.TestWS"
+  }, {
+    "name" : "oap.ws.openapi.OpenapiWS"
+  } ]
+}

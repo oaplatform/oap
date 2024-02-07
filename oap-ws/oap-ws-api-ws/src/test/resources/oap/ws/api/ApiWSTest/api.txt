@@ -1,0 +1,256 @@
+# SERVICES #####################################################################
+## oap.ws.api.TestRecursiveWS ##################################################
+Bound to recursion
+Methods:
+	Method methodWithRecursiveObject
+	[GET] /recursion/getRecursiveObject
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns oap.ws.api.TestRecursiveWS.SomeClass
+	No parameters
+
+
+## oap.ws.api.ExampleWS ########################################################
+Bound to example
+Methods:
+	Method bean
+	[GET, POST] /example/bean
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns oap.ws.api.ExampleWS.Bean[]
+	Parameters
+		i: QUERY int
+		s: QUERY String
+
+	Method bytes
+	[GET, POST] /example/bytes
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	Parameters
+		bytes: BODY byte[]
+
+	Method code
+	[GET, POST] /example/code
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns void
+	Parameters
+		code: QUERY int
+
+	Method deprecated (Deprecated)
+	[GET, POST] /example/deprecated
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	No parameters
+
+	Method en
+	[GET, POST] /example/en
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns ["SOURCE","CLASS","RUNTIME"]
+	Parameters
+		a: QUERY ["SOURCE","CLASS","RUNTIME"]
+
+	Method id
+	[GET, POST] /example/id
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	Parameters
+		a: QUERY String
+
+	Method json
+	[GET, POST] /example/json
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns oap.ws.api.ExampleWS.Bean
+	Parameters
+		bean: BODY oap.ws.api.ExampleWS.Bean
+
+	Method list
+	[GET, POST] /example/list
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String[]
+	Parameters
+		str: BODY String[]
+
+	Method req
+	[GET, POST] /example/req
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	No parameters
+
+	Method response
+	[GET, POST] /example/response
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns <http response>
+	No parameters
+
+	Method stream
+	[GET, POST] /example/stream
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String[]
+	No parameters
+
+	Method string
+	[GET, POST] /example/string
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	Parameters
+		bytes: BODY String
+
+	Method sum
+	[GET, POST] /example/sum
+	Produces application/json
+	Realm param realm
+	Permissions [ALLOWED]
+	Returns int
+	Parameters
+		realm: QUERY String
+		a: QUERY int
+		b: QUERY int[]
+		c: QUERY optional int
+		rp: QUERY optional ["SOURCE","CLASS","RUNTIME"]
+
+	Method sumab
+	[GET, POST] /example/sumab
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns int
+	Parameters
+		a: QUERY int
+		b: QUERY int
+
+	Method sumabopt
+	[GET, POST] /example/sumabopt
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns int
+	Parameters
+		a: QUERY int
+		b: QUERY optional int
+
+	Method test1
+	[GET] /example/test/sort/{id}
+	Produces application/json
+	Realm param SYSTEM
+	Permissions [SUPERADMIN]
+	Returns String
+	Parameters
+		id: PATH String
+
+	Method test2
+	[GET] /example/test/sort/default
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	No parameters
+
+	Method testEqual
+	[GET] /example/test/sort={id}/test
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	Parameters
+		id: PATH String
+
+	Method test
+	[GET] /example/
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns int
+	No parameters
+
+	Method x
+	[GET, POST] /example/x
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns int
+	Parameters
+		i: QUERY int
+		s: QUERY String
+
+
+## oap.ws.api.ApiWS ############################################################
+Bound to system/api
+Methods:
+	Method api
+	Description Generates description of WS method with parameters and result
+	[GET] /system/api/
+	Produces text/plain
+	Realm param <no realm>
+	Permissions []
+	Returns String
+	Parameters
+		deprecated: QUERY optional Boolean
+
+
+# TYPES ########################################################################
+## oap.ws.api.TestRecursiveWS.SomeClass ########################################
+SomeClass
+{
+	otherObject: oap.ws.api.TestRecursiveWS.OtherClass
+}
+
+## oap.ws.api.ExampleWS.Bean ###################################################
+Bean
+{
+	amazon: ["UNKNOWN","GOOGLE_PLAY","APP_STORE","AMAZON","WEB"] (Deprecated)
+	b2: oap.ws.api.ExampleWS.Bean2
+	beans: oap.ws.api.ExampleWS.Bean2[]
+	dt: LocalDateTime
+	ext: oap.ws.api.ExampleWS.Bean.BeanExt
+	i: int
+	intStream: int[]
+	map: map String -> oap.ws.api.ExampleWS.Bean2
+	ref: soft reference -> long
+	s: String (Deprecated)
+	unknown: oap.dictionary.Dictionary (Deprecated)
+	something: String
+}
+
+## oap.ws.api.TestRecursiveWS.OtherClass #######################################
+OtherClass
+{
+	someObject: oap.ws.api.TestRecursiveWS.SomeClass
+}
+
+## oap.ws.api.ExampleWS.Bean2 ##################################################
+Bean2
+{
+	price: double (Deprecated)
+	x: int
+}
+
+## oap.ws.api.ExampleWS.Bean.BeanExt ###########################################
+BeanExt
+{
+	extension: String
+}
+
