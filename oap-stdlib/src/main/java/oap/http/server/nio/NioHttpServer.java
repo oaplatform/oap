@@ -72,7 +72,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
     public final ArrayList<NioHandler> handlers = new ArrayList<>();
-    private final ConcurrentHashMap<Integer, PathHandler> pathHandler = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, TestPathHandler> pathHandler = new ConcurrentHashMap<>();
     private final AtomicLong requestId = new AtomicLong();
     private final KeyManager[] keyManagers;
     public int backlog = -1;
@@ -87,6 +87,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean statistics = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
+    public int pathHandlerCacheSize = 0; // without cache
+
     public Undertow undertow;
 
     public NioHttpServer( DefaultPort defaultPort ) {
@@ -156,12 +158,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public void start() {
         long time = System.currentTimeMillis();
 
-        pathHandler.putIfAbsent( defaultPort.httpPort, new PathHandler() );
+        pathHandler.putIfAbsent( defaultPort.httpPort, new TestPathHandler( pathHandlerCacheSize ) );
         if( isHttpsEnabled() ) {
-            pathHandler.putIfAbsent( defaultPort.httpsPort, new PathHandler() );
+            pathHandler.putIfAbsent( defaultPort.httpsPort, new TestPathHandler( pathHandlerCacheSize ) );
         }
 
-        additionalHttpPorts.values().forEach( port -> pathHandler.putIfAbsent( port, new PathHandler() ) );
+        additionalHttpPorts.values().forEach( port -> pathHandler.putIfAbsent( port, new TestPathHandler( pathHandlerCacheSize ) ) );
 
         Undertow.Builder builder = Undertow.builder()
             .setSocketOption( Options.REUSE_ADDRESSES, true )
@@ -219,7 +221,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
-        handler = new TestHttpHandler( handler, portPathHandler );
 
         if( port == defaultPort.httpsPort ) {
             builder.addHttpsListener( port, "0.0.0.0", keyManagers, null, handler );
@@ -282,7 +283,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             httpHandler = new CompressionNioHandler().build( httpHandler );
         }
 
-        PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
+        PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new TestPathHandler( pathHandlerCacheSize ) );
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
         log.debug( "binding '{}' on port: {}:{}, paths {}", prefix, portName, port,
@@ -325,13 +326,18 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         HTTP, HTTPS
     }
 
-    public static class TestHttpHandler implements io.undertow.server.HttpHandler {
-        private final io.undertow.server.HttpHandler httpHandler;
+    public static class TestPathHandler extends PathHandler {
         private final PathHandler pathHandler1;
 
-        public TestHttpHandler( io.undertow.server.HttpHandler httpHandler, PathHandler pathHandler ) {
-            this.httpHandler = httpHandler;
-            pathHandler1 = pathHandler;
+        public TestPathHandler( int cache ) {
+            pathHandler1 = new PathHandler( cache );
+        }
+
+        @Override
+        public synchronized PathHandler addPrefixPath( String path, io.undertow.server.HttpHandler handler ) {
+            log.trace( "addPrefixPath path {} class {}", path, handler.getClass() );
+
+            return pathHandler1.addPrefixPath( path, handler );
         }
 
         @Override
@@ -343,10 +349,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
 
             log.debug( "match {}", match );
-            log.debug( "match {}", match.getMatched() );
+            log.debug( "match getMatched() {}", match.getMatched() );
+            log.debug( "match match.getValue() {}", match.getValue() != null ? match.getValue().getClass() : null );
+            log.debug( "match match.getRemaining() {}", match.getRemaining() );
             log.debug( "available {}", pathMatcher.getPaths().keySet() );
 
-            httpHandler.handleRequest( exchange );
+            pathHandler1.handleRequest( exchange );
         }
     }
 
