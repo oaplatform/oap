@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.util.Lists;
 import org.xnio.Options;
-import org.xnio.XnioWorker;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -74,7 +73,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
     public final ArrayList<NioHandler> handlers = new ArrayList<>();
     private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
-    private final Map<Integer, Holder> servers = new HashMap<>();
     private final AtomicLong requestId = new AtomicLong();
     private final KeyManager[] keyManagers;
     public int backlog = -1;
@@ -89,7 +87,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean statistics = false;
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
-    public XnioWorker xnioWorker;
+    public Undertow undertow;
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
@@ -102,12 +100,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             keyManagers = makeKeyManagers( defaultPort.keyStore, defaultPort.password );
         } else {
             keyManagers = null;
-        }
-
-
-        pathHandler.put( defaultPort.httpPort, new PathHandler() );
-        if( isHttpsEnabled() ) {
-            pathHandler.put( defaultPort.httpsPort, new PathHandler() );
         }
     }
 
@@ -162,52 +154,15 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     public void start() {
-        additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new PathHandler() ) );
-
-        pathHandler.forEach( this::startNewPort );
-    }
-
-    private void startNewPort( int port, PathHandler portPathHandler ) {
-        Preconditions.checkNotNull( portPathHandler );
-
-        log.info( "starting server on port: {} with {} ...", port, portPathHandler );
         long time = System.currentTimeMillis();
-        Undertow server = servers.computeIfAbsent( port, h -> new Holder( port, createUndertowServerAndStart( port, portPathHandler ) ) ).server;
 
-        log.info( "server on port: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
-            port, statistics,
-            server.getWorker().getMXBean().getIoThreadCount(),
-            server.getWorker().getMXBean().getMaxWorkerPoolSize(),
-            System.currentTimeMillis() - time
-        );
-
-        if( statistics ) {
-            addStats( server );
+        pathHandler.putIfAbsent( defaultPort.httpPort, new PathHandler() );
+        if( isHttpsEnabled() ) {
+            pathHandler.putIfAbsent( defaultPort.httpsPort, new PathHandler() );
         }
-    }
 
-    private void addStats( Undertow server ) {
-        for( var listenerInfo : server.getListenerInfo() ) {
-            var sa = ( InetSocketAddress ) listenerInfo.getAddress();
-            var sPort = String.valueOf( sa.getPort() );
+        additionalHttpPorts.values().forEach( port -> pathHandler.putIfAbsent( port, new PathHandler() ) );
 
-            ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
-
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
-
-            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
-
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
-        }
-    }
-
-    private synchronized Undertow createUndertowServerAndStart( int port, PathHandler portPathHandler ) {
         Undertow.Builder builder = Undertow.builder()
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
@@ -226,9 +181,27 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         builder.setServerOption( UndertowOptions.ALWAYS_SET_DATE, alwaysSetDate );
         builder.setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, alwaysSetKeepAlive );
 
-        if( xnioWorker != null ) {
-            builder.setWorker( xnioWorker );
+        pathHandler.forEach( ( port, ph ) -> addPortListener( port, ph, builder ) );
+
+        undertow = builder.build();
+        undertow.start();
+
+        if( statistics ) {
+            addStats( undertow );
         }
+
+        log.info( "server on ports: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
+            pathHandler.keySet(), statistics,
+            undertow.getWorker().getMXBean().getIoThreadCount(),
+            undertow.getWorker().getMXBean().getMaxWorkerPoolSize(),
+            System.currentTimeMillis() - time
+        );
+    }
+
+    private void addPortListener( int port, PathHandler portPathHandler, Undertow.Builder builder ) {
+        Preconditions.checkNotNull( portPathHandler );
+
+        log.info( "starting server on port: {} with {} ...", port, portPathHandler );
 
         io.undertow.server.HttpHandler handler = portPathHandler;
 
@@ -252,13 +225,27 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         } else {
             builder.addHttpListener( port, "0.0.0.0", handler );
         }
+    }
 
-        Undertow undertow = builder.build();
-        undertow.start();
-        if( xnioWorker == null ) {
-            xnioWorker = undertow.getWorker();
+    private void addStats( Undertow server ) {
+        for( var listenerInfo : server.getListenerInfo() ) {
+            var sa = ( InetSocketAddress ) listenerInfo.getAddress();
+            var sPort = String.valueOf( sa.getPort() );
+
+            ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
+
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
+            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+
+            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
+            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
         }
-        return undertow;
     }
 
     public void bind( String prefix, HttpHandler handler, boolean compressionSupport, List<PortType> types ) {
@@ -311,15 +298,15 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     public void preStop() {
-        for( var server : servers.values() ) {
-            try {
-                server.stop();
-            } catch( Exception ex ) {
-                log.error( "Cannot stop server", ex );
+        try {
+            if( undertow != null ) {
+                undertow.stop();
             }
+        } catch( Exception ex ) {
+            log.error( "Cannot stop server", ex );
         }
         pathHandler.clear();
-        servers.clear();
+        undertow = null;
     }
 
     @Override
