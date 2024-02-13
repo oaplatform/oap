@@ -272,7 +272,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             port = additionalHttpPorts.get( portName );
         }
 
-        log.debug( "binding '{}' on port: {}:{} ...", prefix, portName, port );
         io.undertow.server.HttpHandler httpHandler = exchange -> {
             HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
             handler.handleRequest( serverExchange );
@@ -284,6 +283,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
         assignedHandler.addPrefixPath( prefix, httpHandler );
+
+        log.debug( "binding '{}' on port: {}:{}, paths {}", prefix, portName, port, PathHandlerHelper.getPathMatcher( assignedHandler ).getPaths().keySet() );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
