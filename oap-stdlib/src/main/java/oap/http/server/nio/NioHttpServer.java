@@ -33,6 +33,7 @@ import io.undertow.server.ConnectorStatistics;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.util.PathMatcher;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -53,10 +54,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -72,7 +72,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
     public final ArrayList<NioHandler> handlers = new ArrayList<>();
-    private final Map<Integer, PathHandler> pathHandler = new HashMap<>();
+    private final ConcurrentHashMap<Integer, PathHandler> pathHandler = new ConcurrentHashMap<>();
     private final AtomicLong requestId = new AtomicLong();
     private final KeyManager[] keyManagers;
     public int backlog = -1;
@@ -219,6 +219,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
         handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
+        handler = new TestHttpHandler( handler, portPathHandler );
 
         if( port == defaultPort.httpsPort ) {
             builder.addHttpsListener( port, "0.0.0.0", keyManagers, null, handler );
@@ -284,7 +285,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler() );
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
-        log.debug( "binding '{}' on port: {}:{}, paths {}", prefix, portName, port, PathHandlerHelper.getPathMatcher( assignedHandler ).getPaths().keySet() );
+        log.debug( "binding '{}' on port: {}:{}, paths {}", prefix, portName, port,
+            PathHandlerHelper.getPathMatcher( assignedHandler ).getPaths().keySet() );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
@@ -315,7 +317,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         preStop();
     }
 
-    private boolean hasHandler( Class<? extends NioHandler> handlerClass ) {
+    public boolean hasHandler( Class<? extends NioHandler> handlerClass ) {
         return Lists.anyMatch( handlers, h -> h.getClass().equals( handlerClass ) );
     }
 
@@ -323,18 +325,28 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         HTTP, HTTPS
     }
 
-    @ToString( exclude = { "server" } )
-    private static class Holder {
-        Undertow server;
-        int port;
+    public static class TestHttpHandler implements io.undertow.server.HttpHandler {
+        private final io.undertow.server.HttpHandler httpHandler;
+        private final PathHandler pathHandler1;
 
-        Holder( int port, Undertow server ) {
-            this.port = port;
-            this.server = server;
+        public TestHttpHandler( io.undertow.server.HttpHandler httpHandler, PathHandler pathHandler ) {
+            this.httpHandler = httpHandler;
+            pathHandler1 = pathHandler;
         }
 
-        public void stop() {
-            server.stop();
+        @Override
+        public void handleRequest( io.undertow.server.HttpServerExchange exchange ) throws Exception {
+            log.debug( "request exchange {}", exchange );
+
+            PathMatcher<io.undertow.server.HttpHandler> pathMatcher = PathHandlerHelper.getPathMatcher( pathHandler1 );
+            PathMatcher.PathMatch<io.undertow.server.HttpHandler> match = pathMatcher.match( exchange.getRelativePath() );
+
+
+            log.debug( "match {}", match );
+            log.debug( "match {}", match.getMatched() );
+            log.debug( "available {}", pathMatcher.getPaths().keySet() );
+
+            httpHandler.handleRequest( exchange );
         }
     }
 
