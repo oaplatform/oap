@@ -33,7 +33,6 @@ import io.undertow.server.ConnectorStatistics;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.util.PathMatcher;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +56,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -72,8 +70,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public final DefaultPort defaultPort;
     public final LinkedHashMap<String, Integer> defaultPorts = new LinkedHashMap<>();
     public final LinkedHashMap<String, Integer> additionalHttpPorts = new LinkedHashMap<>();
-    public final ArrayList<NioHandler> handlers = new ArrayList<>();
-    private final ConcurrentHashMap<Integer, TestPathHandler> pathHandler = new ConcurrentHashMap<>();
+    public final ArrayList<NioHandlerBuilder> handlers = new ArrayList<>();
+    private final ConcurrentHashMap<Integer, PathHandler> pathHandler = new ConcurrentHashMap<>();
     private final AtomicLong requestId = new AtomicLong();
     private final KeyManager[] keyManagers;
     public int backlog = -1;
@@ -159,12 +157,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public void start() {
         long time = System.currentTimeMillis();
 
-        pathHandler.computeIfAbsent( defaultPort.httpPort, p -> new TestPathHandler( p, pathHandlerCacheSize ) );
+        pathHandler.computeIfAbsent( defaultPort.httpPort, p -> new PathHandler( pathHandlerCacheSize ) );
         if( isHttpsEnabled() ) {
-            pathHandler.computeIfAbsent( defaultPort.httpsPort, p -> new TestPathHandler( p, pathHandlerCacheSize ) );
+            pathHandler.computeIfAbsent( defaultPort.httpsPort, p -> new PathHandler( pathHandlerCacheSize ) );
         }
 
-        additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new TestPathHandler( p, pathHandlerCacheSize ) ) );
+        additionalHttpPorts.values().forEach( port -> pathHandler.computeIfAbsent( port, p -> new PathHandler( pathHandlerCacheSize ) ) );
 
         Undertow.Builder builder = Undertow.builder()
             .setSocketOption( Options.REUSE_ADDRESSES, true )
@@ -209,15 +207,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         io.undertow.server.HttpHandler handler = portPathHandler;
 
         for( int i = handlers.size() - 1; i >= 0; i-- ) {
-            NioHandler nioHandler = handlers.get( i );
-            if( nioHandler instanceof AbstractNioHandler comp ) {
-                comp.httpHandler = handler;
-                handler = comp;
-            } else if( nioHandler instanceof NioHandlerBuilder nioHandlerBuilder ) {
-                handler = nioHandlerBuilder.build( handler );
-            } else {
-                throw new IllegalArgumentException( "unknown handler type " + nioHandler.getClass() );
-            }
+            NioHandlerBuilder nioHandlerBuilder = handlers.get( i );
+            handler = nioHandlerBuilder.build( handler );
         }
 
         handler = new BlockingHandler( handler );
@@ -284,11 +275,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             httpHandler = new CompressionNioHandler().build( httpHandler );
         }
 
-        TestPathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new TestPathHandler( p, pathHandlerCacheSize ) );
+        PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler( pathHandlerCacheSize ) );
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
-        log.debug( "[{}:{}] binding '{}' on port: {}:{}, paths {}", assignedHandler.id, assignedHandler.port, prefix, portName, port,
-            PathHandlerHelper.getPathMatcher( assignedHandler ).getPaths().keySet() );
+        log.debug( "binding '{}' on port: {}:{}", prefix, portName, port );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
@@ -325,46 +315,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public enum PortType {
         HTTP, HTTPS
-    }
-
-    public static class TestPathHandler extends PathHandler {
-        public static final AtomicInteger COUNTER = new AtomicInteger();
-        public final int id = COUNTER.incrementAndGet();
-
-        private final PathHandler pathHandler1;
-        private final int port;
-
-        public TestPathHandler( int port, int cache ) {
-            this.port = port;
-            pathHandler1 = new PathHandler( cache );
-
-            log.trace( "[{}] init port {}", id, port );
-        }
-
-        @Override
-        public synchronized PathHandler addPrefixPath( String path, io.undertow.server.HttpHandler handler ) {
-            log.trace( "[{}:{}] addPrefixPath path {} class {}", id, port, path, handler.getClass() );
-
-            return pathHandler1.addPrefixPath( path, handler );
-        }
-
-        @Override
-        public void handleRequest( io.undertow.server.HttpServerExchange exchange ) throws Exception {
-            log.debug( "[{}:{}] request exchange {}", id, port, exchange );
-
-            PathMatcher<io.undertow.server.HttpHandler> pathMatcher = PathHandlerHelper.getPathMatcher( pathHandler1 );
-            PathMatcher.PathMatch<io.undertow.server.HttpHandler> match = pathMatcher.match( exchange.getRelativePath() );
-
-
-            log.debug( "[{}:{}] match {}", id, port, match );
-            log.debug( "[{}:{}] match getMatched() {}", id, port, match.getMatched() );
-            log.debug( "[{}:{}] match match.getValue() {}", id, port,
-                match.getValue() != null ? match.getValue().getClass() : null );
-            log.debug( "[{}:{}] match match.getRemaining() {}", id, port, match.getRemaining() );
-            log.debug( "[{}:{}] available {}", id, port, pathMatcher.getPaths().keySet() );
-
-            pathHandler1.handleRequest( exchange );
-        }
     }
 
     @ToString
