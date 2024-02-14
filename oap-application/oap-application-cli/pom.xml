@@ -17,6 +17,12 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>${oap.deps.plugins.antlr4.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
             <version>${project.version}</version>
