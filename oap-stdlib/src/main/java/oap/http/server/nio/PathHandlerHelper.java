@@ -8,7 +8,7 @@ import lombok.SneakyThrows;
 import java.lang.reflect.Field;
 
 public class PathHandlerHelper {
-    private static Field pathMatcherField;
+    private static final Field pathMatcherField;
 
     static {
         try {
