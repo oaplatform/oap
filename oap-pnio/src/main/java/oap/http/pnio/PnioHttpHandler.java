@@ -131,7 +131,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
     @SneakyThrows
     private void setupIoWorkers() {
-        XnioWorker xnioWorker = server.xnioWorker;
+        XnioWorker xnioWorker = server.undertow.getWorker();
 
         Field workerThreadsField = xnioWorker.getClass().getDeclaredField( "workerThreads" );
         workerThreadsField.setAccessible( true );

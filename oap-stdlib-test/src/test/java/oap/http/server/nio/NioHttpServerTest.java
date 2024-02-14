@@ -26,10 +26,15 @@ package oap.http.server.nio;
 
 import oap.http.Client;
 import oap.http.Http;
+import oap.http.server.nio.handlers.BandwidthHandler;
+import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
+import oap.http.server.nio.handlers.CompressionNioHandler;
+import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
 import oap.http.server.nio.health.HealthHttpHandler;
 import oap.io.Resources;
 import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.util.Dates;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -81,6 +86,15 @@ public class NioHttpServerTest extends Fixtures {
         int testPort2 = fixture.portFor( getClass() + "test2" );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+            httpServer.handlers.add( new KeepaliveRequestsHandler( 1000 ) );
+            BandwidthHandler bandwidthHandler = new BandwidthHandler();
+            httpServer.handlers.add( bandwidthHandler );
+            httpServer.handlers.add( new CompressionNioHandler() );
+            httpServer.handlers.add( new BlockingReadTimeoutHandler( Dates.s( 60 ) ) );
+
+            bandwidthHandler.start();
+
+
             httpServer.additionalHttpPorts.put( "test", testPort );
             httpServer.additionalHttpPorts.put( "test2", testPort2 );
 
