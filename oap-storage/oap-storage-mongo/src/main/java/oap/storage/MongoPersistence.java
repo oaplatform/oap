@@ -77,7 +77,8 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
         this( mongoClient, collectionName, delay, storage, DEFAULT_CRASH_DUMP_PATH );
     }
 
-    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay, MemoryStorage<I, T> storage, Path crashDumpPath ) {
+    public MongoPersistence( MongoClient mongoClient, String collectionName, long delay,
+                             MemoryStorage<I, T> storage, Path crashDumpPath ) {
         super( storage, collectionName, delay, crashDumpPath );
         this.mongoClient = mongoClient;
         TypeRef<Metadata<T>> ref = new TypeRef<>() {};

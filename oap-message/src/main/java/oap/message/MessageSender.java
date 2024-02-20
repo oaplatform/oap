@@ -32,7 +32,6 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
-import oap.application.ServiceName;
 import oap.concurrent.Executors;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -100,8 +99,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     private final ConcurrentMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
     private final String messageUrl;
     private final long memorySyncPeriod;
-    @ServiceName
-    public String name = "oap-http-message-sender";
+    public String uniqueName = Cuid.UNIQUE.next();
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
@@ -121,7 +119,8 @@ public class MessageSender implements Closeable, AutoCloseable {
         this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
     }
 
-    public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod, MessageNoRetryStrategy messageNoRetryStrategy ) {
+    public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory,
+                          long memorySyncPeriod, MessageNoRetryStrategy messageNoRetryStrategy ) {
         this.host = host;
         this.port = port;
         this.memorySyncPeriod = memorySyncPeriod;
@@ -134,13 +133,13 @@ public class MessageSender implements Closeable, AutoCloseable {
         Metrics.gaugeMapSize( "message_count", Tags.of( "host", host, "type", "inprogress", "port", String.valueOf( port ) ), messages.inProgress );
     }
 
-    public static Path lock( Path file, long storageLockExpiration ) {
+    static Path lock( String uniqueName, Path file, long storageLockExpiration ) {
         var lockFile = Paths.get( FilenameUtils.removeExtension( file.toString() ) + ".lock" );
 
         if( Files.createFile( lockFile ) ) return lockFile;
         if( storageLockExpiration <= 0 ) return null;
 
-        log.trace( "lock found {}, expiration = {}", lockFile,
+        log.trace( "[{}] lock found {}, expiration = {}", uniqueName, lockFile,
             durationToString( Files.getLastModifiedTime( lockFile ) + storageLockExpiration - DateTimeUtils.currentTimeMillis() ) );
 
         return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < DateTimeUtils.currentTimeMillis()
@@ -153,17 +152,17 @@ public class MessageSender implements Closeable, AutoCloseable {
 
     public void start() {
         log.info( "[{}] message server messageUrl {} storage {} storageLockExpiration {}",
-            name, messageUrl, directory, durationToString( storageLockExpiration ) );
+            uniqueName, messageUrl, directory, durationToString( storageLockExpiration ) );
         log.info( "[{}] connection timeout {} rw timeout {} pool size {} keepAliveDuration {}",
-            name, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize,
+            uniqueName, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize,
             Dates.durationToString( keepAliveDuration ) );
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
-            name, durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
+            uniqueName, durationToString( retryTimeout ), durationToString( diskSyncPeriod ), durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
 
         executor = Executors.newFixedBlockingThreadPool(
             poolSize > 0 ? poolSize : Runtime.getRuntime().availableProcessors(),
-            new ThreadFactoryBuilder().setNameFormat( name + "-%d" ).build() );
+            new ThreadFactoryBuilder().setNameFormat( uniqueName + "-%d" ).build() );
 
         Client.ClientBuilder clientBuilder = Client.custom().setConnectTimeout( connectionTimeout );
 
@@ -178,7 +177,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
         if( memorySyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( memorySyncPeriod, TimeUnit.MILLISECONDS, this::syncMemory );
-        log.info( "[{}] message server started", name );
+        log.info( "[{}] message server started", uniqueName );
     }
 
     public <T> MessageSender send( byte messageType, T data, ContentWriter<T> writer ) {
@@ -246,14 +245,14 @@ public class MessageSender implements Closeable, AutoCloseable {
                 .resolve( Long.toHexString( clientId ) )
                 .resolve( String.valueOf( Byte.toUnsignedInt( message.messageType ) ) );
             var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin.tmp" );
-            log.debug( "[{}] writing unsent message to {}", name, tmpMsgPath );
+            log.debug( "[{}] writing unsent message to {}", uniqueName, tmpMsgPath );
             try {
                 Files.write( tmpMsgPath, message.data, ContentWriter.ofBytes() );
                 var msgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
                 log.error( "[{}] type: {}, md5: {}, data: {}",
-                    name, message.messageType, message.getHexMd5(), message.getHexData(), e );
+                    uniqueName, message.messageType, message.getHexMd5(), message.getHexData(), e );
             }
         }
     }
@@ -269,7 +268,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     public CompletableFuture<Messages.MessageInfo> send( Messages.MessageInfo messageInfo, long now ) {
         Message message = messageInfo.message;
 
-        log.debug( "[{}] sending data [type = {}] to server...", name, messageTypeToString( message.messageType ) );
+        log.debug( "[{}] sending data [type = {}] to server...", uniqueName, messageTypeToString( message.messageType ) );
 
         return CompletableFuture.supplyAsync( () -> {
             Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "trysend" ).increment();
@@ -322,7 +321,7 @@ public class MessageSender implements Closeable, AutoCloseable {
         InputStream body = response.getInputStream();
         if( body == null ) {
             Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "io_error" ).increment();
-            log.error( "[{}] unknown error (BODY == null)", name );
+            log.error( "[{}] unknown error (BODY == null)", uniqueName );
             lastStatus.put( message.messageType, __( ERROR, ( short ) -1 ) );
             messages.retry( messageInfo, now + retryTimeout );
             return messageInfo;
@@ -331,7 +330,7 @@ public class MessageSender implements Closeable, AutoCloseable {
         try( var in = new DataInputStream( body ) ) {
             var version = in.readByte();
             if( version != PROTOCOL_VERSION_1 ) {
-                log.error( "[{}] Version mismatch, expected: {}, received: {}", name, PROTOCOL_VERSION_1, version );
+                log.error( "[{}] Version mismatch, expected: {}, received: {}", uniqueName, PROTOCOL_VERSION_1, version );
                 throw new MessageException( "Version mismatch" );
             }
             in.readLong(); // clientId
@@ -339,13 +338,13 @@ public class MessageSender implements Closeable, AutoCloseable {
             in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
             var status = in.readShort();
 
-            log.trace( "[{}] sending done, server status: {}", name, messageStatusToString( status ) );
+            log.trace( "[{}] sending done, server status: {}", uniqueName, messageStatusToString( status ) );
 
             MessageSender.this.networkAvailable = true;
 
             switch( status ) {
                 case STATUS_ALREADY_WRITTEN -> {
-                    log.trace( "[{}] already written {}", name, message.getHexMd5() );
+                    log.trace( "[{}] already written {}", uniqueName, message.getHexMd5() );
                     Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "already_written" ).increment();
                     lastStatus.put( message.messageType, __( ALREADY_WRITTEN, status ) );
                 }
@@ -355,28 +354,28 @@ public class MessageSender implements Closeable, AutoCloseable {
                 }
                 case STATUS_UNKNOWN_ERROR -> {
                     Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "error" ).increment();
-                    log.error( "[{}] unknown error", name );
+                    log.error( "[{}] unknown error", uniqueName );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                     messages.retry( messageInfo, now + retryTimeout );
                 }
                 case STATUS_UNKNOWN_ERROR_NO_RETRY -> {
                     Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "error_no_retry" ).increment();
-                    log.error( "[{}] unknown error -> no retry", name );
+                    log.error( "[{}] unknown error -> no retry", uniqueName );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 case STATUS_UNKNOWN_MESSAGE_TYPE -> {
                     Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "unknown_message_type" ).increment();
-                    log.error( "[{}] unknown message type: {}", name, status );
+                    log.error( "[{}] unknown message type: {}", uniqueName, status );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 default -> {
                     var clientStatus = MessageProtocol.getStatus( status );
                     if( clientStatus != null ) {
-                        log.trace( "[{}] retry: {}", name, clientStatus );
+                        log.trace( "[{}] retry: {}", uniqueName, clientStatus );
                         Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
                     } else {
                         Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "unknown_status" ).increment();
-                        log.error( "[{}] unknown status: {}", name, status );
+                        log.error( "[{}] unknown status: {}", uniqueName, status );
                     }
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                     messages.retry( messageInfo, now + retryTimeout );
@@ -391,7 +390,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     public void syncMemory() {
         if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
             log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
-                name, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
+                uniqueName, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
         long now = DateTimeUtils.currentTimeMillis();
 
@@ -407,11 +406,11 @@ public class MessageSender implements Closeable, AutoCloseable {
             now = DateTimeUtils.currentTimeMillis();
 
             if( messageInfo != null ) {
-                log.trace( "[{}] message {}...", name, messageInfo.message.md5 );
+                log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
                 var future = send( messageInfo, now );
                 future.handle( ( mi, e ) -> {
                     messages.removeInProgress( mi );
-                    log.trace( "[{}] message {}... done", name, mi.message.md5 );
+                    log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
                     return null;
                 } );
             }
@@ -497,20 +496,20 @@ public class MessageSender implements Closeable, AutoCloseable {
                                 synchronized( syncDiskLock ) {
                                     if( closed ) return this;
 
-                                    if( ( lockFile = lock( messagePath, storageLockExpiration ) ) != null ) {
-                                        log.info( "[{}] reading unsent message {}", name, messagePath );
+                                    if( ( lockFile = lock( uniqueName, messagePath, storageLockExpiration ) ) != null ) {
+                                        log.info( "[{}] reading unsent message {}", uniqueName, messagePath );
                                         try {
                                             var data = Files.read( messagePath, ContentReader.ofBytes() );
 
                                             log.info( "[{}] client id {} message type {} md5 {}",
-                                                name, msgClientId, messageTypeToString( messageType ), md5Hex );
+                                                uniqueName, msgClientId, messageTypeToString( messageType ), md5Hex );
 
                                             var message = new Message( clientId, messageType, version, md5, data );
                                             messages.add( message );
 
                                             Files.delete( messagePath );
                                         } catch( Exception e ) {
-                                            LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), "[" + name + "] " + messagePath + ": " + e.getMessage(), e );
+                                            LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), "[" + uniqueName + "] " + messagePath + ": " + e.getMessage(), e );
                                         } finally {
                                             Files.delete( lockFile );
                                         }

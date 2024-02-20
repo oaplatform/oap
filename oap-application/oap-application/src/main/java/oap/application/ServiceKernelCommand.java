@@ -29,6 +29,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceStorage.ErrorStatus;
 import oap.application.module.Reference;
+import oap.application.module.Service;
 import oap.util.Result;
 
 import javax.annotation.Nullable;
@@ -43,11 +44,12 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
     public static final ServiceKernelCommand INSTANCE = new ServiceKernelCommand();
 
     private ServiceKernelCommand() {
-        super( "^modules\\.([^.]*)\\.(.+)$" );
+        super( "^<?modules\\.([^.]*)\\.(.+)>?$" );
     }
 
     @Override
-    public Result<ServiceInitialization, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
+    public Result<ServiceInitialization, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
+                                                           Service service, ServiceStorage storage ) {
         var reference = reference( ( String ) value, moduleItem );
 
         return storage.findByName( reference.module, reference.service ).mapSuccess( v -> ( ServiceInitialization ) v );
@@ -62,11 +64,16 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
         if( "".equals( moduleName ) ) moduleName = "*";
         var linkName = matcher.group( 2 );
 
+        if( linkName.endsWith( ">" ) ) {
+            linkName = linkName.substring( 0, linkName.length() - 1 );
+        }
+
         return new Reference( moduleName, linkName );
     }
 
     @Override
-    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage ) {
-        return get( value, kernel, moduleItem, storage ).mapSuccess( v -> v.instance );
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
+                                                    Service service, ServiceStorage storage ) {
+        return get( value, kernel, moduleItem, service, storage ).mapSuccess( v -> v.instance );
     }
 }

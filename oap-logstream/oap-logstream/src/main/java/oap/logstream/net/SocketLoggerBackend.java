@@ -75,7 +75,7 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
             buffers.cache,
             c -> c.size( conf.bufferSize )
         ) );
-        log.info( "SocketLoggerBackend '{}' is ready", sender == null ? "no-name" : sender.name );
+        log.info( "SocketLoggerBackend '{}' is ready", sender == null ? "no-name" : sender.uniqueName );
     }
 
     public SocketLoggerBackend( MessageSender sender, int bufferSize ) {

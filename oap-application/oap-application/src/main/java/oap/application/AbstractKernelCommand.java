@@ -26,6 +26,7 @@ package oap.application;
 
 import lombok.ToString;
 import oap.application.ServiceStorage.ErrorStatus;
+import oap.application.module.Service;
 import oap.util.Result;
 
 import javax.annotation.Nullable;
@@ -44,7 +45,9 @@ public abstract class AbstractKernelCommand<TResult> {
         return value instanceof String && pattern.matcher( ( CharSequence ) value ).matches();
     }
 
-    public abstract Result<TResult, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage );
+    public abstract Result<TResult, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
+                                                      Service service, ServiceStorage storage );
 
-    public abstract Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem, ServiceStorage storage );
+    public abstract Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
+                                                             Service service, ServiceStorage storage );
 }

@@ -13,7 +13,6 @@
 
     <modules>
         <module>oap-application-cli</module>
-        <module>oap-application-annotation</module>
         <module>oap-application</module>
         <module>oap-application-test</module>
     </modules>

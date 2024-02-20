@@ -538,10 +538,10 @@ public class MessageServerTest extends Fixtures {
             var files = Files.wildcard( msgDirectory, "**/*.bin" );
 
             // lock
-            assertNotNull( MessageSender.lock( files.get( 0 ), -1 ) );
+            assertNotNull( MessageSender.lock( "clientPersistenceLockExpiration1", files.get( 0 ), -1 ) );
 
             // lock expired
-            var lockFile2 = MessageSender.lock( files.get( 1 ), -1 );
+            var lockFile2 = MessageSender.lock( "clientPersistenceLockExpiration2", files.get( 1 ), -1 );
             assertNotNull( lockFile2 );
 
             Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
