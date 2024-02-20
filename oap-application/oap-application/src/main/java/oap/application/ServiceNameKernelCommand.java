@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 @ToString( callSuper = true )
 public class ServiceNameKernelCommand extends AbstractKernelCommand<String> {
     protected ServiceNameKernelCommand() {
-        super( "^kernel.selfService.name$" );
+        super( "^services.self.name$" );
     }
 
     @Override
