@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 @ToString( callSuper = true )
 public class KernelKernelCommand extends AbstractKernelCommand<Kernel> {
     protected KernelKernelCommand() {
-        super( "^kernel.self$" );
+        super( "^<kernel.self>$" );
     }
 
     @Override

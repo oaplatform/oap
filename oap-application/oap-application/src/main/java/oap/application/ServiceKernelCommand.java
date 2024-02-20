@@ -44,7 +44,7 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
     public static final ServiceKernelCommand INSTANCE = new ServiceKernelCommand();
 
     private ServiceKernelCommand() {
-        super( "^modules\\.([^.]*)\\.(.+)$" );
+        super( "^<?modules\\.([^.]*)\\.(.+)>?$" );
     }
 
     @Override
@@ -63,6 +63,10 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
         if( moduleItem != null && THIS.contains( moduleName ) ) moduleName = moduleItem.getName();
         if( "".equals( moduleName ) ) moduleName = "*";
         var linkName = matcher.group( 2 );
+
+        if( linkName.endsWith( ">" ) ) {
+            linkName = linkName.substring( 0, linkName.length() - 1 );
+        }
 
         return new Reference( moduleName, linkName );
     }

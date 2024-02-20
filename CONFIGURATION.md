@@ -24,7 +24,7 @@ not-null-objects-factory {
     parameters {
         internalField = 3
         constructorParameter1 = Text
-        constructorParameter2 = modules.this.other-object-factory
+        constructorParameter2 = <modules.this.other-object-factory>
     }
 }
 ~~~
@@ -85,7 +85,7 @@ services {
     real-service {
         implementation = ...ClassX
         parameters {
-            referenced = modules.this.service-to-reference
+            referenced = <modules.this.service-to-reference>
         }
     }
 }
@@ -145,20 +145,20 @@ services {
         implementation = ...
         enabled = false
         link {
-            consructorParameter = modules.this.some-service
+            consructorParameter = <modules.this.some-service>
         }
     }
     fake-param2 {    
         implementation = ...
         profile = [missing]
         link {
-            consructorParameter = modules.this.some-service
+            consructorParameter = <modules.this.some-service>
         }
     }
     real-param {    
         implementation = ...
         link {
-            consructorParameter = modules.this.some-service
+            consructorParameter = <modules.this.some-service>
         }
     }
 }
@@ -173,10 +173,10 @@ Let’s take a look at another (real) example from xenoss-geo:
 geo-enricher {  
     implementation = io.xenoss.bidder.enricher.GeoEnricher  
     parameters {    
-        geoService = modules.xenoss-geo.geo    
+        geoService = <modules.xenoss-geo.geo>    
         priorities = [ MAXMIND, GOOGLE, GEONAMES ]  
     }  
-    link.enricher = modules.xenoss-platform-dsp-bidder.bid-request-processor
+    link.enricher = <modules.xenoss-platform-dsp-bidder.bid-request-processor>
 }
 ~~~
 as we can see, here we have linked geo-enricher to bid-request-processor. The linkage works via calling the method
