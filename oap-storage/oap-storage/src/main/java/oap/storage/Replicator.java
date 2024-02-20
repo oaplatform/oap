@@ -26,10 +26,10 @@ package oap.storage;
 
 import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.ServiceName;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.storage.Storage.DataListener.IdObject;
+import oap.util.Cuid;
 import oap.util.Pair;
 
 import java.io.Closeable;
@@ -53,10 +53,9 @@ import static oap.util.Pair.__;
 public class Replicator<I, T> implements Closeable {
     static final AtomicLong stored = new AtomicLong();
     static final AtomicLong deleted = new AtomicLong();
+    private String uniqueName = Cuid.UNIQUE.next();
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
-    @ServiceName
-    public String serviceName = "<unknown>";
     private Scheduled scheduled;
     private transient Pair<Long, String> lastModified = __( -1L, "" );
 
@@ -65,7 +64,7 @@ public class Replicator<I, T> implements Closeable {
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
             var newLastModified = replicate( lastModified );
-            log.trace( "[{}] newLastModified = {}, lastModified = {}", serviceName, newLastModified, lastModified );
+            log.trace( "[{}] newLastModified = {}, lastModified = {}", uniqueName, newLastModified, lastModified );
             if( newLastModified._2.equals( lastModified._2 ) ) {
                 lastModified = newLastModified.map( ( t, m ) -> __( t + 1, m ) );
             } else {
@@ -80,7 +79,7 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public void replicateNow() {
-        log.trace( "[{}] forcing replication...", serviceName );
+        log.trace( "[{}] forcing replication...", uniqueName );
         scheduled.triggerNow();
     }
 
@@ -90,14 +89,14 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public synchronized Pair<Long, String> replicate( Pair<Long, String> last ) {
-        log.trace( "replicate service {} last {}", serviceName, last );
+        log.trace( "replicate service {} last {}", uniqueName, last );
 
         List<Metadata<T>> newUpdates;
 
         try( var updates = master.updatedSince( last._1 ) ) {
-            log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, serviceName );
+            log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, uniqueName );
             newUpdates = updates.collect( toList() );
-            log.trace( "[{}] updated objects {}", serviceName, newUpdates.size() );
+            log.trace( "[{}] updated objects {}", uniqueName, newUpdates.size() );
         } catch( UncheckedIOException e ) {
             log.error( e.getCause().getMessage() );
             return last;
@@ -132,12 +131,12 @@ public class Replicator<I, T> implements Closeable {
 
         if( lastUpdate != last._1 || !hash.equals( last._2 ) ) {
             for( var metadata : newUpdates ) {
-                log.trace( "[{}] replicate {}", metadata, serviceName );
+                log.trace( "[{}] replicate {}", metadata, uniqueName );
 
                 var id = slave.identifier.get( metadata.object );
                 var unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
                 if( unmodified ) {
-                    log.trace( "[{}] skipping unmodified {}", serviceName, id );
+                    log.trace( "[{}] skipping unmodified {}", uniqueName, id );
                     continue;
                 }
                 if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata.object ) );
@@ -150,7 +149,7 @@ public class Replicator<I, T> implements Closeable {
         }
 
         var ids = master.ids();
-        log.trace( "[{}] master ids {}", serviceName, ids );
+        log.trace( "[{}] master ids {}", uniqueName, ids );
         if( ids.isEmpty() ) lastUpdate = -1;
 
         List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
@@ -159,7 +158,7 @@ public class Replicator<I, T> implements Closeable {
             .filter( Optional::isPresent )
             .map( Optional::get )
             .toList();
-        log.trace( "[{}] deleted {}", serviceName, deleted );
+        log.trace( "[{}] deleted {}", uniqueName, deleted );
         slave.fireDeleted( deleted );
         if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
             slave.fireChanged( added, updated, deleted );

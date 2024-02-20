@@ -21,11 +21,6 @@
             <artifactId>oap-application-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-application-annotation</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

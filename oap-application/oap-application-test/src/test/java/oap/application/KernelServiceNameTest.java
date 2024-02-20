@@ -32,7 +32,7 @@ import java.util.Map;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class KernelAnnotationTest {
+public class KernelServiceNameTest {
     @Test
     public void testServiceName() {
         var modules = Module.CONFIGURATION.urlsFromClassPath();
@@ -51,14 +51,12 @@ public class KernelAnnotationTest {
     }
 
     public static class TestServiceNameField {
-        @ServiceName
         private String serviceName = "<change me>";
     }
 
     public static class TestServiceNameFSetter {
         private String serviceName = "<change me>";
 
-        @ServiceName
         public void setServiceName( String serviceName ) {
             this.serviceName = serviceName;
         }

@@ -26,9 +26,9 @@ package oap.storage;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.ServiceName;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
+import oap.util.Cuid;
 import oap.util.Dates;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static oap.concurrent.Threads.synchronizedOn;
 
 @Slf4j
-@ToString( of = { "tableName", "delay", "batchSize", "watch", "serviceName" } )
+@ToString( of = { "tableName", "delay", "batchSize", "watch", "uniqueName" } )
 public abstract class AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );
@@ -59,12 +59,11 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
     protected final String tableName;
     protected final long delay;
     protected final Path crashDumpPath;
-    @ServiceName
-    public String serviceName;
-    public boolean watch = false;
-    protected int batchSize = 100;
     protected final ExecutorService watchExecutor = Executors.newSingleThreadExecutor();
-    protected final ScheduledExecutorService scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
+    public String uniqueName = Cuid.UNIQUE.next();
+    public boolean watch = false;
+    protected ScheduledExecutorService scheduler;
+    protected int batchSize = 100;
     protected volatile long lastExecuted = -1;
     protected volatile boolean stopped = false;
 
@@ -76,8 +75,10 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
     }
 
     public void preStart() {
-        log.info( "collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
-            tableName, Dates.durationToString( delay ), watch, crashDumpPath );
+        log.info( "[{}] collection = {}, fsync delay = {}, watch = {}, crashDumpPath = {}",
+            uniqueName, tableName, Dates.durationToString( delay ), watch, crashDumpPath );
+
+        scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, uniqueName );
 
         synchronizedOn( lock, () -> {
             this.load();
@@ -87,12 +88,12 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
         if( watch ) {
             CountDownLatch cdl = new CountDownLatch( 1 );
             watchExecutor.execute( () -> {
-                if ( stopped ) return;
+                if( stopped ) return;
                 processRecords( cdl );
             } );
             try {
-                if ( !cdl.await( 1, TimeUnit.MINUTES ) ) {
-                    log.error( "Could not process records within 1 min timeout" );
+                if( !cdl.await( 1, TimeUnit.MINUTES ) ) {
+                    log.error( "[{}] Could not process records within 1 min timeout", uniqueName );
                 }
             } catch( InterruptedException e ) {
                 Thread.currentThread().interrupt();
@@ -111,17 +112,18 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
 
     @Override
     public void close() {
-        log.debug( "closing {}...", this );
+        log.debug( "[{}] closing {}...", uniqueName, this );
+
         synchronizedOn( lock, () -> {
             scheduler.shutdown( 5, TimeUnit.SECONDS );
             Closeables.close( scheduler ); // no more sync after that
             if( storage != null ) {
                 fsync();
-                log.debug( "closed {}...", this );
-            } else log.debug( "this {} wasn't started or already closed", this );
+                log.debug( "[{}] closed {}...", uniqueName, this );
+            } else log.debug( "[{}] this {} wasn't started or already closed", uniqueName, this );
             Closeables.close( watchExecutor );
             stopped = true;
-            log.debug( "closed {}...", this );
+            log.debug( "[{}] closed {}...", uniqueName, this );
         } );
     }
 

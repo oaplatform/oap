@@ -24,13 +24,29 @@
 
 package oap.application;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import lombok.ToString;
+import oap.application.ServiceStorage.ErrorStatus;
+import oap.application.module.Service;
+import oap.util.Result;
+
+import javax.annotation.Nullable;
 
 
-@Target( { ElementType.FIELD, ElementType.METHOD } )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface ServiceName {
+@ToString( callSuper = true )
+public class ServiceNameKernelCommand extends AbstractKernelCommand<String> {
+    protected ServiceNameKernelCommand() {
+        super( "^kernel.selfService.name$" );
+    }
+
+    @Override
+    public Result<String, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
+                                            Service service, ServiceStorage storage ) {
+        return Result.success( service.name );
+    }
+
+    @Override
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
+                                                    Service service, ServiceStorage storage ) {
+        return get( value, kernel, moduleItem, service, storage ).mapSuccess( v -> v );
+    }
 }

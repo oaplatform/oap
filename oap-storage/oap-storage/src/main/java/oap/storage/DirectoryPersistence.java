@@ -27,7 +27,6 @@ package oap.storage;
 import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
-import oap.application.ServiceName;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -37,6 +36,7 @@ import oap.reflect.TypeRef;
 import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
 import oap.storage.migration.MigrationException;
+import oap.util.Cuid;
 import oap.util.Lists;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
@@ -66,9 +66,8 @@ public class DirectoryPersistence<I, T> implements Closeable {
     private final Logger log;
     private final Lock lock = new ReentrantLock();
     private final MemoryStorage<I, T> storage;
-    @ServiceName
-    public String serviceName;
     protected long fsync;
+    private String uniqueName = Cuid.UNIQUE.next();
     private volatile ScheduledExecutorService scheduler;
     private volatile long lastExecuted = -1;
 
@@ -96,7 +95,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
     }
 
     public void preStart() {
-        scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, serviceName );
+        scheduler = oap.concurrent.Executors.newScheduledThreadPool( 1, uniqueName );
         synchronizedOn( lock, () -> {
             this.load();
             scheduler.scheduleWithFixedDelay( this::fsync, fsync, fsync, TimeUnit.MILLISECONDS );
@@ -105,11 +104,11 @@ public class DirectoryPersistence<I, T> implements Closeable {
 
     @SneakyThrows
     private void load() {
-        log.debug( "loading data from {}", path );
+        log.debug( "[{}] loading data from {}", uniqueName, path );
 
         Files.ensureDirectory( path );
         List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
-        log.debug( "found {} files", paths.size() );
+        log.debug( "[{}] found {} files", uniqueName, paths.size() );
 
         for( Path file : paths ) {
             Persisted persisted = Persisted.valueOf( file );
@@ -121,7 +120,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
             Path newPath = pathFor( metadata.object );
             var id = storage.identifier.get( metadata.object );
             if( !newPath.equals( file ) ) {
-                log.trace( "moving {} => {}", file, newPath );
+                log.trace( "[{}] moving {} => {}", uniqueName, file, newPath );
                 Files.delete( file );
                 persist( id, metadata );
             }
@@ -129,7 +128,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
             storage.memory.put( id, metadata );
         }
 
-        log.info( storage.size() + " object(s) loaded." );
+        log.info( "[{}] {} object(s) loaded.", uniqueName, storage.size() );
     }
 
     @SneakyThrows
@@ -140,7 +139,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
 
             Persisted fn = Persisted.valueOf( path );
 
-            log.debug( "migration {}", fn );
+            log.debug( "[{}] migration {}", uniqueName, fn );
 
             var migration = Lists.find( migrations, m -> m.fromVersion() == fn.version )
                 .orElseThrow( () -> new MigrationException( "migration from version " + fn + " not found" ) );
@@ -166,7 +165,7 @@ public class DirectoryPersistence<I, T> implements Closeable {
         synchronizedOn( lock, () -> {
             var time = DateTimeUtils.currentTimeMillis();
 
-            log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
+            log.trace( "[{}] fsyncing, last: {}, objects in storage: {}", uniqueName, lastExecuted, storage.size() );
             storage.memory.selectUpdatedSince( lastExecuted - 1 ).forEach( this::persist );
 
             lastExecuted = time;
@@ -177,29 +176,29 @@ public class DirectoryPersistence<I, T> implements Closeable {
     private void persist( I id, Metadata<T> metadata ) {
         Path path = pathFor( metadata.object );
         if( metadata.isDeleted() ) {
-            log.trace( "delete {}", path );
+            log.trace( "[{}] delete {}", uniqueName, path );
             Files.delete( path );
             storage.memory.removePermanently( id );
         } else try( OutputStream outputStream = IoStreams.out( path, PLAIN, DEFAULT_BUFFER, false, true ) ) {
-            log.trace( "storing {} with modification time {}", path, metadata.modified );
+            log.trace( "[{}] storing {} with modification time {}", uniqueName, path, metadata.modified );
             Binder.json.marshal( outputStream, metadata );
-            log.trace( "storing {} done", path );
+            log.trace( "[{}] storing {} done", uniqueName, path );
         }
     }
 
     @Override
     public void close() {
-        log.debug( "closing {}...", this );
+        log.debug( "[{}] closing {}...", uniqueName, this );
         if( scheduler != null && storage != null ) {
             synchronizedOn( lock, () -> {
                 Closeables.close( scheduler );
                 fsync();
             } );
         } else {
-            log.debug( "This {} wasn't started or already closed", this );
+            log.debug( "[{}] This {} wasn't started or already closed", uniqueName, this );
         }
 
-        log.debug( "closing {}... Done.", this );
+        log.debug( "[{}] closing {}... Done.", uniqueName, this );
     }
 
     private Path pathFor( T object ) {

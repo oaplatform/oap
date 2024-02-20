@@ -18,11 +18,6 @@
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-application-annotation</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>oap</groupId>

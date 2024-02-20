@@ -41,7 +41,6 @@ import oap.application.supervision.Supervisor;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
-import oap.reflect.Reflection;
 import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Strings;
@@ -75,6 +74,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
     static {
         commands.add( new LocationKernelCommand() );
+        commands.add( new ServiceNameKernelCommand() );
         commands.add( new KernelKernelCommand() );
         commands.add( ServiceKernelCommand.INSTANCE );
     }
@@ -227,14 +227,13 @@ public class Kernel implements Closeable, AutoCloseable {
                 var reflect = Reflect.reflect( service.implementation, Module.coersions );
                 Object instance;
                 if( !service.isRemoteService() ) {
-                    var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service.parameters );
+                    var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service );
 
                     var p = new LinkedHashMap<String, Object>();
                     p.putAll( parametersWithoutLinks.serviceReferenceParameters );
                     p.putAll( parametersWithoutLinks.configurationParameters );
 
                     instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
-                    setServiceName( reflect, instance, service.name );
 
                     service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
                 } else {
@@ -249,25 +248,6 @@ public class Kernel implements Closeable, AutoCloseable {
         }
 
         return retModules;
-    }
-
-    private void setServiceName( Reflection reflect, Object instance, String serviceName ) throws ApplicationException {
-        var fields = reflect.annotatedFields( ServiceName.class );
-        for( var field : fields ) {
-            if( !String.class.equals( field.underlying.getType() ) )
-                throw new ApplicationException( "The " + serviceName + "#" + field.name() + " field must be of type 'String'." );
-
-            field.set( instance, serviceName );
-        }
-
-        var methods = reflect.annotatedMethods( ServiceName.class );
-        for( var method : methods ) {
-            if( method.parameters.size() != 1 && !String.class.equals( method.parameters.get( 0 ).underlying.getType() ) ) {
-                throw new ApplicationException( "The " + serviceName + "#" + method.name() + " method must be only one parameter of type 'String'." );
-            }
-
-            method.invoke( instance, serviceName );
-        }
     }
 
     private void registerServices( ServiceInitializationTree moduleServices ) {
@@ -293,7 +273,7 @@ public class Kernel implements Closeable, AutoCloseable {
     @SuppressWarnings( "unchecked" )
     private void linkLinks( ServiceInitialization initialization ) {
         initialization.service.link.forEach( ( fieldName, serviceRef ) ->
-            ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.module, services )
+            ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.module, initialization.service, services )
                 .ifSuccessOrElse(
                     service -> {
                         var reflect = Reflect.reflect( service.service.implementation );
@@ -360,7 +340,7 @@ public class Kernel implements Closeable, AutoCloseable {
                 linkService( linkReflection, entry.getValue(), si, !isMap );
             }
         } else if( ServiceKernelCommand.INSTANCE.matches( parameterValue ) ) {
-            var linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si.module, services );
+            var linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si.module, si.service, services );
 
             if( failIfNotFound && !linkResult.isSuccess() )
                 throw new ApplicationException( "for " + si.implementationName + " linked object " + parameterValue + " is not found" );
