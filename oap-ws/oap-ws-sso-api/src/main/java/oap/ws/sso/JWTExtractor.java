@@ -33,7 +33,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +50,13 @@ public class JWTExtractor {
         this.secret = secret;
         this.issuer = issuer;
         this.roles = roles;
+    }
+
+    public static String extractBearerToken( String authorization ) {
+        if( authorization != null && authorization.startsWith( BEARER ) ) {
+            return authorization.substring( BEARER.length() );
+        }
+        return authorization;
     }
 
     protected DecodedJWT decodeJWT( String token ) {
@@ -73,21 +79,14 @@ public class JWTExtractor {
         }
     }
 
-    public static String extractBearerToken( String authorization ) {
-        if( authorization != null && authorization.startsWith( BEARER ) ) {
-            return authorization.substring( BEARER.length() );
-        }
-        return authorization;
-    }
-
     public List<String> getPermissions( String token, String organizationId ) {
         final DecodedJWT decodedJWT = decodeJWT( token );
         if( decodedJWT == null ) {
-            return Collections.emptyList();
+            return List.of();
         }
         final Claim tokenRoles = decodedJWT.getClaims().get( "roles" );
         if( tokenRoles == null ) {
-            return Collections.emptyList();
+            return List.of();
         }
         Map<String, Object> rolesByOrganization = tokenRoles.asMap();
         final String role;
@@ -99,7 +98,7 @@ public class JWTExtractor {
         if( role != null ) {
             return new ArrayList<>( roles.permissionsOf( role ) );
         }
-        return Collections.emptyList();
+        return List.of();
     }
 
     public String getUserEmail( String token ) {
