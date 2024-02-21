@@ -68,8 +68,8 @@ public class ElasticSearchSchema {
 
             if( objectSchemaAST.dynamic.isPresent() ) {
                 switch( objectSchemaAST.dynamic.orElse( Dynamic.TRUE ) ) {
-                    case TRUE -> jsonGenerator.writeStringField( "dynamic", "true" );
-                    case FALSE -> jsonGenerator.writeStringField( "dynamic", "false" );
+                    case Dynamic.TRUE -> jsonGenerator.writeStringField( "dynamic", "true" );
+                    case Dynamic.FALSE -> jsonGenerator.writeStringField( "dynamic", "false" );
                     default -> jsonGenerator.writeStringField( "dynamic", "strict" );
                 }
             }
