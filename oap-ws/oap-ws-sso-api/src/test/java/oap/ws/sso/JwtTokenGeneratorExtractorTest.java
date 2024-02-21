@@ -31,10 +31,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Set;
 
 import static oap.testng.Asserts.assertString;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -51,9 +50,9 @@ public class JwtTokenGeneratorExtractorTest extends AbstractUserTest {
         assertString( token._2 ).isNotEmpty();
         Instant expirationTime = token._1.toInstant().truncatedTo( ChronoUnit.MINUTES );
         Instant expectedExpirationTime = Instant.now().plus( Duration.ofMinutes( 15 ) ).truncatedTo( ChronoUnit.MINUTES );
-        assertTrue( expirationTime.compareTo( expectedExpirationTime ) == 0 );
+        assertThat( expirationTime ).isEqualTo( expectedExpirationTime );
         assertTrue( jwtExtractor.verifyToken( token._2 ) );
-        assertEquals( jwtExtractor.getUserEmail( token._2 ), "email@email.com" );
-        assertEquals( jwtExtractor.getPermissions( token._2, "org1" ), Set.of( "accounts:list", "accounts:create" ) );
+        assertThat( jwtExtractor.getUserEmail( token._2 ) ).isEqualTo( "email@email.com" );
+        assertThat( jwtExtractor.getPermissions( token._2, "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );
     }
 }

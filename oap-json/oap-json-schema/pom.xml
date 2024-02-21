@@ -3,12 +3,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <name>oap-json-schema</name>
 
-    <artifactId>oap-ws</artifactId>
+    <artifactId>oap-json-schema</artifactId>
 
     <parent>
         <groupId>oap</groupId>
-        <artifactId>oap-ws-parent</artifactId>
+        <artifactId>oap-json-parent</artifactId>
         <version>${oap.project.version}</version>
     </parent>
 
@@ -18,23 +19,13 @@
             <artifactId>oap-stdlib</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-json-schema</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-application</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
-            <groupId>org.javassist</groupId>
-            <artifactId>javassist</artifactId>
-            <version>${oap.deps.javaassist.version}</version>
+            <groupId>oap</groupId>
+            <artifactId>oap-stdlib-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
-
 
         <dependency>
             <groupId>org.projectlombok</groupId>
