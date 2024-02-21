@@ -29,6 +29,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.Resources;
+import oap.util.Cuid;
 import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
@@ -43,7 +44,7 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
 
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
-    private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Suite.uniqueExecutionId() );
+    private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
 
     private final DeployTestData deployTestData;
 
@@ -73,7 +74,8 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     }
 
     public static Path testPath( String name ) {
-        Path path = testDirectory().resolve( name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
+        Path path = testDirectory().resolve(
+            name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
         Files.ensureFile( path );
         return path;
     }
