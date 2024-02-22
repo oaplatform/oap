@@ -45,7 +45,7 @@ public class ValidatePartialJsonTest extends Fixtures {
     private KernelFixture fixture;
 
     public ValidatePartialJsonTest() {
-        fixture = new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) );
+        fixture = new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) );
         fixture( fixture );
     }
 

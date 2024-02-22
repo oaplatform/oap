@@ -37,7 +37,7 @@ import static oap.io.Resources.urlOrThrow;
 public class WebServicesProfileTest extends Fixtures {
 
     public WebServicesProfileTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
