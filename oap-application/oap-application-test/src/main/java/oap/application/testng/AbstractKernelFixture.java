@@ -48,7 +48,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-import static oap.http.testng.HttpAsserts.httpPrefix;
+import static oap.http.test.HttpAsserts.httpPrefix;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.TestDirectoryFixture.testDirectory;
 import static oap.util.Pair.__;

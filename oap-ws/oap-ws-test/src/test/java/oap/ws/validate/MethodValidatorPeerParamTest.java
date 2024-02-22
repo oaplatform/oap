@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.testng.HttpAsserts.assertPost;
-import static oap.http.testng.HttpAsserts.httpUrl;
+import static oap.http.test.HttpAsserts.assertPost;
+import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;

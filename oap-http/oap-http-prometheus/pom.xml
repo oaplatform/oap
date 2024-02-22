@@ -21,6 +21,11 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
+            <artifactId>oap-http</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

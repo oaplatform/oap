@@ -30,8 +30,8 @@ import oap.http.Http;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
-import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.http.testng.HttpAsserts.httpUrl;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 
 @Slf4j

@@ -26,14 +26,14 @@ package oap.ws.validate;
 
 import oap.application.testng.KernelFixture;
 import oap.http.Http;
-import oap.http.testng.HttpAsserts;
+import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import org.testng.annotations.Test;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.testng.HttpAsserts.assertPost;
+import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;

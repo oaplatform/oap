@@ -28,7 +28,7 @@ import oap.http.Client;
 import oap.json.Binder;
 import oap.ws.validate.ValidationErrors;
 
-import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
+import static oap.http.test.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public final class ValidationAssertion {

@@ -26,12 +26,12 @@ package oap.ws;
 
 import oap.application.testng.KernelFixture;
 import oap.http.Http;
-import oap.http.testng.HttpAsserts;
+import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 
 public class WebServicesProfileTest extends Fixtures {

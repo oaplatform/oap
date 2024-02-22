@@ -33,8 +33,8 @@ import org.testng.annotations.Test;
 import java.util.Optional;
 
 import static oap.http.Http.StatusCode.FORBIDDEN;
-import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.http.testng.HttpAsserts.httpUrl;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 
 public class InterceptorTest extends Fixtures {

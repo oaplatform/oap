@@ -25,6 +25,7 @@ package oap.util;
 
 import lombok.SneakyThrows;
 import oap.reflect.Reflect;
+import oap.util.function.Functions;
 import org.slf4j.Logger;
 
 import java.util.function.BiConsumer;

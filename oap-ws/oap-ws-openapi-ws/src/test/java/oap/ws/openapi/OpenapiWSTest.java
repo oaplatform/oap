@@ -32,8 +32,8 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.http.testng.HttpAsserts.httpUrl;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.testng.Asserts.contentOfTestResource;
 
