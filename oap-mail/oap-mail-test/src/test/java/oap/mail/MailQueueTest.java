@@ -35,8 +35,8 @@ import java.nio.file.Path;
 
 import static oap.mail.test.MessagesAssertion.assertMessages;
 import static oap.testng.TestDirectoryFixture.testPath;
-import static oap.util.Functions.empty.accept;
-import static oap.util.Functions.empty.reject;
+import static oap.util.function.Functions.empty.accept;
+import static oap.util.function.Functions.empty.reject;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MailQueueTest extends Fixtures {

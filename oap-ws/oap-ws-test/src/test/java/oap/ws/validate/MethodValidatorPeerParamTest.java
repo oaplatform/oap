@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.testng.HttpAsserts.assertPost;
-import static oap.http.testng.HttpAsserts.httpUrl;
+import static oap.http.test.HttpAsserts.assertPost;
+import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
@@ -44,7 +44,7 @@ import static oap.ws.validate.ValidationErrors.error;
 
 public class MethodValidatorPeerParamTest extends Fixtures {
     public MethodValidatorPeerParamTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

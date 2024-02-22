@@ -605,13 +605,13 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testKernel() {
         var kernelFixture = new KernelFixture(
-            urlOfTestResource( getClass(), "application.test.conf" ),
+            urlOfTestResource( getClass(), "application-message.test.conf" ),
             List.of( urlOfTestResource( getClass(), "oap-module.conf" ) )
         );
         try {
             kernelFixture.beforeMethod();
 
-            kernelFixture.service( "oap", MessageSender.class ).send( ( byte ) 12, ( short ) 1, "123", ofString() );
+            kernelFixture.service( "oap-message", MessageSender.class ).send( ( byte ) 12, ( short ) 1, "123", ofString() );
 
             assertEventually( 50, 100, () -> {
                 assertThat( kernelFixture.service( "oap-message-test", MessageListenerMock.class ).getMessages() )

@@ -13,5 +13,6 @@
 
     <modules>
         <module>oap-tsv</module>
+        <module>oap-json</module>
     </modules>
 </project>

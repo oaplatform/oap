@@ -33,9 +33,9 @@ import oap.testng.Fixtures;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.http.testng.HttpAsserts.assertPost;
-import static oap.http.testng.HttpAsserts.httpUrl;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertPost;
+import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;

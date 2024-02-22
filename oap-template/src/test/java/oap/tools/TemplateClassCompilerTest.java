@@ -1,8 +1,6 @@
 package oap.tools;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import oap.metrics.MetricsFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
@@ -14,10 +12,6 @@ import java.util.Map;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class TemplateClassCompilerTest extends Fixtures {
-    public TemplateClassCompilerTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
     private static String sourceNoImport = """
         public class Bad {
             public int getRandomNumber() {
@@ -33,7 +27,6 @@ public class TemplateClassCompilerTest extends Fixtures {
             }
         }
         """;
-
     private static String sourceB = """
         import java.util.random.RandomGenerator;
         public class B {
@@ -51,38 +44,35 @@ public class TemplateClassCompilerTest extends Fixtures {
                  }
              }
         """;
+    private final MetricsFixture metricsFixture;
+
+    public TemplateClassCompilerTest() {
+        fixture( TestDirectoryFixture.FIXTURE );
+        metricsFixture = fixture( new MetricsFixture() );
+    }
 
     @Test
     public void testCompileSingleFileOk() {
-        var prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
-        Metrics.addRegistry( prometheusRegistry );
-        try {
+        var compiler = new TemplateClassCompiler( TestDirectoryFixture.testDirectory() );
+        Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
+            )
+        );
 
-            var compiler = new TemplateClassCompiler( TestDirectoryFixture.testDirectory() );
-            Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
-                Lists.of(
-                    new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
-                )
-            );
+        assertThat( result.isSuccess() ).isTrue();
 
-            assertThat( result.isSuccess() ).isTrue();
+        var compiler2 = new TemplateClassCompiler( TestDirectoryFixture.testDirectory() );
+        Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result2 = compiler2.compile(
+            Lists.of(
+                new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
+            )
+        );
 
-            var compiler2 = new TemplateClassCompiler( TestDirectoryFixture.testDirectory() );
-            Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result2 = compiler2.compile(
-                Lists.of(
-                    new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
-                )
-            );
+        assertThat( result2.isSuccess() ).isTrue();
 
-            assertThat( result2.isSuccess() ).isTrue();
-
-            String scrape = prometheusRegistry.scrape();
-            assertThat( scrape ).contains( "oap_template_total{type=\"disk\",} 1.0" );
-            assertThat( scrape ).contains( "oap_template_total{type=\"compile\",} 1.0" );
-
-        } finally {
-            Metrics.removeRegistry( prometheusRegistry );
-        }
+        assertThat( metricsFixture.get( "oap_template", "type", "disk" ).counter().count() ).isEqualTo( 1.0d );
+        assertThat( metricsFixture.get( "oap_template", "type", "compile" ).counter().count() ).isEqualTo( 1.0d );
     }
 
     @Test

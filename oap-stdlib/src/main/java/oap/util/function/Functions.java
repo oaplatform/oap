@@ -24,7 +24,6 @@
 package oap.util.function;
 
 import com.google.common.base.Suppliers;
-import oap.concurrent.Once;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -70,10 +69,6 @@ public class Functions {
         } else if ( actionElse != null ) {
             actionElse.accept( actionValue );
         }
-    }
-
-    public static Runnable once( Runnable runnable ) {
-        return Once.once( runnable );
     }
 
     public static Runnable exception( Exception exception ) {

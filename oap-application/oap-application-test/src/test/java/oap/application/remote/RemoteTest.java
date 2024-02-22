@@ -57,7 +57,7 @@ public class RemoteTest extends Fixtures {
         var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
+            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application-remote.conf" ) ) );
 
             Optional<RemoteClient> service = kernel.service( "*.remote-client" );
             assertThat( service ).isPresent();
@@ -93,7 +93,7 @@ public class RemoteTest extends Fixtures {
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
+            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application-remote.conf" ) ) );
 
             RemoteClient remoteClientOne = kernel.<RemoteClient>service( "*.remote-client" ).get();
             assertThat( remoteClientOne.testStream( "1", "2", "3" ) )
@@ -111,7 +111,7 @@ public class RemoteTest extends Fixtures {
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application.conf" ) ) );
+            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application-remote.conf" ) ) );
 
             assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream() ).isEmpty();
         }
