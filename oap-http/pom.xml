@@ -9,10 +9,9 @@
     </parent>
 
     <packaging>pom</packaging>
-    <artifactId>oap-formats-parent</artifactId>
+    <artifactId>oap-http-parent</artifactId>
 
     <modules>
-        <module>oap-tsv</module>
-        <module>oap-json</module>
+        <module>oap-http-prometheus</module>
     </modules>
 </project>

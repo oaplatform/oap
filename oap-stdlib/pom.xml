@@ -40,7 +40,7 @@
     <dependencies>
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
+            <artifactId>micrometer-core</artifactId>
             <version>${oap.deps.micrometer.version}</version>
         </dependency>
         <dependency>

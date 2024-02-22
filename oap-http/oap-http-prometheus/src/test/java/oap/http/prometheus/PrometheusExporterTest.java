@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.prometheus;
+package oap.http.prometheus;
 
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
