@@ -40,7 +40,7 @@ import static oap.testng.Asserts.contentOfTestResource;
 @Slf4j
 public class OpenapiWSTest extends Fixtures {
     public OpenapiWSTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
     }
 
     @Test
