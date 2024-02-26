@@ -31,10 +31,16 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Paths;
 
 public class HoconFactoryWithSystemProperties extends HoconFactory {
     private final Logger log;
@@ -44,9 +50,27 @@ public class HoconFactoryWithSystemProperties extends HoconFactory {
 //        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
     }
 
+    @SneakyThrows
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
         var options = ConfigParseOptions.defaults();
+
+        Object rawContent = ctxt.contentReference().getRawContent();
+        if( rawContent instanceof URL urlContext ) {
+            URL parentURL = Paths.get( urlContext.toURI() ).getParent().toUri().toURL();
+
+            options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+        } else if( rawContent instanceof File fileContext ) {
+            URL parentURL = Paths.get( fileContext.toURI() ).getParent().toUri().toURL();
+
+            options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+        } else if( rawContent instanceof URI uriContext ) {
+            URL parentURL = Paths.get( uriContext ).getParent().toUri().toURL();
+
+            options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+        }
+
+
         var config = ConfigFactory.parseReader( r, options );
 
         var unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );

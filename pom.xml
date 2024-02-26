@@ -109,7 +109,7 @@
             Metrics.gauge( "task_queue_extra", Tags.of( "type", "current" ), this, 5 );
 
          -->
-        <oap.deps.micrometer.version>1.11.2</oap.deps.micrometer.version>
+        <oap.deps.micrometer.version>1.11.3</oap.deps.micrometer.version>
 
         <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
