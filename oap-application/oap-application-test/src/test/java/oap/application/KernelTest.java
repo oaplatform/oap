@@ -416,12 +416,24 @@ public class KernelTest {
         try {
             TestDirectoryFixture.deployTestData( getClass() );
 
+
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testFinalParameter" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessageContaining( "al=[val1], a=new value" );
         } finally {
             kernel.stop();
             TestDirectoryFixture.deleteDirectory( TestDirectoryFixture.testDirectory() );
+        }
+    }
+
+    @Test
+    public void testInclude() {
+        try( var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "testInclude.conf" ) ) ) ) {
+            kernel.start( Map.of( "boot.main", "testInclude" ) );
+
+            assertThat( kernel.<Service3>service( "testInclude.service3" ).get().name ).isEqualTo( "a" );
+            assertThat( kernel.<Service3>service( "testInclude.service32" ).get().name ).isEqualTo( "b" );
         }
     }
 
