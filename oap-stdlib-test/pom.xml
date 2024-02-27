@@ -57,7 +57,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.25.3</version>
+            <version>${oap.deps.assertj.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.bytebuddy</groupId>
