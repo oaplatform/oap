@@ -56,18 +56,26 @@ public class HoconFactoryWithSystemProperties extends HoconFactory {
         var options = ConfigParseOptions.defaults();
 
         Object rawContent = ctxt.contentReference().getRawContent();
-        if( rawContent instanceof URL urlContext ) {
-            URL parentURL = Paths.get( urlContext.toURI() ).getParent().toUri().toURL();
+        log.trace( "rawContent {} rawContentClazz {}", rawContent, rawContent.getClass() );
 
-            options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
-        } else if( rawContent instanceof File fileContext ) {
-            URL parentURL = Paths.get( fileContext.toURI() ).getParent().toUri().toURL();
-
-            options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
-        } else if( rawContent instanceof URI uriContext ) {
-            URL parentURL = Paths.get( uriContext ).getParent().toUri().toURL();
-
-            options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+        switch( rawContent ) {
+            case URL urlContext -> {
+                URL parentURL = urlContext.toURI().resolve( "" ).toURL();
+                log.trace( "parentURL {}", parentURL );
+                options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+            }
+            case File fileContext -> {
+                URL parentURL = Paths.get( fileContext.toURI() ).getParent().toUri().toURL();
+                log.trace( "parentURL {}", parentURL );
+                options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+            }
+            case URI uriContext -> {
+                URL parentURL = uriContext.resolve( "" ).toURL();
+                log.trace( "parentURL {}", parentURL );
+                options = options.setClassLoader( new URLClassLoader( new URL[] { parentURL } ) );
+            }
+            default -> {
+            }
         }
 
 
