@@ -31,7 +31,6 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Cuid;
 import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
 
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -140,7 +139,7 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
         try( var stream = java.nio.file.Files.list( globalTestDirectory() ) ) {
             stream
                 .filter( java.nio.file.Files::isDirectory )
-                .filter( path -> Files.getLastModifiedTime( path ) < DateTimeUtils.currentTimeMillis() - Dates.h( 2 ) )
+                .filter( path -> Files.getLastModifiedTime( path ) < System.currentTimeMillis() - Dates.h( 2 ) )
                 .forEach( path -> {
                     try {
                         Files.delete( path );
