@@ -37,6 +37,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static oap.testng.Asserts.locationOfTestResource;
 
@@ -44,9 +45,10 @@ import static oap.testng.Asserts.locationOfTestResource;
 public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
     public static final String NO_PREFIX = "";
     public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/port.lock", 1, 10000 );
+    private static final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
+    private static final AtomicBoolean newChanges = new AtomicBoolean( false );
     protected final String prefix;
-    private final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
     public AbstractEnvFixture() {
         this( NO_PREFIX );
@@ -58,7 +60,10 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     @SuppressWarnings( "unchecked" )
     public Self define( String property, Object value ) {
-        properties.put( prefix + property, value );
+        synchronized( newChanges ) {
+            properties.put( prefix + property, value );
+            newChanges.set( true );
+        }
 
         return ( Self ) this;
     }
@@ -90,12 +95,18 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     @Override
     protected void before() {
-        properties.forEach( ( variableName, v ) -> {
-            var value = Strings.substitute( String.valueOf( v ),
-                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            System.setProperty( variableName, value );
-            ConfigImpl.reloadSystemPropertiesConfig();
-        } );
+        synchronized( newChanges ) {
+            if( newChanges.get() ) {
+                properties.forEach( ( variableName, v ) -> {
+                    var value = Strings.substitute( String.valueOf( v ),
+                        k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+                    System.setProperty( variableName, value );
+                } );
+                ConfigImpl.reloadSystemPropertiesConfig();
+
+                newChanges.set( false );
+            }
+        }
     }
 
     public int portFor( Class<?> clazz ) throws UncheckedIOException {
@@ -108,7 +119,8 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
                 return ports.computeIfAbsent( prefix + key, k -> {
                     int port;
                     do {
-                        port = ( int ) LAST_PORT.updateAndGet( previousPort -> previousPort > 30000 ? 10000 : previousPort + 1 );
+                        port = ( int ) LAST_PORT.updateAndGet( previousPort -> previousPort > 30000 ? 10000
+                            : previousPort + 1 );
                     } while( !Sockets.isTcpPortAvailable( port ) );
 
                     log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, port );
