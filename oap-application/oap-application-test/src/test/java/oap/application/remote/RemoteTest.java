@@ -66,14 +66,14 @@ public class RemoteTest extends Fixtures {
                 .satisfies( remote -> {
                     assertThat( remote.accessible() ).isTrue();
                     //this tests local methods of Object.class
-                    assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
                 } );
 
             assertThat( service )
                 .get()
                 .satisfies( remote -> {
                     assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class );
-                    assertThat( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
                 } );
 
             assertThat( service )
