@@ -25,11 +25,6 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-ws-sso-api-default</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
             <artifactId>oap-ws-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
