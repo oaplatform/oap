@@ -79,17 +79,20 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final Counter timeoutMetrics;
     private final Counter errorMetrics;
     private final Counter successMetrics;
+    private final String source;
     private final URI uri;
     private final FST fst;
     private final int retry;
     private final String service;
     private final long timeout;
 
-    private RemoteInvocationHandler( URI uri,
+    private RemoteInvocationHandler( String source,
+                                     URI uri,
                                      String service,
                                      long timeout,
                                      FST.SerializationMethod serialization,
                                      int retry ) {
+        this.source = source;
         this.uri = uri;
         this.service = service;
         this.timeout = timeout;
@@ -106,14 +109,14 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         log.debug( "initialize {}", this );
     }
 
-    public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
-        return proxy( remote.url, remote.name, clazz, remote.timeout, remote.serialization, remote.retry );
+    public static Object proxy( String source, RemoteLocation remote, Class<?> clazz ) {
+        return proxy( source, remote.url, remote.name, clazz, remote.timeout, remote.serialization, remote.retry );
     }
 
-    private static Object proxy( URI uri, String service, Class<?> clazz,
+    private static Object proxy( String source, URI uri, String service, Class<?> clazz,
                                  long timeout, FST.SerializationMethod serialization, int retry ) {
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( uri, service, timeout, serialization, retry ) );
+            new RemoteInvocationHandler( source, uri, service, timeout, serialization, retry ) );
     }
 
     private RemoteInvocationException throwException( String methodName, Throwable throwable ) {
@@ -126,7 +129,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
         if( uri == null )
-            throw new RemoteInvocationException( "uri == null, service " + service + "#" + method.getName() );
+            throw new RemoteInvocationException( "uri == null, source " + source + " -> service " + service + "#" + method.getName() );
 
         if( method.getDeclaringClass() == Object.class ) return method.invoke( this, args );
 
@@ -235,7 +238,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
     @Override
     public String toString() {
-        return "remote:" + service + "(retry=" + retry + ")@" + uri;
+        return "source:" + source + " -> remote:" + service + "(retry=" + retry + ")@" + uri;
     }
 
     private class ChainIterator implements Iterator<Object> {
