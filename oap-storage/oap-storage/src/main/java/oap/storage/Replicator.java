@@ -149,7 +149,9 @@ public class Replicator<I, T> implements Closeable {
             stored.addAndGet( newUpdates.size() );
         }
 
-        log.trace( "[{}] added {} updated {}", uniqueName, Lists.map( added, a -> a.id ), Lists.map( updated, a -> a.id ) );
+        if( log.isTraceEnabled() ) {
+            log.trace( "[{}] added {} updated {}", uniqueName, Lists.map( added, a -> a.id ), Lists.map( updated, a -> a.id ) );
+        }
 
         var ids = master.ids();
         log.trace( "[{}] master ids {}", uniqueName, ids );
