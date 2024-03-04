@@ -8,6 +8,8 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 public interface RemoteStorage<Id, Data> extends ReplicationMaster<Id, Data> {
+    Optional<Data> get( @Nonnull Id id );
+
     Optional<Metadata<Data>> getMetadata( @Nonnull Id id );
 
     long size();
