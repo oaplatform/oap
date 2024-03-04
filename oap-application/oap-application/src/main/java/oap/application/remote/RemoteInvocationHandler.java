@@ -44,6 +44,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -132,6 +133,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             throw new RemoteInvocationException( "uri == null, source " + source + " -> service " + service + "#" + method.getName() );
 
         if( method.getDeclaringClass() == Object.class ) return method.invoke( this, args );
+        if( method.isDefault() ) {
+            return MethodHandles.lookup()
+                .unreflectSpecial( method, method.getDeclaringClass() )
+                .bindTo( proxy )
+                .invokeWithArguments( args );
+        }
 
         Result<Object, Throwable> result = invoke( method, args );
         if( result.isSuccess() ) return result.successValue;
