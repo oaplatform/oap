@@ -24,6 +24,7 @@
 package oap.logstream.net;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.io.content.ContentReader;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.BackendLoggerNotAvailableException;
 import oap.logstream.InvalidProtocolVersionException;
@@ -32,14 +33,13 @@ import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.message.MessageListener;
 import oap.template.BinaryUtils;
-import oap.tsv.TsvInputStream;
+import oap.tsv.Tsv;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -132,16 +132,9 @@ public class SocketLoggerServer implements MessageListener, Closeable {
 
         List<List<Object>> lines = new ArrayList<>();
         switch( version ) {
-            case TSV_V1 -> {
-                String[] split = new String( buffer, StandardCharsets.UTF_8 ).split( "\n" );
-                for( String s : split ) {
-                    ArrayList<String> line = new ArrayList<>();
-                    TsvInputStream.split( s, line );
-                    lines.add( Collections.singletonList( line ) );
-                }
-            }
-            case BINARY_V2 -> lines = BinaryUtils.read( buffer );
-
+            case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
+                    .forEach( line -> lines.add( Collections.singletonList( line ) ) );
+            case BINARY_V2 -> lines.addAll( BinaryUtils.read( buffer ) );
         }
 
         lines.forEach( line ->
