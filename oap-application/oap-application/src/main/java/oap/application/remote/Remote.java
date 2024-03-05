@@ -68,7 +68,7 @@ public class Remote implements HttpHandler {
     public Remote( FST.SerializationMethod serialization, String context, Kernel kernel, NioHttpServer server, String port ) {
         this.serialization = serialization;
         this.context = context;
-        log.debug( "Initializing remote for {}, services: {}...", kernel, kernel.services.size() );
+        log.debug( "Initializing remote for {}...", kernel );
         this.kernel = kernel;
 
         if( port != null ) {
@@ -92,36 +92,37 @@ public class Remote implements HttpHandler {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) {
-        var fst = new FST( serialization );
+        RemoteInvocation invocation = null;
+        try {
+            var fst = new FST( serialization );
 
-        var invocation = getRemoteInvocation( fst, exchange.getInputStream() );
+            invocation = getRemoteInvocation( fst, exchange.getInputStream() );
 
-        Object service;
-        if( !invocation.service.contains( "." ) ) {
-            log.trace( "Looking up service: {} in {}", invocation.service, kernel );
-            var services = kernel.services( "*", invocation.service );
-            if( services.size() > 1 ) {
-                log.error( "There are multiple services for service: {} in {}", invocation.service, kernel );
-                errorMetrics.increment();
-                exchange.setStatusCode( NOT_FOUND );
-                exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
-                exchange.setReasonPhrase( invocation.service + " found multiple services in " + kernel );
-                return;
+            Object service;
+            if( !invocation.service.contains( "." ) ) {
+                log.trace( "Looking up service: {} in {}", invocation.service, kernel );
+                var services = kernel.services( "*", invocation.service );
+                if( services.size() > 1 ) {
+                    log.error( "There are multiple services for service: {} in {}", invocation.service, kernel );
+                    errorMetrics.increment();
+                    exchange.setStatusCode( NOT_FOUND );
+                    exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
+                    exchange.setReasonPhrase( invocation.service + " found multiple services in " + kernel );
+                    return;
+                }
+
+                service = Lists.headOf( services ).orElse( null );
+            } else {
+                service = kernel.service( invocation.service ).orElse( null );
             }
 
-            service = Lists.headOf( services ).orElse( null );
-        } else {
-            service = kernel.service( invocation.service ).orElse( null );
-        }
-
-        if ( service == null ) {
-            errorMetrics.increment();
-            exchange.setStatusCode( HTTP_NOT_FOUND );
-            exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
-            exchange.setReasonPhrase( invocation.service + " not found among " + kernel.services.keySet() + " in " + kernel );
-            return;
-        }
-        try {
+            if( service == null ) {
+                errorMetrics.increment();
+                exchange.setStatusCode( HTTP_NOT_FOUND );
+                exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
+                exchange.setReasonPhrase( invocation.service + " not found among " + kernel.services.keySet() + " in " + kernel );
+                return;
+            }
             Result<Object, Throwable> result;
             int status = HTTP_OK;
             try {

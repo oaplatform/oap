@@ -32,6 +32,7 @@ import oap.util.Pair;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -49,41 +50,41 @@ import static java.util.Objects.requireNonNull;
 import static oap.storage.Storage.DataListener.IdObject.__io;
 
 @Slf4j
-public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, T> {
-    public final Identifier<I, T> identifier;
+public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMaster<Id, Data>, RemoteStorage<Id, Data> {
+    public final Identifier<Id, Data> identifier;
     protected final Lock lock;
-    protected final List<DataListener<I, T>> dataListeners = new CopyOnWriteArrayList<>();
-    protected final Memory<T, I> memory;
-    private final Predicate<I> conflict = Identifier.toConflict( this::get );
+    protected final List<DataListener<Id, Data>> dataListeners = new CopyOnWriteArrayList<>();
+    protected final Memory<Data, Id> memory;
+    private final Predicate<Id> conflict = Identifier.toConflict( this::get );
 
-    public MemoryStorage( Identifier<I, T> identifier, Lock lock ) {
+    public MemoryStorage( Identifier<Id, Data> identifier, Lock lock ) {
         this.identifier = identifier;
         this.lock = lock;
         this.memory = new Memory<>( lock );
     }
 
-    public Stream<T> select( boolean liveOnly ) {
+    public Stream<Data> select( boolean liveOnly ) {
         return ( liveOnly ? memory.selectLive() : memory.selectAll() ).map( p -> p._2.object );
     }
 
-    public Stream<T> select() {
+    public Stream<Data> select() {
         return select( true );
     }
 
-    Stream<T> selectAll() {
+    Stream<Data> selectAll() {
         return memory.selectAll().map( p -> p._2.object );
     }
 
     @Override
-    public List<T> list() {
+    public List<Data> list() {
         return select().toList();
     }
 
     @Override
-    public T store( @Nonnull T object ) {
+    public Data store( @Nonnull Data object ) {
 //        this is not thread-safe
 //        new acquired id does not lead to conflicts
-        I id = identifier.getOrInit( object, conflict );
+        Id id = identifier.getOrInit( object, conflict );
         lock.synchronizedOn( id, () -> {
             if( memory.put( id, object ) ) fireAdded( id, object );
             else fireUpdated( id, object );
@@ -91,13 +92,31 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         return object;
     }
 
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
+    @Nullable
     @Override
-    public void store( Collection<T> objects ) {
-        List<IdObject<I, T>> added = new ArrayList<>();
-        List<IdObject<I, T>> updated = new ArrayList<>();
+    public Data store( @Nonnull Data object, long hash ) {
+        Id id = identifier.getOrInit( object, conflict );
+        return lock.synchronizedOn( id, () -> {
+            Metadata<Data> metadata = memory.get( id ).orElse( null );
+            if( ( metadata == null && hash == 0L ) || ( metadata != null && metadata.hash == hash ) ) {
+                if( memory.put( id, object ) ) fireAdded( id, object );
+                else fireUpdated( id, object );
 
-        for( T object : objects ) {
-            I id = identifier.getOrInit( object, conflict );
+                return object;
+            } else {
+                return null;
+            }
+        } );
+    }
+
+    @Override
+    public void store( Collection<Data> objects ) {
+        List<IdObject<Id, Data>> added = new ArrayList<>();
+        List<IdObject<Id, Data>> updated = new ArrayList<>();
+
+        for( Data object : objects ) {
+            Id id = identifier.getOrInit( object, conflict );
             lock.synchronizedOn( id, () -> {
                 if( memory.put( id, object ) ) added.add( __io( id, object ) );
                 else updated.add( __io( id, object ) );
@@ -108,26 +127,32 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     @Override
-    public Optional<T> update( @Nonnull I id, @Nonnull Function<T, T> update ) {
+    public Optional<Data> update( @Nonnull Id id, @Nonnull Function<Data, Data> update ) {
         requireNonNull( id );
-        Optional<Metadata<T>> result = memory.remap( id, update );
+
+        Optional<Metadata<Data>> result = memory.remap( id, update );
         result.ifPresent( m -> fireUpdated( id, m.object ) );
         return result.map( m -> m.object );
     }
 
     @Override
-    public T update( I id, @Nonnull Function<T, T> update, @Nonnull Supplier<T> init ) {
+    public Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init ) {
         if( id == null ) return store( init.get() );
         else return lock.synchronizedOn( id, () -> update( id, update ).orElseGet( () -> store( init.get() ) ) );
     }
 
     @Override
-    public Optional<T> get( @Nonnull I id ) {
-        return memory.get( id ).map( m -> m.object );
+    public Optional<Metadata<Data>> getMetadata( @Nonnull Id id ) {
+        return memory.get( id );
     }
 
     @Override
-    public T get( I id, @Nonnull Supplier<T> init ) {
+    public Optional<Data> get( @Nonnull Id id ) {
+        return getMetadata( id ).map( m -> m.object );
+    }
+
+    @Override
+    public Data get( Id id, @Nonnull Supplier<Data> init ) {
         return id == null ? store( init.get() )
             : lock.synchronizedOn( id, () -> get( id ).orElseGet( () -> store( init.get() ) ) );
     }
@@ -138,17 +163,17 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     @Override
-    public Optional<T> delete( @Nonnull I id ) {
+    public Optional<Data> delete( @Nonnull Id id ) {
         requireNonNull( id );
-        Optional<T> old = memory.markDeleted( id ).map( m -> m.object );
+        Optional<Data> old = memory.markDeleted( id ).map( m -> m.object );
         old.ifPresent( o -> fireDeleted( id, o ) );
         return old;
     }
 
     @Override
-    public Optional<T> permanentlyDelete( @Nonnull I id ) {
+    public Optional<Data> permanentlyDelete( @Nonnull Id id ) {
         requireNonNull( id );
-        Optional<T> old = memory.removePermanently( id ).map( m -> m.object );
+        Optional<Data> old = memory.removePermanently( id ).map( m -> m.object );
         old.ifPresent( o -> firePermanentlyDeleted( id, o ) );
         return old;
     }
@@ -158,76 +183,76 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
         return memory.selectLiveIds().count();
     }
 
-    protected void fireAdded( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+    protected void fireAdded( Id id, Data object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners )
             dataListener.added( List.of( __io( id, object ) ) );
     }
 
-    protected void fireAdded( List<IdObject<I, T>> objects ) {
+    protected void fireAdded( List<IdObject<Id, Data>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.added( objects );
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.added( objects );
     }
 
-    protected void fireUpdated( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+    protected void fireUpdated( Id id, Data object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners )
             dataListener.updated( List.of( __io( id, object ) ) );
     }
 
-    protected void fireUpdated( List<IdObject<I, T>> objects ) {
+    protected void fireUpdated( List<IdObject<Id, Data>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.updated( objects );
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.updated( objects );
     }
 
-    protected void fireDeleted( List<IdObject<I, T>> objects ) {
+    protected void fireDeleted( List<IdObject<Id, Data>> objects ) {
         if( !objects.isEmpty() )
-            for( DataListener<I, T> dataListener : this.dataListeners ) dataListener.deleted( objects );
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.deleted( objects );
     }
 
-    protected void fireDeleted( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+    protected void fireDeleted( Id id, Data object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners )
             dataListener.deleted( List.of( __io( id, object ) ) );
     }
 
-    protected void firePermanentlyDeleted( I id, T object ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+    protected void firePermanentlyDeleted( Id id, Data object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners )
             dataListener.permanentlyDeleted( __io( id, object ) );
     }
 
-    protected void fireChanged( List<DataListener.IdObject<I, T>> added,
-                                List<DataListener.IdObject<I, T>> updated,
-                                List<DataListener.IdObject<I, T>> deleted ) {
-        for( DataListener<I, T> dataListener : this.dataListeners )
+    protected void fireChanged( List<DataListener.IdObject<Id, Data>> added,
+                                List<DataListener.IdObject<Id, Data>> updated,
+                                List<DataListener.IdObject<Id, Data>> deleted ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners )
             dataListener.changed( added, updated, deleted );
     }
 
     @Override
-    public void addDataListener( DataListener<I, T> dataListener ) {
+    public void addDataListener( DataListener<Id, Data> dataListener ) {
         this.dataListeners.add( dataListener );
     }
 
     @Override
-    public void removeDataListener( DataListener<I, T> dataListener ) {
+    public void removeDataListener( DataListener<Id, Data> dataListener ) {
         this.dataListeners.remove( dataListener );
     }
 
     @Override
-    public Identifier<I, T> identifier() {
+    public Identifier<Id, Data> identifier() {
         return identifier;
     }
 
     @Override
     @Nonnull
-    public Iterator<T> iterator() {
+    public Iterator<Data> iterator() {
         return select().iterator();
     }
 
     @Override
-    public void forEach( Consumer<? super T> action ) {
+    public void forEach( Consumer<? super Data> action ) {
         select().forEach( action );
     }
 
     @Override
-    public Stream<Metadata<T>> updatedSince( long since ) {
+    public Stream<Metadata<Data>> updatedSince( long since ) {
         log.trace( "requested updated objects since={}, total objects={}", since, memory.data.size() );
         return memory.selectLive()
             .mapToObj( ( id, m ) -> m )
@@ -235,7 +260,7 @@ public class MemoryStorage<I, T> implements Storage<I, T>, ReplicationMaster<I, 
     }
 
     @Override
-    public List<I> ids() {
+    public List<Id> ids() {
         return memory.selectLiveIds().toList();
     }
 

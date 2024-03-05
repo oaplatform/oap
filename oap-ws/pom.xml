@@ -26,7 +26,6 @@
         <module>oap-ws-test</module>
         <module>oap-ws-admin-ws</module>
         <module>oap-ws-sso-api</module>
-        <module>oap-ws-sso-api-default</module>
         <module>oap-ws-sso</module>
         <module>oap-ws-file-ws</module>
         <module>oap-ws-openapi</module>

@@ -85,8 +85,11 @@ public class LogWS {
     ) {
         log.debug( "set {} for {}", level, packageName );
 
-        var loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
-        var logger = loggerContext.getLogger( packageName );
+        org.slf4j.Logger slf4jLogger = LoggerFactory.getLogger( packageName );
+
+        log.trace( "logger class {}", slf4jLogger.getClass() );
+
+        var logger = ( ch.qos.logback.classic.Logger ) slf4jLogger;
         log.debug( "{} current logger level: {}", packageName, logger.getLevel() );
         logger.setLevel( Level.toLevel( level ) );
     }

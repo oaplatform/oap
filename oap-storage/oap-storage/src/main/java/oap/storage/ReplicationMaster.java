@@ -27,8 +27,8 @@ package oap.storage;
 import java.util.List;
 import java.util.stream.Stream;
 
-public interface ReplicationMaster<I, T> {
-    Stream<Metadata<T>> updatedSince( long since );
+public interface ReplicationMaster<Id, Data> {
+    Stream<Metadata<Data>> updatedSince( long since );
 
-    List<I> ids();
+    List<Id> ids();
 }
