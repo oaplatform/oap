@@ -145,7 +145,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         }
 
         lines.forEach( line ->
-                log.trace( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
+                log.debug( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
                         hostName, properties, filePreffix, logType, headers, types, length, line )
         );
 
