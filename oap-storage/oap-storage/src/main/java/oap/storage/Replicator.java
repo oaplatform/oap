@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.util.stream.Collectors.toList;
 import static oap.storage.Storage.DataListener.IdObject.__io;
 import static oap.util.Pair.__;
 
@@ -96,7 +95,7 @@ public class Replicator<I, T> implements Closeable {
 
         try( var updates = master.updatedSince( last._1 ) ) {
             log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, uniqueName );
-            newUpdates = updates.collect( toList() );
+            newUpdates = updates.toList();
             log.trace( "[{}] updated objects {}", uniqueName, newUpdates.size() );
         } catch( UncheckedIOException e ) {
             log.error( e.getCause().getMessage() );
