@@ -130,7 +130,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         var buffer = new byte[length];
         in.readFully( buffer, 0, length );
 
-        if ( log.isDebugEnabled() ) {
+        if ( log.isTraceEnabled() ) {
             List<List<Object>> lines = new ArrayList<>();
             switch( version ) {
                 case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
@@ -139,7 +139,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
             }
 
             lines.forEach( line ->
-                    log.debug( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
+                    log.trace( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
                             hostName, properties, filePreffix, logType, headers, types, length, line
                     )
             );
