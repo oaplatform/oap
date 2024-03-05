@@ -130,17 +130,20 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         var buffer = new byte[length];
         in.readFully( buffer, 0, length );
 
-        List<List<Object>> lines = new ArrayList<>();
-        switch( version ) {
-            case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
-                    .forEach( line -> lines.add( Collections.singletonList( line ) ) );
-            case BINARY_V2 -> lines.addAll( BinaryUtils.read( buffer ) );
-        }
+        if ( log.isDebugEnabled() ) {
+            List<List<Object>> lines = new ArrayList<>();
+            switch( version ) {
+                case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
+                        .forEach( line -> lines.add( Collections.singletonList( line ) ) );
+                case BINARY_V2 -> lines.addAll( BinaryUtils.read( buffer ) );
+            }
 
-        lines.forEach( line ->
-                log.debug( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
-                        hostName, properties, filePreffix, logType, headers, types, length, line )
-        );
+            lines.forEach( line ->
+                    log.debug( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
+                            hostName, properties, filePreffix, logType, headers, types, length, line
+                    )
+            );
+        }
 
         backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, buffer, 0, length );
     }
