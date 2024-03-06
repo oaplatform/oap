@@ -1,15 +1,34 @@
 package oap.metrics;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import oap.testng.AbstractScopeFixture;
+import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractDoubleAssert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MetricsFixture extends AbstractScopeFixture<MetricsFixture> {
 
     private SimpleMeterRegistry registry;
+
+    public MetricsAssertion assertMetric( String name, Tags tags ) {
+        return new MetricsAssertion( name, tags );
+    }
+
+    public AbstractDoubleAssert<?> assertGauge( String name, Tags tags ) {
+        RequiredSearch requiredSearch = get( name, tags );
+        var gauge = requiredSearch.gauge();
+
+        Meter.Id id = new Meter.Id( name, tags, null, null, Meter.Type.COUNTER );
+        return assertThat( gauge.value() ).as( id.toString() );
+    }
 
     @Override
     protected void before() {
@@ -18,17 +37,8 @@ public class MetricsFixture extends AbstractScopeFixture<MetricsFixture> {
         super.before();
     }
 
-    public RequiredSearch get( String name, String... tags ) {
-
-        RequiredSearch rs = RequiredSearch.in( Metrics.globalRegistry ).name( name );
-
-        assertThat( ( tags.length / 2 ) * 2 ).isEqualTo( tags.length );
-
-        for( int i = 0; i < tags.length / 2; i += 2 ) {
-            rs = rs.tag( tags[i], tags[i + 1] );
-        }
-
-        return rs;
+    public RequiredSearch get( String name, Tags tags ) {
+        return RequiredSearch.in( Metrics.globalRegistry ).name( name ).tags( tags );
     }
 
     @Override
@@ -36,6 +46,56 @@ public class MetricsFixture extends AbstractScopeFixture<MetricsFixture> {
         super.after();
         if( registry != null ) {
             Metrics.globalRegistry.remove( registry );
+        }
+    }
+
+    public static class CounterMetricsAssertion extends AbstractAssert<CounterMetricsAssertion, Counter> {
+        public CounterMetricsAssertion( Counter actual ) {
+            super( actual, CounterMetricsAssertion.class );
+        }
+
+        public CounterMetricsAssertion isEqualTo( double expected ) {
+            assertThat( actual.count() ).isEqualTo( expected );
+
+            return this;
+        }
+    }
+
+    public static class GaugeMetricsAssertion extends AbstractAssert<GaugeMetricsAssertion, Gauge> {
+        public GaugeMetricsAssertion( Gauge actual ) {
+            super( actual, GaugeMetricsAssertion.class );
+        }
+
+        public GaugeMetricsAssertion isEqualTo( double expected ) {
+            assertThat( actual.value() ).isEqualTo( expected );
+
+            return this;
+        }
+    }
+
+    public class MetricsAssertion extends AbstractAssert<MetricsAssertion, RequiredSearch> {
+        protected MetricsAssertion( String name, Tags tags ) {
+            super( get( name, tags ), MetricsAssertion.class );
+        }
+
+        public CounterMetricsAssertion isCounter() {
+            try {
+                return new CounterMetricsAssertion( actual.counter() );
+            } catch( ClassCastException e ) {
+                throw failure( "a metric is not a counter" );
+            } catch( MeterNotFoundException e ) {
+                throw failure( "metric not found" );
+            }
+        }
+
+        public GaugeMetricsAssertion isGauge() {
+            try {
+                return new GaugeMetricsAssertion( actual.gauge() );
+            } catch( ClassCastException e ) {
+                throw failure( "a metric is not a gauge" );
+            } catch( MeterNotFoundException e ) {
+                throw failure( "metric not found" );
+            }
         }
     }
 }

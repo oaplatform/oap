@@ -1,5 +1,6 @@
 package oap.tools;
 
+import io.micrometer.core.instrument.Tags;
 import oap.metrics.MetricsFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -71,8 +72,12 @@ public class TemplateClassCompilerTest extends Fixtures {
 
         assertThat( result2.isSuccess() ).isTrue();
 
-        assertThat( metricsFixture.get( "oap_template", "type", "disk" ).counter().count() ).isEqualTo( 1.0d );
-        assertThat( metricsFixture.get( "oap_template", "type", "compile" ).counter().count() ).isEqualTo( 1.0d );
+        metricsFixture.assertMetric( "oap_template", Tags.of( "type", "disk" ) )
+            .isCounter()
+            .isEqualTo( 1.0d );
+        metricsFixture.assertMetric( "oap_template", Tags.of( "type", "compile" ) )
+            .isCounter()
+            .isEqualTo( 1.0d );
     }
 
     @Test
