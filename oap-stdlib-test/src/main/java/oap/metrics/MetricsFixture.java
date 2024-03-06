@@ -2,7 +2,6 @@ package oap.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
@@ -10,7 +9,6 @@ import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import oap.testng.AbstractScopeFixture;
 import org.assertj.core.api.AbstractAssert;
-import org.assertj.core.api.AbstractDoubleAssert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,14 +18,6 @@ public class MetricsFixture extends AbstractScopeFixture<MetricsFixture> {
 
     public MetricsAssertion assertMetric( String name, Tags tags ) {
         return new MetricsAssertion( name, tags );
-    }
-
-    public AbstractDoubleAssert<?> assertGauge( String name, Tags tags ) {
-        RequiredSearch requiredSearch = get( name, tags );
-        var gauge = requiredSearch.gauge();
-
-        Meter.Id id = new Meter.Id( name, tags, null, null, Meter.Type.COUNTER );
-        return assertThat( gauge.value() ).as( id.toString() );
     }
 
     @Override
