@@ -28,7 +28,7 @@ public class MetricsFixture extends AbstractScopeFixture<MetricsFixture> {
     }
 
     public RequiredSearch get( String name, Tags tags ) {
-        return RequiredSearch.in( Metrics.globalRegistry ).name( name ).tags( tags );
+        return RequiredSearch.in( registry ).name( name ).tags( tags );
     }
 
     @Override
