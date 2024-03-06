@@ -64,26 +64,26 @@
 
         <oap.deps.guava.version>33.0.0-jre</oap.deps.guava.version>
 
-        <oap.deps.logback.version>1.4.14</oap.deps.logback.version>
-        <oap.deps.slf4j.version>2.0.9</oap.deps.slf4j.version>
+        <oap.deps.logback.version>1.5.3</oap.deps.logback.version>
+        <oap.deps.slf4j.version>2.0.12</oap.deps.slf4j.version>
 
-        <oap.deps.mockito.version>5.8.0</oap.deps.mockito.version>
+        <oap.deps.mockito.version>5.11.0</oap.deps.mockito.version>
 
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
         <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
-        <oap.deps.apache.configuration.version>2.9.0</oap.deps.apache.configuration.version>
 
-        <oap.deps.apache.lang.version>3.14.0</oap.deps.apache.lang.version>
-        <oap.deps.apache.commons.text.version>1.11.0</oap.deps.apache.commons.text.version>
-        <oap.deps.apache.commons.compress.version>1.25.0</oap.deps.apache.commons.compress.version>
-        <oap.deps.apache.commons.codec.version>1.16.0</oap.deps.apache.commons.codec.version>
-        <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
-        <oap.deps.apache.io.version>2.13.0</oap.deps.apache.io.version>
+        <oap.deps.apache.commons-configuration2.version>2.9.0</oap.deps.apache.commons-configuration2.version>
+        <oap.deps.apache.commons-lang3.version>3.14.0</oap.deps.apache.commons-lang3.version>
+        <oap.deps.apache.commons-text.version>1.11.0</oap.deps.apache.commons-text.version>
+        <oap.deps.apache.commons-compress.version>1.25.0</oap.deps.apache.commons-compress.version>
+        <oap.deps.apache.commons-codec.version>1.16.1</oap.deps.apache.commons-codec.version>
+        <oap.deps.apache.commons-collections4.version>4.4</oap.deps.apache.commons-collections4.version>
+        <oap.deps.apache.commons-io.version>2.13.0</oap.deps.apache.commons-io.version>
 
         <oap.deps.hadoop.version>3.3.6</oap.deps.hadoop.version>
-        <oap.deps.aws-java-sdk-bundle.version>1.12.543</oap.deps.aws-java-sdk-bundle.version>
+        <oap.deps.aws-java-sdk-s3.version>1.12.671</oap.deps.aws-java-sdk-s3.version>
         <oap.deps.testcontainers.version>1.19.3</oap.deps.testcontainers.version>
 
         <oap.deps.joda.version>2.12.5</oap.deps.joda.version>

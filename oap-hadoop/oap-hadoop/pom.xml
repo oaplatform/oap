@@ -14,8 +14,8 @@
     <dependencies>
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-bundle</artifactId>
-            <version>${oap.deps.aws-java-sdk-bundle.version}</version>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>${oap.deps.aws-java-sdk-s3.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
