@@ -37,7 +37,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static oap.testng.Asserts.locationOfTestResource;
 
@@ -46,9 +45,8 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     public static final String NO_PREFIX = "";
     public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/port.lock", 1, 10000 );
     private static final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
-    private static final AtomicBoolean newChanges = new AtomicBoolean( false );
+    private static final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
     protected final String prefix;
-    private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
     public AbstractEnvFixture() {
         this( NO_PREFIX );
@@ -60,23 +58,9 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     @SuppressWarnings( "unchecked" )
     public Self define( String property, Object value ) {
-        synchronized( newChanges ) {
-            properties.put( prefix + property, value );
-            newChanges.set( true );
-        }
+        properties.put( prefix + property, value );
 
         return ( Self ) this;
-    }
-
-    public void copyTo( AbstractEnvFixture<?> env, String... names ) {
-        this.properties.forEach( ( key, value ) -> {
-            for( String name : names ) {
-                var propertyName = prefix + name;
-                if( key.equals( propertyName ) ) {
-                    env.properties.put( key, value );
-                }
-            }
-        } );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -92,7 +76,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         return define( property, "classpath(" + locationOfTestResource( clazz, resourceName ) + ")" );
     }
 
-    public Self defineClasspath( String property, Class<?> clazz, String resourceLocation ) {
+    public Self defineClasspath( String property, String resourceLocation ) {
         return define( property, "classpath(" + resourceLocation + ")" );
     }
 
@@ -106,18 +90,12 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     @Override
     protected void before() {
-        synchronized( newChanges ) {
-            if( newChanges.get() ) {
-                properties.forEach( ( variableName, v ) -> {
-                    var value = Strings.substitute( String.valueOf( v ),
-                        k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-                    System.setProperty( variableName, value );
-                } );
-                ConfigImpl.reloadSystemPropertiesConfig();
-
-                newChanges.set( false );
-            }
-        }
+        properties.forEach( ( variableName, v ) -> {
+            var value = Strings.substitute( String.valueOf( v ),
+                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+            System.setProperty( variableName, value );
+        } );
+        ConfigImpl.reloadSystemPropertiesConfig();
     }
 
     public int portFor( Class<?> clazz ) throws UncheckedIOException {
