@@ -37,7 +37,7 @@ public class EnvFixtureTest {
             .define( "u", "u=${PWD}" );
         fixture.beforeMethod();
         assertThat( System.getProperty( "method" ) ).isEqualTo( "method:1" );
-        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" );
+        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
     }
 
     @Test
