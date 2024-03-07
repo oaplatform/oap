@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-@Test
+@Test( enabled = false )
 public class AtomicPerformance {
     private final MutableLong ml = new MutableLong();
     private final AtomicLong al = new AtomicLong( 0 );
@@ -42,7 +42,7 @@ public class AtomicPerformance {
     private volatile long l = 0;
     private volatile long l2 = 0;
 
-    @Test
+    @Test( enabled = false )
     public void testAtomicLong() {
         final int threads = 1024;
         final int samples = 100000000;

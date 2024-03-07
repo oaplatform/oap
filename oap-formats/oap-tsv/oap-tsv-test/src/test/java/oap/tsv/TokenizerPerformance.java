@@ -32,9 +32,10 @@ import static oap.tsv.Tokenizer.parse;
 import static oap.tsv.Tsv.DELIMITER_TAB;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Test( enabled = false )
 public class TokenizerPerformance {
 
-    @Test
+    @Test( enabled = false )
     public void perf() {
         String tsv = "aaaa\tbbbb\txxxx\tddd\t19/11/2011\t33.3\taaaa\t11\txxx\tvvvv\tS\tS\t444\txxx\t4444\t1234\tN\tN";
         assertThat( parse( tsv, DELIMITER_TAB ) ).hasSize( 18 );

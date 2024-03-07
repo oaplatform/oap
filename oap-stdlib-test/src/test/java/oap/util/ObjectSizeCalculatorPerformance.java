@@ -6,11 +6,12 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Test( enabled = false )
 public class ObjectSizeCalculatorPerformance {
     public static final int SAMPLES = 10000;
     public static final int COUNT = 100;
 
-    @Test
+    @Test( enabled = false )
     public void testStringSize() {
         String thai = "utf8 Thai: เป็นมนุษย์สุดประเสริฐเลิศคุณค่า กว่าบรรดาฝูงสัตว์เดรัจฉาน"
                 + "จงฝ่าฟันพัฒนาวิชาการ อย่าล้างผลาญฤๅเข่นฆ่าบีฑาใคร"

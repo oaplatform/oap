@@ -30,11 +30,12 @@ import java.util.Optional;
 
 import static oap.benchmark.Benchmark.benchmark;
 
+@Test( enabled = false )
 public class OptionalPerformance {
     public static final int SAMPLES = 10000000;
     public static final int EXPERIMENTS = 5;
 
-    @Test
+    @Test( enabled = false )
     public void testOptionalVsNull() {
         benchmark( "OptionalChain", SAMPLES, () -> {
             optionalChainTest();

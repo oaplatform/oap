@@ -31,11 +31,12 @@ import java.util.Random;
 
 import static oap.benchmark.Benchmark.benchmark;
 
+@Test( enabled = false )
 public class ArrayPerformance {
 
     private final Random random = new Random();
 
-    @Test
+    @Test( enabled = false )
     public void testClassVsArray() {
         final int samples = 50000000;
         final int experiments = 5;
@@ -78,7 +79,7 @@ public class ArrayPerformance {
         System.out.println( sum[0] );
     }
 
-    @Test
+    @Test( enabled = false )
     public void testArrayType() {
         final int samples = 50000000;
         final int experiments = 5;

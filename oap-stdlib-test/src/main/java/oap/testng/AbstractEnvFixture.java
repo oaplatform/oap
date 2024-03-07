@@ -109,7 +109,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     protected void before() {
         Set<String> propertyNames = System.getProperties().stringPropertyNames();
         for( var propertyName : propertyNames ) {
-            if( propertyName.startsWith( prefix ) ) {
+            if( !prefix.isEmpty() && propertyName.startsWith( prefix ) ) {
                 System.clearProperty( propertyName );
             }
         }

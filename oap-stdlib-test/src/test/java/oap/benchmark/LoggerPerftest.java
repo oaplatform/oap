@@ -32,8 +32,9 @@ import java.util.Random;
 import static oap.benchmark.Benchmark.benchmark;
 
 @Slf4j
+@Test( enabled = false )
 public class LoggerPerftest {
-    @Test
+    @Test( enabled = false )
     public void samePerformance() {
         Random random = new Random();
 

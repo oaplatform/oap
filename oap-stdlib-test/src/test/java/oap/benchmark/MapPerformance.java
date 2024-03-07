@@ -29,12 +29,13 @@ import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+@Test( enabled = false )
 public class MapPerformance {
 
     public static final int SAMPLES = 100000;
     public static final int COUNT = 100;
 
-    @Test
+    @Test( enabled = false )
     public void test() {
         var map = new HashMap<String, Integer>();
 

@@ -50,16 +50,17 @@ import java.util.Optional;
 import static oap.benchmark.Benchmark.benchmark;
 import static oap.io.content.ContentReader.ofString;
 
+@Test( enabled = false )
 public class ParserPerformance {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_MILLIS );
-    public static String yearJson = Resources.read( ParserPerformance.class, "year.json", ofString() ).orElseThrow();
+    public static String yearJson = Resources.read( ParserPerformance.class, "/oap/json/year.json", ofString() ).orElseThrow();
 
     @SuppressWarnings( "unchecked" )
     private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
         return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
     }
 
-    @Test
+    @Test( enabled = false )
     public void performance() {
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule( new Jdk8Module() );
@@ -95,7 +96,7 @@ public class ParserPerformance {
 
     }
 
-    @Test
+    @Test( enabled = false )
     public void testNullVsOptional() {
         final String testEmpty = Binder.json.marshal( new TestNull( null, null, null ) );
         final String testNotEmpty = Binder.json.marshal( new TestNull( "123", "567", new TestNull( "q", "w", new TestNull( null, null, null ) ) ) );

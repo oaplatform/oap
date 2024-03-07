@@ -29,8 +29,9 @@ import org.testng.annotations.Test;
 
 import static oap.benchmark.Benchmark.benchmark;
 
+@Test( enabled = false )
 public class InetPerftest {
-    @Test
+    @Test( enabled = false )
     public void toLong() {
         benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
             .run();

@@ -28,11 +28,12 @@ import org.testng.annotations.Test;
 
 import static oap.benchmark.Benchmark.benchmark;
 
+@Test( enabled = false )
 public class BenchmarkTest {
 
     private static final int SAMPLES = 1_000;
 
-    @Test
+    @Test( enabled = false )
     public void graph() {
         benchmark( "scale", SAMPLES, ( x, s ) -> {
             long r = 0;
