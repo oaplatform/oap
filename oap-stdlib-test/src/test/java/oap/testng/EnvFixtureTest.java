@@ -35,7 +35,10 @@ public class EnvFixtureTest {
         EnvFixture fixture = new EnvFixture()
             .define( "method", "method:${value}" )
             .define( "u", "u=${PWD}" );
-        fixture.beforeMethod();
+
+        Fixtures fixtures = Fixtures.fixtures( fixture );
+
+        fixtures.fixBeforeMethod();
 
         assertThat( System.getProperty( "method" ) ).isEqualTo( "method:1" );
         assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );

@@ -57,6 +57,16 @@ public abstract class Fixtures {
         return fixture;
     }
 
+    public static Fixtures fixtures( Fixture... fixtures ) {
+        return new Fixtures() {
+            {
+                for( var f : fixtures ) {
+                    fixture( f );
+                }
+            }
+        };
+    }
+
     public <F extends Fixture> F fixture( F fixture ) throws IllegalCallerException {
         return fixture( Position.LAST, fixture );
     }

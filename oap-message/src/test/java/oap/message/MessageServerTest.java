@@ -608,8 +608,9 @@ public class MessageServerTest extends Fixtures {
             urlOfTestResource( getClass(), "application-message.test.conf" ),
             List.of( urlOfTestResource( getClass(), "oap-module.conf" ) )
         );
+        var fixtures = Fixtures.fixtures( kernelFixture );
         try {
-            kernelFixture.beforeMethod();
+            fixtures.fixBeforeMethod();
 
             kernelFixture.service( "oap-message", MessageSender.class ).send( ( byte ) 12, ( short ) 1, "123", ofString() );
 
@@ -619,7 +620,7 @@ public class MessageServerTest extends Fixtures {
             } );
 
         } finally {
-            kernelFixture.afterMethod();
+            fixtures.fixAfterMethod();
         }
     }
 }
