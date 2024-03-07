@@ -46,9 +46,9 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     public static final String NO_PREFIX = "";
     public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/port.lock", 1, 10000 );
     private static final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
     private static final AtomicBoolean newChanges = new AtomicBoolean( false );
     protected final String prefix;
+    private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
     public AbstractEnvFixture() {
         this( NO_PREFIX );
@@ -66,6 +66,17 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         }
 
         return ( Self ) this;
+    }
+
+    public void copyTo( AbstractEnvFixture<?> env, String... names ) {
+        this.properties.forEach( ( key, value ) -> {
+            for( String name : names ) {
+                var propertyName = prefix + name;
+                if( key.equals( propertyName ) ) {
+                    env.properties.put( key, value );
+                }
+            }
+        } );
     }
 
     @SuppressWarnings( "unchecked" )
