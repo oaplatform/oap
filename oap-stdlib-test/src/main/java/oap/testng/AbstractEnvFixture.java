@@ -35,6 +35,7 @@ import oap.util.Strings;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -49,12 +50,15 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     protected final String prefix;
     private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
-    public AbstractEnvFixture() {
-        this( NO_PREFIX );
+    private final List<AbstractEnvFixture<?>> dependencies;
+
+    public AbstractEnvFixture( AbstractEnvFixture<?>... dependencies ) {
+        this( NO_PREFIX, dependencies );
     }
 
-    public AbstractEnvFixture( String prefix ) {
+    public AbstractEnvFixture( String prefix, AbstractEnvFixture<?>... dependencies ) {
         this.prefix = prefix;
+        this.dependencies = List.of( dependencies );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -90,6 +94,10 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     }
 
     public void sync( AbstractEnvFixture<?>... fixtures ) {
+        sync( List.of( fixtures ) );
+    }
+
+    public void sync( List<AbstractEnvFixture<?>> fixtures ) {
         for( var fixture : fixtures ) {
             for( var fixtureProperty : fixture.properties.keySet() ) {
                 if( fixtureProperty.startsWith( prefix ) ) {
@@ -107,6 +115,9 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     @Override
     protected void before() {
+        sync( dependencies );
+
+
         Set<String> propertyNames = System.getProperties().stringPropertyNames();
         for( var propertyName : propertyNames ) {
             if( !prefix.isEmpty() && propertyName.startsWith( prefix ) ) {
