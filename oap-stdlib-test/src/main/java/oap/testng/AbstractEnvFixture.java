@@ -35,6 +35,7 @@ import oap.util.Strings;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -45,8 +46,8 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     public static final String NO_PREFIX = "";
     public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/port.lock", 1, 10000 );
     private static final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
     protected final String prefix;
+    private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
     public AbstractEnvFixture() {
         this( NO_PREFIX );
@@ -88,8 +89,31 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         return define( property, "url(" + url + ")" );
     }
 
+    public void sync( AbstractEnvFixture<?>... fixtures ) {
+        for( var fixture : fixtures ) {
+            for( var fixtureProperty : fixture.properties.keySet() ) {
+                if( fixtureProperty.startsWith( prefix ) ) {
+                    fixture.properties.remove( fixtureProperty );
+                }
+            }
+
+            properties.forEach( ( property, value ) -> {
+                if( property.startsWith( prefix ) ) {
+                    fixture.properties.put( property, value );
+                }
+            } );
+        }
+    }
+
     @Override
     protected void before() {
+        Set<String> propertyNames = System.getProperties().stringPropertyNames();
+        for( var propertyName : propertyNames ) {
+            if( propertyName.startsWith( prefix ) ) {
+                System.clearProperty( propertyName );
+            }
+        }
+
         properties.forEach( ( variableName, v ) -> {
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
