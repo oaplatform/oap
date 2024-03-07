@@ -66,7 +66,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
 
     private void clearProperties() {
         if( !prefix.isEmpty() ) {
-            Set<String> propertyNames = System.getProperties().stringPropertyNames();
+            Set<String> propertyNames = properties.keySet();
             for( var propertyName : propertyNames ) {
                 System.clearProperty( propertyName );
             }
