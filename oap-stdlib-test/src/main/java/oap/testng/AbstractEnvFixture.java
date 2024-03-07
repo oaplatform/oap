@@ -36,7 +36,7 @@ import oap.util.Strings;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -51,7 +51,7 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     protected final String prefix;
     private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
 
-    private final List<AbstractEnvFixture<?>> dependencies;
+    private final IdentityHashMap<AbstractEnvFixture<?>, AbstractEnvFixture<?>> dependencies = new IdentityHashMap<>();
 
     public AbstractEnvFixture( AbstractEnvFixture<?>... dependencies ) {
         this( NO_PREFIX, dependencies );
@@ -61,7 +61,15 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         Preconditions.checkNotNull( prefix );
 
         this.prefix = prefix;
-        this.dependencies = List.of( dependencies );
+
+        for( var dependency : dependencies ) {
+            addDependency( dependency );
+            dependency.addDependency( this );
+        }
+    }
+
+    private void addDependency( AbstractEnvFixture<?> env ) {
+        this.dependencies.put( env, env );
     }
 
     private void clearProperties() {
@@ -70,6 +78,8 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
             for( var propertyName : propertyNames ) {
                 System.clearProperty( propertyName );
             }
+
+            ConfigImpl.reloadSystemPropertiesConfig();
         }
     }
 
@@ -106,19 +116,17 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     }
 
     @Override
-    protected void before() {
+    public void start() {
         syncProperties();
 
-        for( var env : dependencies ) {
+        for( var env : dependencies.values() ) {
             env.syncProperties();
         }
     }
 
     @Override
-    protected void after() {
+    public void shutdown() {
         clearProperties();
-
-        ConfigImpl.reloadSystemPropertiesConfig();
     }
 
     protected void syncProperties() {
