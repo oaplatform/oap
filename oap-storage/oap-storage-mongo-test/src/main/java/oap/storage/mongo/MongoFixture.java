@@ -44,11 +44,13 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     private MongoClient mongoClient;
     private MongoServer server;
 
-    public MongoFixture() {
-        this( "test" );
+    public MongoFixture( AbstractEnvFixture<?>... dependencies ) {
+        this( "test", dependencies );
     }
 
-    public MongoFixture( String database ) {
+    public MongoFixture( String database, AbstractEnvFixture<?>... dependencies ) {
+        super( dependencies );
+
         this.database = database;
 
         define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );

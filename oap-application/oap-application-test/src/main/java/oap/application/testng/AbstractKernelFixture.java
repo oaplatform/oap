@@ -70,20 +70,21 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     public Kernel kernel;
     protected Path confdPath;
 
-    public AbstractKernelFixture( String prefix, URL conf ) {
-        this( prefix, Scope.METHOD, conf, null, List.of() );
+    public AbstractKernelFixture( String prefix, URL conf, AbstractEnvFixture<?>... dependencies ) {
+        this( prefix, Scope.METHOD, conf, null, List.of(), dependencies );
     }
 
-    public AbstractKernelFixture( String prefix, URL conf, Path confd ) {
-        this( prefix, Scope.METHOD, conf, confd, List.of() );
+    public AbstractKernelFixture( String prefix, URL conf, Path confd, AbstractEnvFixture<?>... dependencies ) {
+        this( prefix, Scope.METHOD, conf, confd, List.of(), dependencies );
     }
 
-    public AbstractKernelFixture( String prefix, URL conf, List<URL> additionalModules ) {
-        this( prefix, Scope.METHOD, conf, null, additionalModules );
+    public AbstractKernelFixture( String prefix, URL conf, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
+        this( prefix, Scope.METHOD, conf, null, additionalModules, dependencies );
     }
 
-    public AbstractKernelFixture( String prefix, Scope scope, URL conf, Path confdPath, List<URL> additionalModules ) {
-        super( prefix );
+    public AbstractKernelFixture( String prefix, Scope scope, URL conf, Path confdPath, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
+        super( prefix, dependencies );
+
         this.scope = scope;
         this.applicationConf = conf;
         this.confdPath = confdPath;
@@ -205,7 +206,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
                         log.info( "Copy directory " + path + " -> " + confdPath );
                         oap.io.Files.copyDirectory( path, confdPath );
                     } else {
-                        if ( !path.toFile().exists() ) log.warn( "Configuration directory " + path + " is not found" );
+                        if( !path.toFile().exists() ) log.warn( "Configuration directory " + path + " is not found" );
                         else log.warn( "Configuration directory " + path + " is not a directory" );
                     }
                 } );
@@ -214,10 +215,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         for( var cd : conf ) {
             var p = Resources.filePath( cd._1, cd._2 );
             p.ifPresentOrElse( path -> {
-                    Path destPath = confdPath.resolve( path.getFileName() );
-                    log.info( "Copying file " + path + " -> " + destPath );
-                    oap.io.Files.copy( path, PLAIN, destPath, PLAIN );
-                }, () -> log.warn( "Configuration file " + cd + " is not found" ) );
+                Path destPath = confdPath.resolve( path.getFileName() );
+                log.info( "Copying file " + path + " -> " + destPath );
+                oap.io.Files.copy( path, PLAIN, destPath, PLAIN );
+            }, () -> log.warn( "Configuration file " + cd + " is not found" ) );
         }
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();

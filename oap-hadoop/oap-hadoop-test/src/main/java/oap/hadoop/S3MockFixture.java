@@ -29,7 +29,9 @@ public class S3MockFixture extends AbstractEnvFixture<S3MockFixture> {
     private boolean debug = false;
     private String initialBuckets = "";
 
-    public S3MockFixture() {
+    public S3MockFixture( AbstractEnvFixture<?>... dependencies ) {
+        super( dependencies );
+
         definePort( "S3MOCK_PORT" );
         port = portFor( "S3MOCK_PORT" );
     }

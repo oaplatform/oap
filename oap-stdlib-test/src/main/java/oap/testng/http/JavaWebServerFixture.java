@@ -41,8 +41,8 @@ public class JavaWebServerFixture extends AbstractEnvFixture<JavaWebServerFixtur
     private int backlog = 0;
     private int delaySeconds = 1;
 
-    public JavaWebServerFixture() {
-        super( "JAVA_HTTP_SERVER_FIXTURE_" );
+    public JavaWebServerFixture( AbstractEnvFixture<?>... dependencies ) {
+        super( "JAVA_HTTP_SERVER_FIXTURE_", dependencies );
 
         definePort( "HTTP_PORT" );
     }
