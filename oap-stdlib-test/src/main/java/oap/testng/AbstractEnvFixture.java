@@ -25,6 +25,7 @@
 package oap.testng;
 
 
+import com.google.common.base.Preconditions;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
@@ -57,8 +58,19 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
     }
 
     public AbstractEnvFixture( String prefix, AbstractEnvFixture<?>... dependencies ) {
+        Preconditions.checkNotNull( prefix );
+
         this.prefix = prefix;
         this.dependencies = List.of( dependencies );
+    }
+
+    private void clearProperties() {
+        if( !prefix.isEmpty() ) {
+            Set<String> propertyNames = System.getProperties().stringPropertyNames();
+            for( var propertyName : propertyNames ) {
+                System.clearProperty( propertyName );
+            }
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -93,44 +105,34 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         return define( property, "url(" + url + ")" );
     }
 
-    public void sync( AbstractEnvFixture<?>... fixtures ) {
-        sync( List.of( fixtures ) );
-    }
+    @Override
+    protected void before() {
+        syncProperties();
 
-    public void sync( List<AbstractEnvFixture<?>> fixtures ) {
-        for( var fixture : fixtures ) {
-            for( var fixtureProperty : fixture.properties.keySet() ) {
-                if( fixtureProperty.startsWith( prefix ) ) {
-                    fixture.properties.remove( fixtureProperty );
-                }
-            }
-
-            properties.forEach( ( property, value ) -> {
-                if( property.startsWith( prefix ) ) {
-                    fixture.properties.put( property, value );
-                }
-            } );
+        for( var env : dependencies ) {
+            env.syncProperties();
         }
     }
 
     @Override
-    protected void before() {
-        sync( dependencies );
+    protected void after() {
+        clearProperties();
 
+        ConfigImpl.reloadSystemPropertiesConfig();
+    }
 
-        Set<String> propertyNames = System.getProperties().stringPropertyNames();
-        for( var propertyName : propertyNames ) {
-            if( !prefix.isEmpty() && propertyName.startsWith( prefix ) ) {
-                System.clearProperty( propertyName );
-            }
-        }
+    protected void syncProperties() {
+        clearProperties();
+        setProperties();
+        ConfigImpl.reloadSystemPropertiesConfig();
+    }
 
+    private void setProperties() {
         properties.forEach( ( variableName, v ) -> {
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
             System.setProperty( variableName, value );
         } );
-        ConfigImpl.reloadSystemPropertiesConfig();
     }
 
     public int portFor( Class<?> clazz ) throws UncheckedIOException {
