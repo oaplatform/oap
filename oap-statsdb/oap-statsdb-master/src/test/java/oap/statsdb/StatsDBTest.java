@@ -61,7 +61,7 @@ public class StatsDBTest extends Fixtures {
         nc( "n1", MockChild1.class ),
         nc( "n2", MockChild2.class ),
         nc( "n3", MockValue.class ) );
-    private static final MongoFixture MONGO_FIXTURE = new MongoFixture();
+    private static final MongoFixture MONGO_FIXTURE = new MongoFixture( "MONGO" );
     private final EnvFixture envFixture;
 
     {

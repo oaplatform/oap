@@ -40,7 +40,7 @@ import static oap.testng.Asserts.contentOfTestResource;
 @Slf4j
 public class ApiWSTest extends Fixtures {
     public ApiWSTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        fixture( new KernelFixture( "APIWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test

@@ -38,7 +38,7 @@ public class JPathWSTest extends Fixtures {
     private final KernelFixture kernelFixture;
 
     public JPathWSTest() {
-        kernelFixture = fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        kernelFixture = fixture( new KernelFixture( "JPATHWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test

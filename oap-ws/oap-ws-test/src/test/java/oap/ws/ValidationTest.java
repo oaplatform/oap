@@ -38,7 +38,7 @@ import static oap.io.Resources.urlOrThrow;
 public class ValidationTest extends Fixtures {
 
     public ValidationTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        fixture( new KernelFixture( "VALIDATION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

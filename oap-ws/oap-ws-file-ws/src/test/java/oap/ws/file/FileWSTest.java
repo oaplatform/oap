@@ -48,7 +48,7 @@ public class FileWSTest extends Fixtures {
 
     public FileWSTest() {
         fixture( oap.testng.TestDirectoryFixture.FIXTURE );
-        kernelFixture = fixture( new KernelFixture( urlOfTestResource( getClass(), "application.test.conf" ) ) );
+        kernelFixture = fixture( new KernelFixture( "FILEWS", urlOfTestResource( getClass(), "application.test.conf" ) ) );
     }
 
     @Test

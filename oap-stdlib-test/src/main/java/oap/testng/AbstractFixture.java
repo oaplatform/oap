@@ -24,7 +24,6 @@
 
 package oap.testng;
 
-
 import com.google.common.base.Preconditions;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +32,10 @@ import oap.concurrent.atomic.FileAtomicLong;
 import oap.io.Sockets;
 import oap.util.Strings;
 
+import javax.annotation.Nonnull;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,59 +43,122 @@ import java.util.concurrent.ConcurrentMap;
 import static oap.testng.Asserts.locationOfTestResource;
 
 @Slf4j
-public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> extends AbstractScopeFixture<Self> {
-    public static final String NO_PREFIX = "";
+public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
+    public static final int MIN_PORT_RANGE = 10000;
+    public static final int MAX_PORT_RANGE = 30000;
+
     public static final FileAtomicLong LAST_PORT = new FileAtomicLong( "/tmp/port.lock", 1, 10000 );
     private static final ConcurrentMap<String, Integer> ports = new ConcurrentHashMap<>();
+    protected static ConcurrentHashMap<Class<?>, AbstractFixture<?>> suiteScope = new ConcurrentHashMap<>();
     protected final String prefix;
     private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
+    protected Scope scope = Scope.METHOD;
 
-    private final IdentityHashMap<AbstractEnvFixture<?>, AbstractEnvFixture<?>> dependencies = new IdentityHashMap<>();
-
-    public AbstractEnvFixture( AbstractEnvFixture<?>... dependencies ) {
-        this( NO_PREFIX, dependencies );
-    }
-
-    public AbstractEnvFixture( String prefix, AbstractEnvFixture<?>... dependencies ) {
+    public AbstractFixture( String prefix ) {
         Preconditions.checkNotNull( prefix );
+        Preconditions.checkArgument( !prefix.isEmpty() );
 
         this.prefix = prefix;
-
-        for( var dependency : dependencies ) {
-            addDependency( dependency );
-            dependency.addDependency( this );
-        }
-    }
-
-    private void addDependency( AbstractEnvFixture<?> env ) {
-        this.dependencies.put( env, env );
-    }
-
-    private void clearProperties() {
-        if( !prefix.isEmpty() ) {
-            Set<String> propertyNames = properties.keySet();
-            for( var propertyName : propertyNames ) {
-                System.clearProperty( propertyName );
-            }
-
-            ConfigImpl.reloadSystemPropertiesConfig();
-        }
     }
 
     @SuppressWarnings( "unchecked" )
-    public Self define( String property, Object value ) {
-        properties.put( prefix + property, value );
+    public Self withScope( Scope scope ) {
+        this.scope = scope;
+
+        if( scope == Scope.SUITE ) {
+            return ( Self ) suiteScope.computeIfAbsent( getClass(), c -> this );
+        }
 
         return ( Self ) this;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> T getProperty( String name ) {
-        return ( T ) properties.get( prefix + name );
+    public final Scope getScope() {
+        return scope;
     }
 
-    public Self definePort( String property ) throws UncheckedIOException {
-        return define( property, portFor( property ) );
+    public void beforeSuite() {
+        if( scope == Scope.SUITE ) {
+            before();
+        }
+    }
+
+    public void afterSuite() {
+        if( scope == Scope.SUITE ) {
+            after();
+        }
+    }
+
+    public void beforeClass() {
+        if( scope == Scope.CLASS ) {
+            before();
+        }
+    }
+
+    public void afterClass() {
+        if( scope == Scope.CLASS ) {
+            after();
+        }
+    }
+
+    public void beforeMethod() {
+        if( scope == Scope.METHOD ) {
+            before();
+        }
+    }
+
+    public void afterMethod() {
+        if( scope == Scope.METHOD ) {
+            after();
+        }
+    }
+
+    protected void before() {}
+
+    protected void after() {}
+
+    protected void clearProperties() {
+        Set<String> propertyNames = properties.keySet();
+        for( var propertyName : propertyNames ) {
+            System.clearProperty( propertyName );
+        }
+
+        ConfigImpl.reloadSystemPropertiesConfig();
+    }
+
+    protected void setProperties() {
+        properties.forEach( ( variableName, v ) -> {
+            var value = Strings.substitute( String.valueOf( v ),
+                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+            System.setProperty( variableName, value );
+        } );
+    }
+
+
+    @SuppressWarnings( "unchecked" )
+    public Self define( String property, Object value ) {
+        properties.put( toFixturePropertyName( property ), value );
+
+        return ( Self ) this;
+    }
+
+    @Nonnull
+    public String toFixturePropertyName( String property ) {
+        return prefix + "_FIXTURE_" + property;
+    }
+
+    public String toThreadName() {
+        return "fixture-" + prefix;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T getProperty( String name ) {
+        return ( T ) properties.get( toFixturePropertyName( name ) );
+    }
+
+    public int definePort( String property ) throws UncheckedIOException {
+        int port = portFor( property );
+        define( property, port );
+        return port;
     }
 
     public Self defineLocalClasspath( String property, Class<?> clazz, String resourceName ) {
@@ -115,46 +177,18 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
         return define( property, "url(" + url + ")" );
     }
 
-    @Override
-    public void start() {
-        syncProperties();
-
-        for( var env : dependencies.values() ) {
-            env.syncProperties();
-        }
-    }
-
-    @Override
-    public void shutdown() {
-        clearProperties();
-    }
-
-    protected void syncProperties() {
-        clearProperties();
-        setProperties();
-        ConfigImpl.reloadSystemPropertiesConfig();
-    }
-
-    private void setProperties() {
-        properties.forEach( ( variableName, v ) -> {
-            var value = Strings.substitute( String.valueOf( v ),
-                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
-            System.setProperty( variableName, value );
-        } );
-    }
-
     public int portFor( Class<?> clazz ) throws UncheckedIOException {
         return portFor( clazz.getName() );
     }
 
     public int portFor( String key ) throws UncheckedIOException {
-        return Threads.withThreadName( getUniqueName(), () -> {
+        return Threads.withThreadName( prefix, () -> {
             synchronized( LAST_PORT ) {
-                return ports.computeIfAbsent( prefix + key, k -> {
+                return ports.computeIfAbsent( toFixturePropertyName( key ), k -> {
                     int port;
                     do {
-                        port = ( int ) LAST_PORT.updateAndGet( previousPort -> previousPort > 30000 ? 10000
-                            : previousPort + 1 );
+                        port = ( int ) LAST_PORT.updateAndGet( previousPort ->
+                            previousPort > MAX_PORT_RANGE ? MIN_PORT_RANGE : previousPort + 1 );
                     } while( !Sockets.isTcpPortAvailable( port ) );
 
                     log.debug( "{} finding port for key={}... port={}", this.getClass().getSimpleName(), k, port );
@@ -162,5 +196,13 @@ public abstract class AbstractEnvFixture<Self extends AbstractEnvFixture<Self>> 
                 } );
             }
         } );
+    }
+
+    public void initialize() {}
+
+    public void shutdown() {}
+
+    public enum Scope {
+        METHOD, CLASS, SUITE
     }
 }

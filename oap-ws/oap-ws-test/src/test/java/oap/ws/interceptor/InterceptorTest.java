@@ -39,7 +39,7 @@ import static oap.io.Resources.urlOrThrow;
 
 public class InterceptorTest extends Fixtures {
     public InterceptorTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        fixture( new KernelFixture( "INTERCEPTOR", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

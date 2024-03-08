@@ -39,7 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Slf4j
-public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixture> {
+public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> {
     public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
 
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
@@ -52,6 +52,8 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     }
 
     public TestDirectoryFixture( DeployTestData deployTestData ) {
+        super( "TEST_DIRECTORY" );
+
         this.deployTestData = deployTestData;
     }
 

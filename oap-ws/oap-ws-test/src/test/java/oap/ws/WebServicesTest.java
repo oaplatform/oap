@@ -61,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 public class WebServicesTest extends Fixtures {
     public WebServicesTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        fixture( new KernelFixture( "WEB_SERVICES", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

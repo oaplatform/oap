@@ -44,7 +44,7 @@ import static oap.ws.validate.ValidationErrors.error;
 
 public class MethodValidatorPeerParamTest extends Fixtures {
     public MethodValidatorPeerParamTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        fixture( new KernelFixture( "METHOD_VALIDATOR", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

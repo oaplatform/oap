@@ -35,7 +35,7 @@ import static oap.io.Resources.urlOrThrow;
 
 public class WebServicesLocalTest extends Fixtures {
     public WebServicesLocalTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        fixture( new KernelFixture( "WEB_SERVICES_LOCAL", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

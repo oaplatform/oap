@@ -39,7 +39,7 @@ import static oap.ws.WsParam.From.SESSION;
 
 public class WebServicesSessionTest extends Fixtures {
     public WebServicesSessionTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        fixture( new KernelFixture( "WEB_SERVICES_SESSION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

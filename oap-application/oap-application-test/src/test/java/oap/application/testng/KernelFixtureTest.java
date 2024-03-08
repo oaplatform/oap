@@ -44,10 +44,11 @@ public class KernelFixtureTest extends Fixtures {
         var f = new Fixtures() {
             {
                 testFixture = fixture( new TestFixture( "PREFIXED_" ) );
-                kernelFixture = fixture( new KernelFixture(
+                kernelFixture = fixture( new KernelFixture( "KERNEL",
                     urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
                     List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
-                ) ).definePort( "TEST_PORT" );
+                ) );
+                kernelFixture.definePort( "TEST_PORT" );
             }
         };
 
@@ -69,9 +70,11 @@ public class KernelFixtureTest extends Fixtures {
             {
                 testFixture = fixture( new TestFixture( "PREFIXED_" ) );
                 kernelFixture = fixture( new KernelFixture(
+                    "TEST_KERNEL",
                     urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
                     List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
-                ) ).definePort( "TEST_PORT" );
+                ) );
+                kernelFixture.definePort( "TEST_PORT" );
             }
         };
 

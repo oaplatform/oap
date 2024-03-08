@@ -44,7 +44,7 @@ public class MongoFixtureTest extends Fixtures {
 
 
     public MongoFixtureTest() {
-        fixture( mongoFixture = new MongoFixture() );
+        fixture( mongoFixture = new MongoFixture( "MONGO" ) );
     }
 
     @Test

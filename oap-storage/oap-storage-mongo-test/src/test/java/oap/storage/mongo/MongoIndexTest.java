@@ -43,7 +43,7 @@ public class MongoIndexTest extends Fixtures {
     private final MongoFixture mongoFixture;
 
     public MongoIndexTest() {
-        fixture( mongoFixture = new MongoFixture() );
+        fixture( mongoFixture = new MongoFixture( "MONGO" ) );
     }
 
     @Test
