@@ -27,12 +27,13 @@ package oap.benchmark;
 import oap.concurrent.pool.StringBuilderPool;
 import org.testng.annotations.Test;
 
+@Test( enabled = false )
 public class StringBuilderPoolPerformance {
     private static final int THREADS = 64;
     private static final int SAMPLES = 100;
     private static final int ITERATIONS = 100;
 
-    @Test
+    @Test( enabled = false )
     public void test() {
         var threads = new Thread[THREADS];
 

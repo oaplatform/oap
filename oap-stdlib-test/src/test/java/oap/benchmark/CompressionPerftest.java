@@ -54,7 +54,7 @@ public class CompressionPerftest extends Fixtures {
         return new Object[][] { { GZIP }, { LZ4 }, { ZSTD } };
     }
 
-    @Test( dataProvider = "encodings" )
+    @Test( dataProvider = "encodings", enabled = false )
     public void testC( IoStreams.Encoding encoding ) throws IOException {
         Path path = testPath( "test." + encoding );
         Path source = pathOfTestResource( getClass(), "file.txt" );

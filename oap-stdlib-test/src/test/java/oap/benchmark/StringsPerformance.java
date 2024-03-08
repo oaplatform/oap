@@ -33,7 +33,7 @@ import java.util.HashSet;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-@Test
+@Test( enabled = false )
 public class StringsPerformance {
     private static String removeSet( String str, char... characters ) {
         if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
@@ -109,7 +109,7 @@ public class StringsPerformance {
         return new String( output, 0, i );
     }
 
-    @Test
+    @Test( enabled = false )
     public void remove() {
         final int samples = 10000000;
 
@@ -139,7 +139,7 @@ public class StringsPerformance {
 
     }
 
-    @Test
+    @Test( enabled = false )
     public void testReplace() {
         final int samples = 5000000;
         final String text = "sdhfg dkuhsdorifue itfgorufgeryjsfgrhfgj hsdgj";

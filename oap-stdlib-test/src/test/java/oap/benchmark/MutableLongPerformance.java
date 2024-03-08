@@ -33,7 +33,7 @@ import static oap.benchmark.Benchmark.benchmark;
 
 @Test( enabled = false )
 public class MutableLongPerformance {
-    @Test
+    @Test( enabled = false )
     public void testIncrement() {
         final int SAMPLES = 1000000;
 

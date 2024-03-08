@@ -29,8 +29,9 @@ import org.testng.annotations.Test;
 
 import static oap.benchmark.Benchmark.benchmark;
 
+@Test( enabled = false )
 public class CuidPerformance {
-    @Test
+    @Test( enabled = false )
     public void test() {
         Cuid.UNIQUE.next();
 

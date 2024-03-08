@@ -25,4 +25,11 @@
 package oap.testng;
 
 public class EnvFixture extends AbstractEnvFixture<EnvFixture> {
+    public EnvFixture( AbstractEnvFixture<?>... dependencies ) {
+        super( dependencies );
+    }
+
+    public EnvFixture( String prefix, AbstractEnvFixture<?>... dependencies ) {
+        super( prefix, dependencies );
+    }
 }

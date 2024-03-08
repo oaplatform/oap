@@ -25,6 +25,10 @@
 package oap.testng;
 
 public interface Fixture {
+    default void start() {}
+
+    default void shutdown() {}
+
     default void beforeSuite() {}
 
     default void afterSuite() {}

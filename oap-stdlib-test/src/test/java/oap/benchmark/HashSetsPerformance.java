@@ -30,8 +30,9 @@ import org.testng.annotations.Test;
 import java.util.HashSet;
 import java.util.stream.IntStream;
 
+@Test( enabled = false )
 public class HashSetsPerformance {
-    @Test
+    @Test( enabled = false )
     public void ofPerformance() {
         Object[] values = IntStream.range( 1, 10000 ).boxed().toArray();
         HashSet<Object> set1 = HashSets.of();

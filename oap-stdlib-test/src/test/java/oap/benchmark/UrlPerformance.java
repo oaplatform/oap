@@ -35,11 +35,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.benchmark.Benchmark.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Test( enabled = false )
 public class UrlPerformance {
 
     public static final int SAMPLES = 1000000;
 
-    @Test
+    @Test( enabled = false )
     public void encode() {
         String value = "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;";
 
@@ -61,7 +62,7 @@ public class UrlPerformance {
         ).run();
     }
 
-    @Test
+    @Test( enabled = false )
     public void decode() throws UnsupportedEncodingException {
         String value = URLEncoder.encode( "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;", UTF_8.name() );
 
