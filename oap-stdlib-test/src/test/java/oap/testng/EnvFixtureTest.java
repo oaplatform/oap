@@ -40,8 +40,8 @@ public class EnvFixtureTest {
 
         fixtures.fixBeforeMethod();
 
-        assertThat( System.getProperty( "method" ) ).isEqualTo( "method:1" );
-        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
+        assertThat( System.getProperty( "ENV_FIXTURE_method" ) ).isEqualTo( "method:1" );
+        assertThat( System.getProperty( "ENV_FIXTURE_u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
     }
 
     @Test
