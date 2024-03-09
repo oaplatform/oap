@@ -30,30 +30,29 @@ import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import static oap.http.test.HttpAsserts.assertGet;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 
 @Ignore
 public class JPathWSTest extends Fixtures {
-    private final KernelFixture kernelFixture;
+    private final KernelFixture kernel;
 
     public JPathWSTest() {
-        kernelFixture = fixture( new KernelFixture( "JPATHWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( "ADMINWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test
     public void testJavaBeanPropertyAccess() {
-        kernelFixture.service( "oap-ws-admin-ws-test", TestService.class ).setV2( "testv" );
+        kernel.service( "oap-ws-admin-ws-test", TestService.class ).setV2( "testv" );
 
-        assertGet( httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.getV2()" ) )
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.getV2()" ) )
             .isOk()
             .hasBody( "\"testv\"" );
     }
 
     @Test
     public void testPublicFieldAccess() {
-        kernelFixture.service( "oap-ws-admin-ws-test", TestService.class ).setV2( "testv" );
-        assertGet( httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.value" ) )
+        kernel.service( "oap-ws-admin-ws-test", TestService.class ).setV2( "testv" );
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.value" ) )
             .isOk()
             .hasBody( "\"testv\"" );
     }

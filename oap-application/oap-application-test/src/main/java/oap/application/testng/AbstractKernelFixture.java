@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
 import oap.application.module.Module;
+import oap.http.test.HttpAsserts;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.JsonException;
@@ -113,14 +114,11 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     protected void defineDefaults() {
-        var testHttpPort = portFor( TEST_HTTP_PORT );
-        define( TEST_HTTP_PORT, testHttpPort );
+        var testHttpPort = definePort( TEST_HTTP_PORT );
         define( TEST_DIRECTORY, FilenameUtils.separatorsToUnix( testDirectory().toString() ) );
         String resourcePath = Resources.path( getClass(), "/" ).orElseThrow();
         define( TEST_RESOURCE_PATH, resourcePath );
         define( TEST_HTTP_PREFIX, httpPrefix( testHttpPort ) );
-//        deprecated
-        define( "HTTP_PREFIX", httpPrefix( testHttpPort ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -246,5 +244,9 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
             this.kernel = null;
         }
         super.after();
+    }
+
+    public String httpUrl( String url ) {
+        return HttpAsserts.httpUrl( portFor( TEST_HTTP_PORT ), url );
     }
 }

@@ -32,27 +32,28 @@ import org.testng.annotations.Test;
 import static oap.http.Http.ContentType.TEXT_PLAIN;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.test.HttpAsserts.assertGet;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
 
 @Slf4j
 public class ApiWSTest extends Fixtures {
+    private final KernelFixture kernel;
+
     public ApiWSTest() {
-        fixture( new KernelFixture( "APIWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( "APIWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test
     public void api() {
-        assertGet( httpUrl( "/system/api" ) )
+        assertGet( kernel.httpUrl( "/system/api" ) )
             .responded( OK, "OK", TEXT_PLAIN,
                 contentOfTestResource( getClass(), "api.txt", ofString() ) );
     }
 
     @Test
     public void apiWithoutDeprecated() {
-        assertGet( httpUrl( "/system/api?deprecated=false" ) )
+        assertGet( kernel.httpUrl( "/system/api?deprecated=false" ) )
             .responded( OK, "OK", TEXT_PLAIN,
                 contentOfTestResource( getClass(), "apiWithoutDeprecated.txt", ofString() ) );
     }

@@ -129,6 +129,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
         properties.forEach( ( variableName, v ) -> {
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+            log.trace( "set property {} -> {}", variableName, value );
             System.setProperty( variableName, value );
         } );
     }
@@ -182,7 +183,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     }
 
     public int portFor( String key ) throws UncheckedIOException {
-        return Threads.withThreadName( prefix, () -> {
+        return Threads.withThreadName( toThreadName(), () -> {
             synchronized( LAST_PORT ) {
                 return ports.computeIfAbsent( toFixturePropertyName( key ), k -> {
                     int port;
@@ -198,9 +199,14 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
         } );
     }
 
-    public void initialize() {}
+    public void initialize() {
+        clearProperties();
+        setProperties();
+    }
 
-    public void shutdown() {}
+    public void shutdown() {
+        clearProperties();
+    }
 
     public enum Scope {
         METHOD, CLASS, SUITE
