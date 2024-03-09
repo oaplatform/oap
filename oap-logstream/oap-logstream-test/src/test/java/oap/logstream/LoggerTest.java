@@ -63,7 +63,7 @@ public class LoggerTest extends Fixtures {
 
     public LoggerTest() {
         fixture( TestDirectoryFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @Test

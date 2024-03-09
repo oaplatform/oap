@@ -51,7 +51,7 @@ public class DynamicMapLoggerTest extends Fixtures {
     public DynamicMapLoggerTest() {
         fixture( SystemTimerFixture.FIXTURE );
         fixture( TestDirectoryFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @Test

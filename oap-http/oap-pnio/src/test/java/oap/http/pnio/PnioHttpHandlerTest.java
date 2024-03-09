@@ -45,7 +45,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     private final EnvFixture envFixture;
 
     public PnioHttpHandlerTest() {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @Test
