@@ -49,7 +49,7 @@ public class GzipHttpTest extends Fixtures {
     private NioHttpServer server;
 
     public GzipHttpTest() {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @BeforeMethod

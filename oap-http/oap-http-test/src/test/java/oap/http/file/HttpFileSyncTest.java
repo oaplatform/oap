@@ -54,7 +54,7 @@ public class HttpFileSyncTest extends Fixtures {
     {
         fixture( SystemTimerFixture.FIXTURE );
         fixture( TestDirectoryFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @BeforeMethod

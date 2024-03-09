@@ -3,8 +3,8 @@ package oap.http.server.nio.handlers;
 import oap.http.Client;
 import oap.http.Http;
 import oap.http.server.nio.NioHttpServer;
-import oap.testng.EnvFixture;
 import oap.testng.AbstractFixture;
+import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
@@ -18,7 +18,7 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     private final int testHttpPort;
 
     public KeepaliveRequestsHandlerTest() {
-        var envFixture = fixture( new EnvFixture().withScope( AbstractFixture.Scope.CLASS ) );
+        var envFixture = fixture( new EnvFixture( "ENV" ).withScope( AbstractFixture.Scope.CLASS ) );
         testHttpPort = envFixture.portFor( "TEST_HTTP_PORT" );
     }
 

@@ -47,7 +47,7 @@ public class RemoteTest extends Fixtures {
     private final EnvFixture envFixture;
 
     public RemoteTest() {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "REMOTE" ) );
         envFixture.definePort( "HTTP_PORT" );
     }
 

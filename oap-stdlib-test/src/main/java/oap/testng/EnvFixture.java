@@ -25,7 +25,7 @@
 package oap.testng;
 
 public class EnvFixture extends AbstractFixture<EnvFixture> {
-    public EnvFixture() {
-        super( "ENV" );
+    public EnvFixture( String prefix ) {
+        super( prefix );
     }
 }
