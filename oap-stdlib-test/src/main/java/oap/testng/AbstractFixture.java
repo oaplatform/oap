@@ -58,7 +58,11 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     protected Scope scope = Scope.METHOD;
 
     public AbstractFixture( Class<?> testClass, AbstractFixture<?>... children ) {
-        this( testClass.getCanonicalName().toUpperCase(), children );
+        Preconditions.checkNotNull( testClass );
+
+        this.prefix = testClass.getCanonicalName().toUpperCase() + "-" + getClass().getCanonicalName().toUpperCase();
+
+        Lists.addAll( this.children, children );
     }
 
     public AbstractFixture( String prefix, AbstractFixture<?>... children ) {
