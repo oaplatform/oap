@@ -27,13 +27,13 @@ package oap.testng;
 import oap.time.JavaTimeService;
 import oap.time.JodaTimeService;
 
-import static oap.testng.AbstractFixture.Scope.METHOD;
-
 public class SystemTimerFixture extends AbstractFixture<SystemTimerFixture> {
-    public static final SystemTimerFixture FIXTURE = new SystemTimerFixture().withScope( METHOD );
+    public SystemTimerFixture( Class<?> testClass, AbstractFixture<?>... children ) {
+        super( testClass, children );
+    }
 
-    public SystemTimerFixture() {
-        super( "SYSTEM_TIME" );
+    public SystemTimerFixture( String prefix, AbstractFixture<?>... children ) {
+        super( prefix, children );
     }
 
     @Override

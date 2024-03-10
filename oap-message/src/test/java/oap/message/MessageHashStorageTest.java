@@ -40,8 +40,10 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class MessageHashStorageTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public MessageHashStorageTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
@@ -59,7 +61,7 @@ public class MessageHashStorageTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 124 );
         mhs.add( ( byte ) 2, 12, md51 );
 
-        var path = TestDirectoryFixture.testPath( "test" );
+        var path = testDirectoryFixture.testPath( "test" );
         mhs.store( path );
 
         assertFile( path ).hasContent( """
@@ -72,7 +74,7 @@ public class MessageHashStorageTest extends Fixtures {
             098f6bcd4621d373cade4e832627b4f6 - 124
             """.stripIndent() );
 
-        var path2 = TestDirectoryFixture.testPath( "test2" );
+        var path2 = testDirectoryFixture.testPath( "test2" );
         var mhs2 = new MessageHashStorage( 1024 );
         mhs2.load( path );
         mhs2.store( path2 );

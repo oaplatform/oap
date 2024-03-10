@@ -25,6 +25,8 @@
 package oap.benchmark;
 
 import oap.io.Files;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -35,22 +37,26 @@ import java.util.concurrent.atomic.AtomicLongArray;
 
 import static oap.benchmark.Benchmark.benchmark;
 import static oap.io.content.ContentWriter.ofString;
-import static oap.testng.TestDirectoryFixture.testPath;
 
 @Test( enabled = false )
-public class FilesPerformance {
+public class FilesPerformance extends Fixtures {
 
     public static final int SAMPLES = 100000;
+    private final TestDirectoryFixture testDirectoryFixture;
     private Path path;
     private Path path2;
     private Path pathNotExists;
 
+    public FilesPerformance() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+    }
+
     @BeforeMethod
     public void init() {
 
-        path = testPath( "tt/test" );
-        path2 = testPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
-        pathNotExists = testPath( "tt/test2" );
+        path = testDirectoryFixture.testPath( "tt/test" );
+        path2 = testDirectoryFixture.testPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
+        pathNotExists = testDirectoryFixture.testPath( "tt/test2" );
         Files.write( path, RandomStringUtils.random( 10 ), ofString() );
         Files.write( path2, RandomStringUtils.random( 10 ), ofString() );
     }

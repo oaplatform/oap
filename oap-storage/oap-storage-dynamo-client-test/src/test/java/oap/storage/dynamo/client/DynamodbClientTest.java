@@ -59,21 +59,23 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
 public class DynamodbClientTest extends Fixtures {
-    private String tableName = "tableForTestClient";
+    private static Kernel kernel;
+    private final TestDirectoryFixture testDirectoryFixture;
     private final String keyName = "longId";
     private final String longId = Strings.repeat( "1", 8000 );
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private static Kernel kernel;
+    private final AbstractDynamodbFixture fixture;
+    private String tableName = "tableForTestClient";
 
     public DynamodbClientTest() {
-        fixture( fixture );
+        fixture = fixture( new TestContainerDynamodbFixture() );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @BeforeClass
     public void setUp() {
         kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( DynamodbAtomicUpdateTest.class, "/oap/storage/dynamo/client/test-application.conf" ) );
-        System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
+        System.setProperty( "TMP_PATH", testDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
     }
 
     @AfterClass

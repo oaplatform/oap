@@ -46,15 +46,16 @@ public class TemplateClassCompilerTest extends Fixtures {
              }
         """;
     private final MetricsFixture metricsFixture;
+    private final TestDirectoryFixture testDirectoryFixture;
 
     public TemplateClassCompilerTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
         metricsFixture = fixture( new MetricsFixture() );
     }
 
     @Test
     public void testCompileSingleFileOk() {
-        var compiler = new TemplateClassCompiler( TestDirectoryFixture.testDirectory() );
+        var compiler = new TemplateClassCompiler( testDirectoryFixture.testDirectory() );
         Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result = compiler.compile(
             Lists.of(
                 new TemplateClassCompiler.SourceJavaFile( "A", sourceA )
@@ -63,7 +64,7 @@ public class TemplateClassCompilerTest extends Fixtures {
 
         assertThat( result.isSuccess() ).isTrue();
 
-        var compiler2 = new TemplateClassCompiler( TestDirectoryFixture.testDirectory() );
+        var compiler2 = new TemplateClassCompiler( testDirectoryFixture.testDirectory() );
         Result<Map<String, TemplateClassCompiler.CompiledJavaFile>, String> result2 = compiler2.compile(
             Lists.of(
                 new TemplateClassCompiler.SourceJavaFile( "A", sourceA )

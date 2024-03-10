@@ -30,12 +30,14 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.concurrent.atomic.FileAtomicLong;
 import oap.io.Sockets;
+import oap.util.Lists;
 import oap.util.Strings;
 
 import javax.annotation.Nonnull;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,13 +54,23 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     protected static ConcurrentHashMap<Class<?>, AbstractFixture<?>> suiteScope = new ConcurrentHashMap<>();
     protected final String prefix;
     private final ConcurrentMap<String, Object> properties = new ConcurrentHashMap<>();
+    private final ArrayList<AbstractFixture<?>> children = new ArrayList<>();
     protected Scope scope = Scope.METHOD;
 
-    public AbstractFixture( String prefix ) {
+    public AbstractFixture( Class<?> testClass, AbstractFixture<?>... children ) {
+        this( testClass.getCanonicalName().toUpperCase(), children );
+    }
+
+    public AbstractFixture( String prefix, AbstractFixture<?>... children ) {
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
 
         this.prefix = prefix;
+        Lists.addAll( this.children, children );
+    }
+
+    protected void addChild( AbstractFixture<?> child ) {
+        this.children.add( child );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -78,6 +90,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
 
     public void beforeSuite() {
         if( scope == Scope.SUITE ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -85,11 +98,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterSuite() {
         if( scope == Scope.SUITE ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
     }
 
     public void beforeClass() {
         if( scope == Scope.CLASS ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -97,11 +112,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterClass() {
         if( scope == Scope.CLASS ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
     }
 
     public void beforeMethod() {
         if( scope == Scope.METHOD ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -109,6 +126,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterMethod() {
         if( scope == Scope.METHOD ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
     }
 
@@ -123,9 +141,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
         }
 
         ConfigImpl.reloadSystemPropertiesConfig();
+
+        children.forEach( AbstractFixture::clearProperties );
     }
 
     protected void setProperties() {
+        children.forEach( AbstractFixture::setProperties );
+
         properties.forEach( ( variableName, v ) -> {
             var value = Strings.substitute( String.valueOf( v ),
                 k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );

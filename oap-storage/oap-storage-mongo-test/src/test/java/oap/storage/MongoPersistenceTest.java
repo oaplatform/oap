@@ -39,7 +39,6 @@ import org.testng.annotations.Test;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -57,10 +56,11 @@ public class MongoPersistenceTest extends Fixtures {
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build();
+    private final TestDirectoryFixture testDirectoryFixture;
 
     public MongoPersistenceTest() {
         mongoFixture = fixture( new MongoFixture( "MONGO" ) );
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
@@ -142,7 +142,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void storeTooBig() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        var crashDumpPath = testPath( "failures" );
+        var crashDumpPath = testDirectoryFixture.testPath( "failures" );
         String table = "test";
         try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {

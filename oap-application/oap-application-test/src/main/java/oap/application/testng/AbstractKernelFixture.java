@@ -51,7 +51,6 @@ import java.util.Map;
 
 import static oap.http.test.HttpAsserts.httpPrefix;
 import static oap.io.IoStreams.Encoding.PLAIN;
-import static oap.testng.TestDirectoryFixture.testDirectory;
 import static oap.util.Pair.__;
 
 @Slf4j
@@ -64,6 +63,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     private static int kernelN = 0;
     protected final URL applicationConf;
     protected final List<URL> additionalModules = new ArrayList<>();
+    protected final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
     private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
@@ -90,6 +90,9 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         this.applicationConf = conf;
         this.confdPath = confdPath;
         this.additionalModules.addAll( additionalModules );
+        this.testDirectoryFixture = new TestDirectoryFixture( prefix );
+
+        addChild( this.testDirectoryFixture );
 
         defineDefaults();
     }
@@ -115,7 +118,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     protected void defineDefaults() {
         var testHttpPort = definePort( TEST_HTTP_PORT );
-        define( TEST_DIRECTORY, FilenameUtils.separatorsToUnix( testDirectory().toString() ) );
+        define( TEST_DIRECTORY, FilenameUtils.separatorsToUnix( testDirectoryFixture.testDirectory().toString() ) );
         String resourcePath = Resources.path( getClass(), "/" ).orElseThrow();
         define( TEST_RESOURCE_PATH, resourcePath );
         define( TEST_HTTP_PREFIX, httpPrefix( testHttpPort ) );
@@ -161,7 +164,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     private void initConfd() {
         if( this.confdPath == null )
-            this.confdPath = TestDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
+            this.confdPath = testDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
     }
 
     @Nonnull

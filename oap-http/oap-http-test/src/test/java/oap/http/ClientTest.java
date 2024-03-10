@@ -46,12 +46,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class ClientTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
     private int port;
     private ClientAndServer mockServer;
     private Client.Response response;
 
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    public ClientTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @BeforeMethod
@@ -81,7 +82,7 @@ public class ClientTest extends Fixtures {
                     .withBody( "test1" )
             );
 
-        var path = TestDirectoryFixture.testPath( "new.file" );
+        var path = testDirectoryFixture.testPath( "new.file" );
         var progress = new AtomicInteger();
         var download = Client.DEFAULT.download( "http://localhost:" + port + "/file",
             Optional.empty(), Optional.of( path ), progress::set );

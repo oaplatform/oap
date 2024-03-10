@@ -32,14 +32,16 @@ import org.testng.annotations.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LazyFileOutputStreamTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public LazyFileOutputStreamTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
     @SneakyThrows
     public void write() {
-        var path = TestDirectoryFixture.testPath( "file1.txt" );
+        var path = testDirectoryFixture.testPath( "file1.txt" );
 
         new LazyFileOutputStream( path ).close();
 

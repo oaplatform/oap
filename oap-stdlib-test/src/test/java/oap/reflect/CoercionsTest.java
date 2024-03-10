@@ -45,8 +45,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CoercionsTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public CoercionsTest() {
-        fixture( TestDirectoryFixture.FIXTURE.withDeployTestData( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ).withDeployTestData( getClass() ) );
     }
 
     @Test
@@ -91,7 +93,7 @@ public class CoercionsTest extends Fixtures {
 
     @Test
     public void testCastFunctionPathWithEnv() {
-        Env.set( "TEST_ENV", TestDirectoryFixture.testDirectory().toString() );
+        Env.set( "TEST_ENV", testDirectoryFixture.testDirectory().toString() );
 
         assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "path(${ENV.TEST_ENV}/test.yaml)" ) ).isEqualTo( "a: b" );
     }

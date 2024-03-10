@@ -44,13 +44,13 @@ import static oap.logstream.LogStreamProtocol.CURRENT_PROTOCOL_VERSION;
 import static oap.logstream.LogStreamProtocol.ProtocolVersion.TSV_V1;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.TestDirectoryFixture.testPath;
 
 public class TsvWriterTest extends Fixtures {
     private static final String FILE_PATTERN = "<p>-file-<INTERVAL>-<LOG_VERSION>-<if(ORGANIZATION)><ORGANIZATION><else>UNKNOWN<endif>.log.gz";
+    private final TestDirectoryFixture testDirectoryFixture;
 
     public TsvWriterTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
@@ -61,7 +61,7 @@ public class TsvWriterTest extends Fixtures {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         var content = "1\n2\n\r3\t4";
         var bytes = BinaryUtils.line( content );
-        var logs = testPath( "logs" );
+        var logs = testDirectoryFixture.testPath( "logs" );
 
         try( var writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1" ), headers, types ),
@@ -82,7 +82,7 @@ public class TsvWriterTest extends Fixtures {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         var content = "1234567890";
         var bytes = BinaryUtils.line( content );
-        var logs = testPath( "logs" );
+        var logs = testDirectoryFixture.testPath( "logs" );
 
         var writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1" ), headers, types ),
@@ -144,7 +144,7 @@ public class TsvWriterTest extends Fixtures {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         var content = "1234567890";
         var bytes = BinaryUtils.line( content );
-        var logs = testPath( "logs" );
+        var logs = testDirectoryFixture.testPath( "logs" );
         Files.write(
             logs.resolve( "1-file-00-80723ad6-1-UNKNOWN.log.gz" ),
             PLAIN, "corrupted file", ContentWriter.ofString() );
@@ -259,7 +259,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        var logs = testPath( "logs" );
+        var logs = testDirectoryFixture.testPath( "logs" );
         String metadata = """
             ---
             filePrefixPattern: ""
@@ -324,7 +324,7 @@ public class TsvWriterTest extends Fixtures {
 
         var content = "1234567890";
         var bytes = content.getBytes();
-        var logs = testPath( "logs" );
+        var logs = testDirectoryFixture.testPath( "logs" );
         Files.write(
             logs.resolve( "1-file-00-9042dc83-1-UNKNOWN.log.gz" ),
             PLAIN, "corrupted file", ContentWriter.ofString() );

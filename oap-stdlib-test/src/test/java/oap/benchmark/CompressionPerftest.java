@@ -41,12 +41,13 @@ import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.IoStreams.Encoding.ZSTD;
 import static oap.testng.Asserts.pathOfTestResource;
-import static oap.testng.TestDirectoryFixture.testPath;
 
 @Test( enabled = false )
 public class CompressionPerftest extends Fixtures {
+    private final TestDirectoryFixture tdFixture;
+
     public CompressionPerftest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        tdFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @DataProvider( name = "encodings" )
@@ -56,7 +57,7 @@ public class CompressionPerftest extends Fixtures {
 
     @Test( dataProvider = "encodings", enabled = false )
     public void testC( IoStreams.Encoding encoding ) throws IOException {
-        Path path = testPath( "test." + encoding );
+        Path path = tdFixture.testPath( "test." + encoding );
         Path source = pathOfTestResource( getClass(), "file.txt" );
         int bufferSize = 1024 * 1024 * 10;
         byte[] bytesC = new byte[1024 * 64];

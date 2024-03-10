@@ -33,14 +33,16 @@ import org.testng.annotations.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LazyGZIPOutputStreamTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public LazyGZIPOutputStreamTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
     @SneakyThrows
     public void gzip() {
-        var path = TestDirectoryFixture.testPath( "test.gz" );
+        var path = testDirectoryFixture.testPath( "test.gz" );
         new LazyGZIPOutputStream( new LazyFileOutputStream( path ) ).close();
 
         assertThat( path ).doesNotExist();

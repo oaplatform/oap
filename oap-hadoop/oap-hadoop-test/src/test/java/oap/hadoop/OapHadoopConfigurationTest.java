@@ -1,7 +1,6 @@
 package oap.hadoop;
 
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.apache.hadoop.fs.Path;
 import org.testng.annotations.Test;
 
@@ -11,10 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class OapHadoopConfigurationTest extends Fixtures {
-    public OapHadoopConfigurationTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
     @Test
     public void testGetFileSystemLocalFile() {
         OapHadoopConfiguration oapHadoopConfiguration = new OapHadoopConfiguration( OapFileSystemType.FILE, Map.of() );

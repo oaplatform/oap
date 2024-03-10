@@ -47,8 +47,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinaryObjectLoggerTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public BinaryObjectLoggerTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
@@ -62,7 +64,7 @@ public class BinaryObjectLoggerTest extends Fixtures {
                 new DictionaryLeaf( "list", true, 2, Map.of( "path", "data1.list|data2.list", "type", "STRING_ARRAY", "default", "[]" ) ),
                 new DictionaryLeaf( "x", true, 2, Map.of( "type", "INTEGER", "default", 1 ) )
             ) )
-        ) ), memoryLoggerBackend, TestDirectoryFixture.testPath( "tmp" ), Dates.d( 10 ) );
+        ) ), memoryLoggerBackend, testDirectoryFixture.testPath( "tmp" ), Dates.d( 10 ) );
 
         BinaryObjectLogger.TypedBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1" );
 

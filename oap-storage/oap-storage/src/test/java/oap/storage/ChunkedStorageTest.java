@@ -12,24 +12,23 @@ import java.util.List;
 
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.TestDirectoryFixture.deployTestData;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ChunkedStorageTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
 
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    public ChunkedStorageTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @BeforeMethod
     public void beforeMethod() {
-        deployTestData( this.getClass() );
+        testDirectoryFixture.deployTestData( this.getClass() );
     }
 
     @Test
     public void putGetStream() {
-        Path path = testPath( "chunks" );
+        Path path = testDirectoryFixture.testPath( "chunks" );
         ChunkedStorage<String> storage = new ChunkedStorage<>( s -> s, path );
 
         List<String> all = new ArrayList<>();

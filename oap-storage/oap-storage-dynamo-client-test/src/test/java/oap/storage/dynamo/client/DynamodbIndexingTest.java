@@ -63,15 +63,17 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 public class DynamodbIndexingTest extends Fixtures {
 
     private final String keyName = "longId";
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private final AbstractDynamodbFixture fixture;
+    private final TestDirectoryFixture testDirectoryFixture;
 
     public DynamodbIndexingTest() {
-        fixture( fixture );
+        fixture = fixture( new TestContainerDynamodbFixture() );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @BeforeMethod
     public void beforeMethod() {
-        System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
+        System.setProperty( "TMP_PATH", testDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
     }
 
     @Test
@@ -114,13 +116,6 @@ public class DynamodbIndexingTest extends Fixtures {
         assertThat( records.get( "id4" ).get( "test_bin" ).n() ).isEqualTo( "-1" );
         assertThat( records.get( "id3" ).get( "aaa" ).n() ).isEqualTo( "1" );
         assertThat( records.get( "id4" ).get( "aaa" ).n() ).isEqualTo( "2" );
-    }
-
-    @Data
-    static class IndexedRecord {
-        private String longId;
-        private Long testBin;
-        private Long aaa;
     }
 
     private TableSchema<IndexedRecord> createSchemaForRecord( TableSchemaModifier<IndexedRecord> modifier ) {
@@ -331,6 +326,13 @@ public class DynamodbIndexingTest extends Fixtures {
                     );
             }
         );
+    }
+
+    @Data
+    static class IndexedRecord {
+        private String longId;
+        private Long testBin;
+        private Long aaa;
     }
 
 }

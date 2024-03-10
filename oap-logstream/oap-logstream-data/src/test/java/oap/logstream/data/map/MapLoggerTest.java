@@ -31,7 +31,6 @@ import oap.logstream.MemoryLoggerBackend;
 import oap.reflect.TypeRef;
 import oap.template.Types;
 import oap.testng.Fixtures;
-import oap.testng.SystemTimerFixture;
 import oap.util.Dates;
 import org.testng.annotations.Test;
 
@@ -45,10 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 public class MapLoggerTest extends Fixtures {
-    {
-        fixture( SystemTimerFixture.FIXTURE );
-    }
-
     @Test
     public void log() {
         Dates.setTimeFixed( 2021, 1, 1, 1 );
