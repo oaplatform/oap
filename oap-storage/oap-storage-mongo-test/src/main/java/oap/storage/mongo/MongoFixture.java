@@ -38,9 +38,9 @@ import static oap.testng.Asserts.contentOfTestResource;
 
 @Slf4j
 public class MongoFixture extends AbstractFixture<MongoFixture> {
+    public static final String HOST = "localhost";
     public final int port;
     public final String database;
-    public final String host;
     private MongoClient mongoClient;
     private MongoServer server;
 
@@ -53,9 +53,9 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
 
         this.database = database;
 
-        define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
-        define( "MONGO_HOST", host = "localhost" );
-        define( "MONGO_DATABASE", database );
+        port = definePort( "PORT" );
+        define( "HOST", HOST );
+        define( "DATABASE", database );
     }
 
     @Override
@@ -64,7 +64,7 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
 
         this.server = createMongoServer();
         log.info( "mongo port = {}", port );
-        this.server.bind( host, port );
+        this.server.bind( HOST, port );
         this.mongoClient = createMongoClient();
     }
 
@@ -85,7 +85,7 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
 
     @NotNull
     public String getConnectionString( String database ) {
-        return "mongodb://" + host + ":" + port + "/" + database;
+        return "mongodb://" + HOST + ":" + port + "/" + database;
     }
 
     @NotNull
