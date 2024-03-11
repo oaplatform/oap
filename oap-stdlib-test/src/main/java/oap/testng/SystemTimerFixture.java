@@ -28,10 +28,6 @@ import oap.time.JavaTimeService;
 import oap.time.JodaTimeService;
 
 public class SystemTimerFixture extends AbstractFixture<SystemTimerFixture> {
-    public static final SystemTimerFixture FIXTURE = new SystemTimerFixture();
-
-    private SystemTimerFixture() {
-    }
 
     @Override
     public void after() {

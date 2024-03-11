@@ -48,7 +48,7 @@ public class DynamicMapLoggerTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DynamicMapLoggerTest() {
-        fixture( SystemTimerFixture.FIXTURE );
+        fixture( new SystemTimerFixture() );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
