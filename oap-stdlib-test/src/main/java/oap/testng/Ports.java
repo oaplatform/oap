@@ -13,7 +13,7 @@ public class Ports {
     public static final int MIN_PORT_RANGE = 10000;
     public static final int MAX_PORT_RANGE = 30000;
 
-    public static int getFreePort() throws UncheckedIOException {
+    public static int getFreePort( Class<?> logClass ) throws UncheckedIOException {
         synchronized( LAST_PORT ) {
             int port;
             do {
@@ -21,7 +21,7 @@ public class Ports {
                     previousPort > MAX_PORT_RANGE ? MIN_PORT_RANGE : previousPort + 1 );
             } while( !Sockets.isTcpPortAvailable( port ) );
 
-            log.debug( "finding port... port={}", port );
+            log.debug( "[{}] finding port... port={}", logClass, port );
             return port;
         }
     }

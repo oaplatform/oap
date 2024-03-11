@@ -202,8 +202,6 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     @Override
     protected void before() {
-        defineDefaults();
-
         Preconditions.checkArgument( this.kernel == null );
         super.before();
 

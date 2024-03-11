@@ -218,7 +218,7 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void version() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );

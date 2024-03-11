@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class NioHttpServerTest extends Fixtures {
     @Test
     public void testResponseHeaders() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.start();
@@ -76,9 +76,9 @@ public class NioHttpServerTest extends Fixtures {
 
     @Test
     public void testBindToSpecificPort() throws IOException {
-        int port = Ports.getFreePort();
-        int testPort = Ports.getFreePort();
-        int testPort2 = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
+        int testPort = Ports.getFreePort( getClass() );
+        int testPort2 = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.handlers.add( new KeepaliveRequestsHandler( 1000 ) );
@@ -110,8 +110,8 @@ public class NioHttpServerTest extends Fixtures {
      */
     @Test
     public void testHttps() throws IOException {
-        int httpPort = Ports.getFreePort();
-        int httpsPort = Ports.getFreePort();
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
              Client client = Client

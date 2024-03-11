@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RemoteStorageTest extends Fixtures {
     @Test
     public void testUpdate() throws IOException, URISyntaxException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
 
         Kernel kernel = Mockito.mock( Kernel.class );
         MemoryStorage<String, TestRemoteStorage> serverStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), Storage.Lock.SERIALIZED );

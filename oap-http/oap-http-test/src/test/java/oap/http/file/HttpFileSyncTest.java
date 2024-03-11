@@ -57,7 +57,7 @@ public class HttpFileSyncTest extends Fixtures {
 
     @BeforeMethod
     public void start() {
-        mockServer = ClientAndServer.startClientAndServer( Ports.getFreePort() );
+        mockServer = ClientAndServer.startClientAndServer( Ports.getFreePort( getClass() ) );
     }
 
     @AfterMethod
