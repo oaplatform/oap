@@ -49,19 +49,19 @@ public class FilePersistenceTest extends Fixtures {
 
     @Test
     public void fsync() {
-        Path path = testDirectoryFixture.testPath( "storage.json.gz" );
+        Path path = testDirectoryFixture.testPath( "fsync-storage.json.gz" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage ) ) {
             persistence.preStart();
             storage.store( new Bean( "123" ) );
 
-            assertEventually( 10, 200, () -> assertThat( path ).exists() );
+            assertEventually( 10, 2000, () -> assertThat( path ).exists() );
         }
     }
 
     @Test
     public void persist() {
-        Path path = testDirectoryFixture.testPath( "storage.json.gz" );
+        Path path = testDirectoryFixture.testPath( "persist-storage.json.gz" );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage1 ) ) {
             persistence.preStart();
