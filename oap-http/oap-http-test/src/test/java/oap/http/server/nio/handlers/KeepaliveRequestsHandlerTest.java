@@ -17,7 +17,7 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     private final int testHttpPort;
 
     public KeepaliveRequestsHandlerTest() {
-        testHttpPort = Ports.getFreePort();
+        testHttpPort = Ports.getFreePort( getClass() );
     }
 
     @Test

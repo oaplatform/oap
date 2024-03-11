@@ -102,7 +102,7 @@ public class LoggerTest extends Fixtures {
     public void net() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var line1 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );

@@ -163,7 +163,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
 
         var settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )

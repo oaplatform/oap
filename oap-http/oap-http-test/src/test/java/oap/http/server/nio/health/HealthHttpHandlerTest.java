@@ -52,7 +52,7 @@ public class HealthHttpHandlerTest extends Fixtures {
 
     @Test
     public void health() throws IOException {
-        int httpPort = Ports.getFreePort();
+        int httpPort = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort ) ) ) {
             HealthHttpHandler healthHttpHandler = new HealthHttpHandler( httpServer, "/healtz", "default-http", "secret" );

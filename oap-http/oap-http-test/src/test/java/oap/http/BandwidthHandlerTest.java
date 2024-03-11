@@ -46,7 +46,7 @@ public class BandwidthHandlerTest extends Fixtures {
 
     @BeforeMethod
     public void beforeMethod() {
-        server = new NioHttpServer( new NioHttpServer.DefaultPort( Ports.getFreePort() ) );
+        server = new NioHttpServer( new NioHttpServer.DefaultPort( Ports.getFreePort( getClass() ) ) );
         bandwidthHandler = new BandwidthHandler();
         bandwidthHandler.start();
         server.handlers.add( bandwidthHandler );

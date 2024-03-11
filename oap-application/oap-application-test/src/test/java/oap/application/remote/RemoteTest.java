@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RemoteTest extends Fixtures {
     @Test
     public void invoke() {
-        var port = Ports.getFreePort();
+        var port = Ports.getFreePort( getClass() );
 
         var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
@@ -90,7 +90,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
-                Map.of( "HTTP_PORT", Ports.getFreePort() ) ) );
+                Map.of( "HTTP_PORT", Ports.getFreePort( getClass() ) ) ) );
 
             RemoteClient remoteClientOne = kernel.<RemoteClient>service( "*.remote-client" ).get();
             assertThat( remoteClientOne.testStream( "1", "2", "3" ) )
@@ -110,7 +110,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
-                Map.of( "HTTP_PORT", Ports.getFreePort() ) ) );
+                Map.of( "HTTP_PORT", Ports.getFreePort( getClass() ) ) ) );
 
             assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream() ).isEmpty();
         }

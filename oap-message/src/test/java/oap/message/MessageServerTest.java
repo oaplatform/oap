@@ -69,7 +69,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void uniqueMessageTypeListener() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
 
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
@@ -87,7 +87,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void rejectedException() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -132,7 +132,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void sendAndReceive() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -168,7 +168,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void sendAndReceiveJson() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -200,7 +200,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void sendAndReceiveJsonOneThread() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -233,7 +233,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void unknownErrorNoRetry() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -261,7 +261,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void unknownError() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -293,7 +293,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void statusError() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -330,7 +330,7 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void ttl() throws IOException {
         var hashTtl = 1000;
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -377,7 +377,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test( enabled = false ) //flaky test
     public void persistence() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -438,7 +438,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void clientPersistence() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -507,7 +507,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void clientPersistenceLockExpiration() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -565,7 +565,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void availabilityReport() throws IOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );

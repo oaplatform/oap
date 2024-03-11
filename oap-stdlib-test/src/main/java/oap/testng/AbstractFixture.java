@@ -129,7 +129,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     }
 
     public int definePort( String property ) throws UncheckedIOException {
-        int port = Ports.getFreePort();
+        int port = Ports.getFreePort( getClass() );
         define( property, port );
         return port;
     }
