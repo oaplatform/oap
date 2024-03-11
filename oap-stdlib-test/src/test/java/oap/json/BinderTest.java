@@ -57,8 +57,10 @@ import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public BinderTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     //todo generic map-list binding
@@ -294,7 +296,7 @@ public class BinderTest extends Fixtures {
 
     @Test
     public void marshalToPath() {
-        Path path = TestDirectoryFixture.testPath( "test.json" );
+        Path path = testDirectoryFixture.testPath( "test.json" );
         Binder.json.marshal( path, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
 
         assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );

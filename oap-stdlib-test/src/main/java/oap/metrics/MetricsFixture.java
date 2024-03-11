@@ -7,14 +7,18 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.search.RequiredSearch;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import oap.testng.AbstractScopeFixture;
+import oap.testng.AbstractFixture;
 import org.assertj.core.api.AbstractAssert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MetricsFixture extends AbstractScopeFixture<MetricsFixture> {
+public class MetricsFixture extends AbstractFixture<MetricsFixture> {
 
     private SimpleMeterRegistry registry;
+
+    public MetricsFixture() {
+        super( "METRICS" );
+    }
 
     public MetricsAssertion assertMetric( String name, Tags tags ) {
         return new MetricsAssertion( name, tags );

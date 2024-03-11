@@ -46,7 +46,7 @@ public class BandwidthHandlerTest extends Fixtures {
     private BandwidthHandler bandwidthHandler;
 
     public BandwidthHandlerTest() {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @BeforeMethod

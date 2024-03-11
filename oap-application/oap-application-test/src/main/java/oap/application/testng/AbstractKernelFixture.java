@@ -29,11 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
 import oap.application.module.Module;
+import oap.http.test.HttpAsserts;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.reflect.TypeRef;
-import oap.testng.AbstractEnvFixture;
+import oap.testng.AbstractFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Pair;
 import org.apache.commons.io.FilenameUtils;
@@ -50,11 +51,10 @@ import java.util.Map;
 
 import static oap.http.test.HttpAsserts.httpPrefix;
 import static oap.io.IoStreams.Encoding.PLAIN;
-import static oap.testng.TestDirectoryFixture.testDirectory;
 import static oap.util.Pair.__;
 
 @Slf4j
-public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractEnvFixture<Self> {
+public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractFixture<Self> {
     public static final String ANY = "*";
     public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
     public static final String TEST_DIRECTORY = "TEST_DIRECTORY";
@@ -63,6 +63,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     private static int kernelN = 0;
     protected final URL applicationConf;
     protected final List<URL> additionalModules = new ArrayList<>();
+    protected final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
     private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
@@ -70,25 +71,28 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     public Kernel kernel;
     protected Path confdPath;
 
-    public AbstractKernelFixture( String prefix, URL conf, AbstractEnvFixture<?>... dependencies ) {
-        this( prefix, Scope.METHOD, conf, null, List.of(), dependencies );
+    public AbstractKernelFixture( String prefix, URL conf ) {
+        this( prefix, Scope.METHOD, conf, null, List.of() );
     }
 
-    public AbstractKernelFixture( String prefix, URL conf, Path confd, AbstractEnvFixture<?>... dependencies ) {
-        this( prefix, Scope.METHOD, conf, confd, List.of(), dependencies );
+    public AbstractKernelFixture( String prefix, URL conf, Path confd ) {
+        this( prefix, Scope.METHOD, conf, confd, List.of() );
     }
 
-    public AbstractKernelFixture( String prefix, URL conf, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
-        this( prefix, Scope.METHOD, conf, null, additionalModules, dependencies );
+    public AbstractKernelFixture( String prefix, URL conf, List<URL> additionalModules ) {
+        this( prefix, Scope.METHOD, conf, null, additionalModules );
     }
 
-    public AbstractKernelFixture( String prefix, Scope scope, URL conf, Path confdPath, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
-        super( prefix, dependencies );
+    public AbstractKernelFixture( String prefix, Scope scope, URL conf, Path confdPath, List<URL> additionalModules ) {
+        super( prefix );
 
         this.scope = scope;
         this.applicationConf = conf;
         this.confdPath = confdPath;
         this.additionalModules.addAll( additionalModules );
+        this.testDirectoryFixture = new TestDirectoryFixture( prefix );
+
+        addChild( this.testDirectoryFixture );
 
         defineDefaults();
     }
@@ -113,14 +117,11 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     }
 
     protected void defineDefaults() {
-        var testHttpPort = portFor( TEST_HTTP_PORT );
-        define( TEST_HTTP_PORT, testHttpPort );
-        define( TEST_DIRECTORY, FilenameUtils.separatorsToUnix( testDirectory().toString() ) );
+        var testHttpPort = definePort( TEST_HTTP_PORT );
+        define( TEST_DIRECTORY, FilenameUtils.separatorsToUnix( testDirectoryFixture.testDirectory().toString() ) );
         String resourcePath = Resources.path( getClass(), "/" ).orElseThrow();
         define( TEST_RESOURCE_PATH, resourcePath );
         define( TEST_HTTP_PREFIX, httpPrefix( testHttpPort ) );
-//        deprecated
-        define( "HTTP_PREFIX", httpPrefix( testHttpPort ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -163,7 +164,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     private void initConfd() {
         if( this.confdPath == null )
-            this.confdPath = TestDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
+            this.confdPath = testDirectoryFixture.testPath( "/application.test.confd" + "." + prefix );
     }
 
     @Nonnull
@@ -246,5 +247,9 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
             this.kernel = null;
         }
         super.after();
+    }
+
+    public String httpUrl( String url ) {
+        return HttpAsserts.httpUrl( portFor( TEST_HTTP_PORT ), url );
     }
 }

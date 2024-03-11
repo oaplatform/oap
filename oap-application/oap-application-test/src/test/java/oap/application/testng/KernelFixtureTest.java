@@ -41,16 +41,14 @@ public class KernelFixtureTest extends Fixtures {
 
     @Test
     public void isolation() {
-        var f = new Fixtures() {
-            {
-                testFixture = fixture( new TestFixture( "PREFIXED_" ) );
-                kernelFixture = fixture( new KernelFixture(
-                    urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
-                    List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
-                ) ).definePort( "TEST_PORT" );
-            }
-        };
+        testFixture = new TestFixture( "PREFIXED" );
+        kernelFixture = new KernelFixture( "KERNEL",
+            urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+        );
+        kernelFixture.definePort( "TEST_PORT" );
 
+        var f = Fixtures.fixtures( testFixture, kernelFixture );
         f.fixBeforeMethod();
 
         assertThat( kernelFixture.service( ANY, Service.class ).value )
@@ -65,17 +63,17 @@ public class KernelFixtureTest extends Fixtures {
 
     @Test
     public void isolationSecondRun() {
-        var f = new Fixtures() {
-            {
-                testFixture = fixture( new TestFixture( "PREFIXED_" ) );
-                kernelFixture = fixture( new KernelFixture(
-                    urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
-                    List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
-                ) ).definePort( "TEST_PORT" );
-            }
-        };
+        testFixture = new TestFixture( "PREFIXED" );
+        kernelFixture = new KernelFixture(
+            "KERNEL",
+            urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+        );
+        kernelFixture.definePort( "TEST_PORT" );
 
+        var f = Fixtures.fixtures( testFixture, kernelFixture );
         f.fixBeforeMethod();
+
         assertThat( kernelFixture.service( ANY, Service.class ).value )
             .isEqualTo( kernelFixture.portFor( "TEST_PORT" ) );
         assertThat( testFixture.service( ANY, Service.class ).value )

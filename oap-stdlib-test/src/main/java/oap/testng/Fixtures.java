@@ -34,30 +34,29 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
+import java.util.Set;
 
-import static oap.testng.Fixture.Scope.SUITE;
+import static oap.testng.AbstractFixture.Scope.SUITE;
 
 
 @Slf4j
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class Fixtures {
-    private static final LinkedHashMap<Class<? extends Fixture>, Fixture> suiteFixtures = new LinkedHashMap<>();
-    private final LinkedList<Fixture> fixtures = new LinkedList<>();
+    private static final LinkedHashMap<String, AbstractFixture<?>> suiteFixtures = new LinkedHashMap<>();
+    private final LinkedHashMap<String, AbstractFixture<?>> fixtures = new LinkedHashMap<>();
 
-    @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
-    public static <F extends Fixture> F suiteFixture( F fixture ) throws IllegalArgumentException {
-        if( fixture instanceof AbstractScopeFixture<?> )
-            fixture = ( F ) ( ( AbstractScopeFixture<?> ) fixture ).withScope( SUITE );
+    public static <F extends AbstractFixture<?>> F suiteFixture( F fixture ) throws IllegalArgumentException {
+        fixture.withScope( SUITE );
 
-        var ret = suiteFixtures.putIfAbsent( fixture.getClass(), fixture );
+        var ret = suiteFixtures.put( fixture.prefix, fixture );
         if( ret != null )
             throw new IllegalArgumentException( "Fixture '" + fixture.getClass().getCanonicalName() + "' has already been registered, registered: " + suiteFixtures.keySet() );
         return fixture;
     }
 
-    public static Fixtures fixtures( Fixture... fixtures ) {
+    public static Fixtures fixtures( AbstractFixture<?>... fixtures ) {
         return new Fixtures() {
             {
                 for( var f : fixtures ) {
@@ -67,87 +66,81 @@ public abstract class Fixtures {
         };
     }
 
-    public <F extends Fixture> F fixture( F fixture ) throws IllegalCallerException {
-        return fixture( Position.LAST, fixture );
+    public Set<String> nameSet() {
+        var ret = new HashSet<String>();
+        ret.addAll( suiteFixtures.keySet() );
+        ret.addAll( fixtures.keySet() );
+        return ret;
     }
 
-    public <F extends Fixture> F fixture( Position position, F fixture ) throws IllegalCallerException {
-        if( fixture instanceof AbstractScopeFixture<?> && ( ( AbstractScopeFixture<?> ) fixture ).getScope() == SUITE )
-            throw new IllegalCallerException( "use static Fixtures#suiteFixture" );
-        else {
-            if( position == Position.FIRST ) fixtures.addFirst( fixture );
-            else fixtures.addLast( fixture );
-
-            return fixture;
+    public synchronized <F extends AbstractFixture<?>> F fixture( F fixture ) throws IllegalCallerException {
+        if( nameSet().contains( fixture.prefix ) ) {
+            throw new IllegalArgumentException( "Fixture '" + fixture.prefix + "/" + fixture.getClass().getCanonicalName() + "' has already been registered, registered: " + nameSet() );
         }
+
+        fixtures.put( fixture.prefix, fixture );
+
+        return fixture;
     }
 
     @BeforeSuite
     public void fixBeforeSuite() {
-        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::start ) );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::initialize ) );
 
-        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeSuite ) );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeSuite ) );
     }
 
     @AfterSuite( alwaysRun = true )
     public void fixAfterSuite() {
         SilentRun silentRun = new SilentRun();
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterSuite ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterSuite ) ) );
 
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::shutdown ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::shutdown ) ) );
         silentRun.done();
     }
 
     @BeforeClass
     public void fixBeforeClass() {
-        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::start ) );
-        fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::start ) );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::initialize ) );
+        fixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::initialize ) );
 
-        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeClass ) );
-        fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeClass ) );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeClass ) );
+        fixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeClass ) );
     }
 
     @AfterClass( alwaysRun = true )
     public void fixAfterClass() {
         SilentRun silentRun = new SilentRun();
 
-        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterClass ) ) );
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterClass ) ) );
+        Lists.reverse( fixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
 
-        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::shutdown ) ) );
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::shutdown ) ) );
+        Lists.reverse( fixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::shutdown ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::shutdown ) ) );
 
         silentRun.done();
     }
 
     @BeforeMethod
     public void fixBeforeMethod() {
-        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::start ) );
-        fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::start ) );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::initialize ) );
+        fixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::initialize ) );
 
-        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeMethod ) );
-        fixtures.forEach( f -> Threads.withThreadName( f.getUniqueName(), f::beforeMethod ) );
+        suiteFixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeMethod ) );
+        fixtures.values().forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeMethod ) );
     }
 
     @AfterMethod( alwaysRun = true )
     public void fixAfterMethod() {
         SilentRun silentRun = new SilentRun();
 
-        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterMethod ) ) );
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::afterMethod ) ) );
+        Lists.reverse( fixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
 
-        fixtures.descendingIterator().forEachRemaining( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::shutdown ) ) );
-        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.getUniqueName(), () -> silentRun.run( f::shutdown ) ) );
+        Lists.reverse( fixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::shutdown ) ) );
+        Lists.reverse( suiteFixtures.values() ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::shutdown ) ) );
 
         silentRun.done();
-    }
-
-    protected Fixture obtainRegistered( Class<? extends Fixture> clazz ) {
-        return suiteFixtures.get( clazz );
-    }
-
-    public enum Position {
-        FIRST, LAST
     }
 
     private static class SilentRun {

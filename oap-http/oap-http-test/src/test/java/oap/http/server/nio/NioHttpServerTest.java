@@ -45,7 +45,7 @@ import static oap.http.test.HttpAsserts.assertGet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
-    private final EnvFixture fixture = fixture( new EnvFixture() );
+    private final EnvFixture fixture = fixture( new EnvFixture( "ENV" ) );
 
     public NioHttpServerTest() {
     }

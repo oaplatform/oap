@@ -26,16 +26,16 @@ package oap.storage.dynamo.client.batch;
 
 import oap.application.Kernel;
 import oap.application.module.Module;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.storage.dynamo.client.Key;
-import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.crud.AbstractOperation;
 import oap.storage.dynamo.client.crud.CreateItemOperation;
 import oap.storage.dynamo.client.crud.DeleteItemOperation;
 import oap.storage.dynamo.client.crud.OperationType;
 import oap.storage.dynamo.client.crud.ReadItemOperation;
 import oap.storage.dynamo.client.crud.UpdateItemOperation;
+import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
+import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
@@ -59,25 +59,26 @@ import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DynamodbBatchOperationHelperTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+    private final String keyName = "longId";
+    private final AbstractDynamodbFixture fixture;
     private String tableName1 = "batchTable1";
     private String tableName2 = "batchTable2";
-    private final String keyName = "longId";
-
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
     public DynamodbBatchOperationHelperTest() {
-        fixture( fixture );
+        fixture = fixture( new TestContainerDynamodbFixture() );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }
 
     @BeforeMethod
     public void beforeMethod() {
-        System.setProperty( "TMP_PATH", TestDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
+        System.setProperty( "TMP_PATH", testDirectoryFixture.testDirectory().toAbsolutePath().toString().replace( '\\', '/' ) );
     }
 
     @Test
-    public void testBatchOperationCreateAndDeleteInOneBatch() throws Exception {
+    public void testBatchOperationCreateAndDeleteInOneBatch() {
         var client = fixture.getDynamodbClient();
 
         client.start();

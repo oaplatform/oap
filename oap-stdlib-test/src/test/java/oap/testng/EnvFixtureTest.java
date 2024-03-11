@@ -32,7 +32,7 @@ public class EnvFixtureTest {
     @Test
     public void substitute() {
         System.setProperty( "value", "1" );
-        EnvFixture fixture = new EnvFixture()
+        EnvFixture fixture = new EnvFixture( "ENV" )
             .define( "method", "method:${value}" )
             .define( "u", "u=${PWD}" );
 
@@ -40,13 +40,13 @@ public class EnvFixtureTest {
 
         fixtures.fixBeforeMethod();
 
-        assertThat( System.getProperty( "method" ) ).isEqualTo( "method:1" );
-        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
+        assertThat( System.getProperty( "ENV_FIXTURE_method" ) ).isEqualTo( "method:1" );
+        assertThat( System.getProperty( "ENV_FIXTURE_u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
     }
 
     @Test
     public void portFor() {
-        EnvFixture fixture = new EnvFixture();
+        EnvFixture fixture = new EnvFixture( "ENV" );
         assertThat( fixture.portFor( "AAA" ) ).isEqualTo( fixture.portFor( "AAA" ) );
     }
 

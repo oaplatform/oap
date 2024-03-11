@@ -35,8 +35,10 @@ import static oap.io.content.ContentWriter.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileSystemFileSyncTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public FileSystemFileSyncTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
@@ -44,8 +46,8 @@ public class FileSystemFileSyncTest extends Fixtures {
     public void sync() {
         StringBuilder b = new StringBuilder();
 
-        var remoteFile = TestDirectoryFixture.testPath( "rtest.file" ).toUri();
-        var localFile = TestDirectoryFixture.testPath( "ltest.file" );
+        var remoteFile = testDirectoryFixture.testPath( "rtest.file" ).toUri();
+        var localFile = testDirectoryFixture.testPath( "ltest.file" );
 
         Files.write( Paths.get( remoteFile ), "test", ofString() );
 

@@ -40,7 +40,7 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.test.HttpAsserts.assertGet;
 
 public class HealthHttpHandlerTest extends Fixtures {
-    private final EnvFixture fixture = fixture( new EnvFixture() );
+    private final EnvFixture fixture = fixture( new EnvFixture( "ENV" ) );
 
     public HealthHttpHandlerTest() {
 //        fixture( new KernelFixture(

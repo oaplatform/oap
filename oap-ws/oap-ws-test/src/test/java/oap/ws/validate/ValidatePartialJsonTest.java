@@ -35,37 +35,34 @@ import java.util.ArrayList;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
 import static oap.http.test.HttpAsserts.assertPost;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.PATH;
 
 public class ValidatePartialJsonTest extends Fixtures {
-
-    private KernelFixture fixture;
+    private final KernelFixture kernel;
 
     public ValidatePartialJsonTest() {
-        fixture = new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) );
-        fixture( fixture );
+        kernel = fixture( new KernelFixture( "VALIDATION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
     public void validation1() {
-        assertPost( httpUrl( "/vpj/run/validation/1/id1" ), "{\"id\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/1/id1" ), "{\"id\":1}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
-        assertPost( httpUrl( "/vpj/run/validation/1/id1" ), "{\"b\":[{\"element\":\"test\"}],\"id\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/1/id1" ), "{\"b\":[{\"element\":\"test\"}],\"id\":1}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{\"id\":1,\"b\":[{\"element\":\"test\"}]}],\"id\":\"id1\"}" );
-        assertPost( httpUrl( "/vpj/run/validation/1/id1" ), "{}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/1/id1" ), "{}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"errors\":[\"/a/1/id: required property is missing\"]}" );
     }
 
     @Test
     public void validation2() {
-        assertPost( httpUrl( "/vpj/run/validation/2/id1" ), "{\"id\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/2/id1" ), "{\"id\":1}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
-        assertPost( httpUrl( "/vpj/run/validation/2/id1" ), "{}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/2/id1" ), "{}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{}],\"id\":\"id1\"}" );
-        assertPost( httpUrl( "/vpj/run/validation/2/id1" ), "{\"c\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/2/id1" ), "{\"c\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"errors\":[\"/a/1: additional properties are not permitted [c]\"]}" );
     }
 
@@ -77,11 +74,11 @@ public class ValidatePartialJsonTest extends Fixtures {
         final TestBean.TestItem itemB = new TestBean.TestItem();
         itemB.id = 2;
 
-        Object obj = fixture.kernel.service( "modules.oap-ws-validate-test.test-ws-bean" ).orElseThrow();
+        Object obj = kernel.kernel.service( "modules.oap-ws-validate-test.test-ws-bean" ).orElseThrow();
         TestBean bean = ( TestBean ) obj;
         bean.a.add( itemA );
         bean.a.add( itemB );
-        assertPost( httpUrl( "/vpj/run/validation/3/id1/2" ), "{\"element\":\"some text\"}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vpj/run/validation/3/id1/2" ), "{\"element\":\"some text\"}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.OK, "OK", "{\"a\":[{\"id\":1},{\"id\":2,\"b\":[{\"element\":\"some text\"}]}],\"id\":\"id1\"}" );
     }
 

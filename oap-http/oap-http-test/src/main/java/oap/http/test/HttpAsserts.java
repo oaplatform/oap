@@ -53,30 +53,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
-    public static final String TEST_HTTP_PORT = "TEST_HTTP_PORT";
-
     private static final Client client = Client.custom()
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
-
-    public static Optional<Integer> getTestHttpPort() {
-        return Optional.ofNullable( System.getProperty( TEST_HTTP_PORT ) ).map( Integer::parseInt );
-    }
 
     public static String httpPrefix( int port ) {
         return "http://localhost:" + port;
     }
 
-    public static String httpPrefix() {
-        return httpPrefix( getTestHttpPort().orElse( 80 ) );
-    }
-
     public static String httpUrl( int port, String suffix ) {
         return httpPrefix( port ) + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
-    }
-
-    public static String httpUrl( String suffix ) {
-        return httpPrefix() + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
     }
 
     public static void reset() {

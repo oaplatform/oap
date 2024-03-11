@@ -32,15 +32,17 @@ import static oap.logstream.formats.parquet.ParquetAssertion.assertParquet;
 import static oap.logstream.formats.parquet.ParquetAssertion.row;
 
 public class ParquetAssertionTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public ParquetAssertionTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
     public void testWithoutLogicalTypes() {
-        TestDirectoryFixture.deployTestData( getClass() );
+        testDirectoryFixture.deployTestData( getClass() );
 
-        assertParquet( TestDirectoryFixture.testPath( "test.parquet" ) )
+        assertParquet( testDirectoryFixture.testPath( "test.parquet" ) )
             .containOnlyHeaders( "DATETIME", "BID_ID", "TEST_3", "AGR", "REPORT_SOURCE" )
             .contains( row( 1551112200L, "val1", "", 3L, "GR" ) );
     }

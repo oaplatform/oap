@@ -52,18 +52,19 @@ import static oap.io.IoStreams.Encoding.ZSTD;
 import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.pathOfTestResource;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IoStreamsTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public IoStreamsTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
     @SneakyThrows
     public void emptyGz() {
-        Path path = testPath( "test.gz" );
+        Path path = testDirectoryFixture.testPath( "test.gz" );
         try( OutputStream out = IoStreams.out( path, GZIP ) ) {
             out.flush();
         }
@@ -82,7 +83,7 @@ public class IoStreamsTest extends Fixtures {
     @Test( dataProvider = "encodings" )
     @SneakyThrows
     public void append( Encoding encoding ) {
-        Path path = encoding.resolve( testPath( "test.txt" ) );
+        Path path = encoding.resolve( testDirectoryFixture.testPath( "test.txt" ) );
         try( OutputStream out = IoStreams.out( path, encoding ) ) {
             out.write( "12345".getBytes() );
             out.flush();
@@ -96,7 +97,7 @@ public class IoStreamsTest extends Fixtures {
 
     @Test
     public void lz4() throws IOException {
-        Path path = testPath( "test.lz4" );
+        Path path = testDirectoryFixture.testPath( "test.lz4" );
 
         try( OutputStream out = IoStreams.out( path, LZ4 ) ) {
             out.write( "12345".getBytes() );
@@ -138,14 +139,14 @@ public class IoStreamsTest extends Fixtures {
         String content = sb.toString();
 //        String content = Files.readString( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP );
         for( Encoding encoding : Arrays.filter( v -> v.compressed && v.streamable, Encoding.values() ) ) {
-            Path path = testPath( "compressed.tsv" + encoding.extension );
+            Path path = testDirectoryFixture.testPath( "compressed.tsv" + encoding.extension );
             Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
         System.out.println( "Low variance file" );
         content = Files.read( pathOfTestResource( getClass(), "log.tsv.gz" ), GZIP, ContentReader.ofString() );
         for( Encoding encoding : Arrays.filter( v -> v.compressed && v.streamable, Encoding.values() ) ) {
-            Path path = testPath( "compressed.tsv" + encoding.extension );
+            Path path = testDirectoryFixture.testPath( "compressed.tsv" + encoding.extension );
             Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }

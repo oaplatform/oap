@@ -33,26 +33,27 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static oap.http.test.HttpAsserts.assertGet;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.testng.Asserts.contentOfTestResource;
 
 @Slf4j
 public class OpenapiWSTest extends Fixtures {
+    private final KernelFixture kernel;
+
     public OpenapiWSTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( "OPENAPIWS", urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
     }
 
     @Test
     public void openapiWithDeprecated() {
-        assertGet( httpUrl( "/system/openapi?skipDeprecated=false" ) )
+        assertGet( kernel.httpUrl( "/system/openapi?skipDeprecated=false" ) )
             .respondedJson( Http.StatusCode.OK, "OK",
                 contentOfTestResource( getClass(), "openapi.json", Map.of() ) );
     }
 
     @Test
     public void openapiWithoutDeprecated() {
-        assertGet( httpUrl( "/system/openapi" ) )
+        assertGet( kernel.httpUrl( "/system/openapi" ) )
             .respondedJson( Http.StatusCode.OK, "OK",
                 contentOfTestResource( getClass(), "openapiWithoutDeprecated.json", Map.of() ) );
     }

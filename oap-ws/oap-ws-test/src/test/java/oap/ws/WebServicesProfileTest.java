@@ -26,7 +26,6 @@ package oap.ws;
 
 import oap.application.testng.KernelFixture;
 import oap.http.Http;
-import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
@@ -35,19 +34,20 @@ import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 
 public class WebServicesProfileTest extends Fixtures {
+    private final KernelFixture kernel;
 
     public WebServicesProfileTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( "VALIDATION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
     public void shouldStartWebServiceIfProfileIsNotConfiguredForServiceAndWS() {
-        assertGet( HttpAsserts.httpUrl( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "ok" );
+        assertGet( kernel.httpUrl( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "ok" );
     }
 
     @Test
     public void shouldNotStartWebServiceIfProfileIsConfiguredForServiceAndNotWS() {
-        assertGet( HttpAsserts.httpUrl( "/new-profile/text?value=empty" ) ).hasCode( Http.StatusCode.NO_CONTENT );
+        assertGet( kernel.httpUrl( "/new-profile/text?value=empty" ) ).hasCode( Http.StatusCode.NO_CONTENT );
     }
 
 

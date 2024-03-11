@@ -25,7 +25,6 @@
 package oap.util;
 
 import oap.testng.Fixtures;
-import oap.testng.SystemTimerFixture;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
@@ -39,10 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class DatesTest extends Fixtures {
-    {
-        fixture( SystemTimerFixture.FIXTURE );
-    }
-
     @Test
     public void parseIsoDate() {
         assertThat( Dates.parseDateWithMillis( "2016-01-01T00:00:00.000" ).successValue )

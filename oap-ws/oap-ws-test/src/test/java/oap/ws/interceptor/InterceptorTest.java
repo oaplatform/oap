@@ -34,17 +34,18 @@ import java.util.Optional;
 
 import static oap.http.Http.StatusCode.FORBIDDEN;
 import static oap.http.test.HttpAsserts.assertGet;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 
 public class InterceptorTest extends Fixtures {
+    private final KernelFixture kernel;
+
     public InterceptorTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( "VALIDATION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
     public void shouldNotAllowRequestWhenErrorInterceptor() {
-        assertGet( httpUrl( "/interceptor/text?value=error" ) )
+        assertGet( kernel.httpUrl( "/interceptor/text?value=error" ) )
             .hasCode( FORBIDDEN )
             .hasReason( "caused by interceptor" );
     }

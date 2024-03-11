@@ -27,7 +27,7 @@ public class RemoteStorageTest extends Fixtures {
     private final EnvFixture envFixture;
 
     public RemoteStorageTest() {
-        envFixture = fixture( new EnvFixture() );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @Test

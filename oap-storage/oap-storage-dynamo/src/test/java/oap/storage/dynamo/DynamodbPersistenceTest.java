@@ -26,17 +26,16 @@ package oap.storage.dynamo;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import oap.storage.dynamo.client.Key;
-import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
-import oap.storage.dynamo.client.crud.CreateItemOperation;
 import oap.id.Identifier;
 import oap.storage.DynamoPersistence;
 import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
+import oap.storage.dynamo.client.Key;
+import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
+import oap.storage.dynamo.client.crud.CreateItemOperation;
 import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.StreamSpecification;
@@ -55,29 +54,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 public class DynamodbPersistenceTest extends Fixtures {
 
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-
-    public DynamodbPersistenceTest() {
-        fixture( fixture );
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
+    private final AbstractDynamodbFixture fixture;
     private final Identifier<String, Bean> beanIdentifier =
         Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build();
-
     private Function<Map<String, AttributeValue>, Metadata<Bean>> fromDynamo = map -> {
         final Metadata<Bean> metadata = new Metadata<>() {};
         metadata.object = new Bean( map.get( "id" ).s(), map.get( "firstName" ).s() );
         return metadata;
     };
-
     private Function<Metadata<Bean>, Map<String, Object>> toDynamo = metadata -> {
         final HashMap<String, Object> objectHashMap = new HashMap<>();
         objectHashMap.put( "firstName", metadata.object.name );
         return objectHashMap;
     };
+
+    public DynamodbPersistenceTest() {
+        fixture = fixture( new TestContainerDynamodbFixture() );
+    }
 
     @Test
     public void load() {

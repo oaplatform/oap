@@ -36,13 +36,15 @@ import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.assertFile;
 
 public class SafeFileOutputStreamTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public SafeFileOutputStreamTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
     public void rename() throws IOException {
-        Path path = TestDirectoryFixture.testPath( "1" );
+        Path path = testDirectoryFixture.testPath( "1" );
         SafeFileOutputStream stream = new SafeFileOutputStream( path, false, PLAIN );
         stream.write( "111".getBytes() );
         stream.flush();
@@ -53,7 +55,7 @@ public class SafeFileOutputStreamTest extends Fixtures {
 
     @Test
     public void removeIfEmpty() throws IOException {
-        Path path = TestDirectoryFixture.testPath( "1" );
+        Path path = testDirectoryFixture.testPath( "1" );
         SafeFileOutputStream stream = new SafeFileOutputStream( path, false, PLAIN );
         stream.flush();
         stream.close();
@@ -63,7 +65,7 @@ public class SafeFileOutputStreamTest extends Fixtures {
 
     @Test
     public void append() throws IOException {
-        Path path = TestDirectoryFixture.testPath( "1" );
+        Path path = testDirectoryFixture.testPath( "1" );
         Files.write( path, "test", ofString() );
         try( SafeFileOutputStream stream = new SafeFileOutputStream( path, true, PLAIN ) ) {
             stream.write( "2".getBytes() );

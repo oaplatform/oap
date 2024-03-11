@@ -49,12 +49,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HttpFileSyncTest extends Fixtures {
     private static final String PORT = HttpFileSyncTest.class.toString();
     private final EnvFixture envFixture;
+    private final TestDirectoryFixture testDirectoryFixture;
     private ClientAndServer mockServer;
 
-    {
-        fixture( SystemTimerFixture.FIXTURE );
-        fixture( TestDirectoryFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
+    public HttpFileSyncTest() {
+        fixture( new SystemTimerFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        envFixture = fixture( new EnvFixture( "ENV" ) );
     }
 
     @BeforeMethod
@@ -75,7 +76,7 @@ public class HttpFileSyncTest extends Fixtures {
         var date10 = new Date( 10 * 1000 );
         var date20 = new Date( 20 * 1000 );
 
-        var localFile = TestDirectoryFixture.testPath( "ltest.file" );
+        var localFile = testDirectoryFixture.testPath( "ltest.file" );
 
         var fileSync = AbstractFileSync.create( "http://localhost:" + envFixture.portFor( PORT ) + "/file", localFile );
         fileSync.addListener( path -> b.append( "f" ) );

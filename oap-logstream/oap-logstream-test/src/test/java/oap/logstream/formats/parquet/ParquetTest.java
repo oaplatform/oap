@@ -26,6 +26,7 @@ package oap.logstream.formats.parquet;
 
 import oap.dictionary.DictionaryParser;
 import oap.dictionary.DictionaryRoot;
+import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import org.apache.hadoop.conf.Configuration;
@@ -50,7 +51,12 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
 
-public class ParquetTest {
+public class ParquetTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public ParquetTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+    }
 
     @Test
     public void testRW() throws IOException {
@@ -65,7 +71,7 @@ public class ParquetTest {
         MessageType messageType = ( MessageType ) schema.schema.named( "group" );
         GroupWriteSupport.setSchema( messageType, conf );
 
-        var file = TestDirectoryFixture.testPath( "test.parquet" );
+        var file = testDirectoryFixture.testPath( "test.parquet" );
 
         try( ParquetWriter<Group> writer = new ParquetWriteBuilder( new ParquetBufferedWriter( new BufferedOutputStream( new FileOutputStream( file.toFile() ) ) ) )
             .withConf( conf )

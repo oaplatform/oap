@@ -38,8 +38,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
-import static oap.testng.TestDirectoryFixture.deployTestData;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -48,13 +46,15 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public DirectoryPersistenceMigrationTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
     }
 
     @Test
     public void migration() {
-        Path path = deployTestData( getClass() );
+        Path path = testDirectoryFixture.deployTestData( getClass() );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 10, 2, List.of(
             new MigrationV1(),
@@ -77,7 +77,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
 
     @Test
     public void storeWithVersion() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new DirectoryPersistence<>( path, 10, 10, Lists.empty(), storage ) ) {
             persistence.preStart();

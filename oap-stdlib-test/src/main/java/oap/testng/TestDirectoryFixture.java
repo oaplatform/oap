@@ -39,19 +39,31 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Slf4j
-public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixture> {
-    public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
-
+public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> {
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
-    private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
+    private final Path testDirectory;
 
     private final DeployTestData deployTestData;
 
-    public TestDirectoryFixture() {
-        this( null );
+    public TestDirectoryFixture( Class<?> testClass ) {
+        this( testClass, null );
     }
 
-    public TestDirectoryFixture( DeployTestData deployTestData ) {
+    public TestDirectoryFixture( String prefix ) {
+        this( prefix, null );
+    }
+
+    public TestDirectoryFixture( Class<?> testClass, DeployTestData deployTestData ) {
+        super( testClass );
+
+        testDirectory = globalTestDirectory().resolve( "test-" + prefix + "-" + Cuid.UNIQUE.next() );
+        this.deployTestData = deployTestData;
+    }
+
+    public TestDirectoryFixture( String prefix, DeployTestData deployTestData ) {
+        super( prefix );
+
+        testDirectory = globalTestDirectory().resolve( "test-" + prefix + "-" + Cuid.UNIQUE.next() );
         this.deployTestData = deployTestData;
     }
 
@@ -68,31 +80,31 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
         }
     }
 
-    public static Path testDirectory() {
+    public Path testDirectory() {
         return testDirectory;
     }
 
-    public static Path testPath( String name ) {
+    public Path testPath( String name ) {
         Path path = testDirectory().resolve(
             name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
         Files.ensureFile( path );
         return path;
     }
 
-    public static URI testUri( String name ) {
+    public URI testUri( String name ) {
         return testPath( name ).toUri();
     }
 
     @SneakyThrows
-    public static URL testUrl( String name ) {
+    public URL testUrl( String name ) {
         return testUri( name ).toURL();
     }
 
-    public static Path deployTestData( Class<?> contextClass ) {
+    public Path deployTestData( Class<?> contextClass ) {
         return deployTestData( contextClass, "" );
     }
 
-    public static Path deployTestData( Class<?> contextClass, String name ) {
+    public Path deployTestData( Class<?> contextClass, String name ) {
         Path to = testPath( name );
         Resources.filePaths( contextClass, contextClass.getSimpleName() )
             .forEach( path -> {
@@ -107,7 +119,7 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     }
 
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name ) {
-        return new TestDirectoryFixture( new DeployTestData( contextClass, name ) );
+        return new TestDirectoryFixture( contextClass, new DeployTestData( contextClass, name ) );
     }
 
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass ) {
@@ -123,15 +135,10 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     }
 
     @Override
-    public void afterSuite() {
-        super.afterSuite();
-
-        cleanTestDirectories();
-    }
-
-    @Override
     protected void after() {
         TestDirectoryFixture.deleteDirectory( testDirectory() );
+
+        cleanTestDirectories();
     }
 
     @SneakyThrows

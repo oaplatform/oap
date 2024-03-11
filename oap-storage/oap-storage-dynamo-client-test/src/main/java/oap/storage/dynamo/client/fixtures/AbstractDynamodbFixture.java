@@ -27,7 +27,7 @@ package oap.storage.dynamo.client.fixtures;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.system.Env;
-import oap.testng.AbstractEnvFixture;
+import oap.testng.AbstractFixture;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -42,7 +42,7 @@ import java.net.URISyntaxException;
  * AWS_REGION
  */
 @Slf4j
-public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<AbstractDynamodbFixture> {
+public abstract class AbstractDynamodbFixture extends AbstractFixture<AbstractDynamodbFixture> {
 
     public static final String DYNAMODB_PROTOCOL = Env.get( "DYNAMODB_PROTOCOL", "http" );
     public static final String DYNAMODB_HOSTS = Env.get( "DYNAMODB_HOSTS", "localhost" );
@@ -56,16 +56,16 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
     private DynamodbClient dynamodbClient = null;
     private boolean skipBeforeAndAfter = false;
 
-    public AbstractDynamodbFixture( AbstractEnvFixture<?>... dependencies ) {
-        this( 300, 1, false, dependencies );
+    public AbstractDynamodbFixture() {
+        this( 300, 1, false );
     }
 
-    public AbstractDynamodbFixture( boolean skipBeforeAndAfter, AbstractEnvFixture<?>... dependencies ) {
-        this( 300, 1, skipBeforeAndAfter, dependencies );
+    public AbstractDynamodbFixture( boolean skipBeforeAndAfter ) {
+        this( 300, 1, skipBeforeAndAfter );
     }
 
-    public AbstractDynamodbFixture( int maxConnsPerNode, int connPoolsPerNode, boolean skipBeforeAndAfter, AbstractEnvFixture<?>... dependencies ) {
-        super( dependencies );
+    public AbstractDynamodbFixture( int maxConnsPerNode, int connPoolsPerNode, boolean skipBeforeAndAfter ) {
+        super( "DYNAMO_DB" );
 
         this.maxConnsPerNode = maxConnsPerNode;
         this.connPoolsPerNode = connPoolsPerNode;

@@ -24,31 +24,29 @@
 
 package oap.application.testng;
 
-import oap.testng.AbstractEnvFixture;
-
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 
 public class KernelFixture extends AbstractKernelFixture<KernelFixture> {
 
-    public KernelFixture( URL conf, AbstractEnvFixture<?>... dependencies ) {
-        super( NO_PREFIX, Scope.METHOD, conf, null, List.of(), dependencies );
+    public KernelFixture( String prefix, URL conf ) {
+        super( prefix, Scope.METHOD, conf, null, List.of() );
     }
 
-    public KernelFixture( URL conf, Path confd, AbstractEnvFixture<?>... dependencies ) {
-        super( NO_PREFIX, Scope.METHOD, conf, confd, List.of(), dependencies );
+    public KernelFixture( String prefix, URL conf, Path confd ) {
+        super( prefix, Scope.METHOD, conf, confd, List.of() );
     }
 
-    public KernelFixture( URL conf, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
-        super( NO_PREFIX, Scope.METHOD, conf, null, additionalModules, dependencies );
+    public KernelFixture( String prefix, URL conf, List<URL> additionalModules ) {
+        super( prefix, Scope.METHOD, conf, null, additionalModules );
     }
 
-    public KernelFixture( URL conf, Path confd, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
-        this( Scope.METHOD, conf, confd, additionalModules, dependencies );
+    public KernelFixture( String prefix, URL conf, Path confd, List<URL> additionalModules ) {
+        this( prefix, Scope.METHOD, conf, confd, additionalModules );
     }
 
-    public KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules, AbstractEnvFixture<?>... dependencies ) {
-        super( NO_PREFIX, scope, conf, confd, additionalModules, dependencies );
+    public KernelFixture( String prefix, Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
+        super( prefix, scope, conf, confd, additionalModules );
     }
 }

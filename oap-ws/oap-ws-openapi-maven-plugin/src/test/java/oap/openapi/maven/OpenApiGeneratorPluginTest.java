@@ -25,17 +25,12 @@
 package oap.openapi.maven;
 
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class OpenApiGeneratorPluginTest extends Fixtures {
-
-    public OpenApiGeneratorPluginTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
 
     @Test
     public void execute() throws Exception {
