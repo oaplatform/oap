@@ -20,6 +20,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>PORT</li>
+ * </ul>
+ */
 @Slf4j
 public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private static final String S3MOCK_VERSION = "3.1.0";
