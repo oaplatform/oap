@@ -52,7 +52,7 @@ public class DiskLoggerBackendTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DiskLoggerBackendTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

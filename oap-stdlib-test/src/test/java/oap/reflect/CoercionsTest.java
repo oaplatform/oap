@@ -48,7 +48,7 @@ public class CoercionsTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public CoercionsTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ).withDeployTestData( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture().withDeployTestData( getClass() ) );
     }
 
     @Test

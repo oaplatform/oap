@@ -47,7 +47,7 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
     private final KernelFixture kernel;
 
     public MethodValidatorPeerMethodTest() {
-        kernel = fixture( new KernelFixture( "VALIDATION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

@@ -60,7 +60,7 @@ public class TemplateEngineTest extends Fixtures {
     private String testMethodName;
 
     public TemplateEngineTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

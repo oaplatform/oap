@@ -22,7 +22,7 @@ public class FileSystemTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FileSystemTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

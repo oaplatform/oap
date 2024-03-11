@@ -49,7 +49,7 @@ public class ParquetWriterTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public ParquetWriterTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

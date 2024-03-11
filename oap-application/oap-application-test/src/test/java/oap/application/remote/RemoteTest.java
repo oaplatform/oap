@@ -28,8 +28,8 @@ import oap.application.ApplicationConfiguration;
 import oap.application.ApplicationException;
 import oap.application.Kernel;
 import oap.application.module.Module;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -43,17 +43,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 public class RemoteTest extends Fixtures {
-
-    private final EnvFixture envFixture;
-
-    public RemoteTest() {
-        envFixture = fixture( new EnvFixture( "REMOTE" ) );
-        envFixture.definePort( "HTTP_PORT" );
-    }
-
     @Test
     public void invoke() {
-        var port = envFixture.portFor( "HTTP_PORT" );
+        var port = Ports.getFreePort();
+
         var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
         try( var kernel = new Kernel( modules ) ) {

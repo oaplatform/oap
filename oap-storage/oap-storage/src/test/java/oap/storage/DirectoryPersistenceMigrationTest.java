@@ -49,7 +49,7 @@ public class DirectoryPersistenceMigrationTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DirectoryPersistenceMigrationTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

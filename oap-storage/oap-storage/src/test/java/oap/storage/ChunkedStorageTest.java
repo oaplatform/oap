@@ -18,7 +18,7 @@ public class ChunkedStorageTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public ChunkedStorageTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

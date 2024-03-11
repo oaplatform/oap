@@ -48,7 +48,7 @@ public class DirectoryPersistenceTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DirectoryPersistenceTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

@@ -48,7 +48,7 @@ public class FilesPerformance extends Fixtures {
     private Path pathNotExists;
 
     public FilesPerformance() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

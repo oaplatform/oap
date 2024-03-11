@@ -19,7 +19,7 @@ public class FileAtomicLongTest extends Fixtures {
     private FileAtomicLong fileAtomicLong2;
 
     public FileAtomicLongTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

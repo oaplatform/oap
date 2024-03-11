@@ -49,7 +49,7 @@ public class TemplateClassCompilerTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public TemplateClassCompilerTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
         metricsFixture = fixture( new MetricsFixture() );
     }
 

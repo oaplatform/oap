@@ -60,7 +60,7 @@ public class BinderTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public BinderTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     //todo generic map-list binding

@@ -35,7 +35,7 @@ public class ParquetAssertionTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public ParquetAssertionTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

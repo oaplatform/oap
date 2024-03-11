@@ -58,7 +58,7 @@ public class IoStreamsTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public IoStreamsTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

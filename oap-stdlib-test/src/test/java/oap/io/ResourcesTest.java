@@ -39,7 +39,7 @@ public class ResourcesTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public ResourcesTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

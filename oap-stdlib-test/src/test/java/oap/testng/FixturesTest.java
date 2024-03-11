@@ -54,10 +54,6 @@ public class FixturesTest extends Fixtures {
     static class F extends AbstractFixture<F> {
         String result = "";
 
-        F() {
-            super( "F" );
-        }
-
         @Override
         public void beforeClass() {
             log.info( "beforeClass" );

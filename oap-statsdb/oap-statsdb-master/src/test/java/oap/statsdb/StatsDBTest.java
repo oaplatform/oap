@@ -32,8 +32,8 @@ import oap.message.MessageHttpHandler;
 import oap.message.MessageSender;
 import oap.message.MessageSenderUtils;
 import oap.storage.mongo.MongoFixture;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Cuid;
@@ -61,16 +61,12 @@ public class StatsDBTest extends Fixtures {
         nc( "n2", MockChild2.class ),
         nc( "n3", MockValue.class ) );
     private static final MongoFixture MONGO_FIXTURE = new MongoFixture( "MONGO" );
-    private final EnvFixture envFixture;
     private final TestDirectoryFixture testDirectoryFixture;
 
     public StatsDBTest() {
-        envFixture = new EnvFixture( "ENV" );
-
         fixture( MONGO_FIXTURE );
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
-        fixture( new SystemTimerFixture( getClass() ) );
-        fixture( envFixture );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        fixture( SystemTimerFixture.FIXTURE );
     }
 
     @Test
@@ -222,7 +218,7 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void version() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );

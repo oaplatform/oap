@@ -30,8 +30,6 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private String initialBuckets = "";
 
     public S3MockFixture() {
-        super( "S3MOCK" );
-
         port = definePort( "PORT" );
     }
 

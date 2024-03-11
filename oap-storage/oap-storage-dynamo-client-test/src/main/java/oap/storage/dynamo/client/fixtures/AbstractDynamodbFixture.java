@@ -65,8 +65,6 @@ public abstract class AbstractDynamodbFixture extends AbstractFixture<AbstractDy
     }
 
     public AbstractDynamodbFixture( int maxConnsPerNode, int connPoolsPerNode, boolean skipBeforeAndAfter ) {
-        super( "DYNAMO_DB" );
-
         this.maxConnsPerNode = maxConnsPerNode;
         this.connPoolsPerNode = connPoolsPerNode;
         this.skipBeforeAndAfter = skipBeforeAndAfter;

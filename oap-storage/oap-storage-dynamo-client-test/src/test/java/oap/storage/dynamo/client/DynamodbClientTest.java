@@ -68,7 +68,7 @@ public class DynamodbClientTest extends Fixtures {
 
     public DynamodbClientTest() {
         fixture = fixture( new TestContainerDynamodbFixture() );
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeClass

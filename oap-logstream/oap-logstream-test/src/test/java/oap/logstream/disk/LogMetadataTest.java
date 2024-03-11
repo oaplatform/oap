@@ -20,7 +20,7 @@ public class LogMetadataTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public LogMetadataTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

@@ -17,7 +17,6 @@ public class MetricsFixture extends AbstractFixture<MetricsFixture> {
     private SimpleMeterRegistry registry;
 
     public MetricsFixture() {
-        super( "METRICS" );
     }
 
     public MetricsAssertion assertMetric( String name, Tags tags ) {

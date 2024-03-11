@@ -43,7 +43,7 @@ public class MessageHashStorageTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public MessageHashStorageTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

@@ -45,25 +45,12 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
 
     private final DeployTestData deployTestData;
 
-    public TestDirectoryFixture( Class<?> testClass ) {
-        this( testClass, null );
+    public TestDirectoryFixture() {
+        this( null );
     }
 
-    public TestDirectoryFixture( String prefix ) {
-        this( prefix, null );
-    }
-
-    public TestDirectoryFixture( Class<?> testClass, DeployTestData deployTestData ) {
-        super( testClass );
-
-        testDirectory = globalTestDirectory().resolve( "test-" + prefix + "-" + Cuid.UNIQUE.next() );
-        this.deployTestData = deployTestData;
-    }
-
-    public TestDirectoryFixture( String prefix, DeployTestData deployTestData ) {
-        super( prefix );
-
-        testDirectory = globalTestDirectory().resolve( "test-" + prefix + "-" + Cuid.UNIQUE.next() );
+    public TestDirectoryFixture( DeployTestData deployTestData ) {
+        testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
         this.deployTestData = deployTestData;
     }
 
@@ -119,7 +106,7 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
     }
 
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass, String name ) {
-        return new TestDirectoryFixture( contextClass, new DeployTestData( contextClass, name ) );
+        return new TestDirectoryFixture( new DeployTestData( contextClass, name ) );
     }
 
     public TestDirectoryFixture withDeployTestData( Class<?> contextClass ) {

@@ -27,8 +27,8 @@ package oap.http;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.IoStreams;
 import oap.io.content.ContentWriter;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -45,16 +45,11 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GzipHttpTest extends Fixtures {
-    private final EnvFixture envFixture;
     private NioHttpServer server;
-
-    public GzipHttpTest() {
-        envFixture = fixture( new EnvFixture( "ENV" ) );
-    }
 
     @BeforeMethod
     public void beforeMethod() {
-        server = new NioHttpServer( new NioHttpServer.DefaultPort( envFixture.portFor( getClass() ) ) );
+        server = new NioHttpServer( new NioHttpServer.DefaultPort( Ports.getFreePort() ) );
     }
 
     @AfterMethod
@@ -69,13 +64,13 @@ public class GzipHttpTest extends Fixtures {
         );
         server.start();
 
-        var responseHtml = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" );
+        var responseHtml = Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" );
 
         assertThat( responseHtml.code ).isEqualTo( HTTP_OK );
         assertThat( responseHtml.contentType ).isEqualTo( TEXT_PLAIN );
         assertThat( responseHtml.contentString() ).isEqualTo( "test" );
 
-        var responseGzip = Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
+        var responseGzip = Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test",
             Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
@@ -90,7 +85,7 @@ public class GzipHttpTest extends Fixtures {
         );
         server.start();
 
-        var response = Client.DEFAULT.post( "http://localhost:" + envFixture.portFor( getClass() ) + "/test",
+        var response = Client.DEFAULT.post( "http://localhost:" + server.defaultPort.httpPort + "/test",
             ContentWriter.write( "test2", ofGzip() ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );

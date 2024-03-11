@@ -44,7 +44,7 @@ public class FilePersistenceTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FilePersistenceTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

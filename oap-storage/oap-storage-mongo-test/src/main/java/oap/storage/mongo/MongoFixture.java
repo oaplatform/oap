@@ -44,13 +44,11 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
     private MongoClient mongoClient;
     private MongoServer server;
 
-    public MongoFixture( String prefix ) {
-        this( prefix, "test" );
+    public MongoFixture() {
+        this( "test" );
     }
 
-    public MongoFixture( String prefix, String database ) {
-        super( prefix );
-
+    public MongoFixture( String database ) {
         this.database = database;
 
         port = definePort( "PORT" );
