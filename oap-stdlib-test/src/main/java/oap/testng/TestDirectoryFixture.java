@@ -38,6 +38,12 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>TEST_DIRECTORY</li>
+ * </ul>
+ */
 @Slf4j
 public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> {
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
@@ -52,6 +58,8 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
     public TestDirectoryFixture( DeployTestData deployTestData ) {
         testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
         this.deployTestData = deployTestData;
+
+        define( "TEST_DIRECTORY", testDirectory );
     }
 
     public static Path globalTestDirectory() {

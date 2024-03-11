@@ -32,10 +32,10 @@ import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -50,7 +50,9 @@ public class RemoteTest extends Fixtures {
         var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application-remote.conf" ) ) );
+            kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
+                List.of(),
+                Map.of( "HTTP_PORT", port ) ) );
 
             Optional<RemoteClient> service = kernel.service( "*.remote-client" );
             assertThat( service ).isPresent();
@@ -86,7 +88,9 @@ public class RemoteTest extends Fixtures {
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application-remote.conf" ) ) );
+            kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
+                List.of(),
+                Map.of( "HTTP_PORT", Ports.getFreePort() ) ) );
 
             RemoteClient remoteClientOne = kernel.<RemoteClient>service( "*.remote-client" ).get();
             assertThat( remoteClientOne.testStream( "1", "2", "3" ) )
@@ -104,7 +108,9 @@ public class RemoteTest extends Fixtures {
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( pathOfTestResource( RemoteTest.class, "application-remote.conf" ) ) );
+            kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
+                List.of(),
+                Map.of( "HTTP_PORT", Ports.getFreePort() ) ) );
 
             assertThat( kernel.<RemoteClient>service( "*.remote-client" ).get().testStream() ).isEmpty();
         }

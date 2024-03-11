@@ -53,6 +53,15 @@ import static oap.http.test.HttpAsserts.httpPrefix;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.util.Pair.__;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>TEST_HTTP_PORT</li>
+ *     <li>TEST_DIRECTORY</li>
+ *     <li>TEST_RESOURCE_PATH</li>
+ *     <li>TEST_HTTP_PREFIX</li>
+ * </ul>
+ */
 @Slf4j
 public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<Self>> extends AbstractFixture<Self> {
     public static final String ANY = "*";
@@ -226,7 +235,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
         var confds = ApplicationConfiguration.getConfdUrls( confdPath );
 
-        var kernelProperties = new LinkedHashMap<String, Object>( properties );
+        var kernelProperties = new LinkedHashMap<>( properties );
 
         dependencies.forEach( ( name, fixture ) -> {
             kernelProperties.put( name, fixture.getProperties() );
