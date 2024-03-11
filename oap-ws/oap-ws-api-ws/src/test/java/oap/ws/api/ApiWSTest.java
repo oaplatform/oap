@@ -41,7 +41,7 @@ public class ApiWSTest extends Fixtures {
     private final KernelFixture kernel;
 
     public ApiWSTest() {
-        kernel = fixture( new KernelFixture( "APIWS", urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test

@@ -41,8 +41,8 @@ public class KernelFixtureTest extends Fixtures {
 
     @Test
     public void isolation() {
-        testFixture = new TestFixture( "PREFIXED" );
-        kernelFixture = new KernelFixture( "KERNEL",
+        testFixture = new TestFixture();
+        kernelFixture = new KernelFixture(
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
         );
@@ -52,20 +52,19 @@ public class KernelFixtureTest extends Fixtures {
         f.fixBeforeMethod();
 
         assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( kernelFixture.portFor( "TEST_PORT" ) );
+            .isEqualTo( kernelFixture.getProperty( "TEST_PORT" ) );
         assertThat( testFixture.service( ANY, Service.class ).value )
-            .isEqualTo( testFixture.portFor( "TEST_PORT" ) );
+            .isEqualTo( testFixture.getProperty( "TEST_PORT" ) );
         assertThat( kernelFixture.service( ANY, Service.class ) )
             .isNotSameAs( testFixture.service( ANY, Service.class ) );
-        assertThat( kernelFixture.portFor( "TEST_PORT" ) )
-            .isNotSameAs( testFixture.portFor( "TEST_PORT" ) );
+        assertThat( kernelFixture.<Integer>getProperty( "TEST_PORT" ) )
+            .isNotSameAs( testFixture.getProperty( "TEST_PORT" ) );
     }
 
     @Test
     public void isolationSecondRun() {
-        testFixture = new TestFixture( "PREFIXED" );
+        testFixture = new TestFixture();
         kernelFixture = new KernelFixture(
-            "KERNEL",
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
         );
@@ -75,13 +74,13 @@ public class KernelFixtureTest extends Fixtures {
         f.fixBeforeMethod();
 
         assertThat( kernelFixture.service( ANY, Service.class ).value )
-            .isEqualTo( kernelFixture.portFor( "TEST_PORT" ) );
+            .isEqualTo( kernelFixture.getProperty( "TEST_PORT" ) );
         assertThat( testFixture.service( ANY, Service.class ).value )
-            .isEqualTo( testFixture.portFor( "TEST_PORT" ) );
+            .isEqualTo( testFixture.getProperty( "TEST_PORT" ) );
         assertThat( kernelFixture.service( ANY, Service.class ) )
             .isNotSameAs( testFixture.service( ANY, Service.class ) );
-        assertThat( kernelFixture.portFor( "TEST_PORT" ) )
-            .isNotSameAs( testFixture.portFor( "TEST_PORT" ) );
+        assertThat( kernelFixture.<Integer>getProperty( "TEST_PORT" ) )
+            .isNotSameAs( testFixture.getProperty( "TEST_PORT" ) );
     }
 
     @Test
@@ -90,15 +89,18 @@ public class KernelFixtureTest extends Fixtures {
             {
                 testFixtureC = fixture( new TestFixtureC( "f1" ) );
                 testFixtureC2 = fixture( new TestFixtureC( "f2" ) );
+
+                testFixtureC.addDependency( "f2", testFixtureC2 );
+                testFixtureC2.addDependency( "f1", testFixtureC );
             }
         };
 
         f.fixBeforeMethod();
 
         assertThat( testFixtureC.service( ANY, Service.class ).value )
-            .isEqualTo( testFixtureC2.portFor( "TEST_PORT" ) );
+            .isEqualTo( testFixtureC2.getProperty( "TEST_PORT" ) );
         assertThat( testFixtureC2.service( ANY, Service.class ).value )
-            .isEqualTo( testFixtureC.portFor( "TEST_PORT" ) );
+            .isEqualTo( testFixtureC.getProperty( "TEST_PORT" ) );
     }
 
     public static class Service {
@@ -106,9 +108,8 @@ public class KernelFixtureTest extends Fixtures {
     }
 
     public static class TestFixture extends AbstractKernelFixture<TestFixture> {
-        public TestFixture( String name ) {
-            super( name,
-                urlOfTestResource( KernelFixtureTest.class, "application.fixture.conf" ),
+        public TestFixture() {
+            super( urlOfTestResource( KernelFixtureTest.class, "application.fixture.conf" ),
                 List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
             );
             definePort( "TEST_PORT" );
@@ -117,8 +118,7 @@ public class KernelFixtureTest extends Fixtures {
 
     public static class TestFixtureC extends AbstractKernelFixture<TestFixtureC> {
         public TestFixtureC( String name ) {
-            super( name,
-                urlOfTestResource( KernelFixtureTest.class, "application.fixture-" + name + ".conf" ),
+            super( urlOfTestResource( KernelFixtureTest.class, "application.fixture-" + name + ".conf" ),
                 List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
             );
             definePort( "TEST_PORT" );

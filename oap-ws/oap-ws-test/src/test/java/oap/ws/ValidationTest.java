@@ -38,7 +38,7 @@ public class ValidationTest extends Fixtures {
     private final KernelFixture kernel;
 
     public ValidationTest() {
-        kernel = fixture( new KernelFixture( "VALIDATION", urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

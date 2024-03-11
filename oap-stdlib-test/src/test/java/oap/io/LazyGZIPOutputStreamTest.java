@@ -36,7 +36,7 @@ public class LazyGZIPOutputStreamTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public LazyGZIPOutputStreamTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

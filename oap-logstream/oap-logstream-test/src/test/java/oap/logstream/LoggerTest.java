@@ -33,8 +33,8 @@ import oap.message.MessageHttpHandler;
 import oap.message.MessageSender;
 import oap.template.BinaryUtils;
 import oap.template.Types;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.joda.time.DateTime;
@@ -58,12 +58,10 @@ import static org.testng.Assert.assertTrue;
 
 @Slf4j
 public class LoggerTest extends Fixtures {
-    private final EnvFixture envFixture;
     private final TestDirectoryFixture testDirectoryFixture;
 
     public LoggerTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
-        envFixture = fixture( new EnvFixture( "ENV" ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
@@ -104,7 +102,7 @@ public class LoggerTest extends Fixtures {
     public void net() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var line1 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );

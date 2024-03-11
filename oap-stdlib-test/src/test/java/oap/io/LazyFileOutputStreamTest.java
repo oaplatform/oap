@@ -35,7 +35,7 @@ public class LazyFileOutputStreamTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public LazyFileOutputStreamTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

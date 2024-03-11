@@ -41,7 +41,7 @@ public class OpenapiWSTest extends Fixtures {
     private final KernelFixture kernel;
 
     public OpenapiWSTest() {
-        kernel = fixture( new KernelFixture( "OPENAPIWS", urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
     }
 
     @Test

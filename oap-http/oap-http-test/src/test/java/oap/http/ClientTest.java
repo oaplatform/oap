@@ -52,7 +52,7 @@ public class ClientTest extends Fixtures {
     private Client.Response response;
 
     public ClientTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

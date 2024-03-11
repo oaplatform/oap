@@ -34,7 +34,7 @@ public class AbstractCounterTest extends Fixtures {
     protected final TestDirectoryFixture testDirectoryFixture;
 
     public AbstractCounterTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

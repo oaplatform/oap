@@ -29,8 +29,8 @@ package oap.http.server.nio.health;
 
 import oap.http.server.nio.NioHttpServer;
 import oap.http.test.HttpAsserts;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -40,8 +40,6 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.test.HttpAsserts.assertGet;
 
 public class HealthHttpHandlerTest extends Fixtures {
-    private final EnvFixture fixture = fixture( new EnvFixture( "ENV" ) );
-
     public HealthHttpHandlerTest() {
 //        fixture( new KernelFixture(
 //            urlOfTestResource( getClass(), "application.test.conf" ),
@@ -54,7 +52,7 @@ public class HealthHttpHandlerTest extends Fixtures {
 
     @Test
     public void health() throws IOException {
-        int httpPort = fixture.portFor( "TEST_HTTP_PORT" );
+        int httpPort = Ports.getFreePort();
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort ) ) ) {
             HealthHttpHandler healthHttpHandler = new HealthHttpHandler( httpServer, "/healtz", "default-http", "secret" );

@@ -28,8 +28,8 @@ import oap.application.testng.KernelFixture;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.apache.commons.codec.binary.Hex;
@@ -56,12 +56,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
 public class MessageServerTest extends Fixtures {
-    private final EnvFixture envFixture;
     private final TestDirectoryFixture testDirectoryFixture;
 
     public MessageServerTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
-        envFixture = fixture( new EnvFixture( "ENV" ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod
@@ -71,7 +69,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void uniqueMessageTypeListener() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
 
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
@@ -89,7 +87,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void rejectedException() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -134,7 +132,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void sendAndReceive() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -170,7 +168,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void sendAndReceiveJson() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -202,7 +200,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void sendAndReceiveJsonOneThread() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
@@ -235,7 +233,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void unknownErrorNoRetry() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -263,7 +261,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void unknownError() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -295,7 +293,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void statusError() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -332,7 +330,7 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void ttl() throws IOException {
         var hashTtl = 1000;
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -379,7 +377,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test( enabled = false ) //flaky test
     public void persistence() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -440,7 +438,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void clientPersistence() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -509,7 +507,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void clientPersistenceLockExpiration() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -567,7 +565,7 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void availabilityReport() throws IOException {
-        int port = envFixture.portFor( getClass() );
+        int port = Ports.getFreePort();
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
@@ -605,7 +603,6 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testKernel() {
         var kernelFixture = new KernelFixture(
-            "MESSAGE_SERVER",
             urlOfTestResource( getClass(), "application-message.test.conf" ),
             List.of( urlOfTestResource( getClass(), "oap-module.conf" ) )
         );

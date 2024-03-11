@@ -36,15 +36,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class JavaWebServerFixture extends AbstractFixture<JavaWebServerFixture> {
     private final LinkedHashMap<String, HttpHandler> contexts = new LinkedHashMap<>();
+    private final int port;
     private HttpServer server;
     private int threads = 10;
     private int backlog = 0;
     private int delaySeconds = 1;
 
     public JavaWebServerFixture() {
-        super( "JAVA_HTTP_SERVER" );
-
-        definePort( "HTTP_PORT" );
+        port = definePort( "HTTP_PORT" );
     }
 
     @SneakyThrows
@@ -54,7 +53,7 @@ public class JavaWebServerFixture extends AbstractFixture<JavaWebServerFixture> 
 
         var threadPoolExecutor = ( ThreadPoolExecutor ) Executors.newFixedThreadPool( threads );
         backlog = 0;
-        server = HttpServer.create( new InetSocketAddress( "localhost", portFor( "HTTP_PORT" ) ), backlog );
+        server = HttpServer.create( new InetSocketAddress( "localhost", port ), backlog );
 
         contexts.forEach( ( path, context ) -> server.createContext( path, context ) );
 

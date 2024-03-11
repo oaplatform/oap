@@ -68,7 +68,7 @@ public class DynamodbIndexingTest extends Fixtures {
 
     public DynamodbIndexingTest() {
         fixture = fixture( new TestContainerDynamodbFixture() );
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

@@ -60,7 +60,7 @@ public class MongoPersistenceTest extends Fixtures {
 
     public MongoPersistenceTest() {
         mongoFixture = fixture( new MongoFixture( "MONGO" ) );
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

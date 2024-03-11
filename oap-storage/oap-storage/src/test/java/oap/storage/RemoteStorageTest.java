@@ -9,8 +9,8 @@ import oap.application.remote.RemoteLocation;
 import oap.http.server.nio.NioHttpServer;
 import oap.id.Id;
 import oap.id.Identifier;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.util.Dates;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
@@ -24,22 +24,16 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RemoteStorageTest extends Fixtures {
-    private final EnvFixture envFixture;
-
-    public RemoteStorageTest() {
-        envFixture = fixture( new EnvFixture( "ENV" ) );
-    }
-
     @Test
     public void testUpdate() throws IOException, URISyntaxException {
-        envFixture.definePort( "RemoteStorageTest" );
+        int port = Ports.getFreePort();
 
         Kernel kernel = Mockito.mock( Kernel.class );
         MemoryStorage<String, TestRemoteStorage> serverStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), Storage.Lock.SERIALIZED );
 
         Mockito.doReturn( Optional.of( serverStorage ) ).when( kernel ).service( "module.service" );
 
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( envFixture.portFor( "RemoteStorageTest" ) ) ) ) {
+        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", kernel, server );
 
             server.start();

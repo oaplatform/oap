@@ -38,7 +38,7 @@ public class FileSystemFileSyncTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FileSystemFileSyncTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

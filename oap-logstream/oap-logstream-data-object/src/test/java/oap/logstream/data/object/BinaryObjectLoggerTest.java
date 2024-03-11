@@ -50,7 +50,7 @@ public class BinaryObjectLoggerTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public BinaryObjectLoggerTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

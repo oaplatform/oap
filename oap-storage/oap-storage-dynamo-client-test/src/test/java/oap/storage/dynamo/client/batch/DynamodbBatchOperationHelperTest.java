@@ -67,7 +67,7 @@ public class DynamodbBatchOperationHelperTest extends Fixtures {
 
     public DynamodbBatchOperationHelperTest() {
         fixture = fixture( new TestContainerDynamodbFixture() );
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );
     }

@@ -27,8 +27,8 @@ package oap.http.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -38,15 +38,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrometheusExporterTest extends Fixtures {
-    private final EnvFixture envFixture;
-
-    public PrometheusExporterTest() {
-        envFixture = fixture( new EnvFixture( "ENV" ) );
-    }
-
     @Test
     public void server() throws IOException {
-        var port = envFixture.portFor( "prometheus" );
+        var port = Ports.getFreePort();
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             var exporter = new PrometheusExporter( server );
 

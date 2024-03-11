@@ -36,6 +36,15 @@ import java.util.Map;
 
 import static oap.testng.Asserts.contentOfTestResource;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>PORT</li>
+ *     <li>HOST</li>
+ *     <li>DATABASE</li>
+ * </ul>
+ *
+ */
 @Slf4j
 public class MongoFixture extends AbstractFixture<MongoFixture> {
     public static final String HOST = "localhost";
@@ -44,13 +53,11 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
     private MongoClient mongoClient;
     private MongoServer server;
 
-    public MongoFixture( String prefix ) {
-        this( prefix, "test" );
+    public MongoFixture() {
+        this( "test" );
     }
 
-    public MongoFixture( String prefix, String database ) {
-        super( prefix );
-
+    public MongoFixture( String database ) {
         this.database = database;
 
         port = definePort( "PORT" );

@@ -32,7 +32,7 @@ public class TestDirectoryFixtureTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public TestDirectoryFixtureTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

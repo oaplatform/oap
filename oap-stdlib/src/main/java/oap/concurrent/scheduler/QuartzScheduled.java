@@ -41,6 +41,7 @@ public class QuartzScheduled extends Scheduled {
     @SneakyThrows
     public void cancel() {
         log.trace( "cancelling {}", job );
+        Scheduler.scheduler.interrupt( job.jobDetail.getKey() );
         Scheduler.scheduler.deleteJob( job.jobDetail.getKey() );
         Scheduler.jobFactory.unregister( job.jobDetail.getKey() );
 

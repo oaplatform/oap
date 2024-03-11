@@ -47,7 +47,7 @@ public class CompressionPerftest extends Fixtures {
     private final TestDirectoryFixture tdFixture;
 
     public CompressionPerftest() {
-        tdFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        tdFixture = fixture( new TestDirectoryFixture() );
     }
 
     @DataProvider( name = "encodings" )

@@ -21,7 +21,7 @@ public class FileWalkerTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FileWalkerTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod

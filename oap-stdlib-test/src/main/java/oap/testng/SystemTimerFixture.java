@@ -28,13 +28,6 @@ import oap.time.JavaTimeService;
 import oap.time.JodaTimeService;
 
 public class SystemTimerFixture extends AbstractFixture<SystemTimerFixture> {
-    public SystemTimerFixture( Class<?> testClass, AbstractFixture<?>... children ) {
-        super( testClass, children );
-    }
-
-    public SystemTimerFixture( String prefix, AbstractFixture<?>... children ) {
-        super( prefix, children );
-    }
 
     @Override
     public void after() {

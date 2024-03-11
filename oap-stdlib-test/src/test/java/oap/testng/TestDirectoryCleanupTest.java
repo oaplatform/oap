@@ -49,7 +49,7 @@ public class TestDirectoryCleanupTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public TestDirectoryCleanupTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture( getClass() ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

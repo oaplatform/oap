@@ -30,23 +30,23 @@ import java.util.List;
 
 public class KernelFixture extends AbstractKernelFixture<KernelFixture> {
 
-    public KernelFixture( String prefix, URL conf ) {
-        super( prefix, Scope.METHOD, conf, null, List.of() );
+    public KernelFixture( URL conf ) {
+        super( Scope.METHOD, conf, null, List.of() );
     }
 
-    public KernelFixture( String prefix, URL conf, Path confd ) {
-        super( prefix, Scope.METHOD, conf, confd, List.of() );
+    public KernelFixture( URL conf, Path confd ) {
+        super( Scope.METHOD, conf, confd, List.of() );
     }
 
-    public KernelFixture( String prefix, URL conf, List<URL> additionalModules ) {
-        super( prefix, Scope.METHOD, conf, null, additionalModules );
+    public KernelFixture( URL conf, List<URL> additionalModules ) {
+        super( Scope.METHOD, conf, null, additionalModules );
     }
 
-    public KernelFixture( String prefix, URL conf, Path confd, List<URL> additionalModules ) {
-        this( prefix, Scope.METHOD, conf, confd, additionalModules );
+    public KernelFixture( URL conf, Path confd, List<URL> additionalModules ) {
+        this( Scope.METHOD, conf, confd, additionalModules );
     }
 
-    public KernelFixture( String prefix, Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
-        super( prefix, scope, conf, confd, additionalModules );
+    public KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
+        super( scope, conf, confd, additionalModules );
     }
 }
