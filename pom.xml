@@ -22,7 +22,6 @@
         <module>oap-jpath</module>
         <module>oap-message</module>
         <module>oap-application</module>
-        <module>oap-hadoop</module>
         <module>oap-formats</module>
         <module>oap-storage</module>
         <module>oap-mail</module>
@@ -54,7 +53,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.16.5</oap.project.version>
+        <oap.project.version>21.17.0</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
@@ -81,6 +80,8 @@
         <oap.deps.apache.commons-codec.version>1.16.1</oap.deps.apache.commons-codec.version>
         <oap.deps.apache.commons-collections4.version>4.4</oap.deps.apache.commons-collections4.version>
         <oap.deps.apache.commons-io.version>2.13.0</oap.deps.apache.commons-io.version>
+
+        <oap.deps.apache.jclouds.version>2.6.0</oap.deps.apache.jclouds.version>
 
         <oap.deps.hadoop.version>3.3.6</oap.deps.hadoop.version>
         <oap.deps.aws-java-sdk-s3.version>1.12.671</oap.deps.aws-java-sdk-s3.version>

@@ -129,7 +129,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
                     LogFormat logFormat = LogFormat.parse( fp.path );
                     return switch( logFormat ) {
-                        case PARQUET -> new ParquetWriter( logDirectory, fp.path, id,
+                        case PARQUET -> new ParquetLogWriter( logDirectory, fp.path, id,
                             writerConfiguration.parquet, bufferSize, timestamp, maxVersions );
                         case TSV_GZ, TSV_ZSTD -> new TsvWriter( logDirectory, fp.path, id,
                             writerConfiguration.tsv, bufferSize, timestamp, maxVersions );

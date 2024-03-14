@@ -1,0 +1,176 @@
+package oap.storage.cloud;
+
+import lombok.extern.slf4j.Slf4j;
+import oap.io.Closeables;
+import oap.io.Resources;
+import oap.util.Maps;
+import org.jclouds.ContextBuilder;
+import org.jclouds.blobstore.BlobStore;
+import org.jclouds.blobstore.BlobStoreContext;
+import org.jclouds.blobstore.domain.Blob;
+import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
+
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+@Slf4j
+public class FileSystem {
+    private static final HashMap<String, Tags> tagSupport = new HashMap<>();
+
+    static {
+        try {
+            List<URL> urls = Resources.urls( FileSystem.class, "/META-INF/tags.properties" );
+
+            for( var url : urls ) {
+                log.debug( "url {}", url );
+                try( var is = url.openStream() ) {
+                    Properties properties = new Properties();
+                    properties.load( is );
+
+                    for( String scheme : properties.stringPropertyNames() ) {
+                        tagSupport.put( scheme, ( Tags ) Class.forName( properties.getProperty( scheme ) ).getConstructor().newInstance() );
+                    }
+                }
+            }
+
+            log.info( "tags {}", Maps.toList( tagSupport, ( k, v ) -> k + " : " + v.getClass() ) );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
+    private final FileSystemConfiguration fileSystemConfiguration;
+
+    public FileSystem( FileSystemConfiguration fileSystemConfiguration ) {
+        this.fileSystemConfiguration = fileSystemConfiguration;
+    }
+
+    /**
+     * The core api does not allow passing custom headers. This is a workaround.
+     */
+    private static void putBlob( BlobStore blobStore, Blob blob, CloudURI blobURI, Map<String, String> tags ) throws CloudException {
+        if( !tags.isEmpty() ) {
+            Tags putObject = tagSupport.get( blobURI.scheme );
+            if( putObject != null ) {
+                putObject.putBlob( blobStore, blob, blobURI, tags );
+            } else {
+                throw new CloudException( "tags are only supported for " + tagSupport.keySet() );
+            }
+        } else {
+            blobStore.putBlob( blobURI.container, blob );
+        }
+    }
+
+    public CloudInputStream getInputStream( String source ) {
+        CloudURI sourceURI = new CloudURI( source );
+
+        BlobStoreContext context = null;
+        try {
+            context = getContext( sourceURI );
+
+            BlobStore blobStore = context.getBlobStore();
+
+            Blob blob = blobStore.getBlob( sourceURI.container, sourceURI.path );
+
+            if( blob == null ) {
+                throw new CloudException( new FileNotFoundException( source ) );
+            }
+
+            return new CloudInputStream( blob.getPayload().openStream(), blob.getMetadata().getUserMetadata(), context );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        } finally {
+            Closeables.close( context );
+        }
+    }
+
+    public void uploadFile( String destination, Path path ) {
+        uploadFile( destination, path, Map.of() );
+    }
+
+    public void uploadFile( String destination, Path path, Map<String, String> userMetadata ) {
+        uploadFile( destination, path, userMetadata, Map.of() );
+    }
+
+    public void uploadFile( String destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
+        CloudURI destinationURI = new CloudURI( destination );
+
+        try( BlobStoreContext sourceContext = getContext( destinationURI ) ) {
+            BlobStore blobStore = sourceContext.getBlobStore();
+
+            Blob blob = blobStore
+                .blobBuilder( destinationURI.path )
+                .userMetadata( userMetadata )
+                .payload( path.toFile() )
+                .build();
+
+            putBlob( blobStore, blob, destinationURI, tags );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+
+    }
+
+    public void copy( String source, String destination ) {
+        copy( source, destination, Map.of(), Map.of() );
+    }
+
+    public void copy( String source, String destination, Map<String, String> userMetadata ) {
+        copy( source, destination, userMetadata, Map.of() );
+    }
+
+    public void copy( String source, String destination, Map<String, String> userMetadata, Map<String, String> tags ) {
+        CloudURI sourceURI = new CloudURI( source );
+        CloudURI destinationURI = new CloudURI( destination );
+
+        BlobStoreContext spurceContext = null;
+        BlobStoreContext destinationContext = null;
+        try {
+            spurceContext = getContext( sourceURI );
+            destinationContext = getContext( destinationURI );
+
+            BlobStore sourceBlobStore = spurceContext.getBlobStore();
+            BlobStore destinationBlobStore = destinationContext.getBlobStore();
+
+            Blob sourceBlob = sourceBlobStore.getBlob( sourceURI.container, sourceURI.path );
+            Long contentLength = sourceBlob.getMetadata().getContentMetadata().getContentLength();
+
+            try( InputStream is = sourceBlob.getPayload().openStream() ) {
+                Blob destinationBlob = destinationBlobStore
+                    .blobBuilder( destinationURI.path )
+                    .userMetadata( userMetadata )
+                    .payload( is )
+                    .contentLength( contentLength )
+                    .build();
+
+                putBlob( destinationBlobStore, destinationBlob, destinationURI, tags );
+            }
+
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        } finally {
+            Closeables.close( spurceContext );
+            Closeables.close( destinationContext );
+        }
+    }
+
+    private BlobStoreContext getContext( CloudURI uri ) {
+        Map<String, Object> containerConfiguration = fileSystemConfiguration.get( uri.scheme, uri.container );
+
+        Properties overrides = new Properties();
+        overrides.putAll( containerConfiguration );
+
+        ContextBuilder contextBuilder = ContextBuilder
+            .newBuilder( uri.getProvider() )
+            .modules( List.of( new SLF4JLoggingModule() ) )
+            .overrides( overrides );
+
+        return contextBuilder.buildView( BlobStoreContext.class );
+    }
+}
