@@ -33,8 +33,8 @@ import oap.message.MessageHttpHandler;
 import oap.message.MessageSender;
 import oap.template.BinaryUtils;
 import oap.template.Types;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.joda.time.DateTime;
@@ -52,18 +52,16 @@ import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_FREE_SPACE_REQUIRED;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 @Slf4j
 public class LoggerTest extends Fixtures {
-    private final EnvFixture envFixture;
+    private final TestDirectoryFixture testDirectoryFixture;
 
     public LoggerTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
@@ -80,7 +78,7 @@ public class LoggerTest extends Fixtures {
         var headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         var types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
         var loggedHeaders2 = String.join( "\t", headers2 ) + "\n";
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             Logger logger = new Logger( backend );
             logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
             logger.log( "lfn2", Map.of(), "log", headers1, types1, line1 );
@@ -90,13 +88,13 @@ public class LoggerTest extends Fixtures {
             logger.log( "lfn1", Map.of(), "log", headers2, types2, line2 );
         }
 
-        assertFile( testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( loggedHeaders1 + loggedLine1 + loggedLine1, GZIP );
-        assertFile( testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( loggedHeaders1 + loggedLine1, GZIP );
-        assertFile( testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( loggedHeaders2 + loggedLine2, GZIP );
-        assertFile( testPath( "logs/lfn1/2015-10/10/log_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( loggedHeaders2 + loggedLine2, GZIP );
     }
 
@@ -104,8 +102,8 @@ public class LoggerTest extends Fixtures {
     public void net() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        int port = envFixture.portFor( getClass() );
-        Path controlStatePath = testPath( "controlStatePath.st" );
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var line1 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
         var headers1 = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
@@ -114,11 +112,11 @@ public class LoggerTest extends Fixtures {
         var headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         var types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
 
-        try( var serverBackend = new DiskLoggerBackend( testPath( "logs" ), BPH_12, DEFAULT_BUFFER );
+        try( var serverBackend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER );
              var server = new SocketLoggerServer( serverBackend );
              var mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
-             var client = new MessageSender( "localhost", port, "/messages", testPath( "tmp" ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
              var clientBackend = new SocketLoggerBackend( client, 256, -1 ) ) {
 
             mServer.start();
@@ -134,7 +132,7 @@ public class LoggerTest extends Fixtures {
             client.syncMemory();
             assertEventually( 50, 100, () -> assertFalse( logger.isLoggingAvailable() ) );
 
-            assertFile( testPath( "logs/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
                 .doesNotExist();
 
             serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
@@ -158,18 +156,18 @@ public class LoggerTest extends Fixtures {
         }
 
         assertEventually( 10, 1000, () ->
-            assertFile( testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
                 .hasContent( """
                     TIMESTAMP\tREQUEST_ID\tREQUEST_ID2
                     2015-10-10 01:00:00	12345678\t12345678
                     2015-10-10 01:00:00	12345678\t12345678
                     """.stripIndent(), GZIP ) );
-        assertFile( testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( """
                 TIMESTAMP\tREQUEST_ID\tREQUEST_ID2
                 2015-10-10 01:00:00\t12345678\t12345678
                 """, GZIP );
-        assertFile( testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( """
                 TIMESTAMP\tREQUEST_ID2
                 2015-10-10 01:00:00\t12345678

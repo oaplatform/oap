@@ -237,7 +237,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
                     service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
                 } else {
-                    instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
+                    instance = RemoteInvocationHandler.proxy( serviceItem.getModuleName() + ":" + service.name, service.remote, reflect.underlying );
                 }
                 retModules.put( serviceItem, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
             } catch( Exception e ) {

@@ -35,8 +35,9 @@ import java.util.stream.IntStream;
 
 import static oap.benchmark.Benchmark.benchmark;
 
+@Test( enabled = false )
 public class ListsPerformance {
-    @Test
+    @Test( enabled = false )
     public void testAllMatch() {
         List<String> list = IntStream.range( 0, 10 ).mapToObj( i -> "sdfsdf" + i ).collect( Collectors.toList() );
 
@@ -54,7 +55,7 @@ public class ListsPerformance {
         } ).run();
     }
 
-    @Test
+    @Test( enabled = false )
     public void testFilter() {
         List<Integer> list = IntStream.range( 0, 10 ).boxed().collect( Collectors.toList() );
 

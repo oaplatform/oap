@@ -14,16 +14,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileAtomicLongTest extends Fixtures {
 
+    private final TestDirectoryFixture testDirectoryFixture;
     private FileAtomicLong fileAtomicLong1;
     private FileAtomicLong fileAtomicLong2;
 
     public FileAtomicLongTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod
     public void beforeMethod() {
-        Path file = TestDirectoryFixture.testPath( "al" );
+        Path file = testDirectoryFixture.testPath( "al" );
 
         fileAtomicLong1 = new FileAtomicLong( file, 1, 0 );
         fileAtomicLong2 = new FileAtomicLong( file, 1, 0 );
@@ -36,7 +37,7 @@ public class FileAtomicLongTest extends Fixtures {
     }
 
     @Test
-    public void testGetSet() throws IOException {
+    public void testGetSet() {
         assertThat( fileAtomicLong1.get() ).isEqualTo( 0L );
         assertThat( fileAtomicLong2.get() ).isEqualTo( 0L );
 

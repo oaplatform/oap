@@ -26,7 +26,6 @@ package oap.template;
 
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -41,10 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TemplateEngineEnumTest extends Fixtures {
     private TemplateEngine engine;
     private String testMethodName;
-
-    public TemplateEngineEnumTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
 
     @BeforeClass
     public void beforeClass() {

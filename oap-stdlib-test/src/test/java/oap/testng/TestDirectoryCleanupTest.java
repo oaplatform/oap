@@ -44,23 +44,28 @@ import static org.assertj.core.api.Assertions.assertThat;
  * This is utility for teamcity to clean up orphaned test dirs
  */
 @Slf4j
-public class TestDirectoryCleanupTest {
+public class TestDirectoryCleanupTest extends Fixtures {
     private static final long TEN_HOURS = TimeUnit.HOURS.toMillis( 10 );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public TestDirectoryCleanupTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    }
 
     @Test
     public void test() {}
 
     @BeforeClass
-    public void init() throws IOException {
-        Path dir = TestDirectoryFixture.testDirectory();
-        if ( dir.toFile().exists() ) return;
+    public void init() {
+        Path dir = testDirectoryFixture.testDirectory();
+        if( dir.toFile().exists() ) return;
         dir.toFile().mkdirs();
     }
 
     @AfterClass
     public void checkForPollution() throws IOException {
-        Path dir = TestDirectoryFixture.testDirectory();
-        if ( !dir.toFile().exists() ) return;
+        Path dir = testDirectoryFixture.testDirectory();
+        if( !dir.toFile().exists() ) return;
         long count = Files.list( dir ).count();
         assertThat( count )
             .withFailMessage( "POLLUTION DETECTED, the previous test left test directory with content" )
@@ -75,7 +80,7 @@ public class TestDirectoryCleanupTest {
 
         try( var stream = java.nio.file.Files.newDirectoryStream( globalTestDirectory() ) ) {
             for( Path build : stream ) {
-                boolean self = TestDirectoryFixture.testDirectory().equals( build );
+                boolean self = testDirectoryFixture.testDirectory().equals( build );
                 long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();
                 long diff = now - lastModified;
                 if( self || diff > TEN_HOURS ) {

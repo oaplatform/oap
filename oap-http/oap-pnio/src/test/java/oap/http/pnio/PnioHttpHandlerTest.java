@@ -29,8 +29,8 @@ import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.util.Dates;
 import org.testng.annotations.Test;
 
@@ -42,12 +42,6 @@ import static oap.http.pnio.PnioRequestHandler.Type.IO;
 import static oap.http.test.HttpAsserts.assertPost;
 
 public class PnioHttpHandlerTest extends Fixtures {
-    private final EnvFixture envFixture;
-
-    public PnioHttpHandlerTest() {
-        envFixture = fixture( new EnvFixture() );
-    }
-
     @Test
     public void testProcess() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu-1", COMPUTE ) )
@@ -169,7 +163,8 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
-        int port = envFixture.portFor( "pnio" );
+        int port = Ports.getFreePort( getClass() );
+
         var settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )
             .responseSize( responseSize )

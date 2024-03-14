@@ -27,8 +27,8 @@ package oap.http;
 import io.github.bucket4j.Bandwidth;
 import oap.http.server.nio.NioHttpServer;
 import oap.http.server.nio.handlers.BandwidthHandler;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -41,17 +41,12 @@ import static oap.http.Http.StatusCode.TOO_MANY_REQUESTS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BandwidthHandlerTest extends Fixtures {
-    private final EnvFixture envFixture;
     private NioHttpServer server;
     private BandwidthHandler bandwidthHandler;
 
-    public BandwidthHandlerTest() {
-        envFixture = fixture( new EnvFixture() );
-    }
-
     @BeforeMethod
     public void beforeMethod() {
-        server = new NioHttpServer( new NioHttpServer.DefaultPort( envFixture.portFor( getClass() ) ) );
+        server = new NioHttpServer( new NioHttpServer.DefaultPort( Ports.getFreePort( getClass() ) ) );
         bandwidthHandler = new BandwidthHandler();
         bandwidthHandler.start();
         server.handlers.add( bandwidthHandler );
@@ -73,9 +68,9 @@ public class BandwidthHandlerTest extends Fixtures {
         );
         server.start();
 
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( HTTP_OK );
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( HTTP_OK );
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( HTTP_OK );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( HTTP_OK );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
     }
 
     @Test
@@ -90,11 +85,11 @@ public class BandwidthHandlerTest extends Fixtures {
         );
         server.start();
 
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( HTTP_OK );
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( HTTP_OK );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
         Thread.currentThread().sleep( 2_100L );
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( HTTP_OK );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( HTTP_OK );
         Thread.currentThread().sleep( 2_100L );
-        assertThat( Client.DEFAULT.get( "http://localhost:" + envFixture.portFor( getClass() ) + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
+        assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
     }
 }

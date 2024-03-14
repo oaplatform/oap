@@ -19,8 +19,10 @@ public class FileSystemTest extends Fixtures {
         s3MockFixture = suiteFixture( new S3MockFixture().withInitialBuckets( "test-bucket" ) );
     }
 
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public FileSystemTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
@@ -35,8 +37,8 @@ public class FileSystemTest extends Fixtures {
             ) );
 
         FileSystem fileSystem = new FileSystem( oapHadoopConfiguration );
-        Path inFile = TestDirectoryFixture.testPath( "folder/file.txt" );
-        Path outFile = TestDirectoryFixture.testPath( "file-out.txt" );
+        Path inFile = testDirectoryFixture.testPath( "folder/file.txt" );
+        Path outFile = testDirectoryFixture.testPath( "file-out.txt" );
         oap.io.Files.write( inFile, IoStreams.Encoding.PLAIN, "txt", ContentWriter.ofString() );
         var s3File = oapHadoopConfiguration.getPath( "folder/file.txt" );
         assertThat( s3File ).isEqualTo( new org.apache.hadoop.fs.Path( "s3://test-bucket/folder/file.txt" ) );

@@ -34,19 +34,20 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 
 import static oap.mail.test.MessagesAssertion.assertMessages;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static oap.util.function.Functions.empty.accept;
 import static oap.util.function.Functions.empty.reject;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MailQueueTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public MailQueueTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
     public void persist() {
-        var location = testPath( "queue" );
+        var location = testDirectoryFixture.testPath( "queue" );
         MailQueue queue = prepareQueue( location );
         queue.processing( reject() );
         assertThat( location.resolve( "mail.gz" ) ).exists();

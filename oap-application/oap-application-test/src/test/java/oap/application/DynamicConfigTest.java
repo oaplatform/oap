@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Files;
+import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
@@ -39,11 +40,16 @@ import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DynamicConfigTest {
+public class DynamicConfigTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public DynamicConfigTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    }
 
     @Test
     public void defaultConfig() throws MalformedURLException {
-        Path update = TestDirectoryFixture.testPath( "update.conf" );
+        Path update = testDirectoryFixture.testPath( "update.conf" );
 
         DynamicConfig<Cfg> config = new DynamicConfig<>( 10, Cfg.class,
             urlOfTestResource( getClass(), "default.conf" ),

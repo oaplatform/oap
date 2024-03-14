@@ -55,11 +55,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class TemplateEngineTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
     private TemplateEngine engine;
     private String testMethodName;
 
     public TemplateEngineTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod
@@ -361,14 +362,14 @@ public class TemplateEngineTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field2}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "2" );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+        var engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
     }
 
     @Test
     public void testDiskCacheChangeSourceCode() throws IOException {
-        engine = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+        engine = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
         var c1 = new TestTemplateClass();
         c1.field = "1";
         c1.field2 = "2";
@@ -379,13 +380,13 @@ public class TemplateEngineTest extends Fixtures {
         replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.class" );
         replace( "oap.template.testDiskCacheChangeSourceCode_42de630bd51c4a364dda63f562a3cc7d.java" );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+        var engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
     }
 
-    private static void replace( String fileName ) throws IOException {
-        File file = TestDirectoryFixture.testPath( fileName ).toFile();
+    private void replace( String fileName ) throws IOException {
+        File file = testDirectoryFixture.testPath( fileName ).toFile();
         String classStr = new String( FileUtils.readFileToByteArray( file ), ISO_8859_1 );
         byte[] classBytes = StringUtils.replace( classStr, "TemplateAccumulator", "Fake____Accumulator" ).getBytes( ISO_8859_1 );
         FileUtils.writeByteArrayToFile( file, classBytes );
@@ -517,7 +518,7 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testCacheClassFormatError() throws IOException {
-        FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
+        FileUtils.write( testDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
 
         var c = new TestTemplateClass();
         c.field = "1";
@@ -525,9 +526,9 @@ public class TemplateEngineTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "12\t12" );
 
-        FileUtils.write( TestDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
+        FileUtils.write( testDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
 
-        var engine2 = new TemplateEngine( TestDirectoryFixture.testDirectory(), Dates.d( 20 ) );
+        var engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 20 ) );
 
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field}\t${field}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "12\t12" );

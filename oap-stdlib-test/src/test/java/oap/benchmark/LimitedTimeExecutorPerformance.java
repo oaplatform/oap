@@ -34,7 +34,7 @@ import static oap.benchmark.Benchmark.benchmark;
 
 @Test( enabled = false )
 public class LimitedTimeExecutorPerformance {
-    @Test
+    @Test( enabled = false )
     public void testPerf() {
 
         final int samples = 100_000;

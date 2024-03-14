@@ -33,38 +33,39 @@ import java.util.Map;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.test.HttpAsserts.assertGet;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.SESSION;
 
 public class WebServicesSessionTest extends Fixtures {
+    private final KernelFixture kernel;
+
     public WebServicesSessionTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
     public void sessionViaResponse() {
-        assertGet( httpUrl( "/session/put" ), Map.of( "value", "vvv" ), Map.of() )
+        assertGet( kernel.httpUrl( "/session/put" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet( httpUrl( "/session/get" ) )
+        assertGet( kernel.httpUrl( "/session/get" ) )
             .isOk()
             .hasBody( "vvv" );
     }
 
     @Test
     public void sessionDirectly() {
-        assertGet( httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
+        assertGet( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet( httpUrl( "/session/get" ) )
+        assertGet( kernel.httpUrl( "/session/get" ) )
             .isOk()
             .hasBody( "vvv" );
     }
 
     @Test
     public void respondHtmlContentType() {
-        assertGet( httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
+        assertGet( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet( httpUrl( "/session/html" ) )
+        assertGet( kernel.httpUrl( "/session/html" ) )
             .isOk()
             .hasBody( "vvv" )
             .hasContentType( Http.ContentType.TEXT_HTML );

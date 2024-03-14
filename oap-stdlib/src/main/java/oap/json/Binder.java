@@ -237,6 +237,11 @@ public class Binder {
         }
     }
 
+    private static String getLimitation( String json ) {
+        if( json != null && json.length() > 20 ) return json.substring( 0, 20 ) + "...";
+        return json;
+    }
+
     public ObjectMapper getMapper() {
         return mapper;
     }
@@ -405,8 +410,8 @@ public class Binder {
     }
 
     public <T> T unmarshal( Class<T> clazz, URL url ) throws JsonException {
-        try( var in = url.openStream() ) {
-            return unmarshal( clazz, in );
+        try {
+            return mapper.readValue( url, clazz );
         } catch( IOException e ) {
             throw new JsonException( "Cannot deserialize to class: " + clazz.getCanonicalName(), e );
         }
@@ -620,7 +625,6 @@ public class Binder {
         return mapper.writerFor( ref );
     }
 
-
     @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
         return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
@@ -648,10 +652,5 @@ public class Binder {
             else if( path.endsWith( "yaml" ) || path.endsWith( "yml" ) ) return YAML;
             return withSystemProperties ? HOCON : HOCON_WO_SYSTEM_PROPERTIES;
         }
-    }
-
-    private static String getLimitation( String json ) {
-        if ( json != null && json.length() > 20 ) return json.substring( 0, 20 ) + "...";
-        return json;
     }
 }

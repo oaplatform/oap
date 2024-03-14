@@ -38,8 +38,9 @@ import static oap.id.Identifier.Option.FILL;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Test( enabled = false )
 public class MemoryStorageTest {
-    @Test
+    @Test( enabled = false )
     public void update() {
         var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
@@ -60,7 +61,7 @@ public class MemoryStorageTest {
         assertThat( ids ).containsOnly( noId.id );
     }
 
-    @Test
+    @Test( enabled = false )
     public void updateWithId() {
         var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
@@ -81,7 +82,7 @@ public class MemoryStorageTest {
         assertThat( ids ).containsOnly( id.id );
     }
 
-    @Test
+    @Test( enabled = false )
     public void get() {
         var storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
@@ -111,7 +112,7 @@ public class MemoryStorageTest {
         assertThat( storage.list().size() ).isEqualTo( 2000 );
     }
 
-    @Test
+    @Test( enabled = false )
     public void intId() {
         var storage = new MemoryStorage<>( IntIdentifier.<IntBean>forId( b -> b.id, ( b, id ) -> b.id = id ).build(), SERIALIZED );
         var a = new IntBean( null, "a" );

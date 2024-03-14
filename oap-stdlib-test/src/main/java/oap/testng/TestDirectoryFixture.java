@@ -31,7 +31,6 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Cuid;
 import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
 
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -39,12 +38,16 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>TEST_DIRECTORY</li>
+ * </ul>
+ */
 @Slf4j
-public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixture> {
-    public static final TestDirectoryFixture FIXTURE = new TestDirectoryFixture();
-
+public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> {
     private static final Path globalTestDirectory = Paths.get( "/tmp/test" );
-    private static final Path testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
+    private final Path testDirectory;
 
     private final DeployTestData deployTestData;
 
@@ -53,7 +56,10 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     }
 
     public TestDirectoryFixture( DeployTestData deployTestData ) {
+        testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
         this.deployTestData = deployTestData;
+
+        define( "TEST_DIRECTORY", testDirectory );
     }
 
     public static Path globalTestDirectory() {
@@ -69,31 +75,31 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
         }
     }
 
-    public static Path testDirectory() {
+    public Path testDirectory() {
         return testDirectory;
     }
 
-    public static Path testPath( String name ) {
+    public Path testPath( String name ) {
         Path path = testDirectory().resolve(
             name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
         Files.ensureFile( path );
         return path;
     }
 
-    public static URI testUri( String name ) {
+    public URI testUri( String name ) {
         return testPath( name ).toUri();
     }
 
     @SneakyThrows
-    public static URL testUrl( String name ) {
+    public URL testUrl( String name ) {
         return testUri( name ).toURL();
     }
 
-    public static Path deployTestData( Class<?> contextClass ) {
+    public Path deployTestData( Class<?> contextClass ) {
         return deployTestData( contextClass, "" );
     }
 
-    public static Path deployTestData( Class<?> contextClass, String name ) {
+    public Path deployTestData( Class<?> contextClass, String name ) {
         Path to = testPath( name );
         Resources.filePaths( contextClass, contextClass.getSimpleName() )
             .forEach( path -> {
@@ -124,15 +130,10 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
     }
 
     @Override
-    public void afterSuite() {
-        super.afterSuite();
-
-        cleanTestDirectories();
-    }
-
-    @Override
     protected void after() {
         TestDirectoryFixture.deleteDirectory( testDirectory() );
+
+        cleanTestDirectories();
     }
 
     @SneakyThrows
@@ -140,7 +141,7 @@ public class TestDirectoryFixture extends AbstractScopeFixture<TestDirectoryFixt
         try( var stream = java.nio.file.Files.list( globalTestDirectory() ) ) {
             stream
                 .filter( java.nio.file.Files::isDirectory )
-                .filter( path -> Files.getLastModifiedTime( path ) < DateTimeUtils.currentTimeMillis() - Dates.h( 2 ) )
+                .filter( path -> Files.getLastModifiedTime( path ) < System.currentTimeMillis() - Dates.h( 2 ) )
                 .forEach( path -> {
                     try {
                         Files.delete( path );

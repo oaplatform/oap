@@ -13,15 +13,21 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
 import oap.io.content.ContentReader;
-import oap.testng.AbstractEnvFixture;
+import oap.testng.AbstractFixture;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>PORT</li>
+ * </ul>
+ */
 @Slf4j
-public class S3MockFixture extends AbstractEnvFixture<S3MockFixture> {
+public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private static final String S3MOCK_VERSION = "3.1.0";
     @Getter
     private final int port;
@@ -30,8 +36,7 @@ public class S3MockFixture extends AbstractEnvFixture<S3MockFixture> {
     private String initialBuckets = "";
 
     public S3MockFixture() {
-        definePort( "S3MOCK_PORT" );
-        port = portFor( "S3MOCK_PORT" );
+        port = definePort( "PORT" );
     }
 
     @Override

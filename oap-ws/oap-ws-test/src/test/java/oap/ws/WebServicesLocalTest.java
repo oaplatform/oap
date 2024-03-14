@@ -30,17 +30,18 @@ import org.testng.annotations.Test;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.test.HttpAsserts.assertGet;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.Resources.urlOrThrow;
 
 public class WebServicesLocalTest extends Fixtures {
+    private final KernelFixture kernel;
+
     public WebServicesLocalTest() {
-        fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
     public void shouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "ok" );
+        assertGet( kernel.httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "ok" );
     }
 
     @SuppressWarnings( "unused" )

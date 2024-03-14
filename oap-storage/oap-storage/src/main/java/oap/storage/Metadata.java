@@ -31,10 +31,14 @@ import lombok.EqualsAndHashCode;
 import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 @EqualsAndHashCode
 public class Metadata<T> implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -4330659282261369252L;
+
     public long modified = DateTimeUtils.currentTimeMillis();
     public long hash = 0;
     @JsonTypeIdResolver( TypeIdFactory.class )

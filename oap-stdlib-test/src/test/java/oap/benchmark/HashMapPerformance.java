@@ -35,7 +35,7 @@ import static oap.benchmark.Benchmark.benchmark;
 
 @Test( enabled = false )
 public class HashMapPerformance {
-    @Test
+    @Test( enabled = false )
     public void testComputeIfAbsentVsGet() {
         HashMap<String, String> map = new HashMap<>();
 
@@ -46,7 +46,7 @@ public class HashMapPerformance {
         benchmark( "get", samples, i -> map.get( "key" + i ) ).run();
     }
 
-    @Test
+    @Test( enabled = false )
     public void testMultiStringKey() {
         int samples = 10000000;
 

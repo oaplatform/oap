@@ -39,13 +39,15 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryParserTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public DictionaryParserTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
     public void serialize() {
-        var path = TestDirectoryFixture.testPath( "test/test.json" );
+        var path = testDirectoryFixture.testPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
         assertThat( Files.readString( path ) ).isEqualTo( """

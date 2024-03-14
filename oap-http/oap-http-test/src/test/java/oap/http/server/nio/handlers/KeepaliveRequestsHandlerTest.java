@@ -3,9 +3,8 @@ package oap.http.server.nio.handlers;
 import oap.http.Client;
 import oap.http.Http;
 import oap.http.server.nio.NioHttpServer;
-import oap.testng.EnvFixture;
-import oap.testng.Fixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -18,8 +17,7 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     private final int testHttpPort;
 
     public KeepaliveRequestsHandlerTest() {
-        var envFixture = fixture( new EnvFixture().withScope( Fixture.Scope.CLASS ) );
-        testHttpPort = envFixture.portFor( "TEST_HTTP_PORT" );
+        testHttpPort = Ports.getFreePort( getClass() );
     }
 
     @Test

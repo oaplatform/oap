@@ -25,14 +25,16 @@
 package oap.util;
 
 import oap.testng.Fixtures;
-import oap.testng.SystemTimerFixture;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AbstractCounterTest extends Fixtures {
-    {
-        fixture( SystemTimerFixture.FIXTURE );
+    protected final TestDirectoryFixture testDirectoryFixture;
+
+    public AbstractCounterTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test

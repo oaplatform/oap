@@ -36,8 +36,6 @@ import java.util.function.BiFunction;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.TestDirectoryFixture.deployTestData;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static oap.util.Lists.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,13 +45,15 @@ public class DirectoryPersistenceTest extends Fixtures {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public DirectoryPersistenceTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
     public void load() {
-        Path path = deployTestData( getClass() );
+        Path path = testDirectoryFixture.deployTestData( getClass() );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
@@ -66,7 +66,7 @@ public class DirectoryPersistenceTest extends Fixtures {
 
     @Test
     public void persist() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
@@ -88,7 +88,7 @@ public class DirectoryPersistenceTest extends Fixtures {
 
     @Test
     public void persistFsLayout() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         BiFunction<Path, Bean, Path> fsResolve = ( p, o ) -> p.resolve( o.s );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
@@ -115,7 +115,7 @@ public class DirectoryPersistenceTest extends Fixtures {
 
     @Test
     public void restructureFsLayout() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
@@ -150,7 +150,7 @@ public class DirectoryPersistenceTest extends Fixtures {
 
     @Test
     public void storeAndUpdate() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
@@ -175,7 +175,7 @@ public class DirectoryPersistenceTest extends Fixtures {
 
     @Test
     public void delete() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
@@ -194,7 +194,7 @@ public class DirectoryPersistenceTest extends Fixtures {
 
     @Test
     public void deleteVersion() {
-        Path path = testPath( "data" );
+        Path path = testDirectoryFixture.testPath( "data" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );

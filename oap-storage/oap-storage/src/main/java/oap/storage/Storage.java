@@ -39,39 +39,39 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public interface Storage<I, T> extends Iterable<T> {
+public interface Storage<Id, Data> extends Iterable<Data> {
 
-    Stream<T> select();
+    Stream<Data> select();
 
-    List<T> list();
+    List<Data> list();
 
-    Optional<T> get( @Nonnull I id );
+    Optional<Data> get( @Nonnull Id id );
 
-    T get( I id, @Nonnull Supplier<T> init );
+    Data get( Id id, @Nonnull Supplier<Data> init );
 
     long size();
 
-    T store( @Nonnull T object );
+    Data store( @Nonnull Data object );
 
-    void store( Collection<T> objects );
+    void store( Collection<Data> objects );
 
-    void forEach( Consumer<? super T> action );
+    void forEach( Consumer<? super Data> action );
 
-    Optional<T> update( @Nonnull I id, @Nonnull Function<T, T> update );
+    Optional<Data> update( @Nonnull Id id, @Nonnull Function<Data, Data> update );
 
-    T update( I id, @Nonnull Function<T, T> update, @Nonnull Supplier<T> init );
+    Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init );
 
-    Optional<T> delete( @Nonnull I id );
+    Optional<Data> delete( @Nonnull Id id );
 
-    Optional<T> permanentlyDelete( @Nonnull I id );
+    Optional<Data> permanentlyDelete( @Nonnull Id id );
 
     void deleteAll();
 
-    void addDataListener( DataListener<I, T> dataListener );
+    void addDataListener( DataListener<Id, Data> dataListener );
 
-    void removeDataListener( DataListener<I, T> dataListener );
+    void removeDataListener( DataListener<Id, Data> dataListener );
 
-    Identifier<I, T> identifier();
+    Identifier<Id, Data> identifier();
 
     interface DataListener<DI, D> {
         /**

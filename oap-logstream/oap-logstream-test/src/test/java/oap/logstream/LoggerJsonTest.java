@@ -44,11 +44,12 @@ import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
-import static oap.testng.TestDirectoryFixture.testPath;
 
 public class LoggerJsonTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public LoggerJsonTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
@@ -58,7 +59,7 @@ public class LoggerJsonTest extends Fixtures {
         var content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
         var headers = new String[] { "test" };
         var types = new byte[][] { new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             Logger logger = new Logger( backend );
 
             var o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
@@ -68,7 +69,7 @@ public class LoggerJsonTest extends Fixtures {
             logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, BinaryUtils.line( jsonContent ) );
         }
 
-        assertFile( testPath( "logs/open_rtb_json/2015-10/10/request_response_v3b5d9e1b-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "logs/open_rtb_json/2015-10/10/request_response_v3b5d9e1b-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( String.join( "\t", headers ) + '\n' + content + "\n", Encoding.GZIP );
     }
 

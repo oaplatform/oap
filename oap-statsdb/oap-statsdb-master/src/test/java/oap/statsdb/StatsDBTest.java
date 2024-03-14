@@ -32,8 +32,8 @@ import oap.message.MessageHttpHandler;
 import oap.message.MessageSender;
 import oap.message.MessageSenderUtils;
 import oap.storage.mongo.MongoFixture;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Cuid;
@@ -45,7 +45,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static oap.statsdb.NodeSchema.nc;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -61,16 +60,13 @@ public class StatsDBTest extends Fixtures {
         nc( "n1", MockChild1.class ),
         nc( "n2", MockChild2.class ),
         nc( "n3", MockValue.class ) );
-    private static final MongoFixture MONGO_FIXTURE = new MongoFixture();
-    private final EnvFixture envFixture;
+    private static final MongoFixture MONGO_FIXTURE = new MongoFixture( "MONGO" );
+    private final TestDirectoryFixture testDirectoryFixture;
 
-    {
-        envFixture = new EnvFixture();
-
+    public StatsDBTest() {
         fixture( MONGO_FIXTURE );
-        fixture( TestDirectoryFixture.FIXTURE );
-        fixture( SystemTimerFixture.FIXTURE );
-        fixture( envFixture );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        fixture( new SystemTimerFixture() );
     }
 
     @Test
@@ -222,8 +218,8 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void version() throws IOException {
-        int port = envFixture.portFor( getClass() );
-        Path controlStatePath = testPath( "controlStatePath.st" );
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
@@ -231,7 +227,7 @@ public class StatsDBTest extends Fixtures {
         try( var master = new StatsDBMaster( schema2, StatsDBStorage.NULL );
              var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( new StatsDBMessageListener( master ) ), -1 );
-             var client = new MessageSender( "localhost", port, "/messages", TestDirectoryFixture.testPath( "msend" ), -1 );
+             var client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "msend" ), -1 );
              var node = new StatsDBNode( schema2, new StatsDBTransportMessage( client ), uid ) ) {
             server.bind( "/messages", messageHttpHandler );
             client.start();

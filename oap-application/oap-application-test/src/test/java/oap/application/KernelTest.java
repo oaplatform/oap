@@ -33,6 +33,7 @@ import oap.application.ServiceOne.Complex;
 import oap.application.module.Module;
 import oap.concurrent.Threads;
 import oap.system.Env;
+import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -60,7 +61,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertTrue;
 
-public class KernelTest {
+public class KernelTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public KernelTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    }
+
     @AfterMethod
     public void afterMethod() {
         new ArrayList<>( System.getenv().keySet() )
@@ -392,8 +399,8 @@ public class KernelTest {
             List.of( urlOfTestResource( getClass(), "beanFromPath.conf" ) )
         );
         try {
-            TestDirectoryFixture.deployTestData( getClass() );
-            System.setProperty( "TEST_PATH", TestDirectoryFixture.testDirectory().toString() );
+            testDirectoryFixture.deployTestData( getClass() );
+            System.setProperty( "TEST_PATH", testDirectoryFixture.testDirectory().toString() );
             ConfigImpl.reloadSystemPropertiesConfig();
 
             kernel.start( Map.of( "boot.main", "beanFromPath" ) );
@@ -403,7 +410,7 @@ public class KernelTest {
             assertThat( s3.service3.name ).isEqualTo( "from path" );
         } finally {
             kernel.stop();
-            TestDirectoryFixture.deleteDirectory( TestDirectoryFixture.testDirectory() );
+            TestDirectoryFixture.deleteDirectory( testDirectoryFixture.testDirectory() );
         }
     }
 
@@ -414,14 +421,26 @@ public class KernelTest {
         );
 
         try {
-            TestDirectoryFixture.deployTestData( getClass() );
+            testDirectoryFixture.deployTestData( getClass() );
+
 
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testFinalParameter" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessageContaining( "al=[val1], a=new value" );
         } finally {
             kernel.stop();
-            TestDirectoryFixture.deleteDirectory( TestDirectoryFixture.testDirectory() );
+            TestDirectoryFixture.deleteDirectory( testDirectoryFixture.testDirectory() );
+        }
+    }
+
+    @Test
+    public void testInclude() {
+        try( var kernel = new Kernel(
+            List.of( urlOfTestResource( getClass(), "testInclude.conf" ) ) ) ) {
+            kernel.start( Map.of( "boot.main", "testInclude" ) );
+
+            assertThat( kernel.<Service3>service( "testInclude.service3" ).get().name ).isEqualTo( "a" );
+            assertThat( kernel.<Service3>service( "testInclude.service32" ).get().name ).isEqualTo( "b" );
         }
     }
 

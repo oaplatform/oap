@@ -27,24 +27,23 @@ package oap.testng.http;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import lombok.SneakyThrows;
-import oap.testng.AbstractEnvFixture;
+import oap.testng.AbstractFixture;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class JavaWebServerFixture extends AbstractEnvFixture<JavaWebServerFixture> {
+public class JavaWebServerFixture extends AbstractFixture<JavaWebServerFixture> {
     private final LinkedHashMap<String, HttpHandler> contexts = new LinkedHashMap<>();
+    private final int port;
     private HttpServer server;
     private int threads = 10;
     private int backlog = 0;
     private int delaySeconds = 1;
 
     public JavaWebServerFixture() {
-        super( "JAVA_HTTP_SERVER_FIXTURE_" );
-
-        definePort( "HTTP_PORT" );
+        port = definePort( "HTTP_PORT" );
     }
 
     @SneakyThrows
@@ -54,7 +53,7 @@ public class JavaWebServerFixture extends AbstractEnvFixture<JavaWebServerFixtur
 
         var threadPoolExecutor = ( ThreadPoolExecutor ) Executors.newFixedThreadPool( threads );
         backlog = 0;
-        server = HttpServer.create( new InetSocketAddress( "localhost", portFor( "HTTP_PORT" ) ), backlog );
+        server = HttpServer.create( new InetSocketAddress( "localhost", port ), backlog );
 
         contexts.forEach( ( path, context ) -> server.createContext( path, context ) );
 

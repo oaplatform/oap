@@ -26,20 +26,20 @@ package oap.testng;
 
 import org.testng.annotations.Test;
 
-import static oap.testng.TestDirectoryFixture.deployTestData;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDirectoryFixtureTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public TestDirectoryFixtureTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
     public void deploy() {
-        deployTestData( getClass(), "test" );
-        assertThat( testPath( "test/test.txt" ) ).hasContent( "1" );
-        deployTestData( getClass() );
-        assertThat( testPath( "test.txt" ) ).hasContent( "1" );
+        testDirectoryFixture.deployTestData( getClass(), "test" );
+        assertThat( testDirectoryFixture.testPath( "test/test.txt" ) ).hasContent( "1" );
+        testDirectoryFixture.deployTestData( getClass() );
+        assertThat( testDirectoryFixture.testPath( "test.txt" ) ).hasContent( "1" );
     }
 }

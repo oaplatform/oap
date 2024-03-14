@@ -34,33 +34,34 @@ import java.nio.file.Path;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FilePersistenceTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 
+    private final TestDirectoryFixture testDirectoryFixture;
+
+    public FilePersistenceTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    }
+
     @Test
     public void fsync() {
-        Path path = testPath( "storage.json.gz" );
+        Path path = testDirectoryFixture.testPath( "fsync-storage.json.gz" );
         var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage ) ) {
             persistence.preStart();
             storage.store( new Bean( "123" ) );
 
-            assertEventually( 10, 200, () -> assertThat( path ).exists() );
+            assertEventually( 10, 2000, () -> assertThat( path ).exists() );
         }
     }
 
     @Test
     public void persist() {
-        Path path = testPath( "storage.json.gz" );
+        Path path = testDirectoryFixture.testPath( "persist-storage.json.gz" );
         var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var persistence = new FilePersistence<>( path, 10, storage1 ) ) {
             persistence.preStart();

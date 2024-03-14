@@ -22,7 +22,7 @@ class RequestTaskComputeRunner<WorkflowState> implements Runnable {
     private final BlockingQueue<PnioExchange<WorkflowState>> queue;
     private final Affinity affinity;
     volatile boolean done = false;
-    private Thread thread;
+    private volatile Thread thread;
 
     RequestTaskComputeRunner( BlockingQueue<PnioExchange<WorkflowState>> queue, Affinity affinity ) {
         this.queue = Objects.requireNonNull( queue );
@@ -31,9 +31,11 @@ class RequestTaskComputeRunner<WorkflowState> implements Runnable {
 
     @Override
     public void run() {
-        this.thread = Thread.currentThread();
         affinity.set();
-        Thread.currentThread().setPriority( Thread.MAX_PRIORITY );
+        synchronized( RequestTaskComputeRunner.class ) {
+            this.thread = Thread.currentThread();
+            this.thread.setPriority( Thread.MAX_PRIORITY );
+        }
 
         while( !done ) {
             try {
@@ -54,6 +56,11 @@ class RequestTaskComputeRunner<WorkflowState> implements Runnable {
 
     public void interrupt() {
         done = true;
-        thread.interrupt();
+
+        if( thread != null ) {
+            synchronized( RequestTaskComputeRunner.class ) {
+                thread.interrupt();
+            }
+        }
     }
 }

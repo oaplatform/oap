@@ -31,15 +31,15 @@ import java.util.List;
 public class KernelFixture extends AbstractKernelFixture<KernelFixture> {
 
     public KernelFixture( URL conf ) {
-        super( NO_PREFIX, Scope.METHOD, conf, null, List.of() );
+        super( Scope.METHOD, conf, null, List.of() );
     }
 
     public KernelFixture( URL conf, Path confd ) {
-        super( NO_PREFIX, Scope.METHOD, conf, confd, List.of() );
+        super( Scope.METHOD, conf, confd, List.of() );
     }
 
     public KernelFixture( URL conf, List<URL> additionalModules ) {
-        super( NO_PREFIX, Scope.METHOD, conf, null, additionalModules );
+        super( Scope.METHOD, conf, null, additionalModules );
     }
 
     public KernelFixture( URL conf, Path confd, List<URL> additionalModules ) {
@@ -47,6 +47,6 @@ public class KernelFixture extends AbstractKernelFixture<KernelFixture> {
     }
 
     public KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
-        super( NO_PREFIX, scope, conf, confd, additionalModules );
+        super( scope, conf, confd, additionalModules );
     }
 }

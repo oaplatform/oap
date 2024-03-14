@@ -30,6 +30,7 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Cuid;
+import oap.util.Lists;
 import oap.util.Pair;
 
 import java.io.Closeable;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.util.stream.Collectors.toList;
 import static oap.storage.Storage.DataListener.IdObject.__io;
 import static oap.util.Pair.__;
 
@@ -53,9 +53,9 @@ import static oap.util.Pair.__;
 public class Replicator<I, T> implements Closeable {
     static final AtomicLong stored = new AtomicLong();
     static final AtomicLong deleted = new AtomicLong();
-    private String uniqueName = Cuid.UNIQUE.next();
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
+    private String uniqueName = Cuid.UNIQUE.next();
     private Scheduled scheduled;
     private transient Pair<Long, String> lastModified = __( -1L, "" );
 
@@ -95,7 +95,7 @@ public class Replicator<I, T> implements Closeable {
 
         try( var updates = master.updatedSince( last._1 ) ) {
             log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, uniqueName );
-            newUpdates = updates.collect( toList() );
+            newUpdates = updates.toList();
             log.trace( "[{}] updated objects {}", uniqueName, newUpdates.size() );
         } catch( UncheckedIOException e ) {
             log.error( e.getCause().getMessage() );
@@ -121,7 +121,7 @@ public class Replicator<I, T> implements Closeable {
             .filter( metadata -> metadata.modified == finalLastUpdate )
             .map( metadata -> slave.identifier.get( metadata.object ).toString() )
             .sorted()
-            .collect( toList() );
+            .toList();
 
         for( var id : list ) {
             hasher = hasher.putUnencodedChars( id );
@@ -148,9 +148,15 @@ public class Replicator<I, T> implements Closeable {
             stored.addAndGet( newUpdates.size() );
         }
 
+        if( log.isTraceEnabled() ) {
+            log.trace( "[{}] added {} updated {}", uniqueName, Lists.map( added, a -> a.id ), Lists.map( updated, a -> a.id ) );
+        }
+
         var ids = master.ids();
         log.trace( "[{}] master ids {}", uniqueName, ids );
-        if( ids.isEmpty() ) lastUpdate = -1;
+        if( ids.isEmpty() ) {
+            lastUpdate = -1;
+        }
 
         List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )

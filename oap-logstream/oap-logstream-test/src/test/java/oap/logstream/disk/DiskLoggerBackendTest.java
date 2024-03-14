@@ -44,19 +44,20 @@ import static oap.logstream.formats.parquet.ParquetAssertion.assertParquet;
 import static oap.logstream.formats.parquet.ParquetAssertion.row;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.TestDirectoryFixture.testPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class DiskLoggerBackendTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public DiskLoggerBackendTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
             backend.start();
 
             assertTrue( backend.isLoggingAvailable() );
@@ -74,7 +75,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
             backend.filePattern = "<LOG_TYPE>_<LOG_VERSION>_<INTERVAL>.tsv.gz";
             backend.filePatternByType.put( "LOG_TYPE_WITH_DIFFERENT_FILE_PATTERN",
                 new DiskLoggerBackend.FilePatternConfiguration( "<LOG_TYPE>_<LOG_VERSION>_<MINUTE>.parquet" ) );
@@ -87,13 +88,13 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             backend.refresh( true );
 
-            assertFile( testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz" ) )
                 .hasContent( """
                     REQUEST_ID\tREQUEST_ID2
                     12345678\trrrr5678
                     1\t2
                     """, IoStreams.Encoding.GZIP );
-            assertParquet( testPath( "logs/lfn1/log_type_with_different_file_pattern_59193f7e-1_16.parquet" ) )
+            assertParquet( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_different_file_pattern_59193f7e-1_16.parquet" ) )
                 .containOnlyHeaders( "REQUEST_ID", "REQUEST_ID2" )
                 .contains( row( "12345678", "rrrr5678" ),
                     row( "1", "2" ) );
@@ -107,19 +108,19 @@ public class DiskLoggerBackendTest extends Fixtures {
         var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
         //init new logger
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             backend.start();
 
             Logger logger = new Logger( backend );
             //log a line to lfn1
             logger.log( "lfn1", Map.of(), "log", headers, types, lines );
             //check file size
-            assertThat( testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            assertThat( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
                 .hasSize( 10 );
             //call refresh() with forceSync flag = true -> trigger flush()
             backend.refresh( true );
             //check file size once more after flush() -> now the size is larger
-            assertFile( testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
                 .hasContent( """
                     REQUEST_ID\tREQUEST_ID2
                     12345678\trrrr5678

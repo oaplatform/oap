@@ -51,7 +51,7 @@ public class FixturesTest extends Fixtures {
 
 
     @Slf4j
-    static class F implements Fixture {
+    static class F extends AbstractFixture<F> {
         String result = "";
 
         @Override

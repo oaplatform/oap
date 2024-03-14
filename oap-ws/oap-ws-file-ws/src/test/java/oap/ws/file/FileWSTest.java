@@ -28,14 +28,13 @@ import oap.application.testng.KernelFixture;
 import oap.http.Http;
 import oap.io.Files;
 import oap.io.content.ContentWriter;
-import oap.testng.Env;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import static oap.http.test.HttpAsserts.assertGet;
 import static oap.http.test.HttpAsserts.assertPost;
-import static oap.http.test.HttpAsserts.httpUrl;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
@@ -44,32 +43,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Ignore
 public class FileWSTest extends Fixtures {
 
-    private final KernelFixture kernelFixture;
+    private final KernelFixture kernel;
+    private final TestDirectoryFixture testDirectoryFixture;
 
     public FileWSTest() {
-        fixture( oap.testng.TestDirectoryFixture.FIXTURE );
-        kernelFixture = fixture( new KernelFixture( urlOfTestResource( getClass(), "application.test.conf" ) ) );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( urlOfTestResource( getClass(), "application.test.conf" ) ) );
     }
 
     @Test
     public void upload() {
-        assertPost( httpUrl( "/file" ), contentOfTestResource( getClass(), "data-complex.json", ofString() ), Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/file" ), contentOfTestResource( getClass(), "data-complex.json", ofString() ), Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "file.txt" );
-        assertThat( Env.tmpPath( "default/file.txt" ) ).hasContent( "test" );
+        assertThat( testDirectoryFixture.testPath( "default/file.txt" ) ).hasContent( "test" );
 
-        assertPost( httpUrl( "/file?bucket=b1" ), contentOfTestResource( getClass(), "data-single.json", ofString() ), Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/file?bucket=b1" ), contentOfTestResource( getClass(), "data-single.json", ofString() ), Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "file.txt" );
-        assertThat( Env.tmpPath( "b1/file.txt" ) ).hasContent( "test" );
+        assertThat( testDirectoryFixture.testPath( "b1/file.txt" ) ).hasContent( "test" );
     }
 
     @Test
     public void download() {
-        Files.write( Env.tmpPath( "default/test.txt" ), "test", ContentWriter.ofString() );
-        assertGet( httpUrl( "/file?path=test.txt" ) )
+        Files.write( testDirectoryFixture.testPath( "default/test.txt" ), "test", ContentWriter.ofString() );
+        assertGet( kernel.httpUrl( "/file?path=test.txt" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "test" );
 
-        Files.write( Env.tmpPath( "b1/test.txt" ), "b1test", ContentWriter.ofString() );
-        assertGet( httpUrl( "/file?path=test.txt&bucket=b1" ) )
+        Files.write( testDirectoryFixture.testPath( "b1/test.txt" ), "b1test", ContentWriter.ofString() );
+        assertGet( kernel.httpUrl( "/file?path=test.txt&bucket=b1" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "b1test" );
     }
 }

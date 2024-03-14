@@ -29,8 +29,9 @@ import org.testng.annotations.Test;
 import static oap.benchmark.Benchmark.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Test( enabled = false )
 public class PublicSuffixDataPerformance {
-    @Test
+    @Test( enabled = false )
     public void baseDomainOf() {
         assertThat( PublicSuffixData.baseDomainOf( "facebook.com" ) ).isEqualTo( "facebook.com" );
         benchmark( "baseDomainOf", 1000000,

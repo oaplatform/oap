@@ -25,8 +25,8 @@
 package oap.http.file;
 
 import oap.io.AbstractFileSync;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import org.apache.http.client.utils.DateUtils;
@@ -47,19 +47,17 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpFileSyncTest extends Fixtures {
-    private static final String PORT = HttpFileSyncTest.class.toString();
-    private final EnvFixture envFixture;
+    private final TestDirectoryFixture testDirectoryFixture;
     private ClientAndServer mockServer;
 
-    {
-        fixture( SystemTimerFixture.FIXTURE );
-        fixture( TestDirectoryFixture.FIXTURE );
-        envFixture = fixture( new EnvFixture() );
+    public HttpFileSyncTest() {
+        fixture( new SystemTimerFixture() );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @BeforeMethod
     public void start() {
-        mockServer = ClientAndServer.startClientAndServer( envFixture.portFor( PORT ) );
+        mockServer = ClientAndServer.startClientAndServer( Ports.getFreePort( getClass() ) );
     }
 
     @AfterMethod
@@ -75,9 +73,9 @@ public class HttpFileSyncTest extends Fixtures {
         var date10 = new Date( 10 * 1000 );
         var date20 = new Date( 20 * 1000 );
 
-        var localFile = TestDirectoryFixture.testPath( "ltest.file" );
+        var localFile = testDirectoryFixture.testPath( "ltest.file" );
 
-        var fileSync = AbstractFileSync.create( "http://localhost:" + envFixture.portFor( PORT ) + "/file", localFile );
+        var fileSync = AbstractFileSync.create( "http://localhost:" + mockServer.getLocalPort() + "/file", localFile );
         fileSync.addListener( path -> b.append( "f" ) );
 
         mockServer

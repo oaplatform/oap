@@ -30,7 +30,7 @@ import static oap.benchmark.Benchmark.benchmark;
 
 @Test( enabled = false )
 public class SystemPerformance {
-    @Test
+    @Test( enabled = false )
     public void testNanoTimeVsCurrentTimeMillis() {
         final int SAMPLES = 10000000;
 

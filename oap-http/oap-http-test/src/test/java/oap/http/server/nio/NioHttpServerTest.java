@@ -32,8 +32,8 @@ import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
 import oap.http.server.nio.health.HealthHttpHandler;
 import oap.io.Resources;
-import oap.testng.EnvFixture;
 import oap.testng.Fixtures;
+import oap.testng.Ports;
 import oap.util.Dates;
 import org.testng.annotations.Test;
 
@@ -45,14 +45,9 @@ import static oap.http.test.HttpAsserts.assertGet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
-    private final EnvFixture fixture = fixture( new EnvFixture() );
-
-    public NioHttpServerTest() {
-    }
-
     @Test
     public void testResponseHeaders() throws IOException {
-        int port = fixture.portFor( getClass() );
+        int port = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.start();
@@ -81,9 +76,9 @@ public class NioHttpServerTest extends Fixtures {
 
     @Test
     public void testBindToSpecificPort() throws IOException {
-        int port = fixture.portFor( getClass() );
-        int testPort = fixture.portFor( getClass() + "test" );
-        int testPort2 = fixture.portFor( getClass() + "test2" );
+        int port = Ports.getFreePort( getClass() );
+        int testPort = Ports.getFreePort( getClass() );
+        int testPort2 = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.handlers.add( new KeepaliveRequestsHandler( 1000 ) );
@@ -115,8 +110,8 @@ public class NioHttpServerTest extends Fixtures {
      */
     @Test
     public void testHttps() throws IOException {
-        int httpPort = fixture.portFor( "TEST_HTTP_PORT" );
-        int httpsPort = fixture.portFor( "TEST_HTTPS_PORT" );
+        int httpPort = Ports.getFreePort( getClass() );
+        int httpsPort = Ports.getFreePort( getClass() );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
              Client client = Client

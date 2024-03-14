@@ -23,6 +23,7 @@
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

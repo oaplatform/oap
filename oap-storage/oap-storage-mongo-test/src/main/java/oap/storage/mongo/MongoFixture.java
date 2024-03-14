@@ -28,7 +28,7 @@ import de.bwaldvogel.mongo.MongoServer;
 import de.bwaldvogel.mongo.ServerVersion;
 import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
-import oap.testng.AbstractEnvFixture;
+import oap.testng.AbstractFixture;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,11 +36,20 @@ import java.util.Map;
 
 import static oap.testng.Asserts.contentOfTestResource;
 
+/**
+ * variables:
+ * <ul>
+ *     <li>PORT</li>
+ *     <li>HOST</li>
+ *     <li>DATABASE</li>
+ * </ul>
+ *
+ */
 @Slf4j
-public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
+public class MongoFixture extends AbstractFixture<MongoFixture> {
+    public static final String HOST = "localhost";
     public final int port;
     public final String database;
-    public final String host;
     private MongoClient mongoClient;
     private MongoServer server;
 
@@ -51,9 +60,9 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
     public MongoFixture( String database ) {
         this.database = database;
 
-        define( "MONGO_PORT", port = portFor( "MONGO_PORT" ) );
-        define( "MONGO_HOST", host = "localhost" );
-        define( "MONGO_DATABASE", database );
+        port = definePort( "PORT" );
+        define( "HOST", HOST );
+        define( "DATABASE", database );
     }
 
     @Override
@@ -62,7 +71,7 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
 
         this.server = createMongoServer();
         log.info( "mongo port = {}", port );
-        this.server.bind( host, port );
+        this.server.bind( HOST, port );
         this.mongoClient = createMongoClient();
     }
 
@@ -83,7 +92,7 @@ public class MongoFixture extends AbstractEnvFixture<MongoFixture> {
 
     @NotNull
     public String getConnectionString( String database ) {
-        return "mongodb://" + host + ":" + port + "/" + database;
+        return "mongodb://" + HOST + ":" + port + "/" + database;
     }
 
     @NotNull

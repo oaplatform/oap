@@ -30,11 +30,12 @@ import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.pathOfTestResource;
-import static oap.testng.TestDirectoryFixture.testPath;
 
 public class DictionaryMojoTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+
     public DictionaryMojoTest() {
-        fixture( TestDirectoryFixture.FIXTURE );
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
@@ -42,16 +43,16 @@ public class DictionaryMojoTest extends Fixtures {
         DictionaryMojo mojo = new DictionaryMojo();
         mojo.sourceDirectory = "src/test/resources/dictionary";
         mojo.dictionaryPackage = "test";
-        mojo.outputDirectory = testPath( "dictionary" ).toString();
+        mojo.outputDirectory = testDirectoryFixture.testPath( "dictionary" ).toString();
         mojo.exclude = new String[] { "**/test-dictionary.json" };
 
         mojo.execute();
 
-        assertFile( testPath( "dictionary/test/TestDictionaryExternalIdAsCharacter.java" ) )
+        assertFile( testDirectoryFixture.testPath( "dictionary/test/TestDictionaryExternalIdAsCharacter.java" ) )
             .hasSameContentAs( pathOfTestResource( getClass(), "TestDictionaryExternalIdAsCharacter.java" ) );
-        assertFile( testPath( "dictionary/test/Child1.java" ) )
+        assertFile( testDirectoryFixture.testPath( "dictionary/test/Child1.java" ) )
             .hasSameContentAs( pathOfTestResource( getClass(), "Child1.java" ) );
-        assertFile( testPath( "dictionary/test/Child2.java" ) )
+        assertFile( testDirectoryFixture.testPath( "dictionary/test/Child2.java" ) )
             .hasSameContentAs( pathOfTestResource( getClass(), "Child2.java" ) );
     }
 

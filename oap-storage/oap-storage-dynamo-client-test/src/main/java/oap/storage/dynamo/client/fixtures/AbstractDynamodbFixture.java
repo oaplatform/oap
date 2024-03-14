@@ -27,7 +27,7 @@ package oap.storage.dynamo.client.fixtures;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.system.Env;
-import oap.testng.AbstractEnvFixture;
+import oap.testng.AbstractFixture;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -42,7 +42,7 @@ import java.net.URISyntaxException;
  * AWS_REGION
  */
 @Slf4j
-public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<AbstractDynamodbFixture> {
+public abstract class AbstractDynamodbFixture extends AbstractFixture<AbstractDynamodbFixture> {
 
     public static final String DYNAMODB_PROTOCOL = Env.get( "DYNAMODB_PROTOCOL", "http" );
     public static final String DYNAMODB_HOSTS = Env.get( "DYNAMODB_HOSTS", "localhost" );
@@ -56,7 +56,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
     private DynamodbClient dynamodbClient = null;
     private boolean skipBeforeAndAfter = false;
 
-    public AbstractDynamodbFixture( ) {
+    public AbstractDynamodbFixture() {
         this( 300, 1, false );
     }
 
@@ -75,7 +75,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
             "AWS_ACCESS_KEY_ID", AWS_ACCESS_KEY_ID,
             "AWS_SECRET_ACCESS_KEY", AWS_SECRET_ACCESS_KEY,
             "AWS_REGION", AWS_REGION
-            );
+        );
         define( "DYNAMODB_PROTOCOL", DYNAMODB_PROTOCOL );
         define( "DYNAMODB_HOSTS", DYNAMODB_HOSTS );
         define( "DYNAMODB_PORT", DYNAMODB_PORT );
@@ -87,7 +87,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
     @Override
     protected void before() throws RuntimeException {
         super.before();
-        if ( skipBeforeAndAfter ) return;
+        if( skipBeforeAndAfter ) return;
         try {
             dynamodbClient = createClient();
             asDeleteAll();
@@ -101,7 +101,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
     @Override
     protected void after() {
         try {
-            if ( skipBeforeAndAfter ) return;
+            if( skipBeforeAndAfter ) return;
             asDeleteAll();
             dynamodbClient.close();
         } catch( Exception e ) {
@@ -111,7 +111,7 @@ public abstract class AbstractDynamodbFixture extends AbstractEnvFixture<Abstrac
         }
     }
 
-    public void asDeleteAll( ) {
+    public void asDeleteAll() {
         var ret = dynamodbClient.getTables();
         ret.ifSuccess( tables -> {
             for( var table : tables ) {

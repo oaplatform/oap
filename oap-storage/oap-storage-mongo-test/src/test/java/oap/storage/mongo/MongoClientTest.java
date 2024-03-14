@@ -37,13 +37,20 @@ public class MongoClientTest extends Fixtures {
     private final MongoFixture mongoFixture;
 
     public MongoClientTest() {
-        fixture( mongoFixture = new MongoFixture() );
+        fixture( mongoFixture = new MongoFixture( "MONGO" ) );
+    }
+
+    private static Integer getDocumentField( MongoClient mongoClient, String id, String field ) {
+        return mongoClient.doWithCollectionIfExist( "test", collection ->
+            Objects.requireNonNull( collection
+                .find( eq( "_id", id ) )
+                .first() ).getInteger( field ) ).orElseThrow();
     }
 
     @Test
     public void instantiationWithoutCredentialsInConnectionString() {
         try {
-            new MongoClient( String.format( "mongodb://%s:%s/%s", mongoFixture.host, mongoFixture.port, mongoFixture.database ) );
+            new MongoClient( String.format( "mongodb://%s:%s/%s", MongoFixture.HOST, mongoFixture.port, mongoFixture.database ) );
         } catch( Exception e ) {
             Assert.fail( e.getMessage() );
         }
@@ -57,12 +64,5 @@ public class MongoClientTest extends Fixtures {
             assertThat( getDocumentField( client, "test", "c" ) ).isEqualTo( 17 );
             assertThat( getDocumentField( client, "test3", "v" ) ).isEqualTo( 1 );
         }
-    }
-
-    private static Integer getDocumentField( MongoClient mongoClient, String id, String field ) {
-        return mongoClient.doWithCollectionIfExist( "test", collection ->
-            Objects.requireNonNull( collection
-                .find( eq( "_id", id ) )
-                .first() ).getInteger( field ) ).orElseThrow();
     }
 }
