@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -64,7 +65,7 @@ public class FileSystemTest extends Fixtures {
 
         assertThat( inputStream ).hasContent( "test string" );
 
-        assertThat( s3mockFixture.readFile( TEST_BUCKET, "logs/my-file.txt" ) ).isEqualTo( "test string" );
+        assertThat( s3mockFixture.readFile( TEST_BUCKET, "logs/my-file.txt", ofString() ) ).isEqualTo( "test string" );
 
         assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/my-file.txt" ) ).contains(
             entry( "tag1", "va1" ),

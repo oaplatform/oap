@@ -12,7 +12,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.Tag;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import oap.io.IoStreams;
+import oap.io.content.ContentReader;
 import oap.testng.AbstractFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static oap.io.IoStreams.Encoding.PLAIN;
 
 /**
  * variables:
@@ -100,13 +99,13 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         s3.putObject( putObjectRequest );
     }
 
-    public String readFile( String container, String name ) {
+    public <T> T readFile( String container, String name, ContentReader<T> contentReader ) {
         AmazonS3 s3 = getS3();
 
         try( S3Object s3Object = s3.getObject( container, name );
              S3ObjectInputStream objectContent = s3Object.getObjectContent() ) {
 
-            return IoStreams.asString( objectContent, PLAIN );
+            return contentReader.read( objectContent );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
