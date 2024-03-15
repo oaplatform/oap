@@ -44,7 +44,25 @@ public class FileSystemConfiguration {
 
         }
 
+        String defaultScheme = getDefaultScheme();
+        String defaultContainer = getDefaultContainer();
+
+        log.info( "DefaultScheme {} DefaultContainer {}", defaultScheme, defaultContainer );
         log.info( "fs {}", properties );
+    }
+
+    public String getDefaultScheme() {
+        return getDefault( "scheme" );
+    }
+
+    public String getDefaultContainer() {
+        return getDefault( "container" );
+    }
+
+    private String getDefault( String parameter ) {
+        Map<String, Object> defaults = properties.get( "default" );
+        Preconditions.checkNotNull( defaults, "fs.default is required" );
+        return Preconditions.checkNotNull( ( String ) defaults.get( "jclouds." + parameter ), "fs.default.jclouds." + parameter + " is required" );
     }
 
     private LinkedHashMap<String, Object> toStringList( Object configuration ) {

@@ -32,7 +32,10 @@ public class FileSystemTest extends Fixtures {
             "fs.s3.jclouds.identity", "access_key",
             "fs.s3.jclouds.credential", "access_secret",
             "fs.s3.jclouds.s3.virtual-host-buckets", false,
-            "fs.s3.jclouds.endpoint", "http://localhost:" + s3mockFixture.getPort()
+            "fs.s3.jclouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
+
+            "fs.default.jclouds.scheme", "s3",
+            "fs.default.jclouds.container", TEST_BUCKET
         ) ) );
 
         s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
@@ -55,7 +58,10 @@ public class FileSystemTest extends Fixtures {
             "fs.s3.jclouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
             "fs.s3.jclouds.headers", "DEBUG",
 
-            "fs.file.jclouds.filesystem.basedir", testDirectoryFixture.testDirectory()
+            "fs.file.jclouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
+
+            "fs.default.jclouds.scheme", "s3",
+            "fs.default.jclouds.container", TEST_BUCKET
         ) ) );
 
         fileSystem.copy( "file://folder/my-file.txt", "s3://" + TEST_BUCKET + "/logs/my-file.txt",
