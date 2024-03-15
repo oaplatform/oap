@@ -90,6 +90,10 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             t -> URLDecoder.decode( t.getKey(), UTF_8 ), t -> URLDecoder.decode( t.getValue(), UTF_8 ) );
     }
 
+    public void uploadFile( String container, String name, Path file ) {
+        uploadFile( container, name, file, Map.of() );
+    }
+
     public void uploadFile( String container, String name, Path file, Map<String, String> tags ) {
         final AmazonS3 s3 = getS3();
 

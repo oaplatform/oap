@@ -117,7 +117,6 @@ public class FileSystem {
         } catch( Exception e ) {
             throw new CloudException( e );
         }
-
     }
 
     public void copy( String source, String destination ) {
@@ -163,18 +162,59 @@ public class FileSystem {
         }
     }
 
-    private BlobStoreContext getContext( CloudURI uri ) {
-        Map<String, Object> containerConfiguration = fileSystemConfiguration.get( uri.scheme, uri.container );
+    public void deleteBlob( String path ) {
+        CloudURI pathURI = new CloudURI( path );
 
-        Properties overrides = new Properties();
-        overrides.putAll( containerConfiguration );
+        try( BlobStoreContext context = getContext( pathURI ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            blobStore.removeBlob( pathURI.container, pathURI.path );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
 
-        ContextBuilder contextBuilder = ContextBuilder
-            .newBuilder( uri.getProvider() )
-            .modules( List.of( new SLF4JLoggingModule() ) )
-            .overrides( overrides );
+    public boolean deleteContainerIfEmpty( String path ) {
+        CloudURI pathURI = new CloudURI( path );
 
-        return contextBuilder.buildView( BlobStoreContext.class );
+        try( BlobStoreContext context = getContext( pathURI ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            return blobStore.deleteContainerIfEmpty( pathURI.container );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
+    public void deleteContainer( String path ) {
+        CloudURI pathURI = new CloudURI( path );
+
+        try( BlobStoreContext context = getContext( pathURI ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            blobStore.deleteContainer( pathURI.container );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
+    public boolean blobExists( String path ) {
+        CloudURI pathURI = new CloudURI( path );
+
+        try( BlobStoreContext context = getContext( pathURI ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            return blobStore.blobExists( pathURI.container, pathURI.path );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
+    public boolean containerExists( String path ) {
+        CloudURI pathURI = new CloudURI( path );
+
+        try( BlobStoreContext context = getContext( pathURI ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            return blobStore.containerExists( pathURI.container );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
     }
 
     public String getDefaultURL( String path ) {
@@ -187,6 +227,20 @@ public class FileSystem {
         }
 
         return prefix + path;
+    }
+
+    private BlobStoreContext getContext( CloudURI uri ) {
+        Map<String, Object> containerConfiguration = fileSystemConfiguration.get( uri.scheme, uri.container );
+
+        Properties overrides = new Properties();
+        overrides.putAll( containerConfiguration );
+
+        ContextBuilder contextBuilder = ContextBuilder
+            .newBuilder( uri.getProvider() )
+            .modules( List.of( new SLF4JLoggingModule() ) )
+            .overrides( overrides );
+
+        return contextBuilder.buildView( BlobStoreContext.class );
     }
 
     public String toLocalFilePath( Path path ) {
