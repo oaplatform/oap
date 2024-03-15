@@ -64,6 +64,8 @@ public class FileSystemTest extends Fixtures {
 
         assertThat( inputStream ).hasContent( "test string" );
 
+        assertThat( s3mockFixture.readFile( TEST_BUCKET, "logs/my-file.txt" ) ).isEqualTo( "test string" );
+
         assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/my-file.txt" ) ).contains(
             entry( "tag1", "va1" ),
             entry( "tag2=&+", "val2=&+" )
