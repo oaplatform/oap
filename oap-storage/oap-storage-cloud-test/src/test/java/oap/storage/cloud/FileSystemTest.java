@@ -24,6 +24,17 @@ public class FileSystemTest extends Fixtures {
     }
 
     @Test
+    public void testGetDefaultURL() {
+        FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
+            "fs.default.jclouds.scheme", "s3",
+            "fs.default.jclouds.container", TEST_BUCKET
+        ) ) );
+
+        assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( "s3://" + TEST_BUCKET + "/a.file" );
+        assertThat( fileSystem.getDefaultURL( "a.file" ) ).isEqualTo( "s3://" + TEST_BUCKET + "/a.file" );
+    }
+
+    @Test
     public void testGetInputStream() {
         Path path = testDirectoryFixture.testPath( "my-file.txt" );
         Files.write( path, "test string", ContentWriter.ofString() );

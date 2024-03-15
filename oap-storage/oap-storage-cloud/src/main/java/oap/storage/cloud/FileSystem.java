@@ -173,4 +173,16 @@ public class FileSystem {
 
         return contextBuilder.buildView( BlobStoreContext.class );
     }
+
+    public String getDefaultURL( String path ) {
+        String prefix = fileSystemConfiguration.getDefaultScheme() + "://" + fileSystemConfiguration.getDefaultContainer();
+
+        if( prefix.endsWith( "/" ) && path.startsWith( "/" ) ) {
+            prefix = prefix.substring( 0, prefix.length() - 1 );
+        } else if( !prefix.endsWith( "/" ) && !path.startsWith( "/" ) ) {
+            prefix = prefix + "/";
+        }
+
+        return prefix + path;
+    }
 }
