@@ -1,5 +1,6 @@
 package oap.storage.cloud;
 
+import com.google.common.base.Preconditions;
 import lombok.ToString;
 
 import java.io.Serial;
@@ -18,13 +19,15 @@ public class CloudURI implements Serializable {
 
     public CloudURI( String uri ) throws CloudException {
         try {
-            URI uri1 = new URI( uri );
+            URI u = new URI( uri );
 
-            scheme = uri1.getScheme();
-            container = uri1.getHost();
-            String uriPath = uri1.getPath();
+            scheme = u.getScheme();
+            container = u.getHost();
+            String uriPath = u.getPath();
             if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
             path = uriPath;
+
+            Preconditions.checkArgument( !path.isEmpty(), "container is required" );
 
             getProvider();
         } catch( URISyntaxException e ) {

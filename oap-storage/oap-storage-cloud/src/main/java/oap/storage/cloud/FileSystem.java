@@ -1,9 +1,11 @@
 package oap.storage.cloud;
 
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.io.Resources;
 import oap.util.Maps;
+import org.apache.commons.io.FilenameUtils;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
@@ -14,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,5 +187,13 @@ public class FileSystem {
         }
 
         return prefix + path;
+    }
+
+    public String toLocalFilePath( Path path ) {
+        Map<String, Object> filesystem = fileSystemConfiguration.get( "file", "" );
+        var baseDir = filesystem.get( "jclouds.filesystem.basedir" );
+        Preconditions.checkNotNull( baseDir, "fs.file.jclouds.filesystem.basedir is required" );
+
+        return FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) );
     }
 }

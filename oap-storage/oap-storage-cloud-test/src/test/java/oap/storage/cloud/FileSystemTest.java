@@ -59,8 +59,7 @@ public class FileSystemTest extends Fixtures {
 
     @Test
     public void testCopy() {
-        Path path = testDirectoryFixture.testPath( "folder/my-file.txt" );
-        Files.write( path, "test string", ContentWriter.ofString() );
+        Files.write( testDirectoryFixture.testPath( "folder/my-file.txt" ), "test string", ContentWriter.ofString() );
 
         FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
             "fs.s3.jclouds.identity", "access_key",
@@ -88,5 +87,18 @@ public class FileSystemTest extends Fixtures {
             entry( "tag1", "va1" ),
             entry( "tag2=&+", "val2=&+" )
         );
+    }
+
+    @Test
+    public void testToLocalFilePath() {
+        FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
+            "fs.file.jclouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
+
+            "fs.default.jclouds.scheme", "s3",
+            "fs.default.jclouds.container", TEST_BUCKET
+        ) ) );
+
+        assertThat( fileSystem.toLocalFilePath( testDirectoryFixture.testPath( "/contaioner/test.file" ) ) )
+            .isEqualTo( "file://contaioner/test.file" );
     }
 }
