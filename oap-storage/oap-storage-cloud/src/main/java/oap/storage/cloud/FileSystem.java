@@ -226,7 +226,7 @@ public class FileSystem {
             prefix = prefix + "/";
         }
 
-        return prefix + path;
+        return FilenameUtils.separatorsToUnix( prefix + path );
     }
 
     private BlobStoreContext getContext( CloudURI uri ) {
