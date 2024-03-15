@@ -41,6 +41,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -266,5 +267,21 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     public void addDependency( String name, AbstractFixture<?> fixture ) {
         dependencies.put( name, fixture );
+    }
+
+    public Path testPath( String name ) {
+        return testDirectoryFixture.testPath( name );
+    }
+
+    public Path testDirectory() {
+        return testDirectoryFixture.testDirectory();
+    }
+
+    public URI testUri( String name ) {
+        return testDirectoryFixture.testUri( name );
+    }
+
+    public URL testUrl( String name ) {
+        return testDirectoryFixture.testUrl( name );
     }
 }
