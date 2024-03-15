@@ -70,8 +70,10 @@ public class FileSystem {
         }
     }
 
-    public CloudInputStream getInputStream( String source ) {
-        CloudURI sourceURI = new CloudURI( source );
+    public CloudInputStream getInputStream( String path ) {
+        log.debug( "getInputStream {}", path );
+
+        CloudURI sourceURI = new CloudURI( path );
 
         BlobStoreContext context = null;
         try {
@@ -82,7 +84,7 @@ public class FileSystem {
             Blob blob = blobStore.getBlob( sourceURI.container, sourceURI.path );
 
             if( blob == null ) {
-                throw new CloudException( new FileNotFoundException( source ) );
+                throw new CloudException( new FileNotFoundException( path ) );
             }
 
             return new CloudInputStream( blob.getPayload().openStream(), blob.getMetadata().getUserMetadata(), context );
@@ -102,6 +104,8 @@ public class FileSystem {
     }
 
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
+        log.debug( "uploadFile {} path {} userMetadata {} tags {}", destination, path, userMetadata, tags );
+
         CloudURI destinationURI = new CloudURI( destination );
 
         try( BlobStoreContext sourceContext = getContext( destinationURI ) ) {
@@ -128,6 +132,8 @@ public class FileSystem {
     }
 
     public void copy( String source, String destination, Map<String, String> userMetadata, Map<String, String> tags ) {
+        log.debug( "copy {} tp {} userMetadata {} tags {}", source, destination, userMetadata, tags );
+
         CloudURI sourceURI = new CloudURI( source );
         CloudURI destinationURI = new CloudURI( destination );
 
@@ -163,6 +169,8 @@ public class FileSystem {
     }
 
     public void deleteBlob( String path ) {
+        log.debug( "deleteBlob {}", path );
+
         CloudURI pathURI = new CloudURI( path );
 
         try( BlobStoreContext context = getContext( pathURI ) ) {
@@ -174,6 +182,8 @@ public class FileSystem {
     }
 
     public boolean deleteContainerIfEmpty( String path ) {
+        log.debug( "deleteContainerIfEmpty {}", path );
+
         CloudURI pathURI = new CloudURI( path );
 
         try( BlobStoreContext context = getContext( pathURI ) ) {
@@ -185,6 +195,8 @@ public class FileSystem {
     }
 
     public void deleteContainer( String path ) {
+        log.debug( "deleteContainer {}", path );
+
         CloudURI pathURI = new CloudURI( path );
 
         try( BlobStoreContext context = getContext( pathURI ) ) {
@@ -196,6 +208,8 @@ public class FileSystem {
     }
 
     public boolean blobExists( String path ) {
+        log.debug( "blobExists {}", path );
+
         CloudURI pathURI = new CloudURI( path );
 
         try( BlobStoreContext context = getContext( pathURI ) ) {
@@ -207,6 +221,8 @@ public class FileSystem {
     }
 
     public boolean containerExists( String path ) {
+        log.debug( "containerExists {}", path );
+
         CloudURI pathURI = new CloudURI( path );
 
         try( BlobStoreContext context = getContext( pathURI ) ) {
@@ -218,6 +234,8 @@ public class FileSystem {
     }
 
     public String getDefaultURL( String path ) {
+        log.debug( "getDefaultURL {}", path );
+
         String prefix = fileSystemConfiguration.getDefaultScheme() + "://" + fileSystemConfiguration.getDefaultContainer();
 
         if( prefix.endsWith( "/" ) && path.startsWith( "/" ) ) {
@@ -244,6 +262,8 @@ public class FileSystem {
     }
 
     public String toLocalFilePath( Path path ) {
+        log.debug( "toLocalFilePath {}", path );
+
         Map<String, Object> filesystem = fileSystemConfiguration.get( "file", "" );
         var baseDir = filesystem.get( "jclouds.filesystem.basedir" );
         Preconditions.checkNotNull( baseDir, "fs.file.jclouds.filesystem.basedir is required" );
