@@ -186,7 +186,7 @@ public class FileSystem {
     public void deleteBlob( String path ) {
         CloudURI pathURI = new CloudURI( path );
 
-        deleteBlob( path );
+        deleteBlob( pathURI );
     }
 
     public void deleteBlob( CloudURI path ) {
@@ -268,18 +268,13 @@ public class FileSystem {
         }
     }
 
-    public String getDefaultURL( String path ) {
+    public CloudURI getDefaultURL( String path ) {
         log.debug( "getDefaultURL {}", path );
 
-        String prefix = fileSystemConfiguration.getDefaultScheme() + "://" + fileSystemConfiguration.getDefaultContainer();
-
-        if( prefix.endsWith( "/" ) && path.startsWith( "/" ) ) {
-            prefix = prefix.substring( 0, prefix.length() - 1 );
-        } else if( !prefix.endsWith( "/" ) && !path.startsWith( "/" ) ) {
-            prefix = prefix + "/";
-        }
-
-        return FilenameUtils.separatorsToUnix( prefix + path );
+        return new CloudURI( fileSystemConfiguration.getDefaultScheme(),
+            fileSystemConfiguration.getDefaultContainer(),
+            FilenameUtils.separatorsToUnix( path )
+        );
     }
 
     private BlobStoreContext getContext( CloudURI uri ) {
@@ -296,13 +291,13 @@ public class FileSystem {
         return contextBuilder.buildView( BlobStoreContext.class );
     }
 
-    public String toLocalFilePath( Path path ) {
+    public CloudURI toLocalFilePath( Path path ) {
         log.debug( "toLocalFilePath {}", path );
 
         Map<String, Object> filesystem = fileSystemConfiguration.get( "file", "" );
         var baseDir = filesystem.get( "jclouds.filesystem.basedir" );
         Preconditions.checkNotNull( baseDir, "fs.file.jclouds.filesystem.basedir is required" );
 
-        return FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) );
+        return new CloudURI( FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) ) );
     }
 }

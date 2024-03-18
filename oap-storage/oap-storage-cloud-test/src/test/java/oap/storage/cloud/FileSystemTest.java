@@ -32,8 +32,8 @@ public class FileSystemTest extends Fixtures {
             "fs.default.jclouds.container", TEST_BUCKET
         ) ) );
 
-        assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( "s3://" + TEST_BUCKET + "/a.file" );
-        assertThat( fileSystem.getDefaultURL( "a.file" ) ).isEqualTo( "s3://" + TEST_BUCKET + "/a.file" );
+        assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( new CloudURI( "s3", TEST_BUCKET, "a.file" ) );
+        assertThat( fileSystem.getDefaultURL( "a.file" ) ).isEqualTo( new CloudURI( "s3", TEST_BUCKET, "a.file" ) );
     }
 
     @Test
@@ -100,8 +100,8 @@ public class FileSystemTest extends Fixtures {
             "fs.default.jclouds.container", TEST_BUCKET
         ) ) );
 
-        assertThat( fileSystem.toLocalFilePath( testDirectoryFixture.testPath( "/contaioner/test.file" ) ) )
-            .isEqualTo( "file://contaioner/test.file" );
+        assertThat( fileSystem.toLocalFilePath( testDirectoryFixture.testPath( "/container/test.file" ) ) )
+            .isEqualTo( new CloudURI( "file", "container", "test.file" ) );
     }
 
     @Test
