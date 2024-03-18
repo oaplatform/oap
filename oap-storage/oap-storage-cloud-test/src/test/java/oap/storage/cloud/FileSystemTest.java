@@ -22,8 +22,8 @@ public class FileSystemTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FileSystemTest() {
-        s3mockFixture = fixture( new S3MockFixture() ).withInitialBuckets( TEST_BUCKET, "test2" );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        s3mockFixture = fixture( new S3MockFixture( testDirectoryFixture ) ).withInitialBuckets( TEST_BUCKET, "test2" );
     }
 
     @Test

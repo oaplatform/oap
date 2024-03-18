@@ -44,10 +44,10 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private String initialBuckets = "";
     private S3MockApplication s3MockApplication;
 
-    public S3MockFixture() {
+    public S3MockFixture( TestDirectoryFixture testDirectoryFixture ) {
+        this.testDirectoryFixture = testDirectoryFixture;
+
         port = definePort( "PORT" );
-        testDirectoryFixture = new TestDirectoryFixture();
-        addChild( testDirectoryFixture );
     }
 
     @Override
