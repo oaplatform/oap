@@ -1,13 +1,10 @@
 package oap.storage.cloud;
 
-import lombok.ToString;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-@ToString
 public class CloudURI implements Serializable {
     @Serial
     private static final long serialVersionUID = -435068850003366392L;
@@ -32,6 +29,24 @@ public class CloudURI implements Serializable {
         }
     }
 
+    public CloudURI( String scheme, String container, String path ) {
+        this.scheme = scheme;
+        this.container = container;
+        this.path = path;
+    }
+
+    public CloudURI withContainer( String container ) {
+        return new CloudURI( this.scheme, container, this.path );
+    }
+
+    public CloudURI withPath( String path ) {
+        return new CloudURI( this.scheme, this.container, path );
+    }
+
+    public CloudURI withSchema( String scheme ) {
+        return new CloudURI( scheme, this.container, this.path );
+    }
+
     public String getProvider() {
         return switch( scheme ) {
             case "s3" -> "aws-s3";
@@ -44,5 +59,10 @@ public class CloudURI implements Serializable {
 
     public CloudURI resolve( String name ) {
         return new CloudURI( scheme + "://" + container + path + "/" + name );
+    }
+
+    @Override
+    public String toString() {
+        return scheme + "://" + container + "/" + path;
     }
 }
