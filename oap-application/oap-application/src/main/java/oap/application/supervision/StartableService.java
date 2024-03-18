@@ -80,7 +80,7 @@ public class StartableService implements Supervised {
         try {
             findMethod( methods, supervised ).ifPresent( m -> m.invoke( supervised ) );
         } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
+            logger.error( "Looking for methods " + methods + " with no parameters in class " + supervised.getClass().getCanonicalName() + " failed", e );
             if( rethrow ) throw e;
         }
     }
