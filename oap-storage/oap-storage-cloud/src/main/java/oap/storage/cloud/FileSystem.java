@@ -295,9 +295,7 @@ public class FileSystem {
     public CloudURI toLocalFilePath( Path path ) {
         log.debug( "toLocalFilePath {}", path );
 
-        Map<String, Object> filesystem = fileSystemConfiguration.get( "file", "" );
-        var baseDir = filesystem.get( "jclouds.filesystem.basedir" );
-        Preconditions.checkNotNull( baseDir, "fs.file.jclouds.filesystem.basedir is required" );
+        var baseDir = fileSystemConfiguration.getOrThrow( "file", "", "jclouds.filesystem.basedir" );
 
         return new CloudURI( FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) ) );
     }
@@ -305,15 +303,8 @@ public class FileSystem {
     public File toFile( CloudURI cloudURI ) {
         Preconditions.checkArgument( "file".equals( cloudURI.scheme ) );
 
-        Map<String, Object> fileMap = fileSystemConfiguration.get( "file", cloudURI.container );
-        if( fileMap != null ) {
-            String basedir = ( String ) fileMap.get( "jclouds.filesystem.basedir" );
+        String basedir = ( String ) fileSystemConfiguration.getOrThrow( "file", cloudURI.container, "jclouds.filesystem.basedir" );
 
-            if( basedir != null ) {
-                return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
-            }
-        }
-
-        throw new CloudException( "fs.file.jclouds.filesystem.basedir is required" );
+        return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
     }
 }
