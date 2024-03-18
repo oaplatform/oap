@@ -50,6 +50,10 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
         this.children.add( child );
     }
 
+    protected void removeChild( AbstractFixture<?> child ) {
+        this.children.remove( child );
+    }
+
     @SuppressWarnings( "unchecked" )
     public Self withScope( Scope scope ) {
         this.scope = scope;

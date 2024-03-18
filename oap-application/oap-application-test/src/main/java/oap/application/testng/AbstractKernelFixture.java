@@ -72,12 +72,12 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     public static final String TEST_HTTP_PREFIX = "TEST_HTTP_PREFIX";
     protected final URL applicationConf;
     protected final List<URL> additionalModules = new ArrayList<>();
-    protected final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
     private final ArrayList<Pair<Class<?>, String>> conf = new ArrayList<>();
     private final LinkedHashMap<String, AbstractFixture<?>> dependencies = new LinkedHashMap<>();
     public Kernel kernel;
+    protected TestDirectoryFixture testDirectoryFixture;
     protected Path confdPath;
     private int testHttpPort;
 
@@ -103,6 +103,16 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         addChild( this.testDirectoryFixture );
 
         defineDefaults();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public Self withTestDirectoryFixture( TestDirectoryFixture testDirectoryFixture ) {
+        removeChild( this.testDirectoryFixture );
+
+        this.testDirectoryFixture = testDirectoryFixture;
+        addChild( testDirectoryFixture );
+
+        return ( Self ) this;
     }
 
     @SuppressWarnings( "unchecked" )
