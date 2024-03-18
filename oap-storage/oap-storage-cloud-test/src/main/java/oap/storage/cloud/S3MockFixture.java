@@ -12,6 +12,8 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.Tag;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import oap.io.IoStreams;
+import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentReader;
 import oap.testng.AbstractFixture;
 import oap.testng.TestDirectoryFixture;
@@ -109,7 +111,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         try( S3Object s3Object = s3.getObject( container, name );
              S3ObjectInputStream objectContent = s3Object.getObjectContent() ) {
 
-            return contentReader.read( objectContent );
+            return contentReader.read( IoStreams.in( objectContent, Encoding.from( name ) ) );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
