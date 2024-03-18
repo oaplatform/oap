@@ -12,6 +12,7 @@ import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URL;
@@ -299,5 +300,20 @@ public class FileSystem {
         Preconditions.checkNotNull( baseDir, "fs.file.jclouds.filesystem.basedir is required" );
 
         return new CloudURI( FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) ) );
+    }
+
+    public File toFile( CloudURI cloudURI ) {
+        Preconditions.checkArgument( "file".equals( cloudURI.scheme ) );
+
+        Map<String, Object> fileMap = fileSystemConfiguration.get( "file", cloudURI.container );
+        if( fileMap != null ) {
+            String basedir = ( String ) fileMap.get( "jclouds.filesystem.basedir" );
+
+            if( basedir != null ) {
+                return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
+            }
+        }
+
+        throw new CloudException( "fs.file.jclouds.filesystem.basedir is required" );
     }
 }

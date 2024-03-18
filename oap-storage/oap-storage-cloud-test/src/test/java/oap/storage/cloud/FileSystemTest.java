@@ -6,6 +6,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -142,5 +143,22 @@ public class FileSystemTest extends Fixtures {
         assertFalse( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertFalse( fileSystem.containerExists( "s3://test2" ) );
         assertTrue( fileSystem.containerExists( "s3://" + TEST_BUCKET ) );
+    }
+
+    @Test
+    public void testToFile() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
+            Map.of(
+                "fs.file.jclouds.filesystem.basedir", "/tmp",
+                "fs.file.tmp.jclouds.filesystem.basedir", "/container",
+                "fs.default.jclouds.scheme", "s3",
+                "fs.default.jclouds.container", "test-bucket"
+            )
+        );
+
+        FileSystem fileSystem = new FileSystem( fileSystemConfiguration );
+
+        assertThat( fileSystem.toFile( new CloudURI( "file://container/a/file1" ) ) ).isEqualTo( new File( "/tmp/container/a/file1" ) );
+        assertThat( fileSystem.toFile( new CloudURI( "file://tmp/a/file1" ) ) ).isEqualTo( new File( "/container/tmp/a/file1" ) );
     }
 }
