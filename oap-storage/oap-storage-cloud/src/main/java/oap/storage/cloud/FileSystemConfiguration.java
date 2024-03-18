@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -125,5 +127,20 @@ public class FileSystemConfiguration {
         }
 
         return conf;
+    }
+
+    public File toFile( CloudURI cloudURI ) {
+        Preconditions.checkArgument( "file".equals( cloudURI.scheme ) );
+
+        Map<String, Object> fileMap = get( "file", cloudURI.container );
+        if( fileMap != null ) {
+            String basedir = ( String ) fileMap.get( "jclouds.filesystem.basedir" );
+
+            if( basedir != null ) {
+                return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
+            }
+        }
+
+        throw new CloudException( "fs.file.jclouds.filesystem.basedir is required" );
     }
 }
