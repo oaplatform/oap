@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 /**
  * <a href="https://github.com/GeoscienceAustralia/wit_tooling/blob/main/examples/java/parquet-reader/src/main/java/LocalInputFile.java">from</a>
@@ -17,6 +18,10 @@ public class LocalInputFile implements InputFile {
     private static final int COPY_BUFFER_SIZE = 8192;
 
     private final RandomAccessFile raf;
+
+    public LocalInputFile( Path path ) throws FileNotFoundException {
+        this( path.toFile() );
+    }
 
     public LocalInputFile( File file ) throws FileNotFoundException {
         raf = new RandomAccessFile( file, "r" );
