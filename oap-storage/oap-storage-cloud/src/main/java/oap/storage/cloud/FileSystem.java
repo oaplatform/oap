@@ -107,20 +107,24 @@ public class FileSystem {
     }
 
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "uploadFile {} path {} userMetadata {} tags {}", destination, path, userMetadata, tags );
-
         CloudURI destinationURI = new CloudURI( destination );
 
-        try( BlobStoreContext sourceContext = getContext( destinationURI ) ) {
+        uploadFile( destinationURI, path, userMetadata, tags );
+    }
+
+    public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
+        log.debug( "uploadFile {} path {} userMetadata {} tags {}", destination, path, userMetadata, tags );
+
+        try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
 
             Blob blob = blobStore
-                .blobBuilder( destinationURI.path )
+                .blobBuilder( destination.path )
                 .userMetadata( userMetadata )
                 .payload( path.toFile() )
                 .build();
 
-            putBlob( blobStore, blob, destinationURI, tags );
+            putBlob( blobStore, blob, destination, tags );
         } catch( Exception e ) {
             throw new CloudException( e );
         }
