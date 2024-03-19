@@ -52,11 +52,20 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
     private final DeployTestData deployTestData;
 
     public TestDirectoryFixture() {
-        this( null );
+        this( null, null );
+    }
+
+    public TestDirectoryFixture( String suffix ) {
+        this( suffix, null );
     }
 
     public TestDirectoryFixture( DeployTestData deployTestData ) {
-        testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next() );
+        this( null, deployTestData );
+    }
+
+    public TestDirectoryFixture( String suffix, DeployTestData deployTestData ) {
+        testDirectory = globalTestDirectory().resolve( "test-" + Cuid.UNIQUE.next()
+            + ( suffix != null ? "-" + suffix : "" ) );
         this.deployTestData = deployTestData;
 
         define( "TEST_DIRECTORY", testDirectory );

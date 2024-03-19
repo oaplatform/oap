@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,9 +40,14 @@ import static oap.testng.Asserts.locationOfTestResource;
 public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     protected static ConcurrentHashMap<Class<?>, AbstractFixture<?>> suiteScope = new ConcurrentHashMap<>();
     protected final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
+    private final ArrayList<AbstractFixture<?>> children = new ArrayList<>();
     protected Scope scope = Scope.METHOD;
 
     protected AbstractFixture() {
+    }
+
+    protected void addChild( AbstractFixture<?> child ) {
+        this.children.add( child );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -61,6 +67,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
 
     public void beforeSuite() {
         if( scope == Scope.SUITE ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -68,11 +75,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterSuite() {
         if( scope == Scope.SUITE ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
     }
 
     public void beforeClass() {
         if( scope == Scope.CLASS ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -80,11 +89,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterClass() {
         if( scope == Scope.CLASS ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
     }
 
     public void beforeMethod() {
         if( scope == Scope.METHOD ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -92,6 +103,7 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterMethod() {
         if( scope == Scope.METHOD ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
     }
 
