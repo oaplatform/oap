@@ -56,6 +56,20 @@ public class FileSystemTest extends Fixtures {
     }
 
     @Test
+    public void testDownloadFile() {
+        Path path = testDirectoryFixture.testPath( "my-file.txt" );
+        Files.write( path, "test string", ContentWriter.ofString() );
+
+        FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() );
+
+        s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
+
+        fileSystem.downloadFile( "s3://" + TEST_BUCKET + "/logs/file.txt", testDirectoryFixture.testPath( "file.txt" ) );
+
+        assertThat( testDirectoryFixture.testPath( "file.txt" ) ).hasContent( "test string" );
+    }
+
+    @Test
     public void testCopy() {
         Files.write( testDirectoryFixture.testPath( "folder/my-file.txt.gz" ), "test string", ContentWriter.ofString() );
 

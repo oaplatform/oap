@@ -3,6 +3,7 @@ package oap.storage.cloud;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
+import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Maps;
 import org.apache.commons.io.FilenameUtils;
@@ -22,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
 public class FileSystem {
@@ -91,6 +94,35 @@ public class FileSystem {
             }
 
             return new CloudInputStream( blob.getPayload().openStream(), blob.getMetadata().getUserMetadata(), context );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        } finally {
+            Closeables.close( context );
+        }
+    }
+
+    public void downloadFile( String source, Path destination ) {
+        downloadFile( new CloudURI( source ), destination );
+    }
+
+    public void downloadFile( CloudURI source, Path destination ) {
+        log.debug( "downloadFile {} destination {}", source, destination );
+
+        BlobStoreContext context = null;
+        try {
+            context = getContext( source );
+
+            BlobStore blobStore = context.getBlobStore();
+
+            Blob blob = blobStore.getBlob( source.container, source.path );
+
+            if( blob == null ) {
+                throw new CloudBlobNotFoundException( source );
+            }
+
+            try( InputStream is = blob.getPayload().openStream() ) {
+                IoStreams.write( destination, PLAIN, is );
+            }
         } catch( Exception e ) {
             throw new CloudException( e );
         } finally {
