@@ -1,7 +1,6 @@
 package oap.storage.cloud;
 
 import com.google.common.base.Preconditions;
-import com.google.common.net.MediaType;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.io.Resources;
@@ -15,7 +14,6 @@ import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
@@ -89,7 +87,7 @@ public class FileSystem {
             Blob blob = blobStore.getBlob( path.container, path.path );
 
             if( blob == null ) {
-                throw new CloudException( new FileNotFoundException( path.toString() ) );
+                throw new CloudBlobNotFoundException( path );
             }
 
             return new CloudInputStream( blob.getPayload().openStream(), blob.getMetadata().getUserMetadata(), context );
@@ -120,7 +118,6 @@ public class FileSystem {
                 .blobBuilder( destinationURI.path )
                 .userMetadata( userMetadata )
                 .payload( path.toFile() )
-                .contentType( MediaType.APPLICATION_BINARY )
                 .build();
 
             putBlob( blobStore, blob, destinationURI, tags );
@@ -166,6 +163,11 @@ public class FileSystem {
             BlobStore destinationBlobStore = destinationContext.getBlobStore();
 
             Blob sourceBlob = sourceBlobStore.getBlob( source.container, source.path );
+
+            if( sourceBlob == null ) {
+                throw new CloudBlobNotFoundException( source );
+            }
+
             MutableContentMetadata sourceContentMetadata = sourceBlob.getMetadata().getContentMetadata();
 
             try( InputStream is = sourceBlob.getPayload().openStream() ) {

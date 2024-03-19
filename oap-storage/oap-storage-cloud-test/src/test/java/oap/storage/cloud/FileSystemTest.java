@@ -1,9 +1,12 @@
 package oap.storage.cloud;
 
 import oap.io.Files;
+import oap.io.IoStreams;
+import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -42,15 +45,7 @@ public class FileSystemTest extends Fixtures {
         Path path = testDirectoryFixture.testPath( "my-file.txt" );
         Files.write( path, "test string", ContentWriter.ofString() );
 
-        FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.s3.jclouds.identity", "access_key",
-            "fs.s3.jclouds.credential", "access_secret",
-            "fs.s3.jclouds.s3.virtual-host-buckets", false,
-            "fs.s3.jclouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
-
-            "fs.default.jclouds.scheme", "s3",
-            "fs.default.jclouds.container", TEST_BUCKET
-        ) ) );
+        FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() );
 
         s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
 
@@ -62,9 +57,28 @@ public class FileSystemTest extends Fixtures {
 
     @Test
     public void testCopy() {
-        Files.write( testDirectoryFixture.testPath( "folder/my-file.txt" ), "test string", ContentWriter.ofString() );
+        Files.write( testDirectoryFixture.testPath( "folder/my-file.txt.gz" ), "test string", ContentWriter.ofString() );
 
-        FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
+        FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() );
+
+        fileSystem.copy( "file://folder/my-file.txt.gz", "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz",
+            Map.of(), Map.of( "tag1", "va1", "tag2=&+", "val2=&+" ) );
+
+        CloudInputStream inputStream = fileSystem.getInputStream( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" );
+
+        assertThat( IoStreams.in( inputStream, Encoding.GZIP ) ).hasContent( "test string" );
+
+        assertThat( s3mockFixture.readFile( TEST_BUCKET, "logs/my-file.txt.gz", ofString() ) ).isEqualTo( "test string" );
+
+        assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/my-file.txt.gz" ) ).contains(
+            entry( "tag1", "va1" ),
+            entry( "tag2=&+", "val2=&+" )
+        );
+    }
+
+    @NotNull
+    private FileSystemConfiguration getFileSystemConfiguration() {
+        return new FileSystemConfiguration( Map.of(
             "fs.s3.jclouds.identity", "access_key",
             "fs.s3.jclouds.credential", "access_secret",
             "fs.s3.jclouds.s3.virtual-host-buckets", false,
@@ -75,21 +89,7 @@ public class FileSystemTest extends Fixtures {
 
             "fs.default.jclouds.scheme", "s3",
             "fs.default.jclouds.container", TEST_BUCKET
-        ) ) );
-
-        fileSystem.copy( "file://folder/my-file.txt", "s3://" + TEST_BUCKET + "/logs/my-file.txt",
-            Map.of(), Map.of( "tag1", "va1", "tag2=&+", "val2=&+" ) );
-
-        CloudInputStream inputStream = fileSystem.getInputStream( "s3://" + TEST_BUCKET + "/logs/my-file.txt" );
-
-        assertThat( inputStream ).hasContent( "test string" );
-
-        assertThat( s3mockFixture.readFile( TEST_BUCKET, "logs/my-file.txt", ofString() ) ).isEqualTo( "test string" );
-
-        assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/my-file.txt" ) ).contains(
-            entry( "tag1", "va1" ),
-            entry( "tag2=&+", "val2=&+" )
-        );
+        ) );
     }
 
     @Test
@@ -113,15 +113,7 @@ public class FileSystemTest extends Fixtures {
         Files.write( path1, "1", ContentWriter.ofString() );
         Files.write( path2, "2", ContentWriter.ofString() );
 
-        FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.s3.jclouds.identity", "access_key",
-            "fs.s3.jclouds.credential", "access_secret",
-            "fs.s3.jclouds.s3.virtual-host-buckets", false,
-            "fs.s3.jclouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
-
-            "fs.default.jclouds.scheme", "s3",
-            "fs.default.jclouds.container", TEST_BUCKET
-        ) ) );
+        FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() );
 
         s3mockFixture.uploadFile( "test2", "logs/file1.txt", path1 );
         s3mockFixture.uploadFile( "test2", "logs/file2.txt", path2 );
