@@ -269,6 +269,17 @@ public class FileSystem {
         }
     }
 
+    public boolean createContainer( CloudURI path ) {
+        log.debug( "createContainer {}", path );
+
+        try( BlobStoreContext context = getContext( path ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            return blobStore.createContainerInLocation( null, path.container );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
     public CloudURI getDefaultURL( String path ) {
         log.debug( "getDefaultURL {}", path );
 
