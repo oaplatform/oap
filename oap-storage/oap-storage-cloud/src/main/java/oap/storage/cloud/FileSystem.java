@@ -1,6 +1,7 @@
 package oap.storage.cloud;
 
 import com.google.common.base.Preconditions;
+import com.google.common.net.MediaType;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.io.Resources;
@@ -10,6 +11,7 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
+import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
 import java.io.File;
@@ -118,6 +120,7 @@ public class FileSystem {
                 .blobBuilder( destinationURI.path )
                 .userMetadata( userMetadata )
                 .payload( path.toFile() )
+                .contentType( MediaType.APPLICATION_BINARY )
                 .build();
 
             putBlob( blobStore, blob, destinationURI, tags );
@@ -163,14 +166,16 @@ public class FileSystem {
             BlobStore destinationBlobStore = destinationContext.getBlobStore();
 
             Blob sourceBlob = sourceBlobStore.getBlob( source.container, source.path );
-            Long contentLength = sourceBlob.getMetadata().getContentMetadata().getContentLength();
+            MutableContentMetadata sourceContentMetadata = sourceBlob.getMetadata().getContentMetadata();
 
             try( InputStream is = sourceBlob.getPayload().openStream() ) {
                 Blob destinationBlob = destinationBlobStore
                     .blobBuilder( destination.path )
                     .userMetadata( userMetadata )
                     .payload( is )
-                    .contentLength( contentLength )
+                    .contentMD5( sourceContentMetadata.getContentMD5AsHashCode() )
+                    .contentLength( sourceContentMetadata.getContentLength() )
+                    .contentType( sourceContentMetadata.getContentType() )
                     .build();
 
                 putBlob( destinationBlobStore, destinationBlob, destination, tags );
