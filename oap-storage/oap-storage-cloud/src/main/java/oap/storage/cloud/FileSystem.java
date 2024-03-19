@@ -269,6 +269,10 @@ public class FileSystem {
         }
     }
 
+    public boolean createContainer( String path ) {
+        return createContainer( new CloudURI( path ) );
+    }
+
     public boolean createContainer( CloudURI path ) {
         log.debug( "createContainer {}", path );
 
