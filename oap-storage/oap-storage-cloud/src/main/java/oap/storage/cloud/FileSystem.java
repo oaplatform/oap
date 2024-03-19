@@ -102,7 +102,15 @@ public class FileSystem {
         uploadFile( destination, path, Map.of() );
     }
 
+    public void uploadFile( CloudURI destination, Path path ) {
+        uploadFile( destination, path, Map.of() );
+    }
+
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata ) {
+        uploadFile( destination, path, userMetadata, Map.of() );
+    }
+
+    public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata ) {
         uploadFile( destination, path, userMetadata, Map.of() );
     }
 
