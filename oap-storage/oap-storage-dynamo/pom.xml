@@ -64,7 +64,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
-            <version>${oap.deps.apache.commons-exec.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -80,8 +79,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

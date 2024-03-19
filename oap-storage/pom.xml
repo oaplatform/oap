@@ -13,7 +13,6 @@
 
     <properties>
         <oap.deps.mongo-driver-sync.version>4.11.1</oap.deps.mongo-driver-sync.version>
-        <oap.deps.apache.commons-exec.version>1.4.0</oap.deps.apache.commons-exec.version>
         <oap.deps.netty.version>4.1.106.Final</oap.deps.netty.version>
         <oap.deps.mongock.version>5.4.0</oap.deps.mongock.version>
 

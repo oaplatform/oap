@@ -4,7 +4,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>21.1.6</version>
+        <version>21.1.9</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>oap</groupId>
                 <artifactId>oap-dependencies</artifactId>
-                <version>21.1.6</version>
+                <version>21.1.9</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -85,8 +85,6 @@
 
         <oap.deps.jackson.version>2.16.1</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
-
-        <oap.deps.lombok.version>1.18.30</oap.deps.lombok.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.7.0</oap.deps.bucket4j.version>
