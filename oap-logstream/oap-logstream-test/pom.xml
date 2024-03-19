@@ -56,7 +56,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>${oap.deps.commons.csv.version}</version>
         </dependency>
 
         <dependency>

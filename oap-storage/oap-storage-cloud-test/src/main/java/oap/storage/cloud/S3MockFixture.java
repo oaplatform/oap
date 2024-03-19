@@ -58,7 +58,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             S3MockApplication.PROP_HTTP_PORT, port,
             S3MockApplication.PROP_INITIAL_BUCKETS, initialBuckets,
             S3MockApplication.PROP_SILENT, !debug,
-            S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testDirectory().toString()
+            S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testPath( "s3" ).toString()
         ) ) );
     }
 
