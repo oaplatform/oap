@@ -119,7 +119,7 @@ public class IoStreams {
         return Stream.of( ustream );
     }
 
-    public static void write( Path path, Encoding encoding, java.util.stream.Stream<String> lines ) {
+    public static void write( Path path, Encoding encoding, java.util.stream.Stream<String> lines ) throws UncheckedIOException {
         Files.ensureFile( path );
 
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, false, false ) ) {
@@ -136,28 +136,28 @@ public class IoStreams {
         }
     }
 
-    public static void write( Path path, Encoding encoding, String value ) {
+    public static void write( Path path, Encoding encoding, String value ) throws UncheckedIOException {
         write( path, encoding, value, false );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in ) {
+    public static void write( Path path, Encoding encoding, InputStream in ) throws UncheckedIOException {
         write( path, encoding, in, Progress.EMPTY );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) {
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) throws UncheckedIOException {
         write( path, encoding, in, false, false, progress );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) {
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) throws UncheckedIOException {
         write( path, encoding, in, append, false, progress );
     }
 
-    public static void write( Path path, Encoding encoding, String value, boolean append ) {
+    public static void write( Path path, Encoding encoding, String value, boolean append ) throws UncheckedIOException {
         write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ), append, false, Progress.EMPTY );
 
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) {
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) throws UncheckedIOException {
         Files.ensureFile( path );
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
             ByteStreams.copy( new ProgressInputStream( in, progress ), out );

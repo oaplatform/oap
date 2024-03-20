@@ -4,7 +4,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>21.1.4</version>
+        <version>21.1.10</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -12,6 +12,18 @@
     <version>${oap.project.version}</version>
 
     <name>oap</name>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>oap</groupId>
+                <artifactId>oap-dependencies</artifactId>
+                <version>21.1.10</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <modules>
         <module>oap-stdlib</module>
@@ -22,7 +34,6 @@
         <module>oap-jpath</module>
         <module>oap-message</module>
         <module>oap-application</module>
-        <module>oap-hadoop</module>
         <module>oap-formats</module>
         <module>oap-storage</module>
         <module>oap-mail</module>
@@ -54,18 +65,10 @@
     </repositories>
 
     <properties>
-        <oap.project.version>21.16.5</oap.project.version>
+        <oap.project.version>21.17.0</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
-
-        <oap.deps.testng.version>7.9.0</oap.deps.testng.version>
-        <oap.deps.assertj.version>3.25.3</oap.deps.assertj.version>
-
-        <oap.deps.guava.version>33.0.0-jre</oap.deps.guava.version>
-
-        <oap.deps.logback.version>1.5.3</oap.deps.logback.version>
-        <oap.deps.slf4j.version>2.0.12</oap.deps.slf4j.version>
 
         <oap.deps.mockito.version>5.11.0</oap.deps.mockito.version>
 
@@ -74,24 +77,14 @@
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
         <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
 
-        <oap.deps.apache.commons-configuration2.version>2.9.0</oap.deps.apache.commons-configuration2.version>
-        <oap.deps.apache.commons-lang3.version>3.14.0</oap.deps.apache.commons-lang3.version>
-        <oap.deps.apache.commons-text.version>1.11.0</oap.deps.apache.commons-text.version>
-        <oap.deps.apache.commons-compress.version>1.25.0</oap.deps.apache.commons-compress.version>
-        <oap.deps.apache.commons-codec.version>1.16.1</oap.deps.apache.commons-codec.version>
-        <oap.deps.apache.commons-collections4.version>4.4</oap.deps.apache.commons-collections4.version>
-        <oap.deps.apache.commons-io.version>2.13.0</oap.deps.apache.commons-io.version>
+        <oap.deps.apache.jclouds.version>2.6.0</oap.deps.apache.jclouds.version>
 
         <oap.deps.hadoop.version>3.3.6</oap.deps.hadoop.version>
         <oap.deps.aws-java-sdk-s3.version>1.12.671</oap.deps.aws-java-sdk-s3.version>
         <oap.deps.testcontainers.version>1.19.3</oap.deps.testcontainers.version>
 
-        <oap.deps.joda.version>2.12.5</oap.deps.joda.version>
-
         <oap.deps.jackson.version>2.16.1</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
-
-        <oap.deps.lombok.version>1.18.30</oap.deps.lombok.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.7.0</oap.deps.bucket4j.version>
@@ -145,7 +138,6 @@
         <!--oap-mail-->
         <oap.deps.javax.mail.version>1.6.2</oap.deps.javax.mail.version>
         <oap.deps.apache.velocity.version>2.3</oap.deps.apache.velocity.version>
-        <oap.deps.apache.codec.version>1.16.0</oap.deps.apache.codec.version>
         <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
     </properties>
 </project>

@@ -27,6 +27,7 @@ package oap.ws.api;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.testng.KernelFixture;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import static oap.http.Http.ContentType.TEXT_PLAIN;
@@ -41,7 +42,8 @@ public class ApiWSTest extends Fixtures {
     private final KernelFixture kernel;
 
     public ApiWSTest() {
-        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        TestDirectoryFixture testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test

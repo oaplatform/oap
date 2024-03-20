@@ -27,6 +27,7 @@ package oap.storage;
 import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import oap.testng.Fixtures;
+import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
@@ -44,6 +45,7 @@ public class FilePersistenceTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FilePersistenceTest() {
+        fixture( new SystemTimerFixture() );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 

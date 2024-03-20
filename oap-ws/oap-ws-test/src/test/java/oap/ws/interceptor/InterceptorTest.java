@@ -26,6 +26,7 @@ package oap.ws.interceptor;
 
 import oap.application.testng.KernelFixture;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import oap.ws.InvocationContext;
 import oap.ws.Response;
 import org.testng.annotations.Test;
@@ -40,7 +41,8 @@ public class InterceptorTest extends Fixtures {
     private final KernelFixture kernel;
 
     public InterceptorTest() {
-        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        TestDirectoryFixture testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

@@ -16,8 +16,6 @@
     <properties>
         <oap.deps.stringtemplate.version>4.0.2</oap.deps.stringtemplate.version>
         <oap.deps.parquet.version>1.13.1</oap.deps.parquet.version>
-
-        <oap.deps.commons.csv.version>1.9.0</oap.deps.commons.csv.version>
     </properties>
 
     <modules>

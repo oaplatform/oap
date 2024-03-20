@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.testng.KernelFixture;
 import oap.http.Http;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -41,7 +42,8 @@ public class OpenapiWSTest extends Fixtures {
     private final KernelFixture kernel;
 
     public OpenapiWSTest() {
-        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
+        TestDirectoryFixture testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOrThrow( getClass(), "/application-ws-openapi.test.conf" ) ) );
     }
 
     @Test

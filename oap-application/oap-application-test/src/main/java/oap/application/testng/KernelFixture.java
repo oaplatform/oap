@@ -24,29 +24,27 @@
 
 package oap.application.testng;
 
+import oap.testng.TestDirectoryFixture;
+
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 
 public class KernelFixture extends AbstractKernelFixture<KernelFixture> {
 
-    public KernelFixture( URL conf ) {
-        super( Scope.METHOD, conf, null, List.of() );
+    public KernelFixture( TestDirectoryFixture testDirectoryFixture, URL conf ) {
+        super( testDirectoryFixture, conf, null, List.of() );
     }
 
-    public KernelFixture( URL conf, Path confd ) {
-        super( Scope.METHOD, conf, confd, List.of() );
+    public KernelFixture( TestDirectoryFixture testDirectoryFixture, URL conf, Path confd ) {
+        super( testDirectoryFixture, conf, confd, List.of() );
     }
 
-    public KernelFixture( URL conf, List<URL> additionalModules ) {
-        super( Scope.METHOD, conf, null, additionalModules );
+    public KernelFixture( TestDirectoryFixture testDirectoryFixture, URL conf, List<URL> additionalModules ) {
+        super( testDirectoryFixture, conf, null, additionalModules );
     }
 
-    public KernelFixture( URL conf, Path confd, List<URL> additionalModules ) {
-        this( Scope.METHOD, conf, confd, additionalModules );
-    }
-
-    public KernelFixture( Scope scope, URL conf, Path confd, List<URL> additionalModules ) {
-        super( scope, conf, confd, additionalModules );
+    public KernelFixture( TestDirectoryFixture testDirectoryFixture, URL conf, Path confd, List<URL> additionalModules ) {
+        super( testDirectoryFixture, conf, confd, additionalModules );
     }
 }
