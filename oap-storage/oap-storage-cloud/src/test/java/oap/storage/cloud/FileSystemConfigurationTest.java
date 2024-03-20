@@ -1,5 +1,6 @@
 package oap.storage.cloud;
 
+import oap.system.Env;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -29,4 +30,23 @@ public class FileSystemConfigurationTest {
         assertThat( fileSystemConfiguration.getDefaultContainer() ).isEqualTo( "test-bucket" );
     }
 
+    @Test
+    public void testProperties() {
+        Env.set( "TMP_S3_SCHEME", "s3" );
+        System.setProperty( "TMP_S3_SCHEME", "file" );
+
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
+            Map.of(
+                "fs.s3.jclouds.test", "${env.TMP_S3_SCHEME}",
+                "fs.s3.jclouds.test2", "${TMP_S3_SCHEME}",
+                "fs.s3.jclouds.test3", "${env.unknown}-${unknown}",
+                "fs.default.jclouds.scheme", "s3",
+                "fs.default.jclouds.container", "test-bucket"
+            )
+        );
+
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test2" ) ).isEqualTo( "file" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
+    }
 }
