@@ -301,11 +301,20 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             requireNonNull( id );
             requireNonNull( object );
             return lock.synchronizedOn( id, () -> {
-                boolean isNew = !data.containsKey( id );
-                var nm = data.compute( id, ( anId, m ) -> m != null ? m.update( object )
-                    : new Metadata<>( object ) );
-                log.trace( "storing {}", nm );
-                return isNew;
+                // time: 123 - new Metadata()
+                // time: 124 - fsync()
+                // time: 125 - data.put( id, metadata )
+                // lastmodified must be set after placing the metadata object in the "data"
+                final Metadata<T> oldMetadata = data.get( id );
+                if( oldMetadata == null ) {
+                    Metadata<T> newMetadata = new Metadata<>( object );
+                    data.put( id, newMetadata );
+                    newMetadata.refresh();
+                } else {
+                    oldMetadata.update( object );
+                }
+                log.trace( "storing {}", oldMetadata );
+                return oldMetadata == null;
             } );
         }
 
