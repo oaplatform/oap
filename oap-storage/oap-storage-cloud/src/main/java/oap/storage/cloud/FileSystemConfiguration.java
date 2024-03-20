@@ -5,6 +5,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -40,7 +41,16 @@ public class FileSystemConfiguration {
             }
 
             var property = StringUtils.join( toks, ".", start, toks.length );
-            properties.computeIfAbsent( id, x -> new LinkedHashMap<>() ).put( property, entry.getValue() );
+
+            String value = new StringSubstitutor( key -> {
+                if( key.startsWith( "env." ) ) {
+                    return System.getenv( key.substring( 4 ) );
+                } else {
+                    return System.getProperty( key );
+                }
+            }, "${", "}", '\\' ).replace( entry.getValue() );
+
+            properties.computeIfAbsent( id, x -> new LinkedHashMap<>() ).put( property, value );
 
         }
 
