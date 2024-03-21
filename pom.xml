@@ -4,7 +4,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>21.1.10</version>
+        <version>21.1.11</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>oap</groupId>
                 <artifactId>oap-dependencies</artifactId>
-                <version>21.1.10</version>
+                <version>21.1.11</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -56,7 +56,7 @@
         </repository>
         <repository>
             <id>oap</id>
-            <url>https://artifacts.oaplatform.org/repository/maven/</url>
+            <url>https://artifacts.oaplatform.org/repository/oap-maven/</url>
         </repository>
         <repository>
             <id>jitpack</id>
@@ -64,8 +64,15 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>oap</id>
+            <url>https://artifacts.oaplatform.org/repository/oap-maven/</url>
+        </repository>
+    </distributionManagement>
+
     <properties>
-        <oap.project.version>21.17.2</oap.project.version>
+        <oap.project.version>21.17.3</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
