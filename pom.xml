@@ -4,7 +4,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>21.1.11</version>
+        <version>21.1.13</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>oap</groupId>
                 <artifactId>oap-dependencies</artifactId>
-                <version>21.1.11</version>
+                <version>21.1.13</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -95,7 +95,6 @@
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.7.0</oap.deps.bucket4j.version>
-        <oap.deps.micrometer.version>1.12.4</oap.deps.micrometer.version>
 
         <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
