@@ -72,7 +72,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>21.17.3</oap.project.version>
+        <oap.project.version>21.17.4</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
@@ -95,22 +95,7 @@
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.7.0</oap.deps.bucket4j.version>
-        <!-- NOTE: micrometer version 1.10.x has an issue which causes to change metric's names
-        for instance "task_queue" in 1.6 is modified by adding a suffix "_total" unchanged for COUNTER type
-        and in later versions it is left unchanged so exception will arise.
-        In order to fix that we have to rename all GAUGEs with same name as COUNTER's to different ones,
-        for instance by adding "extra" suffix
-        Example:
-            Metrics.counter( "task_queue", Tags.of( "type", "total" ) );
-            Metrics.gauge( "task_queue", Tags.of( "type", "current" ), this, 5 );
-
-        should be changed to
-
-            Metrics.counter( "task_queue", Tags.of( "type", "total" ) );
-            Metrics.gauge( "task_queue_extra", Tags.of( "type", "current" ), this, 5 );
-
-         -->
-        <oap.deps.micrometer.version>1.11.3</oap.deps.micrometer.version>
+        <oap.deps.micrometer.version>1.12.4</oap.deps.micrometer.version>
 
         <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
