@@ -41,7 +41,6 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <version>${oap.deps.micrometer.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

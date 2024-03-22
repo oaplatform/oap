@@ -34,7 +34,6 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>${oap.deps.micrometer.version}</version>
         </dependency>
 
         <dependency>
