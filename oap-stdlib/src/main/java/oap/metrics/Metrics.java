@@ -60,7 +60,7 @@ public class Metrics {
     }
 
     public static Histogram histogram( String name, List<String> labelNames, Unit unit ) {
-        return Histogram.builder().name( name ).labelNames( labels( labelNames ) ).unit( unit ).register();
+        return Histogram.builder().name( name ).labelNames( labels( labelNames ) ).unit( unit ).classicOnly().register();
     }
 
     public static Summary summary( String name, Unit unit ) {
