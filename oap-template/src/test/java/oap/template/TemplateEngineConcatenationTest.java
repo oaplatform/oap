@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import oap.metrics.MetricsFixture;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.util.Dates;
@@ -43,6 +44,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TemplateEngineConcatenationTest extends Fixtures {
     private TemplateEngine engine;
     private String testMethodName;
+
+    public TemplateEngineConcatenationTest() {
+        fixture( new MetricsFixture() );
+    }
 
     @BeforeClass
     public void beforeClass() {
