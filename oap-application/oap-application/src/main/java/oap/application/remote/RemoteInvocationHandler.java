@@ -66,6 +66,7 @@ import static oap.util.Dates.s;
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
     public static final ExecutorService NEW_SINGLE_THREAD_EXECUTOR = Executors.newSingleThreadExecutor();
+    public static final Counter COUNTER = Metrics.counter( "remote_invocation", List.of( "service", "status" ) );
     private static final Client client;
     private static final SimpleTimeLimiter SIMPLE_TIME_LIMITER = SimpleTimeLimiter.create( NEW_SINGLE_THREAD_EXECUTOR );
 
@@ -103,10 +104,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         Preconditions.checkNotNull( uri );
         Preconditions.checkNotNull( service );
 
-        Counter counter = Metrics.counter( "remote_invocation", List.of( "service", "status" ) );
-        timeoutMetrics = counter.labelValues( service, "timeout" );
-        errorMetrics = counter.labelValues( service, "error" );
-        successMetrics = counter.labelValues( service, "success" );
+        timeoutMetrics = COUNTER.labelValues( service, "timeout" );
+        errorMetrics = COUNTER.labelValues( service, "error" );
+        successMetrics = COUNTER.labelValues( service, "success" );
 
         log.debug( "initialize {}", this );
     }
