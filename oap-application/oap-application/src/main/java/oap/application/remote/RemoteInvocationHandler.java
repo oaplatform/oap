@@ -26,13 +26,13 @@ package oap.application.remote;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.UncheckedTimeoutException;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
+import io.prometheus.metrics.core.datapoints.CounterDataPoint;
+import io.prometheus.metrics.core.metrics.Counter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.http.Client;
+import oap.metrics.Metrics;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
@@ -77,9 +77,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             .build();
     }
 
-    private final Counter timeoutMetrics;
-    private final Counter errorMetrics;
-    private final Counter successMetrics;
+    private final CounterDataPoint timeoutMetrics;
+    private final CounterDataPoint errorMetrics;
+    private final CounterDataPoint successMetrics;
     private final String source;
     private final URI uri;
     private final FST fst;
@@ -103,9 +103,10 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         Preconditions.checkNotNull( uri );
         Preconditions.checkNotNull( service );
 
-        timeoutMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "timeout" ) );
-        errorMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "error" ) );
-        successMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "success" ) );
+        Counter counter = Metrics.counter( "remote_invocation", List.of( "service", "status" ) );
+        timeoutMetrics = counter.labelValues( service, "timeout" );
+        errorMetrics = counter.labelValues( service, "error" );
+        successMetrics = counter.labelValues( service, "success" );
 
         log.debug( "initialize {}", this );
     }
@@ -177,12 +178,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                         () -> ( Throwable ) fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
 
                                     if( throwable instanceof RemoteInvocationException riex ) {
-                                        errorMetrics.increment();
+                                        errorMetrics.inc();
                                         throw riex;
                                     }
 
                                     var failure = Result.failure( throwable );
-                                    errorMetrics.increment();
+                                    errorMetrics.inc();
                                     return failure;
                                 } finally {
                                     dis.close();
@@ -194,12 +195,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
                                     return Result.success( Stream.of( it ).onClose( Try.run( () -> {
                                         dis.close();
-                                        successMetrics.increment();
+                                        successMetrics.inc();
                                     } ) ) );
                                 } else {
                                     try {
                                         var ret = Result.<Object, Throwable>success( fst.readObjectWithSize( dis ) );
-                                        successMetrics.increment();
+                                        successMetrics.inc();
                                         return ret;
                                     } finally {
                                         dis.close();
@@ -220,11 +221,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 }
             } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
-                timeoutMetrics.increment();
+                timeoutMetrics.inc();
                 lastException = e;
             } catch( Throwable e ) {
                 LogConsolidated.log( log, Level.WARN, s( 5 ), "error invoking " + this + "#" + method.getName() + ": " + e.getMessage(), null );
-                errorMetrics.increment();
+                errorMetrics.inc();
                 lastException = e;
             }
         }

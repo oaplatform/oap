@@ -25,7 +25,8 @@
 package oap.logstream.disk;
 
 import com.google.common.base.Preconditions;
-import io.micrometer.core.instrument.Metrics;
+import io.prometheus.metrics.core.metrics.Summary;
+import io.prometheus.metrics.model.snapshots.Unit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Stopwatch;
@@ -34,6 +35,7 @@ import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
+import oap.metrics.Metrics;
 import oap.util.Dates;
 import org.codehaus.plexus.util.StringUtils;
 import org.joda.time.DateTime;
@@ -47,6 +49,9 @@ import java.util.function.Consumer;
 
 @Slf4j
 public abstract class AbstractWriter<T extends Closeable> implements Closeable {
+    private static final Summary LOGSTREAM_LOGGING_SERVER_BUCKET_SIZE = Metrics.summary( "logstream_logging_server_bucket_size", Unit.BYTES );
+    private static final Summary LOGSTREAM_LOGGING_SERVER_BUCKET_TIME = Metrics.summary( "logstream_logging_server_bucket_time", Unit.SECONDS );
+    public final LogFormat logFormat;
     protected final Path logDirectory;
     protected final String filePattern;
     protected final LogId logId;
@@ -59,7 +64,6 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected String lastPattern;
     protected int fileVersion = 1;
     protected boolean closed = false;
-    public final LogFormat logFormat;
 
     protected AbstractWriter( LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
                               int maxVersions ) {
@@ -76,20 +80,6 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         this.timestamp = timestamp;
         this.lastPattern = currentPattern();
         log.debug( "spawning {}", this );
-    }
-
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, Consumer<String> error ) throws LoggerException {
-        write( protocolVersion, buffer, 0, buffer.length, error );
-    }
-
-    public abstract void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length, Consumer<String> error ) throws LoggerException;
-
-    protected String currentPattern() {
-        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
-    }
-
-    protected String currentPattern( int version ) {
-        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc() );
     }
 
     @SneakyThrows
@@ -111,6 +101,20 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
             .addVariable( "LOG_FORMAT_" + logFormat.name(), logFormat.extension );
         return logIdTemplate.render( StringUtils.replace( pattern, " ", "" ), time, timestamp, version );
     }
+
+    protected String currentPattern( int version ) {
+        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc() );
+    }
+
+    protected String currentPattern() {
+        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
+    }
+
+    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, Consumer<String> error ) throws LoggerException {
+        write( protocolVersion, buffer, 0, buffer.length, error );
+    }
+
+    public abstract void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length, Consumer<String> error ) throws LoggerException;
 
     public synchronized void refresh() {
         refresh( false );
@@ -149,8 +153,8 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
 
             var fileSize = Files.size( outFilename );
             log.trace( "closing output {} ({} bytes)", this, fileSize );
-            Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
-            Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
+            LOGSTREAM_LOGGING_SERVER_BUCKET_SIZE.observe( fileSize );
+            LOGSTREAM_LOGGING_SERVER_BUCKET_TIME.observe( Unit.nanosToSeconds( stopwatch.elapsed() ) );
         } catch( IOException e ) {
             throw new LoggerException( e );
         } finally {

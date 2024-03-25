@@ -1,94 +1,45 @@
 package oap.metrics;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.search.MeterNotFoundException;
-import io.micrometer.core.instrument.search.RequiredSearch;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.prometheus.metrics.model.registry.Collector;
+import io.prometheus.metrics.model.registry.MultiCollector;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import oap.testng.AbstractFixture;
-import org.assertj.core.api.AbstractAssert;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
+import java.util.Set;
 
 public class MetricsFixture extends AbstractFixture<MetricsFixture> {
 
-    private SimpleMeterRegistry registry;
+    private static final List<Collector> collectors;
+    private static final List<MultiCollector> multiCollectors;
+    private static final Set<String> prometheusNames;
 
-    public MetricsFixture() {
-    }
-
-    public MetricsAssertion assertMetric( String name, Tags tags ) {
-        return new MetricsAssertion( name, tags );
+    static {
+        try {
+            collectors = ( List<Collector> ) FieldUtils.readDeclaredField( PrometheusRegistry.defaultRegistry, "collectors", true );
+            multiCollectors = ( List<MultiCollector> ) FieldUtils.readDeclaredField( PrometheusRegistry.defaultRegistry, "multiCollectors", true );
+            prometheusNames = ( Set<String> ) FieldUtils.readDeclaredField( PrometheusRegistry.defaultRegistry, "prometheusNames", true );
+        } catch( IllegalAccessException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
     protected void before() {
-        registry = new SimpleMeterRegistry();
-        Metrics.globalRegistry.add( registry );
-        super.before();
-    }
+        collectors.clear();
+        multiCollectors.clear();
+        prometheusNames.clear();
 
-    public RequiredSearch get( String name, Tags tags ) {
-        return RequiredSearch.in( registry ).name( name ).tags( tags );
+        super.before();
     }
 
     @Override
     protected void after() {
         super.after();
-        if( registry != null ) {
-            Metrics.globalRegistry.remove( registry );
-        }
-    }
 
-    public static class CounterMetricsAssertion extends AbstractAssert<CounterMetricsAssertion, Counter> {
-        public CounterMetricsAssertion( Counter actual ) {
-            super( actual, CounterMetricsAssertion.class );
-        }
-
-        public CounterMetricsAssertion isEqualTo( double expected ) {
-            assertThat( actual.count() ).isEqualTo( expected );
-
-            return this;
-        }
-    }
-
-    public static class GaugeMetricsAssertion extends AbstractAssert<GaugeMetricsAssertion, Gauge> {
-        public GaugeMetricsAssertion( Gauge actual ) {
-            super( actual, GaugeMetricsAssertion.class );
-        }
-
-        public GaugeMetricsAssertion isEqualTo( double expected ) {
-            assertThat( actual.value() ).isEqualTo( expected );
-
-            return this;
-        }
-    }
-
-    public class MetricsAssertion extends AbstractAssert<MetricsAssertion, RequiredSearch> {
-        protected MetricsAssertion( String name, Tags tags ) {
-            super( get( name, tags ), MetricsAssertion.class );
-        }
-
-        public CounterMetricsAssertion isCounter() {
-            try {
-                return new CounterMetricsAssertion( actual.counter() );
-            } catch( ClassCastException e ) {
-                throw failure( "a metric is not a counter" );
-            } catch( MeterNotFoundException e ) {
-                throw failure( "metric not found" );
-            }
-        }
-
-        public GaugeMetricsAssertion isGauge() {
-            try {
-                return new GaugeMetricsAssertion( actual.gauge() );
-            } catch( ClassCastException e ) {
-                throw failure( "a metric is not a gauge" );
-            } catch( MeterNotFoundException e ) {
-                throw failure( "metric not found" );
-            }
-        }
+        prometheusNames.clear();
+        multiCollectors.clear();
+        collectors.clear();
     }
 }

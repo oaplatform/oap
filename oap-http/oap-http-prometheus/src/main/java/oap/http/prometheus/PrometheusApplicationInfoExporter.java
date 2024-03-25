@@ -24,7 +24,7 @@
 
 package oap.http.prometheus;
 
-import io.micrometer.core.instrument.Metrics;
+import oap.metrics.Metrics;
 import org.joda.time.DateTimeUtils;
 
 public class PrometheusApplicationInfoExporter {
@@ -36,6 +36,6 @@ public class PrometheusApplicationInfoExporter {
     public void start() {
         start = DateTimeUtils.currentTimeMillis();
 
-        Metrics.gauge( "uptime_seconds", this, e -> ( DateTimeUtils.currentTimeMillis() - start ) / 1000.0 );
+        Metrics.gaugeWithCallback( "uptime_seconds", callback -> callback.call( ( DateTimeUtils.currentTimeMillis() - start ) / 1000.0 ) );
     }
 }

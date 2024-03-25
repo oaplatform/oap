@@ -24,20 +24,24 @@
 
 package oap.http.prometheus;
 
-import io.micrometer.core.instrument.Metrics;
+import io.prometheus.metrics.model.snapshots.Unit;
 import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
+import oap.metrics.Metrics;
+import oap.metrics.MetricsFixture;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrometheusExporterTest extends Fixtures {
+    public PrometheusExporterTest() {
+        fixture( new MetricsFixture() );
+    }
+
     @Test
     public void server() throws IOException {
         var port = Ports.getFreePort( getClass() );
@@ -45,32 +49,21 @@ public class PrometheusExporterTest extends Fixtures {
             var exporter = new PrometheusExporter( server );
 
             var metric1 = Metrics.counter( "test1" );
-            var metric2 = Metrics.timer( "test2" );
+            var metric2 = Metrics.histogram( "test2", Unit.SECONDS );
 
             server.start();
 
-            metric1.increment( 2 );
-            metric2.record( 2, TimeUnit.SECONDS );
+            metric1.inc( 2 );
+            metric2.observe( 2 );
 
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
             assertThat( response ).contains( """
-                # HELP test1_total \s
                 # TYPE test1_total counter
                 test1_total 2.0
                 """ );
-            assertThat( response ).contains( "test2_seconds_count 1.0" );
-            assertThat( response ).contains( "test2_seconds_max 2.0" );
-            assertThat( response ).contains( "system_metrics_total 5.0" );
+            assertThat( response ).contains( "test2_seconds_count 1" );
+            assertThat( response ).contains( "test2_seconds_sum 2.0" );
+            assertThat( response ).contains( "system_metrics 3.0" );
         }
-    }
-
-    @AfterMethod
-    public void beforeMethod() {
-        PrometheusExporter.prometheusRegistry.getPrometheusRegistry().clear();
-    }
-
-    @AfterMethod
-    public void afterMethod() {
-        PrometheusExporter.prometheusRegistry.getPrometheusRegistry().clear();
     }
 }

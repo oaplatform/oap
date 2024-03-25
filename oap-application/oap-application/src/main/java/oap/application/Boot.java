@@ -24,13 +24,16 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.module.Module;
 import oap.application.cli.Cli;
 import oap.application.cli.Option;
+import oap.application.module.Module;
+import oap.metrics.Metrics;
+import oap.system.Env;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.nio.file.Path;
+import java.util.List;
 
 @Slf4j
 public class Boot {
@@ -38,7 +41,13 @@ public class Boot {
     private static Kernel kernel;
 
     public static void main( String[] args ) {
-        System.out.println( "Total " + Runtime.getRuntime().availableProcessors() + " CPUs available" );
+        log.info( "Total " + Runtime.getRuntime().availableProcessors() + " CPUs available" );
+
+        String applicationName = Env.get( "APPLICATION_NAME" ).orElse( null );
+        String applicationVersion = Env.get( "APPLICATION_VERSION" ).orElse( null );
+
+        Metrics.info( "application_info", List.of( "name", "version" ) )
+            .setLabelValues( applicationName, applicationVersion );
 
         Cli.create()
             .group( "Starting service",

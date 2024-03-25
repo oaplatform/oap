@@ -23,15 +23,15 @@
  */
 package oap.application.remote;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
+import io.prometheus.metrics.core.datapoints.CounterDataPoint;
+import io.prometheus.metrics.core.metrics.Counter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
+import oap.metrics.Metrics;
 import oap.util.Lists;
 import oap.util.Result;
 import oap.util.function.Try;
@@ -54,8 +54,9 @@ import static oap.http.Http.StatusCode.NOT_FOUND;
 
 @Slf4j
 public class Remote implements HttpHandler {
-    private final Counter errorMetrics;
-    private final Counter successMetrics;
+    private static final Counter METRICS = Metrics.counter( "remote_server", List.of( "status" ) );
+    private final CounterDataPoint errorMetrics = METRICS.labelValues( "error" );
+    private final CounterDataPoint successMetrics = METRICS.labelValues( "success" );
 
     private final FST.SerializationMethod serialization;
     private final String context;
@@ -76,9 +77,6 @@ public class Remote implements HttpHandler {
         } else {
             server.bind( context, this );
         }
-
-        errorMetrics = Metrics.counter( "remote_server", Tags.of( "status", "error" ) );
-        successMetrics = Metrics.counter( "remote_server", Tags.of( "status", "success" ) );
     }
 
     public void start() {
@@ -104,7 +102,7 @@ public class Remote implements HttpHandler {
                 var services = kernel.services( "*", invocation.service );
                 if( services.size() > 1 ) {
                     log.error( "There are multiple services for service: {} in {}", invocation.service, kernel );
-                    errorMetrics.increment();
+                    errorMetrics.inc();
                     exchange.setStatusCode( NOT_FOUND );
                     exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
                     exchange.setReasonPhrase( invocation.service + " found multiple services in " + kernel );
@@ -117,7 +115,7 @@ public class Remote implements HttpHandler {
             }
 
             if( service == null ) {
-                errorMetrics.increment();
+                errorMetrics.inc();
                 exchange.setStatusCode( HTTP_NOT_FOUND );
                 exchange.setResponseHeader( CONTENT_TYPE, TEXT_PLAIN );
                 exchange.setReasonPhrase( invocation.service + " not found among " + kernel.services.keySet() + " in " + kernel );
@@ -173,9 +171,9 @@ public class Remote implements HttpHandler {
                 }
             }
             if( result.isSuccess() ) {
-                successMetrics.increment();
+                successMetrics.inc();
             } else {
-                errorMetrics.increment();
+                errorMetrics.inc();
             }
         } catch( Throwable e ) {
             log.error( "invocation = {}", invocation, e );

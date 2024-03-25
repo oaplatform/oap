@@ -26,8 +26,7 @@ package oap.message;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
+import io.prometheus.metrics.core.metrics.Counter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +39,7 @@ import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
+import oap.metrics.Metrics;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
 import oap.util.Dates;
@@ -63,6 +63,7 @@ import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -88,7 +89,7 @@ import static oap.util.Pair.__;
 @ToString
 public class MessageSender implements Closeable, AutoCloseable {
     private static final Pair<MessageStatus, Short> STATUS_OK = __( OK, MessageProtocol.STATUS_OK );
-
+    private static final Counter COUNTER = Metrics.counter( "oap.messages", List.of( "type", "status" ) );
     private final Object syncDiskLock = new Object();
     private final String host;
     private final int port;
@@ -128,9 +129,11 @@ public class MessageSender implements Closeable, AutoCloseable {
         this.directory = persistenceDirectory;
         this.messageNoRetryStrategy = messageNoRetryStrategy;
 
-        Metrics.gaugeCollectionSize( "message_count", Tags.of( "host", host, "type", "ready", "port", String.valueOf( port ) ), messages.ready );
-        Metrics.gaugeCollectionSize( "message_count", Tags.of( "host", host, "type", "retry", "port", String.valueOf( port ) ), messages.retry );
-        Metrics.gaugeMapSize( "message_count", Tags.of( "host", host, "type", "inprogress", "port", String.valueOf( port ) ), messages.inProgress );
+        Metrics.gaugeWithCallback( "message_count", List.of( "host", "type", "port" ),
+            callback -> callback.call( messages.ready.size(), host, "ready", String.valueOf( port ) ),
+            callback -> callback.call( messages.retry.size(), host, "retry", String.valueOf( port ) ),
+            callback -> callback.call( messages.inProgress.size(), host, "inprogress", String.valueOf( port ) )
+        );
     }
 
     static Path lock( String uniqueName, Path file, long storageLockExpiration ) {
@@ -271,7 +274,7 @@ public class MessageSender implements Closeable, AutoCloseable {
         log.debug( "[{}] sending data [type = {}] to server...", uniqueName, messageTypeToString( message.messageType ) );
 
         return CompletableFuture.supplyAsync( () -> {
-            Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "trysend" ).increment();
+            COUNTER.labelValues( messageTypeToString( message.messageType ), "trysend" ).inc();
 
             try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
                  DataOutputStream out = new DataOutputStream( buf ) ) {
@@ -308,9 +311,9 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {
-        Metrics.counter( "oap.messages",
-            "type", messageTypeToString( message.messageType ),
-            "status", "send_io_error" + ( globalRetryTimeout ? "_gr" : "" ) ).increment();
+        COUNTER.labelValues( messageTypeToString( message.messageType ), "send_io_error" + ( globalRetryTimeout ? "_gr"
+            : "" ) ).inc();
+
         LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
         messages.retry( messageInfo, now + retryTimeout );
     }
@@ -320,7 +323,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
         InputStream body = response.getInputStream();
         if( body == null ) {
-            Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "io_error" ).increment();
+            COUNTER.labelValues( messageTypeToString( message.messageType ), "io_error" ).inc();
             log.error( "[{}] unknown error (BODY == null)", uniqueName );
             lastStatus.put( message.messageType, __( ERROR, ( short ) -1 ) );
             messages.retry( messageInfo, now + retryTimeout );
@@ -345,26 +348,26 @@ public class MessageSender implements Closeable, AutoCloseable {
             switch( status ) {
                 case STATUS_ALREADY_WRITTEN -> {
                     log.trace( "[{}] already written {}", uniqueName, message.getHexMd5() );
-                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "already_written" ).increment();
+                    COUNTER.labelValues( messageTypeToString( message.messageType ), "already_written" ).inc();
                     lastStatus.put( message.messageType, __( ALREADY_WRITTEN, status ) );
                 }
                 case MessageProtocol.STATUS_OK -> {
-                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "success" ).increment();
+                    COUNTER.labelValues( messageTypeToString( message.messageType ), "success" ).inc();
                     lastStatus.put( message.messageType, __( OK, status ) );
                 }
                 case STATUS_UNKNOWN_ERROR -> {
-                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "error" ).increment();
+                    COUNTER.labelValues( messageTypeToString( message.messageType ), "error" ).inc();
                     log.error( "[{}] unknown error", uniqueName );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                     messages.retry( messageInfo, now + retryTimeout );
                 }
                 case STATUS_UNKNOWN_ERROR_NO_RETRY -> {
-                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "error_no_retry" ).increment();
+                    COUNTER.labelValues( messageTypeToString( message.messageType ), "error_no_retry" ).inc();
                     log.error( "[{}] unknown error -> no retry", uniqueName );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
                 case STATUS_UNKNOWN_MESSAGE_TYPE -> {
-                    Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "unknown_message_type" ).increment();
+                    COUNTER.labelValues( messageTypeToString( message.messageType ), "unknown_message_type" ).inc();
                     log.error( "[{}] unknown message type: {}", uniqueName, status );
                     lastStatus.put( message.messageType, __( ERROR, status ) );
                 }
@@ -372,9 +375,9 @@ public class MessageSender implements Closeable, AutoCloseable {
                     var clientStatus = MessageProtocol.getStatus( status );
                     if( clientStatus != null ) {
                         log.trace( "[{}] retry: {}", uniqueName, clientStatus );
-                        Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
+                        COUNTER.labelValues( messageTypeToString( message.messageType ), "status_" + status + "(" + clientStatus + ")" ).inc();
                     } else {
-                        Metrics.counter( "oap.messages", "type", messageTypeToString( message.messageType ), "status", "unknown_status" ).increment();
+                        COUNTER.labelValues( messageTypeToString( message.messageType ), "unknown_status" ).inc();
                         log.error( "[{}] unknown status: {}", uniqueName, status );
                     }
                     lastStatus.put( message.messageType, __( ERROR, status ) );

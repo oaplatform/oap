@@ -24,7 +24,6 @@
 
 package oap.logstream.net;
 
-import io.micrometer.core.instrument.Metrics;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
@@ -36,8 +35,10 @@ import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.message.MessageAvailabilityReport;
 import oap.message.MessageSender;
+import oap.metrics.Metrics;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -71,10 +72,8 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         this.scheduled = flushInterval > 0
             ? Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::sendAsync )
             : null;
-        configurations.forEach( ( name, conf ) -> Metrics.gauge( "logstream_logging_buffers_cache",
-            buffers.cache,
-            c -> c.size( conf.bufferSize )
-        ) );
+        configurations.forEach( ( name, conf ) -> Metrics.gaugeWithCallback( "logstream_logging_buffers_cache", List.of( "name" ),
+            callback -> callback.call( buffers.cache.size( conf.bufferSize ), name ) ) );
         log.info( "SocketLoggerBackend '{}' is ready", sender == null ? "no-name" : sender.uniqueName );
     }
 

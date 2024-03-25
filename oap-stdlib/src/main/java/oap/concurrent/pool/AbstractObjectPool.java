@@ -28,9 +28,11 @@ import cn.danielw.fop.DisruptorObjectPool;
 import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
-import io.micrometer.core.instrument.Metrics;
 import oap.concurrent.LongAdder;
+import oap.metrics.Metrics;
 import oap.util.Dates;
+
+import java.util.List;
 
 public class AbstractObjectPool<T, Self extends AbstractObjectPool<T, Self>> {
     protected final DisruptorObjectPool<T> pool;
@@ -84,12 +86,12 @@ public class AbstractObjectPool<T, Self extends AbstractObjectPool<T, Self>> {
 
     @SuppressWarnings( "unchecked" )
     public Self withMetrics( String prefix ) {
-        Metrics.gauge( prefix + "_pool_partition_size", config, p -> config.getPartitionSize() );
-        Metrics.gauge( prefix + "_pool_min_size", config, p -> config.getMinSize() );
-        Metrics.gauge( prefix + "_pool_max_size", config, p -> config.getMaxSize() );
-        Metrics.gauge( prefix + "_pool_in_use", config, p -> used.intValue() );
-
-        Metrics.gauge( prefix + "_pool_size", pool, p -> ( double ) p.getSize() );
+        Metrics.gaugeWithCallback( prefix + "object_pool", List.of( "name", "type" ),
+            callback -> callback.call( config.getPartitionSize(), prefix, "partition_size" ),
+            callback -> callback.call( config.getMinSize(), prefix, "min_size" ),
+            callback -> callback.call( config.getMaxSize(), prefix, "max_size" ),
+            callback -> callback.call( used.intValue(), prefix, "in_use" ),
+            callback -> callback.call( pool.getSize(), prefix, "size" ) );
 
         return ( Self ) this;
     }

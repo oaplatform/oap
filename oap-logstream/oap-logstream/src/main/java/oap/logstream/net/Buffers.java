@@ -23,13 +23,14 @@
  */
 package oap.logstream.net;
 
-import io.micrometer.core.instrument.Metrics;
+import io.prometheus.metrics.core.metrics.Summary;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
+import oap.metrics.Metrics;
 import oap.util.Cuid;
 import org.apache.commons.lang3.mutable.MutableLong;
 
@@ -40,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +53,7 @@ import java.util.function.Consumer;
 @Slf4j
 public class Buffers implements Closeable {
 
+    public static final Summary SUMMARY = Metrics.summary( "logstream_logging_buffers", List.of( "type", "readu" ), null );
     //    private final int bufferSize;
     private final ConcurrentHashMap<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<LogId, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
@@ -144,7 +147,7 @@ public class Buffers implements Closeable {
             map.computeIfAbsent( logType, lt -> new MutableLong() ).increment();
         }
 
-        map.forEach( ( type, count ) -> Metrics.summary( "logstream_logging_buffers", "type", type, "ready", ready ).record( count.getValue() ) );
+        map.forEach( ( type, count ) -> SUMMARY.labelValues( type, ready ).observe( count.getValue() ) );
     }
 
     final int readyBuffers() {

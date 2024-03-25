@@ -30,11 +30,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.google.JodaTicker;
 import oap.io.Resources;
+import oap.metrics.Metrics;
 import oap.reflect.TypeRef;
 import oap.template.render.AstRender;
 import oap.template.render.AstRenderRoot;
@@ -91,10 +90,11 @@ public class TemplateEngine implements Runnable {
 
         log.info( "diskCache {} ttl {} functions {}", diskCache, Dates.durationToString( ttl ), builtInFunction.keySet() );
 
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
+        Metrics.gaugeWithCallback( "oap_template_cache", List.of( "type" ),
+            callabak -> callabak.call( templates.size(), "size" ),
+            callabak -> callabak.call( templates.stats().hitCount(), "hit" ),
+            callabak -> callabak.call( templates.stats().missCount(), "miss" ),
+            callabak -> callabak.call( templates.stats().evictionCount(), "eviction" ) );
     }
 
     public static String getHashName( String template ) {

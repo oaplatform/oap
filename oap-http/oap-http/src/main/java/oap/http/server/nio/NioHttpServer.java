@@ -25,8 +25,6 @@
 package oap.http.server.nio;
 
 import com.google.common.base.Preconditions;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.ConnectorStatistics;
@@ -37,6 +35,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.handlers.CompressionNioHandler;
+import oap.metrics.Metrics;
 import oap.util.Lists;
 import org.xnio.Options;
 
@@ -228,17 +227,24 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
             ConnectorStatistics connectorStatistics = listenerInfo.getConnectorStatistics();
 
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "total" ), connectorStatistics, ConnectorStatistics::getRequestCount );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveRequests );
-            Metrics.gauge( NIO_REQUESTS, Tags.of( "port", sPort, "type", "errors" ), connectorStatistics, ConnectorStatistics::getErrorCount );
+            Metrics.gaugeWithCallback( NIO_REQUESTS, List.of( "port", "type" ),
+                callback -> {
+                    callback.call( connectorStatistics.getRequestCount(), sPort, "total" );
+                    callback.call( connectorStatistics.getActiveRequests(), sPort, ACTIVE );
+                    callback.call( connectorStatistics.getErrorCount(), sPort, "errors" );
+                } );
 
-            Metrics.gauge( "nio_connections", Tags.of( "port", sPort, "type", ACTIVE ), connectorStatistics, ConnectorStatistics::getActiveConnections );
+            Metrics.gaugeWithCallback( "nio_connections", List.of( "port", "type" ),
+                callback -> callback.call( connectorStatistics.getActiveConnections(), sPort, ACTIVE ) );
 
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", ACTIVE ), server, s -> s.getWorker().getMXBean().getWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "core" ), server, s -> s.getWorker().getMXBean().getCoreWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "max" ), server, s -> s.getWorker().getMXBean().getMaxWorkerPoolSize() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "busy" ), server, s -> s.getWorker().getMXBean().getBusyWorkerThreadCount() );
-            Metrics.gauge( NIO_POOL_SIZE, Tags.of( "port", sPort, "name", WORKER, "type", "queue" ), server, s -> s.getWorker().getMXBean().getWorkerQueueSize() );
+            Metrics.gaugeWithCallback( NIO_POOL_SIZE, List.of( "port", "name", "type" ),
+                callback -> callback.call( server.getWorker().getMXBean().getWorkerPoolSize(), sPort, WORKER, ACTIVE ),
+                callback -> callback.call( server.getWorker().getMXBean().getCoreWorkerPoolSize(), sPort, WORKER, "core" ),
+                callback -> callback.call( server.getWorker().getMXBean().getMaxWorkerPoolSize(), sPort, WORKER, "max" ),
+                callback -> callback.call( server.getWorker().getMXBean().getBusyWorkerThreadCount(), sPort, WORKER, "busy" ),
+                callback -> callback.call( server.getWorker().getMXBean().getBusyWorkerThreadCount(), sPort, WORKER, "busy" ),
+                callback -> callback.call( server.getWorker().getMXBean().getWorkerQueueSize(), sPort, WORKER, "queue" )
+            );
         }
     }
 

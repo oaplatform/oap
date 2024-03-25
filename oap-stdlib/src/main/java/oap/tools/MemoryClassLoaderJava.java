@@ -24,11 +24,12 @@
 
 package oap.tools;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Metrics;
+import io.prometheus.metrics.core.datapoints.CounterDataPoint;
+import io.prometheus.metrics.core.metrics.Counter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.content.ContentReader;
+import oap.metrics.Metrics;
 import org.joda.time.DateTimeUtils;
 
 import javax.tools.Diagnostic;
@@ -56,9 +57,10 @@ import static oap.io.content.ContentWriter.ofString;
 
 @Slf4j
 public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
-    private static final Counter METRICS_COMPILE = Metrics.counter( "oap_template", "type", "compile" );
-    private static final Counter METRICS_DISK = Metrics.counter( "oap_template", "type", "disk" );
-    private static final Counter METRICS_ERROR = Metrics.counter( "oap_template", "type", "error" );
+    private static final Counter METRICS = Metrics.counter( "oap_template", List.of( "type" ) );
+    private static final CounterDataPoint METRICS_COMPILE = METRICS.labelValues( "compile" );
+    private static final CounterDataPoint METRICS_DISK = METRICS.labelValues( "disk" );
+    private static final CounterDataPoint METRICS_ERROR = METRICS.labelValues( "error" );
 
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final MemoryFileManager manager = new MemoryFileManager( compiler );
@@ -79,7 +81,7 @@ public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
                 oap.io.Files.setLastModifiedTime( classFile, currentTimeMillis );
 
-                METRICS_DISK.increment();
+                METRICS_DISK.inc();
             } else {
 //                log.trace( "not found: {} -> {}", classname, sourceFile );
                 list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
@@ -102,7 +104,7 @@ public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
             var out = new StringWriter();
             var task = compiler.getTask( out, manager, diagnostics, List.of(), null, list );
             if( task.call() ) {
-                METRICS_COMPILE.increment();
+                METRICS_COMPILE.inc();
                 if( diskCache != null ) {
                     for( var source : list ) {
                         var javaFile = diskCache.resolve( source.originalName + ".java" );
@@ -118,9 +120,9 @@ public class MemoryClassLoaderJava extends ClassLoader implements Closeable {
                         }
                     }
                 }
-                if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+                if( log.isDebugEnabled() && !out.toString().isEmpty() ) log.debug( out.toString() );
             } else {
-                METRICS_ERROR.increment();
+                METRICS_ERROR.inc();
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
                         System.err.println( a );

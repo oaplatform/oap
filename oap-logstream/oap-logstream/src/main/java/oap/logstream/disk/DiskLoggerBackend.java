@@ -27,12 +27,12 @@ package oap.logstream.disk;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tag;
+import io.prometheus.metrics.core.metrics.Counter;
+import io.prometheus.metrics.core.metrics.Summary;
+import io.prometheus.metrics.model.snapshots.Unit;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -48,6 +48,7 @@ import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
+import oap.metrics.Metrics;
 import oap.util.Dates;
 import oap.util.Lists;
 import org.apache.commons.io.FileUtils;
@@ -69,34 +70,23 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
 public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneable, AutoCloseable {
-    @ToString
-    @EqualsAndHashCode
-    public static class FilePatternConfiguration {
-        public final String path;
-
-        @JsonCreator
-        public FilePatternConfiguration( String path ) {
-            this.path = path;
-        }
-    }
-
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
+    public static final Counter COUNTER = Metrics.counter( "logstream_logging_disk_counter", List.of( "from" ) );
+    public static final Summary SUMMARY = Metrics.summary( "logstream_logging_disk_buffers", List.of( "from" ), Unit.BYTES );
+    public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
+    public final WriterConfiguration writerConfiguration;
     private final Path logDirectory;
     private final Timestamp timestamp;
     private final int bufferSize;
     private final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
     private final ScheduledExecutorService pool;
     public String filePattern = "/<YEAR>-<MONTH>/<DAY>/<LOG_TYPE>_v<LOG_VERSION>_<CLIENT_HOST>-<YEAR>-<MONTH>-<DAY>-<HOUR>-<INTERVAL>.tsv.gz";
-    public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
-    private volatile boolean closed;
-
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
-
-    public final WriterConfiguration writerConfiguration;
+    private volatile boolean closed;
 
     public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {
         this( logDirectory, new WriterConfiguration(), timestamp, bufferSize );
@@ -136,12 +126,10 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
                     };
                 }
             } );
-        Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", logDirectory.toString() ) ),
-            writers, Cache::size );
+        Metrics.gaugeWithCallback( "logstream_logging_disk_writers", List.of( "path" ), callback -> callback.call( writers.size() ) );
 
         pool = Executors.newScheduledThreadPool( 1, "disk-logger-backend" );
     }
-
 
     public void start() {
         log.info( "default file pattern {}", filePattern );
@@ -178,8 +166,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             throw exception;
         }
 
-        Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", hostName ) ) ).increment();
-        Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", hostName ) ) ).record( length );
+        COUNTER.labelValues( hostName ).inc();
+        SUMMARY.labelValues( hostName ).observe( length );
         AbstractWriter<? extends Closeable> writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
@@ -247,5 +235,16 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "writers", writers.size() )
             .toString();
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class FilePatternConfiguration {
+        public final String path;
+
+        @JsonCreator
+        public FilePatternConfiguration( String path ) {
+            this.path = path;
+        }
     }
 }

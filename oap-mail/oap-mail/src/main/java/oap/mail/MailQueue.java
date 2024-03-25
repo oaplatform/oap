@@ -24,10 +24,9 @@
 
 package oap.mail;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
+import oap.metrics.Metrics;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
 import oap.util.Lists;
@@ -51,7 +50,7 @@ public class MailQueue {
             load();
         } else this.location = null;
 
-        Metrics.gaugeCollectionSize( "mail_queue", Tags.empty(), queue );
+        Metrics.gaugeWithCallback( "mail_queue", callback -> callback.call( queue.size() ) );
     }
 
     public MailQueue() {

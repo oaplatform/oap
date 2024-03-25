@@ -24,14 +24,14 @@
 
 package oap.message;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
+import io.prometheus.metrics.core.metrics.Counter;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
+import oap.metrics.Metrics;
 import oap.util.Dates;
 import oap.util.Lists;
 import org.apache.commons.codec.DecoderException;
@@ -92,17 +92,18 @@ import static oap.message.MessageProtocol.messageTypeToString;
  */
 @Slf4j
 public class MessageHttpHandler implements HttpHandler, Closeable {
+    private static final Counter COUNTER = Metrics.counter( "oap.server.messages", List.of( "type", "status" ) );
+
     public final HashMap<Byte, MessageListener> map = new HashMap<>();
-    public int clientHashCacheSize = 1024;
     private final List<MessageListener> listeners;
     private final long hashTtl;
     private final Path controlStatePath;
     private final NioHttpServer server;
     private final String context;
+    public int clientHashCacheSize = 1024;
+    public String port = null;
     private MessageHashStorage hashes;
     private Scheduled scheduled;
-
-    public String port = null;
 
     public MessageHttpHandler( NioHttpServer server, String context, Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
         this.server = server;
@@ -122,7 +123,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             clientHashCacheSize, context, port );
 
         hashes = new MessageHashStorage( clientHashCacheSize );
-        Metrics.gauge( "messages_hash", Tags.empty(), hashes, MessageHashStorage::size );
+        Metrics.gaugeWithCallback( "messages_hash", callback -> callback.call( hashes.size() ) );
 
         if( port == null )
             server.bind( context, this );
@@ -187,7 +188,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                             log.trace( "handler {}... Done. Status {}", listener.getId(), status );
                         } catch( Throwable e ) {
                             log.error( "[" + clientHostPort + "] " + e.getMessage(), e );
-                            Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ) ).increment();
+                            COUNTER.labelValues( messageTypeToString( messageType ), messageStatusToString( STATUS_UNKNOWN_ERROR_NO_RETRY ) ).inc();
                             writeResponse( exchange, STATUS_UNKNOWN_ERROR_NO_RETRY, clientId, md5 );
 
                             return;
@@ -195,7 +196,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                         writeResponse( exchange, status, clientId, md5 );
                         if( status == STATUS_OK ) {
                             hashes.add( messageType, clientId, md5 );
-                            Metrics.counter( "oap.server.messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ), "status", messageStatusToString( status ) ) ).increment();
+                            COUNTER.labelValues( String.valueOf( Byte.toUnsignedInt( messageType ) ), messageStatusToString( status ) ).inc();
                         } else {
                             log.trace( "[{}] WARN [{}/{}] buffer ({}, " + size + ") status == {}.)",
                                 clientHostPort, hostName, clientId, md5, messageStatusToString( status ) );
@@ -203,7 +204,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
                     }
                 } else {
                     log.warn( "[{}/{}] buffer ({}, {}) already written.)", clientHostPort, clientId, md5, size );
-                    Metrics.counter( "oap.server.messages", Tags.of( "type", messageTypeToString( messageType ), "status", messageStatusToString( STATUS_ALREADY_WRITTEN ) ) ).increment();
+                    COUNTER.labelValues( messageTypeToString( messageType ), messageStatusToString( STATUS_ALREADY_WRITTEN ) ).inc();
 
                     in.skipNBytes( size );
 

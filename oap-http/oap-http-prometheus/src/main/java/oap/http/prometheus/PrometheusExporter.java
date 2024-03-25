@@ -24,24 +24,23 @@
 
 package oap.http.prometheus;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
+import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
+import oap.metrics.Metrics;
 
 @Slf4j
 public class PrometheusExporter implements HttpHandler {
-    public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
     private static long metricCount = 0L;
 
     static {
-        Metrics.addRegistry( prometheusRegistry );
-
-        Metrics.gauge( "system_metrics_total", prometheusRegistry, pmr -> metricCount );
+        Metrics.gaugeWithCallback( "system_metrics", callback -> callback.call( metricCount ) );
     }
 
     public PrometheusExporter( NioHttpServer server ) {
@@ -52,21 +51,26 @@ public class PrometheusExporter implements HttpHandler {
         server.bind( "/metrics", this, port );
     }
 
+    private static long getMetricCount() {
+        long count = 0;
+
+        MetricSnapshots scrape = PrometheusRegistry.defaultRegistry.scrape();
+        for( var a : scrape ) {
+            count += a.getDataPoints().size();
+        }
+
+        return count;
+    }
+
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
         metricCount = getMetricCount();
 
-        var response = prometheusRegistry.scrape();
-        exchange.responseOk( response, TextFormat.CONTENT_TYPE_004 );
-    }
+        exchange.exchange.getResponseHeaders().put( Headers.CONTENT_TYPE, Http.ContentType.TEXT_PLAIN );
 
-    private static long getMetricCount() {
-        long count = 0;
-        var en = prometheusRegistry.getPrometheusRegistry().metricFamilySamples();
-        while( en.hasMoreElements() ) {
-            var s = en.nextElement();
-            count += s.samples.size();
-        }
-        return count;
+        new PrometheusTextFormatWriter( false )
+            .write( exchange.getOutputStream(), PrometheusRegistry.defaultRegistry.scrape() );
+
+        exchange.endExchange();
     }
 }
