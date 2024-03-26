@@ -1,7 +1,0 @@
-name: test-profile
-services:
-  profile:
-    profiles:
-      - profile-name1
-      - -profile-name2
-    implementation: "oap.application.KernelProfileTest$TestProfile1"
