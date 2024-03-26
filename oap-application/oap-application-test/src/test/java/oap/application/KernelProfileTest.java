@@ -143,7 +143,7 @@ public class KernelProfileTest {
             assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
 
-        System.setProperty( "ENABLE_TEST_PROFILE", "true" );
+//        System.setProperty( "ENABLE_TEST_PROFILE", "true" );
         ConfigImpl.reloadSystemPropertiesConfig();
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
             kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
@@ -152,7 +152,7 @@ public class KernelProfileTest {
             assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
 
-        System.setProperty( "ENABLE_TEST_PROFILE", "false" );
+        System.setProperty( "ENABLE_TEST_PROFILE", "disabled" );
         ConfigImpl.reloadSystemPropertiesConfig();
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
             kernel.start( pathOfTestResource( getClass(), "application-profile.conf" ) );
