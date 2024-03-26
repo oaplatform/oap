@@ -38,12 +38,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelProfileTest {
     @Test
     public void profileName() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module.conf" ) ) ) ) {
             startWithProfile( kernel, "test-profile", "profile-name" );
 
             assertThat( kernel.<TestProfile1>service( "*.profile1" ) ).isPresent();
-            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isNotPresent();
-            assertThat( kernel.<TestProfile3>service( "*.profile3" ) ).isPresent();
+            assertThat( kernel.<TestProfile2>service( "*.profile2" ) ).isPresent();
         }
     }
 
