@@ -149,11 +149,6 @@ class ModuleHelper {
                     enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
                 }
 
-                if( !service.enabled ) {
-                    log.debug( "skipping service {}:{}, reason: enabled = false", moduleInfo.module.name, serviceName );
-                    enabled = ServiceEnabledStatus.DISABLED_BY_FLAG;
-                }
-
                 moduleInfo.services.put( serviceName, new ModuleItem.ServiceItem( serviceName, moduleInfo, service, enabled ) );
             }
         }
@@ -309,8 +304,8 @@ class ModuleHelper {
             for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
                     throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled."
-                            + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
-                            + dModuleInfo.moduleItem.getEnabled().toString() + "." );
+                        + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
+                        + dModuleInfo.moduleItem.getEnabled().toString() + "." );
                 }
             }
         }
@@ -339,7 +334,7 @@ class ModuleHelper {
                 for( var dServiceReference : serviceInfo.dependsOn ) {
                     if( !dServiceReference.serviceItem.isEnabled() && dServiceReference.required ) {
                         throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. Required service [" + dServiceReference.serviceItem.serviceName + "] is disabled by "
-                                + dServiceReference.serviceItem.enabled.toString() + "." );
+                            + dServiceReference.serviceItem.enabled.toString() + "." );
                     }
                 }
             }
@@ -459,11 +454,11 @@ class ModuleHelper {
     private static void initModuleDeps( ModuleItemTree map, LinkedHashSet<String> profiles ) {
         for( var moduleItem : map.values() ) {
             for( var d : moduleItem.module.dependsOn ) {
-                if ( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
+                if( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
                     log.trace( "[module#{}]: skip dependsOn {}, module profiles are not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
                     continue;
                 }
-                ModuleItem dModule  = map.findModule( moduleItem, d.name );
+                ModuleItem dModule = map.findModule( moduleItem, d.name );
                 if( !dModule.isEnabled() ) {
                     log.trace( "[module#{}]: skip dependsOn {}, module is not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
                     continue;

@@ -50,7 +50,6 @@ public class Service {
     public String implementation;
     public String name;
     public RemoteLocation remote;
-    public boolean enabled = true;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
 
