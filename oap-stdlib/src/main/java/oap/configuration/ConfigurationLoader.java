@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
+import oap.json.HoconFactoryWithSystemProperties;
 
 import java.io.IOException;
 import java.net.URL;
@@ -33,7 +33,7 @@ public class ConfigurationLoader {
                         List<URL> urls = Resources.urls( "META-INF/oap-module.conf" );
                         log.trace( "urls {}", urls );
 
-                        var objectMapper = new ObjectMapper( new HoconFactory() );
+                        var objectMapper = new ObjectMapper( new HoconFactoryWithSystemProperties( log ) );
                         objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
                         objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
                         objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );

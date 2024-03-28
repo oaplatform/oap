@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class PropertiesDeserializer extends JsonDeserializer<Object> {
@@ -56,7 +57,7 @@ public class PropertiesDeserializer extends JsonDeserializer<Object> {
 
         Configuration.ClassConfiguration classConfiguration = propertiesMap.get( currentValue.getClass() );
 
-        Class<?> aClass = classConfiguration.properties.get( currentName );
+        Class<?> aClass = classConfiguration.properties.getOrDefault( currentName, Map.class );
 
         return deserializationContext.readValue( jsonParser, aClass );
     }

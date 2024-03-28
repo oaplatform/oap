@@ -25,12 +25,12 @@
 package oap.json;
 
 import com.fasterxml.jackson.core.io.IOContext;
-import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
+import lombok.SneakyThrows;
 import oap.util.Stream;
 import org.slf4j.Logger;
 
@@ -38,7 +38,7 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 
-public class HoconFactoryWithFallback extends HoconFactory {
+public class HoconFactoryWithFallback extends OapHoconFactory {
     private final Config additinal;
     private final boolean withSystemProperties;
     private final Logger log;
@@ -65,9 +65,15 @@ public class HoconFactoryWithFallback extends HoconFactory {
                 ( config, value ) -> config.withFallback( ConfigFactory.parseString( value ) ) );
     }
 
+    @SneakyThrows
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) {
         var options = ConfigParseOptions.defaults();
+
+        Object rawContent = ctxt.contentReference().getRawContent();
+
+        options = fixClassLoader( log, rawContent, options );
+
         var config = ConfigFactory.parseReader( r, options );
 
         var unresolvedConfig = additinal.withFallback( config );
