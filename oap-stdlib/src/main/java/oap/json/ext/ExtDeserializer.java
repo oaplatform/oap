@@ -24,62 +24,27 @@
 
 package oap.json.ext;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.io.Resources;
+import oap.configuration.ConfigurationLoader;
 import oap.json.ClassDeserializer;
-import oap.json.JsonException;
 import oap.json.ext.ExtDeserializer.Configuration.ClassConfiguration;
-import oap.util.Lists;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 public class ExtDeserializer extends StdDeserializer<Ext> {
-    private static final HashMap<String, ClassConfiguration> extmap = new HashMap<>();
-
-    static {
-        try {
-            var list = Lists.concat(
-                Resources.urls( "META-INF/json-ext.conf" ),
-                Resources.urls( "META-INF/json-ext.yaml" ) );
-
-            for( var p : list ) {
-                log.trace( "mapping ext {}", p );
-
-                var mapper = new ObjectMapper( p.toString().endsWith( "yaml" ) ? new YAMLFactory() : new HoconFactory() );
-                mapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
-                mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
-
-                var conf = mapper.readValue( p, Configuration.class );
-
-                for( var cc : conf.ext ) {
-                    String key = extensionKey( cc.clazz, cc.field );
-                    var oldConf = extmap.get( key );
-                    if ( oldConf != null && oldConf.disableOverwrite ) continue;
-                    extmap.put( key, cc );
-                    log.debug( "add ext rule: {} = {}", key, cc.implementation );
-                }
-            }
-        } catch( IOException e ) {
-            throw new JsonException( e );
-        }
-        log.trace( "mapped extensions: {}", extmap );
-    }
+    private static volatile HashMap<String, ClassConfiguration> extmap;
 
     protected ExtDeserializer() {
         this( Ext.class );
@@ -89,11 +54,34 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
         super( clazz );
     }
 
+    private static void init() {
+        if( extmap == null ) {
+            synchronized( ExtDeserializer.class ) {
+                if( extmap == null ) {
+                    extmap = new HashMap<>();
+                    List<Configuration> conf = ConfigurationLoader.read( ExtDeserializer.class, new TypeReference<>() {} );
+                    for( Configuration c : conf ) {
+                        for( ClassConfiguration cc : c.config ) {
+                            String key = extensionKey( cc.clazz, cc.field );
+                            var oldConf = extmap.get( key );
+                            if( oldConf != null && oldConf.disableOverwrite ) continue;
+                            extmap.put( key, cc );
+                            log.debug( "add ext rule: {} = {}", key, cc.implementation );
+                        }
+                    }
+                    log.trace( "mapped extensions: {}", extmap );
+                }
+            }
+        }
+    }
+
     private static String extensionKey( Class<?> clazz, String field ) {
         return clazz.getName() + "#" + field;
     }
 
     public static Class<?> extensionOf( Class<?> clazz, String field ) {
+        init();
+
         var classConfiguration = extmap.get( extensionKey( clazz, field ) );
         if( classConfiguration != null ) return classConfiguration.implementation;
         return null;
@@ -101,6 +89,8 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
 
     @SuppressWarnings( "rawtypes" )
     public static Map<Class, ExtDeserializer> getDeserializers() {
+        init();
+
         var ret = new HashMap<Class, ExtDeserializer>();
 
         ret.put( Ext.class, new ExtDeserializer() );
@@ -130,9 +120,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
     }
 
     @ToString
-    public static class Configuration {
-        public final ArrayList<ClassConfiguration> ext = new ArrayList<>();
-
+    public static class Configuration extends ConfigurationLoader.Configuration<ArrayList<ClassConfiguration>> {
         @ToString
         public static class ClassConfiguration {
             @JsonProperty( "class" )
