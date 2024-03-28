@@ -25,78 +25,93 @@
 package oap.json;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.io.Resources;
-import oap.util.Throwables;
+import oap.configuration.ConfigurationLoader;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.util.Properties;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class TypeIdFactory implements TypeIdResolver {
-    private static final ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
-
-    static {
-        Resources.urls( "META-INF/json-mapping.properties" )
-            .forEach( url -> {
-                log.info( "loading {}...", url );
-                try( InputStream is = url.openStream() ) {
-                    final Properties properties = new Properties();
-                    properties.load( is );
-                    for( String key : properties.stringPropertyNames() )
-                        register( Class.forName( properties.getProperty( key ) ), key );
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
-                } catch( ClassNotFoundException e ) {
-                    throw Throwables.propagate( e );
-                }
-            } );
-    }
-
+    private static ConcurrentHashMap<Class<?>, String> classToId;
+    private static volatile LinkedHashMap<String, Class<?>> idToClass;
     private JavaType baseType;
 
     public static boolean containsId( String id ) {
+        init();
+
         return idToClass.containsKey( id );
     }
 
     public static boolean containsClass( Class<?> clazz ) {
+        init();
+
         return classToId.containsKey( clazz );
     }
 
     public static Class<?> get( String id ) {
+        init();
+
         return idToClass.get( id );
     }
 
     public static String get( Class clazz ) {
+        init();
+
         return classToId.get( clazz );
     }
 
     public static void register( Class<?> bean, String id ) {
+        init();
+
         idToClass.put( id, bean );
         classToId.put( bean, id );
     }
 
     public static Set<String> keys() {
+        init();
+
         return idToClass.keySet();
     }
 
     public static Set<Class<?>> values() {
+        init();
+
         return classToId.keySet();
     }
 
     public static void clear() {
+        init();
+
         idToClass.clear();
         classToId.clear();
+    }
+
+    private static void init() {
+        if( idToClass == null ) {
+            synchronized( TypeIdFactory.class ) {
+                if( idToClass == null ) {
+                    idToClass = new LinkedHashMap<>();
+                    classToId = new ConcurrentHashMap<>();
+
+                    List<Configuration> conf = ConfigurationLoader.read( TypeIdFactory.class, new TypeReference<>() {} );
+                    for( var c : conf ) {
+                        c.config.forEach( ( k, v ) -> {
+                            register( v, k );
+                        } );
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -111,6 +126,8 @@ public class TypeIdFactory implements TypeIdResolver {
 
     @Override
     public String idFromValueAndType( Object value, Class<?> suggestedType ) {
+        init();
+
         return classToId.computeIfAbsent( suggestedType, k -> {
             throw new IllegalStateException( "cannot find class '" + k + "'" );
         } );
@@ -123,6 +140,8 @@ public class TypeIdFactory implements TypeIdResolver {
 
     @Override
     public JavaType typeFromId( DatabindContext context, String id ) {
+        init();
+
         final Class<?> clazz = idToClass.computeIfAbsent( id, k -> {
             throw new IllegalStateException( "cannot find id '" + k + "'" );
         } );
@@ -131,11 +150,23 @@ public class TypeIdFactory implements TypeIdResolver {
 
     @Override
     public String getDescForKnownTypeIds() {
-        return idToClass.keySet().stream().collect( Collectors.joining( "," ) );
+        init();
+
+        return String.join( ",", idToClass.keySet() );
     }
 
     @Override
     public JsonTypeInfo.Id getMechanism() {
         return JsonTypeInfo.Id.CLASS;
+    }
+
+    @ToString
+    public static class Configuration extends ConfigurationLoader.Configuration<Configuration.ClassConfiguration> {
+        @ToString
+        @JsonDeserialize( contentUsing = ClassDeserializer.class )
+        public static class ClassConfiguration extends LinkedHashMap<String, Class<?>> {
+
+        }
+
     }
 }
