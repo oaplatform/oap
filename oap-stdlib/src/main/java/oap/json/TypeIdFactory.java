@@ -64,7 +64,7 @@ public class TypeIdFactory implements TypeIdResolver {
         return idToClass.get( id );
     }
 
-    public static String get( Class clazz ) {
+    public static String get( Class<?> clazz ) {
         init();
 
         return classToId.get( clazz );
@@ -72,6 +72,8 @@ public class TypeIdFactory implements TypeIdResolver {
 
     public static void register( Class<?> bean, String id ) {
         init();
+
+        log.trace( "{} -> {}", id, bean );
 
         idToClass.put( id, bean );
         classToId.put( bean, id );
