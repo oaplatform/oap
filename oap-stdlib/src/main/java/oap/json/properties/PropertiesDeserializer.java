@@ -1,7 +1,6 @@
 package oap.json.properties;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class PropertiesDeserializer extends JsonDeserializer<Object> {
@@ -47,7 +45,7 @@ public class PropertiesDeserializer extends JsonDeserializer<Object> {
     }
 
     @Override
-    public Object deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException, JacksonException {
+    public Object deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException {
         init();
 
         String currentName = jsonParser.getCurrentName();
@@ -55,9 +53,15 @@ public class PropertiesDeserializer extends JsonDeserializer<Object> {
         JsonStreamContext parent = parsingContext.getParent();
         Object currentValue = parent.getCurrentValue();
 
+        if( currentValue == null ) { // not list/map
+            currentValue = parsingContext.getCurrentValue();
+        }
+
         Configuration.ClassConfiguration classConfiguration = propertiesMap.get( currentValue.getClass() );
 
-        Class<?> aClass = classConfiguration.properties.getOrDefault( currentName, Map.class );
+        Class<?> aClass = classConfiguration.properties.getOrDefault( currentName, Object.class );
+
+        log.trace( "currentName {} aClass {} currentValue {}", currentName, aClass, currentValue );
 
         return deserializationContext.readValue( jsonParser, aClass );
     }
