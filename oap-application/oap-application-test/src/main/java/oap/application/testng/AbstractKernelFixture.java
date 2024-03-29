@@ -25,6 +25,7 @@
 package oap.application.testng;
 
 import com.google.common.base.Preconditions;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
@@ -41,6 +42,7 @@ import oap.util.Pair;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -200,6 +202,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return kernel.ofClass( moduleName, clazz );
     }
 
+    @SneakyThrows
     @Override
     protected void before() {
         Preconditions.checkArgument( this.kernel == null );
@@ -219,18 +222,18 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         }
 
         for( var cd : conf ) {
-            var u = Resources.url( cd._1, cd._2 );
-            u.ifPresentOrElse( url -> {
-                Path destPath = confdPath.resolve( FilenameUtils.getName( url.toString() ) );
-                log.info( "Copying file " + url + " -> " + destPath );
+            var url = Resources.url( cd._1, cd._2 ).orElse( null );
+            if( url == null ) {
+                throw new FileNotFoundException( "Configuration file " + cd + " is not found" );
+            }
+            Path destPath = confdPath.resolve( FilenameUtils.getName( url.toString() ) );
+            log.info( "Copying file " + url + " -> " + destPath );
 
-                try( var is = IoStreams.in( url ) ) {
-                    IoStreams.write( destPath, PLAIN, is );
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
-                }
-
-            }, () -> log.warn( "Configuration file " + cd + " is not found" ) );
+            try( var is = IoStreams.in( url ) ) {
+                IoStreams.write( destPath, PLAIN, is );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
         }
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
