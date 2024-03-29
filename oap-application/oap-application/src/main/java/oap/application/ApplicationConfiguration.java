@@ -233,7 +233,7 @@ public final class ApplicationConfiguration {
     @ToString
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
-        public boolean allowActiveByDefault = true;
+        public boolean allowActiveByDefault = false;
     }
 
     public static class ProfileMap {

@@ -171,6 +171,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return withConfResource( clazz, cr );
     }
 
+    public Self withAllowActiveByDefault( boolean allowActiveByDefault ) {
+        return define( "main.allowActiveByDefault", allowActiveByDefault );
+    }
+
     private void initConfd() {
         if( this.confdPath == null )
             this.confdPath = testDirectoryFixture.testPath( "/application.test.confd" );

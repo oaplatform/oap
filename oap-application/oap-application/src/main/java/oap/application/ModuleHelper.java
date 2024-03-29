@@ -235,7 +235,18 @@ class ModuleHelper {
                                                         boolean allowActiveByDefault,
                                                         final LinkedHashSet<String> profiles,
                                                         final LinkedHashSet<String> loaded ) {
-        for( var module : main ) {
+
+        var mainWithAllowActiveByDefault = new LinkedHashSet<>( main );
+        if( allowActiveByDefault ) {
+            for( var moduleName : modules.keySet() ) {
+                var moduleItem = modules.get( moduleName );
+                if( moduleItem.module.activation.activeByDefault ) {
+                    mainWithAllowActiveByDefault.add( moduleName );
+                }
+            }
+        }
+
+        for( var module : mainWithAllowActiveByDefault ) {
             var moduleItem = modules.get( module );
 
             if( moduleItem == null && !loaded.contains( module ) ) {
@@ -259,18 +270,6 @@ class ModuleHelper {
                     }
                 }
                 loadOnlyMainModuleAndDependsOn( modules, dependsOn, allowActiveByDefault, profiles, loaded );
-            }
-        }
-
-        if( allowActiveByDefault ) {
-            for( var moduleName : new ArrayList<>( modules.keySet() ) ) {
-                ModuleItem moduleItem = modules.get( moduleName );
-                if( moduleItem.module.activation.activeByDefault ) {
-                    moduleItem.setLoad();
-                    modules.remove( moduleName );
-
-                    log.trace( "{} activeByDefault true", moduleName );
-                }
             }
         }
     }
