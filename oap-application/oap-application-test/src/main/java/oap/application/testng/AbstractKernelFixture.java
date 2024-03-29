@@ -81,6 +81,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
     private final ArrayList<Pair<Class<?>, String>> conf = new ArrayList<>();
     private final LinkedHashMap<String, AbstractFixture<?>> dependencies = new LinkedHashMap<>();
+    private final LinkedHashSet<String> bootMain = new LinkedHashSet<>();
     public Kernel kernel;
     protected Path confdPath;
     private int testHttpPort;
@@ -175,6 +176,13 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return define( "main.allowActiveByDefault", allowActiveByDefault );
     }
 
+    @SuppressWarnings( "unchecked" )
+    public Self withBootMain( String... modules ) {
+        this.bootMain.addAll( List.of( modules ) );
+
+        return ( Self ) this;
+    }
+
     private void initConfd() {
         if( this.confdPath == null )
             this.confdPath = testDirectoryFixture.testPath( "/application.test.confd" );
@@ -247,6 +255,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         var confds = ApplicationConfiguration.getConfdUrls( confdPath );
 
         var kernelProperties = new LinkedHashMap<>( properties );
+
+        if( !bootMain.isEmpty() ) {
+            profiles.add( "boot.main = ${boot.main} [" + String.join( ",", bootMain ) + "]" );
+        }
 
         dependencies.forEach( ( name, fixture ) -> {
             kernelProperties.put( name, fixture.getProperties() );
