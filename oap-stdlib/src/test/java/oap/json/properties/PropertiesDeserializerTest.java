@@ -43,4 +43,15 @@ public class PropertiesDeserializerTest {
             entry( "property6", Map.of( "k", "v" ) )
         );
     }
+
+    @Test
+    public void testUnknownClass() {
+        var json = """
+            {
+              "a": "b"
+            }
+            """;
+        TestJsonProperties2 tp = Binder.json.unmarshal( TestJsonProperties2.class, json );
+        assertThat( tp.getProperties() ).contains( entry( "a", "b" ) );
+    }
 }

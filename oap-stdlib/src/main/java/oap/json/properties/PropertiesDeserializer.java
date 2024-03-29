@@ -59,7 +59,9 @@ public class PropertiesDeserializer extends JsonDeserializer<Object> {
 
         Configuration.ClassConfiguration classConfiguration = propertiesMap.get( currentValue.getClass() );
 
-        Class<?> aClass = classConfiguration.properties.getOrDefault( currentName, Object.class );
+        Class<?> aClass = classConfiguration != null
+            ? classConfiguration.properties.getOrDefault( currentName, Object.class )
+            : Object.class;
 
         log.trace( "currentName {} aClass {} currentValue {}", currentName, aClass, currentValue );
 
