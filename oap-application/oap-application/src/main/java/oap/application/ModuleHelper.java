@@ -267,7 +267,9 @@ class ModuleHelper {
                 ModuleItem moduleItem = modules.get( moduleName );
                 if( moduleItem.module.activation.activeByDefault ) {
                     moduleItem.setLoad();
-                    modules.remove( moduleItem.getName() );
+                    modules.remove( moduleName );
+
+                    log.trace( "{} activeByDefault true", moduleName );
                 }
             }
         }
