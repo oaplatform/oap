@@ -263,7 +263,7 @@ class ModuleHelper {
         }
 
         if( allowActiveByDefault ) {
-            for( var moduleName : modules.keySet() ) {
+            for( var moduleName : new ArrayList<>( modules.keySet() ) ) {
                 ModuleItem moduleItem = modules.get( moduleName );
                 if( moduleItem.module.activation.activeByDefault ) {
                     moduleItem.setLoad();
