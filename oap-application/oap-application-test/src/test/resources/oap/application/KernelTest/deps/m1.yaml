@@ -1,6 +1,0 @@
-name: m1
-dependsOn:
-  - m3
-services:
-  s11:
-    implementation: oap.application.KernelTest$Service1

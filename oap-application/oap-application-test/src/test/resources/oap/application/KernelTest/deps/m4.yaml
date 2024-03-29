@@ -1,4 +1,0 @@
-name: m4
-services:
-  s41:
-    implementation: oap.application.KernelTest$Service1

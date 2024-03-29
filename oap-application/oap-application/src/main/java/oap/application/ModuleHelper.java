@@ -59,10 +59,11 @@ class ModuleHelper {
     public static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
                                        LinkedHashSet<String> profiles,
                                        LinkedHashSet<String> main,
+                                       boolean allowActiveByDefault,
                                        Kernel kernel ) throws ApplicationException {
-        log.trace( "Init modules: {}, profiles: {}, main: {}", modules, profiles, main );
+        log.trace( "Init modules {} profiles {} main {} allowActiveByDefault {}", modules, profiles, main, allowActiveByDefault );
         var map = init( modules, profiles );
-        loadOnlyMainModuleAndDependsOn( map, main, profiles );
+        loadOnlyMainModuleAndDependsOn( map, main, allowActiveByDefault, profiles );
 
         validateModuleName( map );
         validateServiceName( map );
@@ -217,10 +218,11 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main, LinkedHashSet<String> profiles ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main,
+                                                        boolean allowActiveByDefault, LinkedHashSet<String> profiles ) {
         var modules = map.clone();
-        log.info( "loading main modules: {} with profiles: {}", main, profiles );
-        loadOnlyMainModuleAndDependsOn( modules, main, profiles, new LinkedHashSet<>() );
+        log.info( "loading main modules {} with profiles {}", main, profiles );
+        loadOnlyMainModuleAndDependsOn( modules, main, allowActiveByDefault, profiles, new LinkedHashSet<>() );
 
         for( var moduleItem : modules.values() ) {
             log.debug( "unload module {}", moduleItem.getName() );
@@ -230,13 +232,15 @@ class ModuleHelper {
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules,
                                                         final LinkedHashSet<String> main,
+                                                        boolean allowActiveByDefault,
                                                         final LinkedHashSet<String> profiles,
                                                         final LinkedHashSet<String> loaded ) {
         for( var module : main ) {
             var moduleItem = modules.get( module );
 
-            if( moduleItem == null && !loaded.contains( module ) )
+            if( moduleItem == null && !loaded.contains( module ) ) {
                 throw new ApplicationException( "main.boot: unknown module name '" + module + "', already loaded: " + loaded );
+            }
 
             if( moduleItem != null ) {
                 log.trace( "Loading module: {}, already loaded: {}", moduleItem.getName(), loaded );
@@ -254,7 +258,17 @@ class ModuleHelper {
                         log.trace( "dependant module {} disabled for module {}", depends.name, module );
                     }
                 }
-                loadOnlyMainModuleAndDependsOn( modules, dependsOn, profiles, loaded );
+                loadOnlyMainModuleAndDependsOn( modules, dependsOn, allowActiveByDefault, profiles, loaded );
+            }
+        }
+
+        if( allowActiveByDefault ) {
+            for( var moduleName : modules.keySet() ) {
+                ModuleItem moduleItem = modules.get( moduleName );
+                if( moduleItem.module.activation.activeByDefault ) {
+                    moduleItem.setLoad();
+                    modules.remove( moduleItem.getName() );
+                }
             }
         }
     }

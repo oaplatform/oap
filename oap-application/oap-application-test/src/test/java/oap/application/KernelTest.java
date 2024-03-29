@@ -281,10 +281,11 @@ public class KernelTest extends Fixtures {
     @Test
     public void testLoadModules() {
         var modules = List.of(
-            url( "deps/m1.yaml" ),
-            url( "deps/m2.yaml" ),
-            url( "deps/m3.yaml" ),
-            url( "deps/m4.yaml" )
+            url( "deps/m1.conf" ),
+            url( "deps/m2.conf" ),
+            url( "deps/m3.conf" ),
+            url( "deps/m4.conf" ),
+            url( "deps/activeByDefault.conf" )
         );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -295,6 +296,13 @@ public class KernelTest extends Fixtures {
             assertThat( kernel.service( "m1.s31" ) ).isNotPresent();
             assertThat( kernel.service( "m3.s31" ) ).isPresent();
             assertThat( kernel.service( "m4.s41" ) ).isPresent();
+            assertThat( kernel.service( "activeByDefault.sa" ) ).isPresent();
+        }
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot", Map.of( "main", "m1", "allowActiveByDefault", false ) ) );
+
+            assertThat( kernel.service( "activeByDefault.sa" ) ).isNotPresent();
         }
     }
 

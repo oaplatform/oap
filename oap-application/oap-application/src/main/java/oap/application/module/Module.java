@@ -55,6 +55,8 @@ public class Module {
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
 
+    public final ModuleActivation activation = new ModuleActivation();
+
     @JsonCreator
     public Module( String name ) {
         this.name = name;
@@ -70,4 +72,8 @@ public class Module {
         return ext;
     }
 
+    @ToString
+    public static class ModuleActivation {
+        public boolean activeByDefault = false;
+    }
 }
