@@ -30,6 +30,7 @@ import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
 import oap.application.module.Module;
 import oap.http.test.HttpAsserts;
+import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.JsonException;
@@ -40,6 +41,7 @@ import oap.util.Pair;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
@@ -217,11 +219,17 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         }
 
         for( var cd : conf ) {
-            var p = Resources.filePath( cd._1, cd._2 );
-            p.ifPresentOrElse( path -> {
-                Path destPath = confdPath.resolve( path.getFileName() );
-                log.info( "Copying file " + path + " -> " + destPath );
-                oap.io.Files.copy( path, PLAIN, destPath, PLAIN );
+            var u = Resources.url( cd._1, cd._2 );
+            u.ifPresentOrElse( url -> {
+                Path destPath = confdPath.resolve( FilenameUtils.getName( url.toString() ) );
+                log.info( "Copying file " + url + " -> " + destPath );
+
+                try( var is = IoStreams.in( url ) ) {
+                    IoStreams.write( destPath, PLAIN, is );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+
             }, () -> log.warn( "Configuration file " + cd + " is not found" ) );
         }
 
