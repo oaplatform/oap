@@ -24,7 +24,6 @@
 
 package oap.testng;
 
-import oap.time.JavaTimeService;
 import oap.time.JodaTimeService;
 
 public class SystemTimerFixture extends AbstractFixture<SystemTimerFixture> {
