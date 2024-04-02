@@ -77,39 +77,34 @@ public abstract class Fixtures {
     @AfterSuite( alwaysRun = true )
     public void fixAfterSuite() {
         SilentRun silentRun = new SilentRun();
-        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterSuite ) ) );
+        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> {
+            log.info( "afterSuite {}", f.getClass() );
+            silentRun.run( f::afterSuite );
+        } ) );
         silentRun.done();
     }
 
     @BeforeClass
     public void fixBeforeClass() {
-        suiteFixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeClass ) );
         fixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeClass ) );
     }
 
     @AfterClass( alwaysRun = true )
     public void fixAfterClass() {
         SilentRun silentRun = new SilentRun();
-
-        Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
         Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
-
         silentRun.done();
     }
 
     @BeforeMethod
     public void fixBeforeMethod() {
-        suiteFixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeMethod ) );
         fixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeMethod ) );
     }
 
     @AfterMethod( alwaysRun = true )
     public void fixAfterMethod() {
         SilentRun silentRun = new SilentRun();
-
         Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
-        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
-
         silentRun.done();
     }
 
