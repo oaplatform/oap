@@ -92,7 +92,7 @@ public abstract class Fixtures {
     @AfterClass( alwaysRun = true )
     public void fixAfterClass() {
         SilentRun silentRun = new SilentRun();
-        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
+        Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
         silentRun.done();
     }
 
