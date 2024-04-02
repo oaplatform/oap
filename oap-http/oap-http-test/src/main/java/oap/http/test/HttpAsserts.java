@@ -58,7 +58,7 @@ public class HttpAsserts {
         .build();
 
     public static String httpPrefix( int port ) {
-        return "http://127.0.0.1:" + port;
+        return "http://localhost:" + port;
     }
 
     public static String httpUrl( int port, String suffix ) {
