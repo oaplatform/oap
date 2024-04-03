@@ -46,7 +46,7 @@ public abstract class Fixtures {
     private final ArrayList<AbstractFixture<?>> fixtures = new ArrayList<>();
 
     public static <F extends AbstractFixture<?>> F suiteFixture( F fixture ) throws IllegalArgumentException {
-        fixture.withScope( SUITE );
+        fixture.scope = SUITE;
 
         suiteFixtures.add( fixture );
 
