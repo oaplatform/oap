@@ -47,6 +47,7 @@ public abstract class Fixtures {
 
     public static <F extends AbstractFixture<?>> F suiteFixture( F fixture ) throws IllegalArgumentException {
         fixture.scope = SUITE;
+        fixture.children.forEach( f -> f.scope = SUITE );
 
         suiteFixtures.add( fixture );
 

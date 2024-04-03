@@ -38,7 +38,7 @@ import static oap.testng.Asserts.locationOfTestResource;
 @Slf4j
 public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     protected final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
-    private final ArrayList<AbstractFixture<?>> children = new ArrayList<>();
+    protected final ArrayList<AbstractFixture<?>> children = new ArrayList<>();
     protected Scope scope = Scope.METHOD;
 
     protected AbstractFixture() {
@@ -56,6 +56,8 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
             throw new IllegalArgumentException( "use Fixtures#suiteFixture" );
         }
 
+        children.forEach( f -> f.withScope( scope ) );
+
         return ( Self ) this;
     }
 
@@ -64,8 +66,8 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     }
 
     public void beforeSuite() {
-        children.forEach( AbstractFixture::beforeSuite );
         if( scope == Scope.SUITE ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -73,13 +75,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterSuite() {
         if( scope == Scope.SUITE ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
-        children.forEach( AbstractFixture::afterSuite );
     }
 
     public void beforeClass() {
-        children.forEach( AbstractFixture::beforeClass );
         if( scope == Scope.CLASS ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -87,13 +89,13 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterClass() {
         if( scope == Scope.CLASS ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
-        children.forEach( AbstractFixture::afterClass );
     }
 
     public void beforeMethod() {
-        children.forEach( AbstractFixture::beforeMethod );
         if( scope == Scope.METHOD ) {
+            children.forEach( AbstractFixture::before );
             before();
         }
     }
@@ -101,8 +103,8 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     public void afterMethod() {
         if( scope == Scope.METHOD ) {
             after();
+            children.forEach( AbstractFixture::after );
         }
-        children.forEach( AbstractFixture::afterMethod );
     }
 
     protected void before() {}

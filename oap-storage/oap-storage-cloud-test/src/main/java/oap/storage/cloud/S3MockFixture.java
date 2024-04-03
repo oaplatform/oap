@@ -43,7 +43,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private final int port;
     private final TestDirectoryFixture testDirectoryFixture;
     private boolean debug = false;
-    private LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
+    private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
     private S3MockApplication s3MockApplication;
 
     public S3MockFixture() {
