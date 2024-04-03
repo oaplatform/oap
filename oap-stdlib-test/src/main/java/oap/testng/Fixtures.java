@@ -86,6 +86,7 @@ public abstract class Fixtures {
 
     @BeforeClass
     public void fixBeforeClass() {
+        suiteFixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeClass ) );
         fixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeClass ) );
     }
 
@@ -93,11 +94,13 @@ public abstract class Fixtures {
     public void fixAfterClass() {
         SilentRun silentRun = new SilentRun();
         Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
+        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
         silentRun.done();
     }
 
     @BeforeMethod
     public void fixBeforeMethod() {
+        suiteFixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeMethod ) );
         fixtures.forEach( f -> Threads.withThreadName( f.toThreadName(), f::beforeMethod ) );
     }
 
@@ -105,6 +108,7 @@ public abstract class Fixtures {
     public void fixAfterMethod() {
         SilentRun silentRun = new SilentRun();
         Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
+        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
         silentRun.done();
     }
 
