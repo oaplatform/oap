@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -166,5 +167,14 @@ public class FileSystemTest extends Fixtures {
 
         assertThat( fileSystem.toFile( new CloudURI( "file://container/a/file1" ) ) ).isEqualTo( new File( "/tmp/container/a/file1" ) );
         assertThat( fileSystem.toFile( new CloudURI( "file://tmp/a/file1" ) ) ).isEqualTo( new File( "/container/tmp/a/file1" ) );
+    }
+
+    @Test
+    public void testUploadByteArray() {
+        FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() );
+
+        fileSystem.upload( "s3://test-bucket/file.txt", "content".getBytes( UTF_8 ), Map.of(), Map.of() );
+
+        assertThat( s3mockFixture.readFile( TEST_BUCKET, "file.txt", ofString() ) ).isEqualTo( "content" );
     }
 }

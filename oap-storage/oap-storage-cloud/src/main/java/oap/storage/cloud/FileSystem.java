@@ -170,6 +170,30 @@ public class FileSystem {
         }
     }
 
+    public void upload( String destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
+        CloudURI destinationURI = new CloudURI( destination );
+
+        upload( destinationURI, content, userMetadata, tags );
+    }
+
+    public void upload( CloudURI destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
+        log.debug( "upload byte[] {} userMetadata {} tags {}", destination, userMetadata, tags );
+
+        try( BlobStoreContext sourceContext = getContext( destination ) ) {
+            BlobStore blobStore = sourceContext.getBlobStore();
+
+            Blob blob = blobStore
+                .blobBuilder( destination.path )
+                .userMetadata( userMetadata )
+                .payload( content )
+                .build();
+
+            putBlob( blobStore, blob, destination, tags );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
     public void copy( String source, String destination ) {
         copy( source, destination, Map.of(), Map.of() );
     }
