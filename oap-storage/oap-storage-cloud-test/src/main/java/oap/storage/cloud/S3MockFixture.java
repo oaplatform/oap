@@ -25,6 +25,8 @@ import java.io.UncheckedIOException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -41,7 +43,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private final int port;
     private final TestDirectoryFixture testDirectoryFixture;
     private boolean debug = false;
-    private String initialBuckets = "";
+    private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
     private S3MockApplication s3MockApplication;
 
     public S3MockFixture() {
@@ -58,7 +60,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
         s3MockApplication = S3MockApplication.start( new LinkedHashMap<>( Map.of(
             S3MockApplication.PROP_HTTP_PORT, port,
-            S3MockApplication.PROP_INITIAL_BUCKETS, initialBuckets,
+            S3MockApplication.PROP_INITIAL_BUCKETS, String.join( ",", initialBuckets ),
             S3MockApplication.PROP_SILENT, !debug,
             S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testPath( "s3" ).toString()
         ) ) );
@@ -71,7 +73,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     }
 
     public S3MockFixture withInitialBuckets( String... bucketNames ) {
-        initialBuckets = String.join( ",", bucketNames );
+        initialBuckets.addAll( List.of( bucketNames ) );
 
         return this;
     }

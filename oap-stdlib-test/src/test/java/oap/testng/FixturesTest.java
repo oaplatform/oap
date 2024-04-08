@@ -31,7 +31,6 @@ import org.testng.annotations.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FixturesTest extends Fixtures {
-
     private F fixture;
 
     {
@@ -45,7 +44,7 @@ public class FixturesTest extends Fixtures {
     }
 
     @AfterTest
-    public void assertFixture() {
+    public void testAfterTest() {
         assertThat( fixture.result ).isEqualTo( "BCBMAMAC" );
     }
 

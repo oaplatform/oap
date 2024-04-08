@@ -25,11 +25,13 @@
 package oap.application.testng;
 
 import com.google.common.base.Preconditions;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ApplicationConfiguration;
 import oap.application.Kernel;
 import oap.application.module.Module;
 import oap.http.test.HttpAsserts;
+import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.json.JsonException;
@@ -40,6 +42,8 @@ import oap.util.Pair;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
@@ -77,6 +81,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
     private final ArrayList<Pair<Class<?>, String>> conf = new ArrayList<>();
     private final LinkedHashMap<String, AbstractFixture<?>> dependencies = new LinkedHashMap<>();
+    private final LinkedHashSet<String> bootMain = new LinkedHashSet<>();
     public Kernel kernel;
     protected Path confdPath;
     private int testHttpPort;
@@ -167,6 +172,17 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return withConfResource( clazz, cr );
     }
 
+    public Self withAllowActiveByDefault( boolean allowActiveByDefault ) {
+        return define( "main.allowActiveByDefault", allowActiveByDefault );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public Self withBootMain( String... modules ) {
+        this.bootMain.addAll( List.of( modules ) );
+
+        return ( Self ) this;
+    }
+
     private void initConfd() {
         if( this.confdPath == null )
             this.confdPath = testDirectoryFixture.testPath( "/application.test.confd" );
@@ -198,6 +214,7 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return kernel.ofClass( moduleName, clazz );
     }
 
+    @SneakyThrows
     @Override
     protected void before() {
         Preconditions.checkArgument( this.kernel == null );
@@ -217,12 +234,18 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         }
 
         for( var cd : conf ) {
-            var p = Resources.filePath( cd._1, cd._2 );
-            p.ifPresentOrElse( path -> {
-                Path destPath = confdPath.resolve( path.getFileName() );
-                log.info( "Copying file " + path + " -> " + destPath );
-                oap.io.Files.copy( path, PLAIN, destPath, PLAIN );
-            }, () -> log.warn( "Configuration file " + cd + " is not found" ) );
+            var url = Resources.url( cd._1, cd._2 ).orElse( null );
+            if( url == null ) {
+                throw new FileNotFoundException( "Configuration file " + cd + " is not found" );
+            }
+            Path destPath = confdPath.resolve( FilenameUtils.getName( url.toString() ) );
+            log.info( "Copying file " + url + " -> " + destPath );
+
+            try( var is = IoStreams.in( url ) ) {
+                IoStreams.write( destPath, PLAIN, is );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
         }
 
         var moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
@@ -232,6 +255,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         var confds = ApplicationConfiguration.getConfdUrls( confdPath );
 
         var kernelProperties = new LinkedHashMap<>( properties );
+
+        if( !bootMain.isEmpty() ) {
+            profiles.add( "boot.main = ${boot.main} [" + String.join( ",", bootMain ) + "]" );
+        }
 
         dependencies.forEach( ( name, fixture ) -> {
             kernelProperties.put( name, fixture.getProperties() );

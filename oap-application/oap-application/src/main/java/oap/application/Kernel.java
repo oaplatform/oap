@@ -175,7 +175,7 @@ public class Kernel implements Closeable, AutoCloseable {
         checkForUnknownServices( config.services );
 
         log.debug( "init modules from main: {}", config.boot.main );
-        var map = ModuleHelper.init( this.modules, this.profiles, config.boot.main, this );
+        var map = ModuleHelper.init( this.modules, this.profiles, config.boot.main, config.boot.allowActiveByDefault, this );
 
         var servicesMap = instantiateServices( map );
         registerServices( servicesMap );

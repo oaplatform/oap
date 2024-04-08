@@ -281,20 +281,31 @@ public class KernelTest extends Fixtures {
     @Test
     public void testLoadModules() {
         var modules = List.of(
-            url( "deps/m1.yaml" ),
-            url( "deps/m2.yaml" ),
-            url( "deps/m3.yaml" ),
-            url( "deps/m4.yaml" )
+            url( "deps/m1.conf" ),
+            url( "deps/m2.conf" ),
+            url( "deps/m3.conf" ),
+            url( "deps/m4.conf" ),
+            url( "deps/activeByDefault.conf" ),
+            url( "deps/m5.conf" )
         );
 
         try( var kernel = new Kernel( modules ) ) {
-            kernel.start( Map.of( "boot.main", "m1" ) );
+            kernel.start( Map.of( "boot", Map.of( "main", "m1", "allowActiveByDefault", true ) ) );
 
             assertThat( kernel.service( "m1.s11" ) ).isPresent();
             assertThat( kernel.service( "m2.s21" ) ).isNotPresent();
             assertThat( kernel.service( "m1.s31" ) ).isNotPresent();
             assertThat( kernel.service( "m3.s31" ) ).isPresent();
             assertThat( kernel.service( "m4.s41" ) ).isPresent();
+            assertThat( kernel.service( "activeByDefault.sa" ) ).isPresent();
+            assertThat( kernel.service( "m5.s5" ) ).isPresent();
+        }
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot.main", "m1" ) );
+
+            assertThat( kernel.service( "activeByDefault.sa" ) ).isNotPresent();
+            assertThat( kernel.service( "m5.s5" ) ).isNotPresent();
         }
     }
 

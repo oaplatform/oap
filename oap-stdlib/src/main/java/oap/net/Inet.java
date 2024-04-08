@@ -42,7 +42,7 @@ public class Inet {
 
     @SneakyThrows
     private static String resolveLocalhost() {
-        return InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
+        return InetAddress.getByName( "localhost" ).getCanonicalHostName();
     }
 
     @SneakyThrows
