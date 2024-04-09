@@ -74,7 +74,7 @@ class ModuleHelper {
         validateImplementation( map );
         sort( map );
         removeDisabled( map );
-        validateRemoting( map );
+        validateServices( map );
 
         return map;
     }
@@ -274,21 +274,25 @@ class ModuleHelper {
         }
     }
 
-    private static void validateRemoting( ModuleItemTree map ) throws ApplicationException {
-        var invalidRemoting = new ArrayList<String>();
+    private static void validateServices( ModuleItemTree map ) throws ApplicationException {
+        var errors = new ArrayList<String>();
 
         for( var moduleItem : map.values() ) {
             for( var serviceItem : moduleItem.services.values() ) {
-                if( !serviceItem.service.isRemoteService() ) continue;
-
-                if( serviceItem.service.remote.url == null )
-                    invalidRemoting.add( moduleItem.getName() + ":" + serviceItem.serviceName );
+                for( var ext : serviceItem.service.ext.values() ) {
+                    if( ext instanceof ServiceKernelListener skl ) {
+                        errors.addAll( skl.validate( serviceItem ) );
+                    }
+                }
             }
         }
 
-        if( !invalidRemoting.isEmpty() ) {
-            log.error( "url == null, services " + invalidRemoting );
-            throw new ApplicationException( "remoting: url == null, services " + invalidRemoting );
+        if( !errors.isEmpty() ) {
+            for( var message : errors ) {
+                log.error( message );
+            }
+
+            throw new ApplicationException( "error: " + errors );
         }
     }
 

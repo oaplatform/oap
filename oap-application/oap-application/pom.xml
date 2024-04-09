@@ -23,6 +23,11 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
+            <artifactId>oap-remote</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
             <artifactId>oap-application-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
