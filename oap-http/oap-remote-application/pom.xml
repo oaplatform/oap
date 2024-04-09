@@ -10,22 +10,18 @@
         <version>${oap.project.version}</version>
     </parent>
 
-    <artifactId>oap-remote</artifactId>
+    <artifactId>oap-remote-application</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
+            <artifactId>oap-application</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-http</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-stdlib-test</artifactId>
+            <artifactId>oap-application-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

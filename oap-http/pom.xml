@@ -17,5 +17,6 @@
         <module>oap-pnio</module>
         <module>oap-http-test</module>
         <module>oap-remote</module>
+        <module>oap-remote-application</module>
     </modules>
 </project>

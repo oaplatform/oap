@@ -30,7 +30,6 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.application.remote.RemoteLocation;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -52,7 +51,6 @@ public class Service {
     public final LinkedHashMap<String, String> link = new LinkedHashMap<>();
     public String implementation;
     public String name;
-    public RemoteLocation remote;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
 
@@ -64,11 +62,6 @@ public class Service {
     @JsonAnyGetter
     public Map<String, Object> getUnknown() {
         return ext;
-    }
-
-    @JsonIgnore
-    public boolean isRemoteService() {
-        return remote != null;
     }
 
     @SuppressWarnings( "unchecked" )

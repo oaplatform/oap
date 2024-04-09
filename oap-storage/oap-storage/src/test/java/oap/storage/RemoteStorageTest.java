@@ -2,13 +2,14 @@ package oap.storage;
 
 import lombok.ToString;
 import oap.application.Kernel;
-import oap.application.remote.FST;
-import oap.application.remote.Remote;
-import oap.application.remote.RemoteInvocationHandler;
-import oap.application.remote.RemoteLocation;
+import oap.remote.FST;
+import oap.remote.Remote;
+import oap.remote.RemoteInvocationHandler;
 import oap.http.server.nio.NioHttpServer;
 import oap.id.Id;
 import oap.id.Identifier;
+import oap.remote.RemoteLocation;
+import oap.remote.application.RemoteKernel;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
@@ -34,7 +35,7 @@ public class RemoteStorageTest extends Fixtures {
         Mockito.doReturn( Optional.of( serverStorage ) ).when( kernel ).service( "module.service" );
 
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", kernel, server );
+            Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", new RemoteKernel( kernel ), server );
 
             server.start();
 
