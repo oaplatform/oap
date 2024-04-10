@@ -76,7 +76,7 @@ public class ValidatePartialJsonTest extends Fixtures {
         final TestBean.TestItem itemB = new TestBean.TestItem();
         itemB.id = 2;
 
-        Object obj = kernel.kernel.service( "modules.oap-ws-validate-test.test-ws-bean" ).orElseThrow();
+        Object obj = kernel.kernel.service( "oap-ws-validate-test.test-ws-bean" ).orElseThrow();
         TestBean bean = ( TestBean ) obj;
         bean.a.add( itemA );
         bean.a.add( itemB );
