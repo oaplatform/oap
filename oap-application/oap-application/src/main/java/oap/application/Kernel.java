@@ -426,7 +426,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
     public <T> Optional<T> service( String reference ) {
         var ref = ServiceKernelCommand.INSTANCE.reference(
-            reference.startsWith( "modules." ) ? reference : "modules." + reference, null );
+            reference.startsWith( "<modules." ) ? reference : "<modules." + reference + ">", null );
         return service( ref );
     }
 

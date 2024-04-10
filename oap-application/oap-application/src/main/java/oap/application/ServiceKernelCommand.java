@@ -44,7 +44,7 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
     public static final ServiceKernelCommand INSTANCE = new ServiceKernelCommand();
 
     private ServiceKernelCommand() {
-        super( "^<?modules\\.([^.]*)\\.(.+)>?$" );
+        super( "^<modules\\.([^.]*)\\.(.+)>$" );
     }
 
     @Override

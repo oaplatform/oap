@@ -17,7 +17,7 @@ public class RemoteKernel implements RemoteServices {
     @Nullable
     @Override
     public Object get( String name ) {
-        return kernel.service( name ).orElse( null );
+        return kernel.service( "<modules." + name + ">" ).orElse( null );
     }
 
     @Override
