@@ -19,7 +19,7 @@ public class RemoteLocationExt extends RemoteLocation implements ServiceKernelLi
     @Override
     public List<String> validate( ModuleItem.ServiceItem serviceItem ) {
         if( url == null ) {
-            return List.of( "url == null: service " + serviceItem.toString() );
+            return List.of( "remote.url == null: service " + serviceItem.toString() );
         }
 
         return List.of();

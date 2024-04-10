@@ -62,14 +62,14 @@ public class RemoteTest extends Fixtures {
                 .satisfies( remote -> {
                     assertThat( remote.accessible() ).isTrue();
                     //this tests local methods of Object.class
-                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:oap-module-with-remoting.remote-service(retry=5)@http://localhost:" + port + "/remote/" );
                 } );
 
             assertThat( service )
                 .get()
                 .satisfies( remote -> {
                     assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class );
-                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:oap-module-with-remoting.remote-service(retry=5)@http://localhost:" + port + "/remote/" );
                 } );
 
             assertThat( service )
@@ -125,7 +125,7 @@ public class RemoteTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "oap-module-with-invalid-remoting" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "remoting: url == null, services [oap-module-with-invalid-remoting:remote-client]" );
+                .hasMessage( "error: [remote.url == null: service oap-module-with-invalid-remoting.remote-client]" );
         }
     }
 
