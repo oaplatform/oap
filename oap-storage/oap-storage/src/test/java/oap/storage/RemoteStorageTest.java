@@ -1,15 +1,14 @@
 package oap.storage;
 
 import lombok.ToString;
-import oap.application.Kernel;
-import oap.remote.FST;
-import oap.remote.Remote;
-import oap.remote.RemoteInvocationHandler;
 import oap.http.server.nio.NioHttpServer;
 import oap.id.Id;
 import oap.id.Identifier;
+import oap.remote.FST;
+import oap.remote.Remote;
+import oap.remote.RemoteInvocationHandler;
 import oap.remote.RemoteLocation;
-import oap.remote.application.RemoteKernel;
+import oap.remote.RemoteServices;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
@@ -20,7 +19,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,13 +27,14 @@ public class RemoteStorageTest extends Fixtures {
     public void testUpdate() throws IOException, URISyntaxException {
         int port = Ports.getFreePort( getClass() );
 
-        Kernel kernel = Mockito.mock( Kernel.class );
+        RemoteServices remoteServices = Mockito.mock( RemoteServices.class );
         MemoryStorage<String, TestRemoteStorage> serverStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), Storage.Lock.SERIALIZED );
 
-        Mockito.doReturn( Optional.of( serverStorage ) ).when( kernel ).service( "module.service" );
+        Mockito.doReturn( serverStorage ).when( remoteServices ).get( "module.service" );
 
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", new RemoteKernel( kernel ), server );
+            Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", remoteServices, server );
+            remote.start();
 
             server.start();
 
