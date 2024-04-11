@@ -103,8 +103,8 @@ public class KernelTest extends Fixtures {
         System.setProperty( "failedValue", "value that can fail config parsing" );
         var modules = List.of(
             url( "modules/m1.conf" ),
-            url( "modules/m2.json" ),
-            url( "modules/m3.yaml" )
+            url( "modules/m2.conf" ),
+            url( "modules/m3.conf" )
         );
 
         var kernel = new Kernel( modules );
@@ -159,9 +159,9 @@ public class KernelTest extends Fixtures {
         try {
             kernel.start( Map.of( "boot.main", "disabled" ) );
 
-            assertThat( kernel.<ServiceOne>service( "modules..s1" ) ).isPresent().get()
+            assertThat( kernel.<ServiceOne>service( "disabled.s1" ) ).isPresent().get()
                 .satisfies( s1 -> assertThat( s1.list ).isEmpty() );
-            assertThat( kernel.<ServiceOne>service( "modules..s2" ) ).isNotPresent();
+            assertThat( kernel.<ServiceOne>service( "disabled.s2" ) ).isNotPresent();
         } finally {
             kernel.stop();
         }

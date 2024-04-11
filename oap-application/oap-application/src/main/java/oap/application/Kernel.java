@@ -36,7 +36,6 @@ import oap.application.module.Module;
 import oap.application.module.Reference;
 import oap.application.module.Service;
 import oap.application.module.ServiceExt;
-import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
 import oap.reflect.Reflect;
@@ -224,10 +223,21 @@ public class Kernel implements Closeable, AutoCloseable {
             var implName = serviceItem.serviceName;
             log.trace( "instantiating {}.{} as {} class:{} ...", moduleName, implName, service.name, service.implementation );
             try {
+                Object instance = null;
+
                 var reflect = Reflect.reflect( service.implementation, Module.coersions );
-                Object instance;
-                if( !service.isRemoteService() ) {
-                    var parametersWithoutLinks = fixLinksForConstructor( this, moduleItem, retModules, service );
+
+                for( var ext : service.ext.values() ) {
+                    if( ext instanceof ServiceKernelListener skl ) {
+                        instance = skl.newInstance( this, retModules, serviceItem, reflect );
+                        if( instance != null ) {
+                            break;
+                        }
+                    }
+                }
+
+                if( instance == null ) {
+                    var parametersWithoutLinks = fixLinksForConstructor( this, serviceItem.moduleItem, retModules, service );
 
                     var p = new LinkedHashMap<String, Object>();
                     p.putAll( parametersWithoutLinks.serviceReferenceParameters );
@@ -236,13 +246,12 @@ public class Kernel implements Closeable, AutoCloseable {
                     instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
 
                     service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
-                } else {
-                    instance = RemoteInvocationHandler.proxy( serviceItem.getModuleName() + ":" + service.name, service.remote, reflect.underlying );
                 }
+
                 retModules.put( serviceItem, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
             } catch( Exception e ) {
-                log.error( "Cannot create/initialize service name = {}.{}, remote = {}, profiles = {}, class: {}",
-                    moduleName, implName, service.remote, service.profiles, service.implementation );
+                log.error( "Cannot create/initialize service name = {}.{} profiles = {}, class: {}",
+                    moduleName, implName, service.profiles, service.implementation );
                 throw new ApplicationException( e );
             }
         }
@@ -417,7 +426,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
     public <T> Optional<T> service( String reference ) {
         var ref = ServiceKernelCommand.INSTANCE.reference(
-            reference.startsWith( "modules." ) ? reference : "modules." + reference, null );
+            reference.startsWith( "<modules." ) ? reference : "<modules." + reference + ">", null );
         return service( ref );
     }
 

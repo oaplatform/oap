@@ -24,7 +24,7 @@
 package oap.application.supervision;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.remote.RemoteInvocationException;
+import oap.remote.RemoteInvocationException;
 import oap.concurrent.scheduler.Scheduled;
 
 @Slf4j
