@@ -29,9 +29,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.google.JodaTicker;
 import oap.io.Resources;
@@ -45,7 +45,6 @@ import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -55,7 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -63,11 +62,13 @@ import java.util.stream.Stream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
+@ToString( of = { "ttl", "maxSize", "diskCache" } )
 public class TemplateEngine implements Runnable {
+    public static final String METRICS_NAME = "oap_template_cache";
+    private final Map<String, List<Method>> builtInFunction = new HashMap<>();
+    private final Cache<String, TemplateFunction> templates;
     public final Path diskCache;
     public final long ttl;
-    private final HashMap<String, List<Method>> builtInFunction = new HashMap<>();
-    private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
 
     public TemplateEngine( long ttl ) {
@@ -89,12 +90,12 @@ public class TemplateEngine implements Runnable {
 
         loadFunctions();
 
-        log.info( "diskCache {} ttl {} functions {}", diskCache, Dates.durationToString( ttl ), builtInFunction.keySet() );
+        log.info( "diskCache: {} ttl: {} functions: {}", diskCache, Dates.durationToString( ttl ), builtInFunction.keySet() );
 
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "size" ), templates, Cache::size );
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
-        Metrics.gauge( "oap_template_cache", Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
+        Metrics.gauge( METRICS_NAME, Tags.of( "type", "size" ), templates, Cache::size );
+        Metrics.gauge( METRICS_NAME, Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
+        Metrics.gauge( METRICS_NAME, Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
+        Metrics.gauge( METRICS_NAME, Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
     }
 
     public static String getHashName( String template ) {
@@ -104,7 +105,6 @@ public class TemplateEngine implements Runnable {
 
     public static long getHash( String template ) {
         var hashFunction = Hashing.murmur3_128();
-
         return hashFunction.hashUnencodedChars( template ).asLong();
     }
 
@@ -151,8 +151,8 @@ public class TemplateEngine implements Runnable {
     @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
-        assert template != null;
-        assert acc != null;
+        Objects.requireNonNull( template );
+        Objects.requireNonNull( acc );
 
         Hasher hasher = Hashing.murmur3_128().newHasher();
         hasher
@@ -178,7 +178,6 @@ public class TemplateEngine implements Runnable {
                 var elements = grammar.elements( aliases ).ret;
                 log.trace( "\n" + elements.print() );
 
-
                 AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
 
                 if( postProcess != null )
@@ -191,7 +190,8 @@ public class TemplateEngine implements Runnable {
             } );
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
-        } catch( UncheckedExecutionException | ExecutionException e ) {
+        } catch( Exception e ) {
+            if( e.getCause() == null ) throw new RuntimeException( e );
             if( e.getCause() instanceof TemplateException ) {
                 throw ( TemplateException ) e.getCause();
             }
@@ -206,6 +206,7 @@ public class TemplateEngine implements Runnable {
     @Override
     public void run() {
         templates.cleanUp();
+        if( diskCache == null ) return;
         var now = System.currentTimeMillis();
         try( Stream<Path> stream = Files.walk( diskCache ) ) {
             stream
@@ -215,12 +216,12 @@ public class TemplateEngine implements Runnable {
                             log.debug( "delete {}", path );
                             Files.deleteIfExists( path );
                         }
-                    } catch( IOException e ) {
-                        log.error( "Cannot delete {}", path, e );
+                    } catch( Exception e ) {
+                        log.error( "Cannot delete file/dir: {}", path, e );
                     }
                 } );
-        } catch( IOException e ) {
-            log.error( "Could not walk through " + diskCache, e );
+        } catch( Exception e ) {
+            log.error( "Could not walk through: " + diskCache, e );
         }
     }
 
