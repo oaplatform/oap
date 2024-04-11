@@ -4,7 +4,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>21.1.14</version>
+        <version>22.0.0</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>oap</groupId>
                 <artifactId>oap-dependencies</artifactId>
-                <version>21.1.14</version>
+                <version>22.0.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
