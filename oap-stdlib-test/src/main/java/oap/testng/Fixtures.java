@@ -46,7 +46,8 @@ public abstract class Fixtures {
     private final ArrayList<AbstractFixture<?>> fixtures = new ArrayList<>();
 
     public static <F extends AbstractFixture<?>> F suiteFixture( F fixture ) throws IllegalArgumentException {
-        fixture.withScope( SUITE );
+        fixture.scope = SUITE;
+        fixture.children.forEach( f -> f.scope = SUITE );
 
         suiteFixtures.add( fixture );
 
@@ -77,7 +78,10 @@ public abstract class Fixtures {
     @AfterSuite( alwaysRun = true )
     public void fixAfterSuite() {
         SilentRun silentRun = new SilentRun();
-        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterSuite ) ) );
+        Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> {
+            log.info( "afterSuite {}", f.getClass() );
+            silentRun.run( f::afterSuite );
+        } ) );
         silentRun.done();
     }
 
@@ -90,10 +94,8 @@ public abstract class Fixtures {
     @AfterClass( alwaysRun = true )
     public void fixAfterClass() {
         SilentRun silentRun = new SilentRun();
-
         Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
         Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterClass ) ) );
-
         silentRun.done();
     }
 
@@ -106,10 +108,8 @@ public abstract class Fixtures {
     @AfterMethod( alwaysRun = true )
     public void fixAfterMethod() {
         SilentRun silentRun = new SilentRun();
-
         Lists.reverse( fixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
         Lists.reverse( suiteFixtures ).forEach( f -> Threads.withThreadName( f.toThreadName(), () -> silentRun.run( f::afterMethod ) ) );
-
         silentRun.done();
     }
 

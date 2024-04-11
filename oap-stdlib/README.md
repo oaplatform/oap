@@ -11,8 +11,6 @@ and [KernelTest](oap-stdlib/src/test/java/oap/application/KernelTest.java) and [
 
 ## Kernel services
 See main Kernel services in [oap-module.conf](oap-stdlib/src/main/resources/META-INF/oap-module.conf):
-* oap-time-java
-* oap-time-joda
 * oap-http-server
 * oap-prometheus-metrics
 * oap-http-health-handler

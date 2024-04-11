@@ -603,6 +603,7 @@ public class MessageServerTest extends Fixtures {
     @Test
     public void testKernel() {
         var kernelFixture = new KernelFixture(
+            new TestDirectoryFixture(),
             urlOfTestResource( getClass(), "application-message.test.conf" ),
             List.of( urlOfTestResource( getClass(), "oap-module.conf" ) )
         );

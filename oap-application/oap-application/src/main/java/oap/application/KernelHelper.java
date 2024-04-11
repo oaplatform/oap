@@ -135,11 +135,10 @@ public class KernelHelper {
 
     public static boolean profileEnabled( LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles ) {
         for( var profile : moduleProfiles ) {
-            if( profile.startsWith( "-" ) ) {
-                if( systemProfiles.contains( profile.substring( 1 ) ) ) return false;
-            } else {
-                if( !systemProfiles.contains( profile ) ) return false;
-            }
+            if( Service.PROFILE_ENABLED.equals( profile ) ) continue;
+            if( Service.PROFILE_DISABLED.equals( profile ) ) return false;
+
+            if( !systemProfiles.contains( profile ) ) return false;
         }
         return true;
     }

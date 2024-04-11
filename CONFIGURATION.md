@@ -143,7 +143,7 @@ services {
     }
     fake-param1 {    
         implementation = ...
-        enabled = false
+        profile = disabled
         link {
             consructorParameter = <modules.this.some-service>
         }

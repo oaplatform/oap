@@ -25,6 +25,7 @@
 package oap.application.testng;
 
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -43,6 +44,7 @@ public class KernelFixtureTest extends Fixtures {
     public void isolation() {
         testFixture = new TestFixture();
         kernelFixture = new KernelFixture(
+            new TestDirectoryFixture(),
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
         );
@@ -65,6 +67,7 @@ public class KernelFixtureTest extends Fixtures {
     public void isolationSecondRun() {
         testFixture = new TestFixture();
         kernelFixture = new KernelFixture(
+            new TestDirectoryFixture(),
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
             List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
         );
@@ -109,7 +112,7 @@ public class KernelFixtureTest extends Fixtures {
 
     public static class TestFixture extends AbstractKernelFixture<TestFixture> {
         public TestFixture() {
-            super( urlOfTestResource( KernelFixtureTest.class, "application.fixture.conf" ),
+            super( new TestDirectoryFixture(), urlOfTestResource( KernelFixtureTest.class, "application.fixture.conf" ),
                 List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
             );
             definePort( "TEST_PORT" );
@@ -118,7 +121,8 @@ public class KernelFixtureTest extends Fixtures {
 
     public static class TestFixtureC extends AbstractKernelFixture<TestFixtureC> {
         public TestFixtureC( String name ) {
-            super( urlOfTestResource( KernelFixtureTest.class, "application.fixture-" + name + ".conf" ),
+            super( new TestDirectoryFixture(),
+                urlOfTestResource( KernelFixtureTest.class, "application.fixture-" + name + ".conf" ),
                 List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
             );
             definePort( "TEST_PORT" );

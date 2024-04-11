@@ -26,6 +26,7 @@ package oap.ws;
 
 import oap.application.testng.KernelFixture;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
@@ -36,7 +37,8 @@ public class WebServicesLocalTest extends Fixtures {
     private final KernelFixture kernel;
 
     public WebServicesLocalTest() {
-        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        TestDirectoryFixture testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test

@@ -32,15 +32,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.testng.Asserts.locationOfTestResource;
 
 @Slf4j
 public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
-    protected static ConcurrentHashMap<Class<?>, AbstractFixture<?>> suiteScope = new ConcurrentHashMap<>();
     protected final LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
-    private final ArrayList<AbstractFixture<?>> children = new ArrayList<>();
+    protected final ArrayList<AbstractFixture<?>> children = new ArrayList<>();
     protected Scope scope = Scope.METHOD;
 
     protected AbstractFixture() {
@@ -55,8 +53,10 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
         this.scope = scope;
 
         if( scope == Scope.SUITE ) {
-            return ( Self ) suiteScope.computeIfAbsent( getClass(), c -> this );
+            throw new IllegalArgumentException( "use Fixtures#suiteFixture" );
         }
+
+        children.forEach( f -> f.withScope( scope ) );
 
         return ( Self ) this;
     }

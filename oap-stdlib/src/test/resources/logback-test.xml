@@ -1,0 +1,19 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.quartz" additivity="false">
+        <level value="ERROR"/>
+    </logger>
+
+    <logger name="org.xnio" level="WARN"/>
+    <logger name="io.undertow" level="WARN"/>
+    <logger name="oap.perf" level="WARN"/>
+
+    <root level="TRACE">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

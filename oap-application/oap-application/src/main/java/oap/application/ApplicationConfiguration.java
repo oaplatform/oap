@@ -121,9 +121,9 @@ public final class ApplicationConfiguration {
     public static List<URL> getConfdUrls( Path confd ) {
         return confd != null
             ? Stream
-                .of( wildcard( confd, "*.conf", "*.yaml" ) )
-                .map( Files::toUrl )
-                .toList()
+            .of( wildcard( confd, "*.conf", "*.yaml" ) )
+            .map( Files::toUrl )
+            .toList()
             : List.of();
     }
 
@@ -233,6 +233,7 @@ public final class ApplicationConfiguration {
     @ToString
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
+        public boolean allowActiveByDefault = false;
     }
 
     public static class ProfileMap {

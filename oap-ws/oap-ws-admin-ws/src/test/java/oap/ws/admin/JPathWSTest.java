@@ -26,6 +26,7 @@ package oap.ws.admin;
 
 import oap.application.testng.KernelFixture;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
@@ -37,7 +38,8 @@ public class JPathWSTest extends Fixtures {
     private final KernelFixture kernel;
 
     public JPathWSTest() {
-        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application.test.conf" ) ) );
+        TestDirectoryFixture testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOrThrow( getClass(), "/application.test.conf" ) ) );
     }
 
     @Test

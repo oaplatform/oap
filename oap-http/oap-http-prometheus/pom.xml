@@ -34,14 +34,11 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
-            <version>${oap.deps.micrometer.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${oap.deps.lombok.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

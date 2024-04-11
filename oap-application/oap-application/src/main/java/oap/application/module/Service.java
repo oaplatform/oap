@@ -40,6 +40,9 @@ import java.util.Map;
 @EqualsAndHashCode
 @ToString
 public class Service {
+    public static final String PROFILE_ENABLED = "enabled";
+    public static final String PROFILE_DISABLED = "disabled";
+
     public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
     public final Supervision supervision = new Supervision();
     public final LinkedHashSet<Object> dependsOn = new LinkedHashSet<>();
@@ -50,7 +53,6 @@ public class Service {
     public String implementation;
     public String name;
     public RemoteLocation remote;
-    public boolean enabled = true;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
 

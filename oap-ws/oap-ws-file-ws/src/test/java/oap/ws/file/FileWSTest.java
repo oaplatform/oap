@@ -48,7 +48,7 @@ public class FileWSTest extends Fixtures {
 
     public FileWSTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
-        kernel = fixture( new KernelFixture( urlOfTestResource( getClass(), "application.test.conf" ) ) );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOfTestResource( getClass(), "application.test.conf" ) ) );
     }
 
     @Test

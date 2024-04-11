@@ -1,4 +1,0 @@
-ext:
-  - class: oap.ws.api.ExampleWS$Bean
-    field: ext
-    implementation: oap.ws.api.ExampleWS$Bean$BeanExt

@@ -59,10 +59,11 @@ class ModuleHelper {
     public static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
                                        LinkedHashSet<String> profiles,
                                        LinkedHashSet<String> main,
+                                       boolean allowActiveByDefault,
                                        Kernel kernel ) throws ApplicationException {
-        log.trace( "Init modules: {}, profiles: {}, main: {}", modules, profiles, main );
+        log.trace( "Init modules {} profiles {} main {} allowActiveByDefault {}", modules, profiles, main, allowActiveByDefault );
         var map = init( modules, profiles );
-        loadOnlyMainModuleAndDependsOn( map, main, profiles );
+        loadOnlyMainModuleAndDependsOn( map, main, allowActiveByDefault, profiles );
 
         validateModuleName( map );
         validateServiceName( map );
@@ -149,11 +150,6 @@ class ModuleHelper {
                     enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
                 }
 
-                if( !service.enabled ) {
-                    log.debug( "skipping service {}:{}, reason: enabled = false", moduleInfo.module.name, serviceName );
-                    enabled = ServiceEnabledStatus.DISABLED_BY_FLAG;
-                }
-
                 moduleInfo.services.put( serviceName, new ModuleItem.ServiceItem( serviceName, moduleInfo, service, enabled ) );
             }
         }
@@ -222,10 +218,11 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main, LinkedHashSet<String> profiles ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main,
+                                                        boolean allowActiveByDefault, LinkedHashSet<String> profiles ) {
         var modules = map.clone();
-        log.info( "loading main modules: {} with profiles: {}", main, profiles );
-        loadOnlyMainModuleAndDependsOn( modules, main, profiles, new LinkedHashSet<>() );
+        log.info( "loading main modules {} with profiles {}", main, profiles );
+        loadOnlyMainModuleAndDependsOn( modules, main, allowActiveByDefault, profiles, new LinkedHashSet<>() );
 
         for( var moduleItem : modules.values() ) {
             log.debug( "unload module {}", moduleItem.getName() );
@@ -235,13 +232,26 @@ class ModuleHelper {
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules,
                                                         final LinkedHashSet<String> main,
+                                                        boolean allowActiveByDefault,
                                                         final LinkedHashSet<String> profiles,
                                                         final LinkedHashSet<String> loaded ) {
-        for( var module : main ) {
+
+        var mainWithAllowActiveByDefault = new LinkedHashSet<>( main );
+        if( allowActiveByDefault ) {
+            for( var moduleName : modules.keySet() ) {
+                var moduleItem = modules.get( moduleName );
+                if( moduleItem.module.activation.activeByDefault ) {
+                    mainWithAllowActiveByDefault.add( moduleName );
+                }
+            }
+        }
+
+        for( var module : mainWithAllowActiveByDefault ) {
             var moduleItem = modules.get( module );
 
-            if( moduleItem == null && !loaded.contains( module ) )
+            if( moduleItem == null && !loaded.contains( module ) ) {
                 throw new ApplicationException( "main.boot: unknown module name '" + module + "', already loaded: " + loaded );
+            }
 
             if( moduleItem != null ) {
                 log.trace( "Loading module: {}, already loaded: {}", moduleItem.getName(), loaded );
@@ -259,7 +269,7 @@ class ModuleHelper {
                         log.trace( "dependant module {} disabled for module {}", depends.name, module );
                     }
                 }
-                loadOnlyMainModuleAndDependsOn( modules, dependsOn, profiles, loaded );
+                loadOnlyMainModuleAndDependsOn( modules, dependsOn, allowActiveByDefault, profiles, loaded );
             }
         }
     }
@@ -309,8 +319,8 @@ class ModuleHelper {
             for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
                     throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled."
-                            + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
-                            + dModuleInfo.moduleItem.getEnabled().toString() + "." );
+                        + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
+                        + dModuleInfo.moduleItem.getEnabled().toString() + "." );
                 }
             }
         }
@@ -339,7 +349,7 @@ class ModuleHelper {
                 for( var dServiceReference : serviceInfo.dependsOn ) {
                     if( !dServiceReference.serviceItem.isEnabled() && dServiceReference.required ) {
                         throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. Required service [" + dServiceReference.serviceItem.serviceName + "] is disabled by "
-                                + dServiceReference.serviceItem.enabled.toString() + "." );
+                            + dServiceReference.serviceItem.enabled.toString() + "." );
                     }
                 }
             }
@@ -459,11 +469,11 @@ class ModuleHelper {
     private static void initModuleDeps( ModuleItemTree map, LinkedHashSet<String> profiles ) {
         for( var moduleItem : map.values() ) {
             for( var d : moduleItem.module.dependsOn ) {
-                if ( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
+                if( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
                     log.trace( "[module#{}]: skip dependsOn {}, module profiles are not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
                     continue;
                 }
-                ModuleItem dModule  = map.findModule( moduleItem, d.name );
+                ModuleItem dModule = map.findModule( moduleItem, d.name );
                 if( !dModule.isEnabled() ) {
                     log.trace( "[module#{}]: skip dependsOn {}, module is not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
                     continue;

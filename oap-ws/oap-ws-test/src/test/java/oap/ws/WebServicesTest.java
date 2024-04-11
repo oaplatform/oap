@@ -30,6 +30,7 @@ import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
@@ -62,7 +63,8 @@ public class WebServicesTest extends Fixtures {
     private final KernelFixture kernel;
 
     public WebServicesTest() {
-        kernel = fixture( new KernelFixture( urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
+        TestDirectoryFixture testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        kernel = fixture( new KernelFixture( testDirectoryFixture, urlOrThrow( getClass(), "/application-ws.test.conf" ) ) );
     }
 
     @Test
