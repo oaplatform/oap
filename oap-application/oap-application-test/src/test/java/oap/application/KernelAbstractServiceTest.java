@@ -3,6 +3,7 @@ package oap.application;
 import org.testng.annotations.Test;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +62,60 @@ public class KernelAbstractServiceTest {
                 .isInstanceOf( ServiceOne.class )
                 .extracting( "i" )
                 .isEqualTo( 10 );
+        }
+    }
+
+    @Test
+    public void testAbstractImplementationDifferentModules() {
+        List<URL> modules = List.of(
+            urlOfTestResource( getClass(), "testAbstractImplementationDifferentModules1-module.conf" ),
+            urlOfTestResource( getClass(), "testAbstractImplementationDifferentModules2-module.conf" )
+        );
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( pathOfTestResource( getClass(), "testAbstractImplementationDifferentModules-application.conf" ) );
+
+            assertThat( kernel.service( "testAbstractImplementationDifferentModules1.service1" ) )
+                .isPresent()
+                .get()
+                .isInstanceOf( ServiceOne.class )
+                .extracting( "i" )
+                .isEqualTo( 10 );
+        }
+    }
+
+    @Test
+    public void testReferenceToAbstractService() {
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testReferenceToAbstractService-module.conf" ) );
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( pathOfTestResource( getClass(), "testReferenceToAbstractService-application.conf" ) );
+
+            ServiceRef ref = kernel.<ServiceRef>service( "testReferenceToAbstractService.ref" ).get();
+            assertThat( ref.service )
+                .isNotNull()
+                .isInstanceOf( ServiceOne.class )
+                .extracting( "i" )
+                .isEqualTo( 10 );
+            assertThat( ref.service2 )
+                .isNotNull()
+                .isInstanceOf( ServiceOne.class )
+                .extracting( "i" )
+                .isEqualTo( 10 );
+            assertThat( ref.services )
+                .isNotEmpty()
+                .allMatch( s -> s instanceof ServiceOne )
+                .allMatch( s -> ( ( ServiceOne ) s ).i == 10 );
+        }
+    }
+
+    public static class ServiceRef {
+        public final ArrayList<IService> services = new ArrayList<>();
+        public IService service;
+        public IService service2;
+
+        public ServiceRef( IService service2 ) {
+            this.service2 = service2;
         }
     }
 }
