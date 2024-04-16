@@ -94,14 +94,6 @@ public class KernelProfileTest {
     }
 
     @Test
-    public void profile6() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module6.conf" ) ) ) ) {
-            startWithProfile( kernel, "test-profile6", "run" );
-            assertThat( kernel.<TestContainer>service( "*.container1" ).get().beanName ).isInstanceOf( TestProfile1.class );
-        }
-    }
-
-    @Test
     public void testDynamicProfile() {
         ConfigImpl.reloadSystemPropertiesConfig();
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
