@@ -27,7 +27,6 @@ package oap.application;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ModuleItem.ModuleReference;
 import oap.application.ModuleItem.ServiceItem.ServiceReference;
-import oap.application.module.Depends;
 import oap.application.module.Reference;
 import oap.application.module.Service;
 import oap.util.Lists;
@@ -255,16 +254,7 @@ class ModuleHelper {
 
                 modules.remove( module );
 
-                var dependsOn = new LinkedHashSet<String>();
-                for( Depends depends : moduleItem.module.dependsOn ) {
-                    if( KernelHelper.profileEnabled( depends.profiles, profiles ) ) {
-                        log.trace( "dependant module {} enabled for module {}", depends.name, module );
-                        dependsOn.add( depends.name );
-                    } else {
-                        log.trace( "dependant module {} disabled for module {}", depends.name, module );
-                    }
-                }
-                loadOnlyMainModuleAndDependsOn( modules, dependsOn, allowActiveByDefault, profiles, loaded );
+                loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, allowActiveByDefault, profiles, loaded );
             }
         }
     }
@@ -467,12 +457,8 @@ class ModuleHelper {
     private static void initModuleDeps( ModuleItemTree map,
                                         LinkedHashSet<String> profiles ) {
         for( ModuleItem moduleItem : map.values() ) {
-            for( Depends d : moduleItem.module.dependsOn ) {
-                if( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
-                    log.trace( "[module#{}]: skip dependsOn {}, module profiles are not enabled", moduleItem.getName(), new LinkedHashSet<ModuleItem>() );
-                    continue;
-                }
-                ModuleItem dModule = map.findModule( moduleItem, d.name );
+            for( String d : moduleItem.module.dependsOn ) {
+                ModuleItem dModule = map.findModule( moduleItem, d );
                 if( !dModule.isEnabled() ) {
                     log.trace( "[module#{}]: skip dependsOn {}, module is not enabled", moduleItem.getName(), new LinkedHashSet<ModuleItem>() );
                     continue;

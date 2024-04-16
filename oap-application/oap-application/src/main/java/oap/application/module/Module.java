@@ -28,11 +28,9 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.ModuleConfiguration;
-import oap.application.ModuleDependsDeserializer;
 import oap.reflect.Coercions;
 
 import java.util.LinkedHashMap;
@@ -45,15 +43,13 @@ public class Module {
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     public static final Coercions coersions = Coercions.basic().withStringToObject().withIdentity();
 
-    @JsonDeserialize( contentUsing = ModuleDependsDeserializer.class )
-    public final LinkedHashSet<Depends> dependsOn = new LinkedHashSet<>();
+    public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
     @JsonAlias( { "service", "services" } )
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public final ModuleActivation activation = new ModuleActivation();
     public String name;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
-
-    public final ModuleActivation activation = new ModuleActivation();
 
     @JsonCreator
     public Module( String name ) {
