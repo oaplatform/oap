@@ -54,6 +54,10 @@ public class Service {
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
 
+    @SuppressWarnings( "checkstyle:MemberName" )
+    @JsonAlias( "abstract" )
+    protected boolean _abstract = false;
+
     @JsonAnySetter
     public void putUnknown( String key, Object val ) {
         ext.put( key, KernelExtConfiguration.getInstance().deserializeService( key, val ) );
@@ -67,5 +71,9 @@ public class Service {
     @SuppressWarnings( "unchecked" )
     public <T> T getExt( String ext ) {
         return ( T ) this.ext.get( ext );
+    }
+
+    public boolean isAbstract() {
+        return _abstract;
     }
 }

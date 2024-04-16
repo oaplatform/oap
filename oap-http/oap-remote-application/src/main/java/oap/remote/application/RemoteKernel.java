@@ -27,7 +27,7 @@ public class RemoteKernel implements RemoteServices {
 
     @Override
     public List<String> keySet() {
-        return kernel.services.keySet().stream().map( ModuleItem.ServiceItem::getName ).toList();
+        return kernel.services.values().stream().map( ModuleItem.ServiceItem::getName ).toList();
     }
 
     @Override

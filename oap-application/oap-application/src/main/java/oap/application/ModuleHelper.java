@@ -27,7 +27,9 @@ package oap.application;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ModuleItem.ModuleReference;
 import oap.application.ModuleItem.ServiceItem.ServiceReference;
+import oap.application.module.Depends;
 import oap.application.module.Reference;
+import oap.application.module.Service;
 import oap.util.Lists;
 import oap.util.Pair;
 
@@ -49,20 +51,20 @@ class ModuleHelper {
     private ModuleHelper() {
     }
 
-    private static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
-        var map = initModules( modules, profiles );
+    private static void init( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
+        initModules( map, modules, profiles );
         initServices( map, profiles );
-
-        return map;
     }
 
-    public static ModuleItemTree init( LinkedHashSet<Kernel.ModuleWithLocation> modules,
-                                       LinkedHashSet<String> profiles,
-                                       LinkedHashSet<String> main,
-                                       boolean allowActiveByDefault,
-                                       Kernel kernel ) throws ApplicationException {
+    public static void init( ModuleItemTree map,
+                             LinkedHashMap<String, Kernel.ModuleWithLocation> modules,
+                             LinkedHashSet<String> profiles,
+                             LinkedHashSet<String> main,
+                             boolean allowActiveByDefault,
+                             Kernel kernel ) throws ApplicationException {
         log.trace( "Init modules {} profiles {} main {} allowActiveByDefault {}", modules, profiles, main, allowActiveByDefault );
-        var map = init( modules, profiles );
+
+        init( map, modules, profiles );
         loadOnlyMainModuleAndDependsOn( map, main, allowActiveByDefault, profiles );
 
         validateModuleName( map );
@@ -75,13 +77,11 @@ class ModuleHelper {
         sort( map );
         removeDisabled( map );
         validateServices( map );
-
-        return map;
     }
 
     private static void validateServiceName( ModuleItemTree map ) throws ApplicationException {
-        for( var moduleInfo : map.values() ) {
-            for( var serviceName : moduleInfo.services.keySet() ) {
+        for( ModuleItem moduleInfo : map.values() ) {
+            for( String serviceName : moduleInfo.services.keySet() ) {
                 if( !MODULE_SERVICE_NAME_PATTERN.matcher( serviceName ).matches() ) {
                     throw new ApplicationException( "service name " + serviceName + " does not match specified regex " + MODULE_SERVICE_NAME_PATTERN.pattern() );
                 }
@@ -90,7 +90,7 @@ class ModuleHelper {
     }
 
     private static void validateModuleName( ModuleItemTree map ) throws ApplicationException {
-        for( var moduleName : map.keySet() ) {
+        for( String moduleName : map.keySet() ) {
             if( !MODULE_SERVICE_NAME_PATTERN.matcher( moduleName ).matches() ) {
                 throw new ApplicationException( "module name " + moduleName + " does not match specified regex " + MODULE_SERVICE_NAME_PATTERN.pattern() );
             }
@@ -101,12 +101,12 @@ class ModuleHelper {
     private static Pair<ModuleItem, ModuleItem.ServiceItem> findService( ModuleItemTree map, String thisModuleName, String moduleName, String serviceName ) {
         var found = new ArrayList<Pair<ModuleItem, ModuleItem.ServiceItem>>();
 
-        for( var moduleInfo : map.values() ) {
+        for( ModuleItem moduleInfo : map.values() ) {
             if( KernelHelper.THIS.contains( moduleName ) ) moduleName = thisModuleName;
 
             if( !moduleInfo.getName().equals( moduleName ) ) continue;
 
-            for( var entry : moduleInfo.services.entrySet() ) {
+            for( Map.Entry<String, ModuleItem.ServiceItem> entry : moduleInfo.services.entrySet() ) {
                 if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().service.name ) ) {
                     found.add( __( moduleInfo, entry.getValue() ) );
                 }
@@ -121,11 +121,9 @@ class ModuleHelper {
         return Lists.head2( found );
     }
 
-    private static ModuleItemTree initModules( LinkedHashSet<Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
-        var map = new ModuleItemTree();
-
-        for( var module : modules ) {
-            var enabled = ServiceEnabledStatus.ENABLED;
+    private static void initModules( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
+        for( Kernel.ModuleWithLocation module : modules.values() ) {
+            ServiceEnabledStatus enabled = ServiceEnabledStatus.ENABLED;
             if( !KernelHelper.isModuleEnabled( module.module, profiles ) ) {
                 log.debug( "skipping module {} with profiles {}", module.module.name, module.module.profiles );
                 enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
@@ -134,16 +132,14 @@ class ModuleHelper {
             ModuleItem moduleItem = new ModuleItem( module.module, module.location, enabled, new LinkedHashMap<>() );
             map.put( module.module.name, moduleItem );
         }
-
-        return map;
     }
 
     private static void initServices( ModuleItemTree map, LinkedHashSet<String> profiles ) {
-        for( var moduleInfo : map.values() ) {
-            for( var serviceEntry : moduleInfo.module.services.entrySet() ) {
-                var serviceName = serviceEntry.getKey();
-                var service = serviceEntry.getValue();
-                var enabled = ServiceEnabledStatus.ENABLED;
+        for( ModuleItem moduleInfo : map.values() ) {
+            for( Map.Entry<String, Service> serviceEntry : moduleInfo.module.services.entrySet() ) {
+                String serviceName = serviceEntry.getKey();
+                Service service = serviceEntry.getValue();
+                ServiceEnabledStatus enabled = ServiceEnabledStatus.ENABLED;
 
                 if( !KernelHelper.isServiceEnabled( service, profiles ) ) {
                     log.debug( "skipping service {}:{} with profiles {}", moduleInfo.module.name, serviceName, service.profiles );
@@ -156,7 +152,7 @@ class ModuleHelper {
     }
 
     private static void initServicesDeps( ModuleItemTree map, Kernel kernel ) {
-        for( var moduleItem : map.values() ) {
+        for( ModuleItem moduleItem : map.values() ) {
             if( !moduleItem.isEnabled() ) continue;
 
             moduleItem.services.forEach( ( serviceName, serviceItem ) -> {
@@ -166,7 +162,7 @@ class ModuleHelper {
                     String dModuleName;
                     String dServiceName;
                     if( ServiceKernelCommand.INSTANCE.matches( dService ) ) {
-                        var ref = ServiceKernelCommand.INSTANCE.reference( ( String ) dService, moduleItem );
+                        Reference ref = ServiceKernelCommand.INSTANCE.reference( ( String ) dService, moduleItem );
                         dModuleName = ref.module;
                         dServiceName = ref.service;
                     } else if( dService instanceof String ) {
@@ -174,7 +170,7 @@ class ModuleHelper {
                         dServiceName = ( String ) dService;
                     } else throw new ApplicationException( "Unknown deps format " + dService );
 
-                    var moduleService = findService( map, moduleItem.getName(), dModuleName, dServiceName );
+                    Pair<ModuleItem, ModuleItem.ServiceItem> moduleService = findService( map, moduleItem.getName(), dModuleName, dServiceName );
                     if( moduleService == null ) {
                         throw new ApplicationException( "[" + dModuleName + ":" + dServiceName + "] 'this:" + dService + "' not found" );
                     }
@@ -182,10 +178,10 @@ class ModuleHelper {
                     serviceItem.addDependsOn( new ServiceReference( moduleService._2, true ) );
                 }
 
-                for( var link : serviceItem.service.link.values() )
+                for( String link : serviceItem.service.link.values() )
                     initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem, true );
 
-                for( var value : serviceItem.service.parameters.values() ) {
+                for( Object value : serviceItem.service.parameters.values() ) {
                     initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem, false );
                 }
             } );
@@ -199,8 +195,8 @@ class ModuleHelper {
                                            ModuleItem.ServiceItem serviceItem,
                                            boolean reverse ) {
         if( ServiceKernelCommand.INSTANCE.matches( value ) ) {
-            var reference = ServiceKernelCommand.INSTANCE.reference( ( String ) value, moduleItem );
-            var moduleService = findService( map, moduleItem.getName(), reference.module, reference.service );
+            Reference reference = ServiceKernelCommand.INSTANCE.reference( ( String ) value, moduleItem );
+            Pair<ModuleItem, ModuleItem.ServiceItem> moduleService = findService( map, moduleItem.getName(), reference.module, reference.service );
             if( moduleService == null ) {
                 throw new ApplicationException( "[" + moduleItem.module.name + ":" + serviceName + "#" + reference + "] " + reference + "  not found" );
             }
@@ -210,21 +206,21 @@ class ModuleHelper {
             else
                 moduleService._2.addDependsOn( new ServiceReference( serviceItem, required ) );
         } else if( value instanceof List<?> )
-            for( var item : ( List<?> ) value )
+            for( Object item : ( List<?> ) value )
                 initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem, reverse );
         else if( value instanceof Map<?, ?> ) {
-            for( var item : ( ( Map<?, ?> ) value ).values() )
+            for( Object item : ( ( Map<?, ?> ) value ).values() )
                 initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem, reverse );
         }
     }
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main,
                                                         boolean allowActiveByDefault, LinkedHashSet<String> profiles ) {
-        var modules = map.clone();
+        ModuleItemTree modules = map.clone();
         log.info( "loading main modules {} with profiles {}", main, profiles );
         loadOnlyMainModuleAndDependsOn( modules, main, allowActiveByDefault, profiles, new LinkedHashSet<>() );
 
-        for( var moduleItem : modules.values() ) {
+        for( ModuleItem moduleItem : modules.values() ) {
             log.debug( "unload module {}", moduleItem.getName() );
             map.remove( moduleItem.getName() );
         }
@@ -238,16 +234,16 @@ class ModuleHelper {
 
         var mainWithAllowActiveByDefault = new LinkedHashSet<>( main );
         if( allowActiveByDefault ) {
-            for( var moduleName : modules.keySet() ) {
-                var moduleItem = modules.get( moduleName );
+            for( String moduleName : modules.keySet() ) {
+                ModuleItem moduleItem = modules.get( moduleName );
                 if( moduleItem.module.activation.activeByDefault ) {
                     mainWithAllowActiveByDefault.add( moduleName );
                 }
             }
         }
 
-        for( var module : mainWithAllowActiveByDefault ) {
-            var moduleItem = modules.get( module );
+        for( String module : mainWithAllowActiveByDefault ) {
+            ModuleItem moduleItem = modules.get( module );
 
             if( moduleItem == null && !loaded.contains( module ) ) {
                 throw new ApplicationException( "main.boot: unknown module name '" + module + "', already loaded: " + loaded );
@@ -261,7 +257,7 @@ class ModuleHelper {
                 modules.remove( module );
 
                 var dependsOn = new LinkedHashSet<String>();
-                for( var depends : moduleItem.module.dependsOn ) {
+                for( Depends depends : moduleItem.module.dependsOn ) {
                     if( KernelHelper.profileEnabled( depends.profiles, profiles ) ) {
                         log.trace( "dependant module {} enabled for module {}", depends.name, module );
                         dependsOn.add( depends.name );
@@ -277,9 +273,9 @@ class ModuleHelper {
     private static void validateServices( ModuleItemTree map ) throws ApplicationException {
         var errors = new ArrayList<String>();
 
-        for( var moduleItem : map.values() ) {
-            for( var serviceItem : moduleItem.services.values() ) {
-                for( var ext : serviceItem.service.ext.values() ) {
+        for( ModuleItem moduleItem : map.values() ) {
+            for( ModuleItem.ServiceItem serviceItem : moduleItem.services.values() ) {
+                for( Object ext : serviceItem.service.ext.values() ) {
                     if( ext instanceof ServiceKernelListener skl ) {
                         errors.addAll( skl.validate( serviceItem ) );
                     }
@@ -288,7 +284,7 @@ class ModuleHelper {
         }
 
         if( !errors.isEmpty() ) {
-            for( var message : errors ) {
+            for( String message : errors ) {
                 log.error( message );
             }
 
@@ -306,7 +302,7 @@ class ModuleHelper {
     }
 
     private static void removeDisabledServices( ModuleItemTree map ) {
-        for( var moduleInfo : map.values() ) {
+        for( ModuleItem moduleInfo : map.values() ) {
             moduleInfo.services.values().removeIf( serviceInfo -> !serviceInfo.isEnabled() );
         }
     }
@@ -317,10 +313,10 @@ class ModuleHelper {
     }
 
     private static void validateModuleDeps( ModuleItemTree map ) throws ApplicationException {
-        for( var moduleInfo : map.values() ) {
+        for( ModuleItem moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
-            for( var dModuleInfo : moduleInfo.getDependsOn().values() ) {
+            for( ModuleReference dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
                     throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled."
                         + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
@@ -331,10 +327,10 @@ class ModuleHelper {
     }
 
     private static void validateImplementation( ModuleItemTree map ) throws ApplicationException {
-        for( var moduleInfo : map.values() ) {
+        for( ModuleItem moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
-            for( var serviceInfo : moduleInfo.services.values() ) {
+            for( ModuleItem.ServiceItem serviceInfo : moduleInfo.services.values() ) {
                 if( !serviceInfo.isEnabled() ) continue;
 
                 if( serviceInfo.service.implementation == null )
@@ -344,13 +340,13 @@ class ModuleHelper {
     }
 
     private static void validateServiceDeps( ModuleItemTree map ) throws ApplicationException {
-        for( var moduleInfo : map.values() ) {
+        for( ModuleItem moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
-            for( var serviceInfo : moduleInfo.services.values() ) {
+            for( ModuleItem.ServiceItem serviceInfo : moduleInfo.services.values() ) {
                 if( !serviceInfo.isEnabled() ) continue;
 
-                for( var dServiceReference : serviceInfo.dependsOn ) {
+                for( ServiceReference dServiceReference : serviceInfo.dependsOn ) {
                     if( !dServiceReference.serviceItem.isEnabled() && dServiceReference.required ) {
                         throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. Required service [" + dServiceReference.serviceItem.serviceName + "] is disabled by "
                             + dServiceReference.serviceItem.enabled.toString() + "." );
@@ -380,7 +376,7 @@ class ModuleHelper {
         } );
 
         while( !noIncomingEdges.isEmpty() ) {
-            var moduleItem = noIncomingEdges.removeFirst();
+            ModuleItem moduleItem = noIncomingEdges.removeFirst();
 
             newMap.put( moduleItem.module.name, moduleItem );
 
@@ -426,7 +422,7 @@ class ModuleHelper {
         } );
 
         while( !noIncomingEdges.isEmpty() ) {
-            var serviceItem = noIncomingEdges.removeFirst();
+            ModuleItem.ServiceItem serviceItem = noIncomingEdges.removeFirst();
 
             newMap.put( new Reference( serviceItem.getModuleName(), serviceItem.serviceName ), serviceItem );
 
@@ -444,7 +440,7 @@ class ModuleHelper {
 
         if( !graph.isEmpty() ) {
             log.error( "services cyclic dependency detected:" );
-            for( var node : graph ) {
+            for( ModuleItem.ServiceItem node : graph ) {
                 log.error( "  {}.{} dependsOn {}", node.getModuleName(), node.serviceName,
                     Lists.map( node.dependsOn, d -> d.serviceItem.getModuleName() + "." + d.serviceItem.serviceName ) );
             }
@@ -459,27 +455,29 @@ class ModuleHelper {
     }
 
     private static void fixServiceName( ModuleItemTree map ) {
-        for( var module : map.values() ) {
+        for( ModuleItem module : map.values() ) {
             module.services.forEach( ( implName, serviceItem ) ->
                 serviceItem.fixServiceName( implName ) );
         }
     }
 
-    private static void initDeps( ModuleItemTree map, LinkedHashSet<String> profiles, Kernel kernel ) {
+    private static void initDeps( ModuleItemTree map,
+                                  LinkedHashSet<String> profiles, Kernel kernel ) {
         initModuleDeps( map, profiles );
         initServicesDeps( map, kernel );
     }
 
-    private static void initModuleDeps( ModuleItemTree map, LinkedHashSet<String> profiles ) {
-        for( var moduleItem : map.values() ) {
-            for( var d : moduleItem.module.dependsOn ) {
+    private static void initModuleDeps( ModuleItemTree map,
+                                        LinkedHashSet<String> profiles ) {
+        for( ModuleItem moduleItem : map.values() ) {
+            for( Depends d : moduleItem.module.dependsOn ) {
                 if( !KernelHelper.profileEnabled( d.profiles, profiles ) ) {
-                    log.trace( "[module#{}]: skip dependsOn {}, module profiles are not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
+                    log.trace( "[module#{}]: skip dependsOn {}, module profiles are not enabled", moduleItem.getName(), new LinkedHashSet<ModuleItem>() );
                     continue;
                 }
                 ModuleItem dModule = map.findModule( moduleItem, d.name );
                 if( !dModule.isEnabled() ) {
-                    log.trace( "[module#{}]: skip dependsOn {}, module is not enabled", moduleItem.module.name, new LinkedHashSet<ModuleItem>() );
+                    log.trace( "[module#{}]: skip dependsOn {}, module is not enabled", moduleItem.getName(), new LinkedHashSet<ModuleItem>() );
                     continue;
                 }
                 moduleItem.addDependsOn( new ModuleReference( dModule ) );

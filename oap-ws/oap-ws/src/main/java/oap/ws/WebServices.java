@@ -62,13 +62,13 @@ public class WebServices {
         log.info( "ws-handler: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
 
         for( var config : wsConfigServices ) {
-            log.trace( "service: module = {}, config = {}", config.module.name, config.ext );
+            log.trace( "service: module = {}, config = {}", config.serviceItem.getModuleName(), config.ext );
 
             log.trace( "service = {}", config.ext );
             var interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
                 .orElseThrow( () -> new RuntimeException( "interceptor " + name + " not found" ) ) );
             if( !KernelHelper.profileEnabled( config.ext.profiles, kernel.profiles ) ) {
-                log.debug( "skipping " + config.module.name + "." + config.name + " web service initialization with "
+                log.debug( "skipping " + config.serviceItem.getModuleName() + "." + config.name + " web service initialization with "
                     + "service profiles " + config.ext.profiles );
                 continue;
             }

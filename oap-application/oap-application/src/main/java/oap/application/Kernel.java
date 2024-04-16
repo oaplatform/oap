@@ -40,8 +40,9 @@ import oap.application.supervision.Supervisor;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
+import oap.reflect.Reflection;
 import oap.util.Lists;
-import oap.util.Sets;
+import oap.util.Result;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
@@ -57,6 +58,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 
@@ -78,11 +80,10 @@ public class Kernel implements Closeable, AutoCloseable {
         commands.add( ServiceKernelCommand.INSTANCE );
     }
 
-    public final ServiceInitializationTree services = new ServiceInitializationTree();
+    public final ServiceTree services = new ServiceTree();
     public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     final String name;
     private final List<URL> moduleConfigurations;
-    private final LinkedHashSet<ModuleWithLocation> modules = new LinkedHashSet<>();
     private final Supervisor supervisor = new Supervisor();
 
     public Kernel( String name, List<URL> moduleConfigurations ) {
@@ -94,21 +95,59 @@ public class Kernel implements Closeable, AutoCloseable {
         this( DEFAULT, moduleConfigurations );
     }
 
+    @SuppressWarnings( "unchecked" )
+    private static void configureModules( LinkedHashMap<String, ModuleWithLocation> modules,
+                                          ApplicationConfiguration config,
+                                          Map<Reference, Reference> implementations ) {
+        for( ModuleWithLocation moduleLocation : modules.values() ) {
+            Module module = moduleLocation.module;
+            ApplicationConfigurationModule moduleConfig = config.services.get( module.name );
+            if( moduleConfig == null ) {
+                continue;
+            }
+            for( var entry : module.services.entrySet() ) {
+                String serviceName = entry.getKey();
+                Service service = entry.getValue();
+
+                Object serviceConf = moduleConfig.get( serviceName );
+                switch( serviceConf ) {
+                    case null -> {
+                    }
+                    case Map<?, ?> map -> {
+                        for( Object mapKey : map.keySet() ) {
+                            Preconditions.checkArgument( mapKey instanceof String );
+                        }
+
+                        Binder.update( service, ( Map<String, Object> ) map );
+                    }
+                    case String ref when service.isAbstract() ->
+                        implementations.put( new Reference( module.name, serviceName ), ServiceKernelCommand.INSTANCE.reference( ref, null ) );
+                    default ->
+                        throw new ApplicationException( "the service " + module.name + "." + serviceName + "configuration must be of type Map<String,?> or it must be a reference to the implementation of an abstract service in the form of <modules.[module name].[service name]>" );
+                }
+            }
+        }
+    }
+
     private void linkListeners( ModuleItem moduleItem, Service service, Object instance ) throws ApplicationException {
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
-            var methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
-            var ref = ServiceKernelCommand.INSTANCE.reference( reference, moduleItem );
-            var linkedModule = services.getServices( ref.module );
-            ServiceInitialization linked;
-            if( linkedModule == null || ( ( linked = linkedModule.get( ref.service ) ) ) == null )
+
+            String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
+            Reference ref = ServiceKernelCommand.INSTANCE.reference( reference, moduleItem );
+            LinkedHashMap<String, ModuleItem.ServiceItem> linkedModule = services.getServices( ref.module );
+            ModuleItem.ServiceItem linked;
+            if( linkedModule == null || ( ( linked = linkedModule.get( ref.service ) ) ) == null ) {
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
-            var m = Reflect.reflect( linked.instance.getClass() )
+            }
+            Reflection.Method m = Reflect.reflect( linked.instance.getClass() )
                 .method( methodName )
                 .orElse( null );
-            if( m != null ) m.invoke( linked.instance, instance );
-            else
-                throw new ReflectException( "listener " + listener + " should have method " + methodName + " in " + reference );
+            if( m != null ) {
+                m.invoke( linked.instance, instance );
+            } else {
+                throw new ApplicationException( "listener " + listener + " should have method " + methodName + " in " + reference );
+            }
         } );
     }
 
@@ -118,13 +157,13 @@ public class Kernel implements Closeable, AutoCloseable {
 
     public void start( String appConfigPath, String confd ) throws ApplicationException {
         try {
-            var configURL = appConfigPath.startsWith( "classpath:" )
+            URL configURL = appConfigPath.startsWith( "classpath:" )
                 ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
                 : new File( appConfigPath ).toURI().toURL();
 
             Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
 
-            var confdPath = confd != null
+            Path confdPath = confd != null
                 ? Paths.get( confd )
                 : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
 
@@ -159,24 +198,30 @@ public class Kernel implements Closeable, AutoCloseable {
 
         this.profiles.addAll( config.getProfiles() );
 
-        if( config.boot.main.isEmpty() )
+        if( config.boot.main.isEmpty() ) {
             throw new ApplicationException( "boot.main must contain at least one module name" );
-
-        for( var moduleConfiguration : moduleConfigurations ) {
-            var module = Module.CONFIGURATION.fromFile( moduleConfiguration, config.services );
-            if( StringUtils.isBlank( module.name ) ) {
-                throw new ApplicationException( moduleConfiguration + ": module.name is blank" );
-            }
-            this.modules.add( new ModuleWithLocation( module, moduleConfiguration ) );
         }
-        log.debug( "modules = {}, profiles = {}", Sets.map( this.modules, m -> m.module.name ), profiles );
 
-        checkForUnknownServices( config.services );
+        LinkedHashMap<String, ModuleWithLocation> modules = new LinkedHashMap<>();
+        LinkedHashMap<Reference, Reference> implementations = new LinkedHashMap<>();
 
-        log.debug( "init modules from main: {}", config.boot.main );
-        var map = ModuleHelper.init( this.modules, this.profiles, config.boot.main, config.boot.allowActiveByDefault, this );
+        loadModules( modules );
+        configureModules( modules, config, implementations );
 
-        var servicesMap = instantiateServices( map );
+        log.debug( "modules {} implementations {} profiles {}", Lists.map( modules.values(), m -> m.module.name ), implementations, profiles );
+
+        checkForUnknownServices( modules, config.services );
+
+        log.debug( "init modules from main {}", config.boot.main );
+
+        var map = new ModuleItemTree();
+
+        ModuleHelper.init( map, modules, this.profiles, config.boot.main, config.boot.allowActiveByDefault, this );
+        resolveImplementations( map, implementations );
+
+        ServiceTree servicesMap = new ServiceTree();
+
+        instantiateServices( servicesMap, map );
         registerServices( servicesMap );
         linkServices( servicesMap );
         startServices( servicesMap );
@@ -187,18 +232,45 @@ public class Kernel implements Closeable, AutoCloseable {
         log.debug( "application kernel started " + name );
     }
 
-    private void checkForUnknownServices( Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {
+    private void resolveImplementations( ModuleItemTree map,
+                                         LinkedHashMap<Reference, Reference> implementations ) {
+
+        for( Map.Entry<Reference, Reference> entry : implementations.entrySet() ) {
+            Reference interfaceReference = entry.getKey();
+            Reference implementationReference = entry.getValue();
+
+            ModuleItem interfaceModule = map.get( interfaceReference.module );
+            ModuleItem implementationModule = map.get( implementationReference.module );
+
+            ModuleItem.ServiceItem interfaceService = interfaceModule.services.get( interfaceReference.service );
+            ModuleItem.ServiceItem implementationService = implementationModule.services.get( implementationReference.service );
+
+            interfaceService.abstractImplemenetaion = implementationService;
+        }
+    }
+
+    private void loadModules( LinkedHashMap<String, ModuleWithLocation> modules ) {
+        for( URL moduleConfiguration : moduleConfigurations ) {
+            Module module = Module.CONFIGURATION.fromUrl( moduleConfiguration );
+            if( StringUtils.isBlank( module.name ) ) {
+                throw new ApplicationException( moduleConfiguration + ": module.name is blank" );
+            }
+            modules.put( module.name, new ModuleWithLocation( module, moduleConfiguration ) );
+        }
+    }
+
+    private void checkForUnknownServices( LinkedHashMap<String, ModuleWithLocation> modules, Map<String, ApplicationConfigurationModule> services ) throws ApplicationException {
         services.forEach( ( moduleName, conf ) -> {
-            if( !Lists.contains( this.modules, m -> m.module.name.equals( moduleName ) ) && conf.isEnabled() )
+            if( !modules.containsKey( moduleName ) && conf.isEnabled() )
                 throw new ApplicationException( "unknown application configuration module: " + moduleName );
         } );
 
-        for( var module : this.modules ) {
-            var moduleServices = services.get( module.module.name );
+        for( ModuleWithLocation module : modules.values() ) {
+            ApplicationConfigurationModule moduleServices = services.get( module.module.name );
             if( moduleServices != null ) {
                 var applicationConfigurationServices = new LinkedHashSet<>( moduleServices.keySet() );
 
-                for( var serviceName : module.module.services.keySet() ) {
+                for( String serviceName : module.module.services.keySet() ) {
                     applicationConfigurationServices.remove( serviceName );
                 }
 
@@ -209,80 +281,110 @@ public class Kernel implements Closeable, AutoCloseable {
         }
     }
 
-    private ServiceInitializationTree instantiateServices( ModuleItemTree map ) throws ApplicationException {
-        var retModules = new ServiceInitializationTree();
+    private void instantiateServices( ServiceTree servicesMap, ModuleItemTree map ) throws ApplicationException {
+        for( ModuleItem.ServiceItem serviceItemOriginal : map.services ) {
+            if( !serviceItemOriginal.moduleItem.isEnabled() ) continue;
+            if( !serviceItemOriginal.isEnabled() ) continue;
+            if( serviceItemOriginal.instance != null ) continue;
 
-        for( var serviceItem : map.services ) {
-            if( !serviceItem.moduleItem.isEnabled() ) continue;
-            if( !serviceItem.isEnabled() ) continue;
+            ModuleItem.ServiceItem serviceItem = serviceItemOriginal.getImplementation();
 
-            var moduleItem = serviceItem.moduleItem;
-            var moduleName = moduleItem.getName();
+            ModuleItem moduleItem = serviceItem.moduleItem;
+            String moduleName = moduleItem.getName();
 
-            var service = serviceItem.service;
-            var implName = serviceItem.serviceName;
+            Service service = serviceItem.service;
+            String implName = serviceItem.serviceName;
+
             log.trace( "instantiating {}.{} as {} class:{} ...", moduleName, implName, service.name, service.implementation );
             try {
-                Object instance = null;
+                Reflection reflect = serviceItem.getReflection();
 
-                var reflect = Reflect.reflect( service.implementation, Module.coersions );
-
-                for( var ext : service.ext.values() ) {
+                for( Object ext : service.ext.values() ) {
                     if( ext instanceof ServiceKernelListener skl ) {
-                        instance = skl.newInstance( this, retModules, serviceItem, reflect );
-                        if( instance != null ) {
+                        serviceItem.instance = skl.newInstance( this, servicesMap, serviceItem, reflect );
+                        if( serviceItem.instance != null ) {
                             break;
                         }
                     }
                 }
 
-                if( instance == null ) {
-                    var parametersWithoutLinks = fixLinksForConstructor( this, serviceItem.moduleItem, retModules, service );
+                if( serviceItem.instance == null ) {
+                    KernelHelper.ServiceConfigurationParameters parametersWithoutLinks = fixLinksForConstructor( this, serviceItem.moduleItem, servicesMap, service );
 
                     var p = new LinkedHashMap<String, Object>();
                     p.putAll( parametersWithoutLinks.serviceReferenceParameters );
                     p.putAll( parametersWithoutLinks.configurationParameters );
 
-                    instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
+                    if( reflect.isInterface() || reflect.isAbstract() ) {
+                        if( !service.isAbstract() ) {
+                            throw new ApplicationException( "Service <"
+                                + serviceItem
+                                + "> has an abstract implementation, but the \"abstract = true\" property is missing" );
+
+                        } else {
+                            ArrayList<String> services = new ArrayList<>();
+                            for( ModuleItem.ServiceItem si : map.services ) {
+                                Reflection siReflect = Reflect.reflect( si.service.implementation, Module.coersions );
+
+                                if( !si.service.implementation.equals( service.implementation )
+                                    && reflect.underlying.isAssignableFrom( siReflect.underlying ) ) {
+                                    services.add( "<modules." + si.getModuleName() + "." + si.getName() + ">" );
+                                }
+                            }
+
+                            if( services.isEmpty() ) {
+                                throw new ApplicationException( "No implementation has been declared for the abstract service <"
+                                    + serviceItem
+                                    + "> with interface " + service.implementation );
+                            } else {
+                                throw new ApplicationException( "No implementation specified for abstract service <"
+                                    + serviceItem
+                                    + "> with interface " + service.implementation + ". Declared implementations ["
+                                    + String.join( ",", services ) + "]" );
+                            }
+                        }
+                    }
+                    serviceItemOriginal.instance = serviceItem.instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
 
                     service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
                 }
 
-                retModules.put( serviceItem, new ServiceInitialization( implName, instance, moduleItem, service, reflect ) );
+                servicesMap.add( serviceItemOriginal );
             } catch( Exception e ) {
                 log.error( "Cannot create/initialize service name = {}.{} profiles = {}, class: {}",
                     moduleName, implName, service.profiles, service.implementation );
+                if( e instanceof ApplicationException ae ) {
+                    throw ae;
+                }
                 throw new ApplicationException( e );
             }
         }
-
-        return retModules;
     }
 
-    private void registerServices( ServiceInitializationTree moduleServices ) {
-        moduleServices.forEach( ( serviceItem, si ) -> {
-            register( serviceItem, serviceItem.serviceName, si );
-            if( !si.service.name.equals( serviceItem.serviceName ) )
-                register( serviceItem, si.service.name, si );
+    private void registerServices( ServiceTree moduleServices ) {
+        moduleServices.forEach( serviceItem -> {
+            register( serviceItem, serviceItem.serviceName );
+            if( !serviceItem.service.name.equals( serviceItem.serviceName ) )
+                register( serviceItem, serviceItem.service.name );
         } );
     }
 
-    private void linkServices( ServiceInitializationTree moduleServices ) {
-        for( var si : moduleServices.values() ) {
-            log.trace( "linking service {}...", si.implementationName );
+    private void linkServices( ServiceTree moduleServices ) {
+        for( ModuleItem.ServiceItem si : moduleServices.values() ) {
+            log.trace( "linking service {}...", si.serviceName );
 
-            linkListeners( si.module, si.service, si.instance );
+            linkListeners( si.moduleItem, si.service, si.instance );
             linkLinks( si );
             si.service.parameters.forEach( ( parameter, value ) ->
-                linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si, true )
+                linkService( new FieldLinkReflection( si.getReflection(), si.instance, parameter ), value, si, true )
             );
         }
     }
 
     @SuppressWarnings( "unchecked" )
-    private void linkLinks( ServiceInitialization initialization ) {
+    private void linkLinks( ModuleItem.ServiceItem initialization ) {
         initialization.service.link.forEach( ( fieldName, serviceRef ) ->
-            ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.module, initialization.service, services )
+            ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.moduleItem, initialization.service, services )
                 .ifSuccessOrElse(
                     service -> {
                         var reflect = Reflect.reflect( service.service.implementation );
@@ -308,9 +410,9 @@ public class Kernel implements Closeable, AutoCloseable {
                                     linkField.set( service.instance, initialization.instance );
                                 }
                             } else {
-                                exception( new ReflectException( "link to " + service.implementationName + "/" + service.service.implementation
+                                exception( new ReflectException( "link to " + service.serviceName + "/" + service.service.implementation
                                     + " should have field " + fieldName
-                                    + " for " + initialization.implementationName + "/" + initialization.service.implementation ) );
+                                    + " for " + initialization.serviceName + "/" + initialization.service.implementation ) );
                             }
                         }
                     },
@@ -323,25 +425,24 @@ public class Kernel implements Closeable, AutoCloseable {
     @SuppressWarnings( "unchecked" )
     private void linkService( LinkReflection lRef,
                               Object parameterValue,
-                              ServiceInitialization si,
+                              ModuleItem.ServiceItem si,
                               boolean failIfNotFound ) throws ApplicationException {
-        if( parameterValue instanceof List<?> ) {
-            var parameterList = ( List<?> ) parameterValue;
-            var instance = lRef.get();
+        if( parameterValue instanceof List<?> parameterList ) {
+            Object instance = lRef.get();
             if( instance instanceof List<?> ) {
                 var instanceList = ( List<Object> ) instance;
-                var instanceIterator = instanceList.listIterator();
-                for( var parameter : parameterList )
+                ListIterator<Object> instanceIterator = instanceList.listIterator();
+                for( Object parameter : parameterList )
                     linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
             }
         } else if( parameterValue instanceof Map ) {
             var parameterMap = ( Map<Object, Object> ) parameterValue;
-            var instance = lRef.get();
+            Object instance = lRef.get();
 
             if( instance == null ) return;
 
-            for( var entry : parameterMap.entrySet() ) {
-                var isMap = instance instanceof Map;
+            for( Map.Entry<Object, Object> entry : parameterMap.entrySet() ) {
+                boolean isMap = instance instanceof Map;
                 final LinkReflection linkReflection = isMap
                     ? new MapLinkReflection( ( Map<Object, Object> ) instance, entry.getKey() )
                     : new FieldLinkReflection( Reflect.reflect( instance.getClass() ), instance, entry.getKey().toString() );
@@ -349,26 +450,26 @@ public class Kernel implements Closeable, AutoCloseable {
                 linkService( linkReflection, entry.getValue(), si, !isMap );
             }
         } else if( ServiceKernelCommand.INSTANCE.matches( parameterValue ) ) {
-            var linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si.module, si.service, services );
+            Result<Object, ServiceStorage.ErrorStatus> linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si.moduleItem, si.service, services );
 
             if( failIfNotFound && !linkResult.isSuccess() )
-                throw new ApplicationException( "for " + si.implementationName + " linked object " + parameterValue + " is not found" );
+                throw new ApplicationException( "for " + si.serviceName + " linked object " + parameterValue + " is not found" );
             linkResult.ifSuccess( lRef::set );
         }
     }
 
-    private void startServices( ServiceInitializationTree moduleServices ) {
-        moduleServices.forEach( ( serviceItem, si ) -> {
-            log.debug( "starting {} as {}...", si.service.name, serviceItem.serviceName );
+    private void startServices( ServiceTree moduleServices ) {
+        moduleServices.forEach( serviceItem -> {
+            log.debug( "starting {} as {}...", serviceItem.service.name, serviceItem.serviceName );
 
-            startService( supervisor, si );
-            log.debug( "starting {} as {}... Done", si.service.name, serviceItem.serviceName );
+            startService( supervisor, serviceItem );
+            log.debug( "starting {} as {}... Done", serviceItem.service.name, serviceItem.serviceName );
         } );
     }
 
-    private void startService( Supervisor supervisor, ServiceInitialization si ) {
-        var service = si.service;
-        var instance = si.instance;
+    private void startService( Supervisor supervisor, ModuleItem.ServiceItem si ) {
+        Service service = si.service;
+        Object instance = si.instance;
         if( service.supervision.supervise ) {
             supervisor.startSupervised( service.name, instance,
                 service.supervision.preStartWith,
@@ -393,11 +494,11 @@ public class Kernel implements Closeable, AutoCloseable {
         }
     }
 
-    public void register( ModuleItem.ServiceItem serviceItem, String serviceName, ServiceInitialization si ) throws ApplicationException {
-        ServiceInitialization registered;
+    public void register( ModuleItem.ServiceItem serviceItem, String serviceName ) throws ApplicationException {
+        ModuleItem.ServiceItem registered;
 
-        if( ( registered = services.putIfAbsent( serviceItem, serviceName, si ) ) != null )
-            throw new ApplicationException( serviceItem.getModuleName() + ":" + serviceName + " Service " + si.implementationName + " is already registered [" + registered.instance.getClass() + "]" );
+        if( ( registered = services.putIfAbsent( serviceItem, serviceName, serviceItem ) ) != null )
+            throw new ApplicationException( serviceItem.getModuleName() + ":" + serviceName + " Service " + serviceItem.serviceName + " is already registered [" + registered.instance.getClass() + "]" );
     }
 
     public void stop() {
@@ -414,8 +515,10 @@ public class Kernel implements Closeable, AutoCloseable {
             return services.findFirstServiceByName( serviceName ).map( si -> ( T ) si.instance );
         }
 
-        var si = services.get( moduleName, serviceName );
-        if( si == null ) return Optional.empty();
+        ModuleItem.ServiceItem si = services.get( moduleName, serviceName );
+        if( si == null ) {
+            return Optional.empty();
+        }
 
         return Optional.of( ( T ) si.instance );
     }
@@ -425,7 +528,7 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public <T> Optional<T> service( String reference ) {
-        var ref = ServiceKernelCommand.INSTANCE.reference(
+        Reference ref = ServiceKernelCommand.INSTANCE.reference(
             reference.startsWith( "<modules." ) ? reference : "<modules." + reference + ">", null );
         return service( ref );
     }
@@ -436,7 +539,7 @@ public class Kernel implements Closeable, AutoCloseable {
             return Lists.map( services.findAllServicesByName( serviceName ), si -> ( T ) si.instance );
         }
 
-        var si = services.get( moduleName, serviceName );
+        ModuleItem.ServiceItem si = services.get( moduleName, serviceName );
         if( si == null ) return List.of();
 
         return List.of( ( T ) si.instance );
@@ -450,9 +553,9 @@ public class Kernel implements Closeable, AutoCloseable {
     public <T> List<T> ofClass( String moduleName, Class<T> clazz ) {
         var ret = new ArrayList<T>();
 
-        this.services.forEach( ( serviceItem, service ) -> {
+        this.services.forEach( serviceItem -> {
             if( ServiceStorage.ALL_MODULES.contains( moduleName ) || serviceItem.getModuleName().equals( moduleName ) )
-                if( clazz.isInstance( service.instance ) ) ret.add( ( T ) service.instance );
+                if( clazz.isInstance( serviceItem.instance ) ) ret.add( ( T ) serviceItem.instance );
         } );
 
         return ret;
@@ -477,13 +580,11 @@ public class Kernel implements Closeable, AutoCloseable {
     public <T> List<ServiceExt<T>> servicesByExt( String ext, Class<T> clazz ) {
         var ret = new ArrayList<ServiceExt<T>>();
 
-        for( var si : services.values() ) {
-            var extConfiguration = si.service.<T>getExt( ext );
+        for( ModuleItem.ServiceItem si : services.values() ) {
+            T extConfiguration = si.service.<T>getExt( ext );
             if( extConfiguration == null ) continue;
 
-            ret.add( new ServiceExt<T>( si.implementationName, si.module.module, si, extConfiguration ) );
-
-
+            ret.add( new ServiceExt<T>( si.serviceName, si, extConfiguration ) );
         }
 
         return ret;

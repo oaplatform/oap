@@ -2,7 +2,7 @@ package oap.remote.application;
 
 import oap.application.Kernel;
 import oap.application.ModuleItem;
-import oap.application.ServiceInitializationTree;
+import oap.application.ServiceTree;
 import oap.application.ServiceKernelListener;
 import oap.reflect.Reflection;
 import oap.remote.RemoteInvocationHandler;
@@ -12,7 +12,7 @@ import java.util.List;
 
 public class RemoteLocationExt extends RemoteLocation implements ServiceKernelListener {
     @Override
-    public Object newInstance( Kernel kernel, ServiceInitializationTree retModules, ModuleItem.ServiceItem serviceItem, Reflection reflect ) {
+    public Object newInstance( Kernel kernel, ServiceTree retModules, ModuleItem.ServiceItem serviceItem, Reflection reflect ) {
         return RemoteInvocationHandler.proxy( serviceItem.getModuleName() + ":" + serviceItem.getName(), this, reflect.underlying );
     }
 

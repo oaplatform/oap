@@ -79,7 +79,7 @@ public class KernelTest extends Fixtures {
     @Test
     public void testLifecycle() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.yaml" ) );
+        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.conf" ) );
 
         TestLifecycle service;
         TestLifecycle thread;

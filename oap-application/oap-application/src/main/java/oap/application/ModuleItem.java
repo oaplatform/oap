@@ -28,6 +28,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.module.Module;
 import oap.application.module.Service;
+import oap.reflect.Reflect;
+import oap.reflect.Reflection;
 import oap.util.Lists;
 
 import java.net.URL;
@@ -98,7 +100,6 @@ public class ModuleItem {
         return location;
     }
 
-    @ToString
     @EqualsAndHashCode
     public static class ModuleReference {
         final ModuleItem moduleItem;
@@ -118,7 +119,7 @@ public class ModuleItem {
 
         @ToString
         @EqualsAndHashCode
-        static class ServiceLink {
+        public static class ServiceLink {
             final ServiceItem from;
             final ServiceItem to;
 
@@ -129,19 +130,24 @@ public class ModuleItem {
         }
     }
 
-    @ToString
     public static class ServiceItem {
         public final String serviceName;
         public final ModuleItem moduleItem;
         public final Service service;
         public final ServiceEnabledStatus enabled;
         public final LinkedHashSet<ServiceReference> dependsOn = new LinkedHashSet<>();
+        public Object instance;
+        public ServiceItem abstractImplemenetaion;
 
         ServiceItem( String serviceName, ModuleItem moduleItem, Service service, ServiceEnabledStatus enabled ) {
             this.serviceName = serviceName;
             this.moduleItem = moduleItem;
             this.service = service;
             this.enabled = enabled;
+        }
+
+        public ServiceItem getImplementation() {
+            return abstractImplemenetaion != null ? abstractImplemenetaion : this;
         }
 
         public String getModuleName() {
@@ -191,7 +197,11 @@ public class ModuleItem {
             return enabled == ServiceEnabledStatus.ENABLED;
         }
 
-        static class ServiceReference {
+        public Reflection getReflection() {
+            return Reflect.reflect( service.implementation, Module.coersions );
+        }
+
+        public static class ServiceReference {
             public final ServiceItem serviceItem;
             public final boolean required;
 

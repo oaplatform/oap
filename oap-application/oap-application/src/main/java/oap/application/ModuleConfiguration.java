@@ -23,46 +23,10 @@
  */
 package oap.application;
 
-import com.google.common.base.Preconditions;
-import oap.application.ApplicationConfiguration.ApplicationConfigurationModule;
 import oap.application.module.Module;
-import oap.json.Binder;
-
-import java.net.URL;
-import java.util.Map;
 
 public class ModuleConfiguration extends Configuration<Module> {
     public ModuleConfiguration() {
         super( Module.class, "oap-module" );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static Map<String, Object> toStringObjectMap( Object obj ) {
-        Preconditions.checkArgument( obj instanceof Map<?, ?> );
-
-        var map = ( Map<?, ?> ) obj;
-
-        for( var mapKey : map.keySet() ) {
-            Preconditions.checkArgument( mapKey instanceof String );
-        }
-
-        return ( Map<String, Object> ) map;
-    }
-
-    public Module fromFile( URL url, Map<String, ApplicationConfigurationModule> services ) {
-        var module = super.fromUrl( url );
-
-        var moduleConfig = services.get( module.name );
-        if( moduleConfig == null ) return module;
-
-        module.services.forEach( ( serviceName, service ) -> {
-            var serviceConf = moduleConfig.get( serviceName );
-            if( serviceConf != null ) {
-                var map = toStringObjectMap( serviceConf );
-                Binder.update( service, map );
-            }
-        } );
-
-        return module;
     }
 }
