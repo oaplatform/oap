@@ -122,7 +122,7 @@ public class Kernel implements Closeable, AutoCloseable {
                     case String ref when service.isAbstract() ->
                         implementations.put( new Reference( module.name, serviceName ), ServiceKernelCommand.INSTANCE.reference( ref, null ) );
                     default ->
-                        throw new ApplicationException( "the service " + module.name + "." + serviceName + "configuration must be of type Map<String,?> or it must be a reference to the implementation of an abstract service in the form of <modules.[module name].[service name]>" );
+                        throw new ApplicationException( "Service " + module.name + "." + serviceName + " configuration must be of type Map<String,?> or it must be a reference to the implementation of an abstract service in the form of <modules.[module name].[service name]>" );
                 }
             }
         }
