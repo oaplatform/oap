@@ -148,17 +148,9 @@ public class ModuleItem {
             return moduleItem.getName();
         }
 
-        public String getName() {
-            return service.name;
-        }
-
         @Override
         public String toString() {
             return moduleItem.getName() + "." + serviceName;
-        }
-
-        public void fixServiceName( String implName ) {
-            service.name = service.name != null ? service.name : implName;
         }
 
         @Override
@@ -211,12 +203,12 @@ public class ModuleItem {
 
                 var that = ( ServiceReference ) o;
 
-                return serviceItem.service.name.equals( that.serviceItem.service.name );
+                return serviceItem.serviceName.equals( that.serviceItem.serviceName );
             }
 
             @Override
             public int hashCode() {
-                return serviceItem.service.name.hashCode();
+                return serviceItem.serviceName.hashCode();
             }
         }
     }

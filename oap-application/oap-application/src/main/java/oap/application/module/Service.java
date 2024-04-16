@@ -45,7 +45,6 @@ public class Service {
     public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
     public final LinkedHashMap<String, String> link = new LinkedHashMap<>();
     public String implementation;
-    public String name;
     public boolean enabled = true;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();

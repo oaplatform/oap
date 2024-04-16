@@ -45,7 +45,7 @@ public class ServiceTree implements ServiceStorage {
     public void add( ModuleItem.ServiceItem serviceItem ) {
         var services = moduleMap.computeIfAbsent( serviceItem.getModuleName(), _ -> new LinkedHashMap<>() );
         services.put( serviceItem.serviceName, serviceItem );
-        services.putIfAbsent( serviceItem.getName(), serviceItem );
+        services.putIfAbsent( serviceItem.serviceName, serviceItem );
     }
 
     public void forEach( Consumer<? super ModuleItem.ServiceItem> action ) {

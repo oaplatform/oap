@@ -67,7 +67,6 @@ class ModuleHelper {
         validateModuleName( map );
         validateServiceName( map );
 
-        fixServiceName( map );
         initDeps( map );
         validateDeps( map );
         validateImplementation( map );
@@ -104,7 +103,7 @@ class ModuleHelper {
             if( !moduleInfo.getName().equals( moduleName ) ) continue;
 
             for( Map.Entry<String, ModuleItem.ServiceItem> entry : moduleInfo.services.entrySet() ) {
-                if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().service.name ) ) {
+                if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().serviceName ) ) {
                     found.add( __( moduleInfo, entry.getValue() ) );
                 }
             }
@@ -326,7 +325,7 @@ class ModuleHelper {
 
                 for( ServiceReference dServiceReference : serviceInfo.dependsOn ) {
                     if( !dServiceReference.serviceItem.isEnabled() && dServiceReference.required ) {
-                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.service.name + "] dependencies are not enabled. Required service [" + dServiceReference.serviceItem.serviceName + "] is disabled by "
+                        throw new ApplicationException( "[" + moduleInfo.module.name + ":" + serviceInfo.serviceName + "] dependencies are not enabled. Required service [" + dServiceReference.serviceItem.serviceName + "] is disabled by "
                             + dServiceReference.serviceItem.enabled.toString() + "." );
                     }
                 }
@@ -430,13 +429,6 @@ class ModuleHelper {
         log.trace( "services after sort: \n{}",
             String.join( "\n", Lists.map( map.services, e -> "  " + e ) )
         );
-    }
-
-    private static void fixServiceName( ModuleItemTree map ) {
-        for( ModuleItem module : map.values() ) {
-            module.services.forEach( ( implName, serviceItem ) ->
-                serviceItem.fixServiceName( implName ) );
-        }
     }
 
     private static void initDeps( ModuleItemTree map ) {

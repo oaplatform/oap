@@ -128,16 +128,16 @@ public class Kernel implements Closeable, AutoCloseable {
         }
     }
 
-    private void linkListeners( ModuleItem moduleItem, Service service, Object instance ) throws ApplicationException {
-        service.listen.forEach( ( listener, reference ) -> {
-            log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
+    private void linkListeners( ModuleItem.ServiceItem serviceItem, Object instance ) throws ApplicationException {
+        serviceItem.service.listen.forEach( ( listener, reference ) -> {
+            log.debug( "setting {} to listen to {} with listener {}", serviceItem.serviceName, reference, listener );
 
             String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
-            Reference ref = ServiceKernelCommand.INSTANCE.reference( reference, moduleItem );
+            Reference ref = ServiceKernelCommand.INSTANCE.reference( reference, serviceItem.moduleItem );
             LinkedHashMap<String, ModuleItem.ServiceItem> linkedModule = services.getServices( ref.module );
             ModuleItem.ServiceItem linked;
             if( linkedModule == null || ( ( linked = linkedModule.get( ref.service ) ) ) == null ) {
-                throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
+                throw new ApplicationException( "for " + serviceItem.serviceName + " listening object " + reference + " is not found" );
             }
             Reflection.Method m = Reflect.reflect( linked.instance.getClass() )
                 .method( methodName )
@@ -292,7 +292,7 @@ public class Kernel implements Closeable, AutoCloseable {
             Service service = serviceItem.service;
             String implName = serviceItem.serviceName;
 
-            log.trace( "instantiating {}.{} as {} class:{} ...", moduleName, implName, service.name, service.implementation );
+            log.trace( "instantiating {}.{} as {} class:{} ...", moduleName, implName, serviceItem.serviceName, service.implementation );
             try {
                 Reflection reflect = serviceItem.getReflection();
 
@@ -306,7 +306,7 @@ public class Kernel implements Closeable, AutoCloseable {
                 }
 
                 if( serviceItem.instance == null ) {
-                    KernelHelper.ServiceConfigurationParameters parametersWithoutLinks = fixLinksForConstructor( this, serviceItem.moduleItem, servicesMap, service );
+                    KernelHelper.ServiceConfigurationParameters parametersWithoutLinks = fixLinksForConstructor( this, serviceItem, servicesMap );
 
                     var p = new LinkedHashMap<String, Object>();
                     p.putAll( parametersWithoutLinks.serviceReferenceParameters );
@@ -325,7 +325,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
                                 if( !si.service.implementation.equals( service.implementation )
                                     && reflect.underlying.isAssignableFrom( siReflect.underlying ) ) {
-                                    services.add( "<modules." + si.getModuleName() + "." + si.getName() + ">" );
+                                    services.add( "<modules." + si.getModuleName() + "." + si.serviceName + ">" );
                                 }
                             }
 
@@ -359,18 +359,14 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     private void registerServices( ServiceTree moduleServices ) {
-        moduleServices.forEach( serviceItem -> {
-            register( serviceItem, serviceItem.serviceName );
-            if( !serviceItem.service.name.equals( serviceItem.serviceName ) )
-                register( serviceItem, serviceItem.service.name );
-        } );
+        moduleServices.forEach( serviceItem -> register( serviceItem, serviceItem.serviceName ) );
     }
 
     private void linkServices( ServiceTree moduleServices ) {
         for( ModuleItem.ServiceItem si : moduleServices.values() ) {
             log.trace( "linking service {}...", si.serviceName );
 
-            linkListeners( si.moduleItem, si.service, si.instance );
+            linkListeners( si, si.instance );
             linkLinks( si );
             si.service.parameters.forEach( ( parameter, value ) ->
                 linkService( new FieldLinkReflection( si.getReflection(), si.instance, parameter ), value, si, true )
@@ -379,9 +375,9 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     @SuppressWarnings( "unchecked" )
-    private void linkLinks( ModuleItem.ServiceItem initialization ) {
-        initialization.service.link.forEach( ( fieldName, serviceRef ) ->
-            ServiceKernelCommand.INSTANCE.get( serviceRef, this, initialization.moduleItem, initialization.service, services )
+    private void linkLinks( ModuleItem.ServiceItem serviceItem ) {
+        serviceItem.service.link.forEach( ( fieldName, serviceRef ) ->
+            ServiceKernelCommand.INSTANCE.get( serviceRef, this, serviceItem, services )
                 .ifSuccessOrElse(
                     service -> {
                         var reflect = Reflect.reflect( service.service.implementation );
@@ -396,25 +392,25 @@ public class Kernel implements Closeable, AutoCloseable {
                         }
 
                         if( linkMethod != null && linkMethod.parameters.size() == 1 ) {
-                            linkMethod.invoke( service.instance, initialization.instance );
+                            linkMethod.invoke( service.instance, serviceItem.instance );
                         } else {
                             var linkField = reflect.field( fieldName ).orElse( null );
                             if( linkField != null ) {
                                 if( linkField.type().assignableTo( Collection.class ) ) {
                                     ( ( Collection<Object> ) linkField.get( service.instance ) )
-                                        .add( initialization.instance );
+                                        .add( serviceItem.instance );
                                 } else {
-                                    linkField.set( service.instance, initialization.instance );
+                                    linkField.set( service.instance, serviceItem.instance );
                                 }
                             } else {
                                 exception( new ReflectException( "link to " + service.serviceName + "/" + service.service.implementation
                                     + " should have field " + fieldName
-                                    + " for " + initialization.serviceName + "/" + initialization.service.implementation ) );
+                                    + " for " + serviceItem.serviceName + "/" + serviceItem.service.implementation ) );
                             }
                         }
                     },
                     exception( e -> new ApplicationException( "Unknown service link " + serviceRef + " in"
-                        + "\n{\n\timplementation = " + initialization.service.implementation
+                        + "\n{\n\timplementation = " + serviceItem.service.implementation
                         + "\n\tlink." + fieldName + " = " + serviceRef
                         + "\n}" ) ) ) );
     }
@@ -447,7 +443,7 @@ public class Kernel implements Closeable, AutoCloseable {
                 linkService( linkReflection, entry.getValue(), si, !isMap );
             }
         } else if( ServiceKernelCommand.INSTANCE.matches( parameterValue ) ) {
-            Result<Object, ServiceStorage.ErrorStatus> linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si.moduleItem, si.service, services );
+            Result<Object, ServiceStorage.ErrorStatus> linkResult = ServiceKernelCommand.INSTANCE.getInstance( parameterValue, this, si, services );
 
             if( failIfNotFound && !linkResult.isSuccess() )
                 throw new ApplicationException( "for " + si.serviceName + " linked object " + parameterValue + " is not found" );
@@ -457,10 +453,10 @@ public class Kernel implements Closeable, AutoCloseable {
 
     private void startServices( ServiceTree moduleServices ) {
         moduleServices.forEach( serviceItem -> {
-            log.debug( "starting {} as {}...", serviceItem.service.name, serviceItem.serviceName );
+            log.debug( "starting {} as {}...", serviceItem.serviceName, serviceItem.serviceName );
 
             startService( supervisor, serviceItem );
-            log.debug( "starting {} as {}... Done", serviceItem.service.name, serviceItem.serviceName );
+            log.debug( "starting {} as {}... Done", serviceItem.serviceName, serviceItem.serviceName );
         } );
     }
 
@@ -468,7 +464,7 @@ public class Kernel implements Closeable, AutoCloseable {
         Service service = si.service;
         Object instance = si.instance;
         if( service.supervision.supervise ) {
-            supervisor.startSupervised( service.name, instance,
+            supervisor.startSupervised( si.serviceName, instance,
                 service.supervision.preStartWith,
                 service.supervision.startWith,
                 service.supervision.preStopWith,
@@ -480,13 +476,13 @@ public class Kernel implements Closeable, AutoCloseable {
 //            if( service.supervision.delay != 0 )
 //                supervisor.startScheduledThread( service.name, instance, service.supervision.delay, MILLISECONDS );
 //            else
-            supervisor.startThread( service.name, instance );
+            supervisor.startThread( si.serviceName, instance );
         } else {
             if( service.supervision.schedule && service.supervision.cron != null )
-                supervisor.scheduleCron( service.name, ( Runnable ) instance,
+                supervisor.scheduleCron( si.serviceName, ( Runnable ) instance,
                     service.supervision.cron );
             else if( service.supervision.schedule && service.supervision.delay != 0 )
-                supervisor.scheduleWithFixedDelay( service.name, ( Runnable ) instance,
+                supervisor.scheduleWithFixedDelay( si.serviceName, ( Runnable ) instance,
                     service.supervision.delay, MILLISECONDS );
         }
     }

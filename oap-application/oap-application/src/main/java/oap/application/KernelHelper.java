@@ -25,7 +25,6 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.module.Service;
 import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 
@@ -40,17 +39,16 @@ import java.util.Set;
 public class KernelHelper {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
-    public static ServiceConfigurationParameters fixLinksForConstructor( Kernel kernel, ModuleItem thisModuleName,
-                                                                         ServiceStorage storage,
-                                                                         Service service ) {
+    public static ServiceConfigurationParameters fixLinksForConstructor( Kernel kernel, ModuleItem.ServiceItem thisServiceItem,
+                                                                         ServiceStorage storage ) {
 
         ServiceConfigurationParameters p = new ServiceConfigurationParameters();
 
-        service.parameters.forEach( ( k, v ) -> {
-            var res = fixLinks( kernel, thisModuleName, service, storage, v );
+        thisServiceItem.service.parameters.forEach( ( k, v ) -> {
+            var res = fixLinks( kernel, thisServiceItem, storage, v );
 
             if( !res.ignoreCast ) {
-                Object newValue = fixValue( kernel, thisModuleName, service, storage, res.value );
+                Object newValue = fixValue( kernel, thisServiceItem, storage, res.value );
 
                 p.configurationParameters.put( k, newValue );
             } else {
@@ -62,12 +60,12 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static Object fixValue( Kernel kernel, ModuleItem thisModuleItem, Service service, ServiceStorage storage, Object value ) {
+    public static Object fixValue( Kernel kernel, ModuleItem.ServiceItem thisServiceItem, ServiceStorage storage, Object value ) {
         Object newValue;
         if( value instanceof List<?> ) {
             var newList = new ArrayList<>();
             for( var lValue : ( List<?> ) value ) {
-                var fixLValue = fixValue( kernel, thisModuleItem, service, storage, lValue );
+                var fixLValue = fixValue( kernel, thisServiceItem, storage, lValue );
                 if( fixLValue != null ) newList.add( fixLValue );
             }
             newValue = newList;
@@ -75,7 +73,7 @@ public class KernelHelper {
             var newMap = new LinkedHashMap<>();
 
             ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> {
-                var v = fixValue( kernel, thisModuleItem, service, storage, mValue );
+                var v = fixValue( kernel, thisServiceItem, storage, mValue );
                 if( v != null ) newMap.put( key, v );
             } );
 
@@ -83,7 +81,7 @@ public class KernelHelper {
         } else {
             var command = Lists.find2( Kernel.commands, c -> c.matches( value ) );
             if( command != null ) {
-                var result = command.getInstance( value, kernel, thisModuleItem, service, storage );
+                var result = command.getInstance( value, kernel, thisServiceItem, storage );
                 if( result.isSuccess() ) {
                     newValue = result.successValue;
                 } else {
@@ -98,19 +96,19 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
-    public static ServiceConfigurationParameter fixLinks( Kernel kernel, ModuleItem thisModuleItem, Service service, ServiceStorage storage, final Object value ) {
+    public static ServiceConfigurationParameter fixLinks( Kernel kernel, ModuleItem.ServiceItem thisServiceItem, ServiceStorage storage, final Object value ) {
         if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
                 var oldValue = it.next();
-                var v = fixLinks( kernel, thisModuleItem, service, storage, oldValue );
+                var v = fixLinks( kernel, thisServiceItem, storage, oldValue );
                 if( v.value != null ) {
                     it.set( v.value );
                 }
             }
         } else if( value instanceof Map<?, ?> ) {
             for( var entry : ( ( Map<?, Object> ) value ).entrySet() ) {
-                var v = fixLinks( kernel, thisModuleItem, service, storage, entry.getValue() );
+                var v = fixLinks( kernel, thisServiceItem, storage, entry.getValue() );
                 if( v.value != null ) {
                     entry.setValue( v.value );
                 }
@@ -118,7 +116,7 @@ public class KernelHelper {
         } else if( value instanceof String ) {
             var command = Lists.find2( Kernel.commands, c -> c.matches( value ) );
             if( command != null ) {
-                var result = command.getInstance( value, kernel, thisModuleItem, service, storage );
+                var result = command.getInstance( value, kernel, thisServiceItem, storage );
                 if( !result.isSuccess() ) {
                     log.trace( "{} not found", value );
                     return new ServiceConfigurationParameter( null, false );
