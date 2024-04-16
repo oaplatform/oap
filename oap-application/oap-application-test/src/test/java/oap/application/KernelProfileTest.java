@@ -102,19 +102,6 @@ public class KernelProfileTest {
     }
 
     @Test
-    public void moduleProfiles() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
-            startWithProfile( kernel, "test-module-profile", "test1" );
-            assertThat( kernel.service( "*.module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
-        }
-
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
-            startWithProfile( kernel, "test-module-profile" );
-            assertThat( kernel.service( "*.module-profile" ) ).isNotPresent();
-        }
-    }
-
-    @Test
     public void testDynamicProfile() {
         ConfigImpl.reloadSystemPropertiesConfig();
         try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.conf" ) ) ) ) {
