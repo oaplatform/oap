@@ -214,8 +214,7 @@ public class KernelTest extends Fixtures {
     public void mapEnvToConfig() {
         var modules = List.of( url( "env/env.conf" ) );
 
-        Env.set( "CONFIG.services.env.s1.profile", "disabled" );
-        Env.set( "CONFIG.services.env.s2.profile", "enabled" );
+        Env.set( "CONFIG.services.env.s1.enabled", "false" );
         Env.set( "CONFIG.services.env.s2.parameters.val", "\"test$value\"" );
 
         try( var kernel = new Kernel( modules ) ) {

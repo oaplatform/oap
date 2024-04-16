@@ -146,6 +146,11 @@ class ModuleHelper {
                     enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
                 }
 
+                if( !service.enabled ) {
+                    log.debug( "skipping service {}:{}, reason: enabled = false", moduleInfo.module.name, serviceName );
+                    enabled = ServiceEnabledStatus.DISABLED_BY_FLAG;
+                }
+
                 moduleInfo.services.put( serviceName, new ModuleItem.ServiceItem( serviceName, moduleInfo, service, enabled ) );
             }
         }
