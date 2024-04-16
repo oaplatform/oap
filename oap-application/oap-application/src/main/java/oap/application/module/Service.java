@@ -41,9 +41,7 @@ import java.util.Map;
 public class Service {
     public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
     public final Supervision supervision = new Supervision();
-    public final LinkedHashSet<Object> dependsOn = new LinkedHashSet<>();
-    @JsonAlias( { "profile", "profiles" } )
-    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
     public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
     public final LinkedHashMap<String, String> link = new LinkedHashMap<>();
     public String implementation;

@@ -81,7 +81,6 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public final ServiceTree services = new ServiceTree();
-    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     final String name;
     private final List<URL> moduleConfigurations;
     private final Supervisor supervisor = new Supervisor();
@@ -196,8 +195,6 @@ public class Kernel implements Closeable, AutoCloseable {
     public void start( ApplicationConfiguration config ) throws ApplicationException {
         log.debug( "initializing application kernel {} with config boot {}, services {}", name, config.boot, config.services.keySet() );
 
-        this.profiles.addAll( config.getProfiles() );
-
         if( config.boot.main.isEmpty() ) {
             throw new ApplicationException( "boot.main must contain at least one module name" );
         }
@@ -208,7 +205,7 @@ public class Kernel implements Closeable, AutoCloseable {
         loadModules( modules );
         configureModules( modules, config, implementations );
 
-        log.debug( "modules {} implementations {} profiles {}", Lists.map( modules.values(), m -> m.module.name ), implementations, profiles );
+        log.debug( "modules {} implementations {}", Lists.map( modules.values(), m -> m.module.name ), implementations );
 
         checkForUnknownServices( modules, config.services );
 
@@ -216,7 +213,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
         var map = new ModuleItemTree();
 
-        ModuleHelper.init( map, modules, this.profiles, config.boot.main, config.boot.allowActiveByDefault, this );
+        ModuleHelper.init( map, modules, config.boot.main, config.boot.allowActiveByDefault );
         resolveImplementations( map, implementations );
 
         ServiceTree servicesMap = new ServiceTree();
@@ -351,8 +348,8 @@ public class Kernel implements Closeable, AutoCloseable {
 
                 servicesMap.add( serviceItemOriginal );
             } catch( Exception e ) {
-                log.error( "Cannot create/initialize service name = {}.{} profiles = {}, class: {}",
-                    moduleName, implName, service.profiles, service.implementation );
+                log.error( "Cannot create/initialize service name = {}.{} class: {}",
+                    moduleName, implName, service.implementation );
                 if( e instanceof ApplicationException ae ) {
                     throw ae;
                 }
@@ -596,10 +593,6 @@ public class Kernel implements Closeable, AutoCloseable {
 
     public void unregisterServices() {
         services.clear();
-    }
-
-    public void enableProfile( String profile ) {
-        this.profiles.add( profile );
     }
 
     @Override

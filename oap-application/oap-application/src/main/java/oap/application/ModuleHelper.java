@@ -50,27 +50,25 @@ class ModuleHelper {
     private ModuleHelper() {
     }
 
-    private static void init( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
-        initModules( map, modules, profiles );
-        initServices( map, profiles );
+    private static void init( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules ) {
+        initModules( map, modules );
+        initServices( map );
     }
 
     public static void init( ModuleItemTree map,
                              LinkedHashMap<String, Kernel.ModuleWithLocation> modules,
-                             LinkedHashSet<String> profiles,
                              LinkedHashSet<String> main,
-                             boolean allowActiveByDefault,
-                             Kernel kernel ) throws ApplicationException {
-        log.trace( "Init modules {} profiles {} main {} allowActiveByDefault {}", modules, profiles, main, allowActiveByDefault );
+                             boolean allowActiveByDefault ) throws ApplicationException {
+        log.trace( "Init modules {} main {} allowActiveByDefault {}", modules, main, allowActiveByDefault );
 
-        init( map, modules, profiles );
-        loadOnlyMainModuleAndDependsOn( map, main, allowActiveByDefault, profiles );
+        init( map, modules );
+        loadOnlyMainModuleAndDependsOn( map, main, allowActiveByDefault );
 
         validateModuleName( map );
         validateServiceName( map );
 
         fixServiceName( map );
-        initDeps( map, profiles, kernel );
+        initDeps( map );
         validateDeps( map );
         validateImplementation( map );
         sort( map );
@@ -120,24 +118,19 @@ class ModuleHelper {
         return Lists.head2( found );
     }
 
-    private static void initModules( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
+    private static void initModules( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules ) {
         for( Kernel.ModuleWithLocation module : modules.values() ) {
             ModuleItem moduleItem = new ModuleItem( module.module, module.location, new LinkedHashMap<>() );
             map.put( module.module.name, moduleItem );
         }
     }
 
-    private static void initServices( ModuleItemTree map, LinkedHashSet<String> profiles ) {
+    private static void initServices( ModuleItemTree map ) {
         for( ModuleItem moduleInfo : map.values() ) {
             for( Map.Entry<String, Service> serviceEntry : moduleInfo.module.services.entrySet() ) {
                 String serviceName = serviceEntry.getKey();
                 Service service = serviceEntry.getValue();
                 ServiceEnabledStatus enabled = ServiceEnabledStatus.ENABLED;
-
-                if( !KernelHelper.isServiceEnabled( service, profiles ) ) {
-                    log.debug( "skipping service {}:{} with profiles {}", moduleInfo.module.name, serviceName, service.profiles );
-                    enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
-                }
 
                 if( !service.enabled ) {
                     log.debug( "skipping service {}:{}, reason: enabled = false", moduleInfo.module.name, serviceName );
@@ -149,7 +142,7 @@ class ModuleHelper {
         }
     }
 
-    private static void initServicesDeps( ModuleItemTree map, Kernel kernel ) {
+    private static void initServicesDeps( ModuleItemTree map ) {
         for( ModuleItem moduleItem : map.values() ) {
             if( !moduleItem.isEnabled() ) continue;
 
@@ -160,13 +153,13 @@ class ModuleHelper {
                     String dModuleName;
                     String dServiceName;
                     if( ServiceKernelCommand.INSTANCE.matches( dService ) ) {
-                        Reference ref = ServiceKernelCommand.INSTANCE.reference( ( String ) dService, moduleItem );
+                        Reference ref = ServiceKernelCommand.INSTANCE.reference( dService, moduleItem );
                         dModuleName = ref.module;
                         dServiceName = ref.service;
-                    } else if( dService instanceof String ) {
+                    } else {
                         dModuleName = "this";
-                        dServiceName = ( String ) dService;
-                    } else throw new ApplicationException( "Unknown deps format " + dService );
+                        dServiceName = dService;
+                    }
 
                     Pair<ModuleItem, ModuleItem.ServiceItem> moduleService = findService( map, moduleItem.getName(), dModuleName, dServiceName );
                     if( moduleService == null ) {
@@ -177,17 +170,16 @@ class ModuleHelper {
                 }
 
                 for( String link : serviceItem.service.link.values() )
-                    initDepsParameter( map, kernel, moduleItem, serviceName, link, true, serviceItem, true );
+                    initDepsParameter( map, moduleItem, serviceName, link, true, serviceItem, true );
 
                 for( Object value : serviceItem.service.parameters.values() ) {
-                    initDepsParameter( map, kernel, moduleItem, serviceName, value, true, serviceItem, false );
+                    initDepsParameter( map, moduleItem, serviceName, value, true, serviceItem, false );
                 }
             } );
         }
     }
 
     private static void initDepsParameter( ModuleItemTree map,
-                                           Kernel kernel,
                                            ModuleItem moduleItem, String serviceName,
                                            Object value, boolean required,
                                            ModuleItem.ServiceItem serviceItem,
@@ -205,18 +197,18 @@ class ModuleHelper {
                 moduleService._2.addDependsOn( new ServiceReference( serviceItem, required ) );
         } else if( value instanceof List<?> )
             for( Object item : ( List<?> ) value )
-                initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem, reverse );
+                initDepsParameter( map, moduleItem, serviceName, item, false, serviceItem, reverse );
         else if( value instanceof Map<?, ?> ) {
             for( Object item : ( ( Map<?, ?> ) value ).values() )
-                initDepsParameter( map, kernel, moduleItem, serviceName, item, false, serviceItem, reverse );
+                initDepsParameter( map, moduleItem, serviceName, item, false, serviceItem, reverse );
         }
     }
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main,
-                                                        boolean allowActiveByDefault, LinkedHashSet<String> profiles ) {
+                                                        boolean allowActiveByDefault ) {
         ModuleItemTree modules = map.clone();
-        log.info( "loading main modules {} with profiles {}", main, profiles );
-        loadOnlyMainModuleAndDependsOn( modules, main, allowActiveByDefault, profiles, new LinkedHashSet<>() );
+        log.info( "loading main modules {}", main );
+        loadOnlyMainModuleAndDependsOn( modules, main, allowActiveByDefault, new LinkedHashSet<>() );
 
         for( ModuleItem moduleItem : modules.values() ) {
             log.debug( "unload module {}", moduleItem.getName() );
@@ -227,7 +219,6 @@ class ModuleHelper {
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules,
                                                         final LinkedHashSet<String> main,
                                                         boolean allowActiveByDefault,
-                                                        final LinkedHashSet<String> profiles,
                                                         final LinkedHashSet<String> loaded ) {
 
         var mainWithAllowActiveByDefault = new LinkedHashSet<>( main );
@@ -254,7 +245,7 @@ class ModuleHelper {
 
                 modules.remove( module );
 
-                loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, allowActiveByDefault, profiles, loaded );
+                loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, allowActiveByDefault, loaded );
             }
         }
     }
@@ -448,14 +439,12 @@ class ModuleHelper {
         }
     }
 
-    private static void initDeps( ModuleItemTree map,
-                                  LinkedHashSet<String> profiles, Kernel kernel ) {
-        initModuleDeps( map, profiles );
-        initServicesDeps( map, kernel );
+    private static void initDeps( ModuleItemTree map ) {
+        initModuleDeps( map );
+        initServicesDeps( map );
     }
 
-    private static void initModuleDeps( ModuleItemTree map,
-                                        LinkedHashSet<String> profiles ) {
+    private static void initModuleDeps( ModuleItemTree map ) {
         for( ModuleItem moduleItem : map.values() ) {
             for( String d : moduleItem.module.dependsOn ) {
                 ModuleItem dModule = map.findModule( moduleItem, d );

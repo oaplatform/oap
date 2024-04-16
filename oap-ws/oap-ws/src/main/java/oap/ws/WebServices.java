@@ -26,7 +26,6 @@ package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
-import oap.application.KernelHelper;
 import oap.application.module.ServiceExt;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.NioHttpServer;
@@ -67,11 +66,6 @@ public class WebServices {
             log.trace( "service = {}", config.ext );
             var interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
                 .orElseThrow( () -> new RuntimeException( "interceptor " + name + " not found" ) ) );
-            if( !KernelHelper.profileEnabled( config.ext.profiles, kernel.profiles ) ) {
-                log.debug( "skipping " + config.serviceItem.getModuleName() + "." + config.name + " web service initialization with "
-                    + "service profiles " + config.ext.profiles );
-                continue;
-            }
 
             for( var path : config.ext.path ) {
                 bind( path, config.getInstance(),

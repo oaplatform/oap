@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -130,17 +129,6 @@ public class KernelHelper {
         }
 
         return new ServiceConfigurationParameter( value, false );
-    }
-
-    public static boolean profileEnabled( LinkedHashSet<String> moduleProfiles, LinkedHashSet<String> systemProfiles ) {
-        for( var profile : moduleProfiles ) {
-            if( !systemProfiles.contains( profile ) ) return false;
-        }
-        return true;
-    }
-
-    public static boolean isServiceEnabled( Service service, LinkedHashSet<String> systemProfiles ) {
-        return profileEnabled( service.profiles, systemProfiles );
     }
 
     public static void setThreadNameSuffix( String suffix ) {
