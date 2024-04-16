@@ -2840,12 +2840,7 @@
     "/apiExt/test/empty_required_param/" : {
       "get" : {
         "deprecated" : true,
-        "description" : "This method returns nothing (Void)
-        Note:
-        - security permissions:
-        - account:read
-        - permissions:read
-        - realm: organizationId",
+        "description" : "This method returns nothing (Void)\n    Note: \n- security permissions: \n  - account:read\n  - permissions:read\n- realm: organizationId",
         "operationId" : "testVoid_GET_TestEmpty_required_param",
         "parameters" : [ {
           "description" : "Required parameter, MUST be specified",
