@@ -109,6 +109,23 @@ public class KernelAbstractServiceTest {
         }
     }
 
+    @Test
+    public void testInvalidImplementationReference() {
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testInvalidImplementationReference-module.conf" ) );
+
+        try( var kernel = new Kernel( modules ) ) {
+            assertThatThrownBy( () -> kernel.start( pathOfTestResource( getClass(), "testInvalidImplementationReference-application.conf" ) ) )
+                .isInstanceOf( ApplicationException.class )
+                .hasMessage( "Unknown module unknown-module in reference <modules.unknown-module.serviceImpl>" );
+        }
+
+        try( var kernel = new Kernel( modules ) ) {
+            assertThatThrownBy( () -> kernel.start( pathOfTestResource( getClass(), "testInvalidImplementationReference2-application.conf" ) ) )
+                .isInstanceOf( ApplicationException.class )
+                .hasMessage( "Unknown service unknown-service in reference <modules.testInvalidImplementationReference.unknown-service>" );
+        }
+    }
+
     public static class ServiceRef {
         public final ArrayList<IService> services = new ArrayList<>();
         public IService service;

@@ -243,8 +243,16 @@ public class Kernel implements Closeable, AutoCloseable {
             ModuleItem interfaceModule = map.get( interfaceReference.module );
             ModuleItem implementationModule = map.get( implementationReference.module );
 
+            if( implementationModule == null ) {
+                throw new ApplicationException( "Unknown module " + implementationReference.module + " in reference <modules." + implementationReference + ">" );
+            }
+
             ModuleItem.ServiceItem interfaceService = interfaceModule.services.get( interfaceReference.service );
             ModuleItem.ServiceItem implementationService = implementationModule.services.get( implementationReference.service );
+
+            if( implementationService == null ) {
+                throw new ApplicationException( "Unknown service " + implementationReference.service + " in reference <modules." + implementationReference + ">" );
+            }
 
             interfaceService.abstractImplemenetaion = implementationService;
         }
