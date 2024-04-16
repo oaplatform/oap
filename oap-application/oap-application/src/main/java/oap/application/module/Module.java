@@ -49,8 +49,6 @@ public class Module {
     public final LinkedHashSet<Depends> dependsOn = new LinkedHashSet<>();
     @JsonAlias( { "service", "services" } )
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-    @JsonAlias( { "profile", "profiles" } )
-    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     public String name;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();

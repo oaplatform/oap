@@ -123,13 +123,7 @@ class ModuleHelper {
 
     private static void initModules( ModuleItemTree map, LinkedHashMap<String, Kernel.ModuleWithLocation> modules, LinkedHashSet<String> profiles ) {
         for( Kernel.ModuleWithLocation module : modules.values() ) {
-            ServiceEnabledStatus enabled = ServiceEnabledStatus.ENABLED;
-            if( !KernelHelper.isModuleEnabled( module.module, profiles ) ) {
-                log.debug( "skipping module {} with profiles {}", module.module.name, module.module.profiles );
-                enabled = ServiceEnabledStatus.DISABLED_BY_PROFILE;
-            }
-
-            ModuleItem moduleItem = new ModuleItem( module.module, module.location, enabled, new LinkedHashMap<>() );
+            ModuleItem moduleItem = new ModuleItem( module.module, module.location, new LinkedHashMap<>() );
             map.put( module.module.name, moduleItem );
         }
     }
@@ -323,9 +317,7 @@ class ModuleHelper {
 
             for( ModuleReference dModuleInfo : moduleInfo.getDependsOn().values() ) {
                 if( !dModuleInfo.moduleItem.isEnabled() ) {
-                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled."
-                        + " [" + dModuleInfo.moduleItem.module.name + "] is disabled by "
-                        + dModuleInfo.moduleItem.getEnabled().toString() + "." );
+                    throw new ApplicationException( "[" + moduleInfo.module.name + ":*] dependencies are not enabled." );
                 }
             }
         }

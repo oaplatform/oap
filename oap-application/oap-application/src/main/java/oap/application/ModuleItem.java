@@ -41,15 +41,13 @@ import java.util.Map;
 public class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
-    private final ServiceEnabledStatus enabled;
     private final LinkedHashMap<String, ModuleReference> dependsOn;
     private final URL location;
     private boolean load = false;
 
-    ModuleItem( Module module, URL location, ServiceEnabledStatus enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
+    ModuleItem( Module module, URL location, LinkedHashMap<String, ModuleReference> dependsOn ) {
         this.module = module;
         this.location = location;
-        this.enabled = enabled;
         this.dependsOn = dependsOn;
     }
 
@@ -62,11 +60,7 @@ public class ModuleItem {
     }
 
     public final boolean isEnabled() {
-        return this.enabled == ServiceEnabledStatus.ENABLED && load;
-    }
-
-    final ServiceEnabledStatus getEnabled() {
-        return enabled;
+        return load;
     }
 
     public final String getName() {
