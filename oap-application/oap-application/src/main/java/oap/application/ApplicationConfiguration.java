@@ -36,7 +36,6 @@ import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -132,19 +131,6 @@ public final class ApplicationConfiguration {
         log.trace( "env config = {}", res );
 
         return res.toString();
-    }
-
-    private static void optimizeProfiles( List<String> profiles ) {
-        var cache = new HashSet<String>();
-
-        var it = profiles.listIterator( profiles.size() );
-        while( it.hasPrevious() ) {
-            var profile = it.previous();
-
-            if( profile.startsWith( "-" ) ) profile = profile.substring( 1 );
-            if( cache.contains( profile ) ) it.remove();
-            else cache.add( profile );
-        }
     }
 
     public static class ApplicationConfigurationModule extends LinkedHashMap<String, Object> {

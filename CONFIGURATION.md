@@ -65,7 +65,7 @@ services {
     }  
     s2 {    
         implementation = ...    
-        profile = enabled
+        enabled = true
     }
 }
 ~~~
@@ -74,12 +74,10 @@ There is a way to load service/bean depending on profile:
 services {
     s1 {
         name = service-to-reference
-        profile = s1-activated
         implementation = ...S1
     }
     s2 {
         name = service-to-reference
-        profile = s2-activated
         implementation = ...S2
     }
     real-service {
@@ -143,14 +141,13 @@ services {
     }
     fake-param1 {    
         implementation = ...
-        profile = disabled
+        enabled = false
         link {
             consructorParameter = <modules.this.some-service>
         }
     }
     fake-param2 {    
         implementation = ...
-        profile = [missing]
         link {
             consructorParameter = <modules.this.some-service>
         }

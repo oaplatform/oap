@@ -112,7 +112,7 @@ public class KernelTest extends Fixtures {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
-                Optional<ServiceOne> serviceOne = kernel.service( "m1.ServiceOne" );
+                Optional<ServiceOne> serviceOne = kernel.service( "m1.ServiceOneP1" );
                 Optional<ServiceTwo> serviceTwo = kernel.service( "m2.ServiceTwo" );
 
                 assertThat( serviceOne ).isPresent().get().satisfies( one -> {
