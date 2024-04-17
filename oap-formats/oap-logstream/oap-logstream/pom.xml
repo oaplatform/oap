@@ -26,7 +26,12 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-message</artifactId>
+            <artifactId>oap-message-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-message-server</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

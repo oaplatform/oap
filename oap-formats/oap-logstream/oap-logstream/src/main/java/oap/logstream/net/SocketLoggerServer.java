@@ -31,7 +31,7 @@ import oap.logstream.InvalidProtocolVersionException;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
-import oap.message.MessageListener;
+import oap.message.server.MessageListener;
 import oap.template.BinaryUtils;
 import oap.tsv.Tsv;
 

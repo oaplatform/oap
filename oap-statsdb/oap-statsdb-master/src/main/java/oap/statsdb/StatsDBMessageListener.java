@@ -2,7 +2,7 @@ package oap.statsdb;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
-import oap.message.MessageListener;
+import oap.message.server.MessageListener;
 import oap.message.MessageProtocol;
 
 import java.io.ByteArrayInputStream;

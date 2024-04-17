@@ -23,7 +23,6 @@
  */
 package oap.application;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -120,7 +119,7 @@ public final class ApplicationConfiguration {
     }
 
     private static String getEnvConfig() {
-        var res = new StringBuilder( "" );
+        var res = new StringBuilder();
 
         System.getenv().forEach( ( key, value ) -> {
             if( key.startsWith( PREFIX ) ) {
@@ -143,15 +142,5 @@ public final class ApplicationConfiguration {
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
         public boolean allowActiveByDefault = false;
-    }
-
-    public static class ProfileMap {
-        public final String name;
-        public boolean enabled = true;
-
-        @JsonCreator
-        public ProfileMap( String name ) {
-            this.name = name;
-        }
     }
 }

@@ -1,7 +1,7 @@
 package oap.statsdb;
 
 import oap.io.content.ContentWriter;
-import oap.message.MessageSender;
+import oap.message.client.MessageSender;
 
 /**
  * Created by igor.petrenko on 2019-12-17.

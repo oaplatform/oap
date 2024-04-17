@@ -34,8 +34,8 @@ import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
-import oap.message.MessageAvailabilityReport;
-import oap.message.MessageSender;
+import oap.message.client.MessageAvailabilityReport;
+import oap.message.client.MessageSender;
 
 import java.util.HashMap;
 import java.util.Map;
