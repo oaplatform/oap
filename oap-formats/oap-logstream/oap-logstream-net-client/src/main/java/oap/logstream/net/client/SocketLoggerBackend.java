@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.logstream.net;
+package oap.logstream.net.client;
 
 import io.micrometer.core.instrument.Metrics;
 import lombok.ToString;
@@ -34,6 +34,8 @@ import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
+import oap.logstream.net.BufferConfigurationMap;
+import oap.logstream.net.Buffers;
 import oap.message.client.MessageAvailabilityReport;
 import oap.message.client.MessageSender;
 

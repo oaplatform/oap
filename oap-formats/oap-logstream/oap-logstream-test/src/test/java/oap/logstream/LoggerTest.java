@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.NioHttpServer;
 import oap.logstream.disk.DiskLoggerBackend;
 import oap.logstream.net.SocketLoggerBackend;
-import oap.logstream.net.SocketLoggerServer;
+import oap.logstream.net.server.SocketLoggerServer;
 import oap.message.server.MessageHttpHandler;
 import oap.message.client.MessageSender;
 import oap.template.BinaryUtils;

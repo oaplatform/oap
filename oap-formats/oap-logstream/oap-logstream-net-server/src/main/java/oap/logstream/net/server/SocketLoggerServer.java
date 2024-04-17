@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream.net;
+package oap.logstream.net.server;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.content.ContentReader;

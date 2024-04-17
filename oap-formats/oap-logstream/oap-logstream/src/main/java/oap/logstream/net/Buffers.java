@@ -55,8 +55,8 @@ public class Buffers implements Closeable {
     private final ConcurrentHashMap<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<LogId, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
     private final BufferConfigurationMap configurations;
+    public BufferCache cache;
     ReadyQueue readyBuffers = new ReadyQueue();
-    BufferCache cache;
     private volatile boolean closed;
 
     public Buffers( BufferConfigurationMap configurations ) {
@@ -147,7 +147,7 @@ public class Buffers implements Closeable {
         map.forEach( ( type, count ) -> Metrics.summary( "logstream_logging_buffers", "type", type, "ready", ready ).record( count.getValue() ) );
     }
 
-    final int readyBuffers() {
+    public final int readyBuffers() {
         return readyBuffers.size();
     }
 

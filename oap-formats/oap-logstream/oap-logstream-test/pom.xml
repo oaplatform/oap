@@ -40,7 +40,12 @@
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-logstream</artifactId>
+            <artifactId>oap-logstream-net-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-logstream-net-client</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
