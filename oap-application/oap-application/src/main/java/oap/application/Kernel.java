@@ -383,7 +383,7 @@ public class Kernel implements Closeable, AutoCloseable {
             linkListeners( si, si.instance );
             linkLinks( si );
             si.service.parameters.forEach( ( parameter, value ) ->
-                linkService( new FieldLinkReflection( si.getReflection(), si.instance, parameter ), value, si, true )
+                linkService( new FieldLinkReflection<>( si.getReflection(), si.instance, parameter ), value, si, true )
             );
         }
     }
@@ -423,7 +423,7 @@ public class Kernel implements Closeable, AutoCloseable {
                             }
                         }
                     },
-                    exception( e -> new ApplicationException( "Unknown service link " + serviceRef + " in"
+                    exception( _ -> new ApplicationException( "Unknown service link " + serviceRef + " in"
                         + "\n{\n\timplementation = " + serviceItem.service.implementation
                         + "\n\tlink." + fieldName + " = " + serviceRef
                         + "\n}" ) ) ) );
@@ -440,7 +440,7 @@ public class Kernel implements Closeable, AutoCloseable {
                 var instanceList = ( List<Object> ) instance;
                 ListIterator<Object> instanceIterator = instanceList.listIterator();
                 for( Object parameter : parameterList )
-                    linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
+                    linkService( new ListLinkReflection<>( instanceIterator ), parameter, si, false );
             }
         } else if( parameterValue instanceof Map ) {
             var parameterMap = ( Map<Object, Object> ) parameterValue;
@@ -450,9 +450,9 @@ public class Kernel implements Closeable, AutoCloseable {
 
             for( Map.Entry<Object, Object> entry : parameterMap.entrySet() ) {
                 boolean isMap = instance instanceof Map;
-                final LinkReflection linkReflection = isMap
-                    ? new MapLinkReflection( ( Map<Object, Object> ) instance, entry.getKey() )
-                    : new FieldLinkReflection( Reflect.reflect( instance.getClass() ), instance, entry.getKey().toString() );
+                final LinkReflection<?> linkReflection = isMap
+                    ? new MapLinkReflection<>( ( Map<Object, Object> ) instance, entry.getKey() )
+                    : new FieldLinkReflection<>( Reflect.reflect( instance.getClass() ), instance, entry.getKey().toString() );
 
                 linkService( linkReflection, entry.getValue(), si, !isMap );
             }
@@ -584,14 +584,14 @@ public class Kernel implements Closeable, AutoCloseable {
         return Lists.head2( ofClass( moduleName, clazz ) );
     }
 
-    public <T> List<ServiceExt<T>> servicesByExt( String ext, Class<T> clazz ) {
+    public <T> List<ServiceExt<T>> servicesByExt( String ext ) {
         var ret = new ArrayList<ServiceExt<T>>();
 
         for( ModuleItem.ServiceItem si : services.values() ) {
-            T extConfiguration = si.service.<T>getExt( ext );
+            T extConfiguration = si.service.getExt( ext );
             if( extConfiguration == null ) continue;
 
-            ret.add( new ServiceExt<T>( si.serviceName, si, extConfiguration ) );
+            ret.add( new ServiceExt<>( si.serviceName, si, extConfiguration ) );
         }
 
         return ret;

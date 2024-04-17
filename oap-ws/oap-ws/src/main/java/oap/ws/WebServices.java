@@ -54,8 +54,8 @@ public class WebServices {
     public void start() {
         log.info( "binding web services..." );
 
-        wsConfigServices = kernel.servicesByExt( "ws-service", WsConfig.class );
-        wsConfigHandlers = kernel.servicesByExt( "ws-handler", WsConfig.class );
+        wsConfigServices = kernel.servicesByExt( "ws-service" );
+        wsConfigHandlers = kernel.servicesByExt( "ws-handler" );
 
         log.info( "ws-service: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
         log.info( "ws-handler: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
