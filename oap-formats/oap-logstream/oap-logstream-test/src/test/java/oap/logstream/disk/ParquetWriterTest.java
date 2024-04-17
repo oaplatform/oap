@@ -77,8 +77,8 @@ public class ParquetWriterTest extends Fixtures {
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
         try( var writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, new WriterConfiguration.ParquetConfiguration(), 1024, BPH_12, 20 ) ) {
-            writer.write( CURRENT_PROTOCOL_VERSION, content1, msg -> {} );
-            writer.write( CURRENT_PROTOCOL_VERSION, content2, msg -> {} );
+            writer.write( CURRENT_PROTOCOL_VERSION, content1 );
+            writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }
 
         assertParquet( logs.resolve( "1-file-02-4cd64dae-1.parquet" ) )
@@ -116,7 +116,7 @@ public class ParquetWriterTest extends Fixtures {
         WriterConfiguration.ParquetConfiguration parquetConfiguration = new WriterConfiguration.ParquetConfiguration();
         parquetConfiguration.excludeFieldsIfPropertiesExists.put( "COL1", "COL1_property_name" );
         try( var writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, parquetConfiguration, 1024, BPH_12, 20 ) ) {
-            writer.write( CURRENT_PROTOCOL_VERSION, content1, msg -> {} );
+            writer.write( CURRENT_PROTOCOL_VERSION, content1 );
         }
 
         assertParquet( logs.resolve( "1-file-02-4cd64dae-1.parquet" ) )

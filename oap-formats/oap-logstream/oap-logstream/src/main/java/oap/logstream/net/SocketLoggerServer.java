@@ -26,8 +26,6 @@ package oap.logstream.net;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.content.ContentReader;
 import oap.logstream.AbstractLoggerBackend;
-import oap.logstream.BackendLoggerNotAvailableException;
-import oap.logstream.InvalidProtocolVersionException;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
@@ -68,29 +66,22 @@ public class SocketLoggerServer implements MessageListener, Closeable {
     @Override
     public short run( int protocolVersion, String hostName, int size, byte[] data, String md5 ) {
         if( !backend.isLoggingAvailable() ) {
-            var exception = new BackendLoggerNotAvailableException( hostName );
-            backend.listeners.fireError( exception );
             return LogStreamProtocol.STATUS_BACKEND_LOGGER_NOT_AVAILABLE;
         }
         try( var in = new DataInputStream( new ByteArrayInputStream( data ) ) ) {
             switch( protocolVersion ) {
                 case 1, 2 -> readBinaryV2( ProtocolVersion.valueOf( protocolVersion ), hostName, in );
                 default -> {
-                    var exception = new InvalidProtocolVersionException( hostName, protocolVersion );
-                    backend.listeners.fireError( exception );
                     return LogStreamProtocol.INVALID_VERSION;
                 }
             }
         } catch( EOFException e ) {
-            var msg = "[" + hostName + "] " + " ended, closed";
-            backend.listeners.fireWarning( msg );
-            log.debug( msg );
+            log.debug( "[" + hostName + "] " + " ended, closed" );
             throw new LoggerException( e );
         } catch( LoggerException e ) {
             log.error( "[" + hostName + "] ", e );
             throw e;
         } catch( Exception e ) {
-            backend.listeners.fireWarning( "[" + hostName + "] " );
             log.error( "[" + hostName + "] ", e );
             throw new LoggerException( e );
         }
@@ -130,18 +121,18 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         var buffer = new byte[length];
         in.readFully( buffer, 0, length );
 
-        if ( log.isTraceEnabled() ) {
+        if( log.isTraceEnabled() ) {
             List<List<Object>> lines = new ArrayList<>();
             switch( version ) {
                 case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
-                        .forEach( line -> lines.add( Collections.singletonList( line ) ) );
+                    .forEach( line -> lines.add( Collections.singletonList( line ) ) );
                 case BINARY_V2 -> lines.addAll( BinaryUtils.read( buffer ) );
             }
 
             lines.forEach( line ->
-                    log.trace( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
-                            hostName, properties, filePreffix, logType, headers, types, length, line
-                    )
+                log.trace( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
+                    hostName, properties, filePreffix, logType, headers, types, length, line
+                )
             );
         }
 

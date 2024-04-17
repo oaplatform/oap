@@ -69,34 +69,21 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
 public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneable, AutoCloseable {
-    @ToString
-    @EqualsAndHashCode
-    public static class FilePatternConfiguration {
-        public final String path;
-
-        @JsonCreator
-        public FilePatternConfiguration( String path ) {
-            this.path = path;
-        }
-    }
-
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
+    public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
+    public final WriterConfiguration writerConfiguration;
     private final Path logDirectory;
     private final Timestamp timestamp;
     private final int bufferSize;
     private final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
     private final ScheduledExecutorService pool;
     public String filePattern = "/<YEAR>-<MONTH>/<DAY>/<LOG_TYPE>_v<LOG_VERSION>_<CLIENT_HOST>-<YEAR>-<MONTH>-<DAY>-<HOUR>-<INTERVAL>.tsv.gz";
-    public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
-    private volatile boolean closed;
-
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
-
-    public final WriterConfiguration writerConfiguration;
+    private volatile boolean closed;
 
     public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {
         this( logDirectory, new WriterConfiguration(), timestamp, bufferSize );
@@ -142,7 +129,6 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         pool = Executors.newScheduledThreadPool( 1, "disk-logger-backend" );
     }
 
-
     public void start() {
         log.info( "default file pattern {}", filePattern );
         log.info( "file patterns by type {}", filePatternByType );
@@ -173,9 +159,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public void log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
                      String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
-            var exception = new LoggerException( "already closed!" );
-            listeners.fireError( exception );
-            throw exception;
+            throw new LoggerException( "already closed!" );
         }
 
         Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", hostName ) ) ).increment();
@@ -184,7 +168,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
-            writer.write( protocolVersion, buffer, offset, length, this.listeners::fireError );
+            writer.write( protocolVersion, buffer, offset, length );
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
             for( int i = 0; i < headers.length; i++ ) {
@@ -247,5 +231,16 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "writers", writers.size() )
             .toString();
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class FilePatternConfiguration {
+        public final String path;
+
+        @JsonCreator
+        public FilePatternConfiguration( String path ) {
+            this.path = path;
+        }
     }
 }
