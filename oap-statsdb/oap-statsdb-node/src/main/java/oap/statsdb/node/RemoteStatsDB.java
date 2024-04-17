@@ -22,11 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.statsdb;
+package oap.statsdb.node;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.ToString;
+import oap.statsdb.Node;
+import oap.statsdb.NodeId;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -53,7 +55,7 @@ public interface RemoteStatsDB {
         }
 
         @ToString
-        static class NodeIdNode implements Serializable {
+        public static class NodeIdNode implements Serializable {
             @Serial
             private static final long serialVersionUID = 1612321099236706698L;
 

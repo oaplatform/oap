@@ -22,10 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.statsdb;
+package oap.statsdb.node;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.statsdb.RemoteStatsDB.Sync;
+import oap.statsdb.IStatsDB;
+import oap.statsdb.Node;
+import oap.statsdb.NodeId;
+import oap.statsdb.NodeSchema;
 import oap.util.Cuid;
 
 import java.io.Closeable;
@@ -53,9 +56,9 @@ public class StatsDBNode extends IStatsDB implements Runnable, Closeable {
 
     public synchronized void sync() {
         try {
-            var snapshot = snapshot();
+            ArrayList<RemoteStatsDB.Sync.NodeIdNode> snapshot = snapshot();
             if( !snapshot.isEmpty() ) {
-                var sync = new Sync( snapshot, timestamp.next() );
+                var sync = new RemoteStatsDB.Sync( snapshot, timestamp.next() );
                 transport.sendAsync( sync );
             }
 
@@ -66,10 +69,10 @@ public class StatsDBNode extends IStatsDB implements Runnable, Closeable {
         }
     }
 
-    private ArrayList<Sync.NodeIdNode> snapshot() {
-        var ret = new ArrayList<Sync.NodeIdNode>();
+    private ArrayList<RemoteStatsDB.Sync.NodeIdNode> snapshot() {
+        var ret = new ArrayList<RemoteStatsDB.Sync.NodeIdNode>();
         for( var entry : new ArrayList<>( nodes.entrySet() ) ) {
-            ret.add( new Sync.NodeIdNode( entry.getKey(), entry.getValue() ) );
+            ret.add( new RemoteStatsDB.Sync.NodeIdNode( entry.getKey(), entry.getValue() ) );
             nodes.remove( entry.getKey() );
         }
 

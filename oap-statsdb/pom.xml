@@ -12,7 +12,8 @@
     <artifactId>oap-statsdb-parent</artifactId>
 
     <modules>
-        <module>oap-statsdb</module>
+        <module>oap-statsdb-common</module>
+        <module>oap-statsdb-node</module>
         <module>oap-statsdb-master</module>
     </modules>
 </project>

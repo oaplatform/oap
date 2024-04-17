@@ -1,4 +1,4 @@
-package oap.statsdb;
+package oap.statsdb.node;
 
 /**
  * Created by igor.petrenko on 2019-12-17.

@@ -1,4 +1,4 @@
-package oap.statsdb;
+package oap.statsdb.node;
 
 import oap.io.content.ContentWriter;
 import oap.message.client.MessageSender;

@@ -81,7 +81,7 @@ public class Node implements Serializable {
     }
 
     @SuppressWarnings( "unchecked" )
-    synchronized <V extends Value<V>> void updateValue( Consumer<V> update ) {
+    public synchronized <V extends Value<V>> void updateValue( Consumer<V> update ) {
         assert v != null;
         update.accept( ( V ) v );
         this.mt = DateTimeUtils.currentTimeMillis();

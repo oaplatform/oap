@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>oap-statsdb-master</artifactId>
+    <artifactId>oap-statsdb-node</artifactId>
 
     <parent>
         <groupId>oap</groupId>
@@ -18,33 +18,10 @@
             <artifactId>oap-statsdb-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
+            <artifactId>oap-message-client</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-message-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-storage-mongo</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-storage-mongo-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-message-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
