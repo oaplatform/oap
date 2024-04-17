@@ -356,6 +356,8 @@ public class Kernel implements Closeable, AutoCloseable {
                     serviceItemOriginal.instance = serviceItem.instance = reflect.newInstance( p, parametersWithoutLinks.serviceReferenceParameters.keySet() );
 
                     service.parameters.putAll( parametersWithoutLinks.serviceReferenceParameters );
+                } else if( serviceItemOriginal.instance == null ) {
+                    serviceItemOriginal.instance = serviceItem.instance;
                 }
 
                 servicesMap.add( serviceItemOriginal );
