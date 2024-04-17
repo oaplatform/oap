@@ -45,7 +45,7 @@ public class KernelAbstractServiceTest {
         try( var kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testImplementationNotDeclared2" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "No implementation specified for abstract service <testImplementationNotDeclared1.service1> with interface oap.application.IService. Declared implementations [<modules.testImplementationNotDeclared1.serviceImpl>,<modules.testImplementationNotDeclared2.serviceImpl>]" );
+                .hasMessage( "No implementation specified for abstract service <testImplementationNotDeclared1.service1> with interface oap.application.IService. Available implementations [<modules.testImplementationNotDeclared1.serviceImpl>,<modules.testImplementationNotDeclared2.serviceImpl>]" );
         }
     }
 

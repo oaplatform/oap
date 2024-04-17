@@ -348,7 +348,7 @@ public class Kernel implements Closeable, AutoCloseable {
                             } else {
                                 throw new ApplicationException( "No implementation specified for abstract service <"
                                     + serviceItem
-                                    + "> with interface " + service.implementation + ". Declared implementations ["
+                                    + "> with interface " + service.implementation + ". Available implementations ["
                                     + String.join( ",", services ) + "]" );
                             }
                         }
