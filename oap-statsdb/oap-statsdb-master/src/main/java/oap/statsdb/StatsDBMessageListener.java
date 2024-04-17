@@ -2,12 +2,10 @@ package oap.statsdb;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
-import oap.message.server.MessageListener;
 import oap.message.MessageProtocol;
+import oap.message.server.MessageListener;
 
 import java.io.ByteArrayInputStream;
-
-import static oap.statsdb.StatsDBTransportMessage.MESSAGE_TYPE;
 
 /**
  * Created by igor.petrenko on 2019-12-17.
@@ -22,7 +20,7 @@ public class StatsDBMessageListener implements MessageListener {
 
     @Override
     public byte getId() {
-        return MESSAGE_TYPE;
+        return MessageType.MESSAGE_TYPE;
     }
 
     @Override

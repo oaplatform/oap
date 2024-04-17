@@ -22,13 +22,11 @@
  * SOFTWARE.
  */
 
-package oap.statsdb.node;
+package oap.statsdb;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.ToString;
-import oap.statsdb.Node;
-import oap.statsdb.NodeId;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -63,7 +61,7 @@ public interface RemoteStatsDB {
             public final Node node;
 
             @JsonCreator
-            NodeIdNode( NodeId nodeId, Node node ) {
+            public NodeIdNode( NodeId nodeId, Node node ) {
                 this.nodeId = nodeId;
                 this.node = node;
             }

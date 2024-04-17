@@ -29,6 +29,7 @@ import oap.statsdb.IStatsDB;
 import oap.statsdb.Node;
 import oap.statsdb.NodeId;
 import oap.statsdb.NodeSchema;
+import oap.statsdb.RemoteStatsDB;
 import oap.util.Cuid;
 
 import java.io.Closeable;
