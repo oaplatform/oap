@@ -50,6 +50,7 @@ public class Module {
     public String name;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
+    public boolean enabled = true;
 
     @JsonCreator
     public Module( String name ) {

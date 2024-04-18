@@ -455,6 +455,19 @@ public class KernelTest extends Fixtures {
         }
     }
 
+    @Test
+    public void testDisableModule() {
+        try( var kernel = new Kernel(
+            List.of(
+                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule.conf" ),
+                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule-disabled.conf" )
+            ) ) ) {
+            kernel.start( Map.of( "boot.main", "testDisableModule" ) );
+
+            assertThat( kernel.<Service1>service( "testDisableModule.service1" ).get().list ).isEmpty();
+        }
+    }
+
     public enum Enum {
         ONE, TWO
     }

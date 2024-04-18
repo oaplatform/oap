@@ -114,7 +114,7 @@ class ModuleHelper {
             if( !moduleInfo.getName().equals( moduleName ) ) continue;
 
             for( Map.Entry<String, ModuleItem.ServiceItem> entry : moduleInfo.services.entrySet() ) {
-                if( serviceName.equals( entry.getValue().serviceName ) || serviceName.equals( entry.getValue().serviceName ) ) {
+                if( serviceName.equals( entry.getValue().serviceName ) ) {
                     found.add( __( moduleInfo, entry.getValue() ) );
                 }
             }
@@ -136,18 +136,22 @@ class ModuleHelper {
     }
 
     private static void initServices( ModuleItemTree map ) {
-        for( ModuleItem moduleInfo : map.values() ) {
-            for( Map.Entry<String, Service> serviceEntry : moduleInfo.module.services.entrySet() ) {
+        for( ModuleItem moduleItem : map.values() ) {
+            for( Map.Entry<String, Service> serviceEntry : moduleItem.module.services.entrySet() ) {
                 String serviceName = serviceEntry.getKey();
                 Service service = serviceEntry.getValue();
                 ServiceEnabledStatus enabled = ServiceEnabledStatus.ENABLED;
 
                 if( !service.enabled ) {
-                    log.debug( "skipping service {}:{}, reason: enabled = false", moduleInfo.module.name, serviceName );
+                    log.debug( "skipping service {}:{}, reason: enabled = false", moduleItem.module.name, serviceName );
                     enabled = ServiceEnabledStatus.DISABLED_BY_FLAG;
                 }
+                if( !moduleItem.module.enabled ) {
+                    log.debug( "skipping service {}:{}, reason: module.enabled = false", moduleItem.module.name, serviceName );
+                    enabled = ServiceEnabledStatus.DISABLED_BY_MODULE_FLAG;
+                }
 
-                moduleInfo.services.put( serviceName, new ModuleItem.ServiceItem( serviceName, moduleInfo, service, enabled ) );
+                moduleItem.services.put( serviceName, new ModuleItem.ServiceItem( serviceName, moduleItem, service, enabled ) );
             }
         }
     }
@@ -216,10 +220,11 @@ class ModuleHelper {
                 throw new ApplicationException( "[" + moduleItem.module.name + ":" + serviceName + "#" + reference + "] " + reference + "  not found" );
             }
 
-            if( !reverse )
+            if( !reverse ) {
                 serviceItem.addDependsOn( new ServiceReference( moduleService._2, required ) );
-            else
+            } else {
                 moduleService._2.addDependsOn( new ServiceReference( serviceItem, required ) );
+            }
         } else if( value instanceof List<?> )
             for( Object item : ( List<?> ) value )
                 initDepsParameter( map, moduleItem, serviceName, item, false, serviceItem, reverse );
