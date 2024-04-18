@@ -11,6 +11,9 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
+import org.jclouds.blobstore.domain.PageSet;
+import org.jclouds.blobstore.domain.StorageMetadata;
+import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
@@ -106,7 +109,7 @@ public class FileSystem {
     }
 
     public void downloadFile( CloudURI source, Path destination ) {
-        log.debug( "downloadFile {} destination {}", source, destination );
+        log.debug( "downloadFile {} to {}", source, destination );
 
         BlobStoreContext context = null;
         try {
@@ -153,7 +156,7 @@ public class FileSystem {
     }
 
     public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "uploadFile {} path {} userMetadata {} tags {}", destination, path, userMetadata, tags );
+        log.debug( "uploadFile {} to {} (userMetadata {}, tags {})", path, destination, userMetadata, tags );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
@@ -177,7 +180,7 @@ public class FileSystem {
     }
 
     public void upload( CloudURI destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "upload byte[] {} userMetadata {} tags {}", destination, userMetadata, tags );
+        log.debug( "upload byte[] to {} (userMetadata {}, tags {})", destination, userMetadata, tags );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
@@ -218,7 +221,7 @@ public class FileSystem {
     }
 
     public void copy( CloudURI source, CloudURI destination, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "copy {} tp {} userMetadata {} tags {}", source, destination, userMetadata, tags );
+        log.debug( "copy {} to {} (userMetadata {}, tags {})", source, destination, userMetadata, tags );
 
 
         BlobStoreContext spurceContext = null;
@@ -256,6 +259,19 @@ public class FileSystem {
         } finally {
             Closeables.close( spurceContext );
             Closeables.close( destinationContext );
+        }
+    }
+
+    public PageSet<? extends StorageMetadata> list( String path, String container, ListContainerOptions options ) {
+        CloudURI pathURI = new CloudURI( path );
+        log.debug( "list from {}", pathURI );
+        try( BlobStoreContext context = getContext( pathURI ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            if( container == null && options == null ) return blobStore.list();
+            if( container != null && options == null ) return blobStore.list( container );
+            return blobStore.list( container, options );
+        } catch( Exception e ) {
+            throw new CloudException( e );
         }
     }
 

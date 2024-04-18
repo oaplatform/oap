@@ -121,7 +121,7 @@ public class FileSystemTest extends Fixtures {
     }
 
     @Test
-    public void testDeleteAndExists() {
+    public void testExistsListAndDelete() {
         Path path1 = testDirectoryFixture.testPath( "folder/my-file.txt" );
         Path path2 = testDirectoryFixture.testPath( "folder/my-file2.txt" );
 
@@ -136,12 +136,14 @@ public class FileSystemTest extends Fixtures {
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertTrue( fileSystem.containerExists( "s3://test2" ) );
+        assertThat( fileSystem.list( "s3://test2/logs/", null, null ).size() ).isEqualTo( 2 );
 
         fileSystem.deleteBlob( "s3://test2/logs/file1.txt" );
 
         assertFalse( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertTrue( fileSystem.containerExists( "s3://test2" ) );
+        assertThat( fileSystem.list( "s3://test2/logs/", null, null ).size() ).isEqualTo( 1 );
 
         assertFalse( fileSystem.deleteContainerIfEmpty( "s3://test2" ) );
         fileSystem.deleteContainer( "s3://test2" );
