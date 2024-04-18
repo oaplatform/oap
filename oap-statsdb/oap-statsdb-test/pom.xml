@@ -15,7 +15,7 @@
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-stats-db-master</artifactId>
+            <artifactId>oap-statsdb-master</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
