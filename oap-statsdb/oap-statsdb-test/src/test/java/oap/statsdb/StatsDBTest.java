@@ -28,9 +28,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.server.nio.NioHttpServer;
-import oap.message.server.MessageHttpHandler;
-import oap.message.client.MessageSender;
 import oap.message.MessageSenderUtils;
+import oap.message.client.MessageSender;
+import oap.message.server.MessageHttpHandler;
+import oap.statsdb.node.StatsDBNode;
+import oap.statsdb.node.StatsDBTransportMessage;
 import oap.storage.mongo.MongoFixture;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
@@ -205,7 +207,7 @@ public class StatsDBTest extends Fixtures {
         var transport = new StatsDBTransportMock();
 
         try( var node = new StatsDBNode( schema2, transport ) ) {
-            transport.syncWithException( sync -> new RuntimeException( "sync" ) );
+            transport.syncWithException( _ -> new RuntimeException( "sync" ) );
             node.<MockValue>update( "k1", "k2", c -> c.v += 10 );
             node.sync();
             assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();

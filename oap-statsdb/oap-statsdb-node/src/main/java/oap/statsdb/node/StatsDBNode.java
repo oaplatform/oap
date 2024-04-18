@@ -43,7 +43,7 @@ public class StatsDBNode extends IStatsDB implements Runnable, Closeable {
     protected final NodeSchema schema;
     private final StatsDBTransport transport;
     private final Cuid timestamp;
-    protected boolean lastSyncSuccess = false;
+    public boolean lastSyncSuccess = false;
 
     public StatsDBNode( NodeSchema schema, StatsDBTransport transport ) {
         this( schema, transport, Cuid.UNIQUE );

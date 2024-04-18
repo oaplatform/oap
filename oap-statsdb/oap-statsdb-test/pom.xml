@@ -25,6 +25,17 @@
         </dependency>
 
         <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-storage-mongo-test</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-message-test</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>

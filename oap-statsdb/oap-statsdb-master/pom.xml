@@ -34,18 +34,6 @@
             <artifactId>oap-storage-mongo</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-storage-mongo-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-message-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
