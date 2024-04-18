@@ -217,7 +217,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
         var map = new ModuleItemTree();
 
-        ModuleHelper.init( map, modules, config.boot.main, config.boot.allowActiveByDefault );
+        ModuleHelper.init( map, modules, implementations, config.boot.main, config.boot.allowActiveByDefault );
         resolveImplementations( map, implementations );
 
         ServiceTree servicesMap = new ServiceTree();
@@ -236,16 +236,12 @@ public class Kernel implements Closeable, AutoCloseable {
     private void resolveImplementations( ModuleItemTree map,
                                          LinkedHashMap<Reference, Reference> implementations ) {
 
-        for( Map.Entry<Reference, Reference> entry : implementations.entrySet() ) {
-            Reference interfaceReference = entry.getKey();
-            Reference implementationReference = entry.getValue();
+        for( Map.Entry<Reference, Reference> implEntry : implementations.entrySet() ) {
+            Reference interfaceReference = implEntry.getKey();
+            Reference implementationReference = implEntry.getValue();
 
             ModuleItem interfaceModule = map.get( interfaceReference.module );
             ModuleItem implementationModule = map.get( implementationReference.module );
-
-            if( implementationModule == null ) {
-                throw new ApplicationException( "Unknown module " + implementationReference.module + " in reference <modules." + implementationReference + ">" );
-            }
 
             ModuleItem.ServiceItem interfaceService = interfaceModule.services.get( interfaceReference.service );
             ModuleItem.ServiceItem implementationService = implementationModule.services.get( implementationReference.service );
@@ -487,9 +483,6 @@ public class Kernel implements Closeable, AutoCloseable {
         }
 
         if( service.supervision.thread ) {
-//            if( service.supervision.delay != 0 )
-//                supervisor.startScheduledThread( service.name, instance, service.supervision.delay, MILLISECONDS );
-//            else
             supervisor.startThread( si.serviceName, instance );
         } else {
             if( service.supervision.schedule && service.supervision.cron != null )

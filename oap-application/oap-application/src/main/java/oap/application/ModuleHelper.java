@@ -57,6 +57,7 @@ class ModuleHelper {
 
     public static void init( ModuleItemTree map,
                              LinkedHashMap<String, Kernel.ModuleWithLocation> modules,
+                             LinkedHashMap<Reference, Reference> implementations,
                              LinkedHashSet<String> main,
                              boolean allowActiveByDefault ) throws ApplicationException {
         log.trace( "Init modules {} main {} allowActiveByDefault {}", modules, main, allowActiveByDefault );
@@ -66,12 +67,22 @@ class ModuleHelper {
 
         validateModuleName( map );
         validateServiceName( map );
+        validateServiceImplementation( map );
+        validateImplementations( map, implementations );
 
-        initDeps( map );
-        validateDeps( map );
-        validateImplementation( map );
-        sort( map );
-        removeDisabled( map );
+        initModuleDeps( map );
+        initServicesDeps( map );
+        initImplementationsDeps( map, implementations );
+
+        validateModuleDeps( map );
+        validateServiceDeps( map );
+
+        sortModules( map );
+        sortServices( map );
+
+        removeDisabledModules( map );
+        removeDisabledServices( map );
+
         validateServices( map );
     }
 
@@ -178,6 +189,21 @@ class ModuleHelper {
         }
     }
 
+    private static void initImplementationsDeps( ModuleItemTree map, LinkedHashMap<Reference, Reference> implementations ) {
+        for( Map.Entry<Reference, Reference> implEntry : implementations.entrySet() ) {
+            Reference interfaceReference = implEntry.getKey();
+            Reference implementationReference = implEntry.getValue();
+
+            ModuleItem interfaceModule = map.get( interfaceReference.module );
+            ModuleItem implementationModule = map.get( implementationReference.module );
+
+            ModuleItem.ServiceItem interfaceService = interfaceModule.services.get( interfaceReference.service );
+            ModuleItem.ServiceItem implementationService = implementationModule.services.get( implementationReference.service );
+
+            interfaceService.addDependsOn( new ServiceReference( implementationService, true ) );
+        }
+    }
+
     private static void initDepsParameter( ModuleItemTree map,
                                            ModuleItem moduleItem, String serviceName,
                                            Object value, boolean required,
@@ -271,11 +297,6 @@ class ModuleHelper {
         }
     }
 
-    private static void removeDisabled( ModuleItemTree map ) {
-        removeDisabledModules( map );
-        removeDisabledServices( map );
-    }
-
     private static void removeDisabledModules( ModuleItemTree map ) {
         map.values().removeIf( moduleInfo -> !moduleInfo.isEnabled() );
     }
@@ -284,11 +305,6 @@ class ModuleHelper {
         for( ModuleItem moduleInfo : map.values() ) {
             moduleInfo.services.values().removeIf( serviceInfo -> !serviceInfo.isEnabled() );
         }
-    }
-
-    private static void validateDeps( ModuleItemTree map ) throws ApplicationException {
-        validateModuleDeps( map );
-        validateServiceDeps( map );
     }
 
     private static void validateModuleDeps( ModuleItemTree map ) throws ApplicationException {
@@ -303,7 +319,7 @@ class ModuleHelper {
         }
     }
 
-    private static void validateImplementation( ModuleItemTree map ) throws ApplicationException {
+    private static void validateServiceImplementation( ModuleItemTree map ) throws ApplicationException {
         for( ModuleItem moduleInfo : map.values() ) {
             if( !moduleInfo.isEnabled() ) continue;
 
@@ -312,6 +328,22 @@ class ModuleHelper {
 
                 if( serviceInfo.service.implementation == null )
                     throw new ApplicationException( "failed to initialize service: " + moduleInfo.module.name + ":" + serviceInfo.serviceName + ". implementation == null" );
+            }
+        }
+    }
+
+    private static void validateImplementations( ModuleItemTree map, LinkedHashMap<Reference, Reference> implementations ) throws ApplicationException {
+        for( Reference implementationReference : implementations.values() ) {
+            ModuleItem implementationModule = map.get( implementationReference.module );
+
+            if( implementationModule == null ) {
+                throw new ApplicationException( "Unknown module " + implementationReference.module + " in reference <modules." + implementationReference + ">" );
+            }
+
+            ModuleItem.ServiceItem implementationService = implementationModule.services.get( implementationReference.service );
+
+            if( implementationService == null ) {
+                throw new ApplicationException( "Unknown service " + implementationReference.service + " in reference <modules." + implementationReference + ">" );
             }
         }
     }
@@ -331,11 +363,6 @@ class ModuleHelper {
                 }
             }
         }
-    }
-
-    private static void sort( ModuleItemTree map ) {
-        sortModules( map );
-        sortServices( map );
     }
 
     private static void sortModules( ModuleItemTree map ) {
@@ -429,11 +456,6 @@ class ModuleHelper {
         log.trace( "services after sort: \n{}",
             String.join( "\n", Lists.map( map.services, e -> "  " + e ) )
         );
-    }
-
-    private static void initDeps( ModuleItemTree map ) {
-        initModuleDeps( map );
-        initServicesDeps( map );
     }
 
     private static void initModuleDeps( ModuleItemTree map ) {
