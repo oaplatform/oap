@@ -85,4 +85,4 @@ services {
 ```
 
 1. If an implementation is not specified, the oap application will throw an error with a list of services that can be implementations.
-2. Cyclic dependencies are not allowed, example __container__ -> __abstract service__ -> __implementation__ -> <font color="red">(! ERROR )</font>&nbsp;__container__
+2. Cyclic dependencies are not allowed, example __container__ -> __abstract service__ -> __implementation__ -> $${\color{red}(! ERROR )}$$ __container__
