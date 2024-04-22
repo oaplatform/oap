@@ -26,7 +26,6 @@ package oap.application;
 
 import lombok.ToString;
 import oap.application.ServiceStorage.ErrorStatus;
-import oap.application.module.Service;
 import oap.util.Result;
 
 import javax.annotation.Nullable;
@@ -38,14 +37,14 @@ public class KernelKernelCommand extends AbstractKernelCommand<Kernel> {
     }
 
     @Override
-    public Result<Kernel, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
-                                            Service service, ServiceStorage storage ) {
+    public Result<Kernel, ErrorStatus> get( Object value, Kernel kernel,
+                                            @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
         return Result.success( kernel );
     }
 
     @Override
-    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
-                                                    Service service, ServiceStorage storage ) {
-        return get( value, kernel, moduleItem, service, storage ).mapSuccess( v -> v );
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel,
+                                                    @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
+        return get( value, kernel, serviceItem, storage ).mapSuccess( v -> v );
     }
 }

@@ -26,7 +26,6 @@ package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
-import oap.application.KernelHelper;
 import oap.application.module.ServiceExt;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.NioHttpServer;
@@ -55,23 +54,18 @@ public class WebServices {
     public void start() {
         log.info( "binding web services..." );
 
-        wsConfigServices = kernel.servicesByExt( "ws-service", WsConfig.class );
-        wsConfigHandlers = kernel.servicesByExt( "ws-handler", WsConfig.class );
+        wsConfigServices = kernel.servicesByExt( "ws-service" );
+        wsConfigHandlers = kernel.servicesByExt( "ws-handler" );
 
         log.info( "ws-service: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
         log.info( "ws-handler: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
 
         for( var config : wsConfigServices ) {
-            log.trace( "service: module = {}, config = {}", config.module.name, config.ext );
+            log.trace( "service: module = {}, config = {}", config.serviceItem.getModuleName(), config.ext );
 
             log.trace( "service = {}", config.ext );
             var interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
                 .orElseThrow( () -> new RuntimeException( "interceptor " + name + " not found" ) ) );
-            if( !KernelHelper.profileEnabled( config.ext.profiles, kernel.profiles ) ) {
-                log.debug( "skipping " + config.module.name + "." + config.name + " web service initialization with "
-                    + "service profiles " + config.ext.profiles );
-                continue;
-            }
 
             for( var path : config.ext.path ) {
                 bind( path, config.getInstance(),

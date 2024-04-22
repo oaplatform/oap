@@ -77,7 +77,6 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     protected final URL applicationConf;
     protected final List<URL> additionalModules = new ArrayList<>();
     protected final TestDirectoryFixture testDirectoryFixture;
-    private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
     private final ArrayList<Pair<Class<?>, String>> conf = new ArrayList<>();
     private final LinkedHashMap<String, AbstractFixture<?>> dependencies = new LinkedHashMap<>();
@@ -148,12 +147,6 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         cr = clazz.getSimpleName() + cr;
 
         return withConfdResources( clazz, cr );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public Self withProfile( String profile ) {
-        this.profiles.add( profile );
-        return ( Self ) this;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -256,23 +249,12 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
         var kernelProperties = new LinkedHashMap<>( properties );
 
-        if( !bootMain.isEmpty() ) {
-            profiles.add( "boot.main = ${boot.main} [" + String.join( ",", bootMain ) + "]" );
-        }
-
         dependencies.forEach( ( name, fixture ) -> {
             kernelProperties.put( name, fixture.getProperties() );
         } );
 
         var applicationConfiguration = ApplicationConfiguration.load( applicationConf, confds, kernelProperties );
 
-        for( var newProfile : profiles ) {
-            var enabled = !newProfile.startsWith( "-" );
-            if( enabled ) applicationConfiguration.profiles.remove( "-" + newProfile );
-            else applicationConfiguration.profiles.remove( newProfile.substring( 1 ) );
-        }
-
-        applicationConfiguration.profiles.addAll( profiles );
         this.kernel.start( applicationConfiguration );
     }
 

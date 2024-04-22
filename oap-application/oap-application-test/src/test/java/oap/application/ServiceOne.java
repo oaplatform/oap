@@ -43,7 +43,7 @@ import static java.util.Collections.emptySet;
 @ToString( exclude = "listener" )
 @EqualsAndHashCode
 @Slf4j
-public class ServiceOne {
+public class ServiceOne implements IService {
     int i;
     int i2;
     Complex complex;

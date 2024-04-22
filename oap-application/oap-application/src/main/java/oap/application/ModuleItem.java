@@ -28,6 +28,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.module.Module;
 import oap.application.module.Service;
+import oap.reflect.Reflect;
+import oap.reflect.Reflection;
 import oap.util.Lists;
 
 import java.net.URL;
@@ -39,15 +41,13 @@ import java.util.Map;
 public class ModuleItem {
     final Module module;
     final LinkedHashMap<String, ServiceItem> services = new LinkedHashMap<>();
-    private final ServiceEnabledStatus enabled;
     private final LinkedHashMap<String, ModuleReference> dependsOn;
     private final URL location;
     private boolean load = false;
 
-    ModuleItem( Module module, URL location, ServiceEnabledStatus enabled, LinkedHashMap<String, ModuleReference> dependsOn ) {
+    ModuleItem( Module module, URL location, LinkedHashMap<String, ModuleReference> dependsOn ) {
         this.module = module;
         this.location = location;
-        this.enabled = enabled;
         this.dependsOn = dependsOn;
     }
 
@@ -60,11 +60,7 @@ public class ModuleItem {
     }
 
     public final boolean isEnabled() {
-        return this.enabled == ServiceEnabledStatus.ENABLED && load;
-    }
-
-    final ServiceEnabledStatus getEnabled() {
-        return enabled;
+        return load;
     }
 
     public final String getName() {
@@ -98,7 +94,6 @@ public class ModuleItem {
         return location;
     }
 
-    @ToString
     @EqualsAndHashCode
     public static class ModuleReference {
         final ModuleItem moduleItem;
@@ -118,7 +113,7 @@ public class ModuleItem {
 
         @ToString
         @EqualsAndHashCode
-        static class ServiceLink {
+        public static class ServiceLink {
             final ServiceItem from;
             final ServiceItem to;
 
@@ -129,13 +124,14 @@ public class ModuleItem {
         }
     }
 
-    @ToString
     public static class ServiceItem {
         public final String serviceName;
         public final ModuleItem moduleItem;
         public final Service service;
         public final ServiceEnabledStatus enabled;
         public final LinkedHashSet<ServiceReference> dependsOn = new LinkedHashSet<>();
+        public Object instance;
+        public ServiceItem abstractImplemenetaion;
 
         ServiceItem( String serviceName, ModuleItem moduleItem, Service service, ServiceEnabledStatus enabled ) {
             this.serviceName = serviceName;
@@ -144,21 +140,17 @@ public class ModuleItem {
             this.enabled = enabled;
         }
 
-        public String getModuleName() {
-            return moduleItem.getName();
+        public ServiceItem getImplementation() {
+            return abstractImplemenetaion != null ? abstractImplemenetaion : this;
         }
 
-        public String getName() {
-            return service.name;
+        public String getModuleName() {
+            return moduleItem.getName();
         }
 
         @Override
         public String toString() {
             return moduleItem.getName() + "." + serviceName;
-        }
-
-        public void fixServiceName( String implName ) {
-            service.name = service.name != null ? service.name : implName;
         }
 
         @Override
@@ -191,7 +183,11 @@ public class ModuleItem {
             return enabled == ServiceEnabledStatus.ENABLED;
         }
 
-        static class ServiceReference {
+        public Reflection getReflection() {
+            return Reflect.reflect( service.implementation, Module.coersions );
+        }
+
+        public static class ServiceReference {
             public final ServiceItem serviceItem;
             public final boolean required;
 
@@ -207,12 +203,12 @@ public class ModuleItem {
 
                 var that = ( ServiceReference ) o;
 
-                return serviceItem.service.name.equals( that.serviceItem.service.name );
+                return serviceItem.serviceName.equals( that.serviceItem.serviceName );
             }
 
             @Override
             public int hashCode() {
-                return serviceItem.service.name.hashCode();
+                return serviceItem.serviceName.hashCode();
             }
         }
     }

@@ -33,8 +33,8 @@ public class FileSystemTest extends Fixtures {
     @Test
     public void testGetDefaultURL() {
         FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.jclouds.scheme", "s3",
-            "fs.default.jclouds.container", TEST_BUCKET
+            "fs.default.clouds.scheme", "s3",
+            "fs.default.clouds.container", TEST_BUCKET
         ) ) );
 
         assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( new CloudURI( "s3", TEST_BUCKET, "a.file" ) );
@@ -94,26 +94,26 @@ public class FileSystemTest extends Fixtures {
     @NotNull
     private FileSystemConfiguration getFileSystemConfiguration() {
         return new FileSystemConfiguration( Map.of(
-            "fs.s3.jclouds.identity", "access_key",
-            "fs.s3.jclouds.credential", "access_secret",
-            "fs.s3.jclouds.s3.virtual-host-buckets", false,
-            "fs.s3.jclouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
-            "fs.s3.jclouds.headers", "DEBUG",
+            "fs.s3.clouds.identity", "access_key",
+            "fs.s3.clouds.credential", "access_secret",
+            "fs.s3.clouds.s3.virtual-host-buckets", false,
+            "fs.s3.clouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
+            "fs.s3.clouds.headers", "DEBUG",
 
-            "fs.file.jclouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
+            "fs.file.clouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
 
-            "fs.default.jclouds.scheme", "s3",
-            "fs.default.jclouds.container", TEST_BUCKET
+            "fs.default.clouds.scheme", "s3",
+            "fs.default.clouds.container", TEST_BUCKET
         ) );
     }
 
     @Test
     public void testToLocalFilePath() {
         FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.file.jclouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
+            "fs.file.clouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
 
-            "fs.default.jclouds.scheme", "s3",
-            "fs.default.jclouds.container", TEST_BUCKET
+            "fs.default.clouds.scheme", "s3",
+            "fs.default.clouds.container", TEST_BUCKET
         ) ) );
 
         assertThat( fileSystem.toLocalFilePath( testDirectoryFixture.testPath( "/container/test.file" ) ) )
@@ -156,10 +156,10 @@ public class FileSystemTest extends Fixtures {
     public void testToFile() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.file.jclouds.filesystem.basedir", "/tmp",
-                "fs.file.tmp.jclouds.filesystem.basedir", "/container",
-                "fs.default.jclouds.scheme", "s3",
-                "fs.default.jclouds.container", "test-bucket"
+                "fs.file.clouds.filesystem.basedir", "/tmp",
+                "fs.file.tmp.clouds.filesystem.basedir", "/container",
+                "fs.default.clouds.scheme", "s3",
+                "fs.default.clouds.container", "test-bucket"
             )
         );
 

@@ -283,6 +283,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         return this.underlying.isInterface();
     }
 
+    public boolean isAbstract() {
+        return Modifier.isAbstract( this.underlying.getModifiers() );
+    }
+
     public boolean isPrimitive() {
         return this.underlying.isPrimitive();
     }
@@ -301,6 +305,12 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
     public boolean implementationOf( Class<?> clazz ) {
         return this.typeToken.getTypes().interfaces().rawTypes().contains( clazz );
+    }
+
+    private String argsToString( Object... args ) {
+        if( args == null || args.length == 0 ) return "()";
+        List<String> arguments = Stream.of( args ).map( arg -> arg.getClass().getCanonicalName() + "=" + arg ).toList();
+        return "(" + Joiner.on( "," ).join( arguments ) + ")";
     }
 
     public class Field extends AbstractAnnotated<java.lang.reflect.Field> implements Comparable<Field> {
@@ -369,12 +379,6 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public boolean isArray() {
             return underlying.getType().isArray();
         }
-    }
-
-    private String argsToString( Object... args ) {
-        if( args == null || args.length == 0 ) return "()";
-        List<String> arguments = Stream.of( args ).map( arg -> arg.getClass().getCanonicalName() + "=" + arg ).toList();
-        return "(" + Joiner.on( "," ).join( arguments ) + ")";
     }
 
     public class Method extends AbstractAnnotated<java.lang.reflect.Method> {
