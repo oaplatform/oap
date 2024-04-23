@@ -35,9 +35,15 @@ public class FileSystemConfiguration {
             String id = toks[1];
 
             int start = 2;
-            if( !toks[2].equals( "jclouds" ) ) {
+            if( !toks[2].equals( "jclouds" ) && !toks[2].equals( "clouds" ) ) {
                 id = id + "." + toks[2];
                 start++;
+            }
+
+            if( start < toks.length - 1 ) {
+                if( toks[start].equals( "clouds" ) ) {
+                    toks[start] = "jclouds";
+                }
             }
 
             var property = StringUtils.join( toks, ".", start, toks.length );

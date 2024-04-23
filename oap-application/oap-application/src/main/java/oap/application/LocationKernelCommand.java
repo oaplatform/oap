@@ -26,7 +26,6 @@ package oap.application;
 
 import lombok.ToString;
 import oap.application.ServiceStorage.ErrorStatus;
-import oap.application.module.Service;
 import oap.util.Result;
 
 import javax.annotation.Nullable;
@@ -42,16 +41,16 @@ public class LocationKernelCommand extends AbstractKernelCommand<URL> {
     }
 
     @Override
-    public Result<URL, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
-                                         Service service, ServiceStorage storage ) {
-        if( moduleItem == null ) return Result.failure( MODULE_NOT_FOUND );
+    public Result<URL, ErrorStatus> get( Object value, Kernel kernel,
+                                         @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
+        if( serviceItem == null ) return Result.failure( MODULE_NOT_FOUND );
 
-        return Result.success( moduleItem.getLocation() );
+        return Result.success( serviceItem.moduleItem.getLocation() );
     }
 
     @Override
-    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
-                                                    Service service, ServiceStorage storage ) {
-        return get( value, kernel, moduleItem, service, storage ).mapSuccess( v -> v );
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel,
+                                                    @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
+        return get( value, kernel, serviceItem, storage ).mapSuccess( v -> v );
     }
 }

@@ -79,7 +79,7 @@ public class KernelTest extends Fixtures {
     @Test
     public void testLifecycle() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.yaml" ) );
+        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.conf" ) );
 
         TestLifecycle service;
         TestLifecycle thread;
@@ -112,7 +112,7 @@ public class KernelTest extends Fixtures {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
-                Optional<ServiceOne> serviceOne = kernel.service( "m1.ServiceOne" );
+                Optional<ServiceOne> serviceOne = kernel.service( "m1.ServiceOneP1" );
                 Optional<ServiceTwo> serviceTwo = kernel.service( "m2.ServiceTwo" );
 
                 assertThat( serviceOne ).isPresent().get().satisfies( one -> {
@@ -214,8 +214,7 @@ public class KernelTest extends Fixtures {
     public void mapEnvToConfig() {
         var modules = List.of( url( "env/env.conf" ) );
 
-        Env.set( "CONFIG.services.env.s1.profile", "disabled" );
-        Env.set( "CONFIG.services.env.s2.profile", "enabled" );
+        Env.set( "CONFIG.services.env.s1.enabled", "false" );
         Env.set( "CONFIG.services.env.s2.parameters.val", "\"test$value\"" );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -250,7 +249,7 @@ public class KernelTest extends Fixtures {
         try( var kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "reference" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessage( "[reference:s1] dependencies are not enabled. Required service [s2] is disabled by profile." );
+                .hasMessage( "[reference:s1] dependencies are not enabled. Required service [s2] is disabled by 'enabled' flag." );
         }
     }
 
@@ -453,6 +452,19 @@ public class KernelTest extends Fixtures {
 
             assertThat( kernel.<Service3>service( "testInclude.service3" ).get().name ).isEqualTo( "a" );
             assertThat( kernel.<Service3>service( "testInclude.service32" ).get().name ).isEqualTo( "b" );
+        }
+    }
+
+    @Test
+    public void testDisableModule() {
+        try( var kernel = new Kernel(
+            List.of(
+                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule.conf" ),
+                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule-disabled.conf" )
+            ) ) ) {
+            kernel.start( Map.of( "boot.main", "testDisableModule" ) );
+
+            assertThat( kernel.<Service1>service( "testDisableModule.service1" ).get().list ).isEmpty();
         }
     }
 

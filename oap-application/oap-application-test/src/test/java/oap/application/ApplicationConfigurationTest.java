@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import oap.system.Env;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -61,41 +60,5 @@ public class ApplicationConfigurationTest {
             "ServiceOneP1", Map.of( "parameters", Map.of( "i2", "100", "i3", "VALUE" ) ),
             "ServiceTwo", Map.of( "parameters", Map.of( "j", "3s" ) )
         ) ) );
-    }
-
-    @Test
-    public void testProfiles() {
-        var ac = ApplicationConfiguration.load();
-
-        assertThat( ac.getProfiles() ).isEmpty();
-        ac.reset();
-
-        ac.profiles.add( "-with-file" );
-        ac.profiles.add( "test" );
-
-        System.setProperty( "OAP_PROFILE_with__file", "1" );
-        Env.set( "OAP_PROFILE_with_2Dfile", "on" );
-        Env.set( "OAP_PROFILE_test", "false" );
-
-        assertThat( ac.getProfiles() ).containsOnly( "with_file", "with-file", "-test" );
-    }
-
-    @Test
-    public void testOptimize() {
-        var ac = ApplicationConfiguration.load();
-
-        ac.profiles.add( "test" );
-        ac.profiles.add( "test" );
-
-        assertThat( ac.getProfiles() ).containsExactly( "test" );
-        ac.reset();
-
-        ac.profiles.add( "-test" );
-        ac.profiles.add( "b" );
-        assertThat( ac.getProfiles() ).containsExactly( "-test", "b" );
-        ac.reset();
-
-        ac.profiles.add( "test" );
-        assertThat( ac.getProfiles() ).containsExactly( "b", "test" );
     }
 }

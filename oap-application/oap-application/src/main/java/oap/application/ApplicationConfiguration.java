@@ -23,8 +23,6 @@
  */
 package oap.application;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -37,13 +35,10 @@ import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringJoiner;
 
 import static oap.io.Files.wildcard;
@@ -53,12 +48,8 @@ import static oap.util.Lists.concat;
 @ToString
 public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
-    public static final String OAP_PROFILE_PREFIX = "OAP_PROFILE_";
     public final Map<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
-    @JsonAlias( "profile" )
-    public final List<Object> profiles = new ArrayList<>();
     public final ModuleBoot boot = new ModuleBoot();
-    private Set<String> profilesCache = null;
 
     private ApplicationConfiguration() {
     }
@@ -128,7 +119,7 @@ public final class ApplicationConfiguration {
     }
 
     private static String getEnvConfig() {
-        var res = new StringBuilder( "" );
+        var res = new StringBuilder();
 
         System.getenv().forEach( ( key, value ) -> {
             if( key.startsWith( PREFIX ) ) {
@@ -141,89 +132,6 @@ public final class ApplicationConfiguration {
         return res.toString();
     }
 
-    private static void optimizeProfiles( List<String> profiles ) {
-        var cache = new HashSet<String>();
-
-        var it = profiles.listIterator( profiles.size() );
-        while( it.hasPrevious() ) {
-            var profile = it.previous();
-
-            if( profile.startsWith( "-" ) ) profile = profile.substring( 1 );
-            if( cache.contains( profile ) ) it.remove();
-            else cache.add( profile );
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public synchronized Set<String> getProfiles() {
-        if( profilesCache != null ) return profilesCache;
-        var p = new ArrayList<String>();
-        for( var profile : this.profiles ) {
-            if( profile instanceof String ) p.add( ( String ) profile );
-            else if( profile instanceof Map<?, ?> ) {
-                String profileJson = Binder.json.marshal( profile );
-                var conf = Binder.json.unmarshal( ProfileMap.class, profileJson );
-                if( conf.enabled )
-                    p.add( conf.name );
-            }
-        }
-        addProfiles( p, System.getenv() );
-        addProfiles( p, System.getProperties() );
-        optimizeProfiles( p );
-        profilesCache = new LinkedHashSet<>( p );
-        log.info( "application profiles = {}", profilesCache );
-        return profilesCache;
-    }
-
-    public synchronized void reset() {
-        profilesCache = null;
-    }
-
-    private void addProfiles( List<String> ret, Map<? extends Object, ? extends Object> env ) {
-        env.forEach( ( nameObj, valueObj ) -> {
-            var name = ( String ) nameObj;
-            var value = ( String ) valueObj;
-            if( name.startsWith( OAP_PROFILE_PREFIX ) ) {
-                var profileName = name.substring( OAP_PROFILE_PREFIX.length() );
-                var profileValue = value.trim().toUpperCase();
-                profileName = profileEscape( profileName );
-                var enabled = "1".equals( profileValue ) || "ON".equals( profileValue ) || "TRUE".equals( profileValue );
-
-                ret.remove( ( enabled ? "-" : "" ) + profileName );
-                ret.add( ( enabled ? "" : "-" ) + profileName );
-            }
-        } );
-    }
-
-    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
-    private String profileEscape( String profileName ) {
-        var ret = new StringBuilder();
-        var escapeMode = false;
-
-        for( var i = 0; i < profileName.length(); i++ ) {
-            var ch = profileName.charAt( i );
-            if( ch == '_' ) {
-                if( !escapeMode ) escapeMode = true;
-                else {
-                    escapeMode = false;
-                    ret.append( '_' );
-                }
-
-            } else if( escapeMode ) {
-                if( i < profileName.length() - 2 ) {
-                    var b = Byte.parseByte( profileName.substring( i, i + 2 ), 16 );
-                    ret.append( ( char ) b );
-                    escapeMode = false;
-                    i += 1;
-                } else throw new IllegalArgumentException( "invalid escape: " + i );
-            } else {
-                ret.append( ch );
-            }
-        }
-
-        return ret.toString();
-    }
-
     public static class ApplicationConfigurationModule extends LinkedHashMap<String, Object> {
         public boolean isEnabled() {
             return !Boolean.FALSE.equals( get( "enabled" ) );
@@ -234,15 +142,5 @@ public final class ApplicationConfiguration {
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
         public boolean allowActiveByDefault = false;
-    }
-
-    public static class ProfileMap {
-        public final String name;
-        public boolean enabled = true;
-
-        @JsonCreator
-        public ProfileMap( String name ) {
-            this.name = name;
-        }
     }
 }

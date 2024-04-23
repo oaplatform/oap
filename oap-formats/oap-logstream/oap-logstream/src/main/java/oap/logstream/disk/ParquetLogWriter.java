@@ -58,7 +58,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
@@ -73,20 +72,20 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
     private static final HashMap<Byte, Function<List<Types.Builder<?, ?>>, Types.Builder<?, ?>>> types = new HashMap<>();
 
     static {
-        types.put( oap.template.Types.BOOLEAN.id, children -> org.apache.parquet.schema.Types.required( BOOLEAN ) );
-        types.put( oap.template.Types.BYTE.id, children -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.intType( 8, true ) ) );
-        types.put( oap.template.Types.SHORT.id, children -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.intType( 16, true ) ) );
-        types.put( oap.template.Types.INTEGER.id, children -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.intType( 32, true ) ) );
-        types.put( oap.template.Types.LONG.id, children -> org.apache.parquet.schema.Types.required( INT64 ).as( LogicalTypeAnnotation.intType( 64, true ) ) );
-        types.put( oap.template.Types.FLOAT.id, children -> org.apache.parquet.schema.Types.required( FLOAT ) );
-        types.put( oap.template.Types.DOUBLE.id, children -> org.apache.parquet.schema.Types.required( DOUBLE ) );
-        types.put( oap.template.Types.RAW.id, children -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
-        types.put( oap.template.Types.STRING.id, children -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
-        types.put( oap.template.Types.DATE.id, children -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.dateType() ) );
-        types.put( oap.template.Types.DATETIME.id, children -> org.apache.parquet.schema.Types.required( INT64 ) );
-//        types.put( Types.DADATETIME64.id, children -> org.apache.parquet.schema.Types.required( INT64 ).as( LogicalTypeAnnotation.timestampType( true, MILLIS ) ) );
+        types.put( oap.template.Types.BOOLEAN.id, _ -> org.apache.parquet.schema.Types.required( BOOLEAN ) );
+        types.put( oap.template.Types.BYTE.id, _ -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.intType( 8, true ) ) );
+        types.put( oap.template.Types.SHORT.id, _ -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.intType( 16, true ) ) );
+        types.put( oap.template.Types.INTEGER.id, _ -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.intType( 32, true ) ) );
+        types.put( oap.template.Types.LONG.id, _ -> org.apache.parquet.schema.Types.required( INT64 ).as( LogicalTypeAnnotation.intType( 64, true ) ) );
+        types.put( oap.template.Types.FLOAT.id, _ -> org.apache.parquet.schema.Types.required( FLOAT ) );
+        types.put( oap.template.Types.DOUBLE.id, _ -> org.apache.parquet.schema.Types.required( DOUBLE ) );
+        types.put( oap.template.Types.RAW.id, _ -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
+        types.put( oap.template.Types.STRING.id, _ -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
+        types.put( oap.template.Types.DATE.id, _ -> org.apache.parquet.schema.Types.required( INT32 ).as( LogicalTypeAnnotation.dateType() ) );
+        types.put( oap.template.Types.DATETIME.id, _ -> org.apache.parquet.schema.Types.required( INT64 ) );
+//        types.put( Types.DADATETIME64.id, _ -> org.apache.parquet.schema.Types.required( INT64 ).as( LogicalTypeAnnotation.timestampType( true, MILLIS ) ) );
         types.put( oap.template.Types.LIST.id, children -> org.apache.parquet.schema.Types.requiredList().element( ( Type ) children.get( 0 ).named( "element" ) ) );
-//        types.put( Types.ENUM.id, children -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
+//        types.put( Types.ENUM.id, _ -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
     }
 
     private final MessageType messageType;
@@ -94,7 +93,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
     private final LinkedHashSet<String> excludeFields = new LinkedHashSet<>();
 
     public ParquetLogWriter( Path logDirectory, String filePattern, LogId logId, WriterConfiguration.ParquetConfiguration configuration,
-                          int bufferSize, Timestamp timestamp, int maxVersions )
+                             int bufferSize, Timestamp timestamp, int maxVersions )
         throws IllegalArgumentException {
         super( LogFormat.PARQUET, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions );
         this.configuration = configuration;
@@ -137,8 +136,38 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         messageType = messageTypeBuilder.named( "logger" );
     }
 
+    private static void addValue( int col, Object obj, byte[] colType, int typeIdx, Group group ) {
+        var type = colType[typeIdx];
+        if( type == oap.template.Types.BOOLEAN.id ) {
+            group.add( col, ( boolean ) obj );
+        } else if( type == oap.template.Types.BYTE.id ) {
+            group.add( col, ( byte ) obj );
+        } else if( type == oap.template.Types.SHORT.id ) {
+            group.add( col, ( short ) obj );
+        } else if( type == oap.template.Types.INTEGER.id ) {
+            group.add( col, ( int ) obj );
+        } else if( type == oap.template.Types.LONG.id ) {
+            group.add( col, ( long ) obj );
+        } else if( type == oap.template.Types.FLOAT.id ) {
+            group.add( col, ( float ) obj );
+        } else if( type == oap.template.Types.DOUBLE.id ) {
+            group.add( col, ( double ) obj );
+        } else if( type == oap.template.Types.STRING.id ) {
+            group.add( col, ( String ) obj );
+        } else if( type == oap.template.Types.DATETIME.id ) {
+            group.add( col, ( ( DateTime ) obj ).getMillis() / 1000 );
+        } else if( type == oap.template.Types.LIST.id ) {
+            var listGroup = group.addGroup( col );
+            for( var item : ( List<?> ) obj ) {
+                addValue( 0, item, colType, typeIdx + 1, listGroup.addGroup( "list" ) );
+            }
+        } else {
+            throw new IllegalStateException( "Unknown type:" + type );
+        }
+    }
+
     @Override
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length, Consumer<String> error ) throws LoggerException {
+    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
         if( protocolVersion.version < ProtocolVersion.BINARY_V2.version ) {
             throw new InvalidProtocolVersionException( "parquet", protocolVersion.version );
         }
@@ -168,7 +197,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
                     log.info( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
-                    write( protocolVersion, buffer, offset, length, error );
+                    write( protocolVersion, buffer, offset, length );
                     return;
                 }
             log.trace( "writing {} bytes to {}", length, this );
@@ -217,36 +246,6 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
             col = 0;
             group = new ParquetSimpleGroup( messageType );
             obj = bis.readObject();
-        }
-    }
-
-    private static void addValue( int col, Object obj, byte[] colType, int typeIdx, Group group ) {
-        var type = colType[typeIdx];
-        if( type == oap.template.Types.BOOLEAN.id ) {
-            group.add( col, ( boolean ) obj );
-        } else if( type == oap.template.Types.BYTE.id ) {
-            group.add( col, ( byte ) obj );
-        } else if( type == oap.template.Types.SHORT.id ) {
-            group.add( col, ( short ) obj );
-        } else if( type == oap.template.Types.INTEGER.id ) {
-            group.add( col, ( int ) obj );
-        } else if( type == oap.template.Types.LONG.id ) {
-            group.add( col, ( long ) obj );
-        } else if( type == oap.template.Types.FLOAT.id ) {
-            group.add( col, ( float ) obj );
-        } else if( type == oap.template.Types.DOUBLE.id ) {
-            group.add( col, ( double ) obj );
-        } else if( type == oap.template.Types.STRING.id ) {
-            group.add( col, ( String ) obj );
-        } else if( type == oap.template.Types.DATETIME.id ) {
-            group.add( col, ( ( DateTime ) obj ).getMillis() / 1000 );
-        } else if( type == oap.template.Types.LIST.id ) {
-            var listGroup = group.addGroup( col );
-            for( var item : ( List<?> ) obj ) {
-                addValue( 0, item, colType, typeIdx + 1, listGroup.addGroup( "list" ) );
-            }
-        } else {
-            throw new IllegalStateException( "Unknown type:" + type );
         }
     }
 

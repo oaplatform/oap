@@ -30,8 +30,6 @@ import java.io.Closeable;
 import java.util.Map;
 
 public abstract class AbstractLoggerBackend implements Closeable {
-    public final LoggerListeners listeners = new LoggerListeners();
-
     public void log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
                      String[] headers, byte[][] types, byte[] buffer ) {
         log( version, hostName, filePreffix, properties, logType, headers, types, buffer, 0, buffer.length );
@@ -46,13 +44,5 @@ public abstract class AbstractLoggerBackend implements Closeable {
 
     public boolean isLoggingAvailable() {
         return availabilityReport().state == AvailabilityReport.State.OPERATIONAL;
-    }
-
-    public void addListener( LoggerListener listener ) {
-        listeners.addListener( listener );
-    }
-
-    public void removeListener( LoggerListener listener ) {
-        listeners.removeListener( listener );
     }
 }

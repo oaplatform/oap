@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ServiceKernelListener {
     Object newInstance( Kernel kernel,
-                        ServiceInitializationTree retModules,
+                        ServiceTree retModules,
                         ModuleItem.ServiceItem serviceItem, Reflection reflect );
 
     default List<String> validate( ModuleItem.ServiceItem serviceItem ) {

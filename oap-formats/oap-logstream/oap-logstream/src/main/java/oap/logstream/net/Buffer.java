@@ -28,7 +28,7 @@ import oap.logstream.LogStreamProtocol.ProtocolVersion;
 
 import java.io.Serializable;
 
-class Buffer implements Serializable {
+public class Buffer implements Serializable {
     public final LogId id;
     public final ProtocolVersion protocolVersion;
     private final byte[] data;
