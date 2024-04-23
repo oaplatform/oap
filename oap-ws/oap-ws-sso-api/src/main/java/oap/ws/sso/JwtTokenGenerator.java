@@ -28,8 +28,11 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import oap.util.Pair;
+import org.joda.time.DateTimeUtils;
 
 import java.util.Date;
+
+import static org.joda.time.DateTimeZone.UTC;
 
 public class JwtTokenGenerator {
 
@@ -49,7 +52,7 @@ public class JwtTokenGenerator {
 
     public Pair<Date, String> generateAccessToken( User user ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( accessSecret );
-        final Date expiresAt = new Date( System.currentTimeMillis() + accessSecretExpiration );
+        Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
         return Pair.__( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withClaim( "roles", user.getRoles() )
@@ -60,7 +63,7 @@ public class JwtTokenGenerator {
 
     public Pair<Date, String> generateAccessTokenWithActiveOrgId( User user, String activeOrganization ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( accessSecret );
-        final Date expiresAt = new Date( System.currentTimeMillis() + accessSecretExpiration );
+        Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
         return Pair.__( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withClaim( "roles", user.getRoles() )
@@ -72,7 +75,7 @@ public class JwtTokenGenerator {
 
     public Pair<Date, String> generateRefreshToken( User user ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( refreshSecret );
-        final Date expiresAt = new Date( System.currentTimeMillis() + refreshSecretExpiration );
+        Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + refreshSecretExpiration, UTC ).toDate();
         return Pair.__( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withIssuer( issuer )
