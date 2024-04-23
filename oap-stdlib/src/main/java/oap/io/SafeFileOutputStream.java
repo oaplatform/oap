@@ -33,7 +33,7 @@ public class SafeFileOutputStream extends FileOutputStream {
     private final Path path;
 
     public SafeFileOutputStream( Path path, boolean append, IoStreams.Encoding encoding ) throws IOException {
-        super( path + ".unsafe", append );
+        super( getUnsafePath( path ).toFile(), append );
         this.path = path;
 
         if( append && java.nio.file.Files.exists( path ) ) {
@@ -44,6 +44,10 @@ public class SafeFileOutputStream extends FileOutputStream {
                     sourceEncoding == encoding ? IoStreams.Encoding.PLAIN : encoding, is );
             }
         }
+    }
+
+    public static Path getUnsafePath( Path path ) {
+        return Paths.get( path.toString() + ".unsafe" );
     }
 
     @Override

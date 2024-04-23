@@ -23,17 +23,20 @@
  */
 package oap.io;
 
+import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 import io.airlift.compress.bzip2.BZip2HadoopStreams;
 import io.airlift.compress.gzip.JdkGzipHadoopStreams;
 import io.airlift.compress.lz4.Lz4HadoopStreams;
 import io.airlift.compress.zstd.ZstdHadoopStreams;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.function.Try;
+import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -57,7 +60,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.function.Functions.empty.consume;
@@ -92,7 +94,7 @@ public class IoStreams {
     }
 
     public static Stream<String> lines( Path path, Encoding encoding ) {
-        return lines( path, encoding, p -> {} );
+        return lines( path, encoding, _ -> {} );
     }
 
     public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) {
@@ -199,22 +201,45 @@ public class IoStreams {
         return out( path, encoding, bufferSize, append, false );
     }
 
-    @SneakyThrows
     public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
-        checkArgument( !append || encoding.appendable, encoding + " is not appendable" );
+        return out( path, new OutOptions()
+            .withBufferSize( bufferSize ).withEncoding( encoding ).withAppend( append )
+            .withSafe( safe ) );
+    }
+
+    @SneakyThrows
+    public static OutputStream out( Path path, OutOptions options ) {
+        if( options.encoding == null ) {
+            options.withEncodingFrom( path );
+        }
+
+        Preconditions.checkArgument( !options.throwIfFileExists || !options.append );
+        Preconditions.checkArgument( !options.append || options.encoding.appendable, options.encoding + " is not appendable" );
+
         Files.ensureFile( path );
-        if( append ) Files.ensureFileEncodingValid( path );
-        OutputStream outputStream = safe
-            ? new SafeFileOutputStream( path, append, encoding )
-            : new FileOutputStream( path.toFile(), append );
+        if( options.append ) Files.ensureFileEncodingValid( path );
+
+        if( options.throwIfFileExists ) {
+            Path filePath = options.safe ? SafeFileOutputStream.getUnsafePath( path ) : path;
+
+            if( !filePath.toFile().createNewFile() ) {
+                throw new UncheckedIOException( new FileExistsException( path.toFile() ) );
+            }
+        }
+
+        OutputStream outputStream = options.safe
+            ? new SafeFileOutputStream( path, options.append, options.encoding )
+            : new FileOutputStream( path.toFile(), options.append );
+
         OutputStream fos =
-            bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize )
+            options.bufferSize > 0 && options.encoding != Encoding.GZIP
+                ? new BufferedOutputStream( outputStream, options.bufferSize )
                 : outputStream;
-        return switch( encoding ) {
+        return switch( options.encoding ) {
             case GZIP -> GZIP_HADOOP_STREAMS.createOutputStream( fos );
             case BZIP2 -> {
                 OutputStream os = BZIP2_HADOOP_STREAMS.createOutputStream( fos );
-                yield bufferSize > 0 ? new BufferedOutputStream( os, bufferSize ) : os;
+                yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
             }
             case ZIP -> {
                 var zip = new ZipOutputStream( fos );
@@ -224,7 +249,7 @@ public class IoStreams {
             case LZ4 -> LZ4_HADOOP_STREAMS.createOutputStream( fos );
             case ZSTD -> {
                 OutputStream os = ZSTD_HADOOP_STREAMS.createOutputStream( fos );
-                yield bufferSize > 0 ? new BufferedOutputStream( os, bufferSize ) : os;
+                yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
             }
             case PLAIN, ORC, PARQUET, AVRO -> fos;
         };
@@ -368,6 +393,51 @@ public class IoStreams {
         public Path resolve( Path path ) {
             String s = path.toString();
             return Paths.get( s.substring( 0, s.length() - from( path ).extension.length() ) + extension );
+        }
+    }
+
+    @ToString
+    public static class OutOptions {
+        protected int bufferSize = DEFAULT_BUFFER;
+        protected Encoding encoding;
+        protected boolean append = false;
+        protected boolean safe = false;
+        protected boolean throwIfFileExists = false;
+
+        public OutOptions withBufferSize( int bufferSize ) {
+            this.bufferSize = bufferSize;
+
+            return this;
+        }
+
+        public OutOptions withEncoding( Encoding encoding ) {
+            this.encoding = encoding;
+
+            return this;
+        }
+
+        public OutOptions withEncodingFrom( Path path ) {
+            this.encoding = Encoding.from( path );
+
+            return this;
+        }
+
+        public OutOptions withAppend( boolean append ) {
+            this.append = append;
+
+            return this;
+        }
+
+        public OutOptions withSafe( boolean safe ) {
+            this.safe = safe;
+
+            return this;
+        }
+
+        public OutOptions withThrowIfFileExists( boolean throwIfFileExists ) {
+            this.throwIfFileExists = throwIfFileExists;
+
+            return this;
         }
     }
 }

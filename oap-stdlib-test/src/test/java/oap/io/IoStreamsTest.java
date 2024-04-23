@@ -31,6 +31,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Arrays;
 import oap.util.Lists;
+import org.apache.commons.io.FileExistsException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -38,6 +39,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class IoStreamsTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
@@ -150,5 +153,18 @@ public class IoStreamsTest extends Fixtures {
             Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
+    }
+
+    @Test
+    public void testThrowIfFileExists() throws IOException {
+        Path testFile = testDirectoryFixture.testPath( "testFile" );
+        testFile.toFile().createNewFile();
+
+        assertThatThrownBy( () -> {
+            try( var _ = IoStreams.out( testFile, new IoStreams.OutOptions().withThrowIfFileExists( true ) ) ) {
+                System.out.println( "!" );
+            }
+        } ).isInstanceOf( UncheckedIOException.class )
+            .hasCauseInstanceOf( FileExistsException.class );
     }
 }
