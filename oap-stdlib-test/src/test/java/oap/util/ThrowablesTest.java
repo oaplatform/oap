@@ -27,10 +27,9 @@ package oap.util;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 public class ThrowablesTest {
-    @Test( expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.io.IOException: test" )
+    @Test( expectedExceptions = oap.io.IOException.class, expectedExceptionsMessageRegExp = "java.io.IOException: test" )
     public void propagateIOException() {
         throw Throwables.propagate( new IOException( "test" ) );
     }

@@ -31,7 +31,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Arrays;
 import oap.util.Lists;
-import org.apache.commons.io.FileExistsException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,7 +38,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -164,7 +162,6 @@ public class IoStreamsTest extends Fixtures {
             try( var _ = IoStreams.out( testFile, new IoStreams.OutOptions().withThrowIfFileExists( true ) ) ) {
                 System.out.println( "!" );
             }
-        } ).isInstanceOf( UncheckedIOException.class )
-            .hasCauseInstanceOf( FileExistsException.class );
+        } ).isInstanceOf( oap.io.FileExistsException.class );
     }
 }
