@@ -29,14 +29,13 @@ import io.airlift.compress.bzip2.BZip2HadoopStreams;
 import io.airlift.compress.gzip.JdkGzipHadoopStreams;
 import io.airlift.compress.lz4.Lz4HadoopStreams;
 import io.airlift.compress.zstd.ZstdHadoopStreams;
-import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Throwables;
 import oap.util.function.Try;
-import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -50,7 +49,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Path;
@@ -72,42 +70,44 @@ public class IoStreams {
     public static final ZstdHadoopStreams ZSTD_HADOOP_STREAMS = new ZstdHadoopStreams();
     public static final JdkGzipHadoopStreams GZIP_HADOOP_STREAMS = new JdkGzipHadoopStreams();
 
-    public static Stream<String> lines( URL url ) {
+    public static Stream<String> lines( URL url ) throws oap.io.IOException {
         return lines( url, Encoding.from( url ), consume() );
     }
 
-    public static Stream<String> lines( URL url, Consumer<Integer> progress ) {
+    public static Stream<String> lines( URL url, Consumer<Integer> progress ) throws oap.io.IOException {
         return lines( url, Encoding.from( url ), progress );
     }
 
-    @SneakyThrows
-    public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) {
-        log.trace( "loading {}...", url );
-        URLConnection connection = url.openConnection();
-        InputStream stream = connection.getInputStream();
-        return lines( stream, encoding, progress( connection.getContentLengthLong(), progress ) )
-            .onClose( Try.run( stream::close ) );
+    public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) throws oap.io.IOException {
+        try {
+            log.trace( "loading {}...", url );
+            URLConnection connection = url.openConnection();
+            InputStream stream = connection.getInputStream();
+            return lines( stream, encoding, progress( connection.getContentLengthLong(), progress ) ).onClose( Try.run( stream::close ) );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    public static Stream<String> lines( Path path ) {
+    public static Stream<String> lines( Path path ) throws oap.io.IOException {
         return lines( path, Encoding.from( path ), consume() );
     }
 
-    public static Stream<String> lines( Path path, Encoding encoding ) {
+    public static Stream<String> lines( Path path, Encoding encoding ) throws oap.io.IOException {
         return lines( path, encoding, _ -> {} );
     }
 
-    public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) {
+    public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) throws oap.io.IOException {
         InputStream stream = in( path, Encoding.PLAIN );
         return lines( stream, encoding, progress( path.toFile().length(), progress ) )
             .onClose( Try.run( stream::close ) );
     }
 
-    private static Stream<String> lines( InputStream stream, Encoding encoding, Progress progress ) {
+    private static Stream<String> lines( InputStream stream, Encoding encoding, Progress progress ) throws oap.io.IOException {
         return lines( in( new ProgressInputStream( stream, progress ), encoding ) );
     }
 
-    public static Stream<String> lines( InputStream stream ) {
+    public static Stream<String> lines( InputStream stream ) throws oap.io.IOException {
         return lines( stream, false );
     }
 
@@ -121,7 +121,7 @@ public class IoStreams {
         return Stream.of( ustream );
     }
 
-    public static void write( Path path, Encoding encoding, java.util.stream.Stream<String> lines ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, java.util.stream.Stream<String> lines ) throws oap.io.IOException {
         Files.ensureFile( path );
 
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, false, false ) ) {
@@ -130,227 +130,233 @@ public class IoStreams {
                     out.write( line.getBytes() );
                     out.write( '\n' );
                 } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
+                    throw Throwables.propagate( e );
                 }
             } );
         } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+            throw Throwables.propagate( e );
         }
     }
 
-    public static void write( Path path, Encoding encoding, String value ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, String value ) throws oap.io.IOException {
         write( path, encoding, value, false );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, InputStream in ) throws oap.io.IOException {
         write( path, encoding, in, Progress.EMPTY );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) throws oap.io.IOException {
         write( path, encoding, in, false, false, progress );
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) throws oap.io.IOException {
         write( path, encoding, in, append, false, progress );
     }
 
-    public static void write( Path path, Encoding encoding, String value, boolean append ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, String value, boolean append ) throws oap.io.IOException {
         write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ), append, false, Progress.EMPTY );
-
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) throws UncheckedIOException {
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) throws oap.io.IOException {
         Files.ensureFile( path );
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
             ByteStreams.copy( new ProgressInputStream( in, progress ), out );
         } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+            throw Throwables.propagate( e );
         }
     }
 
-    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe ) {
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe ) throws oap.io.IOException {
         Files.ensureFile( path );
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
             ByteStreams.copy( in, out );
         } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+            throw Throwables.propagate( e );
         }
     }
 
-    public static FixedLengthArrayOutputStream out( byte[] bytes ) {
+    public static FixedLengthArrayOutputStream out( byte[] bytes ) throws oap.io.IOException {
         return new FixedLengthArrayOutputStream( bytes );
     }
 
-    public static OutputStream out( Path path ) {
+    public static OutputStream out( Path path ) throws oap.io.IOException {
         return out( path, Encoding.from( path ), DEFAULT_BUFFER );
     }
 
-    public static OutputStream out( Path path, Encoding encoding ) {
+    public static OutputStream out( Path path, Encoding encoding ) throws oap.io.IOException {
         return out( path, encoding, DEFAULT_BUFFER );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) throws oap.io.IOException {
         return out( path, encoding, bufferSize, false );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, boolean append ) {
+    public static OutputStream out( Path path, Encoding encoding, boolean append ) throws oap.io.IOException {
         return out( path, encoding, DEFAULT_BUFFER, append );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) throws oap.io.IOException {
         return out( path, encoding, bufferSize, append, false );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) throws oap.io.IOException {
         return out( path, new OutOptions()
             .withBufferSize( bufferSize ).withEncoding( encoding ).withAppend( append )
             .withSafe( safe ) );
     }
 
-    @SneakyThrows
-    public static OutputStream out( Path path, OutOptions options ) {
-        if( options.encoding == null ) {
-            options.withEncodingFrom( path );
+    public static OutputStream out( Path path, OutOptions options ) throws oap.io.IOException {
+        try {
+            if( options.encoding == null ) {
+                options.withEncodingFrom( path );
+            }
+
+            Preconditions.checkArgument( !options.throwIfFileExists || !options.append );
+            Preconditions.checkArgument( !options.append || options.encoding.appendable, options.encoding + " is not appendable" );
+
+            Files.ensureFile( path );
+            if( options.append ) Files.ensureFileEncodingValid( path );
+
+            if( options.throwIfFileExists ) {
+                Path filePath = options.safe ? SafeFileOutputStream.getUnsafePath( path ) : path;
+
+                if( !filePath.toFile().createNewFile() ) {
+                    throw new FileExistsException( path.toFile() );
+                }
+            }
+
+            OutputStream outputStream = options.safe
+                ? new SafeFileOutputStream( path, options.append, options.encoding )
+                : new FileOutputStream( path.toFile(), options.append );
+
+            OutputStream fos =
+                options.bufferSize > 0 && options.encoding != Encoding.GZIP
+                    ? new BufferedOutputStream( outputStream, options.bufferSize )
+                    : outputStream;
+            return switch( options.encoding ) {
+                case GZIP -> GZIP_HADOOP_STREAMS.createOutputStream( fos );
+                case BZIP2 -> {
+                    OutputStream os = BZIP2_HADOOP_STREAMS.createOutputStream( fos );
+                    yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
+                }
+                case ZIP -> {
+                    ZipOutputStream zip = new ZipOutputStream( fos );
+                    zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
+                    yield zip;
+                }
+                case LZ4 -> LZ4_HADOOP_STREAMS.createOutputStream( fos );
+                case ZSTD -> {
+                    OutputStream os = ZSTD_HADOOP_STREAMS.createOutputStream( fos );
+                    yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
+                }
+                case PLAIN, ORC, PARQUET, AVRO -> fos;
+            };
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
-
-        Preconditions.checkArgument( !options.throwIfFileExists || !options.append );
-        Preconditions.checkArgument( !options.append || options.encoding.appendable, options.encoding + " is not appendable" );
-
-        Files.ensureFile( path );
-        if( options.append ) Files.ensureFileEncodingValid( path );
-
-        if( options.throwIfFileExists ) {
-            Path filePath = options.safe ? SafeFileOutputStream.getUnsafePath( path ) : path;
-
-            if( !filePath.toFile().createNewFile() ) {
-                throw new UncheckedIOException( new FileExistsException( path.toFile() ) );
-            }
-        }
-
-        OutputStream outputStream = options.safe
-            ? new SafeFileOutputStream( path, options.append, options.encoding )
-            : new FileOutputStream( path.toFile(), options.append );
-
-        OutputStream fos =
-            options.bufferSize > 0 && options.encoding != Encoding.GZIP
-                ? new BufferedOutputStream( outputStream, options.bufferSize )
-                : outputStream;
-        return switch( options.encoding ) {
-            case GZIP -> GZIP_HADOOP_STREAMS.createOutputStream( fos );
-            case BZIP2 -> {
-                OutputStream os = BZIP2_HADOOP_STREAMS.createOutputStream( fos );
-                yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
-            }
-            case ZIP -> {
-                var zip = new ZipOutputStream( fos );
-                zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
-                yield zip;
-            }
-            case LZ4 -> LZ4_HADOOP_STREAMS.createOutputStream( fos );
-            case ZSTD -> {
-                OutputStream os = ZSTD_HADOOP_STREAMS.createOutputStream( fos );
-                yield options.bufferSize > 0 ? new BufferedOutputStream( os, options.bufferSize ) : os;
-            }
-            case PLAIN, ORC, PARQUET, AVRO -> fos;
-        };
     }
 
-    public static InputStream in( Path path, Encoding encoding ) {
+    public static InputStream in( Path path, Encoding encoding ) throws oap.io.IOException {
         return in( path, encoding, DEFAULT_BUFFER );
     }
 
-    public static InputStream in( URL url, Encoding encoding ) {
+    public static InputStream in( URL url, Encoding encoding ) throws oap.io.IOException {
         return in( url, encoding, DEFAULT_BUFFER );
     }
 
-    public static InputStream in( Path path ) {
+    public static InputStream in( Path path ) throws oap.io.IOException {
         return in( path, DEFAULT_BUFFER );
     }
 
-    public static InputStream in( URL url ) {
+    public static InputStream in( URL url ) throws oap.io.IOException {
         return in( url, DEFAULT_BUFFER );
     }
 
-    public static InputStream in( Path path, int bufferSIze ) {
+    public static InputStream in( Path path, int bufferSIze ) throws oap.io.IOException {
         return in( path, Encoding.from( path ), bufferSIze );
     }
 
-    public static InputStream in( URL url, int bufferSIze ) {
+    public static InputStream in( URL url, int bufferSIze ) throws oap.io.IOException {
         return in( url, Encoding.from( url ), bufferSIze );
     }
 
-    public static InputStream in( Path path, Encoding encoding, int bufferSize ) {
+    public static InputStream in( Path path, Encoding encoding, int bufferSize ) throws oap.io.IOException {
         try {
             FileInputStream fileInputStream = new FileInputStream( path.toFile() );
-            return decoded(
-                bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
+            return decoded( bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
-            throw new UncheckedIOException( "couldn't open file " + path, e );
+            throw new oap.io.IOException( "couldn't open file " + path, e );
         }
     }
 
-    public static InputStream in( URL url, Encoding encoding, int bufferSize ) {
+    public static InputStream in( URL url, Encoding encoding, int bufferSize ) throws oap.io.IOException {
         try {
-            var inputStream = url.openStream();
-            return decoded(
-                bufferSize > 0 ? new BufferedInputStream( inputStream, bufferSize ) : inputStream, encoding );
+            InputStream inputStream = url.openStream();
+            return decoded( bufferSize > 0 ? new BufferedInputStream( inputStream, bufferSize ) : inputStream, encoding );
         } catch( IOException e ) {
-            throw new UncheckedIOException( "couldn't open file " + url, e );
+            throw new oap.io.IOException( "couldn't open file " + url, e );
         }
     }
 
-    @SneakyThrows
-    public static InputStream in( InputStream stream, Encoding encoding ) {
+    public static InputStream in( InputStream stream, Encoding encoding ) throws oap.io.IOException {
         return decoded( stream, encoding );
     }
 
-    @SneakyThrows
-    public static String asString( InputStream stream, Encoding encoding ) {
-        return IOUtils.toString( decoded( stream, encoding ), UTF_8 );
+    public static String asString( InputStream stream, Encoding encoding ) throws oap.io.IOException {
+        try {
+            return IOUtils.toString( decoded( stream, encoding ), UTF_8 );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
-    @SneakyThrows
-    private static InputStream decoded( InputStream stream, Encoding encoding ) {
-        switch( encoding ) {
-            case GZIP:
-                try {
-                    return GZIP_HADOOP_STREAMS.createInputStream( stream );
-                } catch( Exception e ) {
-                    stream.close();
-                }
-            case BZIP2:
-                try {
-                    return BZIP2_HADOOP_STREAMS.createInputStream( stream );
-                } catch( Exception e ) {
-                    stream.close();
-                }
-            case ZIP:
-                try {
-                    ZipInputStream zip = new ZipInputStream( stream );
-                    if( zip.getNextEntry() == null )
-                        throw new IllegalArgumentException( "zip stream contains no entries" );
-                    return zip;
-                } catch( Exception e ) {
-                    stream.close();
-                }
-            case PLAIN, ORC, PARQUET, AVRO:
-                return stream;
-            case LZ4:
-                try {
-                    return LZ4_HADOOP_STREAMS.createInputStream( stream );
-                } catch( Exception e ) {
-                    stream.close();
-                    throw e;
-                }
-            case ZSTD:
-                try {
-                    return ZSTD_HADOOP_STREAMS.createInputStream( stream );
-                } catch( Exception e ) {
-                    stream.close();
-                    throw e;
-                }
-            default:
-                throw new IllegalArgumentException( "Unknown encoding " + encoding );
+    private static InputStream decoded( InputStream stream, Encoding encoding ) throws oap.io.IOException {
+        try {
+            switch( encoding ) {
+                case GZIP:
+                    try {
+                        return GZIP_HADOOP_STREAMS.createInputStream( stream );
+                    } catch( Exception e ) {
+                        stream.close();
+                    }
+                case BZIP2:
+                    try {
+                        return BZIP2_HADOOP_STREAMS.createInputStream( stream );
+                    } catch( Exception e ) {
+                        stream.close();
+                    }
+                case ZIP:
+                    try {
+                        ZipInputStream zip = new ZipInputStream( stream );
+                        if( zip.getNextEntry() == null ) {
+                            throw new IllegalArgumentException( "zip stream contains no entries" );
+                        }
+                        return zip;
+                    } catch( Exception e ) {
+                        stream.close();
+                    }
+                case PLAIN, ORC, PARQUET, AVRO:
+                    return stream;
+                case LZ4:
+                    try {
+                        return LZ4_HADOOP_STREAMS.createInputStream( stream );
+                    } catch( Exception e ) {
+                        stream.close();
+                        throw e;
+                    }
+                case ZSTD:
+                    try {
+                        return ZSTD_HADOOP_STREAMS.createInputStream( stream );
+                    } catch( Exception e ) {
+                        stream.close();
+                        throw e;
+                    }
+                default:
+                    throw new IllegalArgumentException( "Unknown encoding " + encoding );
+            }
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
         }
     }
 
@@ -386,7 +392,11 @@ public class IoStreams {
         }
 
         public static Encoding from( String name ) {
-            for( var e : values() ) if( e.compressed && StringUtils.endsWithIgnoreCase( name, e.extension ) ) return e;
+            for( Encoding e : values() ) {
+                if( e.compressed && StringUtils.endsWithIgnoreCase( name, e.extension ) ) {
+                    return e;
+                }
+            }
             return PLAIN;
         }
 

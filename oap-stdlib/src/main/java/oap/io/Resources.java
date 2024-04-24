@@ -28,11 +28,11 @@ import lombok.SneakyThrows;
 import oap.io.content.ContentReader;
 import oap.util.Lists;
 import oap.util.Stream;
+import oap.util.Throwables;
 import oap.util.function.Try;
 import org.apache.commons.collections4.EnumerationUtils;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -110,7 +110,7 @@ public final class Resources {
                     ret.add( ContentReader.read( is, ContentReader.ofString() ) );
                 }
         } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+            throw Throwables.propagate( e );
         }
         return ret;
     }
@@ -195,8 +195,8 @@ public final class Resources {
     @SneakyThrows
     public static List<URL> urls( Predicate<String> filter ) {
         return Stream.of( ClassPath.from( Thread.currentThread()
-            .getContextClassLoader() )
-            .getResources() )
+                    .getContextClassLoader() )
+                .getResources() )
             .filter( ri -> filter.test( ri.getResourceName() ) )
             .map( ClassPath.ResourceInfo::url )
             .toList();

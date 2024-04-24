@@ -57,7 +57,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.CopyOption;
@@ -509,7 +508,7 @@ public final class Files {
             ensureFile( destPath );
             java.nio.file.Files.move( sourcePath, destPath, ATOMIC_MOVE, REPLACE_EXISTING );
         } catch( IOException e ) {
-            throw new UncheckedIOException( "cannot rename " + sourcePath + " to " + destPath, e );
+            throw new oap.io.IOException( "cannot rename " + sourcePath + " to " + destPath, e );
         }
     }
 
@@ -526,7 +525,7 @@ public final class Files {
         }
     }
 
-    public static void move( Path source, Path target, CopyOption... options ) {
+    public static void move( Path source, Path target, CopyOption... options ) throws oap.io.IOException {
         try {
             ensureFile( target );
             java.nio.file.Files.move( source, target, options );
@@ -535,7 +534,7 @@ public final class Files {
         }
     }
 
-    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
+    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) throws oap.io.IOException {
         try {
             java.nio.file.Files.setPosixFilePermissions( path, permissions );
         } catch( IOException e ) {
@@ -543,11 +542,11 @@ public final class Files {
         }
     }
 
-    public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) {
+    public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) throws oap.io.IOException {
         setPosixPermissions( path, Sets.of( permissions ) );
     }
 
-    public static Set<PosixFilePermission> getPosixPermissions( Path path ) {
+    public static Set<PosixFilePermission> getPosixPermissions( Path path ) throws oap.io.IOException {
         try {
             return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
         } catch( IOException e ) {
@@ -555,7 +554,7 @@ public final class Files {
         }
     }
 
-    public static boolean isDirectoryEmpty( Path directory ) {
+    public static boolean isDirectoryEmpty( Path directory ) throws oap.io.IOException {
         try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
             return !dirStream.iterator().hasNext();
         } catch( IOException e ) {
@@ -563,11 +562,11 @@ public final class Files {
         }
     }
 
-    public static void setLastModifiedTime( Path path, DateTime dateTime ) {
+    public static void setLastModifiedTime( Path path, DateTime dateTime ) throws oap.io.IOException {
         setLastModifiedTime( path, dateTime.getMillis() );
     }
 
-    public static void setLastModifiedTime( Path path, long ms ) {
+    public static void setLastModifiedTime( Path path, long ms ) throws oap.io.IOException {
         try {
             java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
         } catch( IOException e ) {
@@ -654,7 +653,7 @@ public final class Files {
         return isFileNotEmpty( path );
     }
 
-    public static boolean isFileNotEmpty( final Path path ) {
+    public static boolean isFileNotEmpty( final Path path ) throws oap.io.IOException {
         try( InputStream is = IoStreams.in( path );
              InputStreamReader isr = new InputStreamReader( is );
              BufferedReader reader = new BufferedReader( isr ) ) {
@@ -670,7 +669,7 @@ public final class Files {
         return java.nio.file.Files.exists( path );
     }
 
-    public static long getLastModifiedTime( Path path ) {
+    public static long getLastModifiedTime( Path path ) throws oap.io.IOException {
         try {
             return java.nio.file.Files.getLastModifiedTime( path ).toMillis();
         } catch( IOException e ) {
@@ -678,7 +677,7 @@ public final class Files {
         }
     }
 
-    public static boolean createFile( Path file ) {
+    public static boolean createFile( Path file ) throws oap.io.IOException {
         try {
             java.nio.file.Files.createFile( file );
             return true;
