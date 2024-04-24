@@ -24,14 +24,18 @@
 
 package oap.io;
 
-import lombok.SneakyThrows;
+import oap.util.Throwables;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 
 public class Paths {
-    @SneakyThrows
-    public static URL toUrl( Path path ) {
-        return path.toUri().toURL();
+    public static URL toUrl( Path path ) throws oap.io.MalformedURLException {
+        try {
+            return path.toUri().toURL();
+        } catch( MalformedURLException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 }

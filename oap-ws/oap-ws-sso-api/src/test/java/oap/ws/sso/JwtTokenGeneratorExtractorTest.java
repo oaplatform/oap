@@ -26,11 +26,11 @@ package oap.ws.sso;
 
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
-import oap.util.Dates;
 import oap.util.Pair;
 import oap.ws.sso.AbstractUserTest.TestSecurityRolesProvider;
 import oap.ws.sso.AbstractUserTest.TestUser;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.util.Date;
@@ -52,8 +52,7 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
 
     @Test
     public void generateAndExtractToken() {
-        Dates.setTimeFixed( 2024, 4, 23, 14, 45, 56, 12 );
-
+        DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() );
 
         Pair<Date, String> token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
         assertNotNull( token._1 );

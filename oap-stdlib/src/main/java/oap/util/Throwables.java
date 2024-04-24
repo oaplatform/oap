@@ -26,18 +26,24 @@ package oap.util;
 
 import lombok.Lombok;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.concurrent.ExecutionException;
+import java.net.MalformedURLException;
 
 public final class Throwables {
     private Throwables() {
     }
 
     public static RuntimeException propagate( Throwable throwable ) {
-        if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
-        else if( throwable instanceof java.util.concurrent.ExecutionException ) throw new oap.concurrent.ExecutionException( ( ExecutionException ) throwable );
-        else if( throwable instanceof java.util.concurrent.TimeoutException ) throw new oap.concurrent.TimeoutException( throwable );
+        switch( throwable ) {
+            case FileNotFoundException fnf -> throw new oap.io.FileNotFoundException( fnf );
+            case MalformedURLException murl -> throw new oap.io.MalformedURLException( murl );
+            case IOException _ -> throw new oap.io.IOException( throwable );
+            case java.util.concurrent.ExecutionException ee -> throw new oap.concurrent.ExecutionException( ee );
+            case java.util.concurrent.TimeoutException _ -> throw new oap.concurrent.TimeoutException( throwable );
+            case null, default -> {
+            }
+        }
 
         throw Lombok.sneakyThrow( throwable );
     }
