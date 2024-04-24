@@ -23,12 +23,15 @@
  */
 package oap.io;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@Slf4j
 public class SafeFileOutputStream extends FileOutputStream {
     private final Path path;
 
@@ -52,15 +55,17 @@ public class SafeFileOutputStream extends FileOutputStream {
 
     @Override
     public void close() throws IOException {
-        // https://stackoverflow.com/questions/25910173/fileoutputstream-close-is-not-always-writing-bytes-to-file-system
-        getFD().sync();
-        super.close();
+        try {
+            // https://stackoverflow.com/questions/25910173/fileoutputstream-close-is-not-always-writing-bytes-to-file-system
+            getFD().sync();
+            super.close();
+        } catch( IOException e ) {
+            log.error( e.getMessage(), e );
+        }
         final Path unsafePath = Paths.get( this.path + ".unsafe" );
         if( !java.nio.file.Files.exists( unsafePath ) || java.nio.file.Files.size( unsafePath ) == 0 )
             Files.delete( unsafePath );
         else
             Files.rename( unsafePath, this.path );
     }
-
-
 }
