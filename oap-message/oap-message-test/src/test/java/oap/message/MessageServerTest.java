@@ -370,10 +370,13 @@ public class MessageServerTest extends Fixtures {
                 .syncMemory();
 
             MessageSenderUtils.waitSendAll( client, Dates.s( 10 ), 10 );
-            assertThat( listener1.getMessages() ).containsExactly(
-                new TestMessage( 1, "ttl" ),
-                new TestMessage( 1, "ttl" )
-            );
+
+            assertEventually( 100, 10, () -> {
+                assertThat( listener1.getMessages() ).containsExactly(
+                    new TestMessage( 1, "ttl" ),
+                    new TestMessage( 1, "ttl" )
+                );
+            } );
         }
     }
 
