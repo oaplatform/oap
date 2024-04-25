@@ -138,7 +138,7 @@ public class FileSystemTest extends Fixtures {
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertTrue( fileSystem.containerExists( "s3://test2" ) );
-        var list = fileSystem.list("s3://test2/logs/" );
+        var list = fileSystem.list( "s3://test2/logs/" );
         assertThat( list.size() ).isEqualTo( 2 );
         assertNotNull( list.stream().toList().get( 0 ).getLastModified() );
         assertEquals( "logs/file1.txt", list.stream().toList().get( 0 ).getName() );

@@ -68,7 +68,7 @@ public class FileSystem {
      * The core api does not allow passing custom headers. This is a workaround.
      */
     private static void putBlob( BlobStore blobStore, Blob blob, CloudURI blobURI, Map<String, String> tags ) throws CloudException {
-        if (tags.isEmpty()) {
+        if ( tags.isEmpty() ) {
             blobStore.putBlob( blobURI.container, blob );
             return;
         }
@@ -262,7 +262,7 @@ public class FileSystem {
         Long getSize();
     }
 
-    private PageSet<? extends StorageItem> wrapToStorageItem( PageSet<? extends StorageMetadata> list) {
+    private PageSet<? extends StorageItem> wrapToStorageItem( PageSet<? extends StorageMetadata> list ) {
         var wrapped = list.stream()
                 .map( sm -> new StorageItem() {
                     @Override
