@@ -12,11 +12,11 @@ public class FileSystemConfigurationTest {
     @Test
     public void getDefault() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
-            Map.of( "fs.s3.test-bucket.jclouds.endpoint", "http://localhost/s3/tb",
+            Map.of( "fs.s3.test-bucket.clouds.endpoint", "http://localhost/s3/tb",
                 "fs.s3.jclouds.endpoint", "http://localhost/s3",
                 "fs", Map.of(
                     "default.jclouds.scheme", "s3",
-                    "default.jclouds.container", "test-bucket"
+                    "default.clouds.container", "test-bucket"
                 )
             )
         );
@@ -37,11 +37,31 @@ public class FileSystemConfigurationTest {
 
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.s3.jclouds.test", "${env.TMP_S3_SCHEME}",
-                "fs.s3.jclouds.test2", "${TMP_S3_SCHEME}",
+                "fs.s3.clouds.test", "${env.TMP_S3_SCHEME}",
+                "fs.s3.clouds.test2", "${TMP_S3_SCHEME}",
                 "fs.s3.jclouds.test3", "${env.unknown}-${unknown}",
                 "fs.default.jclouds.scheme", "s3",
                 "fs.default.jclouds.container", "test-bucket"
+            )
+        );
+
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test2" ) ).isEqualTo( "file" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
+    }
+
+    @Test
+    public void testOapCloudsProperties() {
+        Env.set( "TMP_S3_SCHEME", "s3" );
+        System.setProperty( "TMP_S3_SCHEME", "file" );
+
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
+            Map.of(
+                "fs.s3.clouds.test", "${env.TMP_S3_SCHEME}",
+                "fs.s3.clouds.test2", "${TMP_S3_SCHEME}",
+                "fs.s3.clouds.test3", "${env.unknown}-${unknown}",
+                "fs.default.clouds.scheme", "s3",
+                "fs.default.clouds.container", "test-bucket"
             )
         );
 

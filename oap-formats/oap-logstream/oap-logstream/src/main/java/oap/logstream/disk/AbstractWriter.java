@@ -43,10 +43,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 @Slf4j
 public abstract class AbstractWriter<T extends Closeable> implements Closeable {
+    public final LogFormat logFormat;
     protected final Path logDirectory;
     protected final String filePattern;
     protected final LogId logId;
@@ -59,7 +59,6 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected String lastPattern;
     protected int fileVersion = 1;
     protected boolean closed = false;
-    public final LogFormat logFormat;
 
     protected AbstractWriter( LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
                               int maxVersions ) {
@@ -76,20 +75,6 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         this.timestamp = timestamp;
         this.lastPattern = currentPattern();
         log.debug( "spawning {}", this );
-    }
-
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, Consumer<String> error ) throws LoggerException {
-        write( protocolVersion, buffer, 0, buffer.length, error );
-    }
-
-    public abstract void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length, Consumer<String> error ) throws LoggerException;
-
-    protected String currentPattern() {
-        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
-    }
-
-    protected String currentPattern( int version ) {
-        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc() );
     }
 
     @SneakyThrows
@@ -111,6 +96,20 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
             .addVariable( "LOG_FORMAT_" + logFormat.name(), logFormat.extension );
         return logIdTemplate.render( StringUtils.replace( pattern, " ", "" ), time, timestamp, version );
     }
+
+    protected String currentPattern( int version ) {
+        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc() );
+    }
+
+    protected String currentPattern() {
+        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
+    }
+
+    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {
+        write( protocolVersion, buffer, 0, buffer.length );
+    }
+
+    public abstract void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException;
 
     public synchronized void refresh() {
         refresh( false );

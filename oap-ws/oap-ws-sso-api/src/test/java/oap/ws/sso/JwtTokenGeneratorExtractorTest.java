@@ -24,33 +24,40 @@
 
 package oap.ws.sso;
 
+import oap.testng.Fixtures;
+import oap.testng.SystemTimerFixture;
 import oap.util.Pair;
+import oap.ws.sso.AbstractUserTest.TestSecurityRolesProvider;
+import oap.ws.sso.AbstractUserTest.TestUser;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 
-public class JwtTokenGeneratorExtractorTest extends AbstractUserTest {
+public class JwtTokenGeneratorExtractorTest extends Fixtures {
+    private static final JwtTokenGenerator jwtTokenGenerator = new JwtTokenGenerator( "secret", "secret", "issuer", 15 * 60 * 1000, 15 * 60 * 1000 * 24 );
+    private static final JWTExtractor jwtExtractor = new JWTExtractor( "secret", "issuer", new SecurityRoles( new TestSecurityRolesProvider() ) );
 
-    private final JwtTokenGenerator jwtTokenGenerator = new JwtTokenGenerator( "secret", "secret", "issuer", 15 * 60 * 1000, 15 * 60 * 1000 * 24 );
-    private final JWTExtractor jwtExtractor = new JWTExtractor( "secret", "issuer", new SecurityRoles( new TestSecurityRolesProvider() ) );
+    public JwtTokenGeneratorExtractorTest() {
+        fixture( new SystemTimerFixture() );
+    }
 
     @Test
     public void generateAndExtractToken() {
-        final Pair<Date, String> token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
+        DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() );
+
+        Pair<Date, String> token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
         assertNotNull( token._1 );
         assertString( token._2 ).isNotEmpty();
-        Instant expirationTime = token._1.toInstant().truncatedTo( ChronoUnit.MINUTES );
-        Instant expectedExpirationTime = Instant.now().plus( Duration.ofMinutes( 15 ) ).truncatedTo( ChronoUnit.MINUTES );
-        assertThat( expirationTime ).isEqualTo( expectedExpirationTime );
+        assertThat( token._1 ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
         assertTrue( jwtExtractor.verifyToken( token._2 ) );
         assertThat( jwtExtractor.getUserEmail( token._2 ) ).isEqualTo( "email@email.com" );
         assertThat( jwtExtractor.getPermissions( token._2, "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );

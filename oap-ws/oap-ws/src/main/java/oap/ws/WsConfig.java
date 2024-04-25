@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.server.nio.NioHttpServer;
@@ -35,8 +34,6 @@ import java.util.Optional;
 @EqualsAndHashCode
 @ToString
 public class WsConfig {
-    @JsonAlias( { "profile", "profiles" } )
-    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     public final ArrayList<String> interceptors = new ArrayList<>();
     public LinkedHashSet<String> path = new LinkedHashSet<>();
     public boolean sessionAware;

@@ -34,7 +34,7 @@ import java.util.List;
 
 @ToString
 @EqualsAndHashCode( exclude = "one2" )
-public class ServiceTwo implements Hello, ActionListener {
+public class ServiceTwo implements Hello, ActionListener, IService {
     public ServiceOne one2;
     int j;
     boolean started;

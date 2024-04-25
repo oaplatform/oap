@@ -49,7 +49,7 @@ public final class BufferConfigurationMap extends HashMap<String, BufferConfigur
         super( m );
     }
 
-    static BufferConfigurationMap defaultMap( int bufferSize ) {
+    public static BufferConfigurationMap defaultMap( int bufferSize ) {
         return new BufferConfigurationMap( "DEFAULT", new BufferConfiguration( bufferSize, ALL ) );
     }
 

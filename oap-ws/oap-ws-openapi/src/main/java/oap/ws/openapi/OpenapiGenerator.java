@@ -150,6 +150,7 @@ public class OpenapiGenerator {
 
     public Result processWebservice( Class<?> clazz, String context ) {
         log.info( "Processing web-service {} implementation class '{}' ...", context, clazz.getCanonicalName() );
+
         if( !processedClasses.add( clazz.getCanonicalName() ) ) return Result.SKIPPED_DUE_TO_ALREADY_PROCESSED;
         if( clazz.isAnnotationPresent( OpenapiIgnore.class ) ) return Result.SKIPPED_DUE_TO_ANNOTATED_TO_IGNORE;
         oap.ws.api.Info.WebServiceInfo wsInfo = new oap.ws.api.Info.WebServiceInfo( Reflect.reflect( clazz ), context );

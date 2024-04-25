@@ -4,6 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <packaging>pom</packaging>
+
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
@@ -12,34 +14,10 @@
 
     <artifactId>oap-message</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-http</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-stdlib-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-application-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>oap-message-common</module>
+        <module>oap-message-server</module>
+        <module>oap-message-client</module>
+        <module>oap-message-test</module>
+    </modules>
 </project>

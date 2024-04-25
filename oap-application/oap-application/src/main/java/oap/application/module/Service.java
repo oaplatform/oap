@@ -39,20 +39,19 @@ import java.util.Map;
 @EqualsAndHashCode
 @ToString
 public class Service {
-    public static final String PROFILE_ENABLED = "enabled";
-    public static final String PROFILE_DISABLED = "disabled";
-
     public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
     public final Supervision supervision = new Supervision();
-    public final LinkedHashSet<Object> dependsOn = new LinkedHashSet<>();
-    @JsonAlias( { "profile", "profiles" } )
-    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
     public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
     public final LinkedHashMap<String, String> link = new LinkedHashMap<>();
     public String implementation;
-    public String name;
+    public boolean enabled = true;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
+
+    @SuppressWarnings( "checkstyle:MemberName" )
+    @JsonAlias( "abstract" )
+    protected boolean _abstract = false;
 
     @JsonAnySetter
     public void putUnknown( String key, Object val ) {
@@ -67,5 +66,9 @@ public class Service {
     @SuppressWarnings( "unchecked" )
     public <T> T getExt( String ext ) {
         return ( T ) this.ext.get( ext );
+    }
+
+    public boolean isAbstract() {
+        return _abstract;
     }
 }

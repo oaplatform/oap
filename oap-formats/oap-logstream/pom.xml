@@ -22,6 +22,8 @@
         <module>oap-logstream</module>
         <module>oap-logstream-data</module>
         <module>oap-logstream-data-object</module>
+        <module>oap-logstream-net-server</module>
+        <module>oap-logstream-net-client</module>
         <module>oap-logstream-test</module>
     </modules>
 </project>

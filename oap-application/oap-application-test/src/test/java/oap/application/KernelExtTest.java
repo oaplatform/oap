@@ -46,7 +46,7 @@ public class KernelExtTest {
         try {
             kernel.start( Map.of( "boot.main", "module-ext" ) );
 
-            var found = kernel.servicesByExt( "ws", TestKernelExt.class );
+            var found = kernel.servicesByExt( "ws" );
             assertThat( found ).hasSize( 1 );
             assertThat( found.get( 0 ).ext ).isEqualTo( new TestKernelExt( "/s", "service" ) );
             assertThat( found.get( 0 ).name ).isEqualTo( "s1" );

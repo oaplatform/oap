@@ -24,23 +24,21 @@
 
 package oap.application.module;
 
-import oap.application.ServiceInitialization;
+import oap.application.ModuleItem;
 
 
 public class ServiceExt<T> {
-    public final Module module;
     public final String name;
     public final T ext;
-    private final ServiceInitialization serviceInitialization;
+    public final ModuleItem.ServiceItem serviceItem;
 
-    public ServiceExt( String name, Module module, ServiceInitialization serviceInitialization, T ext ) {
-        this.module = module;
+    public ServiceExt( String name, ModuleItem.ServiceItem serviceItem, T ext ) {
         this.name = name;
-        this.serviceInitialization = serviceInitialization;
+        this.serviceItem = serviceItem;
         this.ext = ext;
     }
 
     public Object getInstance() {
-        return serviceInitialization.instance;
+        return serviceItem.instance;
     }
 }

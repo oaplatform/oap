@@ -29,7 +29,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceStorage.ErrorStatus;
 import oap.application.module.Reference;
-import oap.application.module.Service;
 import oap.util.Result;
 
 import javax.annotation.Nullable;
@@ -38,7 +37,7 @@ import java.util.Set;
 
 @ToString( callSuper = true )
 @Slf4j
-public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitialization> {
+public class ServiceKernelCommand extends AbstractKernelCommand<ModuleItem.ServiceItem> {
     public static final Set<String> THIS = Set.of( "this", "self" );
 
     public static final ServiceKernelCommand INSTANCE = new ServiceKernelCommand();
@@ -48,11 +47,11 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
     }
 
     @Override
-    public Result<ServiceInitialization, ErrorStatus> get( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
-                                                           Service service, ServiceStorage storage ) {
-        var reference = reference( ( String ) value, moduleItem );
+    public Result<ModuleItem.ServiceItem, ErrorStatus> get( Object value, Kernel kernel,
+                                                            @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
+        var reference = reference( ( String ) value, serviceItem != null ? serviceItem.moduleItem : null );
 
-        return storage.findByName( reference.module, reference.service ).mapSuccess( v -> ( ServiceInitialization ) v );
+        return storage.findByName( reference.module, reference.service ).mapSuccess( v -> ( ModuleItem.ServiceItem ) v );
     }
 
     public Reference reference( String value, @Nullable ModuleItem moduleItem ) {
@@ -72,8 +71,8 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ServiceInitializ
     }
 
     @Override
-    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel, @Nullable ModuleItem moduleItem,
-                                                    Service service, ServiceStorage storage ) {
-        return get( value, kernel, moduleItem, service, storage ).mapSuccess( v -> v.instance );
+    public Result<Object, ErrorStatus> getInstance( Object value, Kernel kernel,
+                                                    @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
+        return get( value, kernel, serviceItem, storage ).mapSuccess( v -> v.instance );
     }
 }
