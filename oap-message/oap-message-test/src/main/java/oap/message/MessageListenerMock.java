@@ -75,15 +75,20 @@ public class MessageListenerMock implements MessageListener {
 
         accessCount.incrementAndGet();
         if( throwUnknownError > 0 ) {
+            log.debug( "throwUnknownError {} noRetry {}", throwUnknownError, noRetry );
             throwUnknownError -= 1;
-            if( noRetry )
+            if( noRetry ) {
+                log.debug( "RuntimeException -> unknown error" );
                 throw new RuntimeException( "unknown error" );
-            else
+            } else {
+                log.debug( "MessageProtocol.STATUS_UNKNOWN_ERROR" );
                 return MessageProtocol.STATUS_UNKNOWN_ERROR;
+            }
         }
 
-        if( status == MessageProtocol.STATUS_OK )
+        if( status == MessageProtocol.STATUS_OK ) {
             messages.add( new TestMessage( version, md5, new String( data, UTF_8 ) ) );
+        }
 
         return status;
     }

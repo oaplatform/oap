@@ -69,8 +69,10 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @ToString
@@ -376,6 +378,10 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
+        syncMemory( -1 );
+    }
+
+    public void syncMemory( long timeoutMs ) {
         if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
             log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
                 uniqueName, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
@@ -401,6 +407,14 @@ public class MessageSender implements Closeable, AutoCloseable {
                     log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
                     return null;
                 } );
+
+                if( timeoutMs >= 0 ) {
+                    try {
+                        future.get( timeoutMs, TimeUnit.MILLISECONDS );
+                    } catch( InterruptedException | TimeoutException | ExecutionException e ) {
+                        log.error( e.getMessage(), e );
+                    }
+                }
             }
 
             if( isGlobalIoRetryTimeout( now ) ) {

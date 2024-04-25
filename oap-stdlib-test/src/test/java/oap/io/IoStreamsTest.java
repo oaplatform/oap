@@ -53,6 +53,7 @@ import static oap.io.content.ContentWriter.ofString;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class IoStreamsTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
@@ -150,5 +151,17 @@ public class IoStreamsTest extends Fixtures {
             Files.write( path, encoding, content, ofString() );
             System.out.println( encoding + ":\t" + content.length() + " -> " + path.toFile().length() );
         }
+    }
+
+    @Test
+    public void testThrowIfFileExists() throws IOException {
+        Path testFile = testDirectoryFixture.testPath( "testFile" );
+        testFile.toFile().createNewFile();
+
+        assertThatThrownBy( () -> {
+            try( var _ = IoStreams.out( testFile, new IoStreams.OutOptions().withThrowIfFileExists( true ) ) ) {
+                System.out.println( "!" );
+            }
+        } ).isInstanceOf( oap.io.FileExistsException.class );
     }
 }
