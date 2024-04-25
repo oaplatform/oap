@@ -33,12 +33,12 @@ import oap.message.client.MessageSender;
 import oap.message.server.MessageHttpHandler;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
+import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeUtils;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -48,7 +48,6 @@ import java.util.List;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentWriter.ofJson;
 import static oap.io.content.ContentWriter.ofString;
-import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -60,11 +59,7 @@ public class MessageServerTest extends Fixtures {
 
     public MessageServerTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
-    }
-
-    @BeforeMethod
-    public void beforeMethod() {
-        DateTimeUtils.setCurrentMillisSystem();
+        fixture( new SystemTimerFixture() );
     }
 
     @Test
@@ -107,12 +102,11 @@ public class MessageServerTest extends Fixtures {
                 server.start();
 
                 client1.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "rejectedException", ofString() )
-                    .syncMemory();
-                client2.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "rejectedException", ofString() );
+                    .syncMemory( Dates.s( 10 ) );
 
-                assertEventually( 50, 100, () -> {
-                    assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "rejectedException" ) );
-                } );
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "rejectedException" ) );
+
+                client2.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "rejectedException", ofString() );
             }
 
             try( var client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
@@ -120,13 +114,12 @@ public class MessageServerTest extends Fixtures {
 
                 client.start();
 
-                client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "rejectedException 2", ofString() ).syncDisk().syncMemory();
+                client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "rejectedException 2", ofString() ).syncDisk()
+                    .syncMemory( Dates.s( 10 ) );
 
-                assertEventually( 50, 100, () -> {
-                    assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "rejectedException" ), new TestMessage( 1, "rejectedException 2" ) );
-                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
-                } );
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "rejectedException" ), new TestMessage( 1, "rejectedException 2" ) );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
             }
         }
     }
@@ -154,13 +147,12 @@ public class MessageServerTest extends Fixtures {
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceive 2", ofString() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceive 1", ofString() )
                 .send( MessageListenerMock.MESSAGE_TYPE2, ( short ) 1, "sendAndReceive 3", ofString() )
-                .syncMemory();
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 100, 50, () -> {
-                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "sendAndReceive 1" ),
-                    new TestMessage( 1, "sendAndReceive 2" ) );
-                assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 1, "sendAndReceive 3" ) );
-            } );
+            assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "sendAndReceive 1" ),
+                new TestMessage( 1, "sendAndReceive 2" ) );
+            assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 1, "sendAndReceive 3" ) );
+
             assertThat( client.getReadyMessages() ).isEqualTo( 0L );
             assertThat( client.getRetryMessages() ).isEqualTo( 0L );
 
@@ -189,13 +181,11 @@ public class MessageServerTest extends Fixtures {
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceiveJson 2", ofJson() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceiveJson 2", ofJson() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceiveJson 1", ofJson() )
-                .syncMemory();
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 100, 50, () ->
-                assertThat( listener1.messages ).containsOnly(
-                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJson 1\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJson 1" ),
-                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJson 2\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJson 2" )
-                )
+            assertThat( listener1.messages ).containsOnly(
+                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJson 1\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJson 1" ),
+                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJson 2\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJson 2" )
             );
         }
     }
@@ -222,14 +212,12 @@ public class MessageServerTest extends Fixtures {
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceiveJsonOneThread 2", ofJson() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceiveJsonOneThread 2", ofJson() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "sendAndReceiveJsonOneThread 1", ofJson() )
-                .syncMemory();
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 50, 100, () -> {
-                assertThat( listener1.messages ).containsOnly(
-                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJsonOneThread 1\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJsonOneThread 1" ),
-                    new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJsonOneThread 2\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJsonOneThread 2" )
-                );
-            } );
+            assertThat( listener1.messages ).containsOnly(
+                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJsonOneThread 1\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJsonOneThread 1" ),
+                new TestMessage( 1, Hex.encodeHexString( DigestUtils.getMd5Digest().digest( "\"sendAndReceiveJsonOneThread 2\"".getBytes( UTF_8 ) ) ), "sendAndReceiveJsonOneThread 2" )
+            );
         }
     }
 
@@ -250,12 +238,11 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             listener1.throwUnknownError( Integer.MAX_VALUE, true );
-            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "unknownErrorNoRetry", ofString() ).syncMemory();
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "unknownErrorNoRetry", ofString() )
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 100, 50, () -> {
-                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
-            } );
+            assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+            assertThat( client.getRetryMessages() ).isEqualTo( 0L );
 
             assertThat( listener1.getMessages() ).isEmpty();
         }
@@ -267,6 +254,8 @@ public class MessageServerTest extends Fixtures {
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
         var listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        DateTimeUtils.setCurrentMillisFixed( 100 );
 
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
@@ -282,11 +271,12 @@ public class MessageServerTest extends Fixtures {
             listener1.throwUnknownError( 4, false );
             client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "unknownError", ofString() );
 
-            assertEventually( 100, 50, () -> {
-                client.syncMemory();
-                assertThat( listener1.throwUnknownError ).isLessThanOrEqualTo( 0 );
-                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "unknownError" ) );
-            } );
+            for( int i = 0; i < 5; i++ ) {
+                client.syncMemory( Dates.s( 10 ) );
+                Dates.incFixed( 100 + 1 );
+            }
+            assertThat( listener1.throwUnknownError ).isLessThanOrEqualTo( 0 );
+            assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "unknownError" ) );
 
             assertThat( client.getReadyMessages() ).isEqualTo( 0L );
             assertThat( client.getRetryMessages() ).isEqualTo( 0L );
@@ -300,6 +290,8 @@ public class MessageServerTest extends Fixtures {
 
         MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
 
+        DateTimeUtils.setCurrentMillisFixed( 100 );
+
         try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
@@ -312,20 +304,19 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             listener1.setStatus( 567 );
-            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "statusError", ofString() ).syncMemory();
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "statusError", ofString() )
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 100, 50, () -> {
-                assertThat( client.getRetryMessages() ).isEqualTo( 1 );
-                assertThat( listener1.getMessages() ).isEmpty();
-            } );
+            assertThat( client.getRetryMessages() ).isEqualTo( 1 );
+            assertThat( listener1.getMessages() ).isEmpty();
 
             listener1.setStatusOk();
 
-            assertEventually( 10, 50, () -> {
-                client.syncMemory();
+            Dates.incFixed( 100 + 1 );
 
-                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "statusError" ) );
-            } );
+            client.syncMemory( Dates.s( 10 ) );
+
+            assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "statusError" ) );
         }
     }
 
@@ -355,28 +346,23 @@ public class MessageServerTest extends Fixtures {
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "ttl", ofString() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "ttl", ofString() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "ttl", ofString() )
-                .syncMemory();
+                .syncMemory( Dates.s( 10 ) );
 
-            MessageSenderUtils.waitSendAll( client, Dates.s( 10 ), 10 );
             assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "ttl" ) );
 
-            DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
+            Dates.incFixed( hashTtl + 1 );
             messageHttpHandler.updateHash();
 
             client
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "ttl", ofString() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "ttl", ofString() )
                 .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "ttl", ofString() )
-                .syncMemory();
+                .syncMemory( Dates.s( 10 ) );
 
-            MessageSenderUtils.waitSendAll( client, Dates.s( 10 ), 10 );
-
-            assertEventually( 100, 10, () -> {
-                assertThat( listener1.getMessages() ).containsExactly(
-                    new TestMessage( 1, "ttl" ),
-                    new TestMessage( 1, "ttl" )
-                );
-            } );
+            assertThat( listener1.getMessages() ).containsExactly(
+                new TestMessage( 1, "ttl" ),
+                new TestMessage( 1, "ttl" )
+            );
         }
     }
 
@@ -405,14 +391,12 @@ public class MessageServerTest extends Fixtures {
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "persistence", ofString() )
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "persistence", ofString() )
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "persistence", ofString() )
-                    .syncMemory();
+                    .syncMemory( Dates.s( 10 ) );
 
-                assertEventually( 100, 50, () -> {
-                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
 
-                    assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "persistence" ) );
-                } );
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 1, "persistence" ) );
 
             }
 
@@ -429,14 +413,12 @@ public class MessageServerTest extends Fixtures {
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "persistence", ofString() )
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "persistence", ofString() )
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "persistence", ofString() )
-                    .syncMemory();
+                    .syncMemory( Dates.s( 10 ) );
 
-                assertEventually( 100, 50, () -> {
-                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
 
-                    assertThat( listener1.getMessages() ).isEmpty();
-                } );
+                assertThat( listener1.getMessages() ).isEmpty();
             }
         }
     }
@@ -464,14 +446,13 @@ public class MessageServerTest extends Fixtures {
                 client.retryTimeout = 100;
                 client.start();
 
-                client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 2, "clientPersistence 1", ofString() ).syncMemory();
+                client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 2, "clientPersistence 1", ofString() )
+                    .syncMemory( Dates.s( 10 ) );
                 client.send( MessageListenerMock.MESSAGE_TYPE2, ( short ) 2, "clientPersistence 2", ofString() );
 
-                assertEventually( 100, 50, () -> {
-                    assertThat( listener1.getMessages() ).isEmpty();
-                    assertThat( client.getReadyMessages() ).isEqualTo( 1L );
-                    assertThat( client.getRetryMessages() ).isEqualTo( 1L );
-                } );
+                assertThat( listener1.getMessages() ).isEmpty();
+                assertThat( client.getReadyMessages() ).isEqualTo( 1L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 1L );
             }
 
             assertThat( persistenceDirectory ).isNotEmptyDirectory();
@@ -496,16 +477,14 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener1.getMessages() ).isEmpty();
 
                 client.syncDisk();
-                client.syncMemory();
+                client.syncMemory( Dates.s( 10 ) );
 
                 assertThat( persistenceDirectory ).isEmptyDirectory();
 
-                assertEventually( 100, 50, () -> {
-                    assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 2, "clientPersistence 1" ) );
-                    assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 2, "clientPersistence 2" ) );
-                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
-                } );
+                assertThat( listener1.getMessages() ).containsOnly( new TestMessage( 2, "clientPersistence 1" ) );
+                assertThat( listener2.getMessages() ).containsOnly( new TestMessage( 2, "clientPersistence 2" ) );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
             }
         }
     }
@@ -534,7 +513,7 @@ public class MessageServerTest extends Fixtures {
                 client
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "clientPersistenceLockExpiration 1", ofString() )
                     .send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "clientPersistenceLockExpiration 2", ofString() )
-                    .syncMemory();
+                    .syncMemory( Dates.s( 10 ) );
             }
 
             assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 );
@@ -557,13 +536,11 @@ public class MessageServerTest extends Fixtures {
 
                 client
                     .syncDisk()
-                    .syncMemory();
+                    .syncMemory( Dates.s( 10 ) );
 
-                assertEventually( 50, 100, () -> {
-                    assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "clientPersistenceLockExpiration 2" ) );
-                    assertThat( client.getReadyMessages() ).isEqualTo( 0L );
-                    assertThat( client.getRetryMessages() ).isEqualTo( 0L );
-                } );
+                assertThat( listener1.getMessages() ).containsExactly( new TestMessage( 1, "clientPersistenceLockExpiration 2" ) );
+                assertThat( client.getReadyMessages() ).isEqualTo( 0L );
+                assertThat( client.getRetryMessages() ).isEqualTo( 0L );
             }
         }
     }
@@ -587,21 +564,18 @@ public class MessageServerTest extends Fixtures {
 
             listener1.setStatus( 300 );
 
-            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "availabilityReport", ofString() ).syncMemory();
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "availabilityReport", ofString() )
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 50, 100, () -> {
-                assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.FAILED );
-                assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
-            } );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.FAILED );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
 
             listener1.setStatus( MessageProtocol.STATUS_OK );
 
-            assertEventually( 50, 100, () -> {
-                client.syncMemory();
+            client.syncMemory( Dates.s( 10 ) );
 
-                assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.OPERATIONAL );
-                assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
-            } );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.OPERATIONAL );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
         }
     }
 
@@ -615,12 +589,12 @@ public class MessageServerTest extends Fixtures {
         try {
             fixtures.fixBeforeMethod();
 
-            kernelFixture.service( "oap-message-client", MessageSender.class ).send( ( byte ) 12, ( short ) 1, "testKernel", ofString() );
+            kernelFixture.service( "oap-message-client", MessageSender.class )
+                .send( ( byte ) 12, ( short ) 1, "testKernel", ofString() )
+                .syncMemory( Dates.s( 10 ) );
 
-            assertEventually( 50, 100, () -> {
-                assertThat( kernelFixture.service( "oap-message-test", MessageListenerMock.class ).getMessages() )
-                    .containsExactly( new TestMessage( 1, "testKernel" ) );
-            } );
+            assertThat( kernelFixture.service( "oap-message-test", MessageListenerMock.class ).getMessages() )
+                .containsExactly( new TestMessage( 1, "testKernel" ) );
 
         } finally {
             fixtures.fixAfterMethod();
