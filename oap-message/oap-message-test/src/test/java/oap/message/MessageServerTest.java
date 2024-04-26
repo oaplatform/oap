@@ -43,6 +43,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -494,19 +495,19 @@ public class MessageServerTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
-        DateTimeUtils.setCurrentMillisFixed( 100 );
+        DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() );
 
-        var listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
-             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 ) ) {
 
             server.bind( "/messages", messageHttpHandler );
             messageHttpHandler.preStart();
             server.start();
 
-            var msgDirectory = testDirectoryFixture.testPath( "tmp" );
-            try( var client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
+            Path msgDirectory = testDirectoryFixture.testPath( "tmp" );
+            try( MessageSender client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
                 client.retryTimeout = 100;
                 client.poolSize = 2;
                 client.start();
@@ -519,18 +520,20 @@ public class MessageServerTest extends Fixtures {
             }
 
             assertThat( Files.wildcard( msgDirectory, "**/*.bin" ) ).hasSize( 2 );
-            var files = Files.wildcard( msgDirectory, "**/*.bin" );
+            ArrayList<Path> files = Files.wildcard( msgDirectory, "**/*.bin" );
 
             // lock
-            assertNotNull( MessageSender.lock( "clientPersistenceLockExpiration1", files.get( 0 ), -1 ) );
+            Path lockFile1 = MessageSender.lock( "clientPersistenceLockExpiration1", files.get( 0 ), -1 );
+            assertNotNull( lockFile1 );
 
             // lock expired
-            var lockFile2 = MessageSender.lock( "clientPersistenceLockExpiration2", files.get( 1 ), -1 );
+            Path lockFile2 = MessageSender.lock( "clientPersistenceLockExpiration2", files.get( 1 ), -1 );
             assertNotNull( lockFile2 );
 
-            Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
+            Files.setLastModifiedTime( lockFile1, DateTimeUtils.currentTimeMillis() );
+            Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - Dates.m( 5 ) - Dates.m( 1 ) );
 
-            try( var client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
+            try( MessageSender client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
                 client.storageLockExpiration = Dates.m( 5 );
                 client.start();
 
