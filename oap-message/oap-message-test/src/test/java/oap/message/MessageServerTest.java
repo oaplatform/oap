@@ -494,6 +494,8 @@ public class MessageServerTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
+        DateTimeUtils.setCurrentMillisFixed( 100 );
+
         var listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
