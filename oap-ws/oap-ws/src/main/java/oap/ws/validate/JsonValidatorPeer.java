@@ -50,8 +50,8 @@ public class JsonValidatorPeer implements ValidatorPeer {
     @Override
     public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
         try {
-            var mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
-            var factory = getJsonSchema( originalValues );
+            Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
+            JsonSchema factory = getJsonSchema( originalValues );
             return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
@@ -59,7 +59,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
     }
 
     private JsonSchema getJsonSchema( Map<Reflection.Parameter, Object> originalValues ) {
-        if( !dynamic ) return cache.computeIfAbsent( Strings.UNDEFINED, s -> JsonSchema.schema( schemaRef ) );
+        if( !dynamic ) return cache.computeIfAbsent( Strings.UNDEFINED, _ -> JsonSchema.schema( schemaRef ) );
 
         log.trace( "dynamic schema ref {}", schemaRef );
 
