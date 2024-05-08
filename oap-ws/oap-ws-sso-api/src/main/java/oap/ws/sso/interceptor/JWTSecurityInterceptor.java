@@ -25,6 +25,7 @@
 package oap.ws.sso.interceptor;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Result;
 import oap.ws.InvocationContext;
 import oap.ws.Response;
 import oap.ws.interceptor.Interceptor;
@@ -87,11 +88,11 @@ public class JWTSecurityInterceptor implements Interceptor {
             final String email = jwtExtractor.getUserEmail( token );
             organization = jwtExtractor.getOrganizationId( token );
 
-            User user = userProvider.getUser( email ).orElse( null );
-            if( user == null ) {
-                return Optional.of( new Response( FORBIDDEN, "User not found with email: " + email ) );
+            Result<? extends User, String> validUser = userProvider.getValidUser( email );
+            if( !validUser.isSuccess() ) {
+                return Optional.of( new Response( FORBIDDEN, validUser.failureValue ) );
             }
-            context.session.set( SESSION_USER_KEY, user );
+            context.session.set( SESSION_USER_KEY, validUser.successValue );
             context.session.set( ISSUER, issuerName );
         }
         Optional<WsSecurity> wss = context.method.findAnnotation( WsSecurity.class );
