@@ -11,14 +11,20 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
+import org.jclouds.blobstore.domain.PageSet;
+import org.jclouds.blobstore.domain.StorageMetadata;
+import org.jclouds.blobstore.domain.internal.PageSetImpl;
+import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,15 +68,15 @@ public class FileSystem {
      * The core api does not allow passing custom headers. This is a workaround.
      */
     private static void putBlob( BlobStore blobStore, Blob blob, CloudURI blobURI, Map<String, String> tags ) throws CloudException {
-        if( !tags.isEmpty() ) {
-            Tags putObject = tagSupport.get( blobURI.scheme );
-            if( putObject != null ) {
-                putObject.putBlob( blobStore, blob, blobURI, tags );
-            } else {
-                throw new CloudException( "tags are only supported for " + tagSupport.keySet() );
-            }
-        } else {
+        if ( tags.isEmpty() ) {
             blobStore.putBlob( blobURI.container, blob );
+            return;
+        }
+        Tags putObject = tagSupport.get( blobURI.scheme );
+        if( putObject != null ) {
+            putObject.putBlob( blobStore, blob, blobURI, tags );
+        } else {
+            throw new CloudException( "tags are only supported for " + tagSupport.keySet() );
         }
     }
 
@@ -84,15 +90,11 @@ public class FileSystem {
         BlobStoreContext context = null;
         try {
             context = getContext( path );
-
             BlobStore blobStore = context.getBlobStore();
-
             Blob blob = blobStore.getBlob( path.container, path.path );
-
             if( blob == null ) {
                 throw new CloudBlobNotFoundException( path );
             }
-
             return new CloudInputStream( blob.getPayload().openStream(), blob.getMetadata().getUserMetadata(), context );
         } catch( Exception e ) {
             throw new CloudException( e );
@@ -106,20 +108,16 @@ public class FileSystem {
     }
 
     public void downloadFile( CloudURI source, Path destination ) {
-        log.debug( "downloadFile {} destination {}", source, destination );
+        log.debug( "downloadFile {} to {}", source, destination );
 
         BlobStoreContext context = null;
         try {
             context = getContext( source );
-
             BlobStore blobStore = context.getBlobStore();
-
             Blob blob = blobStore.getBlob( source.container, source.path );
-
             if( blob == null ) {
                 throw new CloudBlobNotFoundException( source );
             }
-
             try( InputStream is = blob.getPayload().openStream() ) {
                 IoStreams.write( destination, PLAIN, is );
             }
@@ -153,17 +151,15 @@ public class FileSystem {
     }
 
     public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "uploadFile {} path {} userMetadata {} tags {}", destination, path, userMetadata, tags );
+        log.debug( "uploadFile {} to {} (userMetadata {}, tags {})", path, destination, userMetadata, tags );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
-
             Blob blob = blobStore
                 .blobBuilder( destination.path )
                 .userMetadata( userMetadata )
                 .payload( path.toFile() )
                 .build();
-
             putBlob( blobStore, blob, destination, tags );
         } catch( Exception e ) {
             throw new CloudException( e );
@@ -177,17 +173,15 @@ public class FileSystem {
     }
 
     public void upload( CloudURI destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "upload byte[] {} userMetadata {} tags {}", destination, userMetadata, tags );
+        log.debug( "upload byte[] to {} (userMetadata {}, tags {})", destination, userMetadata, tags );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
-
             Blob blob = blobStore
                 .blobBuilder( destination.path )
                 .userMetadata( userMetadata )
                 .payload( content )
                 .build();
-
             putBlob( blobStore, blob, destination, tags );
         } catch( Exception e ) {
             throw new CloudException( e );
@@ -218,7 +212,7 @@ public class FileSystem {
     }
 
     public void copy( CloudURI source, CloudURI destination, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "copy {} tp {} userMetadata {} tags {}", source, destination, userMetadata, tags );
+        log.debug( "copy {} to {} (userMetadata {}, tags {})", source, destination, userMetadata, tags );
 
 
         BlobStoreContext spurceContext = null;
@@ -257,6 +251,78 @@ public class FileSystem {
             Closeables.close( spurceContext );
             Closeables.close( destinationContext );
         }
+    }
+
+    public interface StorageItem {
+        String getName();
+        URI getUri();
+        String getETag();
+        Date getCreationDate();
+        Date getLastModified();
+        Long getSize();
+    }
+
+    private PageSet<? extends StorageItem> wrapToStorageItem( PageSet<? extends StorageMetadata> list ) {
+        var wrapped = list.stream()
+                .map( sm -> new StorageItem() {
+                    @Override
+                    public String getName() {
+                        return sm.getName();
+                    }
+
+                    @Override
+                    public URI getUri() {
+                        return sm.getUri();
+                    }
+
+                    @Override
+                    public String getETag() {
+                        return sm.getETag();
+                    }
+
+                    @Override
+                    public Date getCreationDate() {
+                        return sm.getCreationDate();
+                    }
+
+                    @Override
+                    public Date getLastModified() {
+                        return sm.getLastModified();
+                    }
+
+                    @Override
+                    public Long getSize() {
+                        return sm.getSize();
+                    }
+                } )
+                .toList();
+        return new PageSetImpl<>( wrapped, list.getNextMarker() );
+    }
+
+    public PageSet<? extends StorageItem> list( CloudURI path ) {
+        return list( path, ListContainerOptions.Builder.recursive() );
+    }
+
+    public PageSet<? extends StorageItem> list( CloudURI path, ListContainerOptions options ) {
+        log.debug( "list from {}", path );
+
+        try( BlobStoreContext context = getContext( path ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            if( options == null ) return wrapToStorageItem( blobStore.list( path.container ) );
+            return wrapToStorageItem( blobStore.list( path.container, options ) );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
+    public PageSet<? extends StorageItem> list( String path ) {
+        CloudURI pathURI = new CloudURI( path );
+        return list( pathURI, ListContainerOptions.Builder.recursive() );
+    }
+
+    public PageSet<? extends StorageItem> list( String path, ListContainerOptions options ) {
+        CloudURI pathURI = new CloudURI( path );
+        return list( pathURI, options );
     }
 
     public void deleteBlob( String path ) {

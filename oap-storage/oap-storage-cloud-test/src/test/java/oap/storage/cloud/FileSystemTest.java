@@ -17,7 +17,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class FileSystemTest extends Fixtures {
@@ -121,7 +123,7 @@ public class FileSystemTest extends Fixtures {
     }
 
     @Test
-    public void testDeleteAndExists() {
+    public void testExistsListAndDelete() {
         Path path1 = testDirectoryFixture.testPath( "folder/my-file.txt" );
         Path path2 = testDirectoryFixture.testPath( "folder/my-file2.txt" );
 
@@ -136,12 +138,17 @@ public class FileSystemTest extends Fixtures {
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertTrue( fileSystem.containerExists( "s3://test2" ) );
+        var list = fileSystem.list( "s3://test2/logs/" );
+        assertThat( list.size() ).isEqualTo( 2 );
+        assertNotNull( list.stream().toList().get( 0 ).getLastModified() );
+        assertEquals( "logs/file1.txt", list.stream().toList().get( 0 ).getName() );
 
         fileSystem.deleteBlob( "s3://test2/logs/file1.txt" );
 
         assertFalse( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertTrue( fileSystem.containerExists( "s3://test2" ) );
+        assertThat( fileSystem.list( "s3://test2/logs/" ).size() ).isEqualTo( 1 );
 
         assertFalse( fileSystem.deleteContainerIfEmpty( "s3://test2" ) );
         fileSystem.deleteContainer( "s3://test2" );
