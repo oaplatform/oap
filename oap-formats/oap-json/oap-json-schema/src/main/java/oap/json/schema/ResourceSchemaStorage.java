@@ -31,6 +31,7 @@ import oap.util.Lists;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public final class ResourceSchemaStorage implements SchemaStorage {
@@ -41,20 +42,24 @@ public final class ResourceSchemaStorage implements SchemaStorage {
 
     @Override
     public String get( String name ) {
-        var ext = FilenameUtils.getExtension( name );
-        var prefix = FilenameUtils.removeExtension( name );
-        var fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
+        String ext = FilenameUtils.getExtension( name );
+        String prefix = FilenameUtils.removeExtension( name );
+        String fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
 
-        var conf = Resources.readOrThrow( getClass(), name, ContentReader.ofString() );
-        if( "yaml".equalsIgnoreCase( ext ) ) conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
+        String conf = Resources.readOrThrow( getClass(), name, ContentReader.ofString() );
+        if( "yaml".equalsIgnoreCase( ext ) ) {
+            conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
+        }
 
-        var extConf = Resources.readStrings( getClass(), prefix + "/" + fileName + ".conf" );
-        var extJson = Resources.readStrings( getClass(), prefix + "/" + fileName + ".json" );
-        var extYaml = Resources.readStrings( getClass(), prefix + "/" + fileName + ".yaml" );
+        List<String> extConf = Resources.readStrings( getClass(), prefix + "/" + fileName + ".conf" );
+        List<String> extJson = Resources.readStrings( getClass(), prefix + "/" + fileName + ".json" );
+        List<String> extYaml = Resources.readStrings( getClass(), prefix + "/" + fileName + ".yaml" );
 
-        if( extConf.isEmpty() && extJson.isEmpty() && extYaml.isEmpty() ) return conf;
+        if( extConf.isEmpty() && extJson.isEmpty() && extYaml.isEmpty() ) {
+            return conf;
+        }
 
-        var list = new ArrayList<String>();
+        ArrayList<String> list = new ArrayList<>();
         list.addAll( extConf );
         list.addAll( extJson );
         list.addAll( Lists.map( extYaml, y -> Binder.json.marshal( Binder.yaml.unmarshal( Map.class, y ) ) ) );

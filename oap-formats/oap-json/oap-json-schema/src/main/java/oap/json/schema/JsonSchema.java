@@ -98,7 +98,7 @@ public class JsonSchema {
     }
 
     private Object parseWithTemplate( String schema, SchemaStorage storage ) {
-        var obj = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, schema );
+        Object obj = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, schema );
         resolveTemplates( obj, storage );
         log.trace( "schema = {}", Binder.json.marshal( obj ) );
         return obj;
@@ -107,13 +107,13 @@ public class JsonSchema {
     @SuppressWarnings( "unchecked" )
     private void resolveTemplates( Object obj, SchemaStorage storage ) {
         if( obj instanceof Map<?, ?> ) {
-            var map = ( Map<Object, Object> ) obj;
-            var templatePath = map.get( "template" );
+            Map<Object, Object> map = ( Map<Object, Object> ) obj;
+            Object templatePath = map.get( "template" );
             if( templatePath != null ) {
                 Preconditions.checkArgument( templatePath instanceof String );
 
-                var templateStr = storage.get( ( String ) templatePath );
-                var templateMap = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, templateStr );
+                String templateStr = storage.get( ( String ) templatePath );
+                Object templateMap = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, templateStr );
                 log.trace( "template path = {}, template = {}", templatePath, templateStr );
 
                 map.remove( "template" );
@@ -121,8 +121,7 @@ public class JsonSchema {
             }
 
             map.values().forEach( obj1 -> resolveTemplates( obj1, storage ) );
-        } else if( obj instanceof List<?> ) {
-            var list = ( List<?> ) obj;
+        } else if( obj instanceof List<?> list ) {
             list.forEach( obj1 -> resolveTemplates( obj1, storage ) );
         }
     }
@@ -132,15 +131,17 @@ public class JsonSchema {
         if( sl instanceof Map<?, ?> ) {
             Preconditions.checkArgument( sr instanceof Map<?, ?> );
 
-            var mapl = ( Map<Object, Object> ) sl;
-            var mapr = ( Map<Object, Object> ) sr;
-            mapr.forEach( ( key, vr ) -> {
-                var vl = mapl.get( key );
+            Map<Object, Object> mapl = ( Map<Object, Object> ) sl;
+            Map<Object, Object> mapr = ( Map<Object, Object> ) sr;
+            for( Map.Entry<Object, Object> entry : mapr.entrySet() ) {
+                Object key = entry.getKey();
+                Object vr = entry.getValue();
+                Object vl = mapl.get( key );
                 if( vl != null ) {
                     addTemplate( vl, vr );
                 } else
                     mapl.put( key, vr );
-            } );
+            }
         }
     }
 
@@ -194,7 +195,7 @@ public class JsonSchema {
     }
 
     AbstractSchemaASTWrapper parse( String schemaName, String schema, String rootPath, SchemaStorage storage ) {
-        var context = new JsonSchemaParserContext(
+        JsonSchemaParserContext context = new JsonSchemaParserContext(
             schemaName,
             null, "",
             this::parse,
@@ -204,7 +205,7 @@ public class JsonSchema {
     }
 
     private AbstractSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-        var schemaParser = validators.get( context.schemaType );
+        AbstractJsonSchemaValidator<? extends AbstractSchemaAST<?>> schemaParser = validators.get( context.schemaType );
         if( schemaParser != null ) {
             return schemaParser.parse( context );
         } else {
@@ -215,7 +216,7 @@ public class JsonSchema {
     }
 
     public List<String> partialValidate( Object root, Object json, String path, boolean ignoreRequiredDefault ) {
-        var traverseResult = SchemaPath.traverse( this.schema, path );
+        SchemaPath.Result traverseResult = SchemaPath.traverse( this.schema, path );
         final AbstractSchemaAST partialSchema = traverseResult.schema
             .orElseThrow( () -> new ValidationSyntaxException( "path " + path + " not found" ) );
 

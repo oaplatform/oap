@@ -30,14 +30,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public interface UserProvider {
-    Optional<? extends User> getUser( String email );
-
-    Result<? extends User, AuthenticationFailure> getAuthenticated( String email, String password, Optional<String> tfaCode );
-
-    Result<? extends User, AuthenticationFailure> getAuthenticated( String email, Optional<String> tfaCode );
-
-    Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey );
-
     //eliminating most used letters in english from source
     static String toAccessKey( String email ) {
         int[] transitions = { 6, 11, 3, 10, 4, 1, 5, 0, 7, 2, 9, 8 };
@@ -60,4 +52,14 @@ public interface UserProvider {
         }
         return result.toString();
     }
+
+    Optional<? extends User> getUser( String email );
+
+    Result<? extends User, String> getValidUser( String email );
+
+    Result<? extends User, AuthenticationFailure> getAuthenticated( String email, String password, Optional<String> tfaCode );
+
+    Result<? extends User, AuthenticationFailure> getAuthenticated( String email, Optional<String> tfaCode );
+
+    Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey );
 }
