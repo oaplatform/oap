@@ -55,11 +55,15 @@ public interface UserProvider {
 
     Optional<? extends User> getUser( String email );
 
-    Result<UserWithPermissions, String> getAuthenticatedByAccessToken( String accessToken, Optional<String> refreshToken );
+    Result<UserWithCookies, String> getAuthenticatedByAccessToken( Optional<String> accessToken, Optional<String> refreshToken,
+                                                                   Optional<String> sessionUser,
+                                                                   String realm, String... wssPermissions );
 
     Result<? extends User, AuthenticationFailure> getAuthenticated( String email, String password, Optional<String> tfaCode );
 
     Result<? extends User, AuthenticationFailure> getAuthenticated( String email, Optional<String> tfaCode );
 
     Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey );
+
+    boolean granted( String role, String... permissions );
 }
