@@ -25,15 +25,16 @@
 package oap.ws.sso.interceptor;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.http.Cookie;
 import oap.util.Result;
 import oap.ws.InvocationContext;
 import oap.ws.Response;
 import oap.ws.interceptor.Interceptor;
-import oap.ws.sso.JWTExtractor;
 import oap.ws.sso.SSO;
 import oap.ws.sso.SecurityRoles;
 import oap.ws.sso.User;
 import oap.ws.sso.UserProvider;
+import oap.ws.sso.UserWithPermissions;
 import oap.ws.sso.WsSecurity;
 import org.apache.commons.lang3.StringUtils;
 
@@ -51,20 +52,17 @@ import static oap.ws.sso.WsSecurity.SYSTEM;
 @Slf4j
 public class JWTSecurityInterceptor implements Interceptor {
 
-    private final JWTExtractor jwtExtractor;
     private final UserProvider userProvider;
     private final SecurityRoles roles;
     private final boolean useOrganizationLogin;
 
-    public JWTSecurityInterceptor( JWTExtractor jwtExtractor, UserProvider userProvider, SecurityRoles roles ) {
-        this.jwtExtractor = Objects.requireNonNull( jwtExtractor );
+    public JWTSecurityInterceptor( UserProvider userProvider, SecurityRoles roles ) {
         this.userProvider = Objects.requireNonNull( userProvider );
         this.roles = roles;
         this.useOrganizationLogin = false;
     }
 
-    public JWTSecurityInterceptor( JWTExtractor jwtExtractor, UserProvider userProvider, SecurityRoles roles, boolean useOrganizationLogin ) {
-        this.jwtExtractor = Objects.requireNonNull( jwtExtractor );
+    public JWTSecurityInterceptor( UserProvider userProvider, SecurityRoles roles, boolean useOrganizationLogin ) {
         this.userProvider = Objects.requireNonNull( userProvider );
         this.useOrganizationLogin = useOrganizationLogin;
         this.roles = roles;
@@ -73,34 +71,52 @@ public class JWTSecurityInterceptor implements Interceptor {
     @Override
     public Optional<Response> before( InvocationContext context ) {
         String organization = null;
-        String jwtToken = SSO.getAuthentication( context.exchange );
+        String accessToken = SSO.getAuthentication( context.exchange );
+        Optional<String> refreshToken = SSO.getRefreshAuthentication( context.exchange );
         Optional<User> sessionUserKey = context.session.get( SESSION_USER_KEY );
         String issuerName = this.getClass().getSimpleName();
 
-        if( jwtToken != null && ( sessionUserKey.isEmpty() || issuerFromContext( context ).equals( issuerName ) ) ) {
-            log.debug( "Proceed with user {} in session: {}", sessionUserKey, context.session.id );
+        Result<UserWithPermissions, String> validUser = null;
+        if( accessToken != null ) {
+            validUser = userProvider.getAuthenticatedByAccessToken( accessToken, refreshToken );
 
-            final String token = JWTExtractor.extractBearerToken( jwtToken );
-            if( token == null || !jwtExtractor.verifyToken( token ) ) {
-                return Optional.of( new Response( UNAUTHORIZED, "Invalid token: " + token ) );
-            }
-
-            final String email = jwtExtractor.getUserEmail( token );
-            organization = jwtExtractor.getOrganizationId( token );
-
-            Result<? extends User, String> validUser = userProvider.getValidUser( email );
             if( !validUser.isSuccess() ) {
                 return Optional.of( new Response( FORBIDDEN, validUser.failureValue ) );
             }
             context.session.set( SESSION_USER_KEY, validUser.successValue );
             context.session.set( ISSUER, issuerName );
+            validUser.successValue.responseAccessToken.ifPresent( cookie -> context.session.set( SSO.AUTHENTICATION_KEY, cookie ) );
+            validUser.successValue.responseRefreshToken.ifPresent( cookie -> context.session.set( SSO.REFRESH_TOKEN_KEY, cookie ) );
         }
+
+//        if( jwtToken != null && ( sessionUserKey.isEmpty() || issuerFromContext( context ).equals( issuerName ) ) ) {
+//            log.debug( "Proceed with user {} in session: {}", sessionUserKey, context.session.id );
+//
+//            final String token = JWTExtractor.extractBearerToken( jwtToken );
+//            if( token == null || !jwtExtractor.verifyToken( token ) ) {
+//                return Optional.of( new Response( UNAUTHORIZED, "Invalid token: " + token ) );
+//            }
+//
+//            final String email = jwtExtractor.getUserEmail( token );
+//            organization = jwtExtractor.getOrganizationId( token );
+//
+//            Result<? extends User, String> validUser = userProvider.getAuthenticatedByAccessToken( jwtToken );
+//            if( !validUser.isSuccess() ) {
+//                return Optional.of( new Response( FORBIDDEN, validUser.failureValue ) );
+//            }
+//            context.session.set( SESSION_USER_KEY, validUser.successValue );
+//            context.session.set( ISSUER, issuerName );
+//        }
         Optional<WsSecurity> wss = context.method.findAnnotation( WsSecurity.class );
         if( wss.isEmpty() ) {
             return Optional.empty();
         }
-        if( jwtToken == null && !isApiKeyInterceptor( issuerName, context ) ) {
-            return Optional.of( new Response( UNAUTHORIZED, "JWT token is empty" ) );
+        if( accessToken == null ) {
+            if( !isApiKeyInterceptor( issuerName, context ) ) {
+                return Optional.of( new Response( UNAUTHORIZED, "JWT token is empty" ) );
+            } else {
+                return Optional.empty();
+            }
         }
 
         Optional<String> realm =
@@ -115,7 +131,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         }
         String[] wssPermissions = wss.get().permissions();
         if( isIssuerValid( issuerName, context ) ) {
-            return handleIssuerValid( jwtToken, organization, realmString, wssPermissions );
+            return handleIssuerValid( validUser.successValue, organization, realmString, wssPermissions );
         } else {
             return handleIssuerInvalid( sessionUserKey, realmString, wssPermissions, context );
         }
@@ -145,9 +161,9 @@ public class JWTSecurityInterceptor implements Interceptor {
         return issuerFromContext( context ).equals( issuerName );
     }
 
-    private Optional<Response> handleIssuerValid( String jwtToken, String organization, String realm, String[] wssPermissions ) {
+    private Optional<Response> handleIssuerValid( UserWithPermissions user, String organization, String realm, String[] wssPermissions ) {
         final String orgParam = useOrganizationLogin ? organization : realm;
-        List<String> permissions = jwtExtractor.getPermissions( JWTExtractor.extractBearerToken( jwtToken ), orgParam );
+        List<String> permissions = user.permissions;
         if( permissions != null && Arrays.stream( wssPermissions ).anyMatch( permissions::contains ) ) {
             return Optional.empty();
         }
@@ -168,6 +184,10 @@ public class JWTSecurityInterceptor implements Interceptor {
         }
         return Optional.of( new Response( FORBIDDEN, "user " + sessionUserKey.get().getEmail() + " has no access to method " + context.method.name() + " under realm " + realmString ) );
     }
+
+    @Override
+    public void after( Response response, InvocationContext context ) {
+        context.session.<Cookie>get( SSO.AUTHENTICATION_KEY ).ifPresent( response::withCookie );
+        context.session.<Cookie>get( SSO.REFRESH_TOKEN_KEY ).ifPresent( response::withCookie );
+    }
 }
-
-

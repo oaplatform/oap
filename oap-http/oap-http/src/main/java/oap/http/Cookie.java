@@ -29,10 +29,15 @@ import io.undertow.util.Cookies;
 import lombok.EqualsAndHashCode;
 import org.joda.time.DateTime;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Date;
 
 @EqualsAndHashCode
-public class Cookie {
+public class Cookie implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -6167221123115890689L;
+
     public final io.undertow.server.handlers.Cookie delegate;
 
     public Cookie( String name, Object value ) {

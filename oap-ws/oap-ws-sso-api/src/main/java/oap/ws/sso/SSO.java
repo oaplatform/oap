@@ -30,9 +30,11 @@ import oap.ws.Response;
 import oap.ws.SessionManager;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -47,6 +49,15 @@ public class SSO {
         String value = Objects.requireNonNull( exchange ).getRequestHeader( AUTHENTICATION_KEY );
         if( value != null ) return value;
         return exchange.getRequestCookieValue( AUTHENTICATION_KEY );
+    }
+
+    @Nonnull
+    public static Optional<String> getRefreshAuthentication( HttpServerExchange exchange ) {
+        String value = Objects.requireNonNull( exchange ).getRequestHeader( REFRESH_TOKEN_KEY );
+        if( value != null ) {
+            return Optional.of( value );
+        }
+        return Optional.ofNullable( exchange.getRequestCookieValue( REFRESH_TOKEN_KEY ) );
     }
 
     public static Response authenticatedResponse( Authentication authentication, String cookieDomain, long cookieExpiration, Boolean cookieSecure ) {
