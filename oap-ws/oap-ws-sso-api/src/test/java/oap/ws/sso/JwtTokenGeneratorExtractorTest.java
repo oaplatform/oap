@@ -36,10 +36,10 @@ import org.testng.annotations.Test;
 import java.util.Date;
 
 import static oap.testng.Asserts.assertString;
+import static oap.ws.sso.JWTExtractor.TokenStatus.VALID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 
 public class JwtTokenGeneratorExtractorTest extends Fixtures {
@@ -58,7 +58,7 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
         assertNotNull( token._1 );
         assertString( token._2 ).isNotEmpty();
         assertThat( token._1 ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
-        assertTrue( jwtExtractor.verifyToken( token._2 ) );
+        assertThat( jwtExtractor.verifyToken( token._2 ) ).isEqualTo( VALID );
         assertThat( jwtExtractor.getUserEmail( token._2 ) ).isEqualTo( "email@email.com" );
         assertThat( jwtExtractor.getPermissions( token._2, "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );
     }

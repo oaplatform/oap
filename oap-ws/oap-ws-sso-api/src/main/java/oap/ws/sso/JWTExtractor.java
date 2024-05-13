@@ -28,6 +28,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,7 @@ public class JWTExtractor {
         return authorization;
     }
 
-    protected DecodedJWT decodeJWT( String token ) {
+    protected DecodedJWT decodeJWT( String token ) throws JWTVerificationException {
         if( token == null )
             return null;
         Algorithm algorithm = Algorithm.HMAC256( secret );
@@ -69,13 +70,18 @@ public class JWTExtractor {
         return verifier.verify( token );
     }
 
-    public boolean verifyToken( String token ) {
+    public TokenStatus verifyToken( String token ) {
+        if( token == null ) {
+            return TokenStatus.EMPTY;
+        }
         try {
-            final DecodedJWT decodedJWT = decodeJWT( token );
-            return decodedJWT != null;
+            decodeJWT( token );
+
+            return TokenStatus.VALID;
+        } catch( TokenExpiredException e ) {
+            return TokenStatus.EXPIRED;
         } catch( JWTVerificationException e ) {
-            log.trace( "Token is not valid: {}", token, e );
-            return false;
+            return TokenStatus.INVALID;
         }
     }
 
@@ -111,5 +117,9 @@ public class JWTExtractor {
         final DecodedJWT decodedJWT = decodeJWT( token );
         final Claim orgId = decodedJWT.getClaims().get( "org_id" );
         return orgId != null ? orgId.asString() : null;
+    }
+
+    public enum TokenStatus {
+        EMPTY, INVALID, VALID, EXPIRED
     }
 }

@@ -59,7 +59,7 @@ public class JwtUserAuthenticator implements Authenticator {
     }
 
     public Result<Authentication, AuthenticationFailure> authenticateWithActiveOrgId( String jwtToken, String orgId ) {
-        if( jwtExtractor.verifyToken( jwtToken ) ) {
+        if( jwtExtractor.verifyToken( jwtToken ) == JWTExtractor.TokenStatus.VALID ) {
             log.trace( "generating new authentication token with active organization {} ", orgId );
             var user = userProvider.getUser( jwtExtractor.getUserEmail( jwtToken ) );
             if( user.isEmpty() ) {
@@ -115,7 +115,7 @@ public class JwtUserAuthenticator implements Authenticator {
     }
 
     public Result<Authentication, AuthenticationFailure> refreshToken( String refreshToken, Optional<String> orgId ) {
-        if( !jwtExtractor.verifyToken( refreshToken ) ) {
+        if( jwtExtractor.verifyToken( refreshToken ) != JWTExtractor.TokenStatus.VALID ) {
             return Result.failure( AuthenticationFailure.TOKEN_NOT_VALID );
         }
         return generateAuthentication( refreshToken, orgId );
