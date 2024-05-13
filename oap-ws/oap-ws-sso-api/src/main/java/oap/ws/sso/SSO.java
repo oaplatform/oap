@@ -116,7 +116,7 @@ public class SSO {
             );
     }
 
-    public Tokens createAccessAndRefreshTokensFromRefreshToken( Authentication authentication, String cookieDomain, Boolean cookieSecure ) {
+    public static Tokens createAccessAndRefreshTokensFromRefreshToken( Authentication authentication, String cookieDomain, Boolean cookieSecure ) {
         return new Tokens(
             new Cookie( AUTHENTICATION_KEY, authentication.accessToken.jwt )
                 .withDomain( cookieDomain )
