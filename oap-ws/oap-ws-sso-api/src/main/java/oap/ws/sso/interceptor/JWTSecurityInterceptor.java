@@ -72,7 +72,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         Optional<String> realm = switch( wss.get().realm() ) {
             case SYSTEM, USER -> Optional.of( wss.get().realm() );
             // calling a function in an InvocationContext will cache parameters without SESSION_USER_KEY
-            default -> context.clone().getParameter( wss.get().realm() );
+            default -> context.getPrivateParameter( wss.get().realm() );
         };
 
         if( realm.isEmpty() ) {

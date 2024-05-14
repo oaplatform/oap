@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 import static oap.util.Pair.__;
 
 @Slf4j
-public class InvocationContext implements Cloneable {
+public class InvocationContext {
     public final HttpServerExchange exchange;
     public final Session session;
     public final Reflection.Method method;
@@ -140,8 +140,12 @@ public class InvocationContext implements Cloneable {
         return Optional.ofNullable( ( P ) namedParameters.get().get( name ) );
     }
 
-    @Override
-    public InvocationContext clone() {
-        return new InvocationContext( exchange, session, method );
+    /**
+     * ref me
+     */
+    @SuppressWarnings( "unchecked" )
+    public <P> Optional<P> getPrivateParameter( String name ) {
+        Reflection.Parameter parameter = method.getParameter( name );
+        return Optional.ofNullable( ( P ) map( parameter.type(), getValue( parameter ) ) );
     }
 }
