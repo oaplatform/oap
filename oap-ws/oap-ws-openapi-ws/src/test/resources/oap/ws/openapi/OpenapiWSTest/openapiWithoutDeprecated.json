@@ -294,14 +294,47 @@
       },
       "Cookie" : {
         "properties" : {
-          "delegate" : {
-            "$ref" : "#/components/schemas/io_undertow_server_handlers_Cookie"
+          "comment" : {
+            "type" : "string"
+          },
+          "discard" : {
+            "type" : "boolean"
+          },
+          "domain" : {
+            "type" : "string"
+          },
+          "expires" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "httpOnly" : {
+            "type" : "boolean"
+          },
+          "maxAge" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "name" : {
             "type" : "string"
           },
+          "path" : {
+            "type" : "string"
+          },
+          "sameSite" : {
+            "type" : "boolean"
+          },
+          "sameSiteMode" : {
+            "type" : "string"
+          },
+          "secure" : {
+            "type" : "boolean"
+          },
           "value" : {
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -1671,7 +1704,40 @@
         },
         "type" : "object"
       },
-      "io_undertow_server_handlers_Cookie" : {
+      "oap_dictionary_Dictionary" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "externalId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "properties" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "tags" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "values" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Dictionary"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "oap_http_Cookie" : {
         "properties" : {
           "comment" : {
             "type" : "string"
@@ -1714,53 +1780,6 @@
           "version" : {
             "format" : "int32",
             "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "oap_dictionary_Dictionary" : {
-        "properties" : {
-          "enabled" : {
-            "type" : "boolean"
-          },
-          "externalId" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "id" : {
-            "type" : "string"
-          },
-          "properties" : {
-            "additionalProperties" : {
-              "type" : "object"
-            },
-            "type" : "object"
-          },
-          "tags" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          },
-          "values" : {
-            "items" : {
-              "$ref" : "#/components/schemas/Dictionary"
-            },
-            "type" : "array"
-          }
-        },
-        "type" : "object"
-      },
-      "oap_http_Cookie" : {
-        "properties" : {
-          "delegate" : {
-            "$ref" : "#/components/schemas/io_undertow_server_handlers_Cookie"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "value" : {
-            "type" : "string"
           }
         },
         "type" : "object"
