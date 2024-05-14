@@ -29,7 +29,7 @@ import oap.http.server.nio.HttpServerExchange;
 import oap.json.Binder;
 import oap.reflect.Reflection;
 import oap.util.BiStream;
-import oap.util.Stream;
+import oap.util.Lists;
 import oap.util.function.Functions;
 
 import java.util.Collection;
@@ -44,10 +44,10 @@ public class InvocationContext {
     public final HttpServerExchange exchange;
     public final Session session;
     public final Reflection.Method method;
+    private final Optional<WsMethod> methodAnnotation;
     private final Supplier<Map<Reflection.Parameter, Object>> unparsedParameters = Functions.memoize( this::retrieveParameters );
     private final Supplier<Map<Reflection.Parameter, Object>> parsedParameters = Functions.memoize( this::parseParameters );
     private final Supplier<Map<String, Object>> namedParameters = Functions.memoize( this::nameParameters );
-    private final Optional<WsMethod> methodAnnotation;
 
     public InvocationContext( HttpServerExchange exchange, Session session, Reflection.Method method ) {
         this.exchange = exchange;
@@ -65,25 +65,31 @@ public class InvocationContext {
     }
 
     private Map<Reflection.Parameter, Object> retrieveParameters() {
-        return Stream.of( method.parameters )
-            .mapToPairs( parameter -> __( parameter, getValue( parameter ) ) )
-            .toMap();
+        return Lists.toLinkedHashMap( method.parameters, parameter -> parameter, this::getValue );
     }
 
     private Object getValue( Reflection.Parameter parameter ) {
-        return parameter.type().assignableFrom( HttpServerExchange.class )
-            ? new RoHttpServerExchange( exchange )
-            : parameter.type().assignableFrom( Session.class )
-                ? session
-                : parameter.findAnnotation( WsParam.class )
-                    .map( wsParam -> switch( wsParam.from() ) {
-                        case SESSION -> WsParams.fromSession( session, parameter );
-                        case HEADER -> WsParams.fromHeader( exchange, parameter, wsParam );
-                        case COOKIE -> WsParams.fromCookie( exchange, parameter, wsParam );
-                        case PATH -> WsParams.fromPath( exchange, methodAnnotation, parameter );
-                        case BODY -> WsParams.fromBody( exchange, parameter );
-                        case QUERY -> WsParams.fromQuery( exchange, parameter, wsParam );
-                    } ).orElseGet( () -> WsParams.fromQuery( exchange, parameter ) );
+        if( parameter.type().assignableFrom( HttpServerExchange.class ) ) {
+            return new RoHttpServerExchange( exchange );
+        }
+
+        if( parameter.type().assignableFrom( Session.class ) ) {
+            return session;
+        }
+
+        WsParam wsParam = parameter.findAnnotation( WsParam.class ).orElse( null );
+        if( wsParam == null ) {
+            return WsParams.fromQuery( exchange, parameter );
+        }
+
+        return switch( wsParam.from() ) {
+            case SESSION -> WsParams.fromSession( session, parameter );
+            case HEADER -> WsParams.fromHeader( exchange, parameter, wsParam );
+            case COOKIE -> WsParams.fromCookie( exchange, parameter, wsParam );
+            case PATH -> WsParams.fromPath( exchange, methodAnnotation, parameter );
+            case BODY -> WsParams.fromBody( exchange, parameter );
+            case QUERY -> WsParams.fromQuery( exchange, parameter, wsParam );
+        };
     }
 
     private Map<Reflection.Parameter, Object> parseParameters() {
