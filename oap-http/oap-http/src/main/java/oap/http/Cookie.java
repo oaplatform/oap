@@ -52,8 +52,6 @@ public class Cookie implements Serializable {
     private boolean httpOnly;
     private int version = 0;
     private String comment;
-    private boolean sameSite;
-    private String sameSiteMode;
 
     public static CookieBuilder builder( String name, String value ) {
         return internalBuilder().withName( name ).withValue( value );
@@ -72,8 +70,6 @@ public class Cookie implements Serializable {
             .withHttpOnly( uc.isHttpOnly() )
             .withVersion( uc.getVersion() )
             .withComment( uc.getComment() )
-            .withSameSite( uc.isSameSite() )
-            .withSameSiteMode( uc.getSameSiteMode() )
             .build();
     }
 

@@ -323,9 +323,7 @@ public class HttpServerExchange {
             .setSecure( cookie.isSecure() )
             .setHttpOnly( cookie.isHttpOnly() )
             .setVersion( cookie.getVersion() )
-            .setComment( cookie.getComment() )
-            .setSameSite( cookie.isSameSite() )
-            .setSameSiteMode( cookie.getSameSiteMode() );
+            .setComment( cookie.getComment() );
     }
 
     public Iterable<Cookie> responseCookies() {

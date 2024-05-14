@@ -29,15 +29,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
-import com.auth0.jwt.interfaces.Claim;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static oap.ws.sso.WsSecurity.SYSTEM;
 
 @Slf4j
 public class JWTExtractor {
@@ -60,14 +52,15 @@ public class JWTExtractor {
         return authorization;
     }
 
-    protected DecodedJWT decodeJWT( String token ) throws JWTVerificationException {
-        if( token == null )
+    public JwtToken decodeJWT( String token ) throws JWTVerificationException {
+        if( token == null ) {
             return null;
+        }
         Algorithm algorithm = Algorithm.HMAC256( secret );
         JWTVerifier verifier = JWT.require( algorithm )
             .withIssuer( issuer )
             .build();
-        return verifier.verify( token );
+        return new JwtToken( verifier.verify( token ), roles );
     }
 
     public TokenStatus verifyToken( String token ) {
@@ -83,40 +76,6 @@ public class JWTExtractor {
         } catch( JWTVerificationException e ) {
             return TokenStatus.INVALID;
         }
-    }
-
-    public List<String> getPermissions( String token, String organizationId ) {
-        final DecodedJWT decodedJWT = decodeJWT( token );
-        if( decodedJWT == null ) {
-            return List.of();
-        }
-        final Claim tokenRoles = decodedJWT.getClaims().get( "roles" );
-        if( tokenRoles == null ) {
-            return List.of();
-        }
-        Map<String, Object> rolesByOrganization = tokenRoles.asMap();
-        final String role;
-        if( rolesByOrganization.get( SYSTEM ) != null ) {
-            role = ( String ) rolesByOrganization.get( SYSTEM );
-        } else {
-            role = ( String ) rolesByOrganization.get( organizationId );
-        }
-        if( role != null ) {
-            return new ArrayList<>( roles.permissionsOf( role ) );
-        }
-        return List.of();
-    }
-
-    public String getUserEmail( String token ) {
-        final DecodedJWT decodedJWT = decodeJWT( token );
-        final Claim user = decodedJWT.getClaims().get( "user" );
-        return user != null ? user.asString() : null;
-    }
-
-    public String getOrganizationId( String token ) {
-        final DecodedJWT decodedJWT = decodeJWT( token );
-        final Claim orgId = decodedJWT.getClaims().get( "org_id" );
-        return orgId != null ? orgId.asString() : null;
     }
 
     public enum TokenStatus {

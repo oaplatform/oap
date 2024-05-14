@@ -343,11 +343,6 @@ public class HttpAsserts {
             return this;
         }
 
-        public CookieHttpAssertion hasSameSite( boolean sameSite ) {
-            assertThat( cookie.isSameSite() ).isEqualTo( sameSite );
-            return this;
-        }
-
         public CookieHttpAssertion isSecure() {
             assertThat( cookie.isSecure() ).isTrue();
             return this;

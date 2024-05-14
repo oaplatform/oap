@@ -57,7 +57,10 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
         assertString( token.jwt ).isNotEmpty();
         assertThat( token.expires ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
         assertThat( jwtExtractor.verifyToken( token.jwt ) ).isEqualTo( VALID );
-        assertThat( jwtExtractor.getUserEmail( token.jwt ) ).isEqualTo( "email@email.com" );
-        assertThat( jwtExtractor.getPermissions( token.jwt, "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );
+
+        JwtToken jwtToken = jwtExtractor.decodeJWT( token.jwt );
+
+        assertThat( jwtToken.getUserEmail() ).isEqualTo( "email@email.com" );
+        assertThat( jwtToken.getPermissions( "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );
     }
 }
