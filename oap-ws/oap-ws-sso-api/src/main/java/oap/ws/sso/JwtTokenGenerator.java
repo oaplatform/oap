@@ -55,6 +55,7 @@ public class JwtTokenGenerator {
         return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withClaim( "roles", user.getRoles() )
+            .withClaim( "counter", user.getCounter() )
             .withIssuer( issuer )
             .withExpiresAt( expiresAt )
             .sign( algorithm ) );
@@ -66,6 +67,7 @@ public class JwtTokenGenerator {
         return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withClaim( "roles", user.getRoles() )
+            .withClaim( "counter", user.getCounter() )
             .withClaim( "org_id", activeOrganization )
             .withIssuer( issuer )
             .withExpiresAt( expiresAt )
@@ -77,6 +79,7 @@ public class JwtTokenGenerator {
         Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + refreshSecretExpiration, UTC ).toDate();
         return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
+            .withClaim( "counter", user.getCounter() )
             .withIssuer( issuer )
             .withExpiresAt( expiresAt )
             .sign( algorithm ) );

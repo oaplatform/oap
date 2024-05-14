@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class AbstractUserTest {
 
@@ -52,10 +53,11 @@ public class AbstractUserTest {
         public final Map<String, String> roles = new HashMap<>();
         public final boolean tfaEnabled;
         public final String apiKey = RandomStringUtils.random( 10, true, true );
-        public String defaultOrganization = "";
         public final Map<String, String> defaultAccounts = new HashMap<>();
         @JsonIgnore
         public final View view = new View();
+        private final AtomicLong counter = new AtomicLong();
+        public String defaultOrganization = "";
 
         public TestUser( String email, String password, Pair<String, String> role ) {
             this( email, password, role, false );
@@ -96,6 +98,11 @@ public class AbstractUserTest {
         @Override
         public Optional<String> getDefaultAccount( String organizationId ) {
             return Optional.ofNullable( roles.get( organizationId ) );
+        }
+
+        @Override
+        public long getCounter() {
+            return counter.get();
         }
 
         @Override

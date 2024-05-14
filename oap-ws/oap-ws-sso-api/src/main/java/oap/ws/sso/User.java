@@ -43,6 +43,8 @@ public interface User extends Serializable {
 
     Optional<String> getDefaultAccount( String organizationId );
 
+    long getCounter();
+
     @JsonIgnore
     View getView();
 
