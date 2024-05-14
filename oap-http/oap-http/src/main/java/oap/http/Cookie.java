@@ -24,12 +24,10 @@
 
 package oap.http;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.undertow.server.handlers.CookieImpl;
 import io.undertow.util.Cookies;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.joda.time.DateTime;
 
 import java.io.Serial;
@@ -37,113 +35,57 @@ import java.io.Serializable;
 import java.util.Date;
 
 @EqualsAndHashCode
+@Builder( builderMethodName = "internalBuilder", setterPrefix = "with", builderClassName = "CookieBuilder" )
+@Getter
 public class Cookie implements Serializable {
     @Serial
     private static final long serialVersionUID = -6167221123115890689L;
 
-    @JsonDeserialize( using = CookieDeserializer.class )
-    public final io.undertow.server.handlers.Cookie delegate;
+    private final String name;
+    private String value;
+    private String path;
+    private String domain;
+    private Integer maxAge;
+    private Date expires;
+    private boolean discard;
+    private boolean secure;
+    private boolean httpOnly;
+    private int version = 0;
+    private String comment;
+    private boolean sameSite;
+    private String sameSiteMode;
 
-    public Cookie( String name, Object value ) {
-        this( name, String.valueOf( value ) );
+    public static CookieBuilder builder( String name, String value ) {
+        return internalBuilder().withName( name ).withValue( value );
     }
 
-    @JsonCreator
-    public Cookie( String name, String value ) {
-        this( new CookieImpl( name, value ) );
+    public static Cookie parseSetCookieHeader( String cookie ) {
+        io.undertow.server.handlers.Cookie uc = Cookies.parseSetCookieHeader( cookie );
+
+        return builder( uc.getName(), uc.getValue() )
+            .withPath( uc.getPath() )
+            .withDomain( uc.getDomain() )
+            .withMaxAge( uc.getMaxAge() )
+            .withExpires( uc.getExpires() )
+            .withDiscard( uc.isDiscard() )
+            .withSecure( uc.isSecure() )
+            .withHttpOnly( uc.isHttpOnly() )
+            .withVersion( uc.getVersion() )
+            .withComment( uc.getComment() )
+            .withSameSite( uc.isSameSite() )
+            .withSameSiteMode( uc.getSameSiteMode() )
+            .build();
     }
 
-    private Cookie( io.undertow.server.handlers.Cookie cookie ) {
-        this.delegate = cookie;
-    }
+    public static class CookieBuilder {
+        public CookieBuilder withExpires( DateTime expires ) {
+            this.expires = expires.toDate();
+            return this;
+        }
 
-    public static Cookie parseSetCookieHeader( String headerValue ) {
-        return new Cookie( Cookies.parseSetCookieHeader( headerValue ) );
-    }
-
-    public Cookie withDomain( String domain ) {
-        this.delegate.setDomain( domain );
-        return this;
-    }
-
-    public Cookie withSameSite( boolean sameSite ) {
-        this.delegate.setSameSite( sameSite );
-        return this;
-    }
-
-    public Cookie withExpires( DateTime expires ) {
-        this.delegate.setExpires( expires.toDate() );
-        return this;
-    }
-
-    public Cookie withPath( String path ) {
-        this.delegate.setPath( path );
-        return this;
-    }
-
-    public Cookie withMaxAge( long seconds ) {
-        this.delegate.setMaxAge( ( int ) seconds );
-        return this;
-    }
-
-    public Cookie httpOnly() {
-        return this.httpOnly( true );
-    }
-
-    public Cookie httpOnly( boolean httpOnly ) {
-        this.delegate.setHttpOnly( httpOnly );
-        return this;
-    }
-
-    public Cookie secure( boolean secure ) {
-        this.delegate.setSecure( secure );
-        return this;
-    }
-
-    public String toString() {
-        return delegate.toString();
-    }
-
-    public String getName() {
-        return delegate.getName();
-    }
-
-    public String getValue() {
-        return delegate.getValue();
-    }
-
-    @JsonIgnore
-    public String getDomain() {
-        return delegate.getDomain();
-    }
-
-    @JsonIgnore
-    public Date getExpires() {
-        return delegate.getExpires();
-    }
-
-    @JsonIgnore
-    public String getPath() {
-        return delegate.getPath();
-    }
-
-    @JsonIgnore
-    public Integer getMaxAge() {
-        return delegate.getMaxAge();
-    }
-
-    @JsonIgnore
-    public boolean isSameSite() {
-        return delegate.isSameSite();
-    }
-
-    @JsonIgnore
-    public boolean isSecure() {
-        return delegate.isSecure();
-    }
-
-    @JsonIgnore
-    public boolean isHttpOnly() {
-        return delegate.isHttpOnly();
+        public CookieBuilder withExpires( Date expires ) {
+            this.expires = expires;
+            return this;
+        }
     }
 }

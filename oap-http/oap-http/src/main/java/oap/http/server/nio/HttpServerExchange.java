@@ -25,6 +25,7 @@
 package oap.http.server.nio;
 
 import io.undertow.server.handlers.Cookie;
+import io.undertow.server.handlers.CookieImpl;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -307,9 +308,24 @@ public class HttpServerExchange {
     }
 
     public HttpServerExchange setResponseCookie( oap.http.Cookie cookie ) {
-        exchange.setResponseCookie( cookie.delegate );
+        exchange.setResponseCookie( convert( cookie ) );
 
         return this;
+    }
+
+    private Cookie convert( oap.http.Cookie cookie ) {
+        return new CookieImpl( cookie.getName(), cookie.getValue() )
+            .setPath( cookie.getPath() )
+            .setDomain( cookie.getDomain() )
+            .setMaxAge( cookie.getMaxAge() )
+            .setExpires( cookie.getExpires() )
+            .setDiscard( cookie.isDiscard() )
+            .setSecure( cookie.isSecure() )
+            .setHttpOnly( cookie.isHttpOnly() )
+            .setVersion( cookie.getVersion() )
+            .setComment( cookie.getComment() )
+            .setSameSite( cookie.isSameSite() )
+            .setSameSiteMode( cookie.getSameSiteMode() );
     }
 
     public Iterable<Cookie> responseCookies() {

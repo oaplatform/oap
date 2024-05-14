@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CookieTest {
     @Test
     public void testJson() {
-        Cookie cookie = new Cookie( "name", "val" ).withExpires( new DateTime() );
+        Cookie cookie = Cookie.builder( "name", "val" ).withExpires( new DateTime() ).build();
 
         log.trace( Binder.json.marshalWithDefaultPrettyPrinter( cookie ) );
 
