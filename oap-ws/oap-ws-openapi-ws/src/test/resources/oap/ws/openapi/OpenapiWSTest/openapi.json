@@ -320,12 +320,6 @@
           "path" : {
             "type" : "string"
           },
-          "sameSite" : {
-            "type" : "boolean"
-          },
-          "sameSiteMode" : {
-            "type" : "string"
-          },
           "secure" : {
             "type" : "boolean"
           },
@@ -1763,12 +1757,6 @@
             "type" : "string"
           },
           "path" : {
-            "type" : "string"
-          },
-          "sameSite" : {
-            "type" : "boolean"
-          },
-          "sameSiteMode" : {
             "type" : "string"
           },
           "secure" : {
