@@ -24,6 +24,9 @@
 
 package oap.http;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.undertow.server.handlers.CookieImpl;
 import io.undertow.util.Cookies;
 import lombok.EqualsAndHashCode;
@@ -38,12 +41,14 @@ public class Cookie implements Serializable {
     @Serial
     private static final long serialVersionUID = -6167221123115890689L;
 
+    @JsonDeserialize( using = CookieDeserializer.class )
     public final io.undertow.server.handlers.Cookie delegate;
 
     public Cookie( String name, Object value ) {
         this( name, String.valueOf( value ) );
     }
 
+    @JsonCreator
     public Cookie( String name, String value ) {
         this( new CookieImpl( name, value ) );
     }
@@ -107,30 +112,37 @@ public class Cookie implements Serializable {
         return delegate.getValue();
     }
 
+    @JsonIgnore
     public String getDomain() {
         return delegate.getDomain();
     }
 
+    @JsonIgnore
     public Date getExpires() {
         return delegate.getExpires();
     }
 
+    @JsonIgnore
     public String getPath() {
         return delegate.getPath();
     }
 
+    @JsonIgnore
     public Integer getMaxAge() {
         return delegate.getMaxAge();
     }
 
+    @JsonIgnore
     public boolean isSameSite() {
         return delegate.isSameSite();
     }
 
+    @JsonIgnore
     public boolean isSecure() {
         return delegate.isSecure();
     }
 
+    @JsonIgnore
     public boolean isHttpOnly() {
         return delegate.isHttpOnly();
     }
