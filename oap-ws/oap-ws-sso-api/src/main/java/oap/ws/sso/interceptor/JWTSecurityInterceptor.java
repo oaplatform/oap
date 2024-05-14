@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static oap.http.Http.StatusCode.FORBIDDEN;
+import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.ws.sso.SSO.ISSUER;
 import static oap.ws.sso.SSO.SESSION_USER_KEY;
 import static oap.ws.sso.WsSecurity.SYSTEM;
@@ -79,7 +80,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         validUser = userProvider.getAuthenticatedByAccessToken( Optional.ofNullable( accessToken ), refreshToken, sessionUserKey.map( User::getEmail ), realmString, wssPermissions );
 
         if( !validUser.isSuccess() ) {
-            return Optional.of( new Response( FORBIDDEN, validUser.failureValue ) );
+            return Optional.of( new Response( UNAUTHORIZED, validUser.failureValue ) );
         }
         context.session.set( SESSION_USER_KEY, validUser.successValue );
         context.session.set( ISSUER, issuerName );
