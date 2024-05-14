@@ -103,14 +103,14 @@ public class JwtUserAuthenticator implements Authenticator {
     private Authentication generateTokens( User user ) {
         var accessToken = jwtTokenGenerator.generateAccessToken( user );
         var refreshToken = jwtTokenGenerator.generateRefreshToken( user );
-        log.trace( "generating authentication for user {} -> {}", user.getEmail(), accessToken );
+        log.trace( "generating authentication for user {} -> {} / {}", user.getEmail(), accessToken, refreshToken );
         return new Authentication( accessToken, refreshToken, user );
     }
 
     private Authentication generateTokenWithOrgId( User user, String activeOrgId ) {
         var accessToken = jwtTokenGenerator.generateAccessTokenWithActiveOrgId( user, activeOrgId );
         var refreshToken = jwtTokenGenerator.generateRefreshToken( user );
-        log.trace( "generating authentication for user {} -> {}", user.getEmail(), accessToken );
+        log.trace( "generating authentication for user {} -> {} / {}", user.getEmail(), accessToken, refreshToken );
         return new Authentication( accessToken, refreshToken, user );
     }
 

@@ -68,7 +68,7 @@ public class SSO {
         return Response
             .jsonOk()
             .withHeader( AUTHENTICATION_KEY, authentication.accessToken.jwt )
-            .withCookie( new Cookie( AUTHENTICATION_KEY, authentication.accessToken.expires )
+            .withCookie( new Cookie( AUTHENTICATION_KEY, authentication.accessToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( authentication.accessToken.expires ) )
