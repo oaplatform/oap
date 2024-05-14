@@ -44,6 +44,7 @@ import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.ws.sso.SSO.ISSUER;
 import static oap.ws.sso.SSO.SESSION_USER_KEY;
 import static oap.ws.sso.WsSecurity.SYSTEM;
+import static oap.ws.sso.WsSecurity.USER;
 
 @Slf4j
 public class JWTSecurityInterceptor implements Interceptor {
@@ -68,8 +69,11 @@ public class JWTSecurityInterceptor implements Interceptor {
 
         Result<UserWithCookies, String> validUser;
 
-        Optional<String> realm =
-            SYSTEM.equals( wss.get().realm() ) ? Optional.of( SYSTEM ) : context.getParameter( wss.get().realm() );
+        Optional<String> realm = switch( wss.get().realm() ) {
+            case SYSTEM, USER -> Optional.of( wss.get().realm() );
+            default -> context.getParameter( wss.get().realm() );
+        };
+
         if( realm.isEmpty() ) {
             return Optional.of( new Response( FORBIDDEN, "realm is not passed" ) );
         }

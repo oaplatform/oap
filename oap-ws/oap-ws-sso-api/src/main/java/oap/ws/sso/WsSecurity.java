@@ -33,6 +33,7 @@ import java.lang.annotation.Target;
 @Retention( RetentionPolicy.RUNTIME )
 public @interface WsSecurity {
     String SYSTEM = "SYSTEM";
+    String USER = "USER";
 
     String realm() default SYSTEM;
 
