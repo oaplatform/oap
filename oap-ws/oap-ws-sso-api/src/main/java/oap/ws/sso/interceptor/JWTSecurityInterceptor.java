@@ -86,7 +86,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         if( !validUser.isSuccess() ) {
             return Optional.of( new Response( UNAUTHORIZED, validUser.failureValue ) );
         }
-        context.session.set( SESSION_USER_KEY, validUser.successValue );
+        context.session.set( SESSION_USER_KEY, validUser.successValue.user );
         context.session.set( ISSUER, issuerName );
         validUser.successValue.responseAccessToken.ifPresent( cookie -> context.session.set( SSO.AUTHENTICATION_KEY, cookie ) );
         validUser.successValue.responseRefreshToken.ifPresent( cookie -> context.session.set( SSO.REFRESH_TOKEN_KEY, cookie ) );
