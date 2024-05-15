@@ -7,6 +7,7 @@ import org.apache.http.cookie.Cookie;
 import org.apache.http.cookie.CookieIdentityComparator;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -147,5 +148,16 @@ public class MockCookieStore implements CookieStore {
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    @Nullable
+    public Cookie getCookie( String name ) {
+        for( Cookie cookie : getCookies() ) {
+            if( name.equals( cookie.getName() ) ) {
+                return cookie;
+            }
+        }
+
+        return null;
     }
 }
