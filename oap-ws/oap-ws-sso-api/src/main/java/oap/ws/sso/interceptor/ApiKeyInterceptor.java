@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.ws.InvocationContext;
 import oap.ws.Response;
 import oap.ws.interceptor.Interceptor;
-import oap.ws.sso.SecurityRoles;
 import oap.ws.sso.User;
 import oap.ws.sso.UserProvider;
 
@@ -43,12 +42,10 @@ import static oap.ws.sso.SSO.SESSION_USER_KEY;
 public class ApiKeyInterceptor implements Interceptor {
     public static final String SESSION_API_KEY_AUTHENTICATED = "apiKeyAuthenticated";
     private final UserProvider userProvider;
-    private final SecurityRoles roles;
 
-    public ApiKeyInterceptor( UserProvider userProvider, SecurityRoles roles ) {
+    public ApiKeyInterceptor( UserProvider userProvider ) {
         super();
         this.userProvider = userProvider;
-        this.roles = roles;
     }
 
     @Override
@@ -61,7 +58,7 @@ public class ApiKeyInterceptor implements Interceptor {
         if( context.session.containsKey( SESSION_USER_KEY ) )
             return Optional.of( new Response( CONFLICT, "invoking service with apiKey while logged in" ) );
 
-        User user = userProvider.getAuthenticatedByApiKey( accessKey, apiKey, roles ).orElse( null );
+        User user = userProvider.getAuthenticatedByApiKey( accessKey, apiKey ).orElse( null );
         if( user != null ) {
             context.session.set( SESSION_USER_KEY, user );
             context.session.set( SESSION_API_KEY_AUTHENTICATED, true );

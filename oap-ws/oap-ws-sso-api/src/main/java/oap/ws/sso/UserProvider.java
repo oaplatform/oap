@@ -63,7 +63,7 @@ public interface UserProvider {
 
     Result<? extends User, AuthenticationFailure> getAuthenticated( String email, Optional<String> tfaCode );
 
-    Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey, SecurityRoles roles );
+    Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey );
 
     boolean granted( String role, String... permissions );
 }
