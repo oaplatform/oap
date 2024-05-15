@@ -31,6 +31,7 @@ import oap.ws.InvocationContext;
 import oap.ws.Response;
 import oap.ws.interceptor.Interceptor;
 import oap.ws.sso.SSO;
+import oap.ws.sso.SecurityRoles;
 import oap.ws.sso.User;
 import oap.ws.sso.UserProvider;
 import oap.ws.sso.UserWithCookies;
@@ -48,10 +49,11 @@ import static oap.ws.sso.WsSecurity.USER;
 
 @Slf4j
 public class JWTSecurityInterceptor implements Interceptor {
-
+    private final SecurityRoles roles;
     private final UserProvider userProvider;
 
-    public JWTSecurityInterceptor( UserProvider userProvider ) {
+    public JWTSecurityInterceptor( SecurityRoles roles, UserProvider userProvider ) {
+        this.roles = roles;
         this.userProvider = Objects.requireNonNull( userProvider );
     }
 
@@ -82,7 +84,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         String realmString = realm.get();
         String[] wssPermissions = wss.get().permissions();
 
-        validUser = userProvider.getAuthenticatedByAccessToken( Optional.ofNullable( accessToken ), refreshToken, sessionUserKey.map( User::getEmail ), realmString, wssPermissions );
+        validUser = userProvider.getAuthenticatedByAccessToken( Optional.ofNullable( accessToken ), refreshToken, sessionUserKey.map( User::getEmail ), roles, realmString, wssPermissions );
 
         if( !validUser.isSuccess() ) {
             return Optional.of( new Response( UNAUTHORIZED, validUser.failureValue ) );

@@ -29,6 +29,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Configuration;
 
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,8 @@ import java.util.Set;
 @Slf4j
 public class ConfigSecurityRolesProvider extends AbstractSecurityRolesProvider {
     public static final Configuration<Config> CONFIGURAION = new Configuration<>( Config.class, "oap-ws-roles" );
+    @Serial
+    private static final long serialVersionUID = -4096014517237902041L;
 
     public ConfigSecurityRolesProvider( Config config ) {
         this( List.of( config ) );

@@ -24,9 +24,10 @@
 
 package oap.ws.sso;
 
+import java.io.Serializable;
 import java.util.Set;
 
-public interface SecurityRolesProvider {
+public interface SecurityRolesProvider extends Serializable {
 
     Set<String> permissionsOf( String role );
 

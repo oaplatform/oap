@@ -26,11 +26,16 @@ package oap.ws.sso;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
-public class SecurityRoles {
+public class SecurityRoles implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -100799003057699116L;
+
     private final SecurityRolesProvider provider;
 
     public SecurityRoles( SecurityRolesProvider provider ) {

@@ -57,13 +57,13 @@ public interface UserProvider {
 
     Result<UserWithCookies, String> getAuthenticatedByAccessToken( Optional<String> accessToken, Optional<String> refreshToken,
                                                                    Optional<String> sessionUser,
-                                                                   String realm, String... wssPermissions );
+                                                                   SecurityRoles roles, String realm, String... wssPermissions );
 
     Result<? extends User, AuthenticationFailure> getAuthenticated( String email, String password, Optional<String> tfaCode );
 
     Result<? extends User, AuthenticationFailure> getAuthenticated( String email, Optional<String> tfaCode );
 
-    Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey );
+    Optional<? extends User> getAuthenticatedByApiKey( String accessKey, String apiKey, SecurityRoles roles );
 
     boolean granted( String role, String... permissions );
 }
