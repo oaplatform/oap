@@ -56,7 +56,7 @@ public class MockCookieStore implements CookieStore {
                 // first remove any old cookie that is equivalent
                 cookies.remove( cookie );
                 if( !cookie.isExpired( new DateTime( UTC ).toDate() ) ) {
-                    cookies.add( cookie );
+                    cookies.add( new MockCookie( cookie ) );
                 }
             } finally {
                 lock.writeLock().unlock();
@@ -159,5 +159,74 @@ public class MockCookieStore implements CookieStore {
         }
 
         return null;
+    }
+
+    public static class MockCookie implements Cookie {
+
+        private final Cookie cookie;
+
+        public MockCookie( Cookie cookie ) {
+            this.cookie = cookie;
+        }
+
+        @Override
+        public String getName() {
+            return cookie.getName();
+        }
+
+        @Override
+        public String getValue() {
+            return cookie.getValue();
+        }
+
+        @Override
+        public String getComment() {
+            return cookie.getComment();
+        }
+
+        @Override
+        public String getCommentURL() {
+            return cookie.getCommentURL();
+        }
+
+        @Override
+        public Date getExpiryDate() {
+            return cookie.getExpiryDate();
+        }
+
+        @Override
+        public boolean isPersistent() {
+            return cookie.isPersistent();
+        }
+
+        @Override
+        public String getDomain() {
+            return cookie.getDomain();
+        }
+
+        @Override
+        public String getPath() {
+            return cookie.getPath();
+        }
+
+        @Override
+        public int[] getPorts() {
+            return cookie.getPorts();
+        }
+
+        @Override
+        public boolean isSecure() {
+            return cookie.isSecure();
+        }
+
+        @Override
+        public int getVersion() {
+            return cookie.getVersion();
+        }
+
+        @Override
+        public boolean isExpired( Date date ) {
+            return cookie.isExpired( date );
+        }
     }
 }
