@@ -30,6 +30,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import lombok.extern.slf4j.Slf4j;
+import oap.time.JodaClock;
 
 @Slf4j
 public class JWTExtractor {
@@ -57,9 +58,8 @@ public class JWTExtractor {
             return null;
         }
         Algorithm algorithm = Algorithm.HMAC256( secret );
-        JWTVerifier verifier = JWT.require( algorithm )
-            .withIssuer( issuer )
-            .build();
+        JWTVerifier.BaseVerification verification = ( JWTVerifier.BaseVerification ) JWT.require( algorithm ).withIssuer( issuer );
+        JWTVerifier verifier = verification.build( new JodaClock() );
         return new JwtToken( verifier.verify( token ), roles );
     }
 
@@ -81,4 +81,5 @@ public class JWTExtractor {
     public enum TokenStatus {
         EMPTY, INVALID, VALID, EXPIRED
     }
+
 }
