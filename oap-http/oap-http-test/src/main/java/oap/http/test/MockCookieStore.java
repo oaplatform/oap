@@ -225,7 +225,9 @@ public class MockCookieStore implements CookieStore {
         }
 
         @Override
-        public boolean isExpired( Date date ) {
+        public boolean isExpired( Date ignored ) {
+            Date date = DateTime.now( UTC ).toDate();
+
             return cookie.isExpired( date );
         }
     }
