@@ -28,6 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.http.Cookie;
+import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.util.BiStream;
 import oap.util.Pair;
@@ -292,6 +293,16 @@ public class HttpAsserts {
         public HttpAssertion satisfies( Consumer<Client.Response> assertion ) {
             assertion.accept( response );
             return this;
+        }
+
+        public <T> T unmarshal( Class<T> clazz ) {
+            try {
+                Optional<T> unmarshal = response.unmarshal( clazz );
+                assertThat( unmarshal ).isPresent();
+                return unmarshal.get();
+            } catch( JsonException e ) {
+                throw Assertions.<AssertionError>fail( e.getMessage(), e );
+            }
         }
     }
 
