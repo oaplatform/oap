@@ -28,11 +28,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Set;
 
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface WsSecurity {
     String SYSTEM = "SYSTEM";
+    String USER = "USER";
+
+    Set<String> SYSTEM_REALMS = Set.of( SYSTEM, USER );
 
     String realm() default SYSTEM;
 

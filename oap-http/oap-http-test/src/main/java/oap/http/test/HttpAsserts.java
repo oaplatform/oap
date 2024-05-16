@@ -28,6 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.http.Cookie;
+import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.util.BiStream;
 import oap.util.Pair;
@@ -54,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
     private static final Client client = Client.custom()
+        .withCookieStore( new MockCookieStore() )
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
@@ -292,6 +294,16 @@ public class HttpAsserts {
             assertion.accept( response );
             return this;
         }
+
+        public <T> T unmarshal( Class<T> clazz ) {
+            try {
+                Optional<T> unmarshal = response.unmarshal( clazz );
+                assertThat( unmarshal ).isPresent();
+                return unmarshal.get();
+            } catch( JsonException e ) {
+                throw Assertions.<AssertionError>fail( e.getMessage(), e );
+            }
+        }
     }
 
     public static final class CookieHttpAssertion {
@@ -340,11 +352,6 @@ public class HttpAsserts {
 
         public CookieHttpAssertion hasMaxAge( int maxAge ) {
             assertThat( cookie.getMaxAge() ).isEqualTo( maxAge );
-            return this;
-        }
-
-        public CookieHttpAssertion hasSameSite( boolean sameSite ) {
-            assertThat( cookie.isSameSite() ).isEqualTo( sameSite );
             return this;
         }
 

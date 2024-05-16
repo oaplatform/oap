@@ -24,15 +24,21 @@
 
 package oap.ws.sso;
 
+import lombok.AllArgsConstructor;
+import lombok.ToString;
 import oap.http.Cookie;
 import oap.http.server.nio.HttpServerExchange;
 import oap.ws.Response;
 import oap.ws.SessionManager;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -49,55 +55,105 @@ public class SSO {
         return exchange.getRequestCookieValue( AUTHENTICATION_KEY );
     }
 
-    public static Response authenticatedResponse( Authentication authentication, String cookieDomain, long cookieExpiration, Boolean cookieSecure ) {
+    @Nonnull
+    public static Optional<String> getRefreshAuthentication( HttpServerExchange exchange ) {
+        String value = Objects.requireNonNull( exchange ).getRequestHeader( REFRESH_TOKEN_KEY );
+        if( value != null ) {
+            return Optional.of( value );
+        }
+        return Optional.ofNullable( exchange.getRequestCookieValue( REFRESH_TOKEN_KEY ) );
+    }
+
+    public static Response authenticatedResponse( Authentication authentication, String cookieDomain, Boolean cookieSecure ) {
         return Response
             .jsonOk()
-            .withHeader( AUTHENTICATION_KEY, authentication.accessToken._2 )
-            .withCookie( new Cookie( AUTHENTICATION_KEY, authentication.accessToken._2 )
+            .withHeader( AUTHENTICATION_KEY, authentication.accessToken.jwt )
+            .withCookie( Cookie.builder( AUTHENTICATION_KEY, authentication.accessToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withExpires( getExpirationTimeCookie( authentication.accessToken._1, cookieExpiration ) )
-                .httpOnly( true )
-                .secure( cookieSecure )
+                .withExpires( new DateTime( authentication.accessToken.expires ) )
+                .withHttpOnly( true )
+                .withSecure( cookieSecure )
+                .build()
             )
-            .withCookie( new Cookie( REFRESH_TOKEN_KEY, authentication.refreshToken._2 )
+            .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, authentication.refreshToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withExpires( getExpirationTimeCookie( authentication.refreshToken._1, cookieExpiration ) )
-                .httpOnly( true )
-                .secure( cookieSecure ) )
+                .withExpires( new DateTime( authentication.refreshToken.expires ) )
+                .withHttpOnly( true )
+                .withSecure( cookieSecure )
+                .build()
+            )
             .withBody( authentication.view, false );
     }
 
-    public static Response authenticatedResponse( Authentication authentication, String cookieDomain, long cookieExpiration ) {
-        return authenticatedResponse( authentication, cookieDomain, cookieExpiration, false );
+    public static Response authenticatedResponse( Authentication authentication, String cookieDomain ) {
+        return authenticatedResponse( authentication, cookieDomain, false );
     }
 
-    private static DateTime getExpirationTimeCookie( Date expirationInToken, long cookieExpiration ) {
+    private static DateTime getExpirationTimeCookie( Date expirationInToken, Date cookieExpiration ) {
         return expirationInToken != null ? new DateTime( expirationInToken ) : new DateTime( cookieExpiration );
     }
 
     public static Response logoutResponse( String cookieDomain ) {
         return Response
             .noContent()
-            .withCookie( new Cookie( AUTHENTICATION_KEY, "<logged out>" )
+            .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
+                .build()
             )
-            .withCookie( new Cookie( SessionManager.COOKIE_ID, "<logged out>" )
+            .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
+                .build()
+            )
+            .withCookie( Cookie.builder( SessionManager.COOKIE_ID, "<logged out>" )
+                .withDomain( cookieDomain )
+                .withPath( "/" )
+                .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
+                .build()
             );
     }
 
     public static Response notAuthenticatedResponse( int code, String reasonPhrase, String cookieDomain ) {
         return new Response( code, reasonPhrase )
-            .withCookie( new Cookie( AUTHENTICATION_KEY, "<logged out>" )
+            .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
+                .build()
             );
+    }
+
+    public static Tokens createAccessAndRefreshTokensFromRefreshToken( Authentication authentication, String cookieDomain, Boolean cookieSecure ) {
+        return new Tokens(
+            Cookie.builder( AUTHENTICATION_KEY, authentication.accessToken.jwt )
+                .withDomain( cookieDomain )
+                .withPath( "/" )
+                .withExpires( new DateTime( authentication.accessToken.expires ) )
+                .withHttpOnly( true )
+                .withSecure( cookieSecure )
+                .build(),
+            Cookie.builder( REFRESH_TOKEN_KEY, authentication.refreshToken.jwt )
+                .withDomain( cookieDomain )
+                .withPath( "/" )
+                .withExpires( new DateTime( authentication.refreshToken.expires ) )
+                .withHttpOnly( true )
+                .withSecure( cookieSecure )
+                .build()
+        );
+    }
+
+    @ToString
+    @AllArgsConstructor
+    public static class Tokens implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 3139324331418579632L;
+
+        public final Cookie accessToken;
+        public final Cookie refreshToken;
     }
 }

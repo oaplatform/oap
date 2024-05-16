@@ -86,8 +86,8 @@ public class WebService implements HttpHandler {
     @Override
     public void handleRequest( HttpServerExchange exchange ) {
         try {
-            var requestLine = exchange.getRelativePath();
-            var method = methodMatcher.findMethod( requestLine, exchange.getRequestMethod() ).orElse( null );
+            String requestLine = exchange.getRelativePath();
+            Reflection.Method method = methodMatcher.findMethod( requestLine, exchange.getRequestMethod() ).orElse( null );
             log.trace( "invoking {} for {}", method, requestLine );
             if( method != null ) {
                 Session session = null;
@@ -119,13 +119,13 @@ public class WebService implements HttpHandler {
     private void handleInternal( InvocationContext context ) {
         log.trace( "{}: session: [{}]", this, context.session );
 
-        var wsMethod = context.method.findAnnotation( WsMethod.class );
+        Optional<WsMethod> wsMethod = context.method.findAnnotation( WsMethod.class );
 
         Interceptors.before( interceptors, context )
             .ifPresentOrElse(
                 response -> response.send( context.exchange ),
                 () -> {
-                    var unparsedParameters = context.unparsedParameters();
+                    Map<Reflection.Parameter, Object> unparsedParameters = context.unparsedParameters();
 
                     ValidationErrors validationErrors = ValidationErrors.empty().validateParameters( unparsedParameters, context.method, instance, true );
 
@@ -152,7 +152,7 @@ public class WebService implements HttpHandler {
                         return;
                     }
 
-                    var paramValues = values.values().toArray( new Object[0] );
+                    Object[] paramValues = values.values().toArray( new Object[0] );
                     validationErrors = Validators
                         .forMethod( context.method, instance, false )
                         .validate( paramValues, values );
@@ -163,17 +163,18 @@ public class WebService implements HttpHandler {
                     }
 
                     if( context.session != null && !containsSessionCookie( context.exchange.responseCookies() ) ) {
-                        var cookie = new oap.http.Cookie( SessionManager.COOKIE_ID, context.session.id )
+                        oap.http.Cookie cookie = oap.http.Cookie.builder( SessionManager.COOKIE_ID, context.session.id )
                             .withPath( sessionManager.cookiePath )
                             .withExpires( DateTime.now().plus( sessionManager.cookieExpiration ) )
                             .withDomain( sessionManager.cookieDomain )
-                            .secure( sessionManager.cookieSecure )
-                            .httpOnly( true );
+                            .withSecure( sessionManager.cookieSecure )
+                            .withHttpOnly( true )
+                            .build();
 
                         context.exchange.setResponseCookie( cookie );
                     }
 
-                    var response = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
+                    Response response = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
 
                     Interceptors.after( interceptors, response, context );
 
@@ -182,7 +183,7 @@ public class WebService implements HttpHandler {
     }
 
     private boolean containsSessionCookie( Iterable<Cookie> cookies ) {
-        for( var p : cookies ) {
+        for( Cookie p : cookies ) {
             if( SessionManager.COOKIE_ID.equals( p.getName() ) ) return true;
         }
         return false;
@@ -190,7 +191,7 @@ public class WebService implements HttpHandler {
 
     private Response produceResultResponse( Reflection.Method method, Optional<WsMethod> wsMethod, Object result ) {
         boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
-        var produces = wsMethod.map( WsMethod::produces )
+        String produces = wsMethod.map( WsMethod::produces )
             .orElse( Http.ContentType.APPLICATION_JSON );
 
         if( method.isVoid() ) return Response.noContent();

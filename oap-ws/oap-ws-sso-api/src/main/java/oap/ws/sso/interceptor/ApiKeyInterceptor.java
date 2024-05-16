@@ -28,8 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.ws.InvocationContext;
 import oap.ws.Response;
 import oap.ws.interceptor.Interceptor;
-import oap.ws.sso.Authenticator;
 import oap.ws.sso.User;
+import oap.ws.sso.UserProvider;
 
 import java.util.Optional;
 
@@ -41,16 +41,16 @@ import static oap.ws.sso.SSO.SESSION_USER_KEY;
 @Slf4j
 public class ApiKeyInterceptor implements Interceptor {
     public static final String SESSION_API_KEY_AUTHENTICATED = "apiKeyAuthenticated";
-    private final Authenticator authenticator;
+    private final UserProvider userProvider;
 
-    public ApiKeyInterceptor( Authenticator authenticator ) {
+    public ApiKeyInterceptor( UserProvider userProvider ) {
         super();
-        this.authenticator = authenticator;
+        this.userProvider = userProvider;
     }
 
     @Override
     public Optional<Response> before( InvocationContext context ) {
-        var accessKey = context.exchange.getStringParameter( "accessKey" );
+        String accessKey = context.exchange.getStringParameter( "accessKey" );
         if( accessKey == null ) return Optional.empty();
         var apiKey = context.exchange.getStringParameter( "apiKey" );
         if( apiKey == null ) return Optional.empty();
@@ -58,9 +58,8 @@ public class ApiKeyInterceptor implements Interceptor {
         if( context.session.containsKey( SESSION_USER_KEY ) )
             return Optional.of( new Response( CONFLICT, "invoking service with apiKey while logged in" ) );
 
-        var authentication = authenticator.authenticateWithApiKey( accessKey, apiKey );
-        if( authentication.isPresent() ) {
-            User user = authentication.get().user;
+        User user = userProvider.getAuthenticatedByApiKey( accessKey, apiKey ).orElse( null );
+        if( user != null ) {
             context.session.set( SESSION_USER_KEY, user );
             context.session.set( SESSION_API_KEY_AUTHENTICATED, true );
             context.session.set( ISSUER, this.getClass().getSimpleName() );

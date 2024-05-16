@@ -32,6 +32,7 @@ import oap.util.Sets;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -62,7 +63,9 @@ public class WsParams {
     }
 
     public static Object fromSession( Session session, Reflection.Parameter parameter ) {
-        if( session == null ) return null;
+        if( session == null ) {
+            return null;
+        }
         Optional<Object> value = session.get( parameter.name() );
         return wrapOptional( parameter, value.orElse( null ) );
     }
@@ -70,7 +73,7 @@ public class WsParams {
     public static Object fromHeader( HttpServerExchange exchange, Reflection.Parameter parameter, WsParam wsParam ) {
         log.trace( "headers: {}", exchange.getRequestHeaders() );
 
-        var names = Sets.of( wsParam.name() );
+        Set<String> names = Sets.of( wsParam.name() );
         names.add( uncamelHeaderName( parameter.name() ) );
         names.add( parameter.name() );
         log.trace( "names: {}", names );
@@ -83,13 +86,17 @@ public class WsParams {
     }
 
     public static Object wrapOptional( Reflection.Parameter parameter, Object value ) throws WsClientException {
-        if( parameter.type().isOptional() ) return Optional.ofNullable( value );
-        if( value == null ) throw new WsClientException( "'" + parameter + "' is required" );
+        if( parameter.type().isOptional() ) {
+            return Optional.ofNullable( value );
+        }
+        if( value == null ) {
+            throw new WsClientException( "'" + parameter + "' is required" );
+        }
         return value;
     }
 
     public static Object fromCookie( HttpServerExchange exchange, Reflection.Parameter parameter, WsParam wsParam ) throws WsClientException {
-        var names = Sets.of( wsParam.name() );
+        Set<String> names = Sets.of( wsParam.name() );
         names.add( parameter.name() );
         String cookie = null;
         for( String name : names ) {
@@ -110,10 +117,10 @@ public class WsParams {
         try {
             if( parameter.type().assignableFrom( byte[].class ) ) {
                 if( parameter.type().isOptional() ) {
-                    var bytes = exchange.readBody();
+                    byte[] bytes = exchange.readBody();
                     return bytes.length > 0 ? Optional.of( bytes ) : Optional.empty();
                 }
-                var bytes = exchange.readBody();
+                byte[] bytes = exchange.readBody();
                 if( bytes.length < 1 ) throw new WsClientException( "no body defined for: " + parameter.type() + ":" + parameter.name() );
                 return bytes;
             }
@@ -136,15 +143,15 @@ public class WsParams {
         Set<String> names = wsParam == null ? Sets.of() : Sets.of( wsParam.name() );
         names.add( parameter.name() );
         if( parameter.type().assignableTo( List.class ) ) {
-            for( var name : names ) {
-                var values = exchange.exchange.getQueryParameters().get( name );
+            for( String name : names ) {
+                Deque<String> values = exchange.exchange.getQueryParameters().get( name );
                 if( values == null || values.isEmpty() ) continue;
                 return values.stream().toList();
             }
             return List.of();
         }
         String value = null;
-        for( var name : names ) {
+        for( String name : names ) {
             value = exchange.getStringParameter( name );
             if( value != null ) break;
         }

@@ -24,10 +24,14 @@
 
 package oap.ws.sso;
 
+import java.io.Serial;
 import java.util.Map;
 import java.util.Set;
 
 public class AbstractSecurityRolesProvider implements SecurityRolesProvider {
+    @Serial
+    private static final long serialVersionUID = 2734510325753248087L;
+
     protected final Map<String, Set<String>> roles;
 
     protected AbstractSecurityRolesProvider( Map<String, Set<String>> roles ) {

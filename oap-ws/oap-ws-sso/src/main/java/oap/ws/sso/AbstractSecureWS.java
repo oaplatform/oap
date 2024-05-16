@@ -33,12 +33,6 @@ import static oap.ws.validate.ValidationErrors.empty;
 import static oap.ws.validate.ValidationErrors.error;
 
 public abstract class AbstractSecureWS {
-    protected SecurityRoles roles;
-
-    protected AbstractSecureWS( SecurityRoles roles ) {
-        this.roles = roles;
-    }
-
     protected ValidationErrors validateUserLoggedIn( Optional<User> loggedUser ) {
         return loggedUser.isPresent()
             ? empty()

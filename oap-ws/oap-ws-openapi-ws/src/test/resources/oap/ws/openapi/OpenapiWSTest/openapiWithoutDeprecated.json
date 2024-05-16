@@ -294,8 +294,11 @@
       },
       "Cookie" : {
         "properties" : {
-          "delegate" : {
-            "$ref" : "#/components/schemas/io_undertow_server_handlers_Cookie"
+          "comment" : {
+            "type" : "string"
+          },
+          "discard" : {
+            "type" : "boolean"
           },
           "domain" : {
             "type" : "string"
@@ -317,14 +320,15 @@
           "path" : {
             "type" : "string"
           },
-          "sameSite" : {
-            "type" : "boolean"
-          },
           "secure" : {
             "type" : "boolean"
           },
           "value" : {
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -1694,53 +1698,6 @@
         },
         "type" : "object"
       },
-      "io_undertow_server_handlers_Cookie" : {
-        "properties" : {
-          "comment" : {
-            "type" : "string"
-          },
-          "discard" : {
-            "type" : "boolean"
-          },
-          "domain" : {
-            "type" : "string"
-          },
-          "expires" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "httpOnly" : {
-            "type" : "boolean"
-          },
-          "maxAge" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "path" : {
-            "type" : "string"
-          },
-          "sameSite" : {
-            "type" : "boolean"
-          },
-          "sameSiteMode" : {
-            "type" : "string"
-          },
-          "secure" : {
-            "type" : "boolean"
-          },
-          "value" : {
-            "type" : "string"
-          },
-          "version" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
       "oap_dictionary_Dictionary" : {
         "properties" : {
           "enabled" : {
@@ -1776,8 +1733,11 @@
       },
       "oap_http_Cookie" : {
         "properties" : {
-          "delegate" : {
-            "$ref" : "#/components/schemas/io_undertow_server_handlers_Cookie"
+          "comment" : {
+            "type" : "string"
+          },
+          "discard" : {
+            "type" : "boolean"
           },
           "domain" : {
             "type" : "string"
@@ -1799,14 +1759,15 @@
           "path" : {
             "type" : "string"
           },
-          "sameSite" : {
-            "type" : "boolean"
-          },
           "secure" : {
             "type" : "boolean"
           },
           "value" : {
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"

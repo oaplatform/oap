@@ -33,13 +33,11 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
-import java.util.Date;
-
 import static oap.testng.Asserts.assertString;
+import static oap.ws.sso.JWTExtractor.TokenStatus.VALID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 
 public class JwtTokenGeneratorExtractorTest extends Fixtures {
@@ -54,12 +52,15 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
     public void generateAndExtractToken() {
         DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() );
 
-        Pair<Date, String> token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
-        assertNotNull( token._1 );
-        assertString( token._2 ).isNotEmpty();
-        assertThat( token._1 ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
-        assertTrue( jwtExtractor.verifyToken( token._2 ) );
-        assertThat( jwtExtractor.getUserEmail( token._2 ) ).isEqualTo( "email@email.com" );
-        assertThat( jwtExtractor.getPermissions( token._2, "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );
+        Authentication.Token token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
+        assertNotNull( token.expires );
+        assertString( token.jwt ).isNotEmpty();
+        assertThat( token.expires ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
+        assertThat( jwtExtractor.verifyToken( token.jwt ) ).isEqualTo( VALID );
+
+        JwtToken jwtToken = jwtExtractor.decodeJWT( token.jwt );
+
+        assertThat( jwtToken.getUserEmail() ).isEqualTo( "email@email.com" );
+        assertThat( jwtToken.getPermissions( "org1" ) ).containsExactlyInAnyOrder( "accounts:list", "accounts:create" );
     }
 }

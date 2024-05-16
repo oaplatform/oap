@@ -27,7 +27,6 @@ package oap.ws.sso;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
-import oap.util.Pair;
 import org.joda.time.DateTimeUtils;
 
 import java.util.Date;
@@ -50,34 +49,37 @@ public class JwtTokenGenerator {
         this.refreshSecretExpiration = refreshSecretExpiration;
     }
 
-    public Pair<Date, String> generateAccessToken( User user ) throws JWTCreationException {
+    public Authentication.Token generateAccessToken( User user ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( accessSecret );
         Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
-        return Pair.__( expiresAt, JWT.create()
+        return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withClaim( "roles", user.getRoles() )
+            .withClaim( "counter", user.getCounter() )
             .withIssuer( issuer )
             .withExpiresAt( expiresAt )
             .sign( algorithm ) );
     }
 
-    public Pair<Date, String> generateAccessTokenWithActiveOrgId( User user, String activeOrganization ) throws JWTCreationException {
+    public Authentication.Token generateAccessTokenWithActiveOrgId( User user, String activeOrganization ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( accessSecret );
         Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
-        return Pair.__( expiresAt, JWT.create()
+        return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
             .withClaim( "roles", user.getRoles() )
+            .withClaim( "counter", user.getCounter() )
             .withClaim( "org_id", activeOrganization )
             .withIssuer( issuer )
             .withExpiresAt( expiresAt )
             .sign( algorithm ) );
     }
 
-    public Pair<Date, String> generateRefreshToken( User user ) throws JWTCreationException {
+    public Authentication.Token generateRefreshToken( User user ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( refreshSecret );
         Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + refreshSecretExpiration, UTC ).toDate();
-        return Pair.__( expiresAt, JWT.create()
+        return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "user", user.getEmail() )
+            .withClaim( "counter", user.getCounter() )
             .withIssuer( issuer )
             .withExpiresAt( expiresAt )
             .sign( algorithm ) );

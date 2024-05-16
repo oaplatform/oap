@@ -26,11 +26,17 @@ package oap.ws.sso;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
-public class SecurityRoles {
+public class SecurityRoles implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -100799003057699116L;
+
     private final SecurityRolesProvider provider;
 
     public SecurityRoles( SecurityRolesProvider provider ) {
@@ -47,5 +53,30 @@ public class SecurityRoles {
 
     public Set<String> roles() {
         return provider.roles();
+    }
+
+    public SecurityRoles merge( SecurityRoles roles ) {
+        return new SecurityRoles( provider ) {
+            @Override
+            public Set<String> permissionsOf( String role ) {
+                LinkedHashSet<String> res = new LinkedHashSet<>( super.permissionsOf( role ) );
+                res.addAll( roles.permissionsOf( role ) );
+
+                return res;
+            }
+
+            @Override
+            public boolean granted( String role, String... permissions ) {
+                return super.granted( role, permissions ) || roles.granted( role, permissions );
+            }
+
+            @Override
+            public Set<String> roles() {
+                LinkedHashSet<String> res = new LinkedHashSet<>( super.roles() );
+                res.addAll( roles.roles() );
+
+                return res;
+            }
+        };
     }
 }

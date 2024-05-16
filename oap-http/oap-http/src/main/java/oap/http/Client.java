@@ -49,6 +49,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -141,14 +142,14 @@ public final class Client implements Closeable, AutoCloseable {
         public void cancelled() {
         }
     };
-    private final BasicCookieStore basicCookieStore;
+    private final CookieStore cookieStore;
     private final ClientBuilder builder;
     private CloseableHttpAsyncClient client;
 
-    private Client( BasicCookieStore basicCookieStore, ClientBuilder builder ) {
+    private Client( CookieStore cookieStore, ClientBuilder builder ) {
         this.client = builder.client();
 
-        this.basicCookieStore = basicCookieStore;
+        this.cookieStore = cookieStore;
         this.builder = builder;
     }
 
@@ -420,11 +421,11 @@ public final class Client implements Closeable, AutoCloseable {
     }
 
     public List<Cookie> getCookies() {
-        return basicCookieStore.getCookies();
+        return cookieStore.getCookies();
     }
 
     public void clearCookies() {
-        basicCookieStore.clear();
+        cookieStore.clear();
     }
 
     private CompletableFuture<Response> execute( HttpUriRequest request, Map<String, Object> headers ) {
@@ -687,10 +688,10 @@ public final class Client implements Closeable, AutoCloseable {
 
     public static class ClientBuilder extends AsyncCallbacks<ClientBuilder, Client> {
 
-        private final BasicCookieStore basicCookieStore;
         private final Path certificateLocation;
         private final String certificatePassword;
         private final long timeout;
+        private CookieStore cookieStore;
         private long connectTimeout;
         private int maxConnTotal = 10000;
         private int maxConnPerRoute = 1000;
@@ -698,12 +699,18 @@ public final class Client implements Closeable, AutoCloseable {
         private String cookieSpec = CookieSpecs.STANDARD;
 
         public ClientBuilder( Path certificateLocation, String certificatePassword, long connectTimeout, long timeout ) {
-            basicCookieStore = new BasicCookieStore();
+            cookieStore = new BasicCookieStore();
 
             this.certificateLocation = certificateLocation;
             this.certificatePassword = certificatePassword;
             this.connectTimeout = connectTimeout;
             this.timeout = timeout;
+        }
+
+        public ClientBuilder withCookieStore( CookieStore cookieStore ) {
+            this.cookieStore = cookieStore;
+
+            return this;
         }
 
         private HttpAsyncClientBuilder initialize() {
@@ -740,7 +747,7 @@ public final class Client implements Closeable, AutoCloseable {
                         .setRedirectsEnabled( redirectsEnabled )
                         .setCookieSpec( cookieSpec )
                         .build() )
-                    .setDefaultCookieStore( basicCookieStore );
+                    .setDefaultCookieStore( cookieStore );
             } catch( IOReactorException e ) {
                 throw new UncheckedIOException( e );
             }
@@ -783,7 +790,7 @@ public final class Client implements Closeable, AutoCloseable {
         }
 
         public Client build() {
-            return new Client( basicCookieStore, this );
+            return new Client( cookieStore, this );
         }
     }
 
