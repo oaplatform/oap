@@ -7,10 +7,10 @@ import java.util.Date;
 
 import static org.joda.time.DateTimeZone.UTC;
 
-public class MockCookie implements Cookie {
-    protected final Cookie cookie;
+public class MockCookie<T extends Cookie> implements Cookie {
+    protected final T cookie;
 
-    MockCookie( Cookie cookie ) {
+    MockCookie( T cookie ) {
         this.cookie = cookie;
     }
 

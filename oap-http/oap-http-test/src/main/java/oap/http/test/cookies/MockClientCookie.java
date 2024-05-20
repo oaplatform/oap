@@ -1,20 +1,19 @@
 package oap.http.test.cookies;
 
 import org.apache.http.cookie.ClientCookie;
-import org.apache.http.cookie.Cookie;
 
-public class MockClientCookie extends MockCookie implements ClientCookie {
-    MockClientCookie( Cookie cookie ) {
+public class MockClientCookie<T extends ClientCookie> extends MockCookie<T> implements ClientCookie {
+    MockClientCookie( T cookie ) {
         super( cookie );
     }
 
     @Override
     public String getAttribute( String name ) {
-        return ( ( ClientCookie ) cookie ).getAttribute( name );
+        return cookie.getAttribute( name );
     }
 
     @Override
     public boolean containsAttribute( String name ) {
-        return ( ( ClientCookie ) cookie ).containsAttribute( name );
+        return cookie.containsAttribute( name );
     }
 }
