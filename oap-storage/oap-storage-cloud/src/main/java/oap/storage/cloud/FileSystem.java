@@ -130,118 +130,98 @@ public class FileSystem {
     }
 
     /**
-     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void uploadFile( String destination, Path path ) {
-        uploadFile( new CloudURI( destination ), path, BlobMetadata.builder().build() );
+        upload( new CloudURI( destination ), BlobData.builder().content( path ).build() );
     }
 
     /**
-     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void uploadFile( CloudURI destination, Path path ) {
-        uploadFile( destination, path, BlobMetadata.builder().build() );
+        upload( destination, BlobData.builder().content( path ).build() );
     }
 
     /**
-     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata ) {
-        uploadFile( new CloudURI( destination ), path, BlobMetadata.builder().userMetadata( userMetadata ).build() );
+        upload( new CloudURI( destination ), BlobData.builder().content( path ).userMetadata( userMetadata ).build() );
     }
 
     /**
-     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata ) {
-        uploadFile( destination, path, BlobMetadata.builder().userMetadata( userMetadata ).build() );
+        upload( destination, BlobData.builder().content( path ).userMetadata( userMetadata ).build() );
     }
 
     /**
-     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
-        CloudURI destinationURI = new CloudURI( destination );
-
-        uploadFile( destinationURI, path, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
+        upload( new CloudURI( destination ), BlobData.builder().content( path ).userMetadata( userMetadata ).tags( tags ).build() );
     }
 
     /**
-     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
-        uploadFile( destination, path, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
-    }
-
-    public void uploadFile( CloudURI destination, Path path, BlobMetadata blobMetadata ) {
-        log.debug( "uploadFile {} to {} (blobMetadata {})", path, destination, blobMetadata );
-
-        try( BlobStoreContext sourceContext = getContext( destination ) ) {
-            BlobStore blobStore = sourceContext.getBlobStore();
-            BlobBuilder blobBuilder = blobStore.blobBuilder( destination.path );
-            if( blobMetadata.userMetadata != null ) {
-                blobBuilder = blobBuilder.userMetadata( blobMetadata.userMetadata );
-            }
-            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder
-                .payload( path.toFile() );
-
-            if( blobMetadata.contentType != null ) {
-                payloadBlobBuilder = payloadBlobBuilder.contentEncoding( blobMetadata.contentType );
-            }
-
-            Blob blob = payloadBlobBuilder.build();
-
-            if( blobMetadata.tags != null ) {
-                putBlob( blobStore, blob, destination, blobMetadata.tags );
-            }
-        } catch( Exception e ) {
-            throw new CloudException( e );
-        }
+        upload( destination, BlobData.builder().content( path ).userMetadata( userMetadata ).tags( tags ).build() );
     }
 
     /**
-     * @see FileSystem#upload(CloudURI, byte[], BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void upload( String destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
-        upload( new CloudURI( destination ), content, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
+        upload( new CloudURI( destination ), BlobData.builder().content( content ).userMetadata( userMetadata ).tags( tags ).build() );
     }
 
     /**
-     * @see FileSystem#upload(CloudURI, byte[], BlobMetadata)
+     * @see FileSystem#upload(CloudURI, BlobData)
      */
     @Deprecated()
     public void upload( CloudURI destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
-        upload( destination, content, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
+        upload( destination, BlobData.builder().content( content ).userMetadata( userMetadata ).tags( tags ).build() );
     }
 
-    public void upload( CloudURI destination, byte[] content, BlobMetadata blobMetadata ) {
-        log.debug( "upload byte[] to {} (blobMetadata {})", destination, blobMetadata );
+    public void upload( CloudURI destination, BlobData blobData ) {
+        log.debug( "upload byte[] to {} (blobMetadata {})", destination, blobData );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
             BlobBuilder blobBuilder = blobStore.blobBuilder( destination.path );
-            if( blobMetadata.userMetadata != null ) {
-                blobBuilder = blobBuilder.userMetadata( blobMetadata.userMetadata );
+            if( blobData.userMetadata != null ) {
+                blobBuilder = blobBuilder.userMetadata( blobData.userMetadata );
             }
-            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder
-                .payload( content );
+            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = switch( blobData.content ) {
+                case byte[] bytes -> blobBuilder.payload( bytes );
+                case Path path -> blobBuilder.payload( path.toFile() );
+                case File file -> blobBuilder.payload( file );
+                case InputStream is -> blobBuilder.payload( is );
+                case String string -> blobBuilder.payload( string );
+                default -> throw new CloudException( "Unsupported blob type " + blobData.contentType );
+            };
 
-            if( blobMetadata.contentType != null ) {
-                payloadBlobBuilder = payloadBlobBuilder.contentEncoding( blobMetadata.contentType );
+            if( blobData.contentType != null ) {
+                payloadBlobBuilder = payloadBlobBuilder.contentEncoding( blobData.contentType );
+            }
+
+            if( blobData.contentLength != null ) {
+                payloadBlobBuilder = payloadBlobBuilder.contentLength( blobData.contentLength );
             }
 
             Blob blob = payloadBlobBuilder.build();
 
-            if( blobMetadata.tags != null ) {
-                putBlob( blobStore, blob, destination, blobMetadata.tags );
-            }
+            putBlob( blobStore, blob, destination, blobData.tags != null ? blobData.tags : Map.of() );
         } catch( Exception e ) {
             throw new CloudException( e );
         }

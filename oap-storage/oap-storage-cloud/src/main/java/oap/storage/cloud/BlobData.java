@@ -9,12 +9,14 @@ import java.util.Map;
 
 @ToString
 @Builder
-public class BlobMetadata implements Serializable {
+public class BlobData implements Serializable {
     @Serial
     private static final long serialVersionUID = -3448280826165820410L;
+
+    public Object content;
 
     public Map<String, String> userMetadata;
     public Map<String, String> tags;
     public String contentType;
-
+    public Long contentLength;
 }
