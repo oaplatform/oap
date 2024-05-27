@@ -11,6 +11,7 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.domain.Blob;
+import org.jclouds.blobstore.domain.BlobBuilder;
 import org.jclouds.blobstore.domain.PageSet;
 import org.jclouds.blobstore.domain.StorageMetadata;
 import org.jclouds.blobstore.domain.internal.PageSetImpl;
@@ -68,7 +69,7 @@ public class FileSystem {
      * The core api does not allow passing custom headers. This is a workaround.
      */
     private static void putBlob( BlobStore blobStore, Blob blob, CloudURI blobURI, Map<String, String> tags ) throws CloudException {
-        if ( tags.isEmpty() ) {
+        if( tags.isEmpty() ) {
             blobStore.putBlob( blobURI.container, blob );
             return;
         }
@@ -128,61 +129,119 @@ public class FileSystem {
         }
     }
 
+    /**
+     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     */
+    @Deprecated()
     public void uploadFile( String destination, Path path ) {
-        uploadFile( destination, path, Map.of() );
+        uploadFile( new CloudURI( destination ), path, BlobMetadata.builder().build() );
     }
 
+    /**
+     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     */
+    @Deprecated()
     public void uploadFile( CloudURI destination, Path path ) {
-        uploadFile( destination, path, Map.of() );
+        uploadFile( destination, path, BlobMetadata.builder().build() );
     }
 
+    /**
+     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     */
+    @Deprecated()
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata ) {
-        uploadFile( destination, path, userMetadata, Map.of() );
+        uploadFile( new CloudURI( destination ), path, BlobMetadata.builder().userMetadata( userMetadata ).build() );
     }
 
+    /**
+     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     */
+    @Deprecated()
     public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata ) {
-        uploadFile( destination, path, userMetadata, Map.of() );
+        uploadFile( destination, path, BlobMetadata.builder().userMetadata( userMetadata ).build() );
     }
 
+    /**
+     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     */
+    @Deprecated()
     public void uploadFile( String destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
         CloudURI destinationURI = new CloudURI( destination );
 
-        uploadFile( destinationURI, path, userMetadata, tags );
+        uploadFile( destinationURI, path, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
     }
 
+    /**
+     * @see FileSystem#uploadFile(CloudURI, Path, BlobMetadata)
+     */
+    @Deprecated()
     public void uploadFile( CloudURI destination, Path path, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "uploadFile {} to {} (userMetadata {}, tags {})", path, destination, userMetadata, tags );
+        uploadFile( destination, path, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
+    }
+
+    public void uploadFile( CloudURI destination, Path path, BlobMetadata blobMetadata ) {
+        log.debug( "uploadFile {} to {} (blobMetadata {})", path, destination, blobMetadata );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
-            Blob blob = blobStore
-                .blobBuilder( destination.path )
-                .userMetadata( userMetadata )
-                .payload( path.toFile() )
-                .build();
-            putBlob( blobStore, blob, destination, tags );
+            BlobBuilder blobBuilder = blobStore.blobBuilder( destination.path );
+            if( blobMetadata.userMetadata != null ) {
+                blobBuilder = blobBuilder.userMetadata( blobMetadata.userMetadata );
+            }
+            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder
+                .payload( path.toFile() );
+
+            if( blobMetadata.contentType != null ) {
+                payloadBlobBuilder = payloadBlobBuilder.contentEncoding( blobMetadata.contentType );
+            }
+
+            Blob blob = payloadBlobBuilder.build();
+
+            if( blobMetadata.tags != null ) {
+                putBlob( blobStore, blob, destination, blobMetadata.tags );
+            }
         } catch( Exception e ) {
             throw new CloudException( e );
         }
     }
 
+    /**
+     * @see FileSystem#upload(CloudURI, byte[], BlobMetadata)
+     */
+    @Deprecated()
     public void upload( String destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
-        CloudURI destinationURI = new CloudURI( destination );
-
-        upload( destinationURI, content, userMetadata, tags );
+        upload( new CloudURI( destination ), content, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
     }
 
+    /**
+     * @see FileSystem#upload(CloudURI, byte[], BlobMetadata)
+     */
+    @Deprecated()
     public void upload( CloudURI destination, byte[] content, Map<String, String> userMetadata, Map<String, String> tags ) {
-        log.debug( "upload byte[] to {} (userMetadata {}, tags {})", destination, userMetadata, tags );
+        upload( destination, content, BlobMetadata.builder().userMetadata( userMetadata ).tags( tags ).build() );
+    }
+
+    public void upload( CloudURI destination, byte[] content, BlobMetadata blobMetadata ) {
+        log.debug( "upload byte[] to {} (blobMetadata {})", destination, blobMetadata );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
-            Blob blob = blobStore
-                .blobBuilder( destination.path )
-                .userMetadata( userMetadata )
-                .payload( content )
-                .build();
-            putBlob( blobStore, blob, destination, tags );
+            BlobBuilder blobBuilder = blobStore.blobBuilder( destination.path );
+            if( blobMetadata.userMetadata != null ) {
+                blobBuilder = blobBuilder.userMetadata( blobMetadata.userMetadata );
+            }
+            BlobBuilder.PayloadBlobBuilder payloadBlobBuilder = blobBuilder
+                .payload( content );
+
+            if( blobMetadata.contentType != null ) {
+                payloadBlobBuilder = payloadBlobBuilder.contentEncoding( blobMetadata.contentType );
+            }
+
+            Blob blob = payloadBlobBuilder.build();
+
+            if( blobMetadata.tags != null ) {
+                putBlob( blobStore, blob, destination, blobMetadata.tags );
+            }
         } catch( Exception e ) {
             throw new CloudException( e );
         }
@@ -253,49 +312,40 @@ public class FileSystem {
         }
     }
 
-    public interface StorageItem {
-        String getName();
-        URI getUri();
-        String getETag();
-        Date getCreationDate();
-        Date getLastModified();
-        Long getSize();
-    }
-
     private PageSet<? extends StorageItem> wrapToStorageItem( PageSet<? extends StorageMetadata> list ) {
         var wrapped = list.stream()
-                .map( sm -> new StorageItem() {
-                    @Override
-                    public String getName() {
-                        return sm.getName();
-                    }
+            .map( sm -> new StorageItem() {
+                @Override
+                public String getName() {
+                    return sm.getName();
+                }
 
-                    @Override
-                    public URI getUri() {
-                        return sm.getUri();
-                    }
+                @Override
+                public URI getUri() {
+                    return sm.getUri();
+                }
 
-                    @Override
-                    public String getETag() {
-                        return sm.getETag();
-                    }
+                @Override
+                public String getETag() {
+                    return sm.getETag();
+                }
 
-                    @Override
-                    public Date getCreationDate() {
-                        return sm.getCreationDate();
-                    }
+                @Override
+                public Date getCreationDate() {
+                    return sm.getCreationDate();
+                }
 
-                    @Override
-                    public Date getLastModified() {
-                        return sm.getLastModified();
-                    }
+                @Override
+                public Date getLastModified() {
+                    return sm.getLastModified();
+                }
 
-                    @Override
-                    public Long getSize() {
-                        return sm.getSize();
-                    }
-                } )
-                .toList();
+                @Override
+                public Long getSize() {
+                    return sm.getSize();
+                }
+            } )
+            .toList();
         return new PageSetImpl<>( wrapped, list.getNextMarker() );
     }
 
@@ -462,5 +512,19 @@ public class FileSystem {
         String basedir = ( String ) fileSystemConfiguration.getOrThrow( "file", cloudURI.container, "jclouds.filesystem.basedir" );
 
         return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
+    }
+
+    public interface StorageItem {
+        String getName();
+
+        URI getUri();
+
+        String getETag();
+
+        Date getCreationDate();
+
+        Date getLastModified();
+
+        Long getSize();
     }
 }
