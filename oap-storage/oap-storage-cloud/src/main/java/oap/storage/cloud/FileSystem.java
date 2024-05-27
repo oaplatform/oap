@@ -193,8 +193,8 @@ public class FileSystem {
         upload( destination, BlobData.builder().content( content ).userMetadata( userMetadata ).tags( tags ).build() );
     }
 
-    public void upload( CloudURI destination, BlobData blobData ) {
-        log.debug( "upload byte[] to {} (blobMetadata {})", destination, blobData );
+    public void upload( CloudURI destination, BlobData blobData ) throws CloudException {
+        log.debug( "upload byte[] to {} (blobData {})", destination, blobData );
 
         try( BlobStoreContext sourceContext = getContext( destination ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
@@ -222,6 +222,16 @@ public class FileSystem {
             Blob blob = payloadBlobBuilder.build();
 
             putBlob( blobStore, blob, destination, blobData.tags != null ? blobData.tags : Map.of() );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
+    }
+
+    public URI getPublicURI( CloudURI cloudURI ) throws CloudException {
+        try( BlobStoreContext sourceContext = getContext( cloudURI ) ) {
+            BlobStore blobStore = sourceContext.getBlobStore();
+
+            return blobStore.blobMetadata( cloudURI.container, cloudURI.path ).getPublicUri();
         } catch( Exception e ) {
             throw new CloudException( e );
         }
