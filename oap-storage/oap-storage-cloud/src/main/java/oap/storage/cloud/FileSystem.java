@@ -231,7 +231,7 @@ public class FileSystem {
         try( BlobStoreContext sourceContext = getContext( cloudURI ) ) {
             BlobStore blobStore = sourceContext.getBlobStore();
 
-            return blobStore.blobMetadata( cloudURI.container, cloudURI.path ).getPublicUri();
+            return blobStore.blobMetadata( cloudURI.container, cloudURI.path ).getUri();
         } catch( Exception e ) {
             throw new CloudException( e );
         }
