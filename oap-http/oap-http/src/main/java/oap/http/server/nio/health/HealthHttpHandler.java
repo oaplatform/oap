@@ -64,8 +64,10 @@ public class HealthHttpHandler implements HttpHandler {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
-        if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) )
+        if( secret != null && secret.equals( exchange.getStringParameter( "secret" ) ) ) {
             exchange.responseOk( Binder.json.marshal( Collections.toLinkedHashMap( providers, HealthDataProvider::name, HealthDataProvider::data ) ), ContentTypes.APPLICATION_JSON );
-        else exchange.responseNoContent();
+        } else {
+            exchange.responseNoContent();
+        }
     }
 }

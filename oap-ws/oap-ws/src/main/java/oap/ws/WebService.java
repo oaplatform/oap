@@ -194,8 +194,9 @@ public class WebService implements HttpHandler {
         String produces = wsMethod.map( WsMethod::produces )
             .orElse( Http.ContentType.APPLICATION_JSON );
 
-        if( method.isVoid() ) return Response.noContent();
-        else if( result instanceof Response response ) return response;
+        if( method.isVoid() ) {
+            return Response.noContent();
+        } else if( result instanceof Response response ) return response;
         else if( result instanceof Optional<?> optResult ) return optResult.isEmpty()
             ? Response.notFound()
             : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces );

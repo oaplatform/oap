@@ -34,6 +34,8 @@ import java.util.Optional;
 @EqualsAndHashCode
 @ToString
 public class WsConfig {
+    public boolean enabled = true;
+
     public final ArrayList<String> interceptors = new ArrayList<>();
     public LinkedHashSet<String> path = new LinkedHashSet<>();
     public boolean sessionAware;

@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.zip.GZIPOutputStream;
 
 import static oap.http.Http.ContentType.APPLICATION_JSON;
+import static oap.http.Http.StatusCode.NO_CONTENT;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.test.HttpAsserts.assertGet;
@@ -209,6 +210,14 @@ public class WebServicesTest extends Fixtures {
 
         assertThat( response.code ).isEqualTo( OK );
         assertThat( response.contentString() ).isEqualTo( "{\"i\":1,\"s\":\"sss\"}" );
+    }
+
+    /**
+     * 404 -> 204 (TestHandler)
+     */
+    @Test
+    public void testWsServiceDisabled() {
+        assertGet( kernel.httpUrl( "/test-disabled" ) ).hasCode( NO_CONTENT );
     }
 
     @SuppressWarnings( "unused" )
