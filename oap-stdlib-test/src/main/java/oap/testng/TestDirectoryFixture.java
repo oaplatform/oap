@@ -145,6 +145,12 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
         cleanTestDirectories();
     }
 
+    public void cleanTestDirectory() {
+        TestDirectoryFixture.deleteDirectory( testDirectory() );
+
+        Files.ensureDirectory( testDirectory() );
+    }
+
     @SneakyThrows
     private void cleanTestDirectories() {
         try( var stream = java.nio.file.Files.list( globalTestDirectory() ) ) {

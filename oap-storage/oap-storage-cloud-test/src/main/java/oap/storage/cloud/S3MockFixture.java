@@ -4,11 +4,14 @@ import com.adobe.testing.s3mock.S3MockApplication;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.Tag;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +45,6 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     @Getter
     private final int port;
     private final TestDirectoryFixture testDirectoryFixture;
-    private boolean debug = false;
     private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
     private S3MockApplication s3MockApplication;
 
@@ -61,15 +63,9 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         s3MockApplication = S3MockApplication.start( new LinkedHashMap<>( Map.of(
             S3MockApplication.PROP_HTTP_PORT, port,
             S3MockApplication.PROP_INITIAL_BUCKETS, String.join( ",", initialBuckets ),
-            S3MockApplication.PROP_SILENT, !debug,
+            S3MockApplication.PROP_SILENT, false,
             S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testPath( "s3" ).toString()
         ) ) );
-    }
-
-    public S3MockFixture withDebug( boolean debug ) {
-        this.debug = debug;
-
-        return this;
     }
 
     public S3MockFixture withInitialBuckets( String... bucketNames ) {
@@ -128,5 +124,27 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             .withEndpointConfiguration( new AwsClientBuilder.EndpointConfiguration( "http://localhost:" + port, "us-east-1" ) )
             .withPathStyleAccessEnabled( true )
             .build();
+    }
+
+    public void deleteAll() {
+        AmazonS3 s3 = getS3();
+
+        List<Bucket> buckets = s3.listBuckets();
+        for( Bucket bucket : buckets ) {
+            ObjectListing objectListing = null;
+            do {
+                if( objectListing != null ) {
+                    objectListing = s3.listNextBatchOfObjects( objectListing );
+                } else {
+                    objectListing = s3.listObjects( bucket.getName() );
+                }
+                List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+                for( S3ObjectSummary s3ObjectSummary : objectSummaries ) {
+                    log.trace( "delete object {}/{}", bucket.getName(), s3ObjectSummary.getKey() );
+                    s3.deleteObject( bucket.getName(), s3ObjectSummary.getKey() );
+                }
+            } while( objectListing.getNextMarker() != null );
+        }
+
     }
 }

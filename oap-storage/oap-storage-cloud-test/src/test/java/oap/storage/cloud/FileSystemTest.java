@@ -7,6 +7,7 @@ import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.jetbrains.annotations.NotNull;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -24,12 +25,17 @@ import static org.junit.Assert.assertTrue;
 
 public class FileSystemTest extends Fixtures {
     public static final String TEST_BUCKET = "test-bucket";
-    private final S3MockFixture s3mockFixture;
-    private final TestDirectoryFixture testDirectoryFixture;
+    private static final S3MockFixture s3mockFixture;
+    private static final TestDirectoryFixture testDirectoryFixture;
 
-    public FileSystemTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture() );
-        s3mockFixture = fixture( new S3MockFixture() ).withInitialBuckets( TEST_BUCKET, "test2" );
+    static {
+        testDirectoryFixture = suiteFixture( new TestDirectoryFixture() );
+        s3mockFixture = suiteFixture( new S3MockFixture() ).withInitialBuckets( TEST_BUCKET, "test2" );
+    }
+
+    @BeforeMethod
+    public void beforeMethod() {
+        s3mockFixture.deleteAll();
     }
 
     @Test

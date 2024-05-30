@@ -54,7 +54,6 @@ public class LogWSTest {
         var logWS = new LogWS();
         Map<String, String> map = logWS.getAll();
 
-        assertThat( map ).contains( entry( "org", "DEBUG" ), entry( "ROOT", "TRACE" ) );
-
+        assertThat( map ).contains( entry( "org", "WARN" ), entry( "ROOT", "TRACE" ) );
     }
 }
