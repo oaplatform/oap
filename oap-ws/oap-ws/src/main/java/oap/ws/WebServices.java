@@ -61,9 +61,13 @@ public class WebServices {
         log.info( "ws-handler: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
 
         for( var config : wsConfigServices ) {
-            log.trace( "service: module = {}, config = {}", config.serviceItem.getModuleName(), config.ext );
+            log.trace( "service: module {} config {}", config.serviceItem.getModuleName(), config.ext );
 
-            log.trace( "service = {}", config.ext );
+            if( !config.ext.enabled ) {
+                log.debug( "{}: ws-service is disabled", config.serviceItem.getModuleName() + "." + config.serviceItem.serviceName );
+                continue;
+            }
+
             var interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
                 .orElseThrow( () -> new RuntimeException( "interceptor " + name + " not found" ) ) );
 
@@ -75,6 +79,11 @@ public class WebServices {
 
         for( var config : wsConfigHandlers ) {
             log.trace( "handler = {}", config );
+
+            if( !config.ext.enabled ) {
+                log.debug( "{}: ws-service is disabled", config.serviceItem.getModuleName() + "." + config.serviceItem.serviceName );
+                continue;
+            }
 
             for( var path : config.ext.path ) {
                 bind( path, ( HttpHandler ) config.getInstance(), config.ext.compression, config.ext.port, config.ext.portType );
