@@ -38,6 +38,7 @@ import oap.json.JsonException;
 import oap.reflect.TypeRef;
 import oap.testng.AbstractFixture;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Cuid;
 import oap.util.Pair;
 import org.apache.commons.io.FilenameUtils;
 
@@ -50,7 +51,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -77,10 +77,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
     protected final URL applicationConf;
     protected final List<URL> additionalModules = new ArrayList<>();
     protected final TestDirectoryFixture testDirectoryFixture;
+    private final String uniqueId = Cuid.UNIQUE.next();
     private final ArrayList<Pair<Class<?>, String>> confd = new ArrayList<>();
     private final ArrayList<Pair<Class<?>, String>> conf = new ArrayList<>();
     private final LinkedHashMap<String, AbstractFixture<?>> dependencies = new LinkedHashMap<>();
-    private final LinkedHashSet<String> bootMain = new LinkedHashSet<>();
     public Kernel kernel;
     protected Path confdPath;
     private int testHttpPort;
@@ -169,16 +169,9 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
         return define( "main.allowActiveByDefault", allowActiveByDefault );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public Self withBootMain( String... modules ) {
-        this.bootMain.addAll( List.of( modules ) );
-
-        return ( Self ) this;
-    }
-
     private void initConfd() {
         if( this.confdPath == null )
-            this.confdPath = testDirectoryFixture.testPath( "/application.test.confd" );
+            this.confdPath = testDirectoryFixture.testPath( "/" + uniqueId + "/application.test.confd" );
     }
 
     @Nonnull
@@ -289,5 +282,10 @@ public abstract class AbstractKernelFixture<Self extends AbstractKernelFixture<S
 
     public URL testUrl( String name ) {
         return testDirectoryFixture.testUrl( name );
+    }
+
+    @Override
+    public String toString() {
+        return getClass().toString() + ", uniqueId " + uniqueId;
     }
 }
