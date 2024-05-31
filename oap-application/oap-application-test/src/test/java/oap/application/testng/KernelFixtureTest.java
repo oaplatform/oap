@@ -28,6 +28,8 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 
 import static oap.application.testng.KernelFixture.ANY;
@@ -106,6 +108,33 @@ public class KernelFixtureTest extends Fixtures {
             .isEqualTo( testFixtureC.getProperty( "TEST_PORT" ) );
     }
 
+    @Test
+    public void testConfdIsolation() {
+        TestDirectoryFixture testDirectoryFixture = new TestDirectoryFixture();
+        KernelFixture kernelFixture1 = new KernelFixture1(
+            testDirectoryFixture,
+            urlOfTestResource( KernelFixtureTest.class, "application-fixture-confd.conf" ),
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+        ).withConfResource( getClass(), "/oap/application/testng/KernelFixtureTest/application-confd1.conf" );
+        KernelFixture kernelFixture2 = new KernelFixture2(
+            testDirectoryFixture,
+            urlOfTestResource( KernelFixtureTest.class, "application-fixture-confd.conf" ),
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+        ).withConfResource( getClass(), "/oap/application/testng/KernelFixtureTest/application-confd2.conf" );
+
+        Fixtures f = Fixtures.fixtures( testDirectoryFixture, kernelFixture1, kernelFixture2 );
+        try {
+            f.fixBeforeMethod();
+
+            assertThat( kernelFixture1.service( ANY, Service.class ).value )
+                .isEqualTo( 123 );
+            assertThat( kernelFixture2.service( ANY, Service.class ).value )
+                .isEqualTo( 1 );
+        } finally {
+            f.fixAfterMethod();
+        }
+    }
+
     public static class Service {
         public int value;
     }
@@ -126,6 +155,42 @@ public class KernelFixtureTest extends Fixtures {
                 List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
             );
             definePort( "TEST_PORT" );
+        }
+    }
+
+    public static class KernelFixture1 extends KernelFixture {
+        public KernelFixture1( TestDirectoryFixture testDirectoryFixture, URL conf ) {
+            super( testDirectoryFixture, conf );
+        }
+
+        public KernelFixture1( TestDirectoryFixture testDirectoryFixture, URL conf, Path confd ) {
+            super( testDirectoryFixture, conf, confd );
+        }
+
+        public KernelFixture1( TestDirectoryFixture testDirectoryFixture, URL conf, List<URL> additionalModules ) {
+            super( testDirectoryFixture, conf, additionalModules );
+        }
+
+        public KernelFixture1( TestDirectoryFixture testDirectoryFixture, URL conf, Path confd, List<URL> additionalModules ) {
+            super( testDirectoryFixture, conf, confd, additionalModules );
+        }
+    }
+
+    public static class KernelFixture2 extends KernelFixture {
+        public KernelFixture2( TestDirectoryFixture testDirectoryFixture, URL conf ) {
+            super( testDirectoryFixture, conf );
+        }
+
+        public KernelFixture2( TestDirectoryFixture testDirectoryFixture, URL conf, Path confd ) {
+            super( testDirectoryFixture, conf, confd );
+        }
+
+        public KernelFixture2( TestDirectoryFixture testDirectoryFixture, URL conf, List<URL> additionalModules ) {
+            super( testDirectoryFixture, conf, additionalModules );
+        }
+
+        public KernelFixture2( TestDirectoryFixture testDirectoryFixture, URL conf, Path confd, List<URL> additionalModules ) {
+            super( testDirectoryFixture, conf, confd, additionalModules );
         }
     }
 }
