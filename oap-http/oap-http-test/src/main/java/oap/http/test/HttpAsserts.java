@@ -163,7 +163,11 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertDelete( String uri ) {
-        return assertHttpResponse( client.delete( uri ) );
+        return assertDelete( uri, Map.of() );
+    }
+
+    public static HttpAssertion assertDelete( String uri, Map<String, Object> headers ) {
+        return assertHttpResponse( client.delete( uri, headers ) );
     }
 
     @EqualsAndHashCode
