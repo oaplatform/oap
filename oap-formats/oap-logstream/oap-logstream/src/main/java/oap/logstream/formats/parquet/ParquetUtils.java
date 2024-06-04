@@ -36,6 +36,7 @@ import oap.tsv.TsvArray;
 import oap.tsv.TsvStream;
 import oap.util.Dates;
 import oap.util.Lists;
+import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -144,8 +145,8 @@ public class ParquetUtils {
         String type = args[2];
         String out = FilenameUtils.removeExtension( source ) + ".parquet";
 
-        DictionaryRoot dictionaryRoot = DictionaryParser.parse( Paths.get( datamodel ), DictionaryParser.INCREMENTAL_ID_STRATEGY );
-        var schema = new ParquetUtils( dictionaryRoot.getValue( type ) );
+        DictionaryRoot dictionaryRoot = DictionaryParser.parse( Paths.get( datamodel ), new DictionaryParser.IncrementalIdStrategy() );
+        ParquetUtils schema = new ParquetUtils( dictionaryRoot.getValue( type ) );
 
         Configuration conf = new Configuration();
 
@@ -153,12 +154,12 @@ public class ParquetUtils {
             Files.delete( Paths.get( out ) );
 
         TsvStream tsvStream = Tsv.tsv.fromStream( IoStreams.lines( Paths.get( source ) ) ).withHeaders();
-        var headers = tsvStream.headers();
+        List<String> headers = tsvStream.headers();
 
         MessageType modelMessageType = ( MessageType ) schema.schema.named( "group" );
         org.apache.parquet.schema.Types.MessageTypeBuilder tsvMessageTypeBuilder = org.apache.parquet.schema.Types.buildMessage();
 
-        for( var modelType : modelMessageType.getFields() ) {
+        for( Type modelType : modelMessageType.getFields() ) {
             if( headers.contains( modelType.getName() ) )
                 tsvMessageTypeBuilder.addField( modelType );
         }
@@ -167,19 +168,19 @@ public class ParquetUtils {
 
         GroupWriteSupport.setSchema( tsvMessageType, conf );
 
-        var select = Lists.map( modelMessageType.getFields(), Type::getName );
+        List<String> select = Lists.map( modelMessageType.getFields(), Type::getName );
 
         try( ParquetWriter<Group> writer = new ParquetWriteBuilder( HadoopOutputFile.fromPath( new Path( out ), conf ) )
             .withConf( conf )
             .build() ) {
 
-            try( var stream = tsvStream.select( select ).stripHeaders().toStream() ) {
+            try( Stream<List<String>> stream = tsvStream.select( select ).stripHeaders().toStream() ) {
                 stream.forEach( cols -> {
                     try {
                         ParquetSimpleGroup simpleGroup = new ParquetSimpleGroup( tsvMessageType );
 
                         for( int i = 0; i < tsvMessageType.getFields().size(); i++ ) {
-                            var header = tsvMessageType.getType( i ).getName();
+                            String header = tsvMessageType.getType( i ).getName();
                             schema.setString( simpleGroup, header, cols.get( i ) );
                         }
                         writer.write( simpleGroup );
@@ -190,12 +191,35 @@ public class ParquetUtils {
                 } );
             }
         } finally {
-            var name = FilenameUtils.getName( out );
-            var parent = FilenameUtils.getFullPathNoEndSeparator( out );
+            String name = FilenameUtils.getName( out );
+            String parent = FilenameUtils.getFullPathNoEndSeparator( out );
             java.nio.file.Path crcPath = Paths.get( parent + "/." + name + ".crc" );
             if( Files.exists( crcPath ) )
                 Files.delete( crcPath );
         }
+    }
+
+    public static String toString( Type type, ParquetSimpleGroup group, int x, int y ) {
+        LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
+
+        if( logicalTypeAnnotation instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation ) {
+            return Dates.FORMAT_DATE.print( group.getInteger( x, y ) * 24L * 60 * 60 * 1000 );
+        } else if( logicalTypeAnnotation instanceof LogicalTypeAnnotation.ListLogicalTypeAnnotation ) {
+            ArrayList<Object> list = new ArrayList<>( group.getFieldRepetitionCount( x ) );
+            for( int listIndex = 0; listIndex < group.getFieldRepetitionCount( x ); listIndex++ ) {
+                Type listItemType = ( ( GroupType ) type ).getType( 0 );
+                LogicalTypeAnnotation listItemLogicalTypeAnnotation = listItemType.getLogicalTypeAnnotation();
+
+                if( listItemLogicalTypeAnnotation instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation
+                    || listItemLogicalTypeAnnotation instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation
+                    || listItemLogicalTypeAnnotation instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation ) {
+                    list.add( "'" + toString( listItemType, group, x, listIndex ) + "'" );
+                }
+            }
+            return TsvArray.print( list, Dates.FORMAT_DATE );
+        }
+
+        return group.getValueToString( x, y );
     }
 
     protected void setFields( LinkedHashMap<String, Builder<?, ?>> fields ) {
@@ -231,37 +255,14 @@ public class ParquetUtils {
             }
 //            case DATETIME64 -> group.add( index, Dates.PARSER_MULTIPLE_DATETIME.parseMillis( value ) );
             case LIST -> {
-                var listType = types.subList( 1, types.size() );
+                List<Types> listType = types.subList( 1, types.size() );
                 Group listGroup = group.addGroup( index );
-                for( var item : TsvArray.parse( value ) ) {
+                for( String item : TsvArray.parse( value ) ) {
                     setString( listGroup.addGroup( "list" ), 0, item, listType );
                 }
 
             }
         }
-    }
-
-    public static String toString( Type type, ParquetSimpleGroup group, int x, int y ) {
-        LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
-
-        if( logicalTypeAnnotation instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation ) {
-            return Dates.FORMAT_DATE.print( group.getInteger( x, y ) * 24L * 60 * 60 * 1000 );
-        } else if( logicalTypeAnnotation instanceof LogicalTypeAnnotation.ListLogicalTypeAnnotation ) {
-            var list = new ArrayList<>( group.getFieldRepetitionCount( x ) );
-            for( var listIndex = 0; listIndex < group.getFieldRepetitionCount( x ); listIndex++ ) {
-                var listItemType = ( ( GroupType ) type ).getType( 0 );
-                LogicalTypeAnnotation listItemLogicalTypeAnnotation = listItemType.getLogicalTypeAnnotation();
-
-                if( listItemLogicalTypeAnnotation instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation
-                    || listItemLogicalTypeAnnotation instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation
-                    || listItemLogicalTypeAnnotation instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation ) {
-                    list.add( "'" + toString( listItemType, group, x, listIndex ) + "'" );
-                }
-            }
-            return TsvArray.print( list, Dates.FORMAT_DATE );
-        }
-
-        return group.getValueToString( x, y );
     }
 
     protected String enumToString( Object value ) {
@@ -283,10 +284,10 @@ public class ParquetUtils {
     protected List<String> toList( Object value, List<Types> types ) {
         if( value instanceof List<?> ) return ( List<String> ) value;
 
-        var arrayStr = value.toString().trim();
-        var array = arrayStr.substring( 1, arrayStr.length() - 1 );
+        String arrayStr = value.toString().trim();
+        String array = arrayStr.substring( 1, arrayStr.length() - 1 );
 
-        var data = StringUtils.splitPreserveAllTokens( array, ',' );
+        String[] data = StringUtils.splitPreserveAllTokens( array, ',' );
 
         return List.of( data );
     }
