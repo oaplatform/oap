@@ -90,7 +90,7 @@ public class DictionaryMojo extends AbstractMojo {
         for( var path : paths ) {
             getLog().info( "dictionary " + path + "..." );
 
-            var dictionary = DictionaryParser.parse( path );
+            var dictionary = DictionaryParser.parse( path, new DictionaryParser.AutoIdStrategy() );
 
             var gc = dictionary.getProperty( "$generator" )
                 .map( p -> Binder.json.<Generator>unmarshal( Generator.class, Binder.json.marshal( p ) ) )

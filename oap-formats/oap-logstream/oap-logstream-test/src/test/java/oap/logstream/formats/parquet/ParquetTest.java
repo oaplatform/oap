@@ -60,10 +60,10 @@ public class ParquetTest extends Fixtures {
 
     @Test
     public void testRW() throws IOException {
-        DictionaryRoot dictionaryRoot = DictionaryParser.parse( "/datamodel.conf", DictionaryParser.INCREMENTAL_ID_STRATEGY );
-        var schema = new ParquetUtils( dictionaryRoot.getValue( "TEST" ) );
+        DictionaryRoot dictionaryRoot = DictionaryParser.parse( "/datamodel.conf", new DictionaryParser.IncrementalIdStrategy() );
+        ParquetUtils schema = new ParquetUtils( dictionaryRoot.getValue( "TEST" ) );
 
-        var time = 1653579985423L;
+        long time = 1653579985423L;
         System.out.println( "time = " + new Timestamp( time ) );
 
 
@@ -71,7 +71,7 @@ public class ParquetTest extends Fixtures {
         MessageType messageType = ( MessageType ) schema.schema.named( "group" );
         GroupWriteSupport.setSchema( messageType, conf );
 
-        var file = testDirectoryFixture.testPath( "test.parquet" );
+        java.nio.file.Path file = testDirectoryFixture.testPath( "test.parquet" );
 
         try( ParquetWriter<Group> writer = new ParquetWriteBuilder( new ParquetBufferedWriter( new BufferedOutputStream( new FileOutputStream( file.toFile() ) ) ) )
             .withConf( conf )
@@ -132,7 +132,7 @@ public class ParquetTest extends Fixtures {
             for( int i = 0; i < rows; i++ ) {
                 ParquetSimpleGroup simpleGroup = ( ParquetSimpleGroup ) recordReader.read();
 
-                for( var x = 0; x < fieldNames.size(); x++ ) {
+                for( int x = 0; x < fieldNames.size(); x++ ) {
                     System.out.print( "    " + fieldNames.get( x ) + " = " );
                     System.out.println( simpleGroup.getValueToString( x, 0 ) );
                 }

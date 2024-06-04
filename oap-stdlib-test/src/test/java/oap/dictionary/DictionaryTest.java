@@ -32,7 +32,6 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
-import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,7 +75,7 @@ public class DictionaryTest {
     @Test
     public void testChainExtend() {
         var values = Dictionaries
-            .getDictionary( "test-dictionary-chain-extends", INCREMENTAL_ID_STRATEGY )
+            .getDictionary( "test-dictionary-chain-extends", new DictionaryParser.AutoIdStrategy() )
             .getValue( "DICT2" )
             .getValues();
 
@@ -98,7 +97,7 @@ public class DictionaryTest {
     @Test
     public void extendIgnoreDuplicate() {
         var values = Dictionaries
-            .getDictionary( "test-dictionary-extends-ignore-duplicate", INCREMENTAL_ID_STRATEGY )
+            .getDictionary( "test-dictionary-extends-ignore-duplicate", new DictionaryParser.AutoIdStrategy() )
             .getValue( "id2" )
             .getValues();
 

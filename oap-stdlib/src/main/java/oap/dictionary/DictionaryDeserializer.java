@@ -25,7 +25,6 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
@@ -34,8 +33,8 @@ import java.util.Map;
 
 public class DictionaryDeserializer extends JsonDeserializer<DictionaryRoot> {
     @Override
-    public DictionaryRoot deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JsonProcessingException {
+    public DictionaryRoot deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
         var map = p.readValueAs( Map.class );
-        return DictionaryParser.parse( map, DictionaryParser.INCREMENTAL_ID_STRATEGY );
+        return DictionaryParser.parse( map, new DictionaryParser.IncrementalIdStrategy() );
     }
 }

@@ -37,7 +37,6 @@ import javax.annotation.Nonnull;
 import java.net.URL;
 import java.nio.file.Path;
 
-import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 
 @Slf4j
 public class DataModel {
@@ -49,18 +48,18 @@ public class DataModel {
 
     public DataModel( @Nonnull Resource resource ) {
         log.debug( "loading by resource url {}", resource.url );
-        this.model = DictionaryParser.parse( resource.url, INCREMENTAL_ID_STRATEGY );
+        this.model = DictionaryParser.parse( resource.url, new DictionaryParser.IncrementalIdStrategy() );
     }
 
     @SneakyThrows
     public DataModel( @Nonnull Path location ) {
         log.debug( "loading by location {}", location );
-        this.model = DictionaryParser.parse( location.toUri().toURL(), INCREMENTAL_ID_STRATEGY );
+        this.model = DictionaryParser.parse( location.toUri().toURL(), new DictionaryParser.IncrementalIdStrategy() );
     }
 
     public DataModel( @Nonnull URL url ) {
         log.debug( "loading by url {}", url );
-        this.model = DictionaryParser.parse( url, INCREMENTAL_ID_STRATEGY );
+        this.model = DictionaryParser.parse( url, new DictionaryParser.IncrementalIdStrategy() );
     }
 
     public DataModel( @Nonnull String resourceLocation ) {
