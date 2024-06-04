@@ -54,6 +54,7 @@ public class DictionaryMojoTest extends Fixtures {
             .hasSameContentAs( pathOfTestResource( getClass(), "Child1.java" ) );
         assertFile( testDirectoryFixture.testPath( "dictionary/test/Child2.java" ) )
             .hasSameContentAs( pathOfTestResource( getClass(), "Child2.java" ) );
+        assertFile( testDirectoryFixture.testPath( "dictionary/test/TestDictionaryNoEid.java" ) )
+            .hasSameContentAs( pathOfTestResource( getClass(), "TestDictionaryNoEid.java" ) );
     }
-
 }

@@ -54,21 +54,17 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 public class DictionaryParser {
-    public static final IdStrategy PROPERTY_ID_STRATEGY = new PropertyIdStrategy();
-    public static final IdStrategy INCREMENTAL_ID_STRATEGY = new IncrementalIdStrategy();
-
     private static final String NAME = "name";
     private static final String ID = "id";
     private static final String ENABLED = "enabled";
     private static final String EXTERNAL_ID = "eid";
     private static final String VALUES = "values";
     private static final Set<String> defaultFields = new HashSet<>();
-    private static final Function<Object, Optional<Integer>> intFunc = str -> {
-        if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
-        else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).intValue() );
-        else if( str instanceof String && ( ( String ) str ).length() == 1 )
-            return Optional.of( ( int ) ( ( String ) str ).charAt( 0 ) );
-        else return Optional.empty();
+    private static final Function<Object, Optional<Integer>> intFunc = str -> switch( str ) {
+        case Long l -> Optional.of( l.intValue() );
+        case Double v -> Optional.of( v.intValue() );
+        case String s when s.length() == 1 -> Optional.of( ( int ) s.charAt( 0 ) );
+        case null, default -> Optional.empty();
     };
 
     static {
@@ -105,7 +101,7 @@ public class DictionaryParser {
                 return new DictionaryRoot( name, values, p );
             }
 
-            var anExtends = getExtendsOpt( valueMap ).orElse( null );
+            Extends anExtends = getExtendsOpt( valueMap ).orElse( null );
             if( anExtends != null ) return new DictionaryExtends( anExtends );
 
             String id = getString( valueMap, ID );
@@ -124,7 +120,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( Path path ) {
-        return parse( path, PROPERTY_ID_STRATEGY );
+        return parse( path, new AutoIdStrategy() );
     }
 
     public static DictionaryRoot parse( Path path, IdStrategy idStrategy ) {
@@ -133,7 +129,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( URL resource ) {
-        return parse( resource, PROPERTY_ID_STRATEGY );
+        return parse( resource, new AutoIdStrategy() );
     }
 
     public static DictionaryRoot parse( URL resource, IdStrategy idStrategy ) {
@@ -142,7 +138,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( String resource ) {
-        return parse( resource, PROPERTY_ID_STRATEGY );
+        return parse( resource, new AutoIdStrategy() );
     }
 
     public static DictionaryRoot parse( String resource, IdStrategy idStrategy ) {
@@ -151,10 +147,10 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( Map<?, ?> map, IdStrategy idStrategy ) {
-        var dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
-        var invalid = new ArrayList<InvalidEntry>();
+        DictionaryRoot dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
+        ArrayList<InvalidEntry> invalid = new ArrayList<InvalidEntry>();
 
-        var lastId = idStrategy.getMaxExtendsId( dictionaryRoot );
+        int lastId = idStrategy.getMaxExtendsId( dictionaryRoot );
 
         resolveExtends( dictionaryRoot, dictionaryRoot, new AtomicInteger( lastId ) );
         validate( "", invalid, dictionaryRoot );
@@ -175,23 +171,23 @@ public class DictionaryParser {
 
     public static DictionaryRoot parseFromString( String dictionary ) {
         Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
-        return parse( map, PROPERTY_ID_STRATEGY );
+        return parse( map, new AutoIdStrategy() );
     }
 
     @SuppressWarnings( "unchecked" )
     private static void resolveExtends( DictionaryRoot dictionaryRoot, List<? extends Dictionary> values, AtomicInteger id ) {
-        var iterator = ( ListIterator<Dictionary> ) values.listIterator();
-        var lastExtendsId = -1;
+        ListIterator<Dictionary> iterator = ( ListIterator<Dictionary> ) values.listIterator();
+        int lastExtendsId = -1;
         while( iterator.hasNext() ) {
-            var child = iterator.next();
+            Dictionary child = iterator.next();
             if( child instanceof DictionaryExtends ) {
                 iterator.remove();
 
-                var anExtends = ( ( DictionaryExtends ) child ).anExtends;
-                var eValues = getValues( dictionaryRoot, anExtends );
+                Extends anExtends = ( ( DictionaryExtends ) child ).anExtends;
+                List<? extends Dictionary> eValues = getValues( dictionaryRoot, anExtends );
                 resolveExtends( dictionaryRoot, eValues, id );
 
-                for( var v : eValues ) {
+                for( Dictionary v : eValues ) {
                     if( anExtends.filter.isEmpty() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
                         if( Lists.anyMatch( values, pv -> !( pv instanceof DictionaryExtends ) && pv.getId().equals( v.getId() ) ) ) {
                             if( !anExtends.ignoreDuplicate )
@@ -218,7 +214,7 @@ public class DictionaryParser {
     }
 
     private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent, AtomicInteger id ) {
-        var values = parent.getValues();
+        List<? extends Dictionary> values = parent.getValues();
 
         resolveExtends( dictionaryRoot, values, id );
     }
@@ -226,7 +222,7 @@ public class DictionaryParser {
     private static List<? extends Dictionary> getValues( DictionaryRoot dictionaryRoot, Extends anExtends ) {
         Dictionary value = dictionaryRoot;
 
-        for( var id : StringUtils.split( anExtends.path, "/" ) ) {
+        for( String id : StringUtils.split( anExtends.path, "/" ) ) {
             value = value.getValue( id );
         }
         return value.getValues();
@@ -260,12 +256,12 @@ public class DictionaryParser {
     }
 
     private static Optional<Extends> getExtendsOpt( Map<?, ?> map ) {
-        var m = getValueOpt( Map.class, map, "extends", o -> Optional.empty() ).orElse( null );
+        Map m = getValueOpt( Map.class, map, "extends", o -> Optional.empty() ).orElse( null );
         if( m == null ) return Optional.empty();
 
-        var path = getString( m, "path" );
-        var filter = getStringOpt( m, "filter" );
-        var ignoreDuplicate = getBooleanOpt( m, "ignoreDuplicate" ).orElse( false );
+        String path = getString( m, "path" );
+        Optional<String> filter = getStringOpt( m, "filter" );
+        Boolean ignoreDuplicate = getBooleanOpt( m, "ignoreDuplicate" ).orElse( false );
 
         return Optional.of( new Extends( path, filter, ignoreDuplicate ) );
     }
@@ -275,11 +271,15 @@ public class DictionaryParser {
     }
 
     private static Optional<String> getStringOpt( Map<?, ?> map, String field ) {
-        return getValueOpt( String.class, map, field, str -> Optional.empty() );
+        return getValueOpt( String.class, map, field, _ -> Optional.empty() );
     }
 
     private static int getInt( Map<?, ?> map, String field ) {
         return getValue( Integer.class, map, field, intFunc );
+    }
+
+    private static Optional<Integer> getIntOpt( Map<?, ?> map, String field ) {
+        return getValueOpt( Integer.class, map, field, intFunc );
     }
 
     private static Optional<Boolean> getBooleanOpt( Map<?, ?> map, String field ) {
@@ -337,14 +337,14 @@ public class DictionaryParser {
     }
 
     public static JsonGenerator getJsonGenerator( Path path, boolean format ) {
-        var jsonGenerator = Binder.json.getJsonGenerator( path );
+        JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( path );
         if( format ) jsonGenerator = jsonGenerator
             .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
         return jsonGenerator;
     }
 
     public static JsonGenerator getJsonGenerator( StringBuilder sb, boolean format ) {
-        var jsonGenerator = Binder.json.getJsonGenerator( sb );
+        JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( sb );
         if( format ) jsonGenerator = jsonGenerator
             .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
         return jsonGenerator;
@@ -368,7 +368,7 @@ public class DictionaryParser {
     private static void serializeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {
         jsonGenerator.writeStartArray();
 
-        for( var value : values ) {
+        for( Dictionary value : values ) {
             serializeChild( jsonGenerator, value );
         }
 
@@ -439,7 +439,7 @@ public class DictionaryParser {
 
             int max = root.getExternalId();
 
-            for( var child : root.getValues() ) max = max( max, maxExtendsId( child ) );
+            for( Dictionary child : root.getValues() ) max = max( max, maxExtendsId( child ) );
 
             return max;
         }
@@ -447,6 +447,33 @@ public class DictionaryParser {
         @Override
         public int get( Map<Object, Object> valueMap ) {
             return getInt( valueMap, EXTERNAL_ID );
+        }
+
+        @Override
+        public int getMaxExtendsId( DictionaryRoot root ) {
+            return maxExtendsId( root );
+        }
+    }
+
+    public static class AutoIdStrategy implements DictionaryParser.IdStrategy {
+        private final AtomicInteger id = new AtomicInteger();
+
+        public AutoIdStrategy() {
+        }
+
+        private static int maxExtendsId( Dictionary root ) {
+            if( root instanceof DictionaryExtends ) return Integer.MIN_VALUE;
+
+            int max = root.getExternalId();
+
+            for( Dictionary child : root.getValues() ) max = max( max, maxExtendsId( child ) );
+
+            return max;
+        }
+
+        @Override
+        public int get( Map<Object, Object> valueMap ) {
+            return getIntOpt( valueMap, EXTERNAL_ID ).orElseGet( id::incrementAndGet );
         }
 
         @Override

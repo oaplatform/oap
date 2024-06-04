@@ -78,7 +78,7 @@ public class Dictionaries {
     }
 
     public static DictionaryRoot getDictionary( String name ) {
-        return getDictionary( name, DictionaryParser.PROPERTY_ID_STRATEGY );
+        return getDictionary( name, new DictionaryParser.AutoIdStrategy() );
     }
 
     public static DictionaryRoot getDictionary( String name, DictionaryParser.IdStrategy idStrategy ) {
