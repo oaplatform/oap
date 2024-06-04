@@ -30,6 +30,7 @@ import oap.io.Resources;
 import oap.json.Binder;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -90,6 +91,14 @@ public class DictionaryParserTest extends Fixtures {
         assertThat( url ).isPresent();
 
         DictionaryParser.parse( url.get() );
+    }
+
+    @Test
+    public void testExt() {
+        DictionaryRoot dictionaryRoot = DictionaryParser.parse( "/oap/dictionary/DictionaryParserTest/dict.json" );
+        assertThat( dictionaryRoot.name ).isEqualTo( "dict" );
+        assertThat( dictionaryRoot.getValues() ).hasSize( 3 );
+        assertThat( Lists.map( dictionaryRoot.getValues(), Dictionary::getId ) ).isEqualTo( List.of( "id1", "id2", "id3" ) );
     }
 
     @Test

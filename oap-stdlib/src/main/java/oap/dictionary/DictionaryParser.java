@@ -27,9 +27,13 @@ package oap.dictionary;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import oap.io.Files;
+import oap.io.Resources;
+import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.function.Try;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -124,8 +128,23 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( Path path, IdStrategy idStrategy ) {
+        return parse( path, List.of(), idStrategy );
+    }
+
+    public static DictionaryRoot parse( Path path, List<Path> exts, IdStrategy idStrategy ) {
         Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, path );
-        return parse( map, idStrategy );
+
+        String baseName = FilenameUtils.getBaseName( path.toString() );
+        String extResources = baseName + ".conf";
+
+        List<Path> urls = Lists.map( exts, e -> e.resolve( baseName ).resolve( extResources ) );
+
+        List<String> maps = Lists.filterThenMap( urls, Files::exists, u -> Files.read( u, ContentReader.ofString() ) );
+
+        Map<?, ?> extMap = Binder.hoconWithConfig( false, maps ).unmarshal( Map.class, Binder.json.marshal( map ) );
+
+
+        return parse( extMap, idStrategy );
     }
 
     public static DictionaryRoot parse( URL resource ) {
@@ -143,12 +162,23 @@ public class DictionaryParser {
 
     public static DictionaryRoot parse( String resource, IdStrategy idStrategy ) {
         Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource );
-        return parse( map, idStrategy );
+
+        String baseName = FilenameUtils.getBaseName( resource );
+        String extResources = FilenameUtils.removeExtension( resource ) + "/" + baseName + ".conf";
+        if( extResources.startsWith( "/" ) ) extResources = extResources.substring( 1 );
+
+        List<URL> urls = Resources.urls( extResources );
+
+        List<String> maps = Lists.map( urls, url -> ContentReader.read( url, ContentReader.ofString() ) );
+
+        Map<?, ?> extMap = Binder.hoconWithConfig( false, maps ).unmarshal( Map.class, Binder.json.marshal( map ) );
+
+        return parse( extMap, idStrategy );
     }
 
     public static DictionaryRoot parse( Map<?, ?> map, IdStrategy idStrategy ) {
         DictionaryRoot dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
-        ArrayList<InvalidEntry> invalid = new ArrayList<InvalidEntry>();
+        ArrayList<InvalidEntry> invalid = new ArrayList<>();
 
         int lastId = idStrategy.getMaxExtendsId( dictionaryRoot );
 
@@ -256,7 +286,7 @@ public class DictionaryParser {
     }
 
     private static Optional<Extends> getExtendsOpt( Map<?, ?> map ) {
-        Map m = getValueOpt( Map.class, map, "extends", o -> Optional.empty() ).orElse( null );
+        Map<?, ?> m = getValueOpt( Map.class, map, "extends", _ -> Optional.empty() ).orElse( null );
         if( m == null ) return Optional.empty();
 
         String path = getString( m, "path" );
@@ -267,7 +297,7 @@ public class DictionaryParser {
     }
 
     private static String getString( Map<?, ?> map, String field ) {
-        return getValue( String.class, map, field, str -> Optional.empty() );
+        return getValue( String.class, map, field, _ -> Optional.empty() );
     }
 
     private static Optional<String> getStringOpt( Map<?, ?> map, String field ) {
@@ -283,7 +313,7 @@ public class DictionaryParser {
     }
 
     private static Optional<Boolean> getBooleanOpt( Map<?, ?> map, String field ) {
-        return getValueOpt( Boolean.class, map, field, str -> Optional.empty() );
+        return getValueOpt( Boolean.class, map, field, _ -> Optional.empty() );
     }
 
     private static <T> T getValue( Class<T> clazz, Map<?, ?> map, String field, Function<Object, Optional<T>> func ) {
@@ -308,7 +338,7 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
-    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator, boolean xformat ) throws IOException {
+    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator ) throws IOException {
         jsonGenerator.writeStartObject();
 
         jsonGenerator.writeStringField( NAME, dictionary.name );
@@ -322,7 +352,7 @@ public class DictionaryParser {
 
     public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( path, format ) ) {
-            serialize( dictionary, jsonGenerator, format );
+            serialize( dictionary, jsonGenerator );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -330,7 +360,7 @@ public class DictionaryParser {
 
     public static void serialize( DictionaryRoot dictionary, StringBuilder sb, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
-            serialize( dictionary, jsonGenerator, format );
+            serialize( dictionary, jsonGenerator );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

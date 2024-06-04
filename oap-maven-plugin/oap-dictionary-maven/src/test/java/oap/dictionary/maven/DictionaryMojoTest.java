@@ -42,9 +42,10 @@ public class DictionaryMojoTest extends Fixtures {
     public void execute() {
         DictionaryMojo mojo = new DictionaryMojo();
         mojo.sourceDirectory = "src/test/resources/dictionary";
+        mojo.sourceDirectoryExts = new String[] { "src/test/resources/dictionary" };
         mojo.dictionaryPackage = "test";
         mojo.outputDirectory = testDirectoryFixture.testPath( "dictionary" ).toString();
-        mojo.exclude = new String[] { "**/test-dictionary.json" };
+        mojo.excludes = new String[] { "**/test-dictionary.*" };
 
         mojo.execute();
 

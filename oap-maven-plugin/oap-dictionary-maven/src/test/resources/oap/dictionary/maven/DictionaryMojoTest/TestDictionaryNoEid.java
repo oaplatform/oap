@@ -12,7 +12,8 @@ import static java.util.Arrays.asList;
 
 public enum TestDictionaryNoEid implements Dictionary {
   id1(3, true, "title1"),
-  id2(4, true, "title2");
+  id2(4, true, "title2"),
+  id3(5, true, "title3");
 
   private final int externalId;
   private final boolean enabled;
@@ -31,6 +32,7 @@ public enum TestDictionaryNoEid implements Dictionary {
     switch( externalId ) {
       case 3: return id1;
       case 4: return id2;
+      case 5: return id3;
       default: throw new java.lang.IllegalArgumentException( "Unknown id " + externalId );
     }
   }
