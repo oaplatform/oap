@@ -27,6 +27,7 @@ package oap.dictionary;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import oap.io.Files;
 import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.json.Binder;
@@ -127,8 +128,23 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( Path path, IdStrategy idStrategy ) {
+        return parse( path, List.of(), idStrategy );
+    }
+
+    public static DictionaryRoot parse( Path path, List<Path> exts, IdStrategy idStrategy ) {
         Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, path );
-        return parse( map, idStrategy );
+
+        String baseName = FilenameUtils.getBaseName( path.toString() );
+        String extResources = baseName + ".conf";
+
+        List<Path> urls = Lists.map( exts, e -> e.resolve( baseName ).resolve( extResources ) );
+
+        List<String> maps = Lists.filterThenMap( urls, Files::exists, u -> Files.read( u, ContentReader.ofString() ) );
+
+        Map<?, ?> extMap = Binder.hoconWithConfig( false, maps ).unmarshal( Map.class, Binder.json.marshal( map ) );
+
+
+        return parse( extMap, idStrategy );
     }
 
     public static DictionaryRoot parse( URL resource ) {

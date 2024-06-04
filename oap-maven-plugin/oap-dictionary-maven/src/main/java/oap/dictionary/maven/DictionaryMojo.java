@@ -68,18 +68,21 @@ public class DictionaryMojo extends AbstractMojo {
     @Parameter( defaultValue = "${project.basedir}/src/main/resources/dictionary" )
     public String sourceDirectory;
 
+    @Parameter
+    public String[] sourceDirectoryExts = new String[0];
+
     @Parameter( defaultValue = "dictionary" )
     public String dictionaryPackage;
 
     @Parameter
-    public String[] exclude = new String[0];
+    public String[] excludes = new String[0];
 
     @Override
     public void execute() {
         var paths =
-            Lists.filter( Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" ), p -> {
+            Lists.filter( Lists.concat( Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" ), Files.fastWildcard( Paths.get( sourceDirectory ), "*.conf" ) ), p -> {
                 var b = Arrays
-                    .stream( exclude )
+                    .stream( excludes )
                     .noneMatch( e -> FilenameUtils.wildcardMatchOnSystem( separatorsToUnix( p.toString() ), e ) );
                 if( !b ) getLog().debug( "exclude " + p );
                 return b;
@@ -90,7 +93,7 @@ public class DictionaryMojo extends AbstractMojo {
         for( var path : paths ) {
             getLog().info( "dictionary " + path + "..." );
 
-            var dictionary = DictionaryParser.parse( path, new DictionaryParser.AutoIdStrategy() );
+            var dictionary = DictionaryParser.parse( path, Lists.map( sourceDirectoryExts, Paths::get ), new DictionaryParser.AutoIdStrategy() );
 
             var gc = dictionary.getProperty( "$generator" )
                 .map( p -> Binder.json.<Generator>unmarshal( Generator.class, Binder.json.marshal( p ) ) )
@@ -194,11 +197,11 @@ public class DictionaryMojo extends AbstractMojo {
                 }
 
                 out.append(
-                    ";\n"
-                        + "    }\n"
-                        + "  }\n"
-                        + "\n"
-                        + """
+                        ";\n"
+                            + "    }\n"
+                            + "  }\n"
+                            + "\n"
+                            + """
                               @Override
                                 public int getOrDefault( String id, int defaultValue ) {
                                   return defaultValue;
@@ -280,13 +283,13 @@ public class DictionaryMojo extends AbstractMojo {
                                 }
 
                             """
-                        + "  @Override\n"
-                        + "  public " + dict.name + " cloneDictionary() {\n"
-                        + "    return this;\n"
-                        + "  }\n\n"
-                        + "  public " + externalIdType + " externalId() {\n"
-                        + "    return externalId;\n"
-                        + "  }\n\n" )
+                            + "  @Override\n"
+                            + "  public " + dict.name + " cloneDictionary() {\n"
+                            + "    return this;\n"
+                            + "  }\n\n"
+                            + "  public " + externalIdType + " externalId() {\n"
+                            + "    return externalId;\n"
+                            + "  }\n\n" )
                     .append( "}\n" );
 
 
