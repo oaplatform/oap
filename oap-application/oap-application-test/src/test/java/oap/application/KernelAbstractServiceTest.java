@@ -56,7 +56,7 @@ public class KernelAbstractServiceTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "testAbstractImplementation-application.conf" ) );
 
-            assertThat( kernel.service( "testAbstractImplementation.service" ) )
+            assertThat( kernel.service( "testAbstractImplementation.service1" ) )
                 .isPresent()
                 .get()
                 .isInstanceOf( ServiceOne.class )
