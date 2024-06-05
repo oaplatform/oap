@@ -56,12 +56,30 @@ public class KernelAbstractServiceTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "testAbstractImplementation-application.conf" ) );
 
-            assertThat( kernel.service( "testAbstractImplementation.service1" ) )
+            assertThat( kernel.service( "testAbstractImplementation.service" ) )
                 .isPresent()
                 .get()
                 .isInstanceOf( ServiceOne.class )
                 .extracting( "i" )
                 .isEqualTo( 10 );
+        }
+    }
+
+    @Test
+    public void testAbstractImplementationWithDefault() {
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractImplementationWithDefault-module.conf" ) );
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start( pathOfTestResource( getClass(), "testAbstractImplementationWithDefault-application.conf" ) );
+
+            assertThat( kernel.<ServiceRef>service( "testAbstractImplementationWithDefault.service" ).get().service )
+                .isNotNull()
+                .extracting( "i" )
+                .isEqualTo( 10 );
+            assertThat( kernel.<ServiceRef>service( "testAbstractImplementationWithDefault.service" ).get().service2 )
+                .isNotNull()
+                .extracting( "i" )
+                .isEqualTo( 20 );
         }
     }
 

@@ -27,6 +27,8 @@ services {
     abstract = true
     # abstract class or interface
     implementation = oap.test.AbstractService
+    # optional default implementation
+    default = <modules.module-name.default-service>
   }
   
   service {

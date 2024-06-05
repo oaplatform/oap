@@ -68,6 +68,8 @@ class ModuleHelper {
         validateModuleName( map );
         validateServiceName( map );
         validateServiceImplementation( map );
+
+        initDefaultImplementations( map, implementations );
         validateImplementations( map, implementations );
 
         initModuleDeps( map );
@@ -84,6 +86,28 @@ class ModuleHelper {
         removeDisabledServices( map );
 
         validateServices( map );
+    }
+
+    private static void initDefaultImplementations( ModuleItemTree map, LinkedHashMap<Reference, Reference> implementations ) {
+        for( ModuleItem moduleItem : map.values() ) {
+            for( ModuleItem.ServiceItem serviceItem : moduleItem.services.values() ) {
+                Service service = serviceItem.service;
+                String defaultImplementation = service.defaultImplementation;
+
+                if( defaultImplementation != null ) {
+                    Reference reference = new Reference( moduleItem.getName(), serviceItem.serviceName );
+
+                    if( implementations.containsKey( reference ) ) {
+                        log.trace( "{}: default implementation {} ignored. Overwrite {}", serviceItem, defaultImplementation, implementations.get( reference ) );
+                    } else {
+
+                        log.trace( "{}: default implementation {}", serviceItem, defaultImplementation );
+
+                        implementations.put( reference, ServiceKernelCommand.INSTANCE.reference( defaultImplementation, moduleItem ) );
+                    }
+                }
+            }
+        }
     }
 
     private static void validateServiceName( ModuleItemTree map ) throws ApplicationException {
