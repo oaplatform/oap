@@ -111,11 +111,25 @@ public class CoercionsTest extends Fixtures {
             .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
     }
 
+    @Test
+    public void testCastWithFunctions() {
+        var coercions = Coercions.basic().withIdentity();
+        assertThat( coercions.cast( Reflect.reflect( new TypeRef<Map<String, TestConfiguration2>>() {} ), Map.of( "k", Map.of( "key1", "str(1)" ) ) ) )
+            .isEqualTo( LinkedHashMaps.of( "k", new TestConfiguration2( "1" ) ) );
+    }
+
     @ToString
     @AllArgsConstructor
     @EqualsAndHashCode
     public static class TestConfiguration {
         public final String key1;
         public final String key2;
+    }
+
+    @ToString
+    @AllArgsConstructor
+    @EqualsAndHashCode
+    public static class TestConfiguration2 {
+        public final String key1;
     }
 }
