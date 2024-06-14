@@ -24,6 +24,7 @@
 package oap.reflect;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.util.BiStream;
 import oap.util.BitSet;
@@ -64,17 +65,12 @@ import java.util.stream.Collectors;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.util.Pair.__;
 
+@Slf4j
 public final class Coercions {
 
     private static final HashMap<String, BiFunction<String, Reflection, Object>> functions = new HashMap<>();
 
     private static final HashMap<Class<?>, Function<Object, Object>> convertors = new HashMap<>();
-
-    private static void addFunction( BiFunction<String, Reflection, Object> func, String... names ) {
-        for( var name : names ) {
-            functions.put( name, func );
-        }
-    }
 
     static {
         addFunction( Try.biMap( ( path, reflection ) -> reflection.assignableTo( String.class )
@@ -153,19 +149,6 @@ public final class Coercions {
         convertors.put( Class.class, Try.map( value -> Class.forName( ( String ) value ) ) );
     }
 
-    private static String renderPathTemplate( String path ) {
-        return new StringSubstitutor( key -> {
-            String v = System.getProperty( key );
-            if( v == null ) {
-                v = System.getenv( key );
-            }
-            if( v == null ) {
-                v = key;
-            }
-            return v;
-        }, "${ENV.", "}", '\\' ).replace( path );
-    }
-
     private List<Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>>> coersions = Lists.empty();
 
     @SuppressWarnings( "unchecked" )
@@ -201,21 +184,70 @@ public final class Coercions {
         } );
     }
 
+    private static void addFunction( BiFunction<String, Reflection, Object> func, String... names ) {
+        for( var name : names ) {
+            functions.put( name, func );
+        }
+    }
+
+    private static String renderPathTemplate( String path ) {
+        return new StringSubstitutor( key -> {
+            String v = System.getProperty( key );
+            if( v == null ) {
+                v = System.getenv( key );
+            }
+            if( v == null ) {
+                v = key;
+            }
+            return v;
+        }, "${ENV.", "}", '\\' ).replace( path );
+    }
+
     public static Coercions basic() {
         return new Coercions();
+    }
+
+    public static Object castFunction( Reflection r, Object value ) {
+        var str = ( ( String ) value ).trim();
+        var sv = str.indexOf( '(' );
+        if( sv > 0 && str.endsWith( ")" ) ) {
+            var funcName = str.substring( 0, sv );
+            var func = functions.get( funcName );
+            var funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
+            if( func != null ) {
+                return func.apply( funcValue, r );
+            }
+
+            log.trace( "Unknown function '" + funcName + "'" );
+        }
+        if( r.assignableFrom( String.class ) ) {
+            return value;
+        } else {
+            throw new ReflectException( "cannot cast " + value + " to " + r );
+        }
     }
 
     public Object cast( Reflection target, Object value ) throws ReflectException {
         if( value == null ) return null;
         try {
-            if( target.assignableFrom( value.getClass() )
-                && !target.assignableTo( Collection.class )
-                && !target.assignableTo( Map.class ) )
-                return value;
+            if( target.assignableFrom( value.getClass() ) ) {
+
+                if( String.class.equals( value.getClass() ) ) {
+                    return castFunction( target, value );
+                }
+
+                if( !target.assignableTo( Collection.class )
+                    && !target.assignableTo( Map.class ) ) {
+                    return value;
+                }
+            }
 
             Function<Object, Object> ff = convertors.getOrDefault( target.underlying, v -> {
-                for( Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>> coersion : coersions )
-                    if( coersion._1.test( target, value ) ) return coersion._2.apply( target, value );
+                for( Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>> coersion : coersions ) {
+                    if( coersion._1.test( target, value ) ) {
+                        return coersion._2.apply( target, value );
+                    }
+                }
                 throw new ReflectException( "cannot cast " + value + " to " + target );
             } );
             return ff.apply( value );
@@ -235,26 +267,6 @@ public final class Coercions {
 
     public Coercions withStringToObject() {
         return with( ( r, v ) -> v instanceof String, Coercions::castFunction );
-    }
-
-    public static Object castFunction( Reflection r, Object value ) {
-        var str = ( ( String ) value ).trim();
-        var sv = str.indexOf( '(' );
-        if( sv > 0 && str.endsWith( ")" ) ) {
-            var funcName = str.substring( 0, sv );
-            var func = functions.get( funcName );
-            var funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
-            if( func != null ) {
-                return func.apply( funcValue, r );
-            }
-
-            throw new ReflectException( "Unknown function '" + funcName + "'" );
-        }
-        if( r.assignableFrom( String.class ) ) {
-            return value;
-        } else {
-            throw new ReflectException( "cannot cast " + value + " to " + r );
-        }
     }
 
     public Coercions withIdentity() {
