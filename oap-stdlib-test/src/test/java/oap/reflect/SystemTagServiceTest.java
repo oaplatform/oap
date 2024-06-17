@@ -27,15 +27,15 @@ public class SystemTagServiceTest {
 
     @Test
     void shouldProcessTags() {
-        DateTime now = new DateTime(DateTimeUtils.currentTimeMillis());
+        DateTime now = new DateTime( DateTimeUtils.currentTimeMillis() );
         TestObject testObject = TestObject.builder()
                 .name( "TestName" )
                 .createdAt( now )
                 .updatedAt( now )
                 .build();
         Map<String, Object> stringObjectMap = systemTagsService.collectSystemTags( testObject );
-        assertEquals( now, stringObjectMap.get("create date") );
-        assertEquals( now, stringObjectMap.get("update date") );
-        assertEquals( false, stringObjectMap.get("archived") );
+        assertEquals( now, stringObjectMap.get( "create date" ) );
+        assertEquals( now, stringObjectMap.get( "update date" ) );
+        assertEquals( false, stringObjectMap.get( "archived" ) );
     }
 }
