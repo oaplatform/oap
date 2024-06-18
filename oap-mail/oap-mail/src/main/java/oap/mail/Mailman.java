@@ -39,20 +39,35 @@ public class Mailman implements Runnable {
 
     public void run() {
         log.debug( "sending {} messages from queue ...", queue.size() );
-        queue.processing( message -> {
-            try {
-                transport.send( message );
-                return true;
-            } catch( Exception e ) {
-                log.error( "Cannot send a message: {}", message, e );
-                return false;
-            }
-        } );
+        queue.processing( this::sendMessage );
+    }
+
+    private boolean sendMessage( Message message ) {
+        try {
+            transport.send( message );
+            return true;
+        } catch( Exception e ) {
+            log.error( "Cannot send a message: {}", message, e );
+            return false;
+        }
     }
 
     public void send( Message message ) {
+        send( message, true );
+    }
+
+    public void send( Message message, boolean async ) {
         log.debug( "enqueue message {}", message );
-        queue.add( message );
+
+        boolean addToQueue = async;
+
+        if( !async ) {
+            addToQueue = !sendMessage( message );
+        }
+
+        if( addToQueue ) {
+            this.queue.add( message );
+        }
     }
 
 }
