@@ -25,21 +25,43 @@ package oap.mail;
 
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.scheduler.Scheduled;
+import oap.concurrent.scheduler.Scheduler;
+import oap.io.Closeables;
+
+import java.io.Closeable;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class Mailman implements Runnable {
+public class Mailman implements Runnable, Closeable {
     private final Transport transport;
     private final MailQueue queue;
+    private final Semaphore semaphore = new Semaphore( 0 );
+    private final Scheduled scheduled;
 
-    public Mailman( Transport transport, MailQueue queue ) {
+    public Mailman( Transport transport, MailQueue queue, long retryPeriod ) {
         super();
         this.transport = transport;
         this.queue = queue;
+
+        scheduled = Scheduler.scheduleWithFixedDelay( retryPeriod, TimeUnit.MILLISECONDS, semaphore::release );
     }
 
     public void run() {
-        log.debug( "sending {} messages from queue ...", queue.size() );
-        queue.processing( this::sendMessage );
+        var done = false;
+        while( !done ) {
+            try {
+                semaphore.acquire();
+
+                log.debug( "sending {} messages from queue ...", queue.size() );
+                queue.processing( this::sendMessage );
+            } catch( InterruptedException e ) {
+                done = true;
+            } catch( Exception e ) {
+                log.error( e.getMessage(), e );
+            }
+        }
     }
 
     private boolean sendMessage( Message message ) {
@@ -53,21 +75,15 @@ public class Mailman implements Runnable {
     }
 
     public void send( Message message ) {
-        send( message, true );
-    }
-
-    public void send( Message message, boolean async ) {
         log.debug( "enqueue message {}", message );
 
-        boolean addToQueue = async;
+        this.queue.add( message );
 
-        if( !async ) {
-            addToQueue = !sendMessage( message );
-        }
-
-        if( addToQueue ) {
-            this.queue.add( message );
-        }
+        semaphore.release();
     }
 
+    @Override
+    public void close() {
+        Closeables.close( scheduled );
+    }
 }
