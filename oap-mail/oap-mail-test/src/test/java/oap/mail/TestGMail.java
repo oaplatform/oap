@@ -26,6 +26,8 @@ package oap.mail;
 import oap.io.Resources;
 import oap.mail.test.MessageAssertion;
 import oap.mail.test.MessagesAssertion;
+import oap.testng.Asserts;
+import oap.util.Dates;
 
 public class TestGMail {
 
@@ -39,7 +41,7 @@ public class TestGMail {
         Resources.filePath( TestGMail.class, "/gmailauth.conf" ).ifPresentOrElse( auth -> {
             PasswordAuthenticator authenticator = new PasswordAuthenticator( auth );
             SmtpTransport transport = new SmtpTransport( "smtp.gmail.com", 587, true, authenticator );
-            Mailman mailman = new Mailman( transport, new MailQueue() );
+            Mailman mailman = new Mailman( transport, new MailQueue(), Dates.m( 1 ) );
             Template template = Template.of( "/xjapanese" ).orElseThrow();
             template.bind( "logo",
                 "https://assets.coingecko.com/coins/images/4552/small/0xcert.png?1547039841" );
@@ -47,13 +49,14 @@ public class TestGMail {
             message.from = MailAddress.of( "Україна", "vladimir.kirichenko@gmail.com" );
             message.to.add( MailAddress.of( "Little Green Mail", "vk@xenoss.io" ) );
             mailman.send( message );
-            mailman.run();
 
-            MessageAssertion.assertInboxMostRecentMessage( authenticator.username, authenticator.password )
-                .hasSubject( "[japanese xtest] サーバの接続が切断されました" );
+            Asserts.assertEventually( 500, 100, () -> {
+                MessageAssertion.assertInboxMostRecentMessage( authenticator.username, authenticator.password )
+                    .hasSubject( "[japanese xtest] サーバの接続が切断されました" );
 
-            MessagesAssertion.assertInbox( authenticator.username, authenticator.password )
-                .bySubject( "[japanese xtest] サーバの接続が切断されました", MessageAssertion::assertMessage );
+                MessagesAssertion.assertInbox( authenticator.username, authenticator.password )
+                    .bySubject( "[japanese xtest] サーバの接続が切断されました", MessageAssertion::assertMessage );
+            } );
         }, () -> {
             throw new RuntimeException( "see javadoc!" );
         } );
