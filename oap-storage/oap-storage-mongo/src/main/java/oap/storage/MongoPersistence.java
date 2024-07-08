@@ -117,7 +117,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
             var id = bid.getValue();
             switch( op ) {
                 case DELETE -> deleteById( id );
-                case INSERT, UPDATE -> refreshById( id );
+                case INSERT, UPDATE, REPLACE -> refreshById( id );
             }
         } );
     }
