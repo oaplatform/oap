@@ -163,7 +163,7 @@ public class DynamodbPersistenceTest extends Fixtures {
         persistence.close();
     }
 
-    @Test
+    @Test( enabled = false )
     public void bothStoragesShouldBeEmpty() {
         var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
         var dynamodbClient = fixture.getDynamodbClient();

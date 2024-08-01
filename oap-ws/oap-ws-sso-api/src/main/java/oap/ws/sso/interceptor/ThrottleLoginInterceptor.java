@@ -65,6 +65,10 @@ public class ThrottleLoginInterceptor implements Interceptor {
 
     @Override
     public Optional<Response> before( InvocationContext context ) {
+        if( delay <= 0 ) {
+            return Optional.empty();
+        }
+
         var id = context.session.id;
         if( validateId( id ) || context.session.containsKey( SESSION_USER_KEY ) )
             return Optional.empty();
