@@ -26,6 +26,7 @@ package oap.http;
 
 @SuppressWarnings( "checkstyle:InterfaceIsType" )
 public interface Http {
+
     @SuppressWarnings( "checkstyle:InterfaceIsType" )
     interface StatusCode {
         int CONTINUE = io.undertow.util.StatusCodes.CONTINUE;
