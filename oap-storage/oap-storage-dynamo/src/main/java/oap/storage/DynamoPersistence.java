@@ -103,7 +103,7 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
     }
 
     @Override
-    protected synchronized void processRecords( CountDownLatch cdl ) {
+    protected void processRecords( CountDownLatch cdl ) {
         TableDescription table = dynamodbClient.describeTable( tableName, null );
         String streamArn = table.latestStreamArn();
         cdl.countDown();
@@ -133,7 +133,7 @@ public class DynamoPersistence<I, T> extends AbstractPersistance<I, T> implement
     }
 
     @Override
-    public synchronized void fsync() {
+    public void fsync() {
         var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
             if( stopped ) return;
