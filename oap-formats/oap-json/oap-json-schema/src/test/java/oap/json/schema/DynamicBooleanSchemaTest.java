@@ -98,4 +98,17 @@ public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
 
         assertFailure( schema, "{'a':'c', 'b':'b'}", "additional properties are not permitted [b]" );
     }
+
+    @Test
+    public void testNin() {
+        var schema = "{additionalProperties: false, type: object, properties: {"
+            + "a.type=string,b:{type = string, enabled: {json-path:a, nin=[a,b]}}"
+            + "}}";
+
+        assertOk( schema, "{'a':'a'}" );
+        assertOk( schema, "{'a':'b'}" );
+        assertOk( schema, "{'a':'1', 'b':'b'}" );
+
+        assertFailure( schema, "{'a':'a', 'b':'b'}", "additional properties are not permitted [b]" );
+    }
 }

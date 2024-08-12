@@ -33,33 +33,29 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-import static java.util.Collections.emptyList;
 import static oap.json.schema.OperationFunction.Condition.ANY;
-import static oap.json.schema.OperationFunction.Condition.EQ;
-import static oap.json.schema.OperationFunction.Condition.IN;
-import static oap.json.schema.OperationFunction.Condition.NE;
 
 public class OperationFunction {
     public static final String EQ_OP = "eq";
     public static final String NE_OP = "ne";
     public static final String IN_OP = "in";
+    public static final String NIN_OP = "nin";
 
     private final Condition condition;
     private final BiFunction<Object, Optional<String>, List<Object>> func;
 
     public OperationFunction( Condition condition, BiFunction<Object, Optional<String>, List<Object>> func ) {
-
         this.condition = condition;
         this.func = func;
     }
 
     public static OperationFunction parse( Map<?, ?> map ) {
-        final OperationFunction.Condition condition = getCondition( map );
-        final Object value = getValue( condition, map );
+        OperationFunction.Condition condition = getCondition( map );
+        Object value = getValue( condition, map );
 
         if( value instanceof Map ) {
-            final Map valueMap = ( Map ) value;
-            final String jsonPath = ( String ) valueMap.get( "json-path" );
+            Map valueMap = ( Map ) value;
+            String jsonPath = ( String ) valueMap.get( "json-path" );
 
             return new OperationFunction( condition, ( rootJson, currentPath ) -> new JsonPath( jsonPath, currentPath ).traverse( rootJson ) );
         } else {
@@ -68,9 +64,10 @@ public class OperationFunction {
     }
 
     private static Condition getCondition( Map<?, ?> map ) {
-        if( map.containsKey( EQ_OP ) ) return EQ;
-        else if( map.containsKey( NE_OP ) ) return NE;
-        else if( map.containsKey( IN_OP ) ) return IN;
+        if( map.containsKey( EQ_OP ) ) return Condition.EQ;
+        else if( map.containsKey( NE_OP ) ) return Condition.NE;
+        else if( map.containsKey( IN_OP ) ) return Condition.IN;
+        else if( map.containsKey( NIN_OP ) ) return Condition.NIN;
         return ANY;
     }
 
@@ -80,6 +77,7 @@ public class OperationFunction {
             case EQ -> map.get( EQ_OP );
             case NE -> map.get( NE_OP );
             case IN -> map.get( IN_OP );
+            case NIN -> map.get( NIN_OP );
             case ANY -> null;
         };
     }
@@ -91,28 +89,30 @@ public class OperationFunction {
     public final boolean apply( Object rootJson, Optional<String> currentPath, Object value ) {
         if( condition == ANY ) return true;
 
-        final Optional<Object> foundOpt = getValue( rootJson, currentPath );
+        Optional<Object> foundOpt = getValue( rootJson, currentPath );
 
-        switch( condition ) {
-            case EQ:
-                return foundOpt.map( v -> Objects.equals( v, value ) ).orElse( false );
-            case NE:
-                return foundOpt.map( v -> !Objects.equals( v, value ) ).orElse( true );
-            case IN:
-                final Object found = foundOpt.orElse( emptyList() );
+        return switch( condition ) {
+            case EQ -> foundOpt.map( v -> Objects.equals( v, value ) ).orElse( false );
+            case NE -> foundOpt.map( v -> !Objects.equals( v, value ) ).orElse( true );
+            case IN -> {
+                Object found = foundOpt.orElse( List.of() );
                 for( Object item : ( List ) found ) {
-                    if( Objects.equals( item, value ) ) return true;
+                    if( Objects.equals( item, value ) ) yield true;
                 }
-
-                return false;
-
-            default:
-                throw new IllegalStateException( "Unknown condition " + condition );
-
-        }
+                yield false;
+            }
+            case NIN -> {
+                Object found = foundOpt.orElse( List.of() );
+                for( Object item : ( List ) found ) {
+                    if( Objects.equals( item, value ) ) yield false;
+                }
+                yield true;
+            }
+            default -> throw new IllegalStateException( "Unknown condition " + condition );
+        };
     }
 
     public enum Condition {
-        EQ, NE, ANY, IN
+        EQ, NE, ANY, IN, NIN
     }
 }
