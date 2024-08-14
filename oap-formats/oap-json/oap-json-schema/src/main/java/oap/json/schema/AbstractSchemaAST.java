@@ -24,8 +24,11 @@
 package oap.json.schema;
 
 import lombok.ToString;
+import oap.util.Lists;
 import oap.util.Mergeable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implements Mergeable<T> {
@@ -44,20 +47,27 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
         public final Optional<BooleanReference> enabled;
         public final Optional<Object> defaultValue;
         public final Optional<EnumFunction> enumValue;
-        public final Optional<String> comment;
+        public final Optional<String> title;
+        public final Optional<String> description;
+        public final ArrayList<Object> examples = new ArrayList<>();
 
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
                                 Optional<BooleanReference> enabled,
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
-                                Optional<String> comment ) {
+                                Optional<String> title,
+                                Optional<String> description,
+                                List<Object> examples
+        ) {
             this.schemaType = schemaType;
             this.required = required;
             this.enabled = enabled;
             this.defaultValue = defaultValue;
             this.enumValue = enumValue;
-            this.comment = comment;
+            this.title = title;
+            this.description = description;
+            this.examples.addAll( examples );
         }
 
         @Override
@@ -68,7 +78,9 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                 enabled.isPresent() ? enabled : common.enabled,
                 defaultValue.isPresent() ? defaultValue : common.defaultValue,
                 enumValue.isPresent() ? enumValue : common.enumValue,
-                comment.isPresent() ? comment : common.comment
+                title.isPresent() ? title : common.title,
+                description.isPresent() ? description : common.description,
+                Lists.concat( examples, examples )
             );
         }
     }

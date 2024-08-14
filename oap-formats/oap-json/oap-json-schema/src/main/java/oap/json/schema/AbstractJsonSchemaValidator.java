@@ -127,6 +127,11 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             return new PropertyParser<>( property, properties, Optional.ofNullable( ( Map<?, ?> ) properties.node.get( property ) ) );
         }
 
+        @SuppressWarnings( "unchecked" )
+        public PropertyParser<List<Object>> asList( String property ) {
+            return new PropertyParser<>( property, properties, Optional.ofNullable( ( List<Object> ) properties.node.get( property ) ) );
+        }
+
         public PropertyParser<Pattern> asPattern( String property ) {
             return new PropertyParser<>( property, properties, Optional.ofNullable( ( String ) properties.node.get( property ) ).map( Pattern::compile ) );
         }
@@ -179,12 +184,13 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
             Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
             Object anEnum = properties.node.get( "enum" );
-            Object comment = properties.node.get( "enum" );
 
             return new AbstractSchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
-                asString( "$comment" ).optional()
+                asString( "title" ).optional(),
+                asString( "description" ).optional(),
+                asList( "examples" ).optional().orElse( List.of() )
             );
         }
 
