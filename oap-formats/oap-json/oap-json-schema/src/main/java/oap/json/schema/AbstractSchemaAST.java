@@ -44,32 +44,20 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
         public final Optional<BooleanReference> enabled;
         public final Optional<Object> defaultValue;
         public final Optional<EnumFunction> enumValue;
-        public final Optional<Boolean> index;
-        public final Optional<Boolean> norms;
-        public final Optional<Boolean> includeInAll;
-        public final Optional<String> denormalized;
-        public final Optional<String> analyzer;
+        public final Optional<String> comment;
 
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
                                 Optional<BooleanReference> enabled,
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
-                                Optional<Boolean> index,
-                                Optional<Boolean> includeInAll,
-                                Optional<String> denormalized,
-                                Optional<String> analyzer,
-                                Optional<Boolean> norms ) {
+                                Optional<String> comment ) {
             this.schemaType = schemaType;
             this.required = required;
             this.enabled = enabled;
             this.defaultValue = defaultValue;
             this.enumValue = enumValue;
-            this.index = index;
-            this.includeInAll = includeInAll;
-            this.denormalized = denormalized;
-            this.analyzer = analyzer;
-            this.norms = norms;
+            this.comment = comment;
         }
 
         @Override
@@ -80,11 +68,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                 enabled.isPresent() ? enabled : common.enabled,
                 defaultValue.isPresent() ? defaultValue : common.defaultValue,
                 enumValue.isPresent() ? enumValue : common.enumValue,
-                index.isPresent() ? index : common.index,
-                includeInAll.isPresent() ? includeInAll : common.includeInAll,
-                denormalized.isPresent() ? denormalized : common.denormalized,
-                analyzer.isPresent() ? analyzer : common.analyzer,
-                norms.isPresent() ? norms : common.norms
+                comment.isPresent() ? comment : common.comment
             );
         }
     }

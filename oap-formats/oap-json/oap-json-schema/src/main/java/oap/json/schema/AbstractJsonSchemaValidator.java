@@ -179,17 +179,12 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
             Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
             Object anEnum = properties.node.get( "enum" );
-            Optional<Boolean> index = asBoolean( "index" ).optional();
-            Optional<Boolean> includeInAll = asBoolean( "include_in_all" ).optional();
-            Optional<String> denormalized = asString( "denormalized" ).optional();
-            Optional<String> analyzer = asString( "analyzer" ).optional();
-            Optional<Boolean> norms = asBoolean( "norms" ).optional();
+            Object comment = properties.node.get( "enum" );
 
             return new AbstractSchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
-                index, includeInAll,
-                denormalized, analyzer, norms
+                asString( "$comment" ).optional()
             );
         }
 
