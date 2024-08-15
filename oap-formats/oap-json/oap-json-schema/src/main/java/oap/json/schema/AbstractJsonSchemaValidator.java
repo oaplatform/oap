@@ -139,9 +139,16 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
         public PropertyParser<AbstractSchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
             return new PropertyParser<>( property, properties,
                 Optional.ofNullable( context.node.get( property ) ).map( n -> {
-                    JsonSchemaParserContext newContext = context.withNode( property, n );
-                    AbstractSchemaASTWrapper aw = context.mapParser.apply( newContext );
-                    newContext.astW.putIfAbsent( aw.id, aw );
+                    NodeResponse nodeResponse = context.withNode( property, n );
+
+                    AbstractSchemaASTWrapper aw;
+
+                    if( nodeResponse.schema != null ) {
+                        aw = nodeResponse.schema;
+                    } else {
+                        aw = context.mapParser.apply( nodeResponse.context );
+                    }
+                    context.astW.putIfAbsent( aw.id, aw );
                     return aw;
                 } ) );
         }
@@ -150,11 +157,9 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
         private Optional<EnumFunction> toEnum( Object anEnum ) {
             if( anEnum == null ) {
                 return Optional.empty();
-            } else if( anEnum instanceof List<?> ) {
-                return Optional.of( new ListObjectEnumFunction( ( List<Object> ) anEnum ) );
-            } else if( anEnum instanceof Map<?, ?> ) {
-                Map<?, ?> map = ( Map<?, ?> ) anEnum;
-
+            } else if( anEnum instanceof List list ) {
+                return Optional.of( new ListObjectEnumFunction( list ) );
+            } else if( anEnum instanceof Map<?, ?> map ) {
                 String jsonPath = ( String ) map.get( JSON_PATH );
                 Function<Object, List<Object>> sourceFunc = obj -> new JsonPath( jsonPath ).traverse( obj );
 
@@ -204,27 +209,36 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             map.ifPresent(
                 m -> m.forEach( ( okey, value ) -> {
                     String key = ( String ) okey;
-                    JsonSchemaParserContext newContext = context.withNode( key, value );
-                    AbstractSchemaASTWrapper astw = newContext.astW.get( newContext.getId() );
-                    if( astw == null ) {
-                        astw = context.mapParser.apply( newContext );
-                        newContext.astW.put( newContext.getId(), astw );
+                    NodeResponse nodeResponse = context.withNode( key, value );
+
+                    AbstractSchemaASTWrapper astw;
+                    if( nodeResponse.schema != null ) {
+                        astw = nodeResponse.schema;
+                    } else {
+                        JsonSchemaParserContext newContext = nodeResponse.context;
+                        astw = newContext.astW.get( nodeResponse.context.getId() );
+
+                        if( astw == null ) {
+                            astw = context.mapParser.apply( newContext );
+                        }
                     }
+
+                    context.astW.put( astw.id, astw );
                     p.put( key, astw );
                 } )
             );
 
-            return new PropertyParser<>( property, properties, map.map( v -> p ) );
+            return new PropertyParser<>( property, properties, map.map( _ -> p ) );
         }
 
         public Optional<BooleanReference> asBooleanReference( String field ) {
-            Object enabled = properties.node.get( field );
-            if( enabled == null ) return Optional.empty();
+            Object enabledObj = properties.node.get( field );
+            if( enabledObj == null ) return Optional.empty();
 
-            if( enabled instanceof Boolean ) {
-                return Optional.of( ( Boolean ) enabled ? BooleanReference.TRUE : BooleanReference.FALSE );
+            if( enabledObj instanceof Boolean enabled ) {
+                return Optional.of( enabled ? BooleanReference.TRUE : BooleanReference.FALSE );
             } else {
-                Map map = ( Map ) enabled;
+                Map map = ( Map ) enabledObj;
                 String jsonPath = ( String ) map.get( JSON_PATH );
 
                 OperationFunction of = getOperationFunction( map );
