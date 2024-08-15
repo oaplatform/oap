@@ -68,7 +68,9 @@ public abstract class AbstractSchemaTest {
     protected static void assertFailure( String schema, String json, SchemaStorage storage, String... error ) {
         List<String> result = JsonSchema.schemaFromString( schema, storage )
             .validate( Binder.json.unmarshal( Object.class, json ), false );
-        if( result.isEmpty() ) Assert.fail( json + " -> " + error );
+        if( result.isEmpty() ) {
+            Assert.fail( json + " -> " + List.of( error ) );
+        }
         assertThat( result ).containsOnly( error );
     }
 

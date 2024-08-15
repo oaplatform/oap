@@ -187,7 +187,8 @@ public class JsonSchema {
 
 
     private AbstractSchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
-        return parse( context.withNode( "", parseWithTemplate( schema, context.storage ) ) );
+        NodeResponse nodeResponse = context.withNode( "", parseWithTemplate( schema, context.storage ) );
+        return nodeResponse.schema != null ? nodeResponse.schema : parse( nodeResponse.context );
     }
 
     AbstractSchemaASTWrapper parse( String schema, SchemaStorage storage ) {

@@ -64,27 +64,37 @@ public class JsonSchemaParserContext {
         this.storage = storage;
     }
 
-    public final JsonSchemaParserContext withNode( String field, Object mapObject ) {
-        if( !( mapObject instanceof Map<?, ?> ) )
-            throw new IllegalArgumentException( "object expected, but " + mapObject );
-        Map<?, ?> map = ( Map<?, ?> ) mapObject;
+    public final NodeResponse withNode( String field, Object mapObject ) {
+        if( !( mapObject instanceof Map<?, ?> map ) )
+            throw new JsonSchemaException( "object expected, but " + mapObject );
 
-        Object schemaType = map.get( "type" );
+        Object ref = map.get( "$ref" );
+        if( ref != null ) {
+            if( !( ref instanceof String url ) ) {
+                throw new JsonSchemaException( "object expected, but " + mapObject );
+            }
 
-        if( schemaType instanceof String ) {
-            return new JsonSchemaParserContext( schemaName, map,
-                    ( String ) schemaType,
+            AbstractSchemaASTWrapper astw = urlParser.apply( SchemaPath.resolve( rootPath, path ), url );
+            return new NodeResponse( astw );
+        } else {
+            Object schemaTypeObj = map.get( "type" );
+
+            if( schemaTypeObj instanceof String schemaType ) {
+                return new NodeResponse( new JsonSchemaParserContext( schemaName, map,
+                    schemaType,
                     mapParser,
                     urlParser,
                     rootPath,
                     SchemaPath.resolve( path, field ),
                     astW,
                     ast,
-                    storage );
-        } else {
-            throw new UnknownTypeValidationSyntaxException(
-                "Unknown SchemaType type: " + ( schemaType == null ? "nothing" : schemaType.getClass() ) + " for field: [" + field + "] and map: " + map
-            );
+                    storage ) );
+            } else {
+                throw new UnknownTypeValidationSyntaxException(
+                    "Unknown SchemaType type: " + ( schemaType == null ? "nothing"
+                        : schemaType.getClass() ) + " for field: [" + field + "] and map: " + map
+                );
+            }
         }
     }
 
