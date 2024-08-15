@@ -33,41 +33,48 @@ import static oap.json.testng.JsonAsserts.assertJson;
 
 public class ResourceSchemaStorageTest {
     @Test
-    public void get() {
-        var schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema.conf" );
+    public void testGet() {
+        String schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema.conf" );
+        String schema2 = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema" );
+        String schema3 = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema2" );
 
-        assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
-            .isEqualTo( "{"
-                + "\"type\": \"object\","
-                + "  \"properties\": {"
-                + "     \"a\": {"
-                + "       \"type\": \"string\""
-                + "    }"
-                + "  }"
-                + "}" );
+        String expected = """
+            {
+            "type": "object",
+              "properties": {
+                 "a": {
+                   "type": "string"
+                }
+              }
+            }""";
+
+        assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) ).isEqualTo( expected );
+        assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema2 ) ) ).isEqualTo( expected );
+        assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema3 ) ) ).isEqualTo( expected );
     }
 
     @Test
-    public void getWithExtends() {
-        var schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema-1.conf" );
+    public void testGetWithExtends() {
+        String schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema-1" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
-            .isEqualTo( "{"
-                + "  \"type\": \"object\","
-                + "  \"properties\": {"
-                + "    \"a\": {"
-                + "      \"type\": \"string\""
-                + "    },"
-                + "    \"b\": {"
-                + "      \"type\": \"integer\""
-                + "    },"
-                + "    \"j\": {"
-                + "      \"type\": \"integer\""
-                + "    },"
-                + "    \"y\": {"
-                + "      \"type\": \"integer\""
-                + "    }"
-                + "  }"
-                + "}" );
+            .isEqualTo( """
+                {
+                  "type": "object",
+                  "properties": {
+                    "a": {
+                      "type": "string"
+                    },
+                    "b": {
+                      "type": "integer"
+                    },
+                    "j": {
+                      "type": "integer"
+                    },
+                    "y": {
+                      "type": "integer"
+                    }
+                  }
+                }""" );
     }
 }

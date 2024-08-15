@@ -49,9 +49,41 @@ public class SchemaRefTest extends AbstractSchemaTest {
               }
             }""";
 
-        assertOk( schema, "{'field1': {'a': 'test'}}", url -> schema2, false );
+        assertOk( schema, "{'field1': {'a': 'test'}}", _ -> schema2, false );
         assertFailure( schema, "{'field1': {'a': 1}}",
             _ -> schema2, "/field1/a: instance type is number, but allowed type is string"
+        );
+    }
+
+    @Test
+    public void extendsSchemaArray() {
+        String schema = """
+            {
+              type = object
+              additionalProperties = false
+              properties {
+                list {
+                  type = array
+                  additionalProperties = false
+                  items { "$ref" = "/schema/test2" }
+                }
+              }
+            }""";
+
+        String schema2 = """
+            {
+              type = object
+              additionalProperties = false
+              properties {
+                a {
+                  type = string
+                }
+              }
+            }""";
+
+        assertOk( schema, "{'list': [{'a': 'test'}]}", _ -> schema2, false );
+        assertFailure( schema, "{'list': [{'a': 1}]}",
+            _ -> schema2, "/list/0/a: instance type is number, but allowed type is string"
         );
     }
 }

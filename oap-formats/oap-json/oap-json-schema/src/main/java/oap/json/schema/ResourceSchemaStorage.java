@@ -28,11 +28,14 @@ import oap.io.Resources;
 import oap.io.content.ContentReader;
 import oap.json.Binder;
 import oap.util.Lists;
+import oap.util.Pair;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static oap.util.Pair.__;
 
 public final class ResourceSchemaStorage implements SchemaStorage {
     public static final SchemaStorage INSTANCE = new ResourceSchemaStorage();
@@ -42,14 +45,18 @@ public final class ResourceSchemaStorage implements SchemaStorage {
 
     @Override
     public String get( String name ) {
-        String ext = FilenameUtils.getExtension( name );
         String prefix = FilenameUtils.removeExtension( name );
         String fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
 
-        String conf = Resources.readOrThrow( getClass(), name, ContentReader.ofString() );
-        if( "yaml".equalsIgnoreCase( ext ) ) {
-            conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
-        }
+        Pair<String, Binder> origConf =
+            Resources.read( getClass(), name + ".conf", ContentReader.ofString() ).map( str -> __( str, Binder.hoconWithoutSystemProperties ) )
+                .or( () -> Resources.read( getClass(), name + ".yaml", ContentReader.ofString() ).map( str -> __( str, Binder.yaml ) ) )
+                .or( () -> Resources.read( getClass(), name + ".json", ContentReader.ofString() ).map( str -> __( str, Binder.json ) ) )
+
+                .or( () -> Resources.read( getClass(), name, ContentReader.ofString() ).map( str -> __( str, Binder.Format.of( name, false ).binder ) ) )
+                .orElseThrow( () -> new JsonSchemaException( "resource not found " + name + "[|.conf|.json|.yaml] for context class " + getClass() ) );
+
+        String conf = Binder.json.marshal( origConf._2.unmarshal( Map.class, origConf._1 ) );
 
         List<String> extConf = Resources.readStrings( getClass(), prefix + "/" + fileName + ".conf" );
         List<String> extJson = Resources.readStrings( getClass(), prefix + "/" + fileName + ".json" );
