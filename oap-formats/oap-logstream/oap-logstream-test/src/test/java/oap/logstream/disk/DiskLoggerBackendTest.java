@@ -90,7 +90,7 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             backend.refresh( true );
 
-            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10//log_type_with_default_file_pattern_v59193f7e-1_WF2024-2015-10-10-01-03.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10//log_type_with_default_file_pattern_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-03.tsv.gz" ) )
                 .hasContent( """
                     REQUEST_ID\tREQUEST_ID2
                     12345678\trrrr5678

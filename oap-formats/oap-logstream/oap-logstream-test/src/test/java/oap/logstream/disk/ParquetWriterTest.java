@@ -46,7 +46,7 @@ import static oap.logstream.formats.parquet.ParquetAssertion.row;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class ParquetWriterTest extends Fixtures {
-    private static final String FILE_PATTERN = "<p>-file-<INTERVAL>-<LOG_VERSION>.parquet";
+    private static final String FILE_PATTERN = "<p>-file-<INTERVAL>-<LOG_VERSION><EXT>";
     private final TestDirectoryFixture testDirectoryFixture;
 
     public ParquetWriterTest() {
