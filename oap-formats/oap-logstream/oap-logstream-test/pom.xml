@@ -50,6 +50,11 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
+            <artifactId>oap-logstream-tsv</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
             <artifactId>oap-logstream-net-client</artifactId>
             <version>${project.version}</version>
         </dependency>
