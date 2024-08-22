@@ -44,6 +44,12 @@
 
         <dependency>
             <groupId>oap</groupId>
+            <artifactId>oap-logstream-tsv</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

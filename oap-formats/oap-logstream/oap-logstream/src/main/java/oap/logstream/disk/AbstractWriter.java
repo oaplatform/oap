@@ -71,7 +71,8 @@ public abstract class AbstractWriter<T extends Closeable, TConfiguration extends
         this.maxVersions = maxVersions;
 
         log.trace( "filePattern {}", filePattern );
-        Preconditions.checkArgument( filePattern.contains( "<LOG_VERSION>" ) );
+        Preconditions.checkArgument( filePattern.contains( "<LOG_VERSION>" ), "filePattern " + filePattern +  ": <LOG_VERSION> variable is required" );
+        Preconditions.checkArgument( filePattern.contains( "<EXT>" ), "filePattern " + filePattern +  ": <EXT> variable is required" );
 
         this.logId = logId;
         this.bufferSize = bufferSize;

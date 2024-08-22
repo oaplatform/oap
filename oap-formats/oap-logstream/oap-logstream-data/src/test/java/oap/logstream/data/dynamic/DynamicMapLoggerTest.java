@@ -25,11 +25,12 @@
 package oap.logstream.data.dynamic;
 
 import oap.dictionary.DictionaryRoot;
+import oap.io.CompressionCodec;
 import oap.io.IoStreams;
 import oap.logstream.Timestamp;
 import oap.logstream.disk.DiskLoggerBackend;
+import oap.logstream.disk.TsvConfiguration;
 import oap.logstream.disk.WriterConfiguration;
-import oap.net.Inet;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
@@ -40,8 +41,9 @@ import org.testng.annotations.Test;
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-import static oap.json.testng.JsonAsserts.objectOfTestJsonResource;
+import static oap.io.content.ContentReader.ofJson;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.Asserts.contentOfTestResource;
 import static oap.testng.Asserts.objectOfTestResource;
 
 public class DynamicMapLoggerTest extends Fixtures {
@@ -56,14 +58,15 @@ public class DynamicMapLoggerTest extends Fixtures {
     @Test
     public void log() {
         Dates.setTimeFixed( 2021, 1, 1, 1 );
-        var backend = new DiskLoggerBackend( testDirectoryFixture.testDirectory(), new WriterConfiguration(), Timestamp.BPH_12, 1024 );
+        DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testDirectory(), new WriterConfiguration( "tsv", new TsvConfiguration( CompressionCodec.GZIP ) ), Timestamp.BPH_12, 1024 );
+        backend.filePatternByType.put( "*", new DiskLoggerBackend.FilePatternConfiguration( "event-<LOG_VERSION><EXT>", "tsv" ) );
         DynamicMapLogger logger = new DynamicMapLogger( backend );
         logger.addExtractor( new TestExtractor( objectOfTestResource( DictionaryRoot.class, getClass(), "datamodel.conf" ) ) );
-        logger.log( "EVENT", objectOfTestJsonResource( getClass(), new TypeRef<Map<String, Object>>() {}.clazz(), "event.json" ) );
+        logger.log( "EVENT", contentOfTestResource( getClass(), "event.json", ofJson( new TypeRef<Map<String, Object>>() {}.clazz() ) ) );
 
         backend.refresh( true );
 
-        assertFile( testDirectoryFixture.testPath( "EVENT/event/2021-01/01/EVENT_v7c18022a-1_" + Inet.HOSTNAME + "-2021-01-01-01-00.tsv.gz" ) )
+        assertFile( testDirectoryFixture.testPath( "EVENT/event/event-7c18022a-1.tsv.gz" ) )
             .hasContent( """
                 TIMESTAMP\tNAME\tVALUE1\tVALUE2\tVALUE3
                 2021-01-01 01:00:00\tevent\tvalue1\t222\t333
