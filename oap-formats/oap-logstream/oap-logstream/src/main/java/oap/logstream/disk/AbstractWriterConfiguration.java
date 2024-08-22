@@ -22,34 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.logstream.formats.parquet;
+package oap.logstream.disk;
 
-import oap.logstream.formats.MemoryInputStreamWrapper;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.parquet.hadoop.util.HadoopStreams;
-import org.apache.parquet.io.InputFile;
-import org.apache.parquet.io.SeekableInputStream;
+import oap.io.CompressionCodec;
 
-import java.io.IOException;
-import java.io.InputStream;
+public abstract class AbstractWriterConfiguration {
+    public final CompressionCodec compressionCodec;
 
-public class ParquetInputFile implements InputFile {
-    private final SeekableInputStream wrap;
-    private final MemoryInputStreamWrapper mw;
-
-    public ParquetInputFile( InputStream is ) throws IOException {
-        mw = MemoryInputStreamWrapper.wrap( is );
-        FSDataInputStream fsdis = new FSDataInputStream( mw );
-        wrap = HadoopStreams.wrap( fsdis );
-    }
-
-    @Override
-    public long getLength() throws IOException {
-        return mw.length();
-    }
-
-    @Override
-    public SeekableInputStream newStream() throws IOException {
-        return wrap;
+    protected AbstractWriterConfiguration( CompressionCodec compressionCodec ) {
+        this.compressionCodec = compressionCodec;
     }
 }

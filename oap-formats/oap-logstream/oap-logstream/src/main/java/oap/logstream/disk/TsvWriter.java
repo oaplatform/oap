@@ -28,30 +28,21 @@ import com.google.common.io.CountingOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
 import oap.logstream.InvalidProtocolVersionException;
-import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
-import oap.logstream.Timestamp;
 import oap.template.BinaryInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
-public class TsvWriter extends AbstractWriter<CountingOutputStream> {
-    private final WriterConfiguration.TsvConfiguration configuration;
-
-    public TsvWriter( Path logDirectory, String filePattern, LogId logId,
-                      WriterConfiguration.TsvConfiguration configuration,
-                      int bufferSize, Timestamp timestamp,
-                      int maxVersions ) {
-        super( LogFormat.TSV_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions );
-
-        this.configuration = configuration;
+public class TsvWriter extends AbstractWriter<CountingOutputStream, TsvConfiguration, TsvWriter> {
+    @Override
+    protected String getExt( String type ) {
+        return "tsv" + configuration.compressionCodec.getDefaultFileExt();
     }
 
     public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {

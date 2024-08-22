@@ -26,7 +26,6 @@ package oap.logstream.disk;
 
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Stopwatch;
 import oap.logstream.LogId;
@@ -45,24 +44,28 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 @Slf4j
-public abstract class AbstractWriter<T extends Closeable> implements Closeable {
-    public final LogFormat logFormat;
-    protected final Path logDirectory;
-    protected final String filePattern;
-    protected final LogId logId;
-    protected final Timestamp timestamp;
-    protected final int bufferSize;
-    protected final Stopwatch stopwatch = new Stopwatch();
-    protected final int maxVersions;
+public abstract class AbstractWriter<T extends Closeable, TConfiguration extends AbstractWriterConfiguration, TWriter extends AbstractWriter<T, TConfiguration, TWriter>> implements Closeable {
+    protected Path logDirectory;
+    protected String filePattern;
+    protected LogId logId;
+    protected Timestamp timestamp;
+    protected int bufferSize;
+    protected Stopwatch stopwatch = new Stopwatch();
+    protected int maxVersions;
+    protected TConfiguration configuration;
     protected T out;
     protected Path outFilename;
     protected String lastPattern;
     protected int fileVersion = 1;
     protected boolean closed = false;
 
-    protected AbstractWriter( LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
-                              int maxVersions ) {
-        this.logFormat = logFormat;
+    public AbstractWriter() {
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public TWriter load( TConfiguration configuration, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
+                         int maxVersions ) {
+        this.configuration = configuration;
         this.logDirectory = logDirectory;
         this.filePattern = filePattern;
         this.maxVersions = maxVersions;
@@ -75,10 +78,13 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         this.timestamp = timestamp;
         this.lastPattern = currentPattern();
         log.debug( "spawning {}", this );
+
+        return ( TWriter ) this;
     }
 
-    @SneakyThrows
-    static String currentPattern( LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time ) {
+    protected abstract String getExt( String type );
+
+    protected String currentPattern( String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time ) {
         var suffix = filePattern;
         if( filePattern.startsWith( "/" ) && filePattern.endsWith( "/" ) ) suffix = suffix.substring( 1 );
         else if( !filePattern.startsWith( "/" ) && !logId.filePrefixPattern.endsWith( "/" ) ) suffix = "/" + suffix;
@@ -92,17 +98,16 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
 
         logIdTemplate
-            .addVariable( "LOG_FORMAT", logFormat.extension )
-            .addVariable( "LOG_FORMAT_" + logFormat.name(), logFormat.extension );
+            .addVariable( "EXT", "." + getExt( logId.logType.toUpperCase() ) );
         return logIdTemplate.render( StringUtils.replace( pattern, " ", "" ), time, timestamp, version );
     }
 
-    protected String currentPattern( int version ) {
-        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc() );
+    protected String currentPattern() {
+        return currentPattern( filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
     }
 
-    protected String currentPattern() {
-        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
+    protected String currentPattern( int version ) {
+        return currentPattern( filePattern, logId, timestamp, version, Dates.nowUtc() );
     }
 
     public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {

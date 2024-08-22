@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import static oap.io.content.ContentReader.ofJson;
+import static oap.logstream.Tests.CONFIGURATION;
+import static oap.logstream.Tests.FILE_PATTERN_CONFIGURATION;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.net.Inet.HOSTNAME;
@@ -59,7 +61,9 @@ public class LoggerJsonTest extends Fixtures {
         var content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
         var headers = new String[] { "test" };
         var types = new byte[][] { new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), CONFIGURATION, BPH_12, DEFAULT_BUFFER ) ) {
+            backend.filePatternByType.put( "*", FILE_PATTERN_CONFIGURATION );
+
             Logger logger = new Logger( backend );
 
             var o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );

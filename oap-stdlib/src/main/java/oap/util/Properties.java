@@ -24,36 +24,62 @@
 
 package oap.util;
 
-import lombok.SneakyThrows;
 import oap.io.IoStreams;
+import oap.io.Resources;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
 
 public class Properties {
-    @SneakyThrows
     @Nonnull
-    public static java.util.Properties read( URL url ) {
+    public static java.util.Properties read( URL url ) throws UncheckedIOException {
         try( InputStream stream = url.openStream() ) {
             return read( stream );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
-    @SneakyThrows
     @Nonnull
-    public static java.util.Properties read( Path path ) {
+    public static java.util.Properties read( String resource ) throws UncheckedIOException {
+        try {
+            java.util.Properties properties = new java.util.Properties();
+
+            List<URL> urls = Resources.urls( resource );
+            for( URL url : urls ) {
+                try( InputStream stream = url.openStream() ) {
+                    properties.load( stream );
+                }
+            }
+
+            return properties;
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Nonnull
+    public static java.util.Properties read( Path path ) throws UncheckedIOException {
         try( InputStream stream = IoStreams.in( path ) ) {
             return read( stream );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
-    @SneakyThrows
     @Nonnull
-    public static java.util.Properties read( InputStream stream ) {
-        java.util.Properties properties = new java.util.Properties();
-        properties.load( stream );
-        return properties;
+    public static java.util.Properties read( InputStream stream ) throws UncheckedIOException {
+        try {
+            java.util.Properties properties = new java.util.Properties();
+            properties.load( stream );
+            return properties;
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 }

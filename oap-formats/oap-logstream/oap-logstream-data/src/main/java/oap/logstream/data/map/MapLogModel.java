@@ -24,6 +24,7 @@
 
 package oap.logstream.data.map;
 
+import com.google.common.base.Preconditions;
 import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryRoot;
 import oap.logstream.data.AbstractLogModel;
@@ -31,7 +32,6 @@ import oap.logstream.data.LogRenderer;
 import oap.reflect.TypeRef;
 import oap.template.TemplateAccumulatorString;
 import oap.template.Types;
-import org.apache.parquet.Preconditions;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

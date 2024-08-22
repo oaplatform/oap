@@ -41,6 +41,7 @@ import oap.concurrent.Executors;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.google.JodaTicker;
 import oap.io.Closeables;
+import oap.io.CompressionCodec;
 import oap.io.Files;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
@@ -50,11 +51,14 @@ import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.util.Dates;
 import oap.util.Lists;
+import oap.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.joda.time.DateTime;
 
 import java.io.Closeable;
+import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -71,30 +75,31 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneable, AutoCloseable {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
+    public static final java.util.Properties WRITERS;
+
+    static {
+        WRITERS = Properties.read( "META-INF/logstream-writers.properties" );
+    }
+
     public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
     public final WriterConfiguration writerConfiguration;
     private final Path logDirectory;
     private final Timestamp timestamp;
     private final int bufferSize;
-    private final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
+    private final LoadingCache<LogId, AbstractWriter<?, ? extends AbstractWriterConfiguration, ?>> writers;
     private final ScheduledExecutorService pool;
-    public String filePattern = "/<YEAR>-<MONTH>/<DAY>/<LOG_TYPE>_v<LOG_VERSION>_<CLIENT_HOST>-<YEAR>-<MONTH>-<DAY>-<HOUR>-<INTERVAL>.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     private volatile boolean closed;
 
-    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {
-        this( logDirectory, new WriterConfiguration(), timestamp, bufferSize );
-    }
-
     @SuppressWarnings( "unchecked" )
     public DiskLoggerBackend( Path logDirectory, WriterConfiguration writerConfiguration, Timestamp timestamp, int bufferSize ) {
         log.info( "logDirectory '{}' timestamp {} bufferSize {} writerConfiguration {} refreshInitDelay {} refreshPeriod {}",
             logDirectory, timestamp, FileUtils.byteCountToDisplaySize( bufferSize ), writerConfiguration,
             Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ) );
-
+        log.info( "writers {}", WRITERS );
 
         this.logDirectory = logDirectory;
         this.writerConfiguration = writerConfiguration;
@@ -109,18 +114,38 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             } )
             .build( new CacheLoader<>() {
                 @Override
-                public AbstractWriter<? extends Closeable> load( LogId id ) {
-                    var fp = filePatternByType.getOrDefault( id.logType.toUpperCase(), new FilePatternConfiguration( filePattern ) );
+                public AbstractWriter<?, ?, ?> load( LogId id ) {
+                    String logType = id.logType.toUpperCase();
+                    FilePatternConfiguration fp = filePatternByType.get( logType );
+                    if( fp == null ) {
+                        fp = filePatternByType.get( "*" );
+                    }
+
+                    if( fp == null ) {
+                        throw new LoggerException( "Unknown configuration for log type " + logType );
+                    }
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 
-                    LogFormat logFormat = LogFormat.parse( fp.path );
-                    return switch( logFormat ) {
-                        case PARQUET -> new ParquetLogWriter( logDirectory, fp.path, id,
-                            writerConfiguration.parquet, bufferSize, timestamp, maxVersions );
-                        case TSV_GZ, TSV_ZSTD -> new TsvWriter( logDirectory, fp.path, id,
-                            writerConfiguration.tsv, bufferSize, timestamp, maxVersions );
-                    };
+                    AbstractWriterConfiguration formatWriterConfiguration = writerConfiguration.getProperty( fp.format );
+                    if( formatWriterConfiguration == null ) {
+                        throw new LoggerException( "Unknown configuration for format " + fp.format );
+                    }
+
+
+                    String clazz = WRITERS.getProperty( fp.format );
+                    if( clazz == null ) {
+                        throw new LoggerException( "You must specify a class in logstream-writers.properties for the format " + fp.format );
+                    }
+
+                    try {
+                        AbstractWriter<?, AbstractWriterConfiguration, ?> writer = ( AbstractWriter<?, AbstractWriterConfiguration, ?> ) Class.forName( clazz ).getConstructor().newInstance();
+                        writer.load( formatWriterConfiguration, logDirectory, fp.path, id, bufferSize, timestamp, maxVersions );
+
+                        return writer;
+                    } catch( InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e ) {
+                        throw new LoggerException( e );
+                    }
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", logDirectory.toString() ) ),
@@ -130,11 +155,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     }
 
     public void start() {
-        log.info( "default file pattern {}", filePattern );
         log.info( "file patterns by type {}", filePatternByType );
         log.info( "refreshInitDelay {} refreshPeriod {}", Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ) );
 
-        filePatternValidation( "*", filePattern );
         filePatternByType.forEach( ( k, v ) -> filePatternValidation( k, v.path ) );
 
         filePatternByType.keySet().forEach( key -> Preconditions.checkArgument( key.equals( key.toUpperCase() ), key + " must be uppercase" ) );
@@ -146,8 +169,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         LogId logId = new LogId( "", type, "", Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
-        var currentPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time );
-        var previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ) );
+        var currentPattern = ValidationWriter.INSTANCE.currentPattern( filePattern, logId, timestamp, 0, time );
+        var previousPattern = ValidationWriter.INSTANCE.currentPattern( filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ) );
 
         if( currentPattern.equals( previousPattern ) ) {
             throw new IllegalArgumentException( "filepattern(" + type + ") must contain a variable <INTERVAL> or <MINUTE>" );
@@ -164,7 +187,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
         Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", hostName ) ) ).increment();
         Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", hostName ) ) ).record( length );
-        AbstractWriter<? extends Closeable> writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
+        AbstractWriter<?, ?, ?> writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
@@ -226,7 +249,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public String toString() {
         return MoreObjects.toStringHelper( this )
             .add( "path", logDirectory )
-            .add( "filePattern", filePattern )
+            .add( "filePatternByType", filePatternByType )
             .add( "buffer", bufferSize )
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "writers", writers.size() )
@@ -237,10 +260,32 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     @EqualsAndHashCode
     public static class FilePatternConfiguration {
         public final String path;
+        public final String format;
 
         @JsonCreator
-        public FilePatternConfiguration( String path ) {
+        public FilePatternConfiguration( String path, String format ) {
             this.path = path;
+            this.format = format;
+        }
+    }
+
+    static class ValidationWriter extends AbstractWriter<OutputStream, ValidationWriter.ValidationConfiguration, ValidationWriter> {
+        static final ValidationWriter INSTANCE = new ValidationWriter();
+
+        @Override
+        protected String getExt( String type ) {
+            return "validation.gz";
+        }
+
+        @Override
+        public void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+
+        }
+
+        private static class ValidationConfiguration extends AbstractWriterConfiguration {
+            protected ValidationConfiguration() {
+                super( CompressionCodec.GZIP );
+            }
         }
     }
 }

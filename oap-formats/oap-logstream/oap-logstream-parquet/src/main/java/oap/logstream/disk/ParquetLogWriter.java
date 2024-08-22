@@ -25,6 +25,7 @@
 package oap.logstream.disk;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.io.CompressionCodec;
 import oap.logstream.InvalidProtocolVersionException;
 import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
@@ -42,6 +43,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.Preconditions;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.hadoop.example.GroupWriteSupport;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.hadoop.util.HadoopOutputFile;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
@@ -68,7 +70,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 
 @Slf4j
-public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.ParquetWriter<Group>> {
+public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.ParquetWriter<Group>, ParquetConfiguration, ParquetLogWriter> {
     private static final HashMap<Byte, Function<List<Types.Builder<?, ?>>, Types.Builder<?, ?>>> types = new HashMap<>();
 
     static {
@@ -88,16 +90,42 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
 //        types.put( Types.ENUM.id, _ -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
     }
 
-    private final MessageType messageType;
-    private final WriterConfiguration.ParquetConfiguration configuration;
     private final LinkedHashSet<String> excludeFields = new LinkedHashSet<>();
+    private MessageType messageType;
 
-    public ParquetLogWriter( Path logDirectory, String filePattern, LogId logId, WriterConfiguration.ParquetConfiguration configuration,
-                             int bufferSize, Timestamp timestamp, int maxVersions )
-        throws IllegalArgumentException {
-        super( LogFormat.PARQUET, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions );
-        this.configuration = configuration;
+    private static void addValue( int col, Object obj, byte[] colType, int typeIdx, Group group ) {
+        var type = colType[typeIdx];
+        if( type == oap.template.Types.BOOLEAN.id ) {
+            group.add( col, ( boolean ) obj );
+        } else if( type == oap.template.Types.BYTE.id ) {
+            group.add( col, ( byte ) obj );
+        } else if( type == oap.template.Types.SHORT.id ) {
+            group.add( col, ( short ) obj );
+        } else if( type == oap.template.Types.INTEGER.id ) {
+            group.add( col, ( int ) obj );
+        } else if( type == oap.template.Types.LONG.id ) {
+            group.add( col, ( long ) obj );
+        } else if( type == oap.template.Types.FLOAT.id ) {
+            group.add( col, ( float ) obj );
+        } else if( type == oap.template.Types.DOUBLE.id ) {
+            group.add( col, ( double ) obj );
+        } else if( type == oap.template.Types.STRING.id ) {
+            group.add( col, ( String ) obj );
+        } else if( type == oap.template.Types.DATETIME.id ) {
+            group.add( col, ( ( DateTime ) obj ).getMillis() / 1000 );
+        } else if( type == oap.template.Types.LIST.id ) {
+            var listGroup = group.addGroup( col );
+            for( var item : ( List<?> ) obj ) {
+                addValue( 0, item, colType, typeIdx + 1, listGroup.addGroup( "list" ) );
+            }
+        } else {
+            throw new IllegalStateException( "Unknown type:" + type );
+        }
+    }
 
+    @Override
+    public ParquetLogWriter load( ParquetConfiguration configuration, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, int maxVersions ) {
+        super.load( configuration, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions );
 
         configuration.excludeFieldsIfPropertiesExists.forEach( ( field, property ) -> {
             if( logId.properties.containsKey( property ) ) {
@@ -134,36 +162,13 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         );
 
         messageType = messageTypeBuilder.named( "logger" );
+
+        return this;
     }
 
-    private static void addValue( int col, Object obj, byte[] colType, int typeIdx, Group group ) {
-        var type = colType[typeIdx];
-        if( type == oap.template.Types.BOOLEAN.id ) {
-            group.add( col, ( boolean ) obj );
-        } else if( type == oap.template.Types.BYTE.id ) {
-            group.add( col, ( byte ) obj );
-        } else if( type == oap.template.Types.SHORT.id ) {
-            group.add( col, ( short ) obj );
-        } else if( type == oap.template.Types.INTEGER.id ) {
-            group.add( col, ( int ) obj );
-        } else if( type == oap.template.Types.LONG.id ) {
-            group.add( col, ( long ) obj );
-        } else if( type == oap.template.Types.FLOAT.id ) {
-            group.add( col, ( float ) obj );
-        } else if( type == oap.template.Types.DOUBLE.id ) {
-            group.add( col, ( double ) obj );
-        } else if( type == oap.template.Types.STRING.id ) {
-            group.add( col, ( String ) obj );
-        } else if( type == oap.template.Types.DATETIME.id ) {
-            group.add( col, ( ( DateTime ) obj ).getMillis() / 1000 );
-        } else if( type == oap.template.Types.LIST.id ) {
-            var listGroup = group.addGroup( col );
-            for( var item : ( List<?> ) obj ) {
-                addValue( 0, item, colType, typeIdx + 1, listGroup.addGroup( "list" ) );
-            }
-        } else {
-            throw new IllegalStateException( "Unknown type:" + type );
-        }
+    @Override
+    protected String getExt( String type ) {
+        return "parquet";
     }
 
     @Override
@@ -188,7 +193,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
 
                     out = new ParquetWriteBuilder( HadoopOutputFile.fromPath( new org.apache.hadoop.fs.Path( filename.toString() ), conf ) )
                         .withConf( conf )
-                        .withCompressionCodec( configuration.compressionCodecName )
+                        .withCompressionCodec( toCompressionCodecName( configuration.compressionCodec ) )
                         .build();
 
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
@@ -269,5 +274,14 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
                     }
             }
         }
+    }
+
+    private CompressionCodecName toCompressionCodecName( CompressionCodec compressionCodec ) {
+        return switch( compressionCodec ) {
+            case GZIP -> CompressionCodecName.GZIP;
+            case LZ4 -> CompressionCodecName.LZ4;
+            case ZSTD -> CompressionCodecName.ZSTD;
+            case NONE -> CompressionCodecName.UNCOMPRESSED;
+        };
     }
 }

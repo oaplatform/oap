@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static oap.logstream.Tests.CONFIGURATION;
+import static oap.logstream.Tests.FILE_PATTERN_CONFIGURATION;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.formats.parquet.ParquetAssertion.assertParquet;
@@ -57,7 +59,7 @@ public class DiskLoggerBackendTest extends Fixtures {
 
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), new WriterConfiguration(), Timestamp.BPH_12, 4000 ) ) {
             backend.start();
 
             assertTrue( backend.isLoggingAvailable() );
@@ -75,10 +77,10 @@ public class DiskLoggerBackendTest extends Fixtures {
         var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
-            backend.filePattern = "<LOG_TYPE>_<LOG_VERSION>_<INTERVAL>.tsv.gz";
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), CONFIGURATION, Timestamp.BPH_12, 4000 ) ) {
+            backend.filePatternByType.put( "*", FILE_PATTERN_CONFIGURATION );
             backend.filePatternByType.put( "LOG_TYPE_WITH_DIFFERENT_FILE_PATTERN",
-                new DiskLoggerBackend.FilePatternConfiguration( "<LOG_TYPE>_<LOG_VERSION>_<MINUTE>.parquet" ) );
+                new DiskLoggerBackend.FilePatternConfiguration( "<LOG_TYPE>_<LOG_VERSION>_<MINUTE><EXT>", "parquet" ) );
             backend.start();
 
             Logger logger = new Logger( backend );
@@ -88,7 +90,7 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             backend.refresh( true );
 
-            assertFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10//log_type_with_default_file_pattern_v59193f7e-1_WF2024-2015-10-10-01-03.tsv.gz" ) )
                 .hasContent( """
                     REQUEST_ID\tREQUEST_ID2
                     12345678\trrrr5678
@@ -108,7 +110,8 @@ public class DiskLoggerBackendTest extends Fixtures {
         var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
         //init new logger
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), CONFIGURATION, BPH_12, DEFAULT_BUFFER ) ) {
+            backend.filePatternByType.put( "*", FILE_PATTERN_CONFIGURATION );
             backend.start();
 
             Logger logger = new Logger( backend );

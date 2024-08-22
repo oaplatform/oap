@@ -20,6 +20,7 @@
 
     <modules>
         <module>oap-logstream</module>
+        <module>oap-logstream-parquet</module>
         <module>oap-logstream-data</module>
         <module>oap-logstream-data-object</module>
         <module>oap-logstream-net-server</module>

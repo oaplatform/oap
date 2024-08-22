@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.logstream.formats;
+package oap.logstream.formats.parquet;
 
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;

@@ -24,6 +24,7 @@
 
 package oap.logstream.disk;
 
+import oap.io.CompressionCodec;
 import oap.logstream.LogId;
 import oap.template.BinaryUtils;
 import oap.template.Types;
@@ -76,7 +77,7 @@ public class ParquetWriterTest extends Fixtures {
         LogId logId = new LogId( "", "log", "log",
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
-        try( var writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, new WriterConfiguration.ParquetConfiguration(), 1024, BPH_12, 20 ) ) {
+        try( var writer = new ParquetLogWriter().load( new ParquetConfiguration( CompressionCodec.ZSTD ), logs, FILE_PATTERN, logId, 1024, BPH_12, 20 ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }
@@ -113,9 +114,9 @@ public class ParquetWriterTest extends Fixtures {
         LogId logId = new LogId( "", "log", "log",
             Map.of( "p", "1", "COL1_property_name", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
-        WriterConfiguration.ParquetConfiguration parquetConfiguration = new WriterConfiguration.ParquetConfiguration();
+        ParquetConfiguration parquetConfiguration = new ParquetConfiguration( CompressionCodec.ZSTD );
         parquetConfiguration.excludeFieldsIfPropertiesExists.put( "COL1", "COL1_property_name" );
-        try( var writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, parquetConfiguration, 1024, BPH_12, 20 ) ) {
+        try( var writer = new ParquetLogWriter().load( parquetConfiguration, logs, FILE_PATTERN, logId, 1024, BPH_12, 20 ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
         }
 
