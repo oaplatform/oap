@@ -52,6 +52,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     private final SynchronousQueue<PnioExchange<WorkflowState>> queue;
     private final List<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
     private RequestWorkflow<WorkflowState> workflow;
+    private static final ThreadLocal<Boolean> affinityState = new ThreadLocal<>();
 
     @Deprecated
     // use builder for settings
@@ -144,6 +145,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     }
 
     public void handleRequest( HttpServerExchange exchange, long startTimeNano, long timeout, WorkflowState workflowState ) {
+        setAffinity();
         var requestState = new PnioExchange<>( requestSize, responseSize, workflow, workflowState, exchange, startTimeNano, timeout );
 
         while( !requestState.isDone() ) {
@@ -160,6 +162,13 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         }
 
         response( requestState, workflowState );
+    }
+
+    private void setAffinity() {
+        if ( affinityState.get() == null ) {
+            ioAffinity.set();
+            affinityState.set( true );
+        }
     }
 
     private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
