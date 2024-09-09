@@ -67,6 +67,7 @@ public class TestTemplateClass {
     @Nullable
     public Ext ext;
     public ITestTemplateClassExt ext2;
+    public TestTemplateClassExt ext3 = new TestTemplateClassExt();
     @Nullable
     public List<Integer> list;
     @Nullable
