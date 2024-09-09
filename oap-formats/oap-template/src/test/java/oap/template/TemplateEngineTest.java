@@ -407,6 +407,14 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
+    public void testDefaultExt() {
+        var c = new TestTemplateClass();
+        c.ext3.a = "123";
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext2.a|ext3.a}", STRING, null ).render( c ).get() )
+            .isEqualTo( "123" );
+    }
+
+    @Test
     public void testConcatenation() {
         var c = new TestTemplateClass();
         c.field = "f1";
