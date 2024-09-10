@@ -82,9 +82,10 @@ public class FileSystemTest extends Fixtures {
         s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
 
         FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/logs/file.txt" ) );
-
         assertThat( item.getLastModified() ).isLessThanOrEqualTo( new DateTime( DateTimeZone.UTC ) );
         assertThat( item.getSize() ).isEqualTo( 11L );
+
+        assertThat( fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/unknown.txt" ) ) ).isNull();
     }
 
     @Test

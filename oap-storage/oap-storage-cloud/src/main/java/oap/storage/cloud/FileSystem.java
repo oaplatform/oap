@@ -23,6 +23,7 @@ import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serial;
@@ -352,12 +353,17 @@ public class FileSystem {
         return list( pathURI, options );
     }
 
+    @Nullable
     public StorageItem getMetadata( CloudURI path ) {
         log.debug( "getMetadata {}", path );
 
         try( BlobStoreContext context = getContext( path ) ) {
             BlobStore blobStore = context.getBlobStore();
-            return wrapToStorageItem( blobStore.getBlob( path.container, path.path ).getMetadata() );
+            Blob blob = blobStore.getBlob( path.container, path.path );
+            if( blob == null ) {
+                return null;
+            }
+            return wrapToStorageItem( blob.getMetadata() );
         } catch( Exception e ) {
             throw new CloudException( e );
         }
