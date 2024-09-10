@@ -5,8 +5,12 @@ import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
+import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
+import org.jclouds.blobstore.domain.PageSet;
 import org.jetbrains.annotations.NotNull;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -31,6 +35,10 @@ public class FileSystemTest extends Fixtures {
     static {
         testDirectoryFixture = suiteFixture( new TestDirectoryFixture() );
         s3mockFixture = suiteFixture( new S3MockFixture() ).withInitialBuckets( TEST_BUCKET, "test2" );
+    }
+
+    public FileSystemTest() {
+        fixture( new SystemTimerFixture() );
     }
 
     @BeforeMethod
@@ -62,6 +70,21 @@ public class FileSystemTest extends Fixtures {
 
         assertThat( inputStream ).hasContent( "test string" );
         assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/file.txt" ) ).contains( entry( "test-tag", "tag-val" ) );
+    }
+
+    @Test
+    public void testGetMetadata() {
+        Path path = testDirectoryFixture.testPath( "my-file.txt" );
+        Files.write( path, "test string", ContentWriter.ofString() );
+
+        FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() );
+
+        s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
+
+        FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/logs/file.txt" ) );
+
+        assertThat( item.getLastModified() ).isLessThanOrEqualTo( new DateTime( DateTimeZone.UTC ) );
+        assertThat( item.getSize() ).isEqualTo( 11L );
     }
 
     @Test
@@ -144,7 +167,7 @@ public class FileSystemTest extends Fixtures {
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
         assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
         assertTrue( fileSystem.containerExists( "s3://test2" ) );
-        var list = fileSystem.list( "s3://test2/logs/" );
+        PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( "s3://test2/logs/" );
         assertThat( list.size() ).isEqualTo( 2 );
         assertNotNull( list.stream().toList().get( 0 ).getLastModified() );
         assertEquals( "logs/file1.txt", list.stream().toList().get( 0 ).getName() );

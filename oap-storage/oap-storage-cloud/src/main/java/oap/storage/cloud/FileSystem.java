@@ -1,6 +1,9 @@
 package oap.storage.cloud;
 
 import com.google.common.base.Preconditions;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.io.IoStreams;
@@ -18,9 +21,12 @@ import org.jclouds.blobstore.domain.internal.PageSetImpl;
 import org.jclouds.blobstore.options.ListContainerOptions;
 import org.jclouds.io.MutableContentMetadata;
 import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
+import org.joda.time.DateTime;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.Serial;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -302,39 +308,20 @@ public class FileSystem {
         }
     }
 
+    private DateTime toDateTime( Date date ) {
+        if( date == null ) {
+            return null;
+        }
+        return new DateTime( date );
+    }
+
+    private StorageItem wrapToStorageItem( StorageMetadata sm ) {
+        return new StorageItemImpl( sm.getName(), sm.getETag(), sm.getUri(), toDateTime( sm.getCreationDate() ), toDateTime( sm.getLastModified() ), sm.getSize() );
+    }
+
     private PageSet<? extends StorageItem> wrapToStorageItem( PageSet<? extends StorageMetadata> list ) {
-        var wrapped = list.stream()
-            .map( sm -> new StorageItem() {
-                @Override
-                public String getName() {
-                    return sm.getName();
-                }
-
-                @Override
-                public URI getUri() {
-                    return sm.getUri();
-                }
-
-                @Override
-                public String getETag() {
-                    return sm.getETag();
-                }
-
-                @Override
-                public Date getCreationDate() {
-                    return sm.getCreationDate();
-                }
-
-                @Override
-                public Date getLastModified() {
-                    return sm.getLastModified();
-                }
-
-                @Override
-                public Long getSize() {
-                    return sm.getSize();
-                }
-            } )
+        List<StorageItem> wrapped = list.stream()
+            .map( this::wrapToStorageItem )
             .toList();
         return new PageSetImpl<>( wrapped, list.getNextMarker() );
     }
@@ -363,6 +350,17 @@ public class FileSystem {
     public PageSet<? extends StorageItem> list( String path, ListContainerOptions options ) {
         CloudURI pathURI = new CloudURI( path );
         return list( pathURI, options );
+    }
+
+    public StorageItem getMetadata( CloudURI path ) {
+        log.debug( "getMetadata {}", path );
+
+        try( BlobStoreContext context = getContext( path ) ) {
+            BlobStore blobStore = context.getBlobStore();
+            return wrapToStorageItem( blobStore.getBlob( path.container, path.path ).getMetadata() );
+        } catch( Exception e ) {
+            throw new CloudException( e );
+        }
     }
 
     public void deleteBlob( String path ) {
@@ -491,7 +489,7 @@ public class FileSystem {
     public CloudURI toLocalFilePath( Path path ) {
         log.debug( "toLocalFilePath {}", path );
 
-        var baseDir = fileSystemConfiguration.getOrThrow( "file", "", "jclouds.filesystem.basedir" );
+        Object baseDir = fileSystemConfiguration.getOrThrow( "file", "", "jclouds.filesystem.basedir" );
 
         return new CloudURI( FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) ) );
     }
@@ -511,10 +509,25 @@ public class FileSystem {
 
         String getETag();
 
-        Date getCreationDate();
+        DateTime getCreationDate();
 
-        Date getLastModified();
+        DateTime getLastModified();
 
         Long getSize();
+    }
+
+    @ToString
+    @AllArgsConstructor
+    @Getter
+    public static class StorageItemImpl implements StorageItem, Serializable {
+        @Serial
+        private static final long serialVersionUID = -6579999488530048887L;
+
+        private final String name;
+        private final String eTag;
+        private final URI uri;
+        private final DateTime creationDate;
+        private final DateTime lastModified;
+        private final Long size;
     }
 }
