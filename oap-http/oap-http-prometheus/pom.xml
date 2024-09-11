@@ -24,16 +24,21 @@
             <artifactId>oap-http</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
         <dependency>
