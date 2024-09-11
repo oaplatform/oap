@@ -24,7 +24,9 @@
 
 package oap.http.prometheus;
 
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.search.Search;
 import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
@@ -38,6 +40,12 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrometheusExporterTest extends Fixtures {
+    private static void clear() {
+        for( Meter meter : Search.in( PrometheusExporter.prometheusRegistry ).meters() ) {
+            PrometheusExporter.prometheusRegistry.remove( meter );
+        }
+    }
+
     @Test
     public void server() throws IOException {
         var port = Ports.getFreePort( getClass() );
@@ -58,19 +66,19 @@ public class PrometheusExporterTest extends Fixtures {
                 # TYPE test1_total counter
                 test1_total 2.0
                 """ );
-            assertThat( response ).contains( "test2_seconds_count 1.0" );
+            assertThat( response ).contains( "test2_seconds_count 1" );
             assertThat( response ).contains( "test2_seconds_max 2.0" );
-            assertThat( response ).contains( "system_metrics_total 5.0" );
+            assertThat( response ).contains( "system_metrics 5" );
         }
     }
 
     @AfterMethod
     public void beforeMethod() {
-        PrometheusExporter.prometheusRegistry.getPrometheusRegistry().clear();
+        clear();
     }
 
     @AfterMethod
     public void afterMethod() {
-        PrometheusExporter.prometheusRegistry.getPrometheusRegistry().clear();
+        clear();
     }
 }
