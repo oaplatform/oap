@@ -88,6 +88,10 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         super.after();
     }
 
+    public int getPort() {
+        return getHttpPort();
+    }
+
     /**
      * !!! S3Mock bug!!!! no urldecode is used for the header
      */
