@@ -37,13 +37,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * variables:
  * <ul>
- *     <li>PORT</li>
+ *     <li>HTTP_PORT</li>
+ *     <li>HTTPS_PORT</li>
  * </ul>
  */
 @Slf4j
 public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     @Getter
-    private final int port;
+    private final int httpPort;
+    @Getter
+    private final int httpsPort;
     private final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
     private S3MockApplication s3MockApplication;
@@ -51,7 +54,8 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     public S3MockFixture() {
         this.testDirectoryFixture = new TestDirectoryFixture( "-s3mock" );
 
-        port = definePort( "PORT" );
+        httpPort = definePort( "HTTP_PORT" );
+        httpsPort = definePort( "HTTPS_PORT" );
 
         addChild( testDirectoryFixture );
     }
@@ -61,7 +65,8 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         super.before();
 
         s3MockApplication = S3MockApplication.start( new LinkedHashMap<>( Map.of(
-            S3MockApplication.PROP_HTTP_PORT, port,
+            S3MockApplication.PROP_HTTP_PORT, httpPort,
+            S3MockApplication.PROP_HTTPS_PORT, httpsPort,
             S3MockApplication.PROP_INITIAL_BUCKETS, String.join( ",", initialBuckets ),
             S3MockApplication.PROP_SILENT, false,
             S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testPath( "s3" ).toString()
@@ -121,7 +126,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private AmazonS3 getS3() {
         return AmazonS3ClientBuilder
             .standard()
-            .withEndpointConfiguration( new AwsClientBuilder.EndpointConfiguration( "http://localhost:" + port, "us-east-1" ) )
+            .withEndpointConfiguration( new AwsClientBuilder.EndpointConfiguration( "http://localhost:" + httpPort, "us-east-1" ) )
             .withPathStyleAccessEnabled( true )
             .build();
     }
