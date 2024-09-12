@@ -129,7 +129,7 @@ public class FileSystemTest extends Fixtures {
             "fs.s3.clouds.identity", "access_key",
             "fs.s3.clouds.credential", "access_secret",
             "fs.s3.clouds.s3.virtual-host-buckets", false,
-            "fs.s3.clouds.endpoint", "http://localhost:" + s3mockFixture.getPort(),
+            "fs.s3.clouds.endpoint", "http://localhost:" + s3mockFixture.getHttpPort(),
             "fs.s3.clouds.headers", "DEBUG",
 
             "fs.file.clouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
