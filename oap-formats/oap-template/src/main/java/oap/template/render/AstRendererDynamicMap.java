@@ -40,4 +40,8 @@ public class AstRendererDynamicMap extends AstRender {
     public void addPath( String key ) {
         this.path.add( key );
     }
+
+    public boolean containsNestedFields() {
+        return !path.isEmpty();
+    }
 }

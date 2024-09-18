@@ -281,7 +281,7 @@ public class TemplateAstUtils {
 
             }
 
-            if( astRendererDynamicMap != null ) {
+            if( astRendererDynamicMap != null && astRendererDynamicMap.containsNestedFields() ) {
                 result.add( astRendererDynamicMap );
                 castFieldType = castType != null ? FieldType.parse( castType ) : new FieldType( Object.class );
                 currentTemplateType = new TemplateType( currentTemplateType.type, true );
