@@ -126,9 +126,18 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testTypes() {
         TestTemplateClass testTemplateClass = new TestTemplateClass();
         testTemplateClass.linkedHashMap.put( "v", 1.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v')}", OBJECT, null ).render( testTemplateClass ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v') ?? 0.0}", OBJECT, null ).render( testTemplateClass ).get() )
             .isEqualTo( 1.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v')}d", STRING, null ).render( testTemplateClass ).get() )
-            .isEqualTo( "1.1d" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('c') ?? 0.1}", OBJECT, null ).render( testTemplateClass ).get() )
+            .isEqualTo( 0.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v') ?? 0.0}", STRING, null ).render( testTemplateClass ).get() )
+            .isEqualTo( "1.1" );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Double>linkedHashMap; printDouble('v') ?? 0.0}", OBJECT, null ).render( testTemplateClass ).get() )
+            .isEqualTo( 1.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Double>linkedHashMap; printDouble('c') ?? 0.1}", OBJECT, null ).render( testTemplateClass ).get() )
+            .isEqualTo( 0.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Double>linkedHashMap; printDouble('v') ?? 0.0}", STRING, null ).render( testTemplateClass ).get() )
+            .isEqualTo( "1.1" );
     }
 }
