@@ -46,19 +46,20 @@ public class AstRenderPrintValue extends AstRender {
 
     @Override
     public void render( Render render ) {
-        var r = render.ntab();
+        Render r = render.ntab();
 
-        var defaultValue = value;
+        String defaultValue = value;
 
-        if( defaultValue == null ) defaultValue = r.templateAccumulator.getDefault( type.getTypeClass() );
-
+        if( defaultValue == null ) {
+            defaultValue = r.templateAccumulator.getDefault( type.getTypeClass() );
+        }
         if( defaultValue == null ) {
             r.append( "%s.acceptNull( %s.class );", r.templateAccumulatorName, type.getTypeClass().getTypeName() );
         } else {
             String cast = "";
             if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
 
-            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( type, defaultValue ) );
+            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( castType != null ? new TemplateType( castType.type ) : type, defaultValue ) );
         }
     }
 

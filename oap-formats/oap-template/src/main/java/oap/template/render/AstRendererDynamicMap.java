@@ -23,17 +23,16 @@ public class AstRendererDynamicMap extends AstRender {
                     .withField( "obj" );
             } else {
                 r = render.ntab()
-                    .append( "if( obj instanceOf Map ) {" )
+                    .append( "if( obj instanceof Map ) {" )
                     .tabInc().ntab()
-                    .append( "obj = ( ( Map )%s ).get( \"%s\");", render.field, item )
+                    .append( "obj = ( ( Map )%s ).get( \"%s\");", r.field, item )
                     .ntab().append( "}" )
                     .tabDec();
             }
+        }
 
-            for( AstRender child : children ) {
-                child.render( r.withField( "obj" ) );
-            }
-
+        for( AstRender child : children ) {
+            child.render( r.withField( "obj" ) );
         }
     }
 

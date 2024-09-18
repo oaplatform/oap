@@ -124,7 +124,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testTypes() {
-        Map<String, Object> map = Map.of( "v", Map.of( "d", 1.1d ) );
+        Map<String, Object> map = Map.of( "v", Map.of( "d", 1.1d, "s1", Map.of( "s2", "str" ) ) );
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.d ?? 0.0}", OBJECT, null ).render( map ).get() )
             .isEqualTo( 1.1d );
@@ -139,5 +139,8 @@ public class TemplateEngineFunctionsTest extends Fixtures {
             .isEqualTo( 0.1d );
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.d ?? 0.0}", STRING, null ).render( map ).get() )
             .isEqualTo( "1.1" );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.String>v.s1.s2 ?? ''}", STRING, null ).render( map ).get() )
+            .isEqualTo( "str" );
     }
 }

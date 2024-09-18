@@ -201,7 +201,7 @@ public class TemplateAstUtils {
     }
 
 
-    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder" } )
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder", "checkstyle:ParameterAssignment" } )
     private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
                                     String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         TemplateType currentTemplateType = templateType;
@@ -285,6 +285,7 @@ public class TemplateAstUtils {
                 result.add( astRendererDynamicMap );
                 castFieldType = castType != null ? FieldType.parse( castType ) : new FieldType( Object.class );
                 currentTemplateType = new TemplateType( currentTemplateType.type, true );
+                resultType = new TemplateType( castFieldType.type );
             }
 
             if( currentTemplateType.isOptional() ) {
