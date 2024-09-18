@@ -124,20 +124,20 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testTypes() {
-        TestTemplateClass testTemplateClass = new TestTemplateClass();
-        testTemplateClass.linkedHashMap.put( "v", 1.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v') ?? 0.0}", OBJECT, null ).render( testTemplateClass ).get() )
+        Map<String, Object> map = Map.of( "v", Map.of( "d", 1.1d ) );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.d ?? 0.0}", OBJECT, null ).render( map ).get() )
             .isEqualTo( 1.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('c') ?? 0.1}", OBJECT, null ).render( testTemplateClass ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.c ?? 0.1}", OBJECT, null ).render( map ).get() )
             .isEqualTo( 0.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v') ?? 0.0}", STRING, null ).render( testTemplateClass ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.d ?? 0.0}", STRING, null ).render( map ).get() )
             .isEqualTo( "1.1" );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Double>linkedHashMap; printDouble('v') ?? 0.0}", OBJECT, null ).render( testTemplateClass ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.d ?? 0.0}", OBJECT, null ).render( map ).get() )
             .isEqualTo( 1.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Double>linkedHashMap; printDouble('c') ?? 0.1}", OBJECT, null ).render( testTemplateClass ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.c ?? 0.1}", OBJECT, null ).render( map ).get() )
             .isEqualTo( 0.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Double>linkedHashMap; printDouble('v') ?? 0.0}", STRING, null ).render( testTemplateClass ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.d ?? 0.0}", STRING, null ).render( map ).get() )
             .isEqualTo( "1.1" );
     }
 }

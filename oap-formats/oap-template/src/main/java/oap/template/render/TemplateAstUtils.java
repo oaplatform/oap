@@ -51,8 +51,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +67,9 @@ public class TemplateAstUtils {
         try {
             TemplateType currentType = rootTemplateType;
             ArrayList<Expr> exprArrayList = exprs.exprs;
+
+            boolean dynamicReflection = false;
+
             for( int i = 0; i < exprArrayList.size(); i++ ) {
                 Expr expr = exprArrayList.get( i );
                 if( currentType.isInstanceOf( Optional.class ) ) {
@@ -77,18 +78,23 @@ public class TemplateAstUtils {
 
                 } else if( currentType.isInstanceOf( Map.class ) ) {
                     currentType = currentType.getActualTypeArguments1();
+                    dynamicReflection = true;
                 } else if( !expr.method ) {
                     Class<?> parentClass = currentType.getTypeClass();
-                    Field field = findField( parentClass, expr.name );
+                    if( Object.class.equals( parentClass ) && dynamicReflection ) {
+                        return new TemplateType( Object.class, true );
+                    } else {
+                        Field field = findField( parentClass, expr.name );
 
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
-                    if( fieldType.isInstanceOf( Ext.class ) ) {
-                        Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
-                        if( extClass != null ) {
-                            fieldType = new TemplateType( extClass, fieldType.nullable );
+                        TemplateType fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
+                        if( fieldType.isInstanceOf( Ext.class ) ) {
+                            Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
+                            if( extClass != null ) {
+                                fieldType = new TemplateType( extClass, fieldType.nullable );
+                            }
                         }
+                        currentType = fieldType;
                     }
-                    currentType = fieldType;
                 } else {
                     Class<?> parentClass = currentType.getTypeClass();
                     Method method = Arrays
@@ -203,28 +209,14 @@ public class TemplateAstUtils {
 
         try {
             FieldType castFieldType = FieldType.parse( castType != null ? castType : resultType.getTypeName() );
-            FieldType resultCastFieldType = castFieldType;
-            AstRenderFunction astRenderFunction = null;
 
-            if( function != null ) {
-                AstRender render = getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
-                if( render instanceof AstRenderFunction ) {
-                    astRenderFunction = ( AstRenderFunction ) render;
-                    Type parameterType = astRenderFunction.method.getGenericReturnType();
-                    if( parameterType instanceof ParameterizedType parameterizedType ) {
-                        resultCastFieldType = new FieldType( ( Class<?> ) parameterizedType.getRawType(), Lists.map( parameterizedType.getActualTypeArguments(), t -> new FieldType( ( Class<?> ) t ) ) );
-                    } else {
-                        resultCastFieldType = new FieldType( ( Class<?> ) parameterType );
-                    }
-                }
-            }
-
+            AstRendererDynamicMap astRendererDynamicMap = null;
             for( int i = 0; i < exprs.exprs.size(); i++ ) {
                 Expr expr = exprs.exprs.get( i );
                 if( currentTemplateType.isInstanceOf( Optional.class ) ) {
                     TemplateType valueType = currentTemplateType.getActualTypeArguments0();
                     AstRenderOptional ast = new AstRenderOptional( valueType );
-                    ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, resultCastFieldType );
+                    ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
 
                     i--;
 
@@ -233,7 +225,7 @@ public class TemplateAstUtils {
                 } else if( currentTemplateType.nullable ) {
                     TemplateType newType = new TemplateType( currentTemplateType.type, false );
                     AstRenderNullable ast = new AstRenderNullable( newType );
-                    ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, resultCastFieldType );
+                    ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
 
                     i--;
 
@@ -245,38 +237,31 @@ public class TemplateAstUtils {
 
                     result.add( ast );
                     currentTemplateType = valueType;
+                    astRendererDynamicMap = new AstRendererDynamicMap();
                 } else if( !expr.method ) {
-                    Class<?> parentClass = currentTemplateType.getTypeClass();
-                    Field field = findField( parentClass, expr.name );
+                    if( astRendererDynamicMap != null ) {
+                        astRendererDynamicMap.addPath( expr.name );
+                    } else {
+                        Class<?> parentClass = currentTemplateType.getTypeClass();
+                        Field field = findField( parentClass, expr.name );
 
-                    boolean nullable = field.isAnnotationPresent( Nullable.class )
-                        || ( !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class ) );
-
-
-                    FieldType currentCastType = i < exprs.exprs.size() - 1 || exprs.concatenation != null ? null : castFieldType;
-                    if( astRenderFunction != null ) {
-                        Type parameterType = astRenderFunction.method.getGenericParameterTypes()[0];
-                        if( parameterType instanceof ParameterizedType parameterizedType ) {
-                            currentCastType = new FieldType( ( Class<?> ) parameterizedType.getRawType(), Lists.map( parameterizedType.getActualTypeArguments(), t -> new FieldType( ( Class<?> ) t ) ) );
-                        } else {
-                            currentCastType = new FieldType( ( Class<?> ) parameterType );
+                        boolean nullable = field.isAnnotationPresent( Nullable.class )
+                            || ( !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class ) );
+                        TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                        boolean forceCast = false;
+                        if( fieldType.isInstanceOf( Ext.class ) ) {
+                            Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
+                            if( extClass != null ) {
+                                fieldType = new TemplateType( extClass, fieldType.nullable );
+                                forceCast = true;
+                            }
                         }
+                        AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast,
+                            i < exprs.exprs.size() - 1 || exprs.concatenation != null ? null : castFieldType );
+
+                        result.add( ast );
+                        currentTemplateType = fieldType;
                     }
-
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
-                    boolean forceCast = false;
-                    if( fieldType.isInstanceOf( Ext.class ) ) {
-                        Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
-                        if( extClass != null ) {
-                            fieldType = new TemplateType( extClass, fieldType.nullable );
-                            forceCast = true;
-                        }
-                    }
-
-                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast, currentCastType );
-
-                    result.add( ast );
-                    currentTemplateType = fieldType;
                 } else {
                     Class<?> parentClass = currentTemplateType.getTypeClass();
                     Method method = Arrays
@@ -293,21 +278,28 @@ public class TemplateAstUtils {
                     result.add( ast );
                     currentTemplateType = fieldType;
                 }
+
+            }
+
+            if( astRendererDynamicMap != null ) {
+                result.add( astRendererDynamicMap );
+                castFieldType = castType != null ? FieldType.parse( castType ) : new FieldType( Object.class );
+                currentTemplateType = new TemplateType( currentTemplateType.type, true );
             }
 
             if( currentTemplateType.isOptional() ) {
                 TemplateType actualTypeArguments0 = currentTemplateType.getActualTypeArguments0();
                 AstRenderOptional ast = new AstRenderOptional( actualTypeArguments0 );
-                ast.addChild( wrap( exprs, function, actualTypeArguments0, resultType, defaultValue, castType, builtInFunction, errorStrategy ) );
-                ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, resultCastFieldType );
+                ast.addChild( wrap( exprs, function, actualTypeArguments0, resultType, defaultValue, builtInFunction, errorStrategy ) );
+                ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
                 result.add( ast );
             } else if( currentTemplateType.nullable ) {
                 AstRenderNullable ast = new AstRenderNullable( currentTemplateType );
-                ast.addChild( wrap( exprs, function, currentTemplateType, resultType, defaultValue, castType, builtInFunction, errorStrategy ) );
-                ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, resultCastFieldType );
+                ast.addChild( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
+                ast.elseAstRender = new AstRenderPrintValue( resultType, defaultValue, castFieldType );
                 result.add( ast );
             } else
-                result.add( wrap( exprs, function, currentTemplateType, resultType, defaultValue, castType, builtInFunction, errorStrategy ) );
+                result.add( wrap( exprs, function, currentTemplateType, resultType, defaultValue, builtInFunction, errorStrategy ) );
 
             return result.head();
         } catch( NoSuchFieldException | NoSuchMethodException | ClassNotFoundException e ) {
@@ -316,9 +308,9 @@ public class TemplateAstUtils {
         }
     }
 
-    @SuppressWarnings( { "checkstyle:ParameterAssignment", "checkstyle:UnnecessaryParentheses" } )
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
     private static AstRender wrap( Exprs exprs, Func function, TemplateType parentTemplateType, TemplateType resultType,
-                                   String defaultValue, String castType, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
+                                   String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         Chain list = new Chain();
 
         if( exprs.concatenation != null ) {
@@ -345,30 +337,13 @@ public class TemplateAstUtils {
             list.add( ast );
         }
 
-        boolean nullableFunction = false;
-        AstRenderFunction astRenderFunction = null;
         if( function != null ) {
             AstRender astRender = getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
-
-            if( astRender instanceof AstRenderFunction ) {
-                astRenderFunction = ( AstRenderFunction ) astRender;
-
-                nullableFunction = astRenderFunction.method.isAnnotationPresent( Nullable.class )
-                    || ( !astRenderFunction.method.getReturnType().isPrimitive() && !astRenderFunction.method.isAnnotationPresent( Nonnull.class ) );
-            }
 
             list.add( astRender );
         }
 
-        AstRender ast = new AstRenderPrintField( parentTemplateType );
-        if( nullableFunction && astRenderFunction != null ) {
-            FieldType castFieldType = FieldType.parse( castType != null ? castType : astRenderFunction.type.getTypeName() );
-
-            AstRenderNullable astRenderNullable = new AstRenderNullable( astRenderFunction.type );
-            astRenderNullable.elseAstRender = new AstRenderPrintValue( astRenderFunction.type, defaultValue, castFieldType );
-            astRenderNullable.addChild( ast );
-            ast = astRenderNullable;
-        }
+        AstRenderPrintField ast = new AstRenderPrintField( parentTemplateType );
         list.add( ast );
 
 

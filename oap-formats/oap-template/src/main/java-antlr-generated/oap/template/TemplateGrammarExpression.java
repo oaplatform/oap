@@ -130,8 +130,8 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		public Token CAST_TYPE;
 		public ExprsContext exprs;
 		public OrExprsContext orExprs;
-		public FunctionContext function;
 		public DefaultValueContext defaultValue;
+		public FunctionContext function;
 		public ExprsContext exprs() {
 			return getRuleContext(ExprsContext.class,0);
 		}
@@ -140,11 +140,11 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		}
 		public TerminalNode BLOCK_COMMENT() { return getToken(TemplateGrammarExpression.BLOCK_COMMENT, 0); }
 		public TerminalNode CAST_TYPE() { return getToken(TemplateGrammarExpression.CAST_TYPE, 0); }
-		public FunctionContext function() {
-			return getRuleContext(FunctionContext.class,0);
-		}
 		public DefaultValueContext defaultValue() {
 			return getRuleContext(DefaultValueContext.class,0);
+		}
+		public FunctionContext function() {
+			return getRuleContext(FunctionContext.class,0);
 		}
 		public ExpressionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -194,20 +194,20 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			setState(41);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==SEMI) {
+			if (_la==DQUESTION) {
 				{
 				setState(40);
-				((ExpressionContext)_localctx).function = function();
+				((ExpressionContext)_localctx).defaultValue = defaultValue();
 				}
 			}
 
 			setState(44);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==DQUESTION) {
+			if (_la==SEMI) {
 				{
 				setState(43);
-				((ExpressionContext)_localctx).defaultValue = defaultValue();
+				((ExpressionContext)_localctx).function = function();
 				}
 			}
 
@@ -1450,9 +1450,9 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		"\u0000 \"\u0005\u0001\u0000\u0000! \u0001\u0000\u0000\u0000!\"\u0001\u0000"+
 		"\u0000\u0000\"$\u0001\u0000\u0000\u0000#%\u0005\u001a\u0000\u0000$#\u0001"+
 		"\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%&\u0001\u0000\u0000\u0000"+
-		"&\'\u0003\u0010\b\u0000\')\u0003\u000e\u0007\u0000(*\u0003\b\u0004\u0000"+
-		")(\u0001\u0000\u0000\u0000)*\u0001\u0000\u0000\u0000*,\u0001\u0000\u0000"+
-		"\u0000+-\u0003\u0002\u0001\u0000,+\u0001\u0000\u0000\u0000,-\u0001\u0000"+
+		"&\'\u0003\u0010\b\u0000\')\u0003\u000e\u0007\u0000(*\u0003\u0002\u0001"+
+		"\u0000)(\u0001\u0000\u0000\u0000)*\u0001\u0000\u0000\u0000*,\u0001\u0000"+
+		"\u0000\u0000+-\u0003\b\u0004\u0000,+\u0001\u0000\u0000\u0000,-\u0001\u0000"+
 		"\u0000\u0000-.\u0001\u0000\u0000\u0000./\u0006\u0000\uffff\uffff\u0000"+
 		"/\u0001\u0001\u0000\u0000\u000001\u0005\f\u0000\u000012\u0003\u0004\u0002"+
 		"\u000023\u0006\u0001\uffff\uffff\u00003\u0003\u0001\u0000\u0000\u0000"+

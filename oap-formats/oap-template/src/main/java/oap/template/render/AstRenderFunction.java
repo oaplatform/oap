@@ -42,17 +42,15 @@ public class AstRenderFunction extends AstRender {
 
     @Override
     public void render( Render render ) {
-        String funcVariable = render.newVariable();
+        var funcVariable = render.newVariable();
 
         render.ntab().append( "%s %s = %s.%s( %s",
             method.getGenericReturnType().getTypeName(), funcVariable,
             method.getDeclaringClass().getName(), method.getName(), render.field );
-        if( !parameters.isEmpty() ) {
-            render.append( ", " );
-        }
+        if( !parameters.isEmpty() ) render.append( ", " );
         render.append( String.join( ", ", parameters ) ).append( " );" );
 
-        Render newRender = render.withField( funcVariable ).withParentType( type );
+        var newRender = render.withField( funcVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }

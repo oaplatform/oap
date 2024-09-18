@@ -90,6 +90,6 @@ public class TemplateType {
     }
 
     public boolean isOptional() {
-        return getTypeClass().isAssignableFrom( Optional.class );
+        return Optional.class.equals( getTypeClass() );
     }
 }
