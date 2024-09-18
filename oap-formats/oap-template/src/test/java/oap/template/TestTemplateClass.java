@@ -31,6 +31,7 @@ import org.joda.time.DateTime;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -81,6 +82,7 @@ public class TestTemplateClass {
     @JsonProperty( "jsonTestNew" )
     @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
     public String jsonTest;
+    public LinkedHashMap<String, Object> linkedHashMap = new LinkedHashMap<>();
 
     public String fieldM() {
         return field;

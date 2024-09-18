@@ -51,6 +51,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -247,8 +249,12 @@ public class TemplateAstUtils {
                     FieldType currentCastType = i < exprs.exprs.size() - 1 || exprs.concatenation != null ? null : castFieldType;
                     if( function != null ) {
                         AstRenderFunction render = ( AstRenderFunction ) getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
-                        Class<?> parameterType = render.method.getParameterTypes()[0];
-                        currentCastType = new FieldType( parameterType );
+                        Type parameterType = render.method.getGenericParameterTypes()[0];
+                        if( parameterType instanceof ParameterizedType parameterizedType ) {
+                            currentCastType = new FieldType( ( Class<?> ) parameterizedType.getRawType(), Lists.map( parameterizedType.getActualTypeArguments(), t -> new FieldType( ( Class<?> ) t ) ) );
+                        } else {
+                            currentCastType = new FieldType( ( Class<?> ) parameterType );
+                        }
                     }
                     AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast, currentCastType );
 

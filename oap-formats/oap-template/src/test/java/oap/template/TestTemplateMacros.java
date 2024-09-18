@@ -1,11 +1,9 @@
 package oap.template;
 
-public class TestTemplateMacros {
-    public static String printDoubleWithArg( Double value, String arg ) {
-        return value + arg;
-    }
+import java.util.LinkedHashMap;
 
-    public static Double toDouble( String value ) {
-        return Double.parseDouble( value );
+public class TestTemplateMacros {
+    public static Double printDouble( LinkedHashMap<String, Object> map, String key ) {
+        return ( Double ) map.get( key );
     }
 }

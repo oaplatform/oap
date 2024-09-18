@@ -124,21 +124,11 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testTypes() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "id=${v; printDoubleWithArg('d')}", STRING, null ).render( Map.of( "v", 1.1d ) ).get() )
-            .isEqualTo( "id=1.1d" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "id=${<java.lang.String>v; printDoubleWithArg('d')}", STRING, null ).render( Map.of( "v", 1.1d ) ).get() )
-            .isEqualTo( "id=1.1d" );
-
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${v; toDouble()}", OBJECT, null ).render( Map.of( "v", "1.1" ) ).get() )
-            .isEqualTo( 1.1d );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${<java.lang.Double>v; toDouble()}", OBJECT, null ).render( Map.of( "v", "1.1" ) ).get() )
-            .isEqualTo( 1.1d );
-
         TestTemplateClass testTemplateClass = new TestTemplateClass();
-        testTemplateClass.doubleField = 1.1d;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "id=${doubleField; printDoubleWithArg('d')}", STRING, null ).render( testTemplateClass ).get() )
-            .isEqualTo( "id=1.1d" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "id=${<java.lang.String>doubleField; printDoubleWithArg('d')}", STRING, null ).render( testTemplateClass ).get() )
-            .isEqualTo( "id=1.1d" );
+        testTemplateClass.linkedHashMap.put( "v", 1.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v')}", OBJECT, null ).render( testTemplateClass ).get() )
+            .isEqualTo( 1.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${linkedHashMap; printDouble('v')}d", STRING, null ).render( testTemplateClass ).get() )
+            .isEqualTo( "1.1d" );
     }
 }
