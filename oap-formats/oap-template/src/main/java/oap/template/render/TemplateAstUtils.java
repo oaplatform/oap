@@ -243,8 +243,14 @@ public class TemplateAstUtils {
                             forceCast = true;
                         }
                     }
-                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast,
-                        i < exprs.exprs.size() - 1 || exprs.concatenation != null ? null : castFieldType );
+
+                    FieldType currentCastType = i < exprs.exprs.size() - 1 || exprs.concatenation != null ? null : castFieldType;
+                    if( function != null ) {
+                        AstRenderFunction render = ( AstRenderFunction ) getFunction( function.name, function.arguments, builtInFunction, errorStrategy );
+                        Class<?> parameterType = render.method.getParameterTypes()[0];
+                        currentCastType = new FieldType( parameterType );
+                    }
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast, currentCastType );
 
                     result.add( ast );
                     currentTemplateType = fieldType;
@@ -264,7 +270,6 @@ public class TemplateAstUtils {
                     result.add( ast );
                     currentTemplateType = fieldType;
                 }
-
             }
 
             if( currentTemplateType.isOptional() ) {

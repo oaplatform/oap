@@ -34,6 +34,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+import static oap.template.TemplateAccumulators.OBJECT;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -119,5 +120,25 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testFunctionToUpperCase() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()}", STRING, null ).render( Map.of( "v", "a i/d" ) ).get() )
             .isEqualTo( "id=A I/D" );
+    }
+
+    @Test
+    public void testTypes() {
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "id=${v; printDoubleWithArg('d')}", STRING, null ).render( Map.of( "v", 1.1d ) ).get() )
+            .isEqualTo( "id=1.1d" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "id=${<java.lang.String>v; printDoubleWithArg('d')}", STRING, null ).render( Map.of( "v", 1.1d ) ).get() )
+            .isEqualTo( "id=1.1d" );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${v; toDouble()}", OBJECT, null ).render( Map.of( "v", "1.1" ) ).get() )
+            .isEqualTo( 1.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "${<java.lang.Double>v; toDouble()}", OBJECT, null ).render( Map.of( "v", "1.1" ) ).get() )
+            .isEqualTo( 1.1d );
+
+        TestTemplateClass testTemplateClass = new TestTemplateClass();
+        testTemplateClass.doubleField = 1.1d;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "id=${doubleField; printDoubleWithArg('d')}", STRING, null ).render( testTemplateClass ).get() )
+            .isEqualTo( "id=1.1d" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "id=${<java.lang.String>doubleField; printDoubleWithArg('d')}", STRING, null ).render( testTemplateClass ).get() )
+            .isEqualTo( "id=1.1d" );
     }
 }
