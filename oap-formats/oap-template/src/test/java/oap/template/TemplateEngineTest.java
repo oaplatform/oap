@@ -164,8 +164,8 @@ public class TemplateEngineTest extends Fixtures {
 
     @Test
     public void testEnumFieldDefaultValue() {
-        var c = new TestTemplateClass();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Enum>enumField ?? 'UNKNOWN'}", STRING, null ).render( c ).get() )
+        TestTemplateClass c = new TestTemplateClass();
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${<java.lang.Enum>child.enumField ?? 'UNKNOWN'}", STRING, null ).render( c ).get() )
             .isEqualTo( "UNKNOWN" );
     }
 
