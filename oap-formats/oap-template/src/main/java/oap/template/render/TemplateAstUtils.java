@@ -208,7 +208,7 @@ public class TemplateAstUtils {
         Chain result = new Chain();
 
         try {
-            FieldType castFieldType = FieldType.parse( castType != null ? castType : resultType.getTypeName() );
+            FieldType castFieldType = castType != null ? FieldType.parse( castType ) : null;
 
             AstRendererDynamicMap astRendererDynamicMap = null;
             for( int i = 0; i < exprs.exprs.size(); i++ ) {
@@ -318,12 +318,15 @@ public class TemplateAstUtils {
             ArrayList<AstRender> items = new ArrayList<>();
 
             for( Object item : exprs.concatenation.items ) {
-                if( item instanceof String si ) items.add( new AstRenderText( si ) );
-                else if( item instanceof Expr ei )
-                    items.add( toAst( new Exprs( List.of( ei ) ), function, parentTemplateType, resultType, Object.class.getTypeName(),
-                        defaultValue, builtInFunction, errorStrategy ) );
-                else
+                if( item instanceof String si ) {
+                    items.add( new AstRenderText( si ) );
+                } else if( item instanceof Expr ei ) {
+                    AstRender ast = toAst( new Exprs( List.of( ei ) ), function, parentTemplateType, resultType, null,
+                        defaultValue, builtInFunction, errorStrategy );
+                    items.add( ast );
+                } else {
                     throw new TemplateException( "Unknown concatenation item " + item.getClass() );
+                }
             }
 
             AstRenderConcatenation ast = new AstRenderConcatenation( parentTemplateType, items );
