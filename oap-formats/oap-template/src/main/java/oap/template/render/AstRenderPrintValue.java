@@ -59,15 +59,15 @@ public class AstRenderPrintValue extends AstRender {
             String cast = "";
             if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
 
-            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( castType != null ? new TemplateType( castType.type ) : type, defaultValue ) );
+            r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( castType != null ? new TemplateType( castType.type ) : type, render.parentType, defaultValue ) );
         }
     }
 
     @SuppressWarnings( { "checkstyle:ParameterAssignment" } )
-    private String format( TemplateType parentType, String defaultValue ) {
+    private String format( TemplateType castType, TemplateType fieldType, String defaultValue ) {
         Preconditions.checkNotNull( defaultValue );
 
-        Class<?> typeClass = parentType.isOptional() ? parentType.getActualTypeArguments0().getTypeClass() : parentType.getTypeClass();
+        Class<?> typeClass = castType.isOptional() ? castType.getActualTypeArguments0().getTypeClass() : castType.getTypeClass();
 
         if( String.class.equals( typeClass ) ) return "\"" + StringUtils.replace( defaultValue, "\"", "\\\"" ) + "\"";
         else if( Byte.class.isAssignableFrom( typeClass ) || byte.class.equals( typeClass ) ) return "(byte)%s".formatted( defaultValue );
@@ -78,7 +78,7 @@ public class AstRenderPrintValue extends AstRender {
         else if( Collection.class.isAssignableFrom( typeClass ) ) {
             return "java.util.List.of()";
         } else if( Enum.class.isAssignableFrom( typeClass ) ) {
-            return "%s.%s".formatted( parentType.getTypeName(), defaultValue.isEmpty() ? Strings.UNKNOWN : defaultValue );
+            return "%s.%s".formatted( fieldType.getTypeName(), defaultValue.isEmpty() ? Strings.UNKNOWN : defaultValue );
         } else if( DateTime.class.equals( typeClass ) ) {
             DateTime dateTime = Dates.PARSER_MULTIPLE_DATETIME.parseDateTime( defaultValue );
             return "new org.joda.time.DateTime( " + dateTime.getMillis() + "L, org.joda.time.DateTimeZone.UTC )";
