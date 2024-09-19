@@ -36,6 +36,8 @@ import oap.util.LinkedHashMaps;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import static oap.io.IoStreams.Encoding.GZIP;
@@ -55,15 +57,15 @@ public class TsvWriterTest extends Fixtures {
 
     @Test
     public void testEscape() throws IOException {
-        var headers = new String[] { "RAW" };
-        var types = new byte[][] { new byte[] { Types.STRING.id } };
+        String[] headers = new String[] { "RAW" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-        var content = "1\n2\n\r3\t4";
-        var bytes = BinaryUtils.line( content );
-        var logs = testDirectoryFixture.testPath( "logs" );
+        String content = "1\n2\n\r3\t4";
+        byte[] bytes = BinaryUtils.line( content );
+        Path logs = testDirectoryFixture.testPath( "logs" );
 
-        try( var writer = new TsvWriter( logs, FILE_PATTERN,
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
 
@@ -76,15 +78,15 @@ public class TsvWriterTest extends Fixtures {
 
     @Test
     public void metadataChanged() throws IOException {
-        var headers = new String[] { "REQUEST_ID" };
-        var types = new byte[][] { new byte[] { Types.STRING.id } };
+        String[] headers = new String[] { "REQUEST_ID" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-        var content = "1234567890";
-        var bytes = BinaryUtils.line( content );
-        var logs = testDirectoryFixture.testPath( "logs" );
+        String content = "1234567890";
+        byte[] bytes = BinaryUtils.line( content );
+        Path logs = testDirectoryFixture.testPath( "logs" );
 
-        var writer = new TsvWriter( logs, FILE_PATTERN,
+        TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 );
 
@@ -136,15 +138,15 @@ public class TsvWriterTest extends Fixtures {
 
     @Test
     public void write() throws IOException {
-        var headers = new String[] { "REQUEST_ID" };
-        var types = new byte[][] { new byte[] { Types.STRING.id } };
-        var newHeaders = new String[] { "REQUEST_ID", "H2" };
-        var newTypes = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+        String[] headers = new String[] { "REQUEST_ID" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
+        String[] newHeaders = new String[] { "REQUEST_ID", "H2" };
+        byte[][] newTypes = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-        var content = "1234567890";
-        var bytes = BinaryUtils.line( content );
-        var logs = testDirectoryFixture.testPath( "logs" );
+        String content = "1234567890";
+        byte[] bytes = BinaryUtils.line( content );
+        Path logs = testDirectoryFixture.testPath( "logs" );
         Files.write(
             logs.resolve( "1-file-00-80723ad6-1-UNKNOWN.log.gz" ),
             PLAIN, "corrupted file", ContentWriter.ofString() );
@@ -160,7 +162,7 @@ public class TsvWriterTest extends Fixtures {
                 VERSION: "80723ad6-1"
                 """, ContentWriter.ofString() );
 
-        var writer = new TsvWriter( logs, FILE_PATTERN,
+        TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", Map.of( "p", "1" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 );
 
@@ -253,12 +255,12 @@ public class TsvWriterTest extends Fixtures {
 
     @Test
     public void testVersions() throws IOException {
-        var headers = new String[] { "REQUEST_ID", "H2" };
-        var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+        String[] headers = new String[] { "REQUEST_ID", "H2" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        var logs = testDirectoryFixture.testPath( "logs" );
+        Path logs = testDirectoryFixture.testPath( "logs" );
         String metadata = """
             ---
             filePrefixPattern: ""
@@ -285,7 +287,7 @@ public class TsvWriterTest extends Fixtures {
             logs.resolve( "1-file-00-80723ad6-2-UNKNOWN.log.gz.metadata.yaml" ),
             PLAIN, metadata, ContentWriter.ofString() );
 
-        try( var writer = new TsvWriter( logs, FILE_PATTERN,
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", Map.of( "p", "1" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, BinaryUtils.line( "111", "222" ) );
@@ -316,14 +318,14 @@ public class TsvWriterTest extends Fixtures {
 
     @Test
     public void testProtocolVersion1() {
-        var headers = "REQUEST_ID";
-        var newHeaders = "REQUEST_ID\tH2";
+        String headers = "REQUEST_ID";
+        String newHeaders = "REQUEST_ID\tH2";
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        var content = "1234567890";
-        var bytes = content.getBytes();
-        var logs = testDirectoryFixture.testPath( "logs" );
+        String content = "1234567890";
+        byte[] bytes = content.getBytes();
+        Path logs = testDirectoryFixture.testPath( "logs" );
         Files.write(
             logs.resolve( "1-file-00-9042dc83-1-UNKNOWN.log.gz" ),
             PLAIN, "corrupted file", ContentWriter.ofString() );
@@ -338,7 +340,7 @@ public class TsvWriterTest extends Fixtures {
                 p: "1"
                 """, ContentWriter.ofString() );
 
-        try( var writer = new TsvWriter( logs, FILE_PATTERN,
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", Map.of( "p", "1" ), new String[] { headers }, new byte[][] { { -1 } } ), new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 10 ) ) {
             writer.write( TSV_V1, bytes );
 
@@ -349,7 +351,7 @@ public class TsvWriterTest extends Fixtures {
             writer.write( TSV_V1, bytes );
         }
 
-        try( var writer = new TsvWriter( logs, FILE_PATTERN, new LogId( "", "type", "log", Map.of( "p", "1" ), new String[] { headers }, new byte[][] { { -1 } } ), new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 10 ) ) {
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN, new LogId( "", "type", "log", Map.of( "p", "1" ), new String[] { headers }, new byte[][] { { -1 } } ), new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 10 ) ) {
             Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
             writer.write( TSV_V1, bytes );
 
@@ -357,7 +359,7 @@ public class TsvWriterTest extends Fixtures {
             writer.write( TSV_V1, bytes );
         }
 
-        try( var writer = new TsvWriter( logs, FILE_PATTERN, new LogId( "", "type", "log", Map.of( "p", "1" ), new String[] { newHeaders }, new byte[][] { { -1 } } ), new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 10 ) ) {
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN, new LogId( "", "type", "log", Map.of( "p", "1" ), new String[] { newHeaders }, new byte[][] { { -1 } } ), new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 10 ) ) {
             Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
             writer.write( TSV_V1, bytes );
         }
@@ -416,5 +418,26 @@ public class TsvWriterTest extends Fixtures {
 
         assertFile( logs.resolve( "1-file-02-e56ba426-1-UNKNOWN.log.gz" ) )
             .hasContent( "REQUEST_ID\tH2\n" + content, GZIP );
+    }
+
+    @Test
+    public void testEmpty() throws IOException {
+        String[] headers = new String[] { "T1", "T2" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+
+        byte[] bytes = BinaryUtils.lines( List.of( List.of( "", "a" ), List.of( "", "a" ) ) );
+        Path logs = testDirectoryFixture.testPath( "logs" );
+
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
+            new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1" ), headers, types ),
+            new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
+
+            writer.write( CURRENT_PROTOCOL_VERSION, bytes );
+        }
+
+        assertFile( logs.resolve( "1-file-00-50137474-1-UNKNOWN.log.gz" ) )
+            .hasContent( "T1\tT2\n\ta\n\ta\n", GZIP );
     }
 }

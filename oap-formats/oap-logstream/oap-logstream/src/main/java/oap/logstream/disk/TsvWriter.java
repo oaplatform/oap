@@ -155,8 +155,13 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
         TemplateAccumulatorTsv ta = new TemplateAccumulatorTsv( sb, configuration.dateTime32Format );
         Object obj = bis.readObject();
         while( obj != null ) {
+            boolean first = true;
             while( obj != null && obj != BinaryInputStream.EOL ) {
-                if( !sb.isEmpty() ) sb.append( '\t' );
+                if( !first ) {
+                    sb.append( '\t' );
+                } else {
+                    first = false;
+                }
                 ta.accept( obj );
                 obj = bis.readObject();
             }
