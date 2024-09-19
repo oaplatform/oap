@@ -34,6 +34,7 @@ import org.testng.annotations.Test;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+import static oap.template.TemplateAccumulators.OBJECT;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -119,5 +120,27 @@ public class TemplateEngineFunctionsTest extends Fixtures {
     public void testFunctionToUpperCase() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id=${v; toUpperCase()}", STRING, null ).render( Map.of( "v", "a i/d" ) ).get() )
             .isEqualTo( "id=A I/D" );
+    }
+
+    @Test
+    public void testTypes() {
+        Map<String, Object> map = Map.of( "v", Map.of( "d", 1.1d, "s1", Map.of( "s2", "str" ) ) );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.d ?? 0.0}", OBJECT, null ).render( map ).get() )
+            .isEqualTo( 1.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.c ?? 0.1}", OBJECT, null ).render( map ).get() )
+            .isEqualTo( 0.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${v.d ?? 0.0}", STRING, null ).render( map ).get() )
+            .isEqualTo( "1.1" );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.d ?? 0.0}", OBJECT, null ).render( map ).get() )
+            .isEqualTo( 1.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.c ?? 0.1}", OBJECT, null ).render( map ).get() )
+            .isEqualTo( 0.1d );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.Double>v.d ?? 0.0}", STRING, null ).render( map ).get() )
+            .isEqualTo( "1.1" );
+
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.String>v.s1.s2 ?? ''}", STRING, null ).render( map ).get() )
+            .isEqualTo( "str" );
     }
 }

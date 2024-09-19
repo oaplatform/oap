@@ -86,7 +86,7 @@ public class FieldType {
             if( actualArguments.size() != parameters.size() ) return false;
 
             for( int i = 0; i < parameters.size(); i++ ) {
-                if( !parameters.get( 0 ).isAssignableFrom( actualArguments.get( i ) ) ) return false;
+                if( !parameters.get( i ).isAssignableFrom( actualArguments.get( i ) ) ) return false;
             }
         }
 
