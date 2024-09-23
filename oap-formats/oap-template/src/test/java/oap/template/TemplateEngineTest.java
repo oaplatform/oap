@@ -84,7 +84,7 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.childNullable = new TestTemplateClass();
         c.childNullable.longField = 0;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childNullable.longField}", OBJECT, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{childNullable.longField}}", OBJECT, null ).render( c ).get() )
             .isEqualTo( 0L );
     }
 

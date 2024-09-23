@@ -46,12 +46,12 @@ comment
 
 
 expression[Map<String,String> aliases] returns [String ret]
-    : STARTEXPR expressionContent RBRACE { 
+    : (STARTEXPR|STARTEXPR2) expressionContent (RBRACE|RBRACE2) {
         $ret = $expressionContent.text;
         var alias = aliases.get( $expressionContent.text );
         if( alias != null ) $ret = alias;
     };
 
 expressionContent
-    : (EXPRESSION|LBRACE|RBRACE)+
+    : (EXPRESSION|EXPRESSION2|LBRACE|RBRACE|LBRACE2|RBRACE2)+
     ;
