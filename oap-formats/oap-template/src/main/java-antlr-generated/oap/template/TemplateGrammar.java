@@ -4,6 +4,7 @@ package oap.template;
 
 import oap.template.tree.*;
 
+import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -417,8 +418,8 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				consume();
 			}
 
-			        ((ExpressionContext)_localctx).ret =  (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null);
-			        var alias = aliases.get( (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null) );
+			        ((ExpressionContext)_localctx).ret =  StringUtils.trim( (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null) );
+			        String alias = aliases.get( _localctx.ret );
 			        if( alias != null ) ((ExpressionContext)_localctx).ret =  alias;
 			    
 			}

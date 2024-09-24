@@ -11,6 +11,7 @@ package oap.template;
 
 import oap.template.tree.*;
 
+import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +48,8 @@ comment
 
 expression[Map<String,String> aliases] returns [String ret]
     : (STARTEXPR|STARTEXPR2) expressionContent (RBRACE|RBRACE2) {
-        $ret = $expressionContent.text;
-        var alias = aliases.get( $expressionContent.text );
+        $ret = StringUtils.trim( $expressionContent.text );
+        String alias = aliases.get( $ret );
         if( alias != null ) $ret = alias;
     };
 
