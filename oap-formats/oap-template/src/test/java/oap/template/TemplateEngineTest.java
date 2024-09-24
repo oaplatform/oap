@@ -223,7 +223,7 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field ; default field2}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field | default field2}", STRING, null ).render( c ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -232,7 +232,7 @@ public class TemplateEngineTest extends Fixtures {
         var c = new TestTemplateClass();
         c.list2 = List.of( 2, 3 );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list ; default list2}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${list | default list2}", STRING, null ).render( c ).get() )
             .isEqualTo( "[2,3]" );
     }
 
@@ -409,7 +409,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testExt() {
         var c = new TestTemplateClass();
         c.ext2 = new TestTemplateClassExt( "ev" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a|ext2.a}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext.a | default ext2.a}", STRING, null ).render( c ).get() )
             .isEqualTo( "ev" );
     }
 
@@ -417,7 +417,7 @@ public class TemplateEngineTest extends Fixtures {
     public void testDefaultExt() {
         var c = new TestTemplateClass();
         c.ext3.a = "123";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext2.a|ext3.a}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${ext2.a | default ext3.a}", STRING, null ).render( c ).get() )
             .isEqualTo( "123" );
     }
 

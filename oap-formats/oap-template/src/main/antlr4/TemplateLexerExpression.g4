@@ -9,26 +9,27 @@ fragment Vws			: [\r\n\f]	;
 fragment BlockComment	: '/*'  .*? ('*/' | EOF)	;
 
 
-fragment Esc			: '\\'	;
-fragment SQuote			: '\''	;
-fragment DQuote			: '"'	;
-fragment Underscore		: '_'	;
-fragment Comma			: ','	;
-fragment Semi			: ';'	;
-fragment Pipe			: '|'	;
-fragment Dot			: '.'	;
-fragment LParen			: '('	;
-fragment RParen			: ')'	;
-fragment LBrack			: '['	;
-fragment RBrack			: ']'	;
-fragment Star			: '*'	;
-fragment Slash			: '/'	;
-fragment Percent		: '%'	;
-fragment Plus			: '+'	;
-fragment Minus			: '-'	;
-fragment DQuestion		: '??'	;
-fragment LT             : '<'   ;
-fragment GT             : '>'   ;
+fragment Esc			: '\\'	    ;
+fragment SQuote			: '\''	    ;
+fragment DQuote			: '"'	    ;
+fragment Underscore		: '_'	    ;
+fragment Comma			: ','	    ;
+fragment Semi			: ';'	    ;
+fragment Pipe			: '|'	    ;
+fragment Dot			: '.'	    ;
+fragment LParen			: '('	    ;
+fragment RParen			: ')'	    ;
+fragment LBrack			: '['	    ;
+fragment RBrack			: ']'	    ;
+fragment Star			: '*'	    ;
+fragment Slash			: '/'	    ;
+fragment Percent		: '%'	    ;
+fragment Plus			: '+'	    ;
+fragment Minus			: '-'	    ;
+fragment DQuestion		: '??'	    ;
+fragment LT             : '<'       ;
+fragment GT             : '>'       ;
+fragment Default        : 'default' ;
 
 fragment NameChar
 	:	[A-Z]
@@ -68,64 +69,65 @@ fragment DQuoteLiteral	: DQuote ( EscSeq | ~["\r\n\\] )* DQuote	;
 fragment BoolLiteral	: True | False								;
 
 
-fragment HexDigit		: [0-9a-fA-F]	            ;
-fragment DecDigit		: [0-9]			            ;
+fragment HexDigit		: [0-9a-fA-F]	                ;
+fragment DecDigit		: [0-9]			                ;
 
-fragment DecDigits		: DecDigit+		            ;
-fragment Float          : DecDigits Dot DecDigits?  ;
+fragment DecDigits		: DecDigit+		                ;
+fragment Float          : DecDigits Dot DecDigits?      ;
 
-fragment True		 	: 'true'	                ;
-fragment False			: 'false'	                ;
+fragment True		 	: 'true'	                    ;
+fragment False			: 'false'   	                ;
 
+
+DEFAULT         : Pipe Hws* Default                     ;
 
 BLOCK_COMMENT	: BlockComment;
 
-HORZ_WS	    : Hws+		-> skip	;
-VERT_WS	    : Vws+		-> skip	;
+HORZ_WS	        : Hws+		-> skip	;
+VERT_WS	        : Vws+		-> skip	;
 
-LBRACE      : LBrace -> pushMode(Concatenation)     ;
+LBRACE          : LBrace -> pushMode(Concatenation)     ;
 
-RBRACE		: RBrace -> popMode                     ;
+RBRACE		    : RBrace -> popMode                     ;
 
-PIPE		: Pipe                                  ;
-DOT			: Dot			                        ;
-LPAREN		: LParen		                        ;
-RPAREN		: RParen		                        ;
-LBRACK		: LBrack			                    ;
-RBRACK		: RBrack			                    ;
-DQUESTION   : DQuestion                             ;
-SEMI        : Semi                                  ;
-COMMA		: Comma                                 ;
+DOT			: Dot			                            ;
+LPAREN		: LParen		                            ;
+RPAREN		: RParen		                            ;
+LBRACK		: LBrack			                        ;
+RBRACK		: RBrack			                        ;
+DQUESTION   : DQuestion                                 ;
+SEMI        : Semi                                      ;
+COMMA		: Comma                                     ;
 
-STAR        : Star                                  ;
-SLASH       : Slash                                 ;
-PERCENT     : Percent                               ;
-PLUS        : Plus                                  ;
-MINUS       : Minus                                 ;
+STAR        : Star                                      ;
+SLASH       : Slash                                     ;
+PERCENT     : Percent                                   ;
+PLUS        : Plus                                      ;
+MINUS       : Minus                                     ;
 
-DSTRING     : DQuoteLiteral                         ;
-SSTRING     : SQuoteLiteral                         ;
-DECDIGITS   : DecDigits                             ;
-FLOAT       : Float                                 ;
-BOOLEAN     : BoolLiteral                           ;
-ID			: NameChar (NameChar|DecDigit)*			;
-CAST_TYPE   : LT (NameChar|DOT)+ CAST_TYPE? GT      ;
+DSTRING     : DQuoteLiteral                             ;
+SSTRING     : SQuoteLiteral                             ;
+DECDIGITS   : DecDigits                                 ;
+FLOAT       : Float                                     ;
+BOOLEAN     : BoolLiteral                               ;
+ID			: NameChar (NameChar|DecDigit)*			    ;
+CAST_TYPE   : LT (NameChar|DOT)+ CAST_TYPE? GT          ;
 
 
-ERR_CHAR	: (' '|'\t')	-> skip		            ;
+ERR_CHAR	: Hws	-> skip		                        ;
 
-mode Concatenation                                  ;
+mode Concatenation                                      ;
 
-C_HORZ_WS	: Hws+		-> skip	;
-C_VERT_WS	: Vws+		-> skip	;
+C_HORZ_WS	: Hws+		-> skip	                        ;
+C_VERT_WS	: Vws+		-> skip	                        ;
 
-CRBRACE		: RBrace -> popMode, type(RBRACE)       ;
-CCOMMA		: Comma -> type(COMMA)                  ;
+CRBRACE		: RBrace -> popMode, type(RBRACE)           ;
+CCOMMA		: Comma -> type(COMMA)                      ;
 
-CID			: NameChar (NameChar|DecDigit)* -> type(ID);
-CDSTRING    : DQuoteLiteral -> type(DSTRING)       ;
-CSSTRING    : SQuoteLiteral -> type(SSTRING)       ;
-CDECDIGITS  : DecDigits -> type(DECDIGITS)         ;
-CFLOAT      : Float -> type(FLOAT)                 ;
+CID			: NameChar (NameChar|DecDigit)* -> type(ID) ;
+CDSTRING    : DQuoteLiteral -> type(DSTRING)            ;
+CSSTRING    : SQuoteLiteral -> type(SSTRING)            ;
+CDECDIGITS  : DecDigits -> type(DECDIGITS)              ;
+CFLOAT      : Float -> type(FLOAT)                      ;
 
-CERR_CHAR	: (' '|'\t')	-> skip		            ;
+CERR_CHAR	: (' '|'\t')	-> skip		                ;
