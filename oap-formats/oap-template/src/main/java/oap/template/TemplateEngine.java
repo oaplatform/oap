@@ -24,9 +24,11 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import io.micrometer.core.instrument.Metrics;
@@ -40,6 +42,7 @@ import oap.template.render.AstRender;
 import oap.template.render.AstRenderRoot;
 import oap.template.render.TemplateAstUtils;
 import oap.template.render.TemplateType;
+import oap.template.tree.Elements;
 import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
@@ -50,6 +53,7 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,10 +69,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @ToString( of = { "ttl", "maxSize", "diskCache" } )
 public class TemplateEngine implements Runnable {
     public static final String METRICS_NAME = "oap_template_cache";
-    private final Map<String, List<Method>> builtInFunction = new HashMap<>();
-    private final Cache<String, TemplateFunction> templates;
     public final Path diskCache;
     public final long ttl;
+    private final Map<String, List<Method>> builtInFunction = new HashMap<>();
+    private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
 
     public TemplateEngine( long ttl ) {
@@ -91,6 +95,7 @@ public class TemplateEngine implements Runnable {
         loadFunctions();
 
         log.info( "diskCache: {} ttl: {} functions: {}", diskCache, Dates.durationToString( ttl ), builtInFunction.keySet() );
+        log.info( "functions: {}", builtInFunction.values().stream().flatMap( Collection::stream ).map( Method::getName ).distinct().toList() );
 
         Metrics.gauge( METRICS_NAME, Tags.of( "type", "size" ), templates, Cache::size );
         Metrics.gauge( METRICS_NAME, Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
@@ -104,7 +109,7 @@ public class TemplateEngine implements Runnable {
     }
 
     public static long getHash( String template ) {
-        var hashFunction = Hashing.murmur3_128();
+        HashFunction hashFunction = Hashing.murmur3_128();
         return hashFunction.hashUnencodedChars( template ).asLong();
     }
 
@@ -113,16 +118,22 @@ public class TemplateEngine implements Runnable {
     }
 
     private void loadFunctions() {
-        var functions = new HashSet<Class<?>>();
+        HashSet<Class<?>> functions = new HashSet<Class<?>>();
         try( Stream<String> stream = Resources.lines( "META-INF/oap-template-macros.list" ) ) {
             stream.forEach( Try.consume( cs -> functions.add( Class.forName( cs ) ) ) );
         }
 
-        for( var clazz : functions ) {
-            for( var method : clazz.getDeclaredMethods() ) {
+        for( Class<?> clazz : functions ) {
+            for( Method method : clazz.getDeclaredMethods() ) {
                 if( !Modifier.isStatic( method.getModifiers() ) ) continue;
 
-                builtInFunction.computeIfAbsent( method.getName(), m -> new ArrayList<>() ).add( method );
+                builtInFunction.computeIfAbsent( method.getName(), _ -> new ArrayList<>() ).add( method );
+                JsonAlias jsonAlias = method.getAnnotation( JsonAlias.class );
+                if( jsonAlias != null ) {
+                    for( String alias : jsonAlias.value() ) {
+                        builtInFunction.computeIfAbsent( alias, _ -> new ArrayList<>() ).add( method );
+                    }
+                }
             }
         }
     }
@@ -144,7 +155,7 @@ public class TemplateEngine implements Runnable {
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
-        return getTemplate( name, type, template, acc, aliases, errorStrategy, ast -> {
+        return getTemplate( name, type, template, acc, aliases, errorStrategy, _ -> {
         } );
     }
 
@@ -163,19 +174,19 @@ public class TemplateEngine implements Runnable {
 
         aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
 
-        var id = hasher.hash().toString();
+        String id = hasher.hash().toString();
 
         log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
         try {
             TemplateFunction tFunc = templates.get( id, () -> {
-                var lexer = new TemplateLexer( CharStreams.fromString( template ) );
-                var grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+                TemplateLexer lexer = new TemplateLexer( CharStreams.fromString( template ) );
+                TemplateGrammar grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
                 if( errorStrategy == ErrorStrategy.ERROR ) {
                     lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                     grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
-                var elements = grammar.elements( aliases ).ret;
+                Elements elements = grammar.elements( aliases ).ret;
                 log.trace( "\n" + elements.print() );
 
                 AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
@@ -185,7 +196,7 @@ public class TemplateEngine implements Runnable {
 
                 log.trace( "\n" + ast.print() );
 
-                var tf = new JavaTemplate<>( name + '_' + id, template, type, diskCache, acc, ast );
+                JavaTemplate<TIn, TOut, TOutMutable, TA> tf = new JavaTemplate<>( name + '_' + id, template, type, diskCache, acc, ast );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
             } );
 
@@ -207,7 +218,7 @@ public class TemplateEngine implements Runnable {
     public void run() {
         templates.cleanUp();
         if( diskCache == null ) return;
-        var now = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
         try( Stream<Path> stream = Files.walk( diskCache ) ) {
             stream
                 .forEach( path -> {

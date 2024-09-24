@@ -143,4 +143,14 @@ public class TemplateEngineFunctionsTest extends Fixtures {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Object>>() {}, "${<java.lang.String>v.s1.s2 ?? ''}", STRING, null ).render( map ).get() )
             .isEqualTo( "str" );
     }
+
+    @Test
+    public void testAlias() {
+        var c = new TestTemplateClass();
+        c.intField = 10;
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intField ; testInc() }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "11" );
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intField ; testIncAlias() }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "11" );
+    }
 }
