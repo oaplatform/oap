@@ -78,7 +78,7 @@ functionArg returns [String ret]
     ;
 
 orExprs returns [ArrayList<Exprs> ret = new ArrayList<Exprs>() ]
-    : (PIPE exprs { $ret.add( $exprs.ret ); } ( PIPE exprs { $ret.add( $exprs.ret ); })*)
+    : (DEFAULT exprs { $ret.add( $exprs.ret ); } ( DEFAULT exprs { $ret.add( $exprs.ret ); })*)
     |
     ;
 

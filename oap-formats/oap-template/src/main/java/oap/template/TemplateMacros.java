@@ -24,6 +24,7 @@
 
 package oap.template;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.SneakyThrows;
 import oap.util.Dates;
 import org.joda.time.DateTime;
@@ -32,9 +33,20 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TemplateMacros {
+    private static final ConcurrentHashMap<String, DateTimeFormatter> dateTimeFormatters = new ConcurrentHashMap<>();
+
+    static {
+        dateTimeFormatters.put( "SIMPLE", Dates.FORMAT_SIMPLE );
+        dateTimeFormatters.put( "MILLIS", Dates.FORMAT_MILLIS );
+        dateTimeFormatters.put( "SIMPLE_CLEAN", Dates.FORMAT_SIMPLE_CLEAN );
+        dateTimeFormatters.put( "DATE", Dates.FORMAT_DATE );
+    }
+
     public static String urlencode( String src, long depth ) {
         if( src == null ) return null;
         String res = src;
@@ -71,13 +83,37 @@ public class TemplateMacros {
         return src != null ? src.toLowerCase() : null;
     }
 
-    private static final ConcurrentHashMap<String, DateTimeFormatter> dateTimeFormatters = new ConcurrentHashMap<>();
+    @JsonAlias( "default" )
+    public static Object defaultFunction( String in, Object defaultValue ) {
+        if( in == null ) return defaultValue;
 
-    static {
-        dateTimeFormatters.put( "SIMPLE", Dates.FORMAT_SIMPLE );
-        dateTimeFormatters.put( "MILLIS", Dates.FORMAT_MILLIS );
-        dateTimeFormatters.put( "SIMPLE_CLEAN", Dates.FORMAT_SIMPLE_CLEAN );
-        dateTimeFormatters.put( "DATE", Dates.FORMAT_DATE );
+        return in.isEmpty() ? defaultValue : in;
+    }
+
+    @JsonAlias( "default" )
+    public static Object defaultFunction( Collection<?> in, Object defaultValue ) {
+        if( in == null ) return defaultValue;
+
+        return in.isEmpty() ? defaultValue : in;
+    }
+
+    @JsonAlias( "default" )
+    public static Object defaultFunction( Map<?, ?> in, Object defaultValue ) {
+        if( in == null ) return defaultValue;
+
+        return in.isEmpty() ? defaultValue : in;
+    }
+
+    @JsonAlias( "default" )
+    public static Object defaultFunction( Object in, Object defaultValue ) {
+        return switch( in ) {
+            case null -> defaultValue;
+            case String inStr -> defaultFunction( inStr, defaultValue );
+            case Collection<?> inCollection -> defaultFunction( inCollection, defaultValue );
+            case Map<?, ?> inMap -> defaultFunction( inMap, defaultValue );
+            default -> in;
+        };
+
     }
 
     public static String format( DateTime dateTime, String pattern ) {

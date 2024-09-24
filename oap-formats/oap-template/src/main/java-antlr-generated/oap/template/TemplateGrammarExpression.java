@@ -30,10 +30,10 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		BLOCK_COMMENT=1, HORZ_WS=2, VERT_WS=3, LBRACE=4, RBRACE=5, PIPE=6, DOT=7, 
-		LPAREN=8, RPAREN=9, LBRACK=10, RBRACK=11, DQUESTION=12, SEMI=13, COMMA=14, 
-		STAR=15, SLASH=16, PERCENT=17, PLUS=18, MINUS=19, DSTRING=20, SSTRING=21, 
-		DECDIGITS=22, FLOAT=23, BOOLEAN=24, ID=25, CAST_TYPE=26, ERR_CHAR=27, 
+		DEFAULT=1, BLOCK_COMMENT=2, HORZ_WS=3, VERT_WS=4, LBRACE=5, RBRACE=6, 
+		DOT=7, LPAREN=8, RPAREN=9, LBRACK=10, RBRACK=11, DQUESTION=12, SEMI=13, 
+		COMMA=14, STAR=15, SLASH=16, PERCENT=17, PLUS=18, MINUS=19, DSTRING=20, 
+		SSTRING=21, DECDIGITS=22, FLOAT=23, BOOLEAN=24, ID=25, CAST_TYPE=26, ERR_CHAR=27, 
 		C_HORZ_WS=28, C_VERT_WS=29, CERR_CHAR=30;
 	public static final int
 		RULE_expression = 0, RULE_defaultValue = 1, RULE_defaultValueType = 2, 
@@ -56,7 +56,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "BLOCK_COMMENT", "HORZ_WS", "VERT_WS", "LBRACE", "RBRACE", "PIPE", 
+			null, "DEFAULT", "BLOCK_COMMENT", "HORZ_WS", "VERT_WS", "LBRACE", "RBRACE", 
 			"DOT", "LPAREN", "RPAREN", "LBRACK", "RBRACK", "DQUESTION", "SEMI", "COMMA", 
 			"STAR", "SLASH", "PERCENT", "PLUS", "MINUS", "DSTRING", "SSTRING", "DECDIGITS", 
 			"FLOAT", "BOOLEAN", "ID", "CAST_TYPE", "ERR_CHAR", "C_HORZ_WS", "C_VERT_WS", 
@@ -667,9 +667,9 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 	public static class OrExprsContext extends ParserRuleContext {
 		public ArrayList<Exprs> ret = new ArrayList<Exprs>();
 		public ExprsContext exprs;
-		public List<TerminalNode> PIPE() { return getTokens(TemplateGrammarExpression.PIPE); }
-		public TerminalNode PIPE(int i) {
-			return getToken(TemplateGrammarExpression.PIPE, i);
+		public List<TerminalNode> DEFAULT() { return getTokens(TemplateGrammarExpression.DEFAULT); }
+		public TerminalNode DEFAULT(int i) {
+			return getToken(TemplateGrammarExpression.DEFAULT, i);
 		}
 		public List<ExprsContext> exprs() {
 			return getRuleContexts(ExprsContext.class);
@@ -699,23 +699,23 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			setState(122);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
-			case PIPE:
+			case DEFAULT:
 				enterOuterAlt(_localctx, 1);
 				{
 				{
 				setState(109);
-				match(PIPE);
+				match(DEFAULT);
 				setState(110);
 				((OrExprsContext)_localctx).exprs = exprs();
 				 _localctx.ret.add( ((OrExprsContext)_localctx).exprs.ret ); 
 				setState(118);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				while (_la==PIPE) {
+				while (_la==DEFAULT) {
 					{
 					{
 					setState(112);
-					match(PIPE);
+					match(DEFAULT);
 					setState(113);
 					((OrExprsContext)_localctx).exprs = exprs();
 					 _localctx.ret.add( ((OrExprsContext)_localctx).exprs.ret ); 
@@ -1316,7 +1316,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case EOF:
-			case PIPE:
+			case DEFAULT:
 			case DQUESTION:
 			case SEMI:
 				enterOuterAlt(_localctx, 1);
@@ -1447,7 +1447,7 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		"\u0000\u0014\u00c7\u0001\u0000\u0000\u0000\u0016\u00cc\u0001\u0000\u0000"+
 		"\u0000\u0018\u00e1\u0001\u0000\u0000\u0000\u001a\u00e3\u0001\u0000\u0000"+
 		"\u0000\u001c\u00ea\u0001\u0000\u0000\u0000\u001e\u00ec\u0001\u0000\u0000"+
-		"\u0000 \"\u0005\u0001\u0000\u0000! \u0001\u0000\u0000\u0000!\"\u0001\u0000"+
+		"\u0000 \"\u0005\u0002\u0000\u0000! \u0001\u0000\u0000\u0000!\"\u0001\u0000"+
 		"\u0000\u0000\"$\u0001\u0000\u0000\u0000#%\u0005\u001a\u0000\u0000$#\u0001"+
 		"\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%&\u0001\u0000\u0000\u0000"+
 		"&\'\u0003\u0010\b\u0000\')\u0003\u000e\u0007\u0000(*\u0003\u0002\u0001"+
@@ -1482,8 +1482,8 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		"\uffff\u0000ij\u0005\u0014\u0000\u0000jl\u0006\u0006\uffff\uffff\u0000"+
 		"k]\u0001\u0000\u0000\u0000k_\u0001\u0000\u0000\u0000kb\u0001\u0000\u0000"+
 		"\u0000kd\u0001\u0000\u0000\u0000kg\u0001\u0000\u0000\u0000ki\u0001\u0000"+
-		"\u0000\u0000l\r\u0001\u0000\u0000\u0000mn\u0005\u0006\u0000\u0000no\u0003"+
-		"\u0010\b\u0000ov\u0006\u0007\uffff\uffff\u0000pq\u0005\u0006\u0000\u0000"+
+		"\u0000\u0000l\r\u0001\u0000\u0000\u0000mn\u0005\u0001\u0000\u0000no\u0003"+
+		"\u0010\b\u0000ov\u0006\u0007\uffff\uffff\u0000pq\u0005\u0001\u0000\u0000"+
 		"qr\u0003\u0010\b\u0000rs\u0006\u0007\uffff\uffff\u0000su\u0001\u0000\u0000"+
 		"\u0000tp\u0001\u0000\u0000\u0000ux\u0001\u0000\u0000\u0000vt\u0001\u0000"+
 		"\u0000\u0000vw\u0001\u0000\u0000\u0000w{\u0001\u0000\u0000\u0000xv\u0001"+
@@ -1532,8 +1532,8 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		"\uffff\uffff\u0000\u00c3\u00c4\u0005\u0019\u0000\u0000\u00c4\u00c6\u0006"+
 		"\t\uffff\uffff\u0000\u00c5\u00bb\u0001\u0000\u0000\u0000\u00c5\u00c3\u0001"+
 		"\u0000\u0000\u0000\u00c6\u0013\u0001\u0000\u0000\u0000\u00c7\u00c8\u0005"+
-		"\u0004\u0000\u0000\u00c8\u00c9\u0003\u0016\u000b\u0000\u00c9\u00ca\u0006"+
-		"\n\uffff\uffff\u0000\u00ca\u00cb\u0005\u0005\u0000\u0000\u00cb\u0015\u0001"+
+		"\u0005\u0000\u0000\u00c8\u00c9\u0003\u0016\u000b\u0000\u00c9\u00ca\u0006"+
+		"\n\uffff\uffff\u0000\u00ca\u00cb\u0005\u0006\u0000\u0000\u00cb\u0015\u0001"+
 		"\u0000\u0000\u0000\u00cc\u00cd\u0003\u0018\f\u0000\u00cd\u00d4\u0006\u000b"+
 		"\uffff\uffff\u0000\u00ce\u00cf\u0005\u000e\u0000\u0000\u00cf\u00d0\u0003"+
 		"\u0018\f\u0000\u00d0\u00d1\u0006\u000b\uffff\uffff\u0000\u00d1\u00d3\u0001"+

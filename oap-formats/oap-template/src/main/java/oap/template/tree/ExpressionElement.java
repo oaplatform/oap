@@ -38,6 +38,6 @@ public class ExpressionElement implements Element {
 
     @Override
     public String print() {
-        return "EXPR " + expression;
+        return "EXPR '" + expression + "'";
     }
 }

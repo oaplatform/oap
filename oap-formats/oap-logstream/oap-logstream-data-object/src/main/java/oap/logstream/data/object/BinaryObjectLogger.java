@@ -125,7 +125,7 @@ public class BinaryObjectLogger {
                 defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"'
                     : defaultValue;
 
-            expressions.add( "${/* " + comment + " */" + toJavaType( rowType.javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + "}" );
+            expressions.add( "{{ /* " + comment + " */" + toJavaType( rowType.javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + " }}" );
             headers.add( name );
             if( collection ) {
                 rowTypes.add( new byte[] { Types.LIST.id, rowType.templateType.id } );
