@@ -100,7 +100,7 @@ public class TemplateEngineTypesTest extends Fixtures {
         templateClass.child.child.field2 = "v2";
 
         var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "child.child.{field,\"x\",field2}:{{ <java.lang.String>.child.child.{ field, \"x\", field2} }}",
+            "child.child.{field,\"x\",field2}:{{ <java.lang.String>.child.child | concat( .field, \"x\", .field2 ) }}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
         assertString( str ).isEqualTo( "child.child.{field,\"x\",field2}:v1xv2" );

@@ -123,7 +123,7 @@
 
         <dependency>
             <groupId>org.antlr</groupId>
-            <artifactId>stringtemplate</artifactId>
+            <artifactId>ST4</artifactId>
             <version>${oap.deps.stringtemplate.version}</version>
         </dependency>
 
