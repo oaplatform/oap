@@ -68,6 +68,10 @@ import static oap.util.function.Functions.exception;
 
 @Slf4j
 @ToString( of = "name" )
+/**
+ * APPLICATION_STOP_DETECT_TIMEOUT - default 5s
+ * APPLICATION_FORCE_ASYNC_AFTER_TIMEOUT - default false
+ */
 public class Kernel implements Closeable, AutoCloseable {
     public static final String DEFAULT = Strings.DEFAULT;
 
