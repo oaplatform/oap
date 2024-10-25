@@ -39,6 +39,7 @@ import oap.util.Lists;
 import oap.util.Maps;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -68,8 +69,16 @@ public class KernelTest extends Fixtures {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
+
+    @BeforeMethod
+    public void beforeMethod() {
+        Env.set( "APPLICATION_STOP_DETECT_TIMEOUT", String.valueOf( 1 ) );
+    }
+
     @AfterMethod
     public void afterMethod() {
+        Env.set( "APPLICATION_STOP_DETECT_TIMEOUT", null );
+
         new ArrayList<>( System.getenv().keySet() )
             .stream()
             .filter( k -> k.startsWith( "CONFIG." ) )
@@ -531,6 +540,7 @@ public class KernelTest extends Fixtures {
         }
 
         public void stop() {
+            Threads.sleepSafely( 2 );
             str.append( "/stop" );
         }
 
