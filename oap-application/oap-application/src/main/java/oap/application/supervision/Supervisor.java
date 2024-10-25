@@ -23,11 +23,9 @@
  */
 package oap.application.supervision;
 
-import io.micrometer.core.instrument.util.NamedThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.KernelHelper;
 import oap.concurrent.Executors;
-import oap.concurrent.ThreadPoolExecutor;
 import oap.util.BiStream;
 import oap.util.Dates;
 import oap.util.Throwables;
@@ -38,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -288,7 +287,7 @@ public class Supervisor {
         private static final Set<String> on = Set.of( "on", "1", "true", "ON", "TRUE", "yes", "YES" );
         public final long timeoutMs;
         public final boolean forceAsyncAfterTimeout;
-        public final ThreadPoolExecutor threadPoolExecutor = Executors.newFixedBlockingThreadPool( 1, new NamedThreadFactory( "stop" ) );
+        public final ExecutorService threadPoolExecutor = Executors.newCachedThreadPool();
 
         public ShutdownConfiguration() {
             String timeoutMsStr = System.getenv( "APPLICATION_STOP_DETECT_TIMEOUT" );
