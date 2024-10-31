@@ -30,7 +30,6 @@ fragment DQuestion		: '??'	    ;
 fragment LT             : '<'       ;
 fragment GT             : '>'       ;
 fragment Default        : 'default' ;
-fragment Concat         : 'concat' ;
 
 fragment NameChar
 	:	[A-Z]
@@ -87,7 +86,9 @@ BLOCK_COMMENT	: BlockComment;
 HORZ_WS	        : Hws+		-> skip	;
 VERT_WS	        : Vws+		-> skip	;
 
-START_CONCATENATION : Concat Hws* LParen -> pushMode(Concatenation)     ;
+LBRACE          : LBrace -> pushMode(Concatenation)     ;
+
+RBRACE		    : RBrace -> popMode                     ;
 
 DOT			: Dot			                            ;
 LPAREN		: LParen		                            ;
@@ -97,8 +98,6 @@ RBRACK		: RBrack			                        ;
 DQUESTION   : DQuestion                                 ;
 SEMI        : Semi                                      ;
 COMMA		: Comma                                     ;
-
-PIPE        : Pipe                                      ;
 
 STAR        : Star                                      ;
 SLASH       : Slash                                     ;
@@ -122,10 +121,8 @@ mode Concatenation                                      ;
 C_HORZ_WS	: Hws+		-> skip	                        ;
 C_VERT_WS	: Vws+		-> skip	                        ;
 
-CRBRACE		: RParen -> popMode                         ;
+CRBRACE		: RBrace -> popMode, type(RBRACE)           ;
 CCOMMA		: Comma -> type(COMMA)                      ;
-
-CDOT        : Dot -> type(DOT)                          ;
 
 CID			: NameChar (NameChar|DecDigit)* -> type(ID) ;
 CDSTRING    : DQuoteLiteral -> type(DSTRING)            ;
