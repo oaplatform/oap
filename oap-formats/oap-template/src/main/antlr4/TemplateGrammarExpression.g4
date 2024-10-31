@@ -86,7 +86,7 @@ exprs returns [Exprs ret = new Exprs()]
     : DOT expr  { $ret.exprs.add( $expr.ret ); }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
     | DOT expr  { $ret.exprs.add( $expr.ret ); }
-      PIPE concatenation { $ret.concatenation =$concatenation.ret; }
+      DOT? concatenation { $ret.concatenation =$concatenation.ret; }
     | DOT expr { $ret.exprs.add( $expr.ret ); }
       (DOT expr {
         $ret.exprs.add( $expr.ret );
@@ -96,7 +96,7 @@ exprs returns [Exprs ret = new Exprs()]
     | DOT expr { $ret.exprs.add( $expr.ret ); }
       (DOT expr { $ret.exprs.add( $expr.ret ); })*
       DOT expr { $ret.exprs.add( $expr.ret ); }
-      PIPE concatenation { $ret.concatenation = $concatenation.ret; }
+      DOT? concatenation { $ret.concatenation = $concatenation.ret; }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
     | concatenation { $ret.concatenation = $concatenation.ret; }
     ;
@@ -107,7 +107,7 @@ expr returns [Expr ret]
     ;
 
 concatenation returns [Concatenation ret]
-    : START_CONCATENATION citems { $ret = new Concatenation( $citems.ret ); } CRBRACE
+    : LBRACE citems { $ret = new Concatenation( $citems.ret ); } RBRACE
     ;
 
 citems returns [ArrayList<Object> ret = new ArrayList<>()]
@@ -116,7 +116,7 @@ citems returns [ArrayList<Object> ret = new ArrayList<>()]
     ;
 
 citem returns [Object ret]
-    : DOT ID { $ret = new Expr( $ID.text, false, List.of() ); }
+    : ID { $ret = new Expr( $ID.text, false, List.of() ); }
     | DSTRING  { $ret = sdStringToString( $DSTRING.text ); }
     | SSTRING { $ret = sdStringToString( $SSTRING.text ); }
     | DECDIGITS { $ret = String.valueOf( $DECDIGITS.text ); }
