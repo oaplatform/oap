@@ -60,7 +60,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c.field = "f1";
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ concat( .field, \"x\", .field2 ) }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ { field, \"x\", field2 } }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -70,7 +70,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c.field = "f1";
         c.field2 = "f2";
 
-        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ concat( .field, \"x\", .field2 ) }}", BINARY, null ).render( c ).get() ) )
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ { field, \"x\", field2 } }}", BINARY, null ).render( c ).get() ) )
             .isEqualTo( List.of( List.of( "f1xf2" ) ) );
     }
 
@@ -80,7 +80,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c.intField = 3;
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ concat( .intField, \"x\", .field2 ) }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ { intField, \"x\", field2} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "3xf2" );
     }
 
@@ -92,7 +92,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c1.field = "f1";
         c1.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .child | concat ( .field, \"x\", .field2 ) }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .child{ field, \"x\", field2 } }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -104,7 +104,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c1.field2 = "f1";
         c1.field22 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .child2 | concat( .field2, \"x\", .field22 ) }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .child2.{ field2, \"x\", field22 } }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -120,7 +120,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c11.field2 = "f1";
         c11.intField = 5;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .childNullable.childNullable | concat ( .field2, \"x\", .intField ) ?? '' }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .childNullable.childNullable.{ field2, \"x\", intField } ?? '' }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1x5" );
     }
 
@@ -136,7 +136,7 @@ public class TemplateEngineConcatenationTest extends Fixtures {
         c11.field2 = "f1";
         c11.intField = 5;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .childOpt.childOpt | concat( .field2, \"x\", .intField ) ?? '' }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .childOpt.childOpt.{ field2, \"x\", intField } ?? '' }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1x5" );
     }
 }
