@@ -88,6 +88,7 @@ public class Kernel implements Closeable, AutoCloseable {
     final String name;
     private final List<URL> moduleConfigurations;
     private final Supervisor supervisor = new Supervisor();
+    private ApplicationConfiguration applicationConfiguration = new ApplicationConfiguration();
 
     public Kernel( String name, List<URL> moduleConfigurations ) {
         this.name = name;
@@ -129,8 +130,7 @@ public class Kernel implements Closeable, AutoCloseable {
                         }
                         implementations.put( new Reference( module.name, serviceName ), ServiceKernelCommand.INSTANCE.reference( ref, null ) );
                     }
-                    default ->
-                        throw new ApplicationException( "Service " + module.name + "." + serviceName + " configuration must be of type Map<String,?> or it must be a reference to the implementation of an abstract service in the form of <modules.[module name].[service name]>" );
+                    default -> throw new ApplicationException( "Service " + module.name + "." + serviceName + " configuration must be of type Map<String,?> or it must be a reference to the implementation of an abstract service in the form of <modules.[module name].[service name]>" );
                 }
             }
         }
@@ -159,7 +159,8 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public void start() throws ApplicationException {
-        start( ApplicationConfiguration.load() );
+        applicationConfiguration = ApplicationConfiguration.load();
+        start( applicationConfiguration );
     }
 
     public void start( String appConfigPath, String confd ) throws ApplicationException {
@@ -487,7 +488,7 @@ public class Kernel implements Closeable, AutoCloseable {
         }
 
         if( service.supervision.thread ) {
-            supervisor.startThread( si.serviceName, instance );
+            supervisor.startThread( si.serviceName, instance, applicationConfiguration.shutdown );
         } else {
             if( service.supervision.schedule && service.supervision.cron != null )
                 supervisor.scheduleCron( si.serviceName, ( Runnable ) instance,
@@ -507,8 +508,8 @@ public class Kernel implements Closeable, AutoCloseable {
 
     public void stop() {
         log.debug( "stopping application kernel {}...", name );
-        supervisor.preStop();
-        supervisor.stop();
+        supervisor.preStop( applicationConfiguration.shutdown );
+        supervisor.stop( applicationConfiguration.shutdown );
         services.clear();
         log.debug( "application kernel stopped {}", name );
     }

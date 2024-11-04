@@ -24,6 +24,7 @@
 package oap.application.supervision;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.ApplicationConfiguration;
 import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.SynchronizedRunnableReadyListener;
 import oap.concurrent.SynchronizedThread;
@@ -34,16 +35,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ThreadService extends SynchronizedRunnable implements WrapperService<Runnable>, SynchronizedRunnableReadyListener {
 
     private final Supervisor supervisor;
+    private final ApplicationConfiguration.ModuleShutdown shutdown;
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private final Runnable supervised;
     protected SynchronizedRunnableReadyListener listener;
     private AtomicInteger maxFailures = new AtomicInteger( 100 );
     private volatile boolean done = false;
 
-    public ThreadService( final String name, Runnable supervisee, final Supervisor supervisor ) {
+    public ThreadService( final String name, Runnable supervisee, Supervisor supervisor, ApplicationConfiguration.ModuleShutdown shutdown ) {
         this.supervised = supervisee;
 
         this.supervisor = supervisor;
+        this.shutdown = shutdown;
         this.thread.setName( name );
         if( supervisee instanceof SynchronizedRunnable )
             ( ( SynchronizedRunnable ) supervisee ).readyListener( this );
@@ -71,8 +74,8 @@ public class ThreadService extends SynchronizedRunnable implements WrapperServic
         if( maxFailures.get() <= 0 ) {
             log.error( supervised + " constantly crushing. Requesting shutdown..." );
             new Thread( () -> {
-                supervisor.preStop();
-                supervisor.stop();
+                supervisor.preStop( shutdown );
+                supervisor.stop( shutdown );
             } ).run();
         }
     }

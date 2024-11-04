@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.content.ContentReader;
 import oap.json.Binder;
+import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Stream;
 
@@ -50,8 +51,9 @@ public final class ApplicationConfiguration {
     public static final String PREFIX = "CONFIG.";
     public final Map<String, ApplicationConfigurationModule> services = new LinkedHashMap<>();
     public final ModuleBoot boot = new ModuleBoot();
+    public final ModuleShutdown shutdown = new ModuleShutdown();
 
-    private ApplicationConfiguration() {
+    ApplicationConfiguration() {
     }
 
     @SneakyThrows
@@ -142,5 +144,11 @@ public final class ApplicationConfiguration {
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
         public boolean allowActiveByDefault = false;
+    }
+
+    @ToString
+    public static class ModuleShutdown {
+        public long serviceTimeout = Dates.s( 5 );
+        public boolean serviceAsyncShutdownAfterTimeout = false;
     }
 }

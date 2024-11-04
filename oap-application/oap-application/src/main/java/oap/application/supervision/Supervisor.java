@@ -24,6 +24,7 @@
 package oap.application.supervision;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.application.ApplicationConfiguration;
 import oap.application.KernelHelper;
 import oap.concurrent.Executors;
 import oap.util.BiStream;
@@ -34,7 +35,7 @@ import org.joda.time.DateTimeUtils;
 import java.io.Closeable;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -49,20 +50,21 @@ public class Supervisor {
     private boolean stopped = false;
 
     private static void runAndDetectTimeout( String name, ShutdownConfiguration shutdownConfiguration, Runnable func ) {
-        if( shutdownConfiguration.timeoutMs > 0 ) {
+        long serviceTimeout = shutdownConfiguration.shutdown.serviceTimeout;
+        if( serviceTimeout > 0 ) {
             long start = DateTimeUtils.currentTimeMillis();
             Future<?> future = shutdownConfiguration.submit( func );
             try {
-                future.get( shutdownConfiguration.timeoutMs, TimeUnit.MILLISECONDS );
+                future.get( serviceTimeout, TimeUnit.MILLISECONDS );
             } catch( InterruptedException e ) {
                 log.trace( e.getMessage() );
             } catch( ExecutionException e ) {
                 throw Throwables.propagate( e );
             } catch( TimeoutException e ) {
-                log.warn( "APP_TIMEOUT_START service {} after {}", name, Dates.durationToString( shutdownConfiguration.timeoutMs ) );
+                log.warn( "APP_TIMEOUT_START service {} after {}", name, Dates.durationToString( serviceTimeout ) );
 
                 try {
-                    if( !shutdownConfiguration.forceAsyncAfterTimeout ) {
+                    if( !shutdownConfiguration.shutdown.serviceAsyncShutdownAfterTimeout ) {
                         future.get();
 
                         log.warn( "APP_TIMEOUT_END service {} done in {}", name, Dates.durationToString( DateTimeUtils.currentTimeMillis() - start ) );
@@ -90,8 +92,8 @@ public class Supervisor {
 //        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
 //    }
 
-    public synchronized void startThread( String name, Object instance ) {
-        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
+    public synchronized void startThread( String name, Object instance, ApplicationConfiguration.ModuleShutdown shutdown ) {
+        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this, shutdown ) );
     }
 
     public synchronized void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
@@ -159,42 +161,51 @@ public class Supervisor {
         } );
     }
 
-    public synchronized void preStop() {
+    public synchronized void preStop( ApplicationConfiguration.ModuleShutdown shutdown ) {
         if( !stopped ) {
-            log.debug( "pre stopping..." );
+            try( ShutdownConfiguration shutdownConfiguration = new ShutdownConfiguration( shutdown ) ) {
+                log.debug( "pre stopping..." );
 
-            BiStream.of( this.wrappers )
-                .reversed()
-                .forEach( ( name, service ) -> {
-                    log.debug( "[{}] pre stopping {}...", service.type(), name );
-                    KernelHelper.setThreadNameSuffix( name );
-                    try {
-                        service.preStop();
-                    } finally {
-                        KernelHelper.restoreThreadName();
-                    }
-                    log.debug( "[{}] pre stopping {}... Done.", service.type(), name );
-                } );
+                BiStream.of( this.wrappers )
+                    .reversed()
+                    .forEach( ( name, service ) -> {
+                        Runnable func = () -> {
+                            log.debug( "[{}] pre stopping {}...", service.type(), name );
+                            KernelHelper.setThreadNameSuffix( name );
+                            try {
+                                service.preStop();
+                            } finally {
+                                KernelHelper.restoreThreadName();
+                            }
+                            log.debug( "[{}] pre stopping {}... Done.", service.type(), name );
+                        };
 
-            BiStream.of( this.supervised )
-                .reversed()
-                .forEach( ( name, service ) -> {
-                    log.debug( "pre stopping {}...", name );
-                    KernelHelper.setThreadNameSuffix( name );
-                    try {
-                        service.preStop();
-                    } finally {
-                        KernelHelper.restoreThreadName();
-                    }
-                    log.debug( "pre stopping {}... Done.", name );
-                } );
+                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                    } );
+
+                BiStream.of( this.supervised )
+                    .reversed()
+                    .forEach( ( name, service ) -> {
+                        Runnable func = () -> {
+                            log.debug( "pre stopping {}...", name );
+                            KernelHelper.setThreadNameSuffix( name );
+                            try {
+                                service.preStop();
+                            } finally {
+                                KernelHelper.restoreThreadName();
+                            }
+                            log.debug( "pre stopping {}... Done.", name );
+                        };
+
+                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                    } );
+            }
         }
     }
 
-    public synchronized void stop() {
+    public synchronized void stop( ApplicationConfiguration.ModuleShutdown shutdown ) {
         if( !stopped ) {
-
-            try( ShutdownConfiguration shutdownConfiguration = new ShutdownConfiguration() ) {
+            try( ShutdownConfiguration shutdownConfiguration = new ShutdownConfiguration( shutdown ) ) {
                 log.debug( "stopping..." );
                 this.stopped = true;
 
@@ -237,12 +248,12 @@ public class Supervisor {
         }
     }
 
-    public synchronized void stop( String serviceName ) {
+    public synchronized void stop( String serviceName, ApplicationConfiguration.ModuleShutdown shutdown ) {
         if( !stopped ) {
             log.debug( "stopping..." );
             this.stopped = true;
 
-            try( ShutdownConfiguration shutdownConfiguration = new ShutdownConfiguration() ) {
+            try( ShutdownConfiguration shutdownConfiguration = new ShutdownConfiguration( shutdown ) ) {
                 BiStream.of( this.wrappers )
                     .filter( ( name, _ ) -> name.equals( serviceName ) )
                     .forEach( ( name, service ) -> {
@@ -284,26 +295,29 @@ public class Supervisor {
     }
 
     public static class ShutdownConfiguration implements Closeable {
-        private static final Set<String> on = Set.of( "on", "1", "true", "ON", "TRUE", "yes", "YES" );
-        public final long timeoutMs;
-        public final boolean forceAsyncAfterTimeout;
-        public final ExecutorService threadPoolExecutor = Executors.newCachedThreadPool();
+        public final ExecutorService threadPoolExecutor;
+        private final ApplicationConfiguration.ModuleShutdown shutdown;
 
-        public ShutdownConfiguration() {
-            String timeoutMsStr = System.getenv( "APPLICATION_STOP_DETECT_TIMEOUT" );
-            this.timeoutMs = timeoutMsStr != null ? Long.parseLong( timeoutMsStr ) : Dates.s( 5 );
+        public ShutdownConfiguration( ApplicationConfiguration.ModuleShutdown shutdown ) {
+            this.shutdown = shutdown;
 
-            String forceAsyncAfterTimeoutStr = System.getenv( "APPLICATION_FORCE_ASYNC_AFTER_TIMEOUT" );
-            this.forceAsyncAfterTimeout = forceAsyncAfterTimeoutStr != null && on.contains( forceAsyncAfterTimeoutStr );
+            threadPoolExecutor = shutdown.serviceTimeout > 0 ? Executors.newCachedThreadPool() : null;
         }
 
         @Override
         public void close() {
-            threadPoolExecutor.shutdown();
+            if( threadPoolExecutor != null ) {
+                threadPoolExecutor.shutdown();
+            }
         }
 
         public Future<?> submit( Runnable func ) {
-            return threadPoolExecutor.submit( func );
+            if( threadPoolExecutor != null ) {
+                return threadPoolExecutor.submit( func );
+            } else {
+                func.run();
+                return CompletableFuture.completedFuture( null );
+            }
         }
     }
 }
