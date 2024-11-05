@@ -274,7 +274,7 @@ public class Supervisor {
                 this.wrappers.clear();
 
                 BiStream.of( this.supervised )
-                    .filter( ( name, service ) -> name.equals( serviceName ) )
+                    .filter( ( name, _ ) -> name.equals( serviceName ) )
                     .forEach( ( name, service ) -> {
                         Runnable func = () -> {
                             log.debug( "stopping {}...", name );
@@ -294,11 +294,11 @@ public class Supervisor {
         }
     }
 
-    public static class ShutdownConfiguration implements Closeable {
+    private static class ShutdownConfiguration implements Closeable {
         public final ExecutorService threadPoolExecutor;
         private final ApplicationConfiguration.ModuleShutdown shutdown;
 
-        public ShutdownConfiguration( ApplicationConfiguration.ModuleShutdown shutdown ) {
+        private ShutdownConfiguration( ApplicationConfiguration.ModuleShutdown shutdown ) {
             this.shutdown = shutdown;
 
             threadPoolExecutor = shutdown.serviceTimeout > 0 ? Executors.newCachedThreadPool() : null;
