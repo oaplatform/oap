@@ -487,7 +487,7 @@ public class Binder {
     public <T> T unmarshal( Reflection type, URL url ) throws JsonException {
         return unmarshalTimer.record( () -> {
             try {
-                return mapper.readValue( url, mapper.getTypeFactory().constructType( type.getType( ) ));
+                return mapper.readValue( url, mapper.getTypeFactory().constructType( type.getType( ) ) );
             } catch ( IOException e ) {
                 log.trace( "url: {}", url );
                 throw new JsonException( "Cannot deserialize to class: " + type.getType().getClass().getCanonicalName(), e );
@@ -498,7 +498,7 @@ public class Binder {
     public <T> T unmarshal( Reflection type, Path path ) throws JsonException {
         return unmarshalTimer.record( () -> {
             try ( var is = java.nio.file.Files.newInputStream( path ) ) {
-                return mapper.readValue( is, mapper.getTypeFactory().constructType( type.getType( ) ));
+                return mapper.readValue( is, mapper.getTypeFactory().constructType( type.getType( ) ) );
             } catch ( IOException e ) {
                 log.trace( "path: {}", path );
                 throw new JsonException( "Cannot deserialize to class: " + type.getType().getClass().getCanonicalName(), e );
