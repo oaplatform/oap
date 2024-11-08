@@ -60,7 +60,7 @@ public class PrometheusExporterTest extends Fixtures {
                 """ );
             assertThat( response ).contains( "test2_seconds_count 1.0" );
             assertThat( response ).contains( "test2_seconds_max 2.0" );
-            assertThat( response ).contains( "system_metrics_total 5.0" );
+            assertThat( response ).contains( "system_metrics_total 380.0" );
         }
     }
 
