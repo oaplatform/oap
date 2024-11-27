@@ -31,8 +31,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -44,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -106,16 +109,40 @@ public class Binder {
             .map( Try.map( clazz -> ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) )
             .toSet();
 
-        json = new Binder( initialize( new ObjectMapper(), false, false, true ) );
-        jsonWithTyping = new Binder( initialize( new ObjectMapper(), true, false, true ) );
-        xml = new Binder( initialize( new XmlMapper(), false, false, true ) );
-        xmlWithTyping = new Binder( initialize( new XmlMapper(), true, false, true ) );
-        hoconWithoutSystemProperties =
-            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false, true ) );
-        hocon =
-            new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false, false, true ) );
+        JsonFactory jsonFactory = JsonFactory.builder()
+            .enable( StreamReadFeature.USE_FAST_DOUBLE_PARSER )
+            .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
+            .build();
 
-        yaml = new Binder( initialize( new ObjectMapper( new YAMLFactory() ), false, false, true ) );
+        XmlFactory xmlFactory = XmlFactory.builder()
+            .enable( StreamReadFeature.USE_FAST_DOUBLE_PARSER )
+            .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
+            .build();
+
+        HoconFactory hoconFactory = new HoconFactory();
+        hoconFactory
+            .enable( JsonParser.Feature.USE_FAST_DOUBLE_PARSER )
+            .enable( JsonParser.Feature.USE_FAST_BIG_NUMBER_PARSER );
+
+        HoconFactoryWithSystemProperties hoconFactoryWithSystemProperties = new HoconFactoryWithSystemProperties( log );
+        hoconFactoryWithSystemProperties
+            .enable( JsonParser.Feature.USE_FAST_DOUBLE_PARSER )
+            .enable( JsonParser.Feature.USE_FAST_BIG_NUMBER_PARSER );
+
+        YAMLFactory yamlFactory = YAMLFactory.builder()
+            .enable( StreamReadFeature.USE_FAST_DOUBLE_PARSER )
+            .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
+            .build();
+
+        json = new Binder( initialize( new ObjectMapper( jsonFactory ), false, false, true ) );
+        jsonWithTyping = new Binder( initialize( new ObjectMapper( jsonFactory ), true, false, true ) );
+        xml = new Binder( initialize( new XmlMapper( xmlFactory ), false, false, true ) );
+        xmlWithTyping = new Binder( initialize( new XmlMapper( xmlFactory ), true, false, true ) );
+        hoconWithoutSystemProperties =
+            new Binder( initialize( new ObjectMapper( hoconFactory ), false, false, true ) );
+        hocon =
+            new Binder( initialize( new ObjectMapper( hoconFactoryWithSystemProperties ), false, false, true ) );
+        yaml = new Binder( initialize( new ObjectMapper( yamlFactory ), false, false, true ) );
     }
 
     private final ObjectMapper mapper;

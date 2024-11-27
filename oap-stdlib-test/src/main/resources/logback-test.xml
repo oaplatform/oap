@@ -15,7 +15,7 @@
     <logger name="io" level="WARN"/>
     <logger name="software" level="WARN"/>
 
-    <root level="${APP_LOGGING_LEVEL:-DEBUG}">
+    <root level="${APP_LOGGING_LEVEL:-TRACE}">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

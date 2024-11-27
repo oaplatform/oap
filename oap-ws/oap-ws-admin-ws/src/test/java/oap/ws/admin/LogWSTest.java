@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.entry;
 public class LogWSTest {
     @Test
     public void logs() {
-        var logWS = new LogWS();
+        LogWS logWS = new LogWS();
 
         log.trace( "test trace" );
 
@@ -51,7 +51,7 @@ public class LogWSTest {
 
     @Test
     public void testGetAll() {
-        var logWS = new LogWS();
+        LogWS logWS = new LogWS();
         Map<String, String> map = logWS.getAll();
 
         assertThat( map ).contains( entry( "org", "WARN" ), entry( "ROOT", "TRACE" ) );
