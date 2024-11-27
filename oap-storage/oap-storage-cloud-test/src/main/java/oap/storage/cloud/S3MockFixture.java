@@ -11,6 +11,8 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.endpoints.Endpoint;
@@ -151,7 +153,11 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         S3EndpointParams s3EndpointParams = S3EndpointParams.builder().endpoint( "http://localhost:" + httpPort ).region( Region.AWS_GLOBAL ).build();
         Endpoint s3Endpoint = new DefaultS3EndpointProvider().resolveEndpoint( s3EndpointParams ).join();
 
+        AwsBasicCredentials credentials = AwsBasicCredentials.create( "accessKeyId", "secretAccessKey" );
+        StaticCredentialsProvider provider = StaticCredentialsProvider.create( credentials );
+
         return S3Client.builder()
+            .credentialsProvider( provider )
             .endpointOverride( s3Endpoint.url() )
             .region( Region.AWS_GLOBAL )
             .forcePathStyle( true )
