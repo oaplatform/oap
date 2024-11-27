@@ -55,7 +55,7 @@ public class TemplateEngineEnumTest extends Fixtures {
     public void testEnumField() {
         var c = new TestTemplateClass();
         c.enumFieldWithoutDefaultValue = TestTemplateEnumWithoutDefaultValue.VAL1;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .enumFieldWithoutDefaultValue }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumFieldWithoutDefaultValue}", STRING, null ).render( c ).get() )
             .isEqualTo( "VAL1" );
     }
 
@@ -63,7 +63,7 @@ public class TemplateEngineEnumTest extends Fixtures {
     public void testEnumFieldDefault() {
         var c = new TestTemplateClass();
         c.enumField = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .enumField ?? 'VAL2' }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField??'VAL2'}", STRING, null ).render( c ).get() )
             .isEqualTo( "VAL2" );
     }
 
@@ -71,7 +71,7 @@ public class TemplateEngineEnumTest extends Fixtures {
     public void testEnumFieldWithoutDefault() {
         var c = new TestTemplateClass();
         c.enumField = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .enumField }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -79,7 +79,7 @@ public class TemplateEngineEnumTest extends Fixtures {
     public void testEnumFieldDefaultEmptyAsUNKNOWN() {
         var c = new TestTemplateClass();
         c.enumField = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .enumField ?? '' }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${enumField??''}", STRING, null ).render( c ).get() )
             .isEqualTo( "UNKNOWN" );
     }
 
@@ -87,7 +87,7 @@ public class TemplateEngineEnumTest extends Fixtures {
     public void testEnumFieldNonNull() {
         var c = new TestTemplateClass();
         c.nonNullEnumField = TestTemplateEnum.VAL2;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .nonNullEnumField }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${nonNullEnumField}", STRING, null ).render( c ).get() )
             .isEqualTo( "VAL2" );
     }
 
@@ -95,7 +95,7 @@ public class TemplateEngineEnumTest extends Fixtures {
     public void testListEnum() {
         var c = new TestTemplateClass();
         c.listEnum = List.of( TestTemplateEnum.VAL2, TestTemplateEnum.VAL1 );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .listEnum }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${listEnum}", STRING, null ).render( c ).get() )
             .isEqualTo( "['VAL2','VAL1']" );
     }
 }
