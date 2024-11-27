@@ -186,6 +186,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         return new FileSystemConfiguration( Map.of(
             "fs.s3.clouds.identity", "access_key",
             "fs.s3.clouds.credential", "access_secret",
+            "fs.s3.clouds.region", Region.AWS_GLOBAL.id(),
             "fs.s3.clouds.s3.virtual-host-buckets", false,
             "fs.s3.clouds.endpoint", "http://localhost:" + getHttpPort(),
             "fs.s3.clouds.headers", "DEBUG",

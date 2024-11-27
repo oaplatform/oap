@@ -89,12 +89,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public class FileSystemCloudApiS3 implements FileSystemCloudApi {
-    private final FileSystemConfiguration fileSystemConfiguration;
     private final S3AsyncClient s3Client;
 
     public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String bucketName ) {
-        this.fileSystemConfiguration = fileSystemConfiguration;
-
         S3AsyncClientBuilder builder = S3AsyncClient.builder();
 
         Object endpoint = fileSystemConfiguration.get( "s3", bucketName, "jclouds.endpoint" );
@@ -109,6 +106,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
         if( accessKey != null && accessSecret != null ) {
             builder = builder.credentialsProvider( StaticCredentialsProvider.create( AwsBasicCredentials.create( accessKey.toString(), accessSecret.toString() ) ) );
+        }
+
+        Object region = fileSystemConfiguration.get( "s3", bucketName, "jclouds.region" );
+        if( region != null ) {
+            builder = builder.region( Region.of( region.toString() ) );
         }
 
         builder = builder.multipartEnabled( true );
