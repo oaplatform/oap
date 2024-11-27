@@ -153,6 +153,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
         return S3Client.builder()
             .endpointOverride( s3Endpoint.url() )
+            .region( Region.AWS_GLOBAL )
             .forcePathStyle( true )
             .build();
     }
