@@ -4,7 +4,11 @@ package oap.util;
 import com.google.common.base.Preconditions;
 import lombok.NoArgsConstructor;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -26,11 +30,11 @@ public abstract class ConcurrentAssocMap<K, V> {
 
     protected abstract K keyOf( V label );
 
-    public ConcurrentAssocMap(ConcurrentMap<K, V> entries ) {
+    public ConcurrentAssocMap( ConcurrentMap<K, V> entries ) {
         this.entries = entries;
     }
 
-    public ConcurrentAssocMap(Collection<V> values ) {
+    public ConcurrentAssocMap( Collection<V> values ) {
         entries = values.stream().collect( Collectors.toConcurrentMap( this::keyOf, Function.identity() ) );
     }
 
