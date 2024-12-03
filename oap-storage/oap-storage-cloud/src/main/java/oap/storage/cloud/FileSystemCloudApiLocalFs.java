@@ -201,4 +201,9 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
             throw new CloudException( e );
         }
     }
+
+    @Override
+    public void close() {
+
+    }
 }

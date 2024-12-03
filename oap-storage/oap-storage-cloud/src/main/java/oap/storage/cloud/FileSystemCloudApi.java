@@ -1,11 +1,12 @@
 package oap.storage.cloud;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Map;
 
-public interface FileSystemCloudApi {
+public interface FileSystemCloudApi extends Closeable {
     boolean blobExists( CloudURI path ) throws CloudException;
 
     boolean containerExists( CloudURI path ) throws CloudException;

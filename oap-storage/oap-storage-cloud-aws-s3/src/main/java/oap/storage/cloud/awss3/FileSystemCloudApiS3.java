@@ -510,6 +510,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         }
     }
 
+    @Override
+    public void close() {
+        s3Client.close();
+    }
+
     public static class CloudOutputStream extends OutputStream {
         private final S3TransferManager s3TransferManager;
         private final CompletableFuture<CompletedUpload> completedUploadCompletableFuture;

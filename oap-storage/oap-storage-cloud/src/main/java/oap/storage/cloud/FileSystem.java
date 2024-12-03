@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.io.Closeables;
 import oap.io.Resources;
 import oap.util.Maps;
 import org.apache.commons.io.FilenameUtils;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,11 +34,12 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
-public class FileSystem {
+public class FileSystem implements Closeable {
     private static final HashMap<String, Class<? extends FileSystemCloudApi>> providers = new HashMap<>();
 
     private static final Cache<String, FileSystemCloudApi> apis = CacheBuilder
         .newBuilder()
+        .removalListener( rl -> Closeables.close( ( FileSystemCloudApi ) rl.getValue() ) )
         .build();
 
     static {
@@ -231,6 +234,11 @@ public class FileSystem {
         String basedir = ( String ) fileSystemConfiguration.getOrThrow( "file", cloudURI.container, "jclouds.filesystem.basedir" );
 
         return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
+    }
+
+    @Override
+    public void close() {
+        apis.invalidateAll();
     }
 
     public interface StorageItem {
