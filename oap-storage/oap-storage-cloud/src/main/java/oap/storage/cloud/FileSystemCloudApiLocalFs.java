@@ -204,6 +204,5 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     @Override
     public void close() {
-
     }
 }

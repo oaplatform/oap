@@ -15,7 +15,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +33,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
-public class FileSystem implements Closeable {
+public class FileSystem implements AutoCloseable {
     private static final HashMap<String, Class<? extends FileSystemCloudApi>> providers = new HashMap<>();
 
     private static final Cache<String, FileSystemCloudApi> apis = CacheBuilder
