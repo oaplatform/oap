@@ -46,9 +46,10 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
-    private volatile GenericContainer<?> genericContainer;
+    public static final String DUNAMODB_LOCAL_VERSION = "2.5.3";
     protected URI uri;
     protected StaticCredentialsProvider provider;
+    private volatile GenericContainer<?> genericContainer;
 
     @Override
     protected DynamodbClient createClient() {
@@ -79,7 +80,7 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
                 new ExposedPort( 8000 ) );
             Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig( new HostConfig().withPortBindings( portBinding ) );
             GenericContainer<?> container = new GenericContainer<>( DockerImageName
-                .parse( "amazon/dynamodb-local" ) )
+                .parse( "amazon/dynamodb-local:" + DUNAMODB_LOCAL_VERSION ) )
                 .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
                 .withExposedPorts( 8000 )
                 .withCreateContainerCmdModifier( cmd );
