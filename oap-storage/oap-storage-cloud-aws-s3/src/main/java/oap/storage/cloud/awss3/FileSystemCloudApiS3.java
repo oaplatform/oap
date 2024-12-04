@@ -94,9 +94,19 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String bucketName ) {
         S3AsyncClientBuilder builder = S3AsyncClient.builder();
 
+        Object regionObj = fileSystemConfiguration.get( "s3", bucketName, "jclouds.region" );
+        if( regionObj == null ) {
+            regionObj = System.getenv( "AWS_REGION" );
+        }
+        Region region = regionObj != null ? Region.of( regionObj.toString() ) : null;
+
         Object endpoint = fileSystemConfiguration.get( "s3", bucketName, "jclouds.endpoint" );
         if( endpoint != null ) {
-            S3EndpointParams s3EndpointParams = S3EndpointParams.builder().endpoint( endpoint.toString() ).region( Region.AWS_GLOBAL ).build();
+            S3EndpointParams.Builder s3EndpointParamsBuilder = S3EndpointParams.builder().endpoint( endpoint.toString() );
+            if( region != null ) {
+                s3EndpointParamsBuilder.region( region );
+            }
+            S3EndpointParams s3EndpointParams = s3EndpointParamsBuilder.build();
             Endpoint s3Endpoint = new DefaultS3EndpointProvider().resolveEndpoint( s3EndpointParams ).join();
             builder = builder.endpointOverride( s3Endpoint.url() ).forcePathStyle( true );
         }
@@ -108,9 +118,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             builder = builder.credentialsProvider( StaticCredentialsProvider.create( AwsBasicCredentials.create( accessKey.toString(), accessSecret.toString() ) ) );
         }
 
-        Object region = fileSystemConfiguration.get( "s3", bucketName, "jclouds.region" );
         if( region != null ) {
-            builder = builder.region( Region.of( region.toString() ) );
+            builder = builder.region( region );
         }
 
         builder = builder.multipartEnabled( true );
