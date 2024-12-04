@@ -84,7 +84,7 @@
         <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
 
         <oap.deps.hadoop.version>3.4.1</oap.deps.hadoop.version>
-        <oap.deps.aws-java-sdk-s3.version>2.29.21</oap.deps.aws-java-sdk-s3.version>
+        <oap.deps.aws-java-sdk.version>2.29.24</oap.deps.aws-java-sdk.version>
         <oap.deps.aws-java-sdk-aws-crt.version>0.33.2</oap.deps.aws-java-sdk-aws-crt.version>
         <oap.deps.testcontainers.version>1.20.3</oap.deps.testcontainers.version>
 
