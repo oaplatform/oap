@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import lombok.NoArgsConstructor;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,19 +13,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * This class is a concurrent version of OAP AssocList<K,V>
+ *
  * @param <K>
  * @param <V>
  */
 @SuppressWarnings( "AbstractClassName" )
 @NoArgsConstructor
-public abstract class ConcurrentAssocMap<K, V> {
+public abstract class ConcurrentAssocMap<K, V> implements Iterable<V> {
 
     private final ConcurrentMap<K, V> entries = new ConcurrentHashMap<>();
 
@@ -89,5 +89,10 @@ public abstract class ConcurrentAssocMap<K, V> {
     public boolean addAll( Collection<? extends V> c ) {
         for( V v : c ) add( v );
         return !c.isEmpty();
+    }
+
+    @Override
+    public Iterator<V> iterator() {
+        return entries.values().iterator();
     }
 }
