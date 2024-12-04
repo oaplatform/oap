@@ -26,7 +26,6 @@ package oap.storage.dynamo.client;
 
 import lombok.Data;
 import oap.storage.dynamo.client.convertors.DynamodbDatatype;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
@@ -64,7 +63,7 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 public class DynamodbIndexingTest extends Fixtures {
 
     private final String keyName = "longId";
-    private final AbstractDynamodbFixture fixture;
+    private final TestContainerDynamodbFixture fixture;
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DynamodbIndexingTest() {

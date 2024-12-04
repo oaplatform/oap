@@ -33,7 +33,6 @@ import oap.storage.Metadata;
 import oap.storage.dynamo.client.Key;
 import oap.storage.dynamo.client.batch.WriteBatchOperationHelper;
 import oap.storage.dynamo.client.crud.CreateItemOperation;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;

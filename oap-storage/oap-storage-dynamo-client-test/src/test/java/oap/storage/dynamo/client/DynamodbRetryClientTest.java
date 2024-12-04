@@ -26,7 +26,6 @@ package oap.storage.dynamo.client;
 
 
 import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.modifiers.GetItemRequestModifier;
 import oap.storage.dynamo.client.modifiers.UpdateItemRequestModifier;
@@ -52,13 +51,14 @@ public class DynamodbRetryClientTest extends Fixtures {
     public static final String TABLE_NAME = "retryTest";
     public static final String ID_COLUMN_NAME = "id";
 
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
-    private AtomicInteger counter = new AtomicInteger();
-    private Map<String, AttributeValue> attributeValueMap = HashMaps.of(
+    private final TestContainerDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private final AtomicInteger counter = new AtomicInteger();
+    private final Map<String, AttributeValue> attributeValueMap = HashMaps.of(
         AtomicUpdateFieldAndValue.DEFAULT_NAME, AttributeValue.fromN( "2" ),
         "bin1", AttributeValue.fromS( "Adam Smith" ),
         "bin2", AttributeValue.fromS( "Samuel Collins" )
     );
+
     public DynamodbRetryClientTest() {
         fixture( fixture ).withScope( CLASS );
     }

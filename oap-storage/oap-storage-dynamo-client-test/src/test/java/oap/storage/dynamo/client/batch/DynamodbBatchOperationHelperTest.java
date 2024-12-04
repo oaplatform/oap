@@ -34,7 +34,6 @@ import oap.storage.dynamo.client.crud.DeleteItemOperation;
 import oap.storage.dynamo.client.crud.OperationType;
 import oap.storage.dynamo.client.crud.ReadItemOperation;
 import oap.storage.dynamo.client.crud.UpdateItemOperation;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -62,9 +61,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DynamodbBatchOperationHelperTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
     private final String keyName = "longId";
-    private final AbstractDynamodbFixture fixture;
-    private String tableName1 = "batchTable1";
-    private String tableName2 = "batchTable2";
+    private final TestContainerDynamodbFixture fixture;
+    private final String tableName1 = "batchTable1";
+    private final String tableName2 = "batchTable2";
 
     public DynamodbBatchOperationHelperTest() {
         fixture = fixture( new TestContainerDynamodbFixture() ).withScope( CLASS );
