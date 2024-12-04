@@ -58,7 +58,7 @@ public class TemplateEngineOrTest extends Fixtures {
         TestTemplateClass c = new TestTemplateClass();
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .field | default .field2 }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -66,7 +66,7 @@ public class TemplateEngineOrTest extends Fixtures {
     public void testOrNull() {
         TestTemplateClass c = new TestTemplateClass();
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .field | default .field2 }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -74,7 +74,7 @@ public class TemplateEngineOrTest extends Fixtures {
     public void testOrDefaultBinary() throws IOException {
         TestTemplateClass c = new TestTemplateClass();
 
-        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .intObjectField | default .childNullable.intObjectField ?? 3 }}", BINARY, null ).render( c ).get() ) )
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intObjectField | default childNullable.intObjectField ?? 3 }}", BINARY, null ).render( c ).get() ) )
             .isEqualTo( List.of( List.of( 3 ) ) );
     }
 
@@ -83,7 +83,7 @@ public class TemplateEngineOrTest extends Fixtures {
         TestTemplateClass c = new TestTemplateClass();
         c.field2 = "f2";
 
-        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .field | default .field2 }}", BINARY, null ).render( c ).get() ) )
+        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", BINARY, null ).render( c ).get() ) )
             .isEqualTo( List.of( List.of( "f2" ) ) );
     }
 
@@ -92,7 +92,7 @@ public class TemplateEngineOrTest extends Fixtures {
         TestTemplateClass c = new TestTemplateClass();
         c.list2 = List.of( 2, 3 );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ .list | default .list2 }}", STRING, null ).render( c ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list | default list2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "[2,3]" );
     }
 }

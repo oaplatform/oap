@@ -30,20 +30,20 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static java.util.Collections.emptyMap;
-import static org.assertj.core.api.Assertions.assertThat;
+import static oap.json.testng.JsonAsserts.assertJson;
 
 public class DictionaryLeafTest {
     @Test
     public void serializeProperties() {
-        var dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Map.of( "p1", "v1" ) );
-        assertThat( Binder.json.marshal( dictionaryLeaf ) )
+        DictionaryLeaf dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Map.of( "p1", "v1" ) );
+        assertJson( Binder.json.marshal( dictionaryLeaf ) )
             .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"properties\":{\"p1\":\"v1\"}}" );
     }
 
     @Test
     public void serializeEnabled() {
-        var dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
-        assertThat( Binder.json.marshal( dictionaryLeaf ) )
+        DictionaryLeaf dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
+        assertJson( Binder.json.marshal( dictionaryLeaf ) )
             .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"enabled\":false}" );
     }
 

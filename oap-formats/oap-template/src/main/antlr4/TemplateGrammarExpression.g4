@@ -83,17 +83,17 @@ orExprs returns [ArrayList<Exprs> ret = new ArrayList<Exprs>() ]
     ;
 
 exprs returns [Exprs ret = new Exprs()]
-    : DOT expr  { $ret.exprs.add( $expr.ret ); }
+    : expr  { $ret.exprs.add( $expr.ret ); }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
-    | DOT expr  { $ret.exprs.add( $expr.ret ); }
+    | expr  { $ret.exprs.add( $expr.ret ); }
       DOT? concatenation { $ret.concatenation =$concatenation.ret; }
-    | DOT expr { $ret.exprs.add( $expr.ret ); }
+    | expr { $ret.exprs.add( $expr.ret ); }
       (DOT expr {
         $ret.exprs.add( $expr.ret );
       })*
       DOT expr { $ret.exprs.add( $expr.ret ); }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
-    | DOT expr { $ret.exprs.add( $expr.ret ); }
+    | expr { $ret.exprs.add( $expr.ret ); }
       (DOT expr { $ret.exprs.add( $expr.ret ); })*
       DOT expr { $ret.exprs.add( $expr.ret ); }
       DOT? concatenation { $ret.concatenation = $concatenation.ret; }
