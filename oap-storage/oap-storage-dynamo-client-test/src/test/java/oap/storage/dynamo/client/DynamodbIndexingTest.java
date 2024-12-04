@@ -26,7 +26,6 @@ package oap.storage.dynamo.client;
 
 import lombok.Data;
 import oap.storage.dynamo.client.convertors.DynamodbDatatype;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.modifiers.TableSchemaModifier;
 import oap.storage.dynamo.client.modifiers.UpdateTableRequestModifier;
@@ -56,6 +55,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.primaryPartitionKey;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
@@ -63,11 +63,11 @@ import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag
 public class DynamodbIndexingTest extends Fixtures {
 
     private final String keyName = "longId";
-    private final AbstractDynamodbFixture fixture;
+    private final TestContainerDynamodbFixture fixture;
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DynamodbIndexingTest() {
-        fixture = fixture( new TestContainerDynamodbFixture() );
+        fixture = fixture( new TestContainerDynamodbFixture().withScope( CLASS ) );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 

@@ -22,7 +22,7 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
-            <version>${oap.deps.aws-java-sdk-s3.version}</version>
+            <version>${oap.deps.aws-java-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk.crt</groupId>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3-transfer-manager</artifactId>
-            <version>${oap.deps.aws-java-sdk-s3.version}</version>
+            <version>${oap.deps.aws-java-sdk.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>software.amazon.awssdk</groupId>

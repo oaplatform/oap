@@ -35,7 +35,6 @@ import oap.storage.dynamo.client.creator.samples.AutonomiousDynamo;
 import oap.storage.dynamo.client.creator.samples.BeanWithRestrictedField;
 import oap.storage.dynamo.client.creator.samples.CompositeBean;
 import oap.storage.dynamo.client.creator.samples.EmbeddedBean;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -53,6 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -63,11 +63,11 @@ public class DynamodbClientTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
     private final String keyName = "longId";
     private final String longId = Strings.repeat( "1", 8000 );
-    private final AbstractDynamodbFixture fixture;
+    private final TestContainerDynamodbFixture fixture;
     private String tableName = "tableForTestClient";
 
     public DynamodbClientTest() {
-        fixture = fixture( new TestContainerDynamodbFixture() );
+        fixture = fixture( new TestContainerDynamodbFixture() ).withScope( CLASS );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 

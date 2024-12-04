@@ -25,7 +25,6 @@
 package oap.storage.dynamo.client;
 
 import oap.storage.dynamo.client.atomic.AtomicUpdateFieldAndValue;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.testng.Fixtures;
 import oap.util.HashMaps;
@@ -44,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 
@@ -52,10 +52,10 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
     public static final String ID_COLUMN_NAME = "id";
     private static final AtomicUpdateFieldAndValue parsingHelper = new AtomicUpdateFieldAndValue( "serializedRecordVersion", Integer.MAX_VALUE );
 
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private final TestContainerDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
     public DynamodbAtomicUpdateTest() {
-        fixture( fixture );
+        fixture( fixture ).withScope( CLASS );
     }
 
     @Test

@@ -25,7 +25,6 @@
 package oap.storage.dynamo.client;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.storage.dynamo.client.fixtures.AbstractDynamodbFixture;
 import oap.storage.dynamo.client.fixtures.TestContainerDynamodbFixture;
 import oap.storage.dynamo.client.streams.DynamodbStreamsRecordProcessor;
 import oap.testng.Fixtures;
@@ -44,18 +43,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DynamodbStreamLowLevelTest extends Fixtures {
+    private static final String longId = "787846fd-6e98-4ca9-a2d4-236ff93aa027";
     private final String tableName = "tableForStream";
     private final String keyName = "id";
-    private final String longId = "787846fd-6e98-4ca9-a2d4-236ff93aa027";
-
-    private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private final TestContainerDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private final AtomicInteger counter = new AtomicInteger();
 
     public DynamodbStreamLowLevelTest() {
-        fixture( fixture );
+        fixture( fixture ).withScope( CLASS );
     }
 
     @Test
@@ -158,8 +158,6 @@ public class DynamodbStreamLowLevelTest extends Fixtures {
 
         client.deleteTableIfExists( tableName );
     }
-
-    private AtomicInteger counter = new AtomicInteger();
 
     @NotNull
     private Key createRandomKey() {
