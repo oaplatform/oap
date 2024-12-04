@@ -26,16 +26,16 @@ import java.util.stream.Stream;
 @NoArgsConstructor
 public abstract class ConcurrentAssocMap<K, V> {
 
-    private ConcurrentMap<K, V> entries = new ConcurrentHashMap<>();
+    private final ConcurrentMap<K, V> entries = new ConcurrentHashMap<>();
 
     protected abstract K keyOf( V label );
 
     public ConcurrentAssocMap( ConcurrentMap<K, V> entries ) {
-        this.entries = entries;
+        this.entries.putAll( entries );
     }
 
     public ConcurrentAssocMap( Collection<V> values ) {
-        entries = values.stream().collect( Collectors.toConcurrentMap( this::keyOf, Function.identity() ) );
+        values.forEach( v -> this.entries.put( this.keyOf( v ), v ) );
     }
 
     public Stream<V> stream() {
