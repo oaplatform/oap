@@ -24,11 +24,10 @@
 
 package oap.storage.dynamo.client.fixtures;
 
-import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.dynamo.client.DynamodbClient;
 import org.testcontainers.containers.GenericContainer;
@@ -42,20 +41,37 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 @Slf4j
 public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     public static final String DUNAMODB_LOCAL_VERSION = "2.5.3";
+    @Getter
+    private final int port;
     protected URI uri;
     protected StaticCredentialsProvider provider;
     private volatile GenericContainer<?> genericContainer;
 
+    public TestContainerDynamodbFixture() {
+        port = definePort( "PORT" );
+    }
+
+    public TestContainerDynamodbFixture( boolean skipBeforeAndAfter ) {
+        super( skipBeforeAndAfter );
+
+        port = definePort( "PORT" );
+    }
+
+    public TestContainerDynamodbFixture( int maxConnsPerNode, int connPoolsPerNode, boolean skipBeforeAndAfter ) {
+        super( maxConnsPerNode, connPoolsPerNode, skipBeforeAndAfter );
+
+        port = definePort( "PORT" );
+    }
+
     @Override
     protected DynamodbClient createClient() {
         log.info( "Starting a test container's client with endpoint URL: {}",
-            "http://localhost:" + genericContainer.getFirstMappedPort() );
-        uri = URI.create( "http://localhost:" + genericContainer.getFirstMappedPort() );
+            "http://localhost:" + port );
+        uri = URI.create( "http://localhost:" + port );
         provider = StaticCredentialsProvider.create(
             AwsBasicCredentials.create( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
         );
@@ -73,25 +89,24 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
     }
 
     @BeforeClass
-    public void beforeClass() {
+    public void before() {
         if( genericContainer == null ) {
-            var portBinding = new PortBinding(
-                Ports.Binding.bindPort( 8000 ),
+            PortBinding portBinding = new PortBinding(
+                Ports.Binding.bindPort( port ),
                 new ExposedPort( 8000 ) );
-            Consumer<CreateContainerCmd> cmd = e -> e.withHostConfig( new HostConfig().withPortBindings( portBinding ) );
             GenericContainer<?> container = new GenericContainer<>( DockerImageName
                 .parse( "amazon/dynamodb-local:" + DUNAMODB_LOCAL_VERSION ) )
                 .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
                 .withExposedPorts( 8000 )
-                .withCreateContainerCmdModifier( cmd );
+                .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) );
             container.start();
             genericContainer = container;
-            log.info( "Container {} started, listening to {}", genericContainer.getContainerId(), genericContainer.getFirstMappedPort() );
+            log.info( "Container {} started, listening to {}", genericContainer.getContainerId(), port );
         }
     }
 
     @AfterClass
-    public void afterClass() {
+    public void after() {
         if( genericContainer != null ) {
             genericContainer.stop();
             log.info( "Container stopped" );
