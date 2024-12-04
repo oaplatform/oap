@@ -53,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -67,7 +68,7 @@ public class DynamodbClientTest extends Fixtures {
     private String tableName = "tableForTestClient";
 
     public DynamodbClientTest() {
-        fixture = fixture( new TestContainerDynamodbFixture() );
+        fixture = fixture( new TestContainerDynamodbFixture() ).withScope( CLASS );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 

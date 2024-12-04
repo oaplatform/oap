@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.primaryPartitionKey;
 import static software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTags.secondaryPartitionKey;
@@ -67,7 +68,7 @@ public class DynamodbIndexingTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public DynamodbIndexingTest() {
-        fixture = fixture( new TestContainerDynamodbFixture() );
+        fixture = fixture( new TestContainerDynamodbFixture().withScope( CLASS ) );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 

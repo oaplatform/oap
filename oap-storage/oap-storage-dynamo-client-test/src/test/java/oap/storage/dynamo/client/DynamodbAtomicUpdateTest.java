@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 
@@ -55,7 +56,7 @@ public class DynamodbAtomicUpdateTest extends Fixtures {
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
 
     public DynamodbAtomicUpdateTest() {
-        fixture( fixture );
+        fixture( fixture ).withScope( CLASS );
     }
 
     @Test

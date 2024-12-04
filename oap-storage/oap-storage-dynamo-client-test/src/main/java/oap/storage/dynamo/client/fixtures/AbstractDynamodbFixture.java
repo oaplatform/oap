@@ -28,9 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.dynamo.client.DynamodbClient;
 import oap.system.Env;
 import oap.testng.AbstractFixture;
+import oap.util.Result;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.List;
 
 /**
  * Env:*
@@ -112,7 +114,7 @@ public abstract class AbstractDynamodbFixture extends AbstractFixture<AbstractDy
     }
 
     public void asDeleteAll() {
-        var ret = dynamodbClient.getTables();
+        Result<List<String>, DynamodbClient.State> ret = dynamodbClient.getTables();
         ret.ifSuccess( tables -> {
             for( var table : tables ) {
                 dynamodbClient.deleteTable( table );

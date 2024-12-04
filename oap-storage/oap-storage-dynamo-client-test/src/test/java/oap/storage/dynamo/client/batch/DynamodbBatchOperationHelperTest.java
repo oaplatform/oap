@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static oap.testng.Asserts.pathOfResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,7 +67,7 @@ public class DynamodbBatchOperationHelperTest extends Fixtures {
     private String tableName2 = "batchTable2";
 
     public DynamodbBatchOperationHelperTest() {
-        fixture = fixture( new TestContainerDynamodbFixture() );
+        fixture = fixture( new TestContainerDynamodbFixture() ).withScope( CLASS );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
         Kernel kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
         kernel.start( pathOfResource( getClass(), "/oap/storage/dynamo/client/test-application.conf" ) );

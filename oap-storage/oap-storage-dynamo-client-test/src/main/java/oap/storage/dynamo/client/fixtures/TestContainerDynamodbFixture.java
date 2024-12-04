@@ -32,8 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.dynamo.client.DynamodbClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -44,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
-    public static final String DUNAMODB_LOCAL_VERSION = "2.5.3";
+    public static final String DYNAMODB_LOCAL_VERSION = "2.5.3";
     @Getter
     private final int port;
     protected URI uri;
@@ -61,16 +59,9 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
         port = definePort( "PORT" );
     }
 
-    public TestContainerDynamodbFixture( int maxConnsPerNode, int connPoolsPerNode, boolean skipBeforeAndAfter ) {
-        super( maxConnsPerNode, connPoolsPerNode, skipBeforeAndAfter );
-
-        port = definePort( "PORT" );
-    }
-
     @Override
     protected DynamodbClient createClient() {
-        log.info( "Starting a test container's client with endpoint URL: {}",
-            "http://localhost:" + port );
+        log.info( "Starting a test container's client with endpoint URL: http://localhost:{}", port );
         uri = URI.create( "http://localhost:" + port );
         provider = StaticCredentialsProvider.create(
             AwsBasicCredentials.create( AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY )
@@ -88,24 +79,20 @@ public class TestContainerDynamodbFixture extends AbstractDynamodbFixture {
         return dynamodbClient;
     }
 
-    @BeforeClass
     public void before() {
-        if( genericContainer == null ) {
-            PortBinding portBinding = new PortBinding(
-                Ports.Binding.bindPort( port ),
-                new ExposedPort( 8000 ) );
-            GenericContainer<?> container = new GenericContainer<>( DockerImageName
-                .parse( "amazon/dynamodb-local:" + DUNAMODB_LOCAL_VERSION ) )
-                .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
-                .withExposedPorts( 8000 )
-                .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) );
-            container.start();
-            genericContainer = container;
-            log.info( "Container {} started, listening to {}", genericContainer.getContainerId(), port );
-        }
+        PortBinding portBinding = new PortBinding(
+            Ports.Binding.bindPort( port ),
+            new ExposedPort( 8000 ) );
+        GenericContainer<?> container = new GenericContainer<>( DockerImageName
+            .parse( "amazon/dynamodb-local:" + DYNAMODB_LOCAL_VERSION ) )
+            .withCommand( "-jar DynamoDBLocal.jar -inMemory -sharedDb" )
+            .withExposedPorts( 8000 )
+            .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) );
+        container.start();
+        genericContainer = container;
+        log.info( "Container {} started, listening to {}", genericContainer.getContainerId(), port );
     }
 
-    @AfterClass
     public void after() {
         if( genericContainer != null ) {
             genericContainer.stop();

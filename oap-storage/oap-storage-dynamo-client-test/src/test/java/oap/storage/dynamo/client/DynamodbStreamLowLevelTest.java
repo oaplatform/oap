@@ -44,6 +44,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static oap.testng.AbstractFixture.Scope.CLASS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -53,9 +54,10 @@ public class DynamodbStreamLowLevelTest extends Fixtures {
     private final String longId = "787846fd-6e98-4ca9-a2d4-236ff93aa027";
 
     private final AbstractDynamodbFixture fixture = new TestContainerDynamodbFixture();
+    private AtomicInteger counter = new AtomicInteger();
 
     public DynamodbStreamLowLevelTest() {
-        fixture( fixture );
+        fixture( fixture ).withScope( CLASS );
     }
 
     @Test
@@ -158,8 +160,6 @@ public class DynamodbStreamLowLevelTest extends Fixtures {
 
         client.deleteTableIfExists( tableName );
     }
-
-    private AtomicInteger counter = new AtomicInteger();
 
     @NotNull
     private Key createRandomKey() {
