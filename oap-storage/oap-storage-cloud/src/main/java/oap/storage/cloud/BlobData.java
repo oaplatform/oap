@@ -15,7 +15,6 @@ public class BlobData implements Serializable {
 
     public Object content;
 
-    public Map<String, String> userMetadata;
     public Map<String, String> tags;
     public String contentType;
     public Long contentLength;

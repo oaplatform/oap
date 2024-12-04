@@ -25,9 +25,9 @@ public class LogMetadataTest extends Fixtures {
 
     @Test
     public void testSave() {
-        var file = testDirectoryFixture.testPath( "file" );
+        Path file = testDirectoryFixture.testPath( "file" );
 
-        var metadata = new LogMetadata( "fpp", "type", "host", Map.of(),
+        LogMetadata metadata = new LogMetadata( "fpp", "type", "host", Map.of(),
             new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } );
         metadata.writeFor( file );
 
@@ -54,23 +54,23 @@ public class LogMetadataTest extends Fixtures {
             clientHostname: "host"
             """ );
 
-        var metadata = LogMetadata.readFor( testDirectoryFixture.testPath( "file.gz" ) );
+        LogMetadata metadata = LogMetadata.readFor( testDirectoryFixture.testPath( "file.gz" ) );
         assertThat( metadata.headers ).isNull();
         assertThat( metadata.types ).isNull();
     }
 
     @Test
     public void testSaveLoad() {
-        var file = testDirectoryFixture.testPath( "file" );
+        Path file = testDirectoryFixture.testPath( "file" );
 
-        var metadata = new LogMetadata( "fpp", "type", "host", Map.of(),
+        LogMetadata metadata = new LogMetadata( "fpp", "type", "host", Map.of(),
             new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } );
         metadata.writeFor( file );
 
-        var dt = new DateTime( 2019, 11, 29, 10, 9, 0, 0, UTC );
+        DateTime dt = new DateTime( 2019, 11, 29, 10, 9, 0, 0, UTC );
         LogMetadata.addProperty( file, "time", dt.toString() );
 
-        var newLm = LogMetadata.readFor( file );
+        LogMetadata newLm = LogMetadata.readFor( file );
         assertThat( newLm.getDateTime( "time" ) ).isEqualTo( dt );
     }
 }

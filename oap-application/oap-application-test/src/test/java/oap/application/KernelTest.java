@@ -68,7 +68,6 @@ public class KernelTest extends Fixtures {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
-
     @AfterMethod
     public void afterMethod() {
         new ArrayList<>( System.getenv().keySet() )

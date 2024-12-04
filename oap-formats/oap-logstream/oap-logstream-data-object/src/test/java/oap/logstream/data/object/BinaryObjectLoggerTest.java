@@ -58,10 +58,10 @@ public class BinaryObjectLoggerTest extends Fixtures {
         MemoryLoggerBackend memoryLoggerBackend = new MemoryLoggerBackend();
         BinaryObjectLogger binaryObjectLogger = new BinaryObjectLogger( new DictionaryRoot( "model", List.of(
             new DictionaryValue( "MODEL1", true, 1, List.of(
-                new DictionaryLeaf( "a", true, 2, Map.of( "path", ".a", "type", "STRING", "default", "" ) ),
-                new DictionaryLeaf( "b", true, 2, Map.of( "path", ".b", "type", "INTEGER", "default", 123 ) ),
-                new DictionaryLeaf( "aaa", true, 2, Map.of( "path", ".a | default .aa", "type", "STRING", "default", "" ) ),
-                new DictionaryLeaf( "list", true, 2, Map.of( "path", ".data1.list | default .data2.list", "type", "STRING_ARRAY", "default", "[]" ) ),
+                new DictionaryLeaf( "a", true, 2, Map.of( "path", "a", "type", "STRING", "default", "" ) ),
+                new DictionaryLeaf( "b", true, 2, Map.of( "path", "b", "type", "INTEGER", "default", 123 ) ),
+                new DictionaryLeaf( "aaa", true, 2, Map.of( "path", "a | default aa", "type", "STRING", "default", "" ) ),
+                new DictionaryLeaf( "list", true, 2, Map.of( "path", "data1.list | default data2.list", "type", "STRING_ARRAY", "default", "[]" ) ),
                 new DictionaryLeaf( "x", true, 2, Map.of( "type", "INTEGER", "default", 1 ) )
             ) )
         ) ), memoryLoggerBackend, testDirectoryFixture.testPath( "tmp" ), Dates.d( 10 ) );

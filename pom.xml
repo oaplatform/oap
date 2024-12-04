@@ -70,7 +70,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>22.5.7</oap.project.version>
+        <oap.project.version>22.6.1</oap.project.version>
 
         <oap.deps.config.version>21.0.0</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
@@ -82,13 +82,12 @@
         <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
         <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
 
-        <oap.deps.apache.jclouds.version>2.6.0</oap.deps.apache.jclouds.version>
+        <oap.deps.hadoop.version>3.4.1</oap.deps.hadoop.version>
+        <oap.deps.aws-java-sdk-s3.version>2.29.21</oap.deps.aws-java-sdk-s3.version>
+        <oap.deps.aws-java-sdk-aws-crt.version>0.33.2</oap.deps.aws-java-sdk-aws-crt.version>
+        <oap.deps.testcontainers.version>1.20.3</oap.deps.testcontainers.version>
 
-        <oap.deps.hadoop.version>3.3.6</oap.deps.hadoop.version>
-        <oap.deps.aws-java-sdk-s3.version>1.12.671</oap.deps.aws-java-sdk-s3.version>
-        <oap.deps.testcontainers.version>1.19.3</oap.deps.testcontainers.version>
-
-        <oap.deps.jackson.version>2.17.1</oap.deps.jackson.version>
+        <oap.deps.jackson.version>2.17.2</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>

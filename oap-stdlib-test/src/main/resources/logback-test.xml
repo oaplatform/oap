@@ -12,9 +12,10 @@
     <logger name="sun" level="WARN"/>
     <logger name="java" level="WARN"/>
     <logger name="jdk" level="WARN"/>
-    <logger name="io.undertow" level="WARN"/>
+    <logger name="io" level="WARN"/>
+    <logger name="software" level="WARN"/>
 
-    <root level="TRACE">
+    <root level="${APP_LOGGING_LEVEL:-TRACE}">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
