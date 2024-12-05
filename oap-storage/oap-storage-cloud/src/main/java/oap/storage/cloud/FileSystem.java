@@ -11,7 +11,6 @@ import oap.io.Closeables;
 import oap.io.Resources;
 import oap.util.Maps;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -102,10 +101,6 @@ public class FileSystem implements AutoCloseable {
         log.debug( "upload byte[] to {} (blobData {})", destination, blobData );
 
         getCloudApi( destination ).upload( destination, blobData );
-    }
-
-    public URI getPublicURI( CloudURI cloudURI ) throws CloudException {
-        throw new NotImplementedException();
     }
 
     public void copy( CloudURI source, CloudURI destination, Map<String, String> tags ) {
