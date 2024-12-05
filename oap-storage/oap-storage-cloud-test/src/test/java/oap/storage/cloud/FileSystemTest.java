@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -93,7 +95,7 @@ public class FileSystemTest extends Fixtures {
     }
 
     @Test
-    public void testGetMetadata() {
+    public void testGetMetadata() throws URISyntaxException {
         Path path = testDirectoryFixture.testPath( "my-file.txt" );
         Files.write( path, "test string", ContentWriter.ofString() );
 
@@ -103,6 +105,7 @@ public class FileSystemTest extends Fixtures {
             FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/logs/file.txt" ) );
             assertThat( item.getLastModified() ).isLessThanOrEqualTo( new DateTime( DateTimeZone.UTC ) );
             assertThat( item.getSize() ).isEqualTo( 11L );
+            assertThat( item.getUri() ).isEqualTo( new URI( "http://localhost:" + s3mockFixture.getHttpPort() + "/test-bucket/logs/file.txt" ) );
 
             assertThat( fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/unknown.txt" ) ) ).isNull();
         }

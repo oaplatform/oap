@@ -11,7 +11,6 @@ import oap.io.Closeables;
 import oap.io.Resources;
 import oap.util.Maps;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -25,7 +24,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,10 +102,6 @@ public class FileSystem implements AutoCloseable {
         getCloudApi( destination ).upload( destination, blobData );
     }
 
-    public URI getPublicURI( CloudURI cloudURI ) throws CloudException {
-        throw new NotImplementedException();
-    }
-
     public void copy( CloudURI source, CloudURI destination, Map<String, String> tags ) {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
@@ -120,13 +114,6 @@ public class FileSystem implements AutoCloseable {
         } catch( IOException e ) {
             throw new CloudException( e );
         }
-    }
-
-    private DateTime toDateTime( Date date ) {
-        if( date == null ) {
-            return null;
-        }
-        return new DateTime( date );
     }
 
     public PageSet<? extends StorageItem> list( CloudURI path, ListOptions listOptions ) throws CloudException {
