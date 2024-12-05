@@ -24,7 +24,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,13 +114,6 @@ public class FileSystem implements AutoCloseable {
         } catch( IOException e ) {
             throw new CloudException( e );
         }
-    }
-
-    private DateTime toDateTime( Date date ) {
-        if( date == null ) {
-            return null;
-        }
-        return new DateTime( date );
     }
 
     public PageSet<? extends StorageItem> list( CloudURI path, ListOptions listOptions ) throws CloudException {

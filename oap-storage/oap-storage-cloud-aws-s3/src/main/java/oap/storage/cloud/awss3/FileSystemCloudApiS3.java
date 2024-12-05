@@ -75,6 +75,7 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -275,7 +276,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
                 @Override
                 public URI getUri() {
-                    return s3Client.utilities().parseUri( URI.create( path.toString() ) ).uri();
+                    try {
+                        return s3Client.utilities().getUrl( builder -> builder.bucket( path.container ).key( path.path ).build() ).toURI();
+                    } catch( URISyntaxException e ) {
+                        throw new CloudException( e );
+                    }
                 }
 
                 @Override
