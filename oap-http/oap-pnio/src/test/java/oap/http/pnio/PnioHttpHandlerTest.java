@@ -24,10 +24,7 @@
 
 package oap.http.pnio;
 
-import oap.highload.Affinity;
 import oap.http.Http;
-import oap.http.server.nio.HttpHandler;
-import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
@@ -37,19 +34,23 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import static oap.http.pnio.PnioRequestHandler.Type.ASYNC;
+import static oap.http.pnio.PnioRequestHandler.Type.BLOCK;
 import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
-import static oap.http.pnio.PnioRequestHandler.Type.IO;
 import static oap.http.test.HttpAsserts.assertPost;
 
 public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testProcess() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow.init( new TestHandler( "cpu-1", COMPUTE ) )
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( new TestHandler( "cpu-1", COMPUTE ) )
             .next( new TestHandler( "cpu-2", COMPUTE ) )
-            .next( new TestHandler( "io-1", IO ) )
-            .next( new TestHandler( "io-2", IO ) )
-            .next( new TestHandler( "cpu-3", COMPUTE ) )
-            .next( new TestHandler( "cpu-4", COMPUTE ) )
+            .next( new TestHandler( "block-3", BLOCK ) )
+            .next( new TestHandler( "async-4", ASYNC ) )
+            .next( new TestHandler( "block-5", BLOCK ) )
+            .next( new TestHandler( "cpu-6", COMPUTE ) )
+            .next( new TestHandler( "async-7", ASYNC ) )
+            .next( new TestHandler( "cpu-8", COMPUTE ) )
             .next( new TestResponseBuilder() )
             .build();
 
@@ -59,12 +60,15 @@ public class PnioHttpHandlerTest extends Fixtures {
                 .hasCode( Http.StatusCode.OK )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
                 .hasBody( """
-                    name 'cpu-1' type COMPUTE thread 'cp' new thread true
-                    name 'cpu-2' type COMPUTE thread 'cp' new thread false
-                    name 'io-1' type IO thread 'XN' new thread true
-                    name 'io-2' type IO thread 'XN' new thread false
-                    name 'cpu-3' type COMPUTE thread 'cp' new thread true
-                    name 'cpu-4' type COMPUTE thread 'cp' new thread false""" );
+                    name 'cpu-1' type COMPUTE thread 'I/O-' new thread false
+                    name 'cpu-2' type COMPUTE thread 'I/O-' new thread false
+                    name 'block-3' type BLOCK thread 'task' new thread true
+                    name 'async-4' type ASYNC thread 'I/O-' new thread true
+                    name 'block-5' type BLOCK thread 'task' new thread true
+                    name 'cpu-6' type COMPUTE thread 'I/O-' new thread true
+                    name 'async-7' type ASYNC thread 'I/O-' new thread false
+                    name 'cpu-8' type COMPUTE thread 'I/O-' new thread false"""
+                );
         } );
     }
 
@@ -79,7 +83,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             assertPost( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( Http.StatusCode.BAD_GATEWAY )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
-                .hasBody( "java.lang.RuntimeException: test exception" );
+                .hasBody( "test exception" );
         } );
     }
 
@@ -90,7 +94,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 2, 1024, 5, 4, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 2, 1024, 5, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
@@ -105,7 +109,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 1024, 2, 5, 4, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 1024, 2, 5, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
@@ -114,13 +118,13 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     @Test
-    public void testTimeout() throws IOException {
+    public void testTimeoutBlock() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "cpu", COMPUTE ).withSleepTime( Dates.s( 20 ) ) )
+            .init( new TestHandler( "block", BLOCK ).withSleepTime( Dates.s( 20 ) ) )
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 1024, 1024, 5, 1, 200, workflow, port -> {
+        runWithWorkflow( 1024, 1024, 1, 200, workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
@@ -128,7 +132,26 @@ public class PnioHttpHandlerTest extends Fixtures {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
-                .hasBody( "REJECTED" );
+                .hasBody( "TIMEOUT" );
+        } );
+    }
+
+    @Test
+    public void testTimeoutAsync() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( new TestHandler( "async", ASYNC ).withSleepTime( Dates.s( 5 ) ) )
+            .next( new TestResponseBuilder() )
+            .build();
+
+        runWithWorkflow( 1024, 1024, 1, 200, workflow, port -> {
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( Http.ContentType.TEXT_PLAIN )
+                .hasBody( "TIMEOUT" );
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( Http.ContentType.TEXT_PLAIN )
+                .hasBody( "TIMEOUT" );
         } );
     }
 
@@ -159,20 +182,15 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
-        runWithWorkflow( 1024, 1024, 5, 4, Dates.s( 100 ), workflow, cons );
+        runWithWorkflow( 1024, 1024, 5, Dates.s( 100 ), workflow, cons );
     }
 
-    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int cpuThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
+    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
         var settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )
             .responseSize( responseSize )
-            .queueTimeoutPercent( 0.99 )
-            .cpuThreads( cpuThreads )
-            .cpuQueueFair( true )
-            .cpuAffinity( new Affinity( "0" ) )
-            .ioAffinity( new Affinity( "1+" ) )
             .build();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = ioThreads;
@@ -181,12 +199,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, this::errorResponse ) ) {
 
                 httpServer.bind( "/test",
-                    new HttpHandler() {
-                        @Override
-                        public void handleRequest( HttpServerExchange exchange ) throws Exception {
-                            httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() );
-                        }
-                    } );
+                    exchange -> httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() ) );
 
                 cons.accept( port );
             }
