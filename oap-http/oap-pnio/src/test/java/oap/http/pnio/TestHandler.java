@@ -24,6 +24,12 @@
 
 package oap.http.pnio;
 
+import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
+
+import java.util.concurrent.CompletableFuture;
+
+@Slf4j
 public class TestHandler extends PnioRequestHandler<TestState> {
     private final String name;
     private final Type type;
@@ -36,24 +42,61 @@ public class TestHandler extends PnioRequestHandler<TestState> {
         this.type = type;
     }
 
+    public static String getClassAndLineNumber() {
+        StackWalker.StackFrame stackFrame = StackWalker.getInstance( StackWalker.Option.SHOW_HIDDEN_FRAMES ).walk(
+            s -> s.skip( 1 ).findFirst() ).get();
+        return stackFrame.getClassName() + ":" + stackFrame.getLineNumber();
+    }
+
     @Override
     public Type getType() {
         return type;
     }
 
     @Override
-    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
-        if( runtimeException != null ) throw new RuntimeException( runtimeException );
-        if( sleepTime > 0 ) Thread.sleep( sleepTime );
+    public CompletableFuture<Void> handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
 
-        if( testState.sb.length() > 0 ) testState.sb.append( "\n" );
-
-        var data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 0, 2 )
+        String data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 7, 11 )
             + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
+
+        log.debug( data );
+
+        if( !testState.sb.isEmpty() ) {
+            testState.sb.append( "\n" );
+        }
 
         testState.sb.append( data );
 
         testState.oldThreadName = Thread.currentThread().getName();
+
+        if( runtimeException != null ) {
+            if( type == Type.ASYNC ) {
+                completableFuture.completeExceptionally( runtimeException );
+            } else {
+                throw runtimeException;
+            }
+        } else if( sleepTime > 0 ) {
+            if( type == Type.ASYNC || type == Type.BLOCK ) {
+                log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
+                return CompletableFuture.runAsync( () -> {
+                    log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
+                    Threads.sleepSafely( sleepTime );
+                }, pnioExchange.oapExchange.getWorkerPool() );
+            } else {
+                Thread.sleep( sleepTime );
+            }
+        } else if( type == Type.ASYNC ) {
+            log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
+            return CompletableFuture.runAsync( () -> {
+                log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
+                Threads.sleepSafely( 1 );
+            }, pnioExchange.oapExchange.getWorkerPool() );
+        } else {
+            completableFuture.complete( null );
+        }
+
+        return completableFuture;
     }
 
     @Override
