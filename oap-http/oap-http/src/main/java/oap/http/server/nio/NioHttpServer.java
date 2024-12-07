@@ -211,7 +211,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             handler = nioHandlerBuilder.build( handler );
         }
 
-        handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
         if( port == defaultPort.httpsPort ) {
@@ -252,7 +251,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
     }
 
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, String portName ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, boolean blocking, String portName ) {
         Preconditions.checkNotNull( portName );
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
@@ -276,20 +275,33 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler( pathHandlerCacheSize ) );
+
+        if( blocking ) {
+            httpHandler = new BlockingHandler( httpHandler );
+        }
+
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
         log.debug( "binding '{}' on port: {}:{}", prefix, portName, port );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
-        bind( prefix, handler, DEFAULT_HTTP_PORT );
+        bind( prefix, handler, true );
+    }
+
+    public void bind( String prefix, HttpHandler handler, boolean blocking ) {
+        bind( prefix, handler, blocking, DEFAULT_HTTP_PORT );
         if( isHttpsEnabled() ) {
-            bind( prefix, handler, DEFAULT_HTTPS_PORT );
+            bind( prefix, handler, blocking, DEFAULT_HTTPS_PORT );
         }
     }
 
+    public void bind( String prefix, HttpHandler handler, boolean blocking, String port ) {
+        bind( prefix, handler, blocking, true, DEFAULT_HTTP_PORT );
+    }
+
     public void bind( String prefix, HttpHandler handler, String port ) {
-        bind( prefix, handler, true, port );
+        bind( prefix, handler, true, true, port );
     }
 
     public void preStop() {
