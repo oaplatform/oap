@@ -29,6 +29,7 @@ import oap.http.Http;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.zip.GZIPOutputStream;
 
 public class TestResponseBuilder extends PnioRequestHandler<TestState> {
@@ -38,7 +39,7 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
     }
 
     @Override
-    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
+    public CompletableFuture<Void> handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
         OutputStream outputStream = null;
         try {
             outputStream = pnioExchange.responseBuffer.getOutputStream();
@@ -51,6 +52,8 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
 
             pnioExchange.httpResponse.status = Http.StatusCode.OK;
             pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+
+            return CompletableFuture.completedFuture( null );
         } finally {
             if( outputStream != null ) outputStream.close();
         }

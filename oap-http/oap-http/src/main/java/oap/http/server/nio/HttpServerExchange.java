@@ -37,6 +37,7 @@ import oap.util.HashMaps;
 import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
 import org.xnio.IoUtils;
+import org.xnio.XnioWorker;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -391,6 +392,10 @@ public class HttpServerExchange {
 
     public void closeConnection() {
         IoUtils.safeClose( exchange.getConnection() );
+    }
+
+    public XnioWorker getWorkerPool() {
+        return exchange.getConnection().getWorker();
     }
 
     public enum HttpMethod {

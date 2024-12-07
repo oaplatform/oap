@@ -28,13 +28,14 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RequestWorkflowTest {
     @Test
     public void testSkip() {
-        var workflow = RequestWorkflow
+        RequestWorkflow<Object> workflow = RequestWorkflow
             .init( new TestPnioRequestHandler( "1" ) )
             .next( new TestPnioRequestHandler( "2" ) )
             .next( new TestPnioRequestHandler( "3" ) )
@@ -61,8 +62,8 @@ public class RequestWorkflowTest {
         }
 
         @Override
-        public void handle( PnioExchange<Object> pnioExchange, Object o ) throws InterruptedException, IOException {
-
+        public CompletableFuture<Void> handle( PnioExchange<Object> pnioExchange, Object o ) throws InterruptedException, IOException {
+            return CompletableFuture.completedFuture( null );
         }
 
         @Override
