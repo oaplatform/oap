@@ -241,13 +241,13 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
     }
 
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, List<PortType> types ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, boolean blocking, List<PortType> types ) {
         if( types.isEmpty() || types.contains( PortType.HTTP ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTP_PORT );
+            bind( prefix, handler, compressionSupport, blocking, DEFAULT_HTTP_PORT );
         }
 
         if( isHttpsEnabled() && ( types.isEmpty() || types.contains( PortType.HTTPS ) ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTPS_PORT );
+            bind( prefix, handler, compressionSupport, blocking, DEFAULT_HTTPS_PORT );
         }
     }
 
@@ -297,7 +297,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     }
 
     public void bind( String prefix, HttpHandler handler, boolean blocking, String port ) {
-        bind( prefix, handler, blocking, true, DEFAULT_HTTP_PORT );
+        bind( prefix, handler, true, blocking, port );
     }
 
     public void bind( String prefix, HttpHandler handler, String port ) {

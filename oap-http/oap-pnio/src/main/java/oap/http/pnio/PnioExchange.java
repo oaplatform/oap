@@ -31,7 +31,6 @@ public class PnioExchange<WorkflowState> {
 
     public final byte[] requestBuffer;
     public final PnioBuffer responseBuffer;
-    public final long startTimeNano;
     public final long timeout;
     public final HttpResponse httpResponse = new HttpResponse();
     private final WorkflowState workflowState;
@@ -41,23 +40,16 @@ public class PnioExchange<WorkflowState> {
     RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
     public PnioExchange( byte[] requestBuffer, int responseSize, RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
-                         HttpServerExchange oapExchange, long startTimeNano, long timeout ) {
+                         HttpServerExchange oapExchange, long timeout ) {
         responseBuffer = new PnioBuffer( responseSize );
 
         this.workflowState = inputState;
         this.currentTaskNode = workflow.root;
 
         this.oapExchange = oapExchange;
-        this.startTimeNano = startTimeNano;
         this.timeout = timeout;
 
         this.requestBuffer = requestBuffer;
-    }
-
-    public static String getClassAndLineNumber() {
-        StackWalker.StackFrame stackFrame = StackWalker.getInstance( StackWalker.Option.SHOW_HIDDEN_FRAMES ).walk(
-            s -> s.skip( 1 ).findFirst() ).get();
-        return stackFrame.getClassName() + ":" + stackFrame.getLineNumber();
     }
 
     public boolean gzipSupported() {
@@ -149,7 +141,7 @@ public class PnioExchange<WorkflowState> {
 
     public long getTimeLeftNano() {
         long now = System.nanoTime();
-        long durationInMillis = ( now - startTimeNano );
+        long durationInMillis = ( now - oapExchange.exchange.getRequestStartTime() );
 
         return timeout * 1_000_000 - durationInMillis;
     }
@@ -210,7 +202,6 @@ public class PnioExchange<WorkflowState> {
 
             PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
             CompletableFuture<Void> future = task.handle( this, workflowState );
-            log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
             future
                 .orTimeout( timeLeftNano, TimeUnit.NANOSECONDS )
                 .whenCompleteAsync( ( _, t ) -> {
