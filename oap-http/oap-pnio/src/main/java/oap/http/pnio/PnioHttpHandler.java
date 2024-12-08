@@ -167,6 +167,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
                     httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
                     pnioExchange.responseBuffer.setAndResize( Throwables.getStackTraceAsString( e ) );
                 }
+
+                pnioExchange.send();
             }
         }
     }
