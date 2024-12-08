@@ -74,17 +74,17 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         workerThreadsField.setAccessible( true );
     }
 
-    public void handleRequest( HttpServerExchange oapExchange, long startTimeNano, long timeout, WorkflowState workflowState ) {
+    public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
         oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( exchange, message ) -> {
-            PnioExchange<WorkflowState> requestState = new PnioExchange<>( message, responseSize, workflow, workflowState, oapExchange, startTimeNano, timeout );
+            PnioExchange<WorkflowState> requestState = new PnioExchange<>( message, responseSize, workflow, workflowState, oapExchange, timeout );
 
             new PnioTask( exchange.getIoThread(), exchange, timeout, () -> {
                 process( oapExchange, timeout, workflowState, requestState );
             } ).register();
         }, ( exchange, e ) -> {
-            PnioExchange<WorkflowState> requestState = new PnioExchange<>( null, responseSize, workflow, workflowState, oapExchange, startTimeNano, timeout );
+            PnioExchange<WorkflowState> requestState = new PnioExchange<>( null, responseSize, workflow, workflowState, oapExchange, timeout );
 
             if( e instanceof Receiver.RequestToLargeException ) {
                 requestState.completeWithBufferOverflow( true );
