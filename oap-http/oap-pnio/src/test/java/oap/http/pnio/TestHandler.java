@@ -42,12 +42,6 @@ public class TestHandler extends PnioRequestHandler<TestState> {
         this.type = type;
     }
 
-    public static String getClassAndLineNumber() {
-        StackWalker.StackFrame stackFrame = StackWalker.getInstance( StackWalker.Option.SHOW_HIDDEN_FRAMES ).walk(
-            s -> s.skip( 1 ).findFirst() ).get();
-        return stackFrame.getClassName() + ":" + stackFrame.getLineNumber();
-    }
-
     @Override
     public Type getType() {
         return type;
@@ -78,18 +72,14 @@ public class TestHandler extends PnioRequestHandler<TestState> {
             }
         } else if( sleepTime > 0 ) {
             if( type == Type.ASYNC || type == Type.BLOCK ) {
-                log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
                 return CompletableFuture.runAsync( () -> {
-                    log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
                     Threads.sleepSafely( sleepTime );
                 }, pnioExchange.oapExchange.getWorkerPool() );
             } else {
                 Thread.sleep( sleepTime );
             }
         } else if( type == Type.ASYNC ) {
-            log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
             return CompletableFuture.runAsync( () -> {
-                log.info( "THREAD {} [{}]", Thread.currentThread().getName(), getClassAndLineNumber() );
                 Threads.sleepSafely( 1 );
             }, pnioExchange.oapExchange.getWorkerPool() );
         } else {

@@ -73,7 +73,7 @@ public class WebServices {
 
             for( var path : config.ext.path ) {
                 bind( path, config.getInstance(),
-                    config.ext.sessionAware, sessionManager, interceptors, config.ext.compression, config.ext.port, config.ext.portType );
+                    config.ext.sessionAware, sessionManager, interceptors, config.ext.compression, config.ext.blocking, config.ext.port, config.ext.portType );
             }
         }
 
@@ -86,7 +86,7 @@ public class WebServices {
             }
 
             for( var path : config.ext.path ) {
-                bind( path, ( HttpHandler ) config.getInstance(), config.ext.compression, config.ext.port, config.ext.portType );
+                bind( path, ( HttpHandler ) config.getInstance(), config.ext.compression, config.ext.blocking, config.ext.port, config.ext.portType );
             }
         }
     }
@@ -97,22 +97,23 @@ public class WebServices {
     }
 
     public void bind( String context, Object service, boolean sessionAware,
-                      SessionManager sessionManager, List<Interceptor> interceptors, boolean compressionSupport,
+                      SessionManager sessionManager, List<Interceptor> interceptors,
+                      boolean compressionSupport, boolean blocking,
                       Optional<String> port, List<NioHttpServer.PortType> portType ) {
 
         services.put( context, service );
-        bind( context, new WebService( service, sessionAware, sessionManager, interceptors, compressionSupport ), compressionSupport, port, portType );
+        bind( context, new WebService( service, sessionAware, sessionManager, interceptors, compressionSupport ), compressionSupport, blocking, port, portType );
     }
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )
-    public void bind( String context, HttpHandler handler, boolean compressionSupport,
+    public void bind( String context, HttpHandler handler, boolean compressionSupport, boolean blocking,
                       Optional<String> port, List<NioHttpServer.PortType> portType ) {
         if( context.isEmpty() ) context = "/";
 
         if( port.isEmpty() ) {
-            server.bind( context, handler, compressionSupport, portType );
+            server.bind( context, handler, compressionSupport, blocking, portType );
         } else {
-            server.bind( context, handler, compressionSupport, port.get() );
+            server.bind( context, handler, compressionSupport, blocking, port.get() );
         }
     }
 }

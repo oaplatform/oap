@@ -199,7 +199,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, this::errorResponse ) ) {
 
                 httpServer.bind( "/test",
-                    exchange -> httpHandler.handleRequest( exchange, System.nanoTime(), timeout, new TestState() ) );
+                    exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
                 cons.accept( port );
             }
