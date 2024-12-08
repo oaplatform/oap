@@ -42,4 +42,5 @@ public class WsConfig {
     public boolean compression = true;
     public Optional<String> port = Optional.empty();
     public ArrayList<NioHttpServer.PortType> portType = new ArrayList<>();
+    public boolean blocking = true;
 }
