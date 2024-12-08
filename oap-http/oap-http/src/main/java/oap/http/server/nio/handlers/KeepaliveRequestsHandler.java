@@ -35,16 +35,10 @@ public class KeepaliveRequestsHandler implements NioHandlerBuilder, ServerConnec
                 } );
                 long requests = count.incrementAndGet();
 
-                try {
-                    if( requests >= keepaliveRequests ) {
-                        exchange.getResponseHeaders().put( Headers.CONNECTION, "close" );
-                    }
-                    next.handleRequest( exchange );
-                } finally {
-                    if( requests >= keepaliveRequests ) {
-                        connection.close();
-                    }
+                if( requests >= keepaliveRequests ) {
+                    exchange.getResponseHeaders().put( Headers.CONNECTION, "close" );
                 }
+                next.handleRequest( exchange );
             }
         };
     }
