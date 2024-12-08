@@ -24,6 +24,7 @@
 
 package oap.http.pnio;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.http.Http;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.GZIPOutputStream;
 
+@Slf4j
 public class TestResponseBuilder extends PnioRequestHandler<TestState> {
     @Override
     public Type getType() {
@@ -40,6 +42,11 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
 
     @Override
     public CompletableFuture<Void> handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
+        String data = "name 'TestResponseBuilder' type " + getType() + " thread '" + Thread.currentThread().getName().substring( 7, 11 )
+            + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
+
+        log.debug( data );
+
         OutputStream outputStream = null;
         try {
             outputStream = pnioExchange.responseBuffer.getOutputStream();
