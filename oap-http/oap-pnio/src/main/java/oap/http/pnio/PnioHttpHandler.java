@@ -9,15 +9,19 @@
 
 package oap.http.pnio;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.undertow.io.Receiver;
 import lombok.Builder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Executors;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
+import oap.io.Closeables;
 
 import java.io.Closeable;
 import java.lang.reflect.Field;
+import java.util.concurrent.ExecutorService;
 
 @Slf4j
 public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable {
@@ -31,6 +35,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public final int responseSize;
     private final NioHttpServer server;
     private final ErrorResponse<WorkflowState> errorResponse;
+    private final ExecutorService blockingPool;
+    private final int maxQueueSize;
     private RequestWorkflow<WorkflowState> workflow;
 
     @Deprecated
@@ -38,12 +44,16 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public PnioHttpHandler( NioHttpServer server,
                             int requestSize,
                             int responseSize,
+                            int maxQueueSize,
+                            int blockingPoolSize,
                             RequestWorkflow<WorkflowState> workflow,
                             ErrorResponse<WorkflowState> errorResponse ) {
         this( server,
             PnioHttpSettings.builder()
                 .requestSize( requestSize )
                 .responseSize( responseSize )
+                .maxQueueSize( maxQueueSize )
+                .blockingPoolSize( blockingPoolSize )
                 .build(),
             workflow,
             errorResponse );
@@ -56,9 +66,12 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         this.server = server;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
+        this.maxQueueSize = settings.maxQueueSize;
 
         this.workflow = workflow;
         this.errorResponse = errorResponse;
+
+        blockingPool = settings.blockingPoolSize > 0 ? Executors.newFixedThreadPool( settings.blockingPoolSize, new ThreadFactoryBuilder().setNameFormat( "PNIO - blocking-%d" ).build() ) : null;
     }
 
     @SneakyThrows
@@ -80,13 +93,13 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( exchange, message ) -> {
-            PnioExchange<WorkflowState> requestState = new PnioExchange<>( message, responseSize, workflow, workflowState, oapExchange, timeout, errorResponse );
+            PnioExchange<WorkflowState> requestState = new PnioExchange<>( message, responseSize, blockingPool, workflow, workflowState, oapExchange, timeout, errorResponse );
 
             new PnioTask( exchange.getIoThread(), exchange, timeout, () -> {
                 requestState.process( requestState );
             } ).register();
         }, ( exchange, e ) -> {
-            PnioExchange<WorkflowState> requestState = new PnioExchange<>( null, responseSize, workflow, workflowState, oapExchange, timeout, errorResponse );
+            PnioExchange<WorkflowState> requestState = new PnioExchange<>( null, responseSize, blockingPool, workflow, workflowState, oapExchange, timeout, errorResponse );
 
             if( e instanceof Receiver.RequestToLargeException ) {
                 requestState.completeWithBufferOverflow( true );
@@ -108,6 +121,7 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
     @Override
     public void close() {
+        Closeables.close( blockingPool );
     }
 
     public interface ErrorResponse<WorkflowState> {
@@ -118,5 +132,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public static class PnioHttpSettings {
         int requestSize;
         int responseSize;
+
+        int blockingPoolSize;
+        int maxQueueSize;
     }
 }
