@@ -68,6 +68,15 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     }
 
     public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
+        PnioMetrics.REQUESTS.increment();
+
+        oapExchange.exchange.addExchangeCompleteListener( ( _, nl ) -> {
+            PnioMetrics.activeRequests.decrementAndGet();
+            if( nl != null ) {
+                nl.proceed();
+            }
+        } );
+
         oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( exchange, message ) -> {
