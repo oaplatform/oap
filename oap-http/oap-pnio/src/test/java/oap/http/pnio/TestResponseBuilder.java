@@ -30,7 +30,6 @@ import oap.http.Http;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 import java.util.zip.GZIPOutputStream;
 
 @Slf4j
@@ -41,7 +40,7 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
     }
 
     @Override
-    public CompletableFuture<Void> handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
+    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws IOException {
         String data = "name 'TestResponseBuilder' type " + getType() + " thread '" + Thread.currentThread().getName().substring( 7, 11 )
             + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
 
@@ -60,7 +59,9 @@ public class TestResponseBuilder extends PnioRequestHandler<TestState> {
             pnioExchange.httpResponse.status = Http.StatusCode.OK;
             pnioExchange.httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
 
-            return CompletableFuture.completedFuture( null );
+            if( pnioExchange.completableFuture != null ) {
+                pnioExchange.completableFuture.complete( null );
+            }
         } finally {
             if( outputStream != null ) outputStream.close();
         }

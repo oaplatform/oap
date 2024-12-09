@@ -13,7 +13,6 @@ import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -98,10 +97,8 @@ public class RequestWorkflow<WorkflowState> {
                     }
 
                     @Override
-                    public CompletableFuture<Void> handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
+                    public void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
                         postProcess.accept( pnioExchange, workflowState );
-
-                        return CompletableFuture.completedFuture( null );
                     }
                 } );
             }
