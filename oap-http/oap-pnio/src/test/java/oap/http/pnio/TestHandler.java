@@ -48,9 +48,7 @@ public class TestHandler extends PnioRequestHandler<TestState> {
     }
 
     @Override
-    public CompletableFuture<Void> handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
-        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-
+    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
         String data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 7, 11 )
             + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
 
@@ -66,27 +64,23 @@ public class TestHandler extends PnioRequestHandler<TestState> {
 
         if( runtimeException != null ) {
             if( type == Type.ASYNC ) {
-                completableFuture.completeExceptionally( runtimeException );
+                pnioExchange.completableFuture.completeExceptionally( runtimeException );
             } else {
                 throw runtimeException;
             }
         } else if( sleepTime > 0 ) {
-            if( type == Type.ASYNC || type == Type.BLOCK ) {
-                return CompletableFuture.runAsync( () -> {
-                    Threads.sleepSafely( sleepTime );
-                }, pnioExchange.oapExchange.getWorkerPool() );
+            if( type == Type.ASYNC ) {
+                CompletableFuture.runAsync( () -> {
+                        Threads.sleepSafely( sleepTime );
+                    } )
+                    .thenRun( () -> pnioExchange.completableFuture.complete( null ) );
             } else {
                 Thread.sleep( sleepTime );
             }
         } else if( type == Type.ASYNC ) {
-            return CompletableFuture.runAsync( () -> {
-                Threads.sleepSafely( 1 );
-            }, pnioExchange.oapExchange.getWorkerPool() );
-        } else {
-            completableFuture.complete( null );
+            CompletableFuture.runAsync( () -> {} )
+                .thenRun( () -> pnioExchange.completableFuture.complete( null ) );
         }
-
-        return completableFuture;
     }
 
     @Override
