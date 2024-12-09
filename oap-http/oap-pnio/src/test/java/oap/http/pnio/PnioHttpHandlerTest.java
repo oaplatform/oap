@@ -94,7 +94,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 2, 1024, 5, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 2, 1024, 5, 40, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
@@ -109,7 +109,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 1024, 2, 5, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 1024, 2, 5, 40, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
@@ -124,7 +124,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 1024, 1024, 1, 200, workflow, port -> {
+        runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
@@ -143,7 +143,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestResponseBuilder() )
             .build();
 
-        runWithWorkflow( 1024, 1024, 1, 200, workflow, port -> {
+        runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( Http.ContentType.TEXT_PLAIN )
