@@ -10,7 +10,6 @@
 package oap.http.pnio;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class PnioRequestHandler<State> {
@@ -27,7 +26,7 @@ public abstract class PnioRequestHandler<State> {
         return Type.COMPUTE;
     }
 
-    public abstract CompletableFuture<Void> handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException;
+    public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException;
 
     public enum Type {
         BLOCK, ASYNC, COMPUTE

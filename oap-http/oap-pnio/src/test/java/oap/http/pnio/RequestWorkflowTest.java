@@ -26,9 +26,7 @@ package oap.http.pnio;
 
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,8 +60,7 @@ public class RequestWorkflowTest {
         }
 
         @Override
-        public CompletableFuture<Void> handle( PnioExchange<Object> pnioExchange, Object o ) throws InterruptedException, IOException {
-            return CompletableFuture.completedFuture( null );
+        public void handle( PnioExchange<Object> pnioExchange, Object o ) {
         }
 
         @Override
