@@ -9,11 +9,15 @@
 
 package oap.http.pnio;
 
+import com.google.common.base.Throwables;
 import io.undertow.util.StatusCodes;
 import lombok.extern.slf4j.Slf4j;
+import oap.LogConsolidated;
 import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
+import oap.util.Dates;
+import org.slf4j.event.Level;
 
 import java.nio.BufferOverflowException;
 import java.nio.charset.StandardCharsets;
@@ -34,12 +38,13 @@ public class PnioExchange<WorkflowState> {
     public final long timeout;
     public final HttpResponse httpResponse = new HttpResponse();
     private final WorkflowState workflowState;
+    private final PnioHttpHandler.ErrorResponse<WorkflowState> errorResponse;
     public Throwable throwable;
     public volatile ProcessState processState = ProcessState.RUNNING;
     RequestWorkflow.Node<WorkflowState> currentTaskNode;
 
     public PnioExchange( byte[] requestBuffer, int responseSize, RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
-                         HttpServerExchange oapExchange, long timeout ) {
+                         HttpServerExchange oapExchange, long timeout, PnioHttpHandler.ErrorResponse<WorkflowState> errorResponse ) {
         responseBuffer = new PnioBuffer( responseSize );
 
         this.workflowState = inputState;
@@ -49,6 +54,8 @@ public class PnioExchange<WorkflowState> {
         this.timeout = timeout;
 
         this.requestBuffer = requestBuffer;
+
+        this.errorResponse = errorResponse;
     }
 
     public boolean gzipSupported() {
@@ -165,6 +172,81 @@ public class PnioExchange<WorkflowState> {
             completeWithInterrupted();
         } catch( Throwable e ) {
             completeWithFail( e );
+        }
+    }
+
+    public void process( PnioExchange<WorkflowState> pnioExchange ) {
+        while( !pnioExchange.isDone() ) {
+            RequestWorkflow.Node<WorkflowState> currentTaskNode = pnioExchange.currentTaskNode;
+
+            if( currentTaskNode == null ) {
+                pnioExchange.complete();
+                break;
+            }
+
+            PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
+
+            if( pnioExchange.getTimeLeftNano() <= 0 ) {
+                pnioExchange.completeWithTimeout();
+                break;
+            }
+
+            switch( task.getType() ) {
+                case COMPUTE -> {
+                    pnioExchange.runComputeTask( currentTaskNode );
+                    pnioExchange.currentTaskNode = currentTaskNode.next;
+                }
+
+                case BLOCK -> {
+                    pnioExchange.runBlockingTask( currentTaskNode, () -> asyncProcess( pnioExchange, currentTaskNode ) );
+                    return;
+                }
+
+                case ASYNC -> {
+                    pnioExchange.runAsyncTask( currentTaskNode, () -> asyncProcess( pnioExchange, currentTaskNode ) );
+                    return;
+                }
+            }
+        }
+
+        response( pnioExchange, workflowState, errorResponse );
+    }
+
+    private void asyncProcess( PnioExchange<WorkflowState> pnioExchange, RequestWorkflow.Node<WorkflowState> currentTaskNode ) {
+        pnioExchange.currentTaskNode = currentTaskNode.next;
+
+        io.undertow.server.HttpServerExchange exchange = oapExchange.exchange;
+        new PnioTask( exchange.getIoThread(), exchange, timeout, () -> {
+            process( pnioExchange );
+        } ).register();
+    }
+
+    private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState, PnioHttpHandler.ErrorResponse<WorkflowState> errorResponse ) {
+        switch( pnioExchange.processState ) {
+            case DONE -> pnioExchange.send();
+            case CONNECTION_CLOSED -> pnioExchange.oapExchange.closeConnection();
+            case null, default -> {
+                PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+                try {
+                    httpResponse.cookies.clear();
+                    httpResponse.headers.clear();
+
+                    errorResponse.handle( pnioExchange, workflowState );
+                } catch( Throwable e ) {
+                    if( e instanceof OutOfMemoryError ) {
+                        log.error( "OOM error, need restarting!", e );
+                    }
+                    LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), e.getMessage(), e );
+
+                    httpResponse.cookies.clear();
+                    httpResponse.headers.clear();
+                    httpResponse.status = Http.StatusCode.BAD_GATEWAY;
+                    httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+                    pnioExchange.responseBuffer.setAndResize( Throwables.getStackTraceAsString( e ) );
+                }
+
+                pnioExchange.send();
+            }
         }
     }
 
