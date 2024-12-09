@@ -56,6 +56,8 @@ public class PnioExchange<WorkflowState> {
         this.requestBuffer = requestBuffer;
 
         this.errorResponse = errorResponse;
+
+        PnioMetrics.activeRequests.incrementAndGet();
     }
 
     public boolean gzipSupported() {
@@ -257,7 +259,9 @@ public class PnioExchange<WorkflowState> {
         httpResponse.cookies.forEach( oapExchange::setResponseCookie );
 
         String contentType = httpResponse.contentType;
-        if( contentType != null ) oapExchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
+        if( contentType != null ) {
+            oapExchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
+        }
 
         if( !responseBuffer.isEmpty() ) {
             oapExchange.send( responseBuffer.buffer, 0, responseBuffer.length );
