@@ -33,7 +33,7 @@ public class PnioExchange<WorkflowState> {
     public final HttpServerExchange oapExchange;
 
     public final byte[] requestBuffer;
-    public final PnioBuffer responseBuffer;
+    public final PnioResponseBuffer responseBuffer;
     public final long timeoutNano;
     public final HttpResponse httpResponse = new HttpResponse();
     public final ExecutorService blockingPool;
@@ -49,7 +49,7 @@ public class PnioExchange<WorkflowState> {
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
                          HttpServerExchange oapExchange, long timeout, PnioListener<WorkflowState> pnioListener ) {
         this.requestBuffer = requestBuffer;
-        this.responseBuffer = new PnioBuffer( responseSize );
+        this.responseBuffer = new PnioResponseBuffer( responseSize );
         this.maxQueueSize = maxQueueSize;
 
         this.blockingPool = blockingPool;
