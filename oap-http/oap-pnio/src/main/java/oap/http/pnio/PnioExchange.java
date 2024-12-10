@@ -10,15 +10,11 @@
 package oap.http.pnio;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import io.undertow.util.StatusCodes;
 import lombok.extern.slf4j.Slf4j;
-import oap.LogConsolidated;
 import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
-import oap.util.Dates;
-import org.slf4j.event.Level;
 
 import java.nio.BufferOverflowException;
 import java.nio.charset.StandardCharsets;
@@ -38,21 +34,23 @@ public class PnioExchange<WorkflowState> {
 
     public final byte[] requestBuffer;
     public final PnioBuffer responseBuffer;
-    public final long timeout;
+    public final long timeoutNano;
     public final HttpResponse httpResponse = new HttpResponse();
     public final ExecutorService blockingPool;
-    private final WorkflowState workflowState;
-    private final PnioHttpHandler.ErrorResponse<WorkflowState> errorResponse;
+    public final WorkflowState workflowState;
+    public final PnioListener<WorkflowState> pnioListener;
+    public final int maxQueueSize;
     public Throwable throwable;
-    public volatile ProcessState processState = ProcessState.RUNNING;
+    public ProcessState processState = ProcessState.RUNNING;
     public RequestWorkflow.Node<WorkflowState> currentTaskNode;
     public CompletableFuture<Void> completableFuture;
 
-    public PnioExchange( byte[] requestBuffer, int responseSize, ExecutorService blockingPool,
+    public PnioExchange( byte[] requestBuffer, int responseSize, int maxQueueSize, ExecutorService blockingPool,
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
-                         HttpServerExchange oapExchange, long timeout, PnioHttpHandler.ErrorResponse<WorkflowState> errorResponse ) {
+                         HttpServerExchange oapExchange, long timeout, PnioListener<WorkflowState> pnioListener ) {
         this.requestBuffer = requestBuffer;
         this.responseBuffer = new PnioBuffer( responseSize );
+        this.maxQueueSize = maxQueueSize;
 
         this.blockingPool = blockingPool;
 
@@ -60,9 +58,9 @@ public class PnioExchange<WorkflowState> {
         this.currentTaskNode = workflow.root;
 
         this.oapExchange = oapExchange;
-        this.timeout = timeout;
+        this.timeoutNano = timeout * 1_000_000;
 
-        this.errorResponse = errorResponse;
+        this.pnioListener = pnioListener;
 
         PnioMetrics.activeRequests.incrementAndGet();
     }
@@ -123,7 +121,7 @@ public class PnioExchange<WorkflowState> {
         long now = System.nanoTime();
         long durationInMillis = now - getRequestStartTime();
 
-        return timeout * 1_000_000 - durationInMillis;
+        return timeoutNano - durationInMillis;
     }
 
     public long getRequestStartTime() {
@@ -168,46 +166,44 @@ public class PnioExchange<WorkflowState> {
         }
     }
 
-    public void process( PnioExchange<WorkflowState> pnioExchange ) {
-        while( !pnioExchange.isDone() ) {
-            RequestWorkflow.Node<WorkflowState> currentTaskNode = pnioExchange.currentTaskNode;
-
+    public void process() {
+        while( !isDone() ) {
             if( currentTaskNode == null ) {
-                pnioExchange.complete();
+                complete();
                 break;
             }
 
             PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
 
-            if( pnioExchange.getTimeLeftNano() <= 0 ) {
-                pnioExchange.completeWithTimeout();
+            if( getTimeLeftNano() <= 0 ) {
+                completeWithTimeout();
                 break;
             }
 
             switch( task.getType() ) {
                 case COMPUTE -> {
-                    pnioExchange.runComputeTask( currentTaskNode );
-                    pnioExchange.currentTaskNode = currentTaskNode.next;
+                    runComputeTask( currentTaskNode );
+                    currentTaskNode = currentTaskNode.next;
                 }
 
                 case BLOCK -> {
-                    pnioExchange.runBlockingTask( currentTaskNode );
-                    asyncProcess( pnioExchange, currentTaskNode );
+                    runBlockingTask( currentTaskNode );
+                    asyncProcess( currentTaskNode );
                     return;
                 }
 
                 case ASYNC -> {
-                    pnioExchange.runAsyncTask( currentTaskNode );
-                    asyncProcess( pnioExchange, currentTaskNode );
+                    runAsyncTask( currentTaskNode );
+                    asyncProcess( currentTaskNode );
                     return;
                 }
             }
         }
 
-        response( pnioExchange, workflowState, errorResponse );
+        response();
     }
 
-    private void asyncProcess( PnioExchange<WorkflowState> pnioExchange, RequestWorkflow.Node<WorkflowState> currentTaskNode ) {
+    private void asyncProcess( RequestWorkflow.Node<WorkflowState> taskNode ) {
         completableFuture
             .orTimeout( getTimeLeftNano(), TimeUnit.NANOSECONDS )
             .whenComplete( ( _, t ) -> {
@@ -220,42 +216,24 @@ public class PnioExchange<WorkflowState> {
                         completeWithFail( t );
                     }
                 } else {
-                    pnioExchange.currentTaskNode = currentTaskNode.next;
+                    this.currentTaskNode = taskNode.next;
                 }
 
                 io.undertow.server.HttpServerExchange exchange = oapExchange.exchange;
-                new PnioTask( exchange.getIoThread(), exchange, timeout, () -> {
-                    process( pnioExchange );
-                } ).register();
+                new PnioTask( exchange.getIoThread(), this ).register( false );
             } );
     }
 
-    private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState, PnioHttpHandler.ErrorResponse<WorkflowState> errorResponse ) {
-        switch( pnioExchange.processState ) {
-            case DONE -> pnioExchange.send();
-            case CONNECTION_CLOSED -> pnioExchange.oapExchange.closeConnection();
-            case null, default -> {
-                PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
-                try {
-                    httpResponse.cookies.clear();
-                    httpResponse.headers.clear();
-
-                    errorResponse.handle( pnioExchange, workflowState );
-                } catch( Throwable e ) {
-                    if( e instanceof OutOfMemoryError ) {
-                        log.error( "OOM error, need restarting!", e );
-                    }
-                    LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), e.getMessage(), e );
-
-                    httpResponse.cookies.clear();
-                    httpResponse.headers.clear();
-                    httpResponse.status = Http.StatusCode.BAD_GATEWAY;
-                    httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
-                    pnioExchange.responseBuffer.setAndResize( Throwables.getStackTraceAsString( e ) );
-                }
-
-                pnioExchange.send();
-            }
+    public void response() {
+        switch( processState ) {
+            case DONE -> pnioListener.fireOnDone( this );
+            case CONNECTION_CLOSED -> oapExchange.closeConnection();
+            case REJECTED -> pnioListener.fireOnRejected( this );
+            case REQUEST_BUFFER_OVERFLOW -> pnioListener.fireOnRequestBufferOverflow( this );
+            case RESPONSE_BUFFER_OVERFLOW -> pnioListener.fireOnResponseBufferOverflow( this );
+            case TIMEOUT -> pnioListener.fireOnTimeout( this );
+            case EXCEPTION -> pnioListener.fireOnException( this );
+            case null, default -> pnioListener.fireOnUnknown( this );
         }
     }
 
