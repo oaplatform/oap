@@ -59,7 +59,6 @@ public class PnioHttpHandlerTest extends Fixtures {
             .next( new TestHandler( "cpu-6", COMPUTE ) )
             .next( new TestHandler( "async-7", ASYNC ) )
             .next( new TestHandler( "cpu-8", COMPUTE ) )
-            .next( new TestResponseBuilder() )
             .build();
 
         runWithWorkflow( workflow, port -> {
@@ -84,7 +83,6 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testProcessWithException() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
             .init( new TestHandler( "cpu-2", COMPUTE ).withException( new RuntimeException( "test exception" ) ) )
-            .next( new TestResponseBuilder() )
             .build();
 
         runWithWorkflow( workflow, port -> {
@@ -99,7 +97,6 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testRequestBufferOverflow() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
             .init( new TestHandler( "cpu-2", COMPUTE ) )
-            .next( new TestResponseBuilder() )
             .build();
 
         runWithWorkflow( 2, 1024, 5, 40, Dates.s( 100 ), workflow, port -> {
@@ -114,7 +111,6 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testResponseBufferOverflow() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
             .init( new TestHandler( "cpu-2", COMPUTE ) )
-            .next( new TestResponseBuilder() )
             .build();
 
         runWithWorkflow( 1024, 2, 5, 40, Dates.s( 100 ), workflow, port -> {
@@ -129,7 +125,6 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testTimeoutBlock() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
             .init( new TestHandler( "block", BLOCK ).withSleepTime( Dates.s( 20 ) ) )
-            .next( new TestResponseBuilder() )
             .build();
 
         runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
@@ -148,7 +143,6 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testTimeoutAsync() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
             .init( new TestHandler( "async", ASYNC ).withSleepTime( Dates.s( 5 ) ) )
-            .next( new TestResponseBuilder() )
             .build();
 
         runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
