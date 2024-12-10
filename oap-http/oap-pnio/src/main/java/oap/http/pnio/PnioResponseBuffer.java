@@ -32,11 +32,11 @@ import java.io.OutputStream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @NotThreadSafe
-public class PnioBuffer {
+public class PnioResponseBuffer {
     public int length;
     byte[] buffer;
 
-    public PnioBuffer( int capacity ) {
+    public PnioResponseBuffer( int capacity ) {
         this.buffer = new byte[capacity];
         this.length = 0;
     }
