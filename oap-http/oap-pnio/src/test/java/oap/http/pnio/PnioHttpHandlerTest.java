@@ -67,14 +67,14 @@ public class PnioHttpHandlerTest extends Fixtures {
                 .hasCode( OK )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( """
-                    name 'cpu-1' type COMPUTE thread 'I/O-' new thread false
-                    name 'cpu-2' type COMPUTE thread 'I/O-' new thread false
-                    name 'block-3' type BLOCK thread 'bloc' new thread true
-                    name 'async-4' type ASYNC thread 'I/O-' new thread true
-                    name 'block-5' type BLOCK thread 'bloc' new thread true
-                    name 'cpu-6' type COMPUTE thread 'I/O-' new thread true
-                    name 'async-7' type ASYNC thread 'I/O-' new thread false
-                    name 'cpu-8' type COMPUTE thread 'I/O-' new thread false"""
+                    name 'cpu-1' type COMPUTE thread 'CPU-' new thread true
+                    name 'cpu-2' type COMPUTE thread 'CPU-' new thread false
+                    name 'block-3' type BLOCK thread 'BLK-' new thread true
+                    name 'async-4' type ASYNC thread 'CPU-' new thread true
+                    name 'block-5' type BLOCK thread 'BLK-' new thread true
+                    name 'cpu-6' type COMPUTE thread 'CPU-' new thread true
+                    name 'async-7' type ASYNC thread 'CPU-' new thread false
+                    name 'cpu-8' type COMPUTE thread 'CPU-' new thread true"""
                 );
         } );
     }
@@ -161,13 +161,15 @@ public class PnioHttpHandlerTest extends Fixtures {
         runWithWorkflow( 1024, 1024, 10, 5, Dates.s( 100 ), workflow, cons );
     }
 
-    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int maxQueueSize, long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
+    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int maxQueueSize,
+                                  long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )
             .responseSize( responseSize )
             .blockingPoolSize( 10 )
+            .threads( 3 )
             .maxQueueSize( maxQueueSize )
             .build();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {

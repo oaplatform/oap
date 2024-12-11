@@ -1,0 +1,51 @@
+package oap.http.pnio;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import oap.concurrent.Executors;
+import oap.io.Closeables;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class PnioWorkers<WorkflowState> implements AutoCloseable {
+    public final ExecutorService pool;
+    public final PnioWorker<WorkflowState>[] workers;
+    public AtomicInteger counter = new AtomicInteger( 0 );
+
+    public PnioWorkers( int threads, int maxQueueSize ) {
+        pool = Executors.newFixedThreadPool( threads > 0 ? threads : Runtime.getRuntime().availableProcessors(),
+            new ThreadFactoryBuilder().setNameFormat( "PNIO - CPU-%d" ).build() );
+
+        workers = new PnioWorker[threads];
+
+        for( int i = 0; i < threads; i++ ) {
+            PnioWorker<WorkflowState> pnioWorker = new PnioWorker<>( maxQueueSize );
+            pool.execute( pnioWorker );
+            workers[i] = pnioWorker;
+        }
+    }
+
+    public boolean register( PnioExchange<WorkflowState> pnioExchange, PnioTask<WorkflowState> task ) {
+        int hash = counter.incrementAndGet() % workers.length;
+
+        if( !workers[hash].queue.offer( task ) ) {
+            pnioExchange.completeWithRejected();
+            pnioExchange.response();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public void close() {
+        pool.shutdown();
+
+        for( PnioWorker<WorkflowState> worker : workers ) {
+            worker.interrupt();
+        }
+
+        Closeables.close( pool );
+    }
+}
