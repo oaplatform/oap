@@ -39,18 +39,18 @@ public class PnioExchange<WorkflowState> {
     public final ExecutorService blockingPool;
     public final WorkflowState workflowState;
     public final PnioListener<WorkflowState> pnioListener;
-    public final int maxQueueSize;
+    private final PnioWorkers<WorkflowState> workers;
     public Throwable throwable;
     public ProcessState processState = ProcessState.RUNNING;
     public RequestWorkflow.Node<WorkflowState> currentTaskNode;
     public CompletableFuture<Void> completableFuture;
 
-    public PnioExchange( byte[] requestBuffer, int responseSize, int maxQueueSize, ExecutorService blockingPool,
+    public PnioExchange( byte[] requestBuffer, int responseSize, ExecutorService blockingPool,
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
-                         HttpServerExchange oapExchange, long timeout, PnioListener<WorkflowState> pnioListener ) {
+                         HttpServerExchange oapExchange, long timeout,
+                         PnioWorkers<WorkflowState> workers, PnioListener<WorkflowState> pnioListener ) {
         this.requestBuffer = requestBuffer;
         this.responseBuffer = new PnioResponseBuffer( responseSize );
-        this.maxQueueSize = maxQueueSize;
 
         this.blockingPool = blockingPool;
 
@@ -59,6 +59,8 @@ public class PnioExchange<WorkflowState> {
 
         this.oapExchange = oapExchange;
         this.timeoutNano = timeout * 1_000_000;
+
+        this.workers = workers;
 
         this.pnioListener = pnioListener;
 
@@ -220,7 +222,7 @@ public class PnioExchange<WorkflowState> {
                 }
 
                 io.undertow.server.HttpServerExchange exchange = oapExchange.exchange;
-                new PnioTask( exchange.getIoThread(), this ).register( false );
+                workers.register( this, new PnioTask( this ) );
             } );
     }
 
