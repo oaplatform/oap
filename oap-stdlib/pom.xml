@@ -176,7 +176,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
             <version>${oap.deps.config.version}</version>
         </dependency>
