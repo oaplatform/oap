@@ -42,23 +42,20 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
 import static oap.http.Http.StatusCode.OK;
-import static oap.http.pnio.PnioRequestHandler.Type.ASYNC;
-import static oap.http.pnio.PnioRequestHandler.Type.BLOCK;
-import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
 import static oap.http.test.HttpAsserts.assertPost;
 
 public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testProcess() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "cpu-1", COMPUTE ) )
-            .next( new TestHandler( "cpu-2", COMPUTE ) )
-            .next( new TestHandler( "block-3", BLOCK ) )
-            .next( new TestHandler( "async-4", ASYNC ) )
-            .next( new TestHandler( "block-5", BLOCK ) )
-            .next( new TestHandler( "cpu-6", COMPUTE ) )
-            .next( new TestHandler( "async-7", ASYNC ) )
-            .next( new TestHandler( "cpu-8", COMPUTE ) )
+            .init( TestHandler.compute( "cpu-1" ) )
+            .next( TestHandler.compute( "cpu-2" ) )
+            .next( TestHandler.block( "block-3" ) )
+            .next( TestHandler.async( "async-4" ) )
+            .next( TestHandler.block( "block-5" ) )
+            .next( TestHandler.compute( "cpu-6" ) )
+            .next( TestHandler.async( "async-7" ) )
+            .next( TestHandler.compute( "cpu-8" ) )
             .build();
 
         runWithWorkflow( workflow, port -> {
@@ -82,7 +79,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testProcessWithException() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "cpu-2", COMPUTE ).withException( new RuntimeException( "test exception" ) ) )
+            .init( TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) ) )
             .build();
 
         runWithWorkflow( workflow, port -> {
@@ -96,7 +93,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testRequestBufferOverflow() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "cpu-2", COMPUTE ) )
+            .init( TestHandler.compute( "cpu-2" ) )
             .build();
 
         runWithWorkflow( 2, 1024, 5, 40, Dates.s( 100 ), workflow, port -> {
@@ -110,7 +107,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testResponseBufferOverflow() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "cpu-2", COMPUTE ) )
+            .init( TestHandler.compute( "cpu-2" ) )
             .build();
 
         runWithWorkflow( 1024, 2, 5, 40, Dates.s( 100 ), workflow, port -> {
@@ -124,7 +121,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testTimeoutBlock() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "block", BLOCK ).withSleepTime( Dates.s( 20 ) ) )
+            .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
             .build();
 
         runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
@@ -142,7 +139,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testTimeoutAsync() throws IOException {
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( "async", ASYNC ).withSleepTime( Dates.s( 5 ) ) )
+            .init( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) )
             .build();
 
         runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
@@ -176,8 +173,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener() ) ) {
-
+            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener(), new PnioExchanges<>() ) ) {
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
@@ -200,10 +196,12 @@ public class PnioHttpHandlerTest extends Fixtures {
         @Override
         @SneakyThrows
         public void onDone( PnioExchange<TestState> pnioExchange ) {
-            String data = "name 'TestResponseBuilder thread '" + Thread.currentThread().getName().substring( 7, 11 )
-                + "' new thread " + !pnioExchange.workflowState.oldThreadName.equals( Thread.currentThread().getName() );
+            if( log.isDebugEnabled() ) {
+                String data = "name 'TestResponseBuilder thread '" + Thread.currentThread().getName().substring( 7, 11 )
+                    + "' new thread " + !pnioExchange.workflowState.oldThreadName.equals( Thread.currentThread().getName() );
 
-            log.debug( data );
+                log.debug( data );
+            }
 
             OutputStream outputStream = null;
             try {
@@ -217,10 +215,6 @@ public class PnioHttpHandlerTest extends Fixtures {
 
                 pnioExchange.httpResponse.status = OK;
                 pnioExchange.httpResponse.contentType = ContentType.TEXT_PLAIN;
-
-                if( pnioExchange.completableFuture != null ) {
-                    pnioExchange.completableFuture.complete( null );
-                }
             } finally {
                 Closeables.close( outputStream );
             }
