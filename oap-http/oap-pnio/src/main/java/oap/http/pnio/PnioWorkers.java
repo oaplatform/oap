@@ -18,7 +18,7 @@ public class PnioWorkers<WorkflowState> implements AutoCloseable {
 
         workers = new PnioWorker[threads];
 
-        queue = new ArrayBlockingQueue<>( maxQueueSize );
+        queue = new ArrayBlockingQueue<>( maxQueueSize, true );
 
         for( int i = 0; i < threads; i++ ) {
             PnioWorker<WorkflowState> pnioWorker = new PnioWorker<>( queue );

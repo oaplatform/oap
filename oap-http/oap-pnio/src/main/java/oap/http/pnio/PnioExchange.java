@@ -26,10 +26,14 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 @Slf4j
 @SuppressWarnings( { "all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue" } )
 public class PnioExchange<WorkflowState> {
+    private static final AtomicLong idGenerator = new AtomicLong();
+
     public final HttpServerExchange oapExchange;
 
     public final byte[] requestBuffer;
@@ -39,11 +43,11 @@ public class PnioExchange<WorkflowState> {
     public final ExecutorService blockingPool;
     public final WorkflowState workflowState;
     public final PnioListener<WorkflowState> pnioListener;
+    public final long id = idGenerator.incrementAndGet();
     private final PnioWorkers<WorkflowState> workers;
     public Throwable throwable;
     public ProcessState processState = ProcessState.RUNNING;
     public RequestWorkflow.Node<WorkflowState> currentTaskNode;
-    public CompletableFuture<Void> completableFuture;
 
     public PnioExchange( byte[] requestBuffer, int responseSize, ExecutorService blockingPool,
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
@@ -72,9 +76,10 @@ public class PnioExchange<WorkflowState> {
     }
 
     public String getCurrentTaskName() {
-        if( currentTaskNode == null ) return "NONE";
+        RequestWorkflow.Node<WorkflowState> node = currentTaskNode;
+        if( node == null ) return "NONE";
 
-        return currentTaskNode.handler.getClass().getSimpleName();
+        return node.handler.getClass().getSimpleName();
     }
 
     public String getRequestAsString() {
@@ -130,10 +135,9 @@ public class PnioExchange<WorkflowState> {
         return oapExchange.exchange.getRequestStartTime();
     }
 
-    public void runComputeTask( RequestWorkflow.Node<WorkflowState> taskNode ) {
+    public void runComputeTask( ComputePnioRequestHandler<WorkflowState> compute ) {
         try {
-            PnioRequestHandler<WorkflowState> task = taskNode.handler;
-            task.handle( this, workflowState );
+            compute.handle( this, workflowState );
         } catch( BufferOverflowException e ) {
             completeWithBufferOverflow( false );
         } catch( Throwable e ) {
@@ -141,30 +145,23 @@ public class PnioExchange<WorkflowState> {
         }
     }
 
-    public void runBlockingTask( RequestWorkflow.Node<WorkflowState> taskNode ) {
+    public CompletableFuture<Void> runBlockingTask( BlockingPnioRequestHandler<WorkflowState> blocking ) {
         Preconditions.checkNotNull( blockingPool );
 
-        PnioRequestHandler<WorkflowState> task = taskNode.handler;
-
-        completableFuture = CompletableFuture.runAsync( () -> {
+        return CompletableFuture.runAsync( () -> {
             try {
-                task.handle( this, workflowState );
+                blocking.handle( this, workflowState );
             } catch( Exception e ) {
                 throw new CompletionException( e );
             }
         }, blockingPool );
     }
 
-    public void runAsyncTask( RequestWorkflow.Node<WorkflowState> taskNode ) {
+    public void runAsyncTask( AsyncPnioRequestHandler<WorkflowState> async, Runnable success, Consumer<Throwable> exception ) {
         try {
-            PnioRequestHandler<WorkflowState> task = taskNode.handler;
-            completableFuture = new CompletableFuture<>();
-
-            task.handle( this, workflowState );
-        } catch( InterruptedException e ) {
-            completeWithInterrupted();
+            async.handle( this, workflowState, success, exception );
         } catch( Throwable e ) {
-            completeWithFail( e );
+            exception.accept( e );
         }
     }
 
@@ -175,37 +172,44 @@ public class PnioExchange<WorkflowState> {
                 break;
             }
 
-            PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
+            AbstractPnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
 
             if( getTimeLeftNano() <= 0 ) {
                 completeWithTimeout();
                 break;
             }
 
-            switch( task.getType() ) {
-                case COMPUTE -> {
-                    runComputeTask( currentTaskNode );
+            switch( task ) {
+                case ComputePnioRequestHandler<WorkflowState> compute -> {
+                    runComputeTask( compute );
                     currentTaskNode = currentTaskNode.next;
                 }
 
-                case BLOCK -> {
-                    runBlockingTask( currentTaskNode );
-                    asyncProcess( currentTaskNode );
+                case BlockingPnioRequestHandler<WorkflowState> blocking -> {
+                    CompletableFuture<Void> completableFuture = runBlockingTask( blocking );
+                    asyncProcess( completableFuture, currentTaskNode );
                     return;
                 }
 
-                case ASYNC -> {
-                    runAsyncTask( currentTaskNode );
-                    asyncProcess( currentTaskNode );
+                case AsyncPnioRequestHandler<WorkflowState> async -> {
+                    CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+                    runAsyncTask( async, () -> completableFuture.complete( null ), new Consumer<Throwable>() {
+                        @Override
+                        public void accept( Throwable throwable ) {
+                            completableFuture.completeExceptionally( throwable );
+                        }
+                    } );
+                    asyncProcess( completableFuture, currentTaskNode );
                     return;
                 }
+                default -> throw new IllegalStateException( "Unexpected value: " + task.getClass() );
             }
         }
 
         response();
     }
 
-    private void asyncProcess( RequestWorkflow.Node<WorkflowState> taskNode ) {
+    private void asyncProcess( CompletableFuture<Void> completableFuture, RequestWorkflow.Node<WorkflowState> taskNode ) {
         completableFuture
             .orTimeout( getTimeLeftNano(), TimeUnit.NANOSECONDS )
             .whenComplete( ( _, t ) -> {

@@ -2,7 +2,6 @@ package oap.http.pnio;
 
 import javax.annotation.Nullable;
 import java.nio.BufferOverflowException;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class PnioWorker<WorkflowState> implements Runnable {
@@ -11,10 +10,6 @@ public class PnioWorker<WorkflowState> implements Runnable {
     public boolean done = false;
     @Nullable
     public Thread thread;
-
-    public PnioWorker( int maxQueueSize ) {
-        this( new ArrayBlockingQueue<>( maxQueueSize ) );
-    }
 
     public PnioWorker( BlockingQueue<PnioTask<WorkflowState>> queue ) {
         this.queue = queue;
