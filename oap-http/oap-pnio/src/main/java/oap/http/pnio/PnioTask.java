@@ -7,10 +7,6 @@ public class PnioTask<WorkflowState> implements Runnable {
         this.pnioExchange = pnioExchange;
     }
 
-    public boolean isTimeout( long now ) {
-        return ( System.nanoTime() - pnioExchange.getRequestStartTime() ) > pnioExchange.timeoutNano;
-    }
-
     @Override
     public void run() {
         pnioExchange.process();

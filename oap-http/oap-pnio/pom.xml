@@ -28,6 +28,11 @@
             <artifactId>oap-highload</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-ws</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>oap</groupId>

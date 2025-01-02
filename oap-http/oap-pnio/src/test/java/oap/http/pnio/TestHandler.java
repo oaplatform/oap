@@ -24,31 +24,71 @@
 
 package oap.http.pnio;
 
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 @Slf4j
-public class TestHandler extends PnioRequestHandler<TestState> {
-    private final String name;
-    private final Type type;
-
-    public RuntimeException runtimeException;
-    public long sleepTime = -1;
-
-    public TestHandler( String name, Type type ) {
-        this.name = name;
-        this.type = type;
+public class TestHandler {
+    private TestHandler() {
     }
 
-    @Override
-    public Type getType() {
-        return type;
+    public static ComputePnioRequestHandler<TestState> compute( String name ) {
+        return compute( name, _ -> {} );
     }
 
-    @Override
-    public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
+    public static ComputePnioRequestHandler<TestState> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+        TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
+        builder.accept( testHandlerOptionsBuilder );
+        return new ComputePnioRequestHandler<>() {
+            @Override
+            public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
+                TestHandler.handle( name, "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+            }
+        };
+    }
+
+    public static BlockingPnioRequestHandler<TestState> block( String name ) {
+        return block( name, _ -> {} );
+    }
+
+    public static BlockingPnioRequestHandler<TestState> block( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+        TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
+        builder.accept( testHandlerOptionsBuilder );
+
+        return new BlockingPnioRequestHandler<>() {
+            @Override
+            public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException, IOException {
+                TestHandler.handle( name, "BLOCK", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+            }
+        };
+    }
+
+    public static AsyncPnioRequestHandler<TestState> async( String name ) {
+        return async( name, _ -> {} );
+    }
+
+    public static AsyncPnioRequestHandler<TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+        TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( true );
+        builder.accept( testHandlerOptionsBuilder );
+
+        return new AsyncPnioRequestHandler<>() {
+            @Override
+            public void handle( PnioExchange<TestState> pnioExchange, TestState testState, Runnable success, Consumer<Throwable> exception ) throws InterruptedException {
+                TestHandler.handle( name, "ASYNC", pnioExchange, testState, testHandlerOptionsBuilder
+                    .exceptionCallback( exception )
+                    .successCallback( success )
+                    .build() );
+            }
+        };
+    }
+
+    public static void handle( String name, String type, PnioExchange<TestState> pnioExchange, TestState testState,
+                               TestHandlerOptions testHandlerOptions ) throws InterruptedException {
         String data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 7, 11 )
             + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
 
@@ -62,39 +102,37 @@ public class TestHandler extends PnioRequestHandler<TestState> {
 
         testState.oldThreadName = Thread.currentThread().getName();
 
-        if( runtimeException != null ) {
-            if( type == Type.ASYNC ) {
-                pnioExchange.completableFuture.completeExceptionally( runtimeException );
+        if( testHandlerOptions.runtimeException != null ) {
+            if( testHandlerOptions.async ) {
+                testHandlerOptions.exceptionCallback.accept( testHandlerOptions.runtimeException );
             } else {
-                throw runtimeException;
+                throw testHandlerOptions.runtimeException;
             }
-        } else if( sleepTime > 0 ) {
-            if( type == Type.ASYNC ) {
+        } else if( testHandlerOptions.sleepTime != null ) {
+            if( testHandlerOptions.async ) {
                 CompletableFuture.runAsync( () -> {
-                        Threads.sleepSafely( sleepTime );
+                        Threads.sleepSafely( testHandlerOptions.sleepTime );
                     } )
-                    .thenRun( () -> pnioExchange.completableFuture.complete( null ) );
+                    .thenRun( () -> testHandlerOptions.successCallback.run() );
             } else {
-                Thread.sleep( sleepTime );
+                Thread.sleep( testHandlerOptions.sleepTime );
             }
-        } else if( type == Type.ASYNC ) {
+        } else if( testHandlerOptions.async ) {
             CompletableFuture.runAsync( () -> {} )
-                .thenRun( () -> pnioExchange.completableFuture.complete( null ) );
+                .thenRun( () -> testHandlerOptions.successCallback.run() );
         }
     }
 
-    @Override
-    public String description() {
-        return "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName() + "'";
-    }
+    @Builder( builderMethodName = "" )
+    public static class TestHandlerOptions {
+        public RuntimeException runtimeException;
+        public Runnable successCallback;
+        public Consumer<Throwable> exceptionCallback;
+        public Long sleepTime;
+        public boolean async;
 
-    public TestHandler withException( RuntimeException testException ) {
-        this.runtimeException = testException;
-        return this;
-    }
-
-    public TestHandler withSleepTime( long duration ) {
-        this.sleepTime = duration;
-        return this;
+        public static TestHandlerOptionsBuilder builder( boolean async ) {
+            return new TestHandlerOptionsBuilder().async( async );
+        }
     }
 }

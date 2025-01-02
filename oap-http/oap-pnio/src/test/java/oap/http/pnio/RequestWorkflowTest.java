@@ -40,14 +40,14 @@ public class RequestWorkflowTest {
             .next( new TestPnioRequestHandler( "4" ) )
             .build();
 
-        assertThat( workflow.map( PnioRequestHandler::toString ) ).isEqualTo( List.of( "1", "2", "3", "4" ) );
+        assertThat( workflow.map( AbstractPnioRequestHandler::toString ) ).isEqualTo( List.of( "1", "2", "3", "4" ) );
         assertThat( workflow
             .skipBefore( h -> ( ( TestPnioRequestHandler ) h ).id.equals( "2" ) )
-            .map( PnioRequestHandler::toString ) ).isEqualTo( List.of( "2", "3", "4" ) );
+            .map( AbstractPnioRequestHandler::toString ) ).isEqualTo( List.of( "2", "3", "4" ) );
     }
 
     @Test
-    private static class TestPnioRequestHandler extends PnioRequestHandler<Object> {
+    private static class TestPnioRequestHandler extends ComputePnioRequestHandler<Object> {
         public final String id;
 
         private TestPnioRequestHandler( String id ) {
@@ -55,17 +55,12 @@ public class RequestWorkflowTest {
         }
 
         @Override
-        public Type getType() {
-            return Type.COMPUTE;
+        public String toString() {
+            return id;
         }
 
         @Override
         public void handle( PnioExchange<Object> pnioExchange, Object o ) {
-        }
-
-        @Override
-        public String toString() {
-            return id;
         }
     }
 }
