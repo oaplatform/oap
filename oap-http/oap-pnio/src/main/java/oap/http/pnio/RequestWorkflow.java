@@ -24,12 +24,12 @@ public class RequestWorkflow<WorkflowState> {
         this.root = root;
     }
 
-    public static <WorkflowState> RequestWorkflowBuilder<WorkflowState> init( PnioRequestHandler<WorkflowState> task ) {
+    public static <WorkflowState> RequestWorkflowBuilder<WorkflowState> init( AbstractPnioRequestHandler<WorkflowState> task ) {
         RequestWorkflow<WorkflowState> workflow = new RequestWorkflow<>( new Node<>( task, null ) );
         return new RequestWorkflowBuilder<>( workflow );
     }
 
-    public RequestWorkflow<WorkflowState> skipBefore( Predicate<PnioRequestHandler<WorkflowState>> predicate ) {
+    public RequestWorkflow<WorkflowState> skipBefore( Predicate<AbstractPnioRequestHandler<WorkflowState>> predicate ) {
         Node<WorkflowState> current = root;
 
         while( current != null ) {
@@ -43,7 +43,7 @@ public class RequestWorkflow<WorkflowState> {
         return new RequestWorkflow<>( null );
     }
 
-    public <T> List<T> map( Function<PnioRequestHandler<WorkflowState>, T> mapFunc ) {
+    public <T> List<T> map( Function<AbstractPnioRequestHandler<WorkflowState>, T> mapFunc ) {
         ArrayList<T> ret = new ArrayList<T>();
         Node<WorkflowState> current = root;
         while( current != null ) {
@@ -59,7 +59,7 @@ public class RequestWorkflow<WorkflowState> {
 
     @AllArgsConstructor
     static class Node<WorkflowState> {
-        final PnioRequestHandler<WorkflowState> handler;
+        final AbstractPnioRequestHandler<WorkflowState> handler;
         Node<WorkflowState> next;
     }
 
@@ -72,7 +72,7 @@ public class RequestWorkflow<WorkflowState> {
             lastNode = workflow.root;
         }
 
-        public RequestWorkflowBuilder<WorkflowState> next( PnioRequestHandler<WorkflowState> handlers ) {
+        public RequestWorkflowBuilder<WorkflowState> next( AbstractPnioRequestHandler<WorkflowState> handlers ) {
             var node = new Node<>( handlers, null );
             lastNode.next = node;
             lastNode = node;
@@ -80,22 +80,17 @@ public class RequestWorkflow<WorkflowState> {
             return this;
         }
 
-        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, PnioRequestHandler<WorkflowState>> next ) {
+        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, AbstractPnioRequestHandler<WorkflowState>> next ) {
             return next( list, next, null );
         }
 
-        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, PnioRequestHandler<WorkflowState>> next, BiConsumer<PnioExchange<WorkflowState>, WorkflowState> postProcess ) {
+        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, AbstractPnioRequestHandler<WorkflowState>> next, BiConsumer<PnioExchange<WorkflowState>, WorkflowState> postProcess ) {
             for( T item : list ) {
                 next( next.apply( item ) );
             }
 
             if( postProcess != null ) {
-                next( new PnioRequestHandler<>() {
-                    @Override
-                    public Type getType() {
-                        return Type.COMPUTE;
-                    }
-
+                next( new ComputePnioRequestHandler<>() {
                     @Override
                     public void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
                         postProcess.accept( pnioExchange, workflowState );

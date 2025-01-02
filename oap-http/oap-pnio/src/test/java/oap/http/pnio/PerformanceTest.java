@@ -1,23 +1,22 @@
 package oap.http.pnio;
 
-import oap.benchmark.Benchmark;
 import oap.concurrent.LongAdder;
 import oap.concurrent.Threads;
+import oap.concurrent.scheduler.Scheduler;
 import oap.http.server.nio.NioHttpServer;
-import oap.testng.Ports;
+import oap.json.Binder;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
-import static oap.http.test.HttpAsserts.assertPost;
+import java.util.concurrent.TimeUnit;
 
 public class PerformanceTest {
     @Test
     public void test() throws IOException {
+
         RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( new TestHandler( ) )
+            .init( new TestHandler() )
             .next( new TestHandler() )
             .build();
 
@@ -35,9 +34,18 @@ public class PerformanceTest {
             .build();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = 4;
+            httpServer.statistics = true;
             httpServer.start();
 
-            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener() ) ) {
+            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener(), new PnioExchanges<>() ) ) {
+
+                Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                    System.out.println( Binder.json.marshal( new PnioWS<>( httpHandler ).queue() ) );
+                } );
 
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, 100, new TestState() ), false );
@@ -59,7 +67,7 @@ public class PerformanceTest {
 
     }
 
-    public static class TestHandler extends PnioRequestHandler<TestState> {
+    public static class TestHandler extends ComputePnioRequestHandler<TestState> {
         @Override
         public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) {
             double sum = 0.0;
@@ -68,11 +76,6 @@ public class PerformanceTest {
                     sum += i + Math.pow( j * 1.0, 0.5 );
                 }
             }
-        }
-
-        @Override
-        public Type getType() {
-            return COMPUTE;
         }
     }
 }
