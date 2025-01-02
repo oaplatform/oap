@@ -74,7 +74,7 @@
         <oap.project.version>22.6.7</oap.project.version>
 
         <oap.deps.config.version>1.4.3</oap.deps.config.version>
-        <oap.deps.oap-teamcity.version>21.0.1</oap.deps.oap-teamcity.version>
+        <oap.deps.oap-teamcity.version>22.0.0</oap.deps.oap-teamcity.version>
 
         <oap.deps.mockito.version>5.11.0</oap.deps.mockito.version>
 
