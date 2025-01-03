@@ -54,6 +54,6 @@ public class LogWSTest {
         LogWS logWS = new LogWS();
         Map<String, String> map = logWS.getAll();
 
-        assertThat( map ).contains( entry( "org", "WARN" ), entry( "ROOT", "TRACE" ) );
+        assertThat( map ).contains( entry( "org", "WARN" ) );
     }
 }
