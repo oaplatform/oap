@@ -40,6 +40,7 @@ public class Metadata<T> implements Serializable {
     private static final long serialVersionUID = -4330659282261369252L;
 
     public long modified = DateTimeUtils.currentTimeMillis();
+    public long created = DateTimeUtils.currentTimeMillis();
     public long hash = 0;
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
@@ -57,6 +58,7 @@ public class Metadata<T> implements Serializable {
     public static <T> Metadata<T> from( Metadata<T> metadata ) {
         Metadata<T> m = new Metadata<>( metadata.object );
         m.modified = metadata.modified;
+        m.created = metadata.created;
         m.hash = metadata.hash;
         return m;
     }
@@ -89,7 +91,8 @@ public class Metadata<T> implements Serializable {
     @Override
     public String toString() {
         return "Metadata("
-            + "modified=" + modified
+            + "created=" + created
+            + ", modified=" + modified
             + ", hash=" + hash
             + ", object=" + object
             + ", deleted=" + deleted
