@@ -26,23 +26,30 @@ package oap.storage;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.benchmark.Benchmark;
 import oap.id.Identifier;
 import oap.id.IntIdentifier;
+import oap.testng.Fixtures;
+import oap.testng.SystemTimerFixture;
+import oap.util.Dates;
+import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static oap.id.Identifier.Option.FILL;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
 
-@Test( enabled = false )
-public class MemoryStorageTest {
-    @Test( enabled = false )
+@Test
+public class MemoryStorageTest extends Fixtures {
+    public MemoryStorageTest() {
+        fixtures( new SystemTimerFixture() );
+    }
+
+    @Test
     public void update() {
-        var storage = new MemoryStorage<>(
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
                 .suggestion( b -> b.s )
                 .build(),
@@ -61,9 +68,35 @@ public class MemoryStorageTest {
         assertThat( ids ).containsOnly( noId.id );
     }
 
-    @Test( enabled = false )
+    @Test
+    public void testCreatedModofied() {
+        DateTime created = new DateTime( 2024, 1, 14, 15, 13, 14, UTC );
+
+        Dates.setTimeFixed( created.getMillis() );
+
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>(
+            Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
+                .suggestion( b -> b.s )
+                .build(),
+            SERIALIZED );
+
+        storage.store( new Bean( "id1" ) );
+
+        Metadata<Bean> metadata = storage.getMetadata( "id1" ).orElseThrow();
+        assertThat( new DateTime( metadata.created, UTC ) ).isEqualTo( created );
+        assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created );
+
+        Dates.incFixed( Dates.m( 3 ) );
+        storage.store( new Bean( "id1", "v" ) );
+
+        metadata = storage.getMetadata( "id1" ).orElseThrow();
+        assertThat( new DateTime( metadata.created, UTC ) ).isEqualTo( created );
+        assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created.plusMinutes( 3 ) );
+    }
+
+    @Test
     public void updateWithId() {
-        var storage = new MemoryStorage<>(
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
                 .suggestion( b -> b.s )
                 .build(),
@@ -82,9 +115,9 @@ public class MemoryStorageTest {
         assertThat( ids ).containsOnly( id.id );
     }
 
-    @Test( enabled = false )
+    @Test
     public void get() {
-        var storage = new MemoryStorage<>(
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>(
             Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
                 .suggestion( b -> b.s )
                 .build(),
@@ -97,24 +130,9 @@ public class MemoryStorageTest {
         assertThat( storage.list() ).containsOnly( bean, beanNoId );
     }
 
-    @Test( enabled = false )
-    public void concurrentInsertConflict() {
-        var storage = new MemoryStorage<>(
-            Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
-                .suggestion( b -> b.s )
-                .options( FILL )
-                .build(),
-            SERIALIZED );
-        Benchmark.benchmark( "insert-failure", 1000, () -> storage.store( new Bean( null, "BBBBB" ) ) )
-            .inThreads( 100 )
-            .experiments( 1 )
-            .run();
-        assertThat( storage.list().size() ).isEqualTo( 2000 );
-    }
-
-    @Test( enabled = false )
+    @Test
     public void intId() {
-        var storage = new MemoryStorage<>( IntIdentifier.<IntBean>forId( b -> b.id, ( b, id ) -> b.id = id ).build(), SERIALIZED );
+        MemoryStorage<Integer, IntBean> storage = new MemoryStorage<>( IntIdentifier.<IntBean>forId( b -> b.id, ( b, id ) -> b.id = id ).build(), SERIALIZED );
         var a = new IntBean( null, "a" );
         var b = new IntBean( 2, "b" );
         var c = new IntBean( null, "c" );
