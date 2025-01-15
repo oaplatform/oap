@@ -61,6 +61,8 @@ public interface Storage<Id, Data> extends Iterable<Data> {
 
     Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init );
 
+    boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate );
+
     Optional<Data> delete( @Nonnull Id id );
 
     Optional<Data> permanentlyDelete( @Nonnull Id id );
