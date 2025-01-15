@@ -69,7 +69,7 @@ public class MemoryStorageTest extends Fixtures {
     }
 
     @Test
-    public void testCreatedModofied() {
+    public void testCreatedModified() {
         DateTime created = new DateTime( 2024, 1, 14, 15, 13, 14, UTC );
 
         Dates.setTimeFixed( created.getMillis() );
@@ -91,6 +91,33 @@ public class MemoryStorageTest extends Fixtures {
 
         metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.created, UTC ) ).isEqualTo( created );
+        assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created.plusMinutes( 3 ) );
+    }
+
+    @Test
+    public void testTryUpdate() {
+        DateTime created = new DateTime( 2024, 1, 14, 15, 13, 14, UTC );
+
+        Dates.setTimeFixed( created.getMillis() );
+
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>(
+            Identifier.<Bean>forId( b -> b.id, ( b, id ) -> b.id = id )
+                .suggestion( b -> b.s )
+                .build(),
+            SERIALIZED );
+
+        storage.store( new Bean( "id1" ) );
+
+        Metadata<Bean> metadata = storage.getMetadata( "id1" ).orElseThrow();
+        assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created );
+
+        Dates.incFixed( Dates.m( 3 ) );
+        storage.tryUpdate( "id1", b -> null );
+        metadata = storage.getMetadata( "id1" ).orElseThrow();
+        assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created );
+
+        storage.tryUpdate( "id1", b -> b );
+        metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created.plusMinutes( 3 ) );
     }
 

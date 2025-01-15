@@ -30,6 +30,7 @@ import oap.util.BiStream;
 import oap.util.Lists;
 import oap.util.Pair;
 import oap.util.Stream;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -139,6 +140,15 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     public Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init ) {
         if( id == null ) return store( init.get() );
         else return lock.synchronizedOn( id, () -> update( id, update ).orElseGet( () -> store( init.get() ) ) );
+    }
+
+    @Override
+    public boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate ) {
+        requireNonNull( id );
+
+        Optional<Metadata<Data>> result = memory.tryRemap( id, tryUpdate );
+        result.ifPresent( m -> fireUpdated( id, m.object ) );
+        return result.isPresent();
     }
 
     @Override
@@ -325,6 +335,29 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
                     : m.update( update.apply( m.object ) ) ) ) );
         }
 
+        public Optional<Metadata<T>> tryRemap( I id, Function<T, T> tryUpdate ) {
+            MutableObject<Metadata<T>> ret = new MutableObject<>();
+
+            return lock.synchronizedOn( id, () -> {
+                data.compute( id, ( anId, m ) -> {
+                        if( m == null ) {
+                            return null;
+                        }
+
+                        T apply = tryUpdate.apply( m.object );
+                        if( apply != null ) {
+                            m.update( apply );
+                            ret.setValue( m );
+                        }
+
+                        return m;
+                    }
+                );
+
+                return Optional.ofNullable( ret.getValue() );
+            } );
+        }
+
         public List<Pair<I, Metadata<T>>> markDeletedAll() {
             List<Pair<I, Metadata<T>>> ms = selectLive().toList();
             ms.forEach( p -> p._2.delete() );
@@ -352,6 +385,5 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         public Stream<I> selectLiveIds() {
             return selectLive().mapToObj( ( id, m ) -> id );
         }
-
     }
 }
