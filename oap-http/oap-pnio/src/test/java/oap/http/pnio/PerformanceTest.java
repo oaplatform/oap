@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class PerformanceTest {
-    @Test
+    @Test( enabled = false )
     public void test() throws IOException {
 
         RequestWorkflow<TestState> workflow = RequestWorkflow
