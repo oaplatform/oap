@@ -42,11 +42,21 @@
             <artifactId>oap-mail</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-mail-mongo</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
             <version>${oap.project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-storage-mongo-test</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

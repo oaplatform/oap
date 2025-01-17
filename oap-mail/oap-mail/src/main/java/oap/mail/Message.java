@@ -27,18 +27,23 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.ToString;
 import org.joda.time.DateTime;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @ToString( of = { "subject", "from", "to", "cc", "bcc", "created" } )
-public class Message {
+public class Message implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 207713767383114714L;
+
+    public final ArrayList<MailAddress> to = new ArrayList<>();
+    public final ArrayList<MailAddress> cc = new ArrayList<>();
+    public final ArrayList<MailAddress> bcc = new ArrayList<>();
     public String subject;
     public String body;
-    public List<Attachment> attachments = new ArrayList<>();
+    public ArrayList<Attachment> attachments = new ArrayList<>();
     public MailAddress from;
-    public final List<MailAddress> to = new ArrayList<>();
-    public final List<MailAddress> cc = new ArrayList<>();
-    public final List<MailAddress> bcc = new ArrayList<>();
     public String contentType = "text/plain";
     public DateTime created = new DateTime();
 
@@ -46,7 +51,9 @@ public class Message {
     public Message( String subject, String body, List<Attachment> attachments ) {
         this.body = body;
         this.subject = subject;
-        if( attachments != null ) this.attachments.addAll( attachments );
+        if( attachments != null ) {
+            this.attachments.addAll( attachments );
+        }
     }
 
     public Message() {

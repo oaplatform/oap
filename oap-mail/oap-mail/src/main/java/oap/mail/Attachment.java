@@ -28,10 +28,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import lombok.ToString;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 @ToString
-public class Attachment {
+public class Attachment implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -8962616411939449885L;
+
     private final String contentId;
     private final String file;
     @JacksonXmlProperty( isAttribute = true )
@@ -46,8 +52,8 @@ public class Attachment {
     @JsonCreator
     public Attachment( String contentType, String content, String contentId, String file, String name ) {
         checkArgument( file != null
-            || contentType.startsWith( "text/" )
-            || contentType.startsWith( "image/" ),
+                || contentType.startsWith( "text/" )
+                || contentType.startsWith( "image/" ),
             "contentType.startsWith( text/ ) || contentType.startsWith( image/ ) || file != null" );
         this.contentType = contentType;
         this.content = content;

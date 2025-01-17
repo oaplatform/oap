@@ -21,37 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.mail;
+package oap.mail.mongo;
 
+import oap.mail.MailQueue;
+import oap.mail.Message;
 import oap.mail.test.MessageAssertion;
+import oap.storage.mongo.MongoFixture;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import oap.util.Lists;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
-
-import java.nio.file.Path;
 
 import static oap.mail.test.MessagesAssertion.assertMessages;
 import static oap.util.function.Functions.empty.accept;
 import static oap.util.function.Functions.empty.reject;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MailQueueTest extends Fixtures {
-    private final TestDirectoryFixture testDirectoryFixture;
+public class MailQueueMongoTest extends Fixtures {
+    private final MongoFixture mongoFixture;
 
-    public MailQueueTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    public MailQueueMongoTest() {
+        mongoFixture = fixture( new MongoFixture() );
     }
 
     @Test
     public void persist() {
-        Path location = testDirectoryFixture.testPath( "queue" );
-        MailQueue queue = prepareQueue( location );
+        MailQueue queue = prepareQueue();
         queue.processing( reject() );
-        assertThat( location.resolve( "mail.gz" ) ).exists();
-        MailQueue queue2 = new MailQueue( new MailQueuePersistenceFile( location ) );
+        assertThat( mongoFixture.client().getCollection( "mails" ).countDocuments() ).isEqualTo( 2 );
+        MailQueue queue2 = new MailQueue( new MailQueuePersistenceMongo( mongoFixture.client(), "mails" ) );
         assertMessages( queue2.messages() )
             .hasSize( 2 )
             .bySubject( "subj1", MessageAssertion::assertMessage )
@@ -59,12 +58,12 @@ public class MailQueueTest extends Fixtures {
 
         queue2.processing( accept() );
         assertMessages( queue2.messages() ).isEmpty();
-        MailQueue queue3 = new MailQueue( new MailQueuePersistenceFile( location ) );
+        MailQueue queue3 = new MailQueue( new MailQueuePersistenceMongo( mongoFixture.client(), "mails" ) );
         assertMessages( queue3.messages() ).isEmpty();
     }
 
-    private MailQueue prepareQueue( Path location ) {
-        MailQueue queue = new MailQueue( new MailQueuePersistenceFile( location ) );
+    private MailQueue prepareQueue() {
+        MailQueue queue = new MailQueue( new MailQueuePersistenceMongo( mongoFixture.client(), "mails" ) );
         queue.add( new Message( "subj1", "body", Lists.empty() ) );
         queue.add( new Message( "subj2", "body", Lists.empty() ) );
         Message message = new Message( "subj3", "body", Lists.empty() );
