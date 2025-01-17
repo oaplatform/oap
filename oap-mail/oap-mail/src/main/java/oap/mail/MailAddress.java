@@ -30,6 +30,8 @@ import lombok.ToString;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.mail.internet.InternetAddress;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -38,7 +40,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @ToString
 @EqualsAndHashCode
-public class MailAddress {
+public class MailAddress implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -7106481927777678346L;
+
     public final String personal;
     public final String mail;
 

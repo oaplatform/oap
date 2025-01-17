@@ -24,34 +24,20 @@
 
 package oap.mail;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
-import oap.json.Binder;
-import oap.reflect.TypeRef;
 import oap.util.Dates;
-import oap.util.Lists;
-import oap.util.Stream;
 import org.joda.time.DateTime;
 
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Iterator;
 import java.util.function.Predicate;
 
 @Slf4j
 public class MailQueue {
-    private final ConcurrentLinkedQueue<Message> queue = new ConcurrentLinkedQueue<>();
-    private final Path location;
+    private final MailQueuePersistence mailQueuePersistence;
     public long brokenMessageTTL = Dates.w( 2 );
 
-    public MailQueue( Path location ) {
-        if( location != null ) {
-            this.location = location.resolve( "mail.gz" );
-            load();
-        } else this.location = null;
-
-        Metrics.gaugeCollectionSize( "mail_queue", Tags.empty(), queue );
+    public MailQueue( MailQueuePersistence mailQueuePersistence ) {
+        this.mailQueuePersistence = mailQueuePersistence;
     }
 
     public MailQueue() {
@@ -60,43 +46,29 @@ public class MailQueue {
 
     public void add( Message message ) {
         log.trace( "adding {}", message );
-        queue.add( message );
+        mailQueuePersistence.add( message );
     }
 
     public void processing( Predicate<Message> processor ) {
         DateTime ttl = DateTime.now().minus( brokenMessageTTL );
-        queue.removeIf( m -> {
-            if( processor.test( m ) ) return true;
-            if( m.created.isBefore( ttl ) ) {
-                log.debug( "removing expired message: {}", m );
-                return true;
+        Iterator<Message> iterator = mailQueuePersistence.iterator();
+        while( iterator.hasNext() ) {
+            Message message = iterator.next();
+
+            if( processor.test( message ) ) {
+                iterator.remove();
+            } else if( message.created.isBefore( ttl ) ) {
+                log.debug( "removing expired message: {}", message );
+                iterator.remove();
             }
-            return false;
-        } );
-        persist();
-    }
-
-    private void persist() {
-        if( location != null ) Binder.json.marshal( location, this.queue );
-    }
-
-    private void load() {
-        log.debug( "loading queue..." );
-        queue.addAll( Binder.json.unmarshal( new TypeRef<List<Message>>() {}, location ).orElse( Lists.empty() ) );
-        log.debug( "{} messages loaded", size() );
-    }
-
-    public List<Message> messages() {
-        return Stream.of( queue.stream() ).toList();
+        }
     }
 
     public int size() {
-        return queue.size();
+        return mailQueuePersistence.size();
     }
 
-    public void removeAll() {
-        log.trace( "removeAll" );
-        queue.clear();
-        persist();
+    public Iterable<? extends Message> messages() {
+        return mailQueuePersistence;
     }
 }
