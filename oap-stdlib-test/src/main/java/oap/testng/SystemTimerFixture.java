@@ -27,9 +27,21 @@ package oap.testng;
 import org.joda.time.DateTimeUtils;
 
 public class SystemTimerFixture extends AbstractFixture<SystemTimerFixture> {
+    private final boolean beforeResetToCurrentMillisSystem;
+
+    public SystemTimerFixture() {
+        this( true );
+    }
+
+    public SystemTimerFixture( boolean beforeResetToCurrentMillisSystem ) {
+        this.beforeResetToCurrentMillisSystem = beforeResetToCurrentMillisSystem;
+    }
+
     @Override
     protected void before() {
-        DateTimeUtils.setCurrentMillisSystem();
+        if( beforeResetToCurrentMillisSystem ) {
+            DateTimeUtils.setCurrentMillisSystem();
+        }
     }
 
     @Override
