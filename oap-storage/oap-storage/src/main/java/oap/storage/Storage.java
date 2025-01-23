@@ -43,7 +43,11 @@ public interface Storage<Id, Data> extends Iterable<Data> {
 
     Stream<Data> select();
 
+    Stream<Metadata<Data>> selectMetadata();
+
     List<Data> list();
+
+    List<Metadata<Data>> listMetadata();
 
     Optional<Data> get( @Nonnull Id id );
 
