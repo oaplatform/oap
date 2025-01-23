@@ -50,9 +50,9 @@ public class LazyFileStorage<T> extends MemoryStorage<String, T> implements Auto
     }
 
     @Override
-    public Stream<T> select() {
+    public Stream<Metadata<T>> selectMetadata( boolean liveOnly ) {
         open();
-        return super.select();
+        return super.selectMetadata( liveOnly );
     }
 
     @Override

@@ -64,12 +64,22 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         this.memory = new Memory<>( lock );
     }
 
-    public Stream<Data> select( boolean liveOnly ) {
-        return ( liveOnly ? memory.selectLive() : memory.selectAll() ).map( p -> p._2.object );
-    }
-
+    @Override
     public Stream<Data> select() {
         return select( true );
+    }
+
+    public Stream<Data> select( boolean liveOnly ) {
+        return selectMetadata( liveOnly ).map( metadata -> metadata.object );
+    }
+
+    public Stream<Metadata<Data>> selectMetadata( boolean liveOnly ) {
+        return ( liveOnly ? memory.selectLive() : memory.selectAll() ).map( p -> p._2 );
+    }
+
+    @Override
+    public Stream<Metadata<Data>> selectMetadata() {
+        return selectMetadata( true );
     }
 
     Stream<Data> selectAll() {
@@ -79,6 +89,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     @Override
     public List<Data> list() {
         return select().toList();
+    }
+
+    @Override
+    public List<Metadata<Data>> listMetadata() {
+        return selectMetadata().toList();
     }
 
     @Override
