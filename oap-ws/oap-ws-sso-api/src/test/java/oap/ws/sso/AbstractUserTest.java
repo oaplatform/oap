@@ -24,7 +24,6 @@
 
 package oap.ws.sso;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Pair;
@@ -54,8 +53,6 @@ public class AbstractUserTest {
         public final boolean tfaEnabled;
         public final String apiKey = RandomStringUtils.random( 10, true, true );
         public final Map<String, String> defaultAccounts = new HashMap<>();
-        @JsonIgnore
-        public final View view = new View();
         private final AtomicLong counter = new AtomicLong();
         public String defaultOrganization = "";
 
@@ -104,18 +101,5 @@ public class AbstractUserTest {
         public long getCounter() {
             return counter.get();
         }
-
-        @Override
-        public View getView() {
-            return view;
-        }
-
-        public class View implements User.View {
-            @Override
-            public String getEmail() {
-                return TestUser.this.getEmail();
-            }
-        }
-
     }
 }
