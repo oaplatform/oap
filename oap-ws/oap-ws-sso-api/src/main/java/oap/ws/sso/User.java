@@ -24,8 +24,6 @@
 
 package oap.ws.sso;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
@@ -44,11 +42,4 @@ public interface User extends Serializable {
     Optional<String> getDefaultAccount( String organizationId );
 
     long getCounter();
-
-    @JsonIgnore
-    View getView();
-
-    interface View extends Serializable {
-        String getEmail();
-    }
 }

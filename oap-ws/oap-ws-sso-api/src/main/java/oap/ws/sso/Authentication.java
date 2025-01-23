@@ -24,7 +24,6 @@
 
 package oap.ws.sso;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -43,8 +42,6 @@ public class Authentication implements Serializable {
     public final Token refreshToken;
     public final User user;
     public DateTime created;
-    @JsonIgnore
-    public View view = new View();
 
     public Authentication( Token accessToken, Token refreshToken, User user ) {
         this.accessToken = accessToken;
@@ -63,21 +60,6 @@ public class Authentication implements Serializable {
         public final String jwt;
     }
 
-    public class View implements Serializable {
-        public String getAccessToken() {
-            return accessToken.jwt;
-        }
-
-        public String getRefreshToken() {
-            return refreshToken.jwt;
-        }
-
-        public DateTime getCreated() {
-            return created;
-        }
-
-        public User.View getUser() {
-            return user != null ? user.getView() : null;
-        }
+    public record View( String accessToken, String refreshToken, DateTime created ) implements Serializable {
     }
 }

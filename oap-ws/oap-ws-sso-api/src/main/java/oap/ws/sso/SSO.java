@@ -84,11 +84,15 @@ public class SSO {
                 .withSecure( cookieSecure )
                 .build()
             )
-            .withBody( authentication.view, false );
+            .withBody( authenticationToView( authentication ), false );
     }
 
     public static Response authenticatedResponse( Authentication authentication, String cookieDomain ) {
         return authenticatedResponse( authentication, cookieDomain, false );
+    }
+
+    private static Authentication.View authenticationToView( Authentication authentication ) {
+        return new Authentication.View( authentication.accessToken.jwt, authentication.refreshToken.jwt, authentication.created );
     }
 
     private static DateTime getExpirationTimeCookie( Date expirationInToken, Date cookieExpiration ) {
