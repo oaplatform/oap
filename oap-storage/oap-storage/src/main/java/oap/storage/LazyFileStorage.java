@@ -74,9 +74,9 @@ public class LazyFileStorage<T> extends MemoryStorage<String, T> implements Auto
     }
 
     @Override
-    public Optional<T> delete( @Nonnull String id ) {
+    public Optional<Metadata<T>> deleteMetadata( String id ) {
         open();
-        return super.delete( id );
+        return super.deleteMetadata( id );
     }
 
     private synchronized void open() {
