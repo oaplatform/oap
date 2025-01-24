@@ -69,6 +69,8 @@ public interface Storage<Id, Data> extends Iterable<Data> {
 
     Optional<Data> delete( @Nonnull Id id );
 
+    Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id );
+
     Optional<Data> permanentlyDelete( @Nonnull Id id );
 
     void deleteAll();

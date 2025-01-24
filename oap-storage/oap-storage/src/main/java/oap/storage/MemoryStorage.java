@@ -189,9 +189,14 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     @Override
     public Optional<Data> delete( @Nonnull Id id ) {
+        return deleteMetadata( id ).map( m -> m.object );
+    }
+
+    @Override
+    public Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id ) {
         requireNonNull( id );
-        Optional<Data> old = memory.markDeleted( id ).map( m -> m.object );
-        old.ifPresent( o -> fireDeleted( id, o ) );
+        Optional<Metadata<Data>> old = memory.markDeleted( id );
+        old.ifPresent( o -> fireDeleted( id, o.object ) );
         return old;
     }
 
