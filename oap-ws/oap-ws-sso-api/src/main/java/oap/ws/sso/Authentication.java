@@ -60,6 +60,6 @@ public class Authentication implements Serializable {
         public final String jwt;
     }
 
-    public record View( String accessToken, String refreshToken, DateTime created ) implements Serializable {
+    public record View( String accessToken, String refreshToken, User.View user, DateTime created ) implements Serializable {
     }
 }
