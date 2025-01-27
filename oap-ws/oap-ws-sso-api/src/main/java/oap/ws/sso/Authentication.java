@@ -40,10 +40,10 @@ public class Authentication implements Serializable {
     private static final long serialVersionUID = -2221117654361445000L;
     public final Token accessToken;
     public final Token refreshToken;
-    public final User user;
+    public final UserView user;
     public DateTime created;
 
-    public Authentication( Token accessToken, Token refreshToken, User user ) {
+    public Authentication( Token accessToken, Token refreshToken, UserView user ) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.user = user;
@@ -60,6 +60,6 @@ public class Authentication implements Serializable {
         public final String jwt;
     }
 
-    public record View( String accessToken, String refreshToken, DateTime created ) implements Serializable {
+    public record View( String accessToken, String refreshToken, UserView user, DateTime created ) implements Serializable {
     }
 }
