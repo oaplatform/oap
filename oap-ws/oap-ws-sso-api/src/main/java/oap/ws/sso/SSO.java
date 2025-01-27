@@ -92,7 +92,7 @@ public class SSO {
     }
 
     private static Authentication.View authenticationToView( Authentication authentication ) {
-        return new Authentication.View( authentication.accessToken.jwt, authentication.refreshToken.jwt, authentication.user.getView(), authentication.created );
+        return new Authentication.View( authentication.accessToken.jwt, authentication.refreshToken.jwt, authentication.user, authentication.created );
     }
 
     private static DateTime getExpirationTimeCookie( Date expirationInToken, Date cookieExpiration ) {

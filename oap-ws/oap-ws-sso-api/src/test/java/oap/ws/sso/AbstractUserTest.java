@@ -101,17 +101,5 @@ public class AbstractUserTest {
         public long getCounter() {
             return counter.get();
         }
-
-        @Override
-        public User.View getView() {
-            return new View();
-        }
-
-        public class View implements User.View {
-            @Override
-            public String getEmail() {
-                return TestUser.this.getEmail();
-            }
-        }
     }
 }

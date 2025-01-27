@@ -29,7 +29,6 @@ import oap.util.Result;
 import java.util.Optional;
 
 public interface Authenticator {
-
     Result<Authentication, AuthenticationFailure> authenticate( String email, String password, Optional<String> tfaCode );
 
     Result<Authentication, AuthenticationFailure> authenticate( String email, Optional<String> tfaCode );
