@@ -55,6 +55,8 @@ public interface UserProvider {
 
     Optional<? extends User> getUser( String email );
 
+    Optional<? extends UserView> getUserView( String email );
+
     Result<UserWithCookies, String> getAuthenticatedByAccessToken( Optional<String> accessToken, Optional<String> refreshToken,
                                                                    Optional<String> sessionUser,
                                                                    SecurityRoles roles, String realm, String... wssPermissions );
