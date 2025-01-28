@@ -32,7 +32,7 @@ public abstract class AbstractFinisher implements Runnable {
     public final List<String> mask;
     public final Path corruptedDirectory;
     private final Timestamp timestamp;
-    public int threads = Runtime.getRuntime().availableProcessors();
+    public int threads = -1;
     public LinkedHashMap<String, Integer> priorityByType = new LinkedHashMap<>();
     protected int bufferSize = 1024 * 256 * 4 * 4;
 
@@ -47,6 +47,9 @@ public abstract class AbstractFinisher implements Runnable {
     }
 
     public void start() {
+        if( threads <= 0 ) {
+            threads = Runtime.getRuntime().availableProcessors();
+        }
         log.info( "threads = {}, sourceDirectory = {}, corruptedDirectory = {}, mask = {}, safeInterval = {}, bufferSize = {}",
             threads, sourceDirectory, corruptedDirectory, mask, Dates.durationToString( safeInterval ), bufferSize );
     }
