@@ -46,7 +46,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib-test</artifactId>
-            <version>${oap.project.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
