@@ -82,7 +82,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -91,6 +93,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @Slf4j
 public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     private final S3AsyncClient s3Client;
+    private volatile S3TransferManager s3TransferManager;
 
     public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String bucketName ) {
         S3CrtAsyncClientBuilder builder = S3AsyncClient.crtBuilder();
@@ -304,7 +307,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     @Override
     public void downloadFile( CloudURI source, Path destination ) throws CloudException {
-        try( S3TransferManager s3TransferManager = S3TransferManager.builder().s3Client( s3Client ).build() ) {
+        try {
+            S3TransferManager s3TransferManager = getS3TransferManager();
             GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket( source.container ).key( source.path ).build();
             DownloadFileRequest downloadFileRequest = DownloadFileRequest.builder().getObjectRequest( getObjectRequest ).destination( destination ).build();
             FileDownload fileDownload = s3TransferManager.downloadFile( downloadFileRequest );
@@ -318,9 +322,21 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         }
     }
 
+    private S3TransferManager getS3TransferManager() {
+        if( s3TransferManager == null ) {
+            synchronized( this ) {
+                if( s3TransferManager == null ) {
+                    s3TransferManager = S3TransferManager.builder().s3Client( s3Client ).build();
+                }
+            }
+        }
+        return s3TransferManager;
+    }
+
     @Override
     public void copy( CloudURI source, CloudURI destination ) throws CloudException {
-        try( S3TransferManager s3TransferManager = S3TransferManager.builder().s3Client( s3Client ).build() ) {
+        try {
+            S3TransferManager s3TransferManager = getS3TransferManager();
             CopyObjectRequest build = CopyObjectRequest.builder()
                 .sourceBucket( source.container )
                 .destinationBucket( destination.container )
@@ -350,40 +366,13 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         }
     }
 
-    public void uploadFrom( CloudURI destination, InputStream inputStream, Map<String, String> tags ) {
-        try( S3TransferManager s3TransferManager = S3TransferManager.builder().s3Client( s3Client ).build() ) {
-            BlockingInputStreamAsyncRequestBody body = AsyncRequestBody.forBlockingInputStream( null );
-
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket( destination.container ).key( destination.path )
-                .tagging( getTagging( tags ) )
-                .build();
-            UploadRequest uploadRequest = UploadRequest.builder()
-                .putObjectRequest( putObjectRequest )
-                .requestBody( body )
-                .build();
-
-            Upload upload = s3TransferManager.upload( uploadRequest );
-            CompletableFuture<CompletedUpload> completedUploadCompletableFuture = upload.completionFuture();
-
-            body.writeInputStream( inputStream );
-
-            CompletedUpload completedUpload = completedUploadCompletableFuture.get();
-            log.trace( "completedUpload {}", completedUpload );
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
     @Override
     public OutputStream getOutputStream( CloudURI cloudURI, Map<String, String> tags ) {
-        S3TransferManager s3TransferManager = S3TransferManager.builder().s3Client( s3Client ).build();
         ThreadPoolExecutor threadPoolExecutor = null;
         CompletableFuture<CompletedUpload> completedUploadCompletableFuture = null;
 
         try {
+            S3TransferManager s3TransferManager = getS3TransferManager();
             BlockingInputStreamAsyncRequestBody body = AsyncRequestBody.forBlockingInputStream( null );
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -424,7 +413,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     public void upload( CloudURI cloudURI, BlobData blobData ) {
         Preconditions.checkNotNull( blobData.content );
 
-        try( S3TransferManager s3TransferManager = S3TransferManager.builder().s3Client( s3Client ).build() ) {
+        try {
+            S3TransferManager s3TransferManager = getS3TransferManager();
             AsyncRequestBody body = switch( blobData.content ) {
                 case InputStream _ -> AsyncRequestBody.forBlockingInputStream( null );
                 case String str -> AsyncRequestBody.fromString( str, UTF_8 );
@@ -436,36 +426,36 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             };
 
 
-            PutObjectRequest.Builder builder = PutObjectRequest.builder()
-                .bucket( cloudURI.container ).key( cloudURI.path )
+            PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
+                .bucket( cloudURI.container )
+                .key( cloudURI.path )
                 .tagging( getTagging( blobData.tags ) );
 
             if( blobData.contentType != null ) {
-                builder.contentType( blobData.contentType );
+                putObjectRequestBuilder.contentType( blobData.contentType );
             }
             if( blobData.contentLength != null ) {
-                builder.contentLength( blobData.contentLength );
+                putObjectRequestBuilder.contentLength( blobData.contentLength );
             }
 
-            PutObjectRequest putObjectRequest = builder
-                .build();
             UploadRequest uploadRequest = UploadRequest.builder()
-                .putObjectRequest( putObjectRequest )
                 .requestBody( body )
+                .putObjectRequest( putObjectRequestBuilder.build() )
                 .build();
 
             Upload upload = s3TransferManager.upload( uploadRequest );
-            CompletableFuture<CompletedUpload> completedUploadCompletableFuture = upload.completionFuture();
 
             if( blobData.content instanceof InputStream is ) {
                 ( ( BlockingInputStreamAsyncRequestBody ) body ).writeInputStream( is );
             }
 
-            CompletedUpload completedUpload = completedUploadCompletableFuture.get();
+            CompletableFuture<CompletedUpload> completedUploadCompletableFuture = upload.completionFuture();
+            CompletedUpload completedUpload = completedUploadCompletableFuture.join();
             log.trace( "completedUpload {}", completedUpload );
-        } catch( ExecutionException e ) {
+        } catch( CompletionException e ) {
+            log.error( e.getMessage(), e );
             throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
+        } catch( CancellationException e ) {
             throw new CloudException( e );
         }
     }
@@ -520,7 +510,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     @Override
     public void close() {
-        s3Client.close();
+        Closeables.close( s3TransferManager );
+        Closeables.close( s3Client );
     }
 
     public static class CloudOutputStream extends OutputStream {

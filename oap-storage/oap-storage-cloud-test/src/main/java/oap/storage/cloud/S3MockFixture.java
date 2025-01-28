@@ -13,9 +13,8 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -27,6 +26,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.endpoints.S3EndpointParams;
 import software.amazon.awssdk.services.s3.endpoints.internal.DefaultS3EndpointProvider;
 import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -67,6 +67,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     private final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
     private GenericContainer<?> container;
+    private LocalStackContainer localStackContainer;
 
     public S3MockFixture( TestDirectoryFixture testDirectoryFixture ) {
         this.testDirectoryFixture = testDirectoryFixture;
@@ -86,17 +87,20 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
         PortBinding portBinding = new PortBinding(
             Ports.Binding.bindPort( httpPort ),
-            new ExposedPort( S3MOCK_DEFAULT_HTTP_PORT ) );
+            new ExposedPort( 4566 ) );
 
-        container = new GenericContainer<>( DockerImageName.parse( "adobe/s3mock:" + VERSION ) )
-            .withEnv( "initialBuckets", String.join( ",", initialBuckets ) )
-            .withFileSystemBind( testDirectoryFixture.testPath( "s3" ).toString(), "/s3mockroot", BindMode.READ_WRITE )
-            .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) )
-            .waitingFor( Wait.forHttp( "/favicon.ico" )
-                .forPort( S3MOCK_DEFAULT_HTTP_PORT )
-                .withMethod( "GET" )
-                .forStatusCode( 200 ) );
-        container.start();
+        localStackContainer = new LocalStackContainer( DockerImageName.parse( "localstack/localstack:4.0.3" ) )
+            .withServices( LocalStackContainer.Service.S3 )
+            .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) );
+        localStackContainer.start();
+
+        final S3Client s3 = getS3();
+
+        for( String bucket : initialBuckets ) {
+            CreateBucketRequest createBucketRequest = CreateBucketRequest.builder().bucket( bucket ).build();
+
+            s3.createBucket( createBucketRequest );
+        }
     }
 
     public S3MockFixture withInitialBuckets( String... bucketNames ) {
@@ -107,8 +111,8 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
     @Override
     protected void after() {
-        if( container != null ) {
-            container.stop();
+        if( localStackContainer != null ) {
+            localStackContainer.stop();
         }
 
         super.after();
@@ -122,7 +126,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
      * !!! S3Mock bug!!!! no urldecode is used for the header
      */
     public Map<String, String> readTags( String container, String path ) {
-        final S3Client s3 = getS3();
+        S3Client s3 = getS3();
 
         return Lists.toLinkedHashMap( s3.getObjectTagging( GetObjectTaggingRequest.builder().bucket( container ).key( path ).build() )
             .tagSet(), k -> URLDecoder.decode( k.key(), UTF_8 ), v -> URLDecoder.decode( v.value(), UTF_8 ) );
@@ -172,7 +176,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         return S3Client.builder()
             .credentialsProvider( provider )
             .endpointOverride( s3Endpoint.url() )
-            .region( Region.AWS_GLOBAL )
+            .region( Region.US_EAST_1 )
             .forcePathStyle( true )
             .build();
     }

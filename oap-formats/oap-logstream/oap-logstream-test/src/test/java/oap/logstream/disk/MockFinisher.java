@@ -1,6 +1,8 @@
 package oap.logstream.disk;
 
 import oap.logstream.Timestamp;
+import oap.storage.cloud.FileSystem;
+import oap.storage.cloud.FileSystemConfiguration;
 import oap.util.Pair;
 import org.joda.time.DateTime;
 
@@ -13,8 +15,8 @@ import static oap.util.Pair.__;
 public class MockFinisher extends AbstractFinisher {
     public final ArrayList<Pair<Path, DateTime>> files = new ArrayList<>();
 
-    protected MockFinisher( Path sourceDirectory, long safeInterval, List<String> mask, Timestamp timestamp ) {
-        super( sourceDirectory, safeInterval, mask, timestamp );
+    protected MockFinisher( FileSystemConfiguration fileSystemConfiguration, Path sourceDirectory, long safeInterval, List<String> mask, Timestamp timestamp ) {
+        super( fileSystemConfiguration, sourceDirectory, safeInterval, mask, timestamp );
     }
 
     @Override
@@ -22,7 +24,7 @@ public class MockFinisher extends AbstractFinisher {
     }
 
     @Override
-    protected void process( Path path, DateTime bucketTime ) {
+    protected void process( FileSystem fileSystem, Path path, DateTime bucketTime ) {
         files.add( __( path, bucketTime ) );
     }
 }

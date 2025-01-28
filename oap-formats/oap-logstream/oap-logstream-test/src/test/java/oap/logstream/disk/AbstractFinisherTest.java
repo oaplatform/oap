@@ -1,6 +1,7 @@
 package oap.logstream.disk;
 
 import oap.logstream.Timestamp;
+import oap.storage.cloud.FileSystemConfiguration;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
@@ -32,7 +33,7 @@ public class AbstractFinisherTest extends Fixtures {
 
         Path logs = testDirectoryFixture.testPath( "logs" );
         Files.createDirectory( logs );
-        MockFinisher finisher = new MockFinisher( logs, safeInterval, List.of( "*.txt" ), timestamp );
+        MockFinisher finisher = new MockFinisher( new FileSystemConfiguration( Map.of() ), logs, safeInterval, List.of( "*.txt" ), timestamp );
         finisher.priorityByType.put( "type2", 10 );
 
         Path file11 = Files.createFile( logs.resolve( "file1-type1.txt" ) );
