@@ -33,7 +33,10 @@ public class AbstractFinisherTest extends Fixtures {
 
         Path logs = testDirectoryFixture.testPath( "logs" );
         Files.createDirectory( logs );
-        MockFinisher finisher = new MockFinisher( new FileSystemConfiguration( Map.of() ), logs, safeInterval, List.of( "*.txt" ), timestamp );
+        MockFinisher finisher = new MockFinisher( new FileSystemConfiguration( Map.of(
+            "fs.default.clouds.scheme", "s3", "fs.default.jclouds.container", "test" ) ), logs, safeInterval, List.of( "*.txt" ), timestamp );
+        finisher.start();
+
         finisher.priorityByType.put( "type2", 10 );
 
         Path file11 = Files.createFile( logs.resolve( "file1-type1.txt" ) );
