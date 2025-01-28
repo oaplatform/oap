@@ -15,12 +15,12 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-mail</artifactId>
-            <version>${oap.project.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-storage-mongo</artifactId>
-            <version>${oap.project.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
