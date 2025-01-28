@@ -5,7 +5,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>22.0.6</version>
+        <version>22.0.7</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -19,7 +19,7 @@
             <dependency>
                 <groupId>oap</groupId>
                 <artifactId>oap-dependencies</artifactId>
-                <version>22.0.6</version>
+                <version>22.0.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -84,7 +84,7 @@
         <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
 
         <oap.deps.hadoop.version>3.4.1</oap.deps.hadoop.version>
-        <oap.deps.aws-java-sdk-aws-crt.version>0.33.2</oap.deps.aws-java-sdk-aws-crt.version>
+        <oap.deps.aws-java-sdk-aws-crt.version>0.33.9</oap.deps.aws-java-sdk-aws-crt.version>
         <oap.deps.testcontainers.version>1.20.3</oap.deps.testcontainers.version>
 
         <oap.deps.jackson.version>2.17.2</oap.deps.jackson.version>

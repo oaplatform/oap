@@ -1,6 +1,8 @@
 package oap.storage.cloud;
 
-import com.adobe.testing.s3mock.S3MockApplication;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
@@ -11,6 +13,10 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
+import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -36,7 +42,6 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +49,7 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
+ * https://github.com/adobe/S3Mock/blob/main/testsupport/testcontainers/src/main/java/com/adobe/testing/s3mock/testcontainers/S3MockContainer.java
  * variables:
  * <ul>
  *     <li>HTTP_PORT</li>
@@ -52,19 +58,20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @Slf4j
 public class S3MockFixture extends AbstractFixture<S3MockFixture> {
+    private static final String VERSION = "3.12.0";
+
+    private static final int S3MOCK_DEFAULT_HTTP_PORT = 9090;
+
     @Getter
     private final int httpPort;
-    @Getter
-    private final int httpsPort;
     private final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
-    private S3MockApplication s3MockApplication;
+    private GenericContainer<?> container;
 
     public S3MockFixture( TestDirectoryFixture testDirectoryFixture ) {
         this.testDirectoryFixture = testDirectoryFixture;
 
         httpPort = definePort( "HTTP_PORT" );
-        httpsPort = definePort( "HTTPS_PORT" );
 
         addChild( testDirectoryFixture );
     }
@@ -77,13 +84,19 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     protected void before() {
         super.before();
 
-        s3MockApplication = S3MockApplication.start( new LinkedHashMap<>( Map.of(
-            S3MockApplication.PROP_HTTP_PORT, httpPort,
-            S3MockApplication.PROP_HTTPS_PORT, httpsPort,
-            S3MockApplication.PROP_INITIAL_BUCKETS, String.join( ",", initialBuckets ),
-            S3MockApplication.PROP_SILENT, false,
-            S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testPath( "s3" ).toString()
-        ) ) );
+        PortBinding portBinding = new PortBinding(
+            Ports.Binding.bindPort( httpPort ),
+            new ExposedPort( S3MOCK_DEFAULT_HTTP_PORT ) );
+
+        container = new GenericContainer<>( DockerImageName.parse( "adobe/s3mock:" + VERSION ) )
+            .withEnv( "initialBuckets", String.join( ",", initialBuckets ) )
+            .withFileSystemBind( testDirectoryFixture.testPath( "s3" ).toString(), "/s3mockroot", BindMode.READ_WRITE )
+            .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) )
+            .waitingFor( Wait.forHttp( "/favicon.ico" )
+                .forPort( S3MOCK_DEFAULT_HTTP_PORT )
+                .withMethod( "GET" )
+                .forStatusCode( 200 ) );
+        container.start();
     }
 
     public S3MockFixture withInitialBuckets( String... bucketNames ) {
@@ -94,8 +107,8 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
     @Override
     protected void after() {
-        if( s3MockApplication != null ) {
-            s3MockApplication.stop();
+        if( container != null ) {
+            container.stop();
         }
 
         super.after();

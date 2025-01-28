@@ -37,6 +37,7 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.LogConsolidated;
 import oap.concurrent.Executors;
 import oap.concurrent.scheduler.ScheduledExecutorService;
 import oap.google.JodaTicker;
@@ -53,6 +54,7 @@ import oap.util.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.joda.time.DateTime;
+import org.slf4j.event.Level;
 
 import java.io.Closeable;
 import java.nio.file.Path;
@@ -146,8 +148,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         LogId logId = new LogId( "", type, "", Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
-        var currentPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time );
-        var previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ) );
+        String currentPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time );
+        String previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ) );
 
         if( currentPattern.equals( previousPattern ) ) {
             throw new IllegalArgumentException( "filepattern(" + type + ") must contain a variable <INTERVAL> or <MINUTE>" );
@@ -195,9 +197,11 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     @Override
     public AvailabilityReport availabilityReport() {
         long usableSpaceAtDirectory = Files.usableSpaceAtDirectory( logDirectory );
-        var enoughSpace = usableSpaceAtDirectory > requiredFreeSpace;
+        boolean enoughSpace = usableSpaceAtDirectory > requiredFreeSpace;
         if( !enoughSpace ) {
-            log.error( "There is no enough space on device {}, required {}, but {} available", logDirectory, requiredFreeSpace, usableSpaceAtDirectory );
+            LogConsolidated.log( log, Level.ERROR, Dates.s( 30 ),
+                "There is no enough space on device %s, required %s, but %s available".formatted( logDirectory.toString(), Files.byteCountToDisplaySize( requiredFreeSpace ), Files.byteCountToDisplaySize( usableSpaceAtDirectory ) ),
+                null );
         }
         return new AvailabilityReport( enoughSpace ? OPERATIONAL : FAILED );
     }
@@ -209,7 +213,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public void refresh( boolean forceSync ) {
         log.trace( "refresh forceSync {}", forceSync );
 
-        for( var writer : writers.asMap().values() ) {
+        for( AbstractWriter<? extends Closeable> writer : writers.asMap().values() ) {
             try {
                 writer.refresh( forceSync );
             } catch( Exception e ) {

@@ -59,6 +59,7 @@ public abstract class AbstractFinisher implements Runnable {
     @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     @SneakyThrows
     public void run( boolean forceSync ) {
+        long start = DateTimeUtils.currentTimeMillis();
         log.debug( "force {} let's start packing of {} in {}", forceSync, mask, sourceDirectory );
 
         log.debug( "current timestamp is {}", timestamp.toStartOfBucket( DateTime.now( UTC ) ) );
@@ -107,6 +108,10 @@ public abstract class AbstractFinisher implements Runnable {
         int priority = 0;
         ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
 
+        if( !logInfos.isEmpty() ) {
+            log.info( "uploading..." );
+        }
+
         for( int i = 0; i < logInfos.size(); i++ ) {
             LogInfo logInfo = logInfos.get( i );
             if( priority == logInfo.priority ) {
@@ -135,7 +140,12 @@ public abstract class AbstractFinisher implements Runnable {
             log.debug( "Waiting for finishing..." );
         }
         cleanup();
-        log.debug( "packing is done" );
+        if( !logInfos.isEmpty() ) {
+            log.info( "uploading... Done. (files {} duration {})",
+                logInfos.size(), Dates.durationToString( DateTimeUtils.currentTimeMillis() - start ) );
+        } else {
+            log.debug( "packing is done" );
+        }
     }
 
     protected abstract void cleanup();

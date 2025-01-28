@@ -28,7 +28,7 @@ import software.amazon.awssdk.core.async.BlockingInputStreamAsyncRequestBody;
 import software.amazon.awssdk.endpoints.Endpoint;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
+import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder;
 import software.amazon.awssdk.services.s3.endpoints.S3EndpointParams;
 import software.amazon.awssdk.services.s3.endpoints.internal.DefaultS3EndpointProvider;
 import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
@@ -93,7 +93,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     private final S3AsyncClient s3Client;
 
     public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String bucketName ) {
-        S3AsyncClientBuilder builder = S3AsyncClient.builder();
+        S3CrtAsyncClientBuilder builder = S3AsyncClient.crtBuilder();
 
         Object regionObj = fileSystemConfiguration.get( "s3", bucketName, "jclouds.region" );
         if( regionObj == null ) {
@@ -119,7 +119,6 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
         s3Client = builder
             .region( region )
-            .multipartEnabled( true )
             .build();
     }
 

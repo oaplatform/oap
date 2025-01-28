@@ -74,10 +74,10 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
     private void writeTsvV1( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         try {
             refresh();
-            var filename = filename();
+            Path filename = filename();
             if( out == null )
                 if( !java.nio.file.Files.exists( filename ) ) {
-                    log.info( "[{}] open new file v{}", filename, fileVersion );
+                    log.debug( "[{}] open new file v{}", filename, fileVersion );
                     outFilename = filename;
                     out = new CountingOutputStream( IoStreams.out( filename, IoStreams.Encoding.from( filename ), bufferSize ) );
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
@@ -85,9 +85,9 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
 
                     out.write( logId.headers[0].getBytes( UTF_8 ) );
                     out.write( '\n' );
-                    log.debug( "[{}] write headers {}", filename, logId.headers );
+                    log.trace( "[{}] write headers {}", filename, logId.headers );
                 } else {
-                    log.info( "[{}] file exists v{}", filename, fileVersion );
+                    log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
                     write( protocolVersion, buffer, offset, length );
@@ -113,10 +113,10 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
     private void writeBinaryV2( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         try {
             refresh();
-            var filename = filename();
+            Path filename = filename();
             if( out == null )
                 if( !java.nio.file.Files.exists( filename ) ) {
-                    log.info( "[{}] open new file v{}", filename, fileVersion );
+                    log.debug( "[{}] open new file v{}", filename, fileVersion );
                     outFilename = filename;
                     out = new CountingOutputStream( IoStreams.out( filename, IoStreams.Encoding.from( filename ), bufferSize ) );
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
@@ -124,9 +124,9 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
 
                     out.write( String.join( "\t", logId.headers ).getBytes( UTF_8 ) );
                     out.write( '\n' );
-                    log.debug( "[{}] write headers {}", filename, logId.headers );
+                    log.trace( "[{}] write headers {}", filename, logId.headers );
                 } else {
-                    log.info( "[{}] file exists v{}", filename, fileVersion );
+                    log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
                     write( protocolVersion, buffer, offset, length );
@@ -149,9 +149,9 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
     }
 
     private void convertToTsv( byte[] buffer, int offset, int length, IOExceptionConsumer<byte[]> cons ) throws IOException {
-        var bis = new BinaryInputStream( new ByteArrayInputStream( buffer, offset, length ) );
+        BinaryInputStream bis = new BinaryInputStream( new ByteArrayInputStream( buffer, offset, length ) );
 
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         TemplateAccumulatorTsv ta = new TemplateAccumulatorTsv( sb, configuration.dateTime32Format );
         Object obj = bis.readObject();
         while( obj != null ) {
