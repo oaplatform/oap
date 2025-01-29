@@ -9,6 +9,8 @@ import oap.concurrent.Executors;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Files;
 import oap.logstream.Timestamp;
+import oap.storage.cloud.FileSystem;
+import oap.storage.cloud.FileSystemConfiguration;
 import oap.util.Dates;
 import oap.util.Lists;
 import org.joda.time.DateTime;
@@ -31,14 +33,16 @@ public abstract class AbstractFinisher implements Runnable {
     public final long safeInterval;
     public final List<String> mask;
     public final Path corruptedDirectory;
+    protected final FileSystemConfiguration fileSystemConfiguration;
     private final Timestamp timestamp;
-    public int threads = Runtime.getRuntime().availableProcessors();
+    public int threads = -1;
     public LinkedHashMap<String, Integer> priorityByType = new LinkedHashMap<>();
     protected int bufferSize = 1024 * 256 * 4 * 4;
 
 
     @SneakyThrows
-    protected AbstractFinisher( Path sourceDirectory, long safeInterval, List<String> mask, Timestamp timestamp ) {
+    protected AbstractFinisher( FileSystemConfiguration fileSystemConfiguration, Path sourceDirectory, long safeInterval, List<String> mask, Timestamp timestamp ) {
+        this.fileSystemConfiguration = fileSystemConfiguration;
         this.sourceDirectory = sourceDirectory;
         this.safeInterval = safeInterval;
         this.mask = mask;
@@ -47,6 +51,9 @@ public abstract class AbstractFinisher implements Runnable {
     }
 
     public void start() {
+        if( threads <= 0 ) {
+            threads = Runtime.getRuntime().availableProcessors();
+        }
         log.info( "threads = {}, sourceDirectory = {}, corruptedDirectory = {}, mask = {}, safeInterval = {}, bufferSize = {}",
             threads, sourceDirectory, corruptedDirectory, mask, Dates.durationToString( safeInterval ), bufferSize );
     }
@@ -59,6 +66,7 @@ public abstract class AbstractFinisher implements Runnable {
     @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     @SneakyThrows
     public void run( boolean forceSync ) {
+        long start = DateTimeUtils.currentTimeMillis();
         log.debug( "force {} let's start packing of {} in {}", forceSync, mask, sourceDirectory );
 
         log.debug( "current timestamp is {}", timestamp.toStartOfBucket( DateTime.now( UTC ) ) );
@@ -107,22 +115,28 @@ public abstract class AbstractFinisher implements Runnable {
         int priority = 0;
         ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
 
-        for( int i = 0; i < logInfos.size(); i++ ) {
-            LogInfo logInfo = logInfos.get( i );
-            if( priority == logInfo.priority ) {
-                DateTime lastModifiedTime = timestamp.toStartOfBucket( new DateTime( logInfo.lastModifiedTime, UTC ) );
-                futures.add( CompletableFuture.runAsync( () -> process( logInfo.path, lastModifiedTime ), pool ) );
-            } else {
-                CompletableFuture<Void> allOf = CompletableFuture.allOf( futures.toArray( new CompletableFuture<?>[0] ) );
-                allOf.get( 60 / timestamp.bucketsPerHour, TimeUnit.MINUTES );
-                futures.clear();
-
-                priority = logInfo.priority;
-                i--;
-            }
+        if( !logInfos.isEmpty() ) {
+            log.info( "uploading..." );
         }
-        CompletableFuture<Void> allOf = CompletableFuture.allOf( futures.toArray( new CompletableFuture<?>[0] ) );
-        allOf.get( 60 / timestamp.bucketsPerHour, TimeUnit.MINUTES );
+
+        try( FileSystem fileSystem = new FileSystem( fileSystemConfiguration ) ) {
+            for( int i = 0; i < logInfos.size(); i++ ) {
+                LogInfo logInfo = logInfos.get( i );
+                if( priority == logInfo.priority ) {
+                    DateTime lastModifiedTime = timestamp.toStartOfBucket( new DateTime( logInfo.lastModifiedTime, UTC ) );
+                    futures.add( CompletableFuture.runAsync( () -> process( fileSystem, logInfo.path, lastModifiedTime ), pool ) );
+                } else {
+                    CompletableFuture<Void> allOf = CompletableFuture.allOf( futures.toArray( new CompletableFuture<?>[0] ) );
+                    allOf.get( 60 / timestamp.bucketsPerHour, TimeUnit.MINUTES );
+                    futures.clear();
+
+                    priority = logInfo.priority;
+                    i--;
+                }
+            }
+            CompletableFuture<Void> allOf = CompletableFuture.allOf( futures.toArray( new CompletableFuture<?>[0] ) );
+            allOf.get( 60 / timestamp.bucketsPerHour, TimeUnit.MINUTES );
+        }
 
         pool.shutdown();
 
@@ -135,12 +149,17 @@ public abstract class AbstractFinisher implements Runnable {
             log.debug( "Waiting for finishing..." );
         }
         cleanup();
-        log.debug( "packing is done" );
+        if( !logInfos.isEmpty() ) {
+            log.info( "uploading... Done. (files {} duration {})",
+                logInfos.size(), Dates.durationToString( DateTimeUtils.currentTimeMillis() - start ) );
+        } else {
+            log.debug( "packing is done" );
+        }
     }
 
     protected abstract void cleanup();
 
-    protected abstract void process( Path path, DateTime bucketTime );
+    protected abstract void process( FileSystem fileSystem, Path path, DateTime bucketTime );
 
     @ToString
     @AllArgsConstructor

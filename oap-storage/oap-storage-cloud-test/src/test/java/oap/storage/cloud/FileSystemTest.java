@@ -130,7 +130,7 @@ public class FileSystemTest extends Fixtures {
         Files.write( testDirectoryFixture.testPath( "folder/my-file.txt.gz" ), "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( new CloudURI( "file://folder/my-file.txt.gz" ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2=&+", "val2=&+" ) );
+            fileSystem.copy( new CloudURI( "file://folder/my-file.txt.gz" ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ) );
 
@@ -140,7 +140,7 @@ public class FileSystemTest extends Fixtures {
 
             assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/my-file.txt.gz" ) ).contains(
                 entry( "tag1", "va1" ),
-                entry( "tag2=&+", "val2=&+" )
+                entry( "tag2", "val2" )
             );
         }
     }

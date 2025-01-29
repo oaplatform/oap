@@ -1,6 +1,8 @@
 package oap.storage.cloud;
 
-import com.adobe.testing.s3mock.S3MockApplication;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
@@ -11,6 +13,9 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -21,6 +26,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.endpoints.S3EndpointParams;
 import software.amazon.awssdk.services.s3.endpoints.internal.DefaultS3EndpointProvider;
 import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -36,7 +42,6 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +49,7 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
+ * https://github.com/adobe/S3Mock/blob/main/testsupport/testcontainers/src/main/java/com/adobe/testing/s3mock/testcontainers/S3MockContainer.java
  * variables:
  * <ul>
  *     <li>HTTP_PORT</li>
@@ -52,19 +58,21 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @Slf4j
 public class S3MockFixture extends AbstractFixture<S3MockFixture> {
+    private static final String VERSION = "3.12.0";
+
+    private static final int S3MOCK_DEFAULT_HTTP_PORT = 9090;
+
     @Getter
     private final int httpPort;
-    @Getter
-    private final int httpsPort;
     private final TestDirectoryFixture testDirectoryFixture;
     private final LinkedHashSet<String> initialBuckets = new LinkedHashSet<>();
-    private S3MockApplication s3MockApplication;
+    private GenericContainer<?> container;
+    private LocalStackContainer localStackContainer;
 
     public S3MockFixture( TestDirectoryFixture testDirectoryFixture ) {
         this.testDirectoryFixture = testDirectoryFixture;
 
         httpPort = definePort( "HTTP_PORT" );
-        httpsPort = definePort( "HTTPS_PORT" );
 
         addChild( testDirectoryFixture );
     }
@@ -77,13 +85,22 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     protected void before() {
         super.before();
 
-        s3MockApplication = S3MockApplication.start( new LinkedHashMap<>( Map.of(
-            S3MockApplication.PROP_HTTP_PORT, httpPort,
-            S3MockApplication.PROP_HTTPS_PORT, httpsPort,
-            S3MockApplication.PROP_INITIAL_BUCKETS, String.join( ",", initialBuckets ),
-            S3MockApplication.PROP_SILENT, false,
-            S3MockApplication.PROP_ROOT_DIRECTORY, testDirectoryFixture.testPath( "s3" ).toString()
-        ) ) );
+        PortBinding portBinding = new PortBinding(
+            Ports.Binding.bindPort( httpPort ),
+            new ExposedPort( 4566 ) );
+
+        localStackContainer = new LocalStackContainer( DockerImageName.parse( "localstack/localstack:4.0.3" ) )
+            .withServices( LocalStackContainer.Service.S3 )
+            .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) );
+        localStackContainer.start();
+
+        final S3Client s3 = getS3();
+
+        for( String bucket : initialBuckets ) {
+            CreateBucketRequest createBucketRequest = CreateBucketRequest.builder().bucket( bucket ).build();
+
+            s3.createBucket( createBucketRequest );
+        }
     }
 
     public S3MockFixture withInitialBuckets( String... bucketNames ) {
@@ -94,8 +111,8 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
     @Override
     protected void after() {
-        if( s3MockApplication != null ) {
-            s3MockApplication.stop();
+        if( localStackContainer != null ) {
+            localStackContainer.stop();
         }
 
         super.after();
@@ -109,7 +126,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
      * !!! S3Mock bug!!!! no urldecode is used for the header
      */
     public Map<String, String> readTags( String container, String path ) {
-        final S3Client s3 = getS3();
+        S3Client s3 = getS3();
 
         return Lists.toLinkedHashMap( s3.getObjectTagging( GetObjectTaggingRequest.builder().bucket( container ).key( path ).build() )
             .tagSet(), k -> URLDecoder.decode( k.key(), UTF_8 ), v -> URLDecoder.decode( v.value(), UTF_8 ) );
@@ -159,7 +176,7 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         return S3Client.builder()
             .credentialsProvider( provider )
             .endpointOverride( s3Endpoint.url() )
-            .region( Region.AWS_GLOBAL )
+            .region( Region.US_EAST_1 )
             .forcePathStyle( true )
             .build();
     }

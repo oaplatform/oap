@@ -212,12 +212,12 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void mapEnvToConfig() {
-        var modules = List.of( url( "env/env.conf" ) );
+        List<URL> modules = List.of( url( "env/env.conf" ) );
 
         Env.set( "CONFIG.services.env.s1.enabled", "false" );
         Env.set( "CONFIG.services.env.s2.parameters.val", "\"test$value\"" );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "env" ) );
 
             assertThat( kernel.<Service1>service( "*.s1" ) ).isNotPresent();
