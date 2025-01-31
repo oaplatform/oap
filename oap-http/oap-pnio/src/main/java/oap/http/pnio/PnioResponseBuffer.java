@@ -41,30 +41,34 @@ public class PnioResponseBuffer {
         this.length = 0;
     }
 
-    public final String string() {
+    public String string() {
         return new String( buffer, 0, length );
     }
 
-    public final boolean isEmpty() {
+    public boolean isEmpty() {
         return length == 0;
     }
 
-    public final OutputStream getOutputStream() {
+    public OutputStream getOutputStream() {
         return new PnioOutputStream();
     }
 
-    public final void setAndResize( String data ) {
+    public void setAndResize( String data ) {
         byte[] bytes = data.getBytes( UTF_8 );
         setAndResize( bytes );
     }
 
-    public final void setAndResize( byte[] bytes, int length ) {
+    public void setAndResize( byte[] bytes, int length ) {
         this.buffer = bytes;
         this.length = length;
     }
 
-    public final void setAndResize( byte[] bytes ) {
+    public void setAndResize( byte[] bytes ) {
         setAndResize( bytes, bytes.length );
+    }
+
+    public void setEmpty() {
+        this.length = 0;
     }
 
     class PnioOutputStream extends FixedLengthArrayOutputStream {
