@@ -48,6 +48,7 @@ public class PnioExchange<WorkflowState> {
     public Throwable throwable;
     public ProcessState processState = ProcessState.RUNNING;
     public RequestWorkflow.Node<WorkflowState> currentTaskNode;
+    private Runnable onDoneRunnable;
 
     public PnioExchange( byte[] requestBuffer, int responseSize, ExecutorService blockingPool,
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
@@ -231,15 +232,21 @@ public class PnioExchange<WorkflowState> {
     }
 
     public void response() {
-        switch( processState ) {
-            case DONE -> pnioListener.fireOnDone( this );
-            case CONNECTION_CLOSED -> oapExchange.closeConnection();
-            case REJECTED -> pnioListener.fireOnRejected( this );
-            case REQUEST_BUFFER_OVERFLOW -> pnioListener.fireOnRequestBufferOverflow( this );
-            case RESPONSE_BUFFER_OVERFLOW -> pnioListener.fireOnResponseBufferOverflow( this );
-            case TIMEOUT -> pnioListener.fireOnTimeout( this );
-            case EXCEPTION -> pnioListener.fireOnException( this );
-            case null, default -> pnioListener.fireOnUnknown( this );
+        try {
+            switch( processState ) {
+                case DONE -> pnioListener.fireOnDone( this );
+                case CONNECTION_CLOSED -> oapExchange.closeConnection();
+                case REJECTED -> pnioListener.fireOnRejected( this );
+                case REQUEST_BUFFER_OVERFLOW -> pnioListener.fireOnRequestBufferOverflow( this );
+                case RESPONSE_BUFFER_OVERFLOW -> pnioListener.fireOnResponseBufferOverflow( this );
+                case TIMEOUT -> pnioListener.fireOnTimeout( this );
+                case EXCEPTION -> pnioListener.fireOnException( this );
+                case null, default -> pnioListener.fireOnUnknown( this );
+            }
+        } finally {
+            if( onDoneRunnable != null ) {
+                onDoneRunnable.run();
+            }
         }
     }
 
@@ -259,6 +266,12 @@ public class PnioExchange<WorkflowState> {
         } else {
             oapExchange.endExchange();
         }
+    }
+
+    public void onDone( Runnable onDoneRunnable ) {
+        Preconditions.checkArgument( this.onDoneRunnable == null );
+
+        this.onDoneRunnable = onDoneRunnable;
     }
 
     public enum ProcessState {

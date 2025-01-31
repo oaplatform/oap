@@ -173,7 +173,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener(), new PnioExchanges<>() ) ) {
+            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener() ) ) {
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
