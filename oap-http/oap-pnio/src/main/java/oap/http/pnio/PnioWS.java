@@ -19,7 +19,7 @@ public class PnioWS<WorkflowState> {
     public List<PnoExchangeView> queue() {
         ArrayList<PnoExchangeView> views = new ArrayList<>();
 
-        for( PnioExchange<WorkflowState> pnioExchange : pnioHttpHandler.exchanges ) {
+        for( PnioExchange<WorkflowState> pnioExchange : pnioHttpHandler.exchanges.values() ) {
             views.add( new PnoExchangeView( pnioExchange.processState, pnioExchange.getCurrentTaskName(),
                 pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
                 pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );
