@@ -5,7 +5,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>22.0.7</version>
+        <version>22.0.9</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -19,7 +19,7 @@
             <dependency>
                 <groupId>oap</groupId>
                 <artifactId>oap-dependencies</artifactId>
-                <version>22.0.8</version>
+                <version>22.0.9</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -113,7 +113,7 @@
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
-        <oap.deps.undertow.version>2.3.15.Final</oap.deps.undertow.version>
+        <oap.deps.undertow.version>2.3.18.Final</oap.deps.undertow.version>
         <oap.deps.affinity.version>3.23.3</oap.deps.affinity.version>
 
         <oap.deps.docker-java.version>3.3.4</oap.deps.docker-java.version>
