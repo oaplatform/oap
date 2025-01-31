@@ -136,7 +136,7 @@ public class PnioExchange<WorkflowState> {
         return oapExchange.exchange.getRequestStartTime();
     }
 
-    public void runComputeTask( ComputePnioRequestHandler<WorkflowState> compute ) {
+    public void runComputeTask( PnioRequestHandler<WorkflowState> compute ) {
         try {
             compute.handle( this, workflowState );
         } catch( BufferOverflowException e ) {
@@ -146,7 +146,7 @@ public class PnioExchange<WorkflowState> {
         }
     }
 
-    public CompletableFuture<Void> runBlockingTask( BlockingPnioRequestHandler<WorkflowState> blocking ) {
+    public CompletableFuture<Void> runBlockingTask( PnioRequestHandler<WorkflowState> blocking ) {
         Preconditions.checkNotNull( blockingPool );
 
         return CompletableFuture.runAsync( () -> {
@@ -158,7 +158,7 @@ public class PnioExchange<WorkflowState> {
         }, blockingPool );
     }
 
-    public void runAsyncTask( AsyncPnioRequestHandler<WorkflowState> async, Runnable success, Consumer<Throwable> exception ) {
+    public void runAsyncTask( PnioRequestHandler<WorkflowState> async, Runnable success, Consumer<Throwable> exception ) {
         try {
             async.handle( this, workflowState, success, exception );
         } catch( Throwable e ) {
@@ -173,28 +173,28 @@ public class PnioExchange<WorkflowState> {
                 break;
             }
 
-            AbstractPnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
+            PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
 
             if( getTimeLeftNano() <= 0 ) {
                 completeWithTimeout();
                 break;
             }
 
-            switch( task ) {
-                case ComputePnioRequestHandler<WorkflowState> compute -> {
-                    runComputeTask( compute );
+            switch( task.type ) {
+                case COMPUTE -> {
+                    runComputeTask( task );
                     currentTaskNode = currentTaskNode.next;
                 }
 
-                case BlockingPnioRequestHandler<WorkflowState> blocking -> {
-                    CompletableFuture<Void> completableFuture = runBlockingTask( blocking );
+                case BLOCKING -> {
+                    CompletableFuture<Void> completableFuture = runBlockingTask( task );
                     asyncProcess( completableFuture, currentTaskNode );
                     return;
                 }
 
-                case AsyncPnioRequestHandler<WorkflowState> async -> {
+                case ASYNC -> {
                     CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-                    runAsyncTask( async, () -> completableFuture.complete( null ), new Consumer<Throwable>() {
+                    runAsyncTask( task, () -> completableFuture.complete( null ), new Consumer<Throwable>() {
                         @Override
                         public void accept( Throwable throwable ) {
                             completableFuture.completeExceptionally( throwable );
