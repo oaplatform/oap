@@ -67,7 +67,11 @@ public class PerformanceTest {
 
     }
 
-    public static class TestHandler extends ComputePnioRequestHandler<TestState> {
+    public static class TestHandler extends PnioRequestHandler<TestState> {
+        public TestHandler() {
+            super( Type.COMPUTE );
+        }
+
         @Override
         public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) {
             double sum = 0.0;

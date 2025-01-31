@@ -37,14 +37,14 @@ public class TestHandler {
     private TestHandler() {
     }
 
-    public static ComputePnioRequestHandler<TestState> compute( String name ) {
+    public static PnioRequestHandler<TestState> compute( String name ) {
         return compute( name, _ -> {} );
     }
 
-    public static ComputePnioRequestHandler<TestState> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static PnioRequestHandler<TestState> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
-        return new ComputePnioRequestHandler<>() {
+        return new PnioRequestHandler<>( PnioRequestHandler.Type.COMPUTE ) {
             @Override
             public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
                 TestHandler.handle( name, "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
@@ -52,15 +52,15 @@ public class TestHandler {
         };
     }
 
-    public static BlockingPnioRequestHandler<TestState> block( String name ) {
+    public static PnioRequestHandler<TestState> block( String name ) {
         return block( name, _ -> {} );
     }
 
-    public static BlockingPnioRequestHandler<TestState> block( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static PnioRequestHandler<TestState> block( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 
-        return new BlockingPnioRequestHandler<>() {
+        return new PnioRequestHandler<>( PnioRequestHandler.Type.BLOCKING ) {
             @Override
             public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException, IOException {
                 TestHandler.handle( name, "BLOCK", pnioExchange, testState, testHandlerOptionsBuilder.build() );
@@ -68,15 +68,15 @@ public class TestHandler {
         };
     }
 
-    public static AsyncPnioRequestHandler<TestState> async( String name ) {
+    public static PnioRequestHandler<TestState> async( String name ) {
         return async( name, _ -> {} );
     }
 
-    public static AsyncPnioRequestHandler<TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static PnioRequestHandler<TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( true );
         builder.accept( testHandlerOptionsBuilder );
 
-        return new AsyncPnioRequestHandler<>() {
+        return new PnioRequestHandler<>( PnioRequestHandler.Type.ASYNC ) {
             @Override
             public void handle( PnioExchange<TestState> pnioExchange, TestState testState, Runnable success, Consumer<Throwable> exception ) throws InterruptedException {
                 TestHandler.handle( name, "ASYNC", pnioExchange, testState, testHandlerOptionsBuilder
