@@ -19,6 +19,7 @@ import oap.http.server.nio.NioHttpServer;
 import oap.io.Closeables;
 
 import java.io.Closeable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
@@ -30,14 +31,13 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public final ExecutorService blockingPool;
     public final int maxQueueSize;
     public final PnioWorkers<WorkflowState> workers;
-    public final PnioExchanges<WorkflowState> exchanges;
+    public final ConcurrentHashMap<Long, PnioExchange<WorkflowState>> exchanges = new ConcurrentHashMap<>();
     public RequestWorkflow<WorkflowState> workflow;
 
     public PnioHttpHandler( NioHttpServer server,
                             PnioHttpSettings settings,
                             RequestWorkflow<WorkflowState> workflow,
-                            PnioListener<WorkflowState> pnioListener,
-                            PnioExchanges<WorkflowState> exchanges ) {
+                            PnioListener<WorkflowState> pnioListener ) {
         this.server = server;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
@@ -51,7 +51,6 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
             : null;
 
         workers = new PnioWorkers<>( settings.threads, settings.maxQueueSize );
-        this.exchanges = exchanges;
     }
 
     public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
@@ -68,20 +67,28 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
             PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( message, responseSize, blockingPool, workflow, workflowState, oapExchange, timeout, workers, pnioListener );
-            exchanges.offer( pnioExchange );
+            exchanges.put( pnioExchange.id, pnioExchange );
 
-            workers.register( pnioExchange, new PnioTask<>( pnioExchange ) );
+            if( !workers.register( pnioExchange, new PnioTask<>( pnioExchange ) ) ) {
+                exchanges.remove( pnioExchange.id );
+            } else {
+                pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
+            }
         }, ( _, e ) -> {
             PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( null, responseSize, blockingPool, workflow, workflowState, oapExchange, timeout, workers, pnioListener );
-            exchanges.offer( pnioExchange );
+            exchanges.put( pnioExchange.id, pnioExchange );
+            try {
 
-            if( e instanceof Receiver.RequestToLargeException ) {
-                pnioExchange.completeWithBufferOverflow( true );
-            } else {
-                pnioExchange.completeWithFail( e );
+                if( e instanceof Receiver.RequestToLargeException ) {
+                    pnioExchange.completeWithBufferOverflow( true );
+                } else {
+                    pnioExchange.completeWithFail( e );
+                }
+
+                pnioExchange.response();
+            } finally {
+                exchanges.remove( pnioExchange.id );
             }
-
-            pnioExchange.response();
         } );
 
         oapExchange.exchange.dispatch();
@@ -95,7 +102,6 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
     public void close() {
         Closeables.close( blockingPool );
         Closeables.close( workers );
-        Closeables.close( exchanges );
     }
 
     @Builder
