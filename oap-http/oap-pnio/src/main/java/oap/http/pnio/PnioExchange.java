@@ -44,6 +44,7 @@ public class PnioExchange<WorkflowState> {
     public final WorkflowState workflowState;
     public final PnioListener<WorkflowState> pnioListener;
     public final long id = idGenerator.incrementAndGet();
+    public final long startTimeNano;
     private final PnioWorkers<WorkflowState> workers;
     public Throwable throwable;
     public ProcessState processState = ProcessState.RUNNING;
@@ -54,6 +55,7 @@ public class PnioExchange<WorkflowState> {
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
                          HttpServerExchange oapExchange, long timeout,
                          PnioWorkers<WorkflowState> workers, PnioListener<WorkflowState> pnioListener ) {
+        this.startTimeNano = System.nanoTime();
         this.requestBuffer = requestBuffer;
         this.responseBuffer = new PnioResponseBuffer( responseSize );
 
