@@ -161,7 +161,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
             .build();
 
-        Assertions.assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, _ -> {
+        Assertions.assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 0, 200, workflow, _ -> {
             } ) )
             .isInstanceOf( IllegalArgumentException.class )
             .hasMessage( "blockingPoolSize must be greater than 0" );
