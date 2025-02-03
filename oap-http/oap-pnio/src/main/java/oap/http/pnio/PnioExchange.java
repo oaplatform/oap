@@ -256,7 +256,7 @@ public class PnioExchange<WorkflowState> {
         }
     }
 
-    void send() {
+    public void send() {
         oapExchange.setStatusCode( httpResponse.status );
 
         httpResponse.headers.forEach( oapExchange::setResponseHeader );
