@@ -33,6 +33,7 @@ import oap.io.Closeables;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -96,7 +97,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .init( TestHandler.compute( "cpu-2" ) )
             .build();
 
-        runWithWorkflow( 2, 1024, 5, 40, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 2, 1024, 5, 40, 10, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -110,7 +111,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .init( TestHandler.compute( "cpu-2" ) )
             .build();
 
-        runWithWorkflow( 1024, 2, 5, 40, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 1024, 2, 5, 40, 10, Dates.s( 100 ), workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -124,7 +125,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
             .build();
 
-        runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
+        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -142,7 +143,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             .init( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) )
             .build();
 
-        runWithWorkflow( 1024, 1024, 1, 40, 200, workflow, port -> {
+        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -154,18 +155,30 @@ public class PnioHttpHandlerTest extends Fixtures {
         } );
     }
 
-    private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
-        runWithWorkflow( 1024, 1024, 10, 5, Dates.s( 100 ), workflow, cons );
+    @Test
+    public void testValidateBlockingPool() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
+            .build();
+
+        Assertions.assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, _ -> {
+            } ) )
+            .isInstanceOf( IllegalArgumentException.class )
+            .hasMessage( "blockingPoolSize must be greater than 0" );
     }
 
-    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int maxQueueSize,
+    private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
+        runWithWorkflow( 1024, 1024, 10, 5, 10, Dates.s( 100 ), workflow, cons );
+    }
+
+    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int maxQueueSize, int blockingPoolSize,
                                   long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )
             .responseSize( responseSize )
-            .blockingPoolSize( 10 )
+            .blockingPoolSize( blockingPoolSize )
             .threads( 3 )
             .maxQueueSize( maxQueueSize )
             .build();
