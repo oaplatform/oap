@@ -129,9 +129,9 @@ public class PnioExchange<WorkflowState> {
 
     public long getTimeLeftNano() {
         long now = System.nanoTime();
-        long durationInMillis = now - getRequestStartTime();
+        long durationInNano = now - getRequestStartTime();
 
-        return timeoutNano - durationInMillis;
+        return timeoutNano - durationInNano;
     }
 
     public long getRequestStartTime() {
@@ -178,7 +178,7 @@ public class PnioExchange<WorkflowState> {
             PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
 
             if( log.isTraceEnabled() ) {
-                log.trace( "Processing task: " + task.description() + ", type: " + task.type );
+                log.trace( "[PNIO] Processing task: " + task.description() + ", type: " + task.type );
             }
 
             if( getTimeLeftNano() <= 0 ) {
