@@ -177,6 +177,10 @@ public class PnioExchange<WorkflowState> {
 
             PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
 
+            if( log.isTraceEnabled() ) {
+                log.trace( "Processing task: " + task.description() + ", type: " + task.type );
+            }
+
             if( getTimeLeftNano() <= 0 ) {
                 completeWithTimeout();
                 break;
