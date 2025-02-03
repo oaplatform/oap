@@ -5,7 +5,7 @@ import oap.http.Http;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class PnioListener<WorkflowState> {
-    static void noContextResponse( oap.http.server.nio.HttpServerExchange pnioExchange ) {
+    protected void noContextResponse( oap.http.server.nio.HttpServerExchange pnioExchange ) {
         HttpServerExchange exchange = pnioExchange.exchange;
         exchange.setStatusCode( Http.StatusCode.NO_CONTENT );
         exchange.endExchange();
