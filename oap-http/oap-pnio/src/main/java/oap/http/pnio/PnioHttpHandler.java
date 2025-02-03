@@ -53,6 +53,12 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
         Preconditions.checkArgument( settings.maxQueueSize > 0, "maxQueueSize must be greater than 0" );
 
+        if( settings.blockingPoolSize <= 0 ) {
+            workflow.forEach( h -> {
+                Preconditions.checkArgument( h.type != PnioRequestHandler.Type.BLOCKING, "blockingPoolSize must be greater than 0" );
+            } );
+        }
+
         workers = new PnioWorkers<>( settings.threads, settings.maxQueueSize );
     }
 
