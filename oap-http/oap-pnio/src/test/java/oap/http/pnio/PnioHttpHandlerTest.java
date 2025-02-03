@@ -33,7 +33,6 @@ import oap.io.Closeables;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -44,6 +43,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.test.HttpAsserts.assertPost;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class PnioHttpHandlerTest extends Fixtures {
     @Test
@@ -161,8 +161,8 @@ public class PnioHttpHandlerTest extends Fixtures {
             .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
             .build();
 
-        Assertions.assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 0, 200, workflow, _ -> {
-            } ) )
+        assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 0, 200, workflow, _ -> {
+        } ) )
             .isInstanceOf( IllegalArgumentException.class )
             .hasMessage( "blockingPoolSize must be greater than 0" );
     }

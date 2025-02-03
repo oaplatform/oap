@@ -5,8 +5,9 @@ import oap.http.Http;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class PnioListener<WorkflowState> {
-    protected void noContextResponse( oap.http.server.nio.HttpServerExchange pnioExchange ) {
-        HttpServerExchange exchange = pnioExchange.exchange;
+    protected void noContextResponse( PnioExchange<WorkflowState> pnioExchange ) {
+        oap.http.server.nio.HttpServerExchange oapExchange = pnioExchange.oapExchange;
+        HttpServerExchange exchange = oapExchange.exchange;
         exchange.setStatusCode( Http.StatusCode.NO_CONTENT );
         exchange.endExchange();
     }
@@ -18,7 +19,7 @@ public abstract class PnioListener<WorkflowState> {
     }
 
     public void onTimeout( PnioExchange<WorkflowState> pnioExchange ) {
-        noContextResponse( pnioExchange.oapExchange );
+        noContextResponse( pnioExchange );
     }
 
     public final void fireOnException( PnioExchange<WorkflowState> pnioExchange ) {
@@ -28,7 +29,7 @@ public abstract class PnioListener<WorkflowState> {
     }
 
     public void onException( PnioExchange<WorkflowState> pnioExchange ) {
-        noContextResponse( pnioExchange.oapExchange );
+        noContextResponse( pnioExchange );
     }
 
     public final void fireOnRequestBufferOverflow( PnioExchange<WorkflowState> pnioExchange ) {
@@ -38,7 +39,7 @@ public abstract class PnioListener<WorkflowState> {
     }
 
     public void onRequestBufferOverflow( PnioExchange<WorkflowState> pnioExchange ) {
-        noContextResponse( pnioExchange.oapExchange );
+        noContextResponse( pnioExchange );
     }
 
     public final void fireOnResponseBufferOverflow( PnioExchange<WorkflowState> pnioExchange ) {
@@ -48,7 +49,7 @@ public abstract class PnioListener<WorkflowState> {
     }
 
     public void onResponseBufferOverflow( PnioExchange<WorkflowState> pnioExchange ) {
-        noContextResponse( pnioExchange.oapExchange );
+        noContextResponse( pnioExchange );
     }
 
     public final void fireOnRejected( PnioExchange<WorkflowState> pnioExchange ) {
@@ -58,7 +59,7 @@ public abstract class PnioListener<WorkflowState> {
     }
 
     public void onRejected( PnioExchange<WorkflowState> pnioExchange ) {
-        noContextResponse( pnioExchange.oapExchange );
+        noContextResponse( pnioExchange );
     }
 
     public final void fireOnDone( PnioExchange<WorkflowState> pnioExchange ) {
@@ -76,6 +77,6 @@ public abstract class PnioListener<WorkflowState> {
     }
 
     public void onUnknown( PnioExchange<WorkflowState> pnioExchange ) {
-        noContextResponse( pnioExchange.oapExchange );
+        noContextResponse( pnioExchange );
     }
 }
