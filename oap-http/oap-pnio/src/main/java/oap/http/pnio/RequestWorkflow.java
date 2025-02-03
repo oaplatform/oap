@@ -84,7 +84,7 @@ public class RequestWorkflow<WorkflowState> {
             return next( list, next, null );
         }
 
-        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, PnioRequestHandler<WorkflowState>> next, BiConsumer<PnioExchange<WorkflowState>, WorkflowState> postProcess ) {
+        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, PnioRequestHandler<WorkflowState>> next, PnioRequestHandlerPostProcess<WorkflowState> postProcess ) {
             for( T item : list ) {
                 next( next.apply( item ) );
             }
@@ -95,6 +95,11 @@ public class RequestWorkflow<WorkflowState> {
                     public void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
                         postProcess.accept( pnioExchange, workflowState );
                     }
+
+                    @Override
+                    public String description() {
+                        return postProcess.description();
+                    }
                 } );
             }
 
@@ -103,6 +108,10 @@ public class RequestWorkflow<WorkflowState> {
 
         public RequestWorkflow<WorkflowState> build() {
             return workflow;
+        }
+
+        public interface PnioRequestHandlerPostProcess<WorkflowState> extends BiConsumer<PnioExchange<WorkflowState>, WorkflowState> {
+            String description();
         }
     }
 }
