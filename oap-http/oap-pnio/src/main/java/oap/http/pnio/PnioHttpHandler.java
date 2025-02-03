@@ -9,6 +9,7 @@
 
 package oap.http.pnio;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.undertow.io.Receiver;
 import lombok.Builder;
@@ -49,6 +50,8 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
         blockingPool = settings.blockingPoolSize > 0
             ? Executors.newFixedThreadPool( settings.blockingPoolSize, new ThreadFactoryBuilder().setNameFormat( "PNIO - BLK-%d" ).build() )
             : null;
+
+        Preconditions.checkArgument( settings.maxQueueSize > 0, "maxQueueSize must be greater than 0" );
 
         workers = new PnioWorkers<>( settings.threads, settings.maxQueueSize );
     }
