@@ -190,7 +190,14 @@ public class HttpAsserts {
             return this;
         }
 
-        public HttpAssertion hasCode( int... code ) {
+        public HttpAssertion hasCode( int code ) {
+            assertThat( response.code )
+                .as( "check http code (code = %s, reason = %s, body = %s)", response.code, response.reasonPhrase, response.contentString() )
+                .isIn( code );
+            return this;
+        }
+
+        public HttpAssertion codeIsIn( int... code ) {
             assertThat( response.code )
                 .as( "check http code (code = %s, reason = %s, body = %s)", response.code, response.reasonPhrase, response.contentString() )
                 .isIn( Ints.asList( code ) );
