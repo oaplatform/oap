@@ -35,6 +35,7 @@ import oap.util.Pair;
 import oap.util.Stream;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
+import org.testng.internal.collections.Ints;
 
 import java.io.InputStream;
 import java.util.List;
@@ -192,7 +193,7 @@ public class HttpAsserts {
         public HttpAssertion hasCode( int... code ) {
             assertThat( response.code )
                 .as( "check http code (code = %s, reason = %s, body = %s)", response.code, response.reasonPhrase, response.contentString() )
-                .isIn( code );
+                .isIn( Ints.asList( code ) );
             return this;
         }
 
