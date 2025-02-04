@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.Http.ContentType.APPLICATION_JSON;
@@ -188,10 +189,10 @@ public class HttpAsserts {
             return this;
         }
 
-        public HttpAssertion hasCode( int code ) {
+        public HttpAssertion hasCode( int... code ) {
             assertThat( response.code )
                 .as( "check http code (code = %s, reason = %s, body = %s)", response.code, response.reasonPhrase, response.contentString() )
-                .isEqualTo( code );
+                .isIn( code );
             return this;
         }
 
@@ -214,6 +215,21 @@ public class HttpAsserts {
             return this;
         }
 
+        public HttpAssertion reasonContains( String values ) {
+            assertString( response.reasonPhrase ).contains( values );
+            return this;
+        }
+
+        public HttpAssertion reasonContainsPattern( Pattern pattern ) {
+            assertString( response.reasonPhrase ).containsPattern( pattern );
+            return this;
+        }
+
+        public HttpAssertion reasonContainsPattern( String pattern ) {
+            assertString( response.reasonPhrase ).containsPattern( pattern );
+            return this;
+        }
+
         public HttpAssertion hasContentType( String contentType ) {
             assertString( response.contentType ).isEqualTo( contentType );
             return this;
@@ -221,6 +237,21 @@ public class HttpAsserts {
 
         public HttpAssertion hasBody( String body ) {
             assertString( response.contentString() ).isEqualTo( body );
+            return this;
+        }
+
+        public HttpAssertion bodyContains( String values ) {
+            assertString( response.contentString() ).contains( values );
+            return this;
+        }
+
+        public HttpAssertion bodyContainsPattern( Pattern pattern ) {
+            assertString( response.contentString() ).containsPattern( pattern );
+            return this;
+        }
+
+        public HttpAssertion bodyContainsPattern( String pattern ) {
+            assertString( response.contentString() ).containsPattern( pattern );
             return this;
         }
 
