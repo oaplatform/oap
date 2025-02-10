@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofString;
@@ -130,7 +131,8 @@ public class FileSystemTest extends Fixtures {
         Files.write( testDirectoryFixture.testPath( "folder/my-file.txt.gz" ), "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( new CloudURI( "file://folder/my-file.txt.gz" ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
+            assertThat( fileSystem.copyAsync( new CloudURI( "file://folder/my-file.txt.gz" ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) ) )
+                .succeedsWithin( 30, TimeUnit.SECONDS );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ) );
 
@@ -175,9 +177,9 @@ public class FileSystemTest extends Fixtures {
             s3mockFixture.uploadFile( "test2", "logs/file1.txt", path1 );
             s3mockFixture.uploadFile( "test2", "logs/file2.txt", path2 );
 
-            assertTrue( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
-            assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
-            assertTrue( fileSystem.containerExists( "s3://test2" ) );
+            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
+            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
+            assertTrue( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 2 );
@@ -191,20 +193,20 @@ public class FileSystemTest extends Fixtures {
             assertThat( listP.size() ).isEqualTo( 1 );
             assertEquals( "logs/file2.txt", listP.get( 0 ).getName() );
 
-            fileSystem.deleteBlob( "s3://test2/logs/file1.txt" );
+            fileSystem.deleteBlob( new CloudURI( "s3://test2/logs/file1.txt" ) );
 
-            assertFalse( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
-            assertTrue( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
-            assertTrue( fileSystem.containerExists( "s3://test2" ) );
+            assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
+            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
+            assertTrue( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
             assertThat( fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().build() ).size() ).isEqualTo( 1 );
 
-            assertFalse( fileSystem.deleteContainerIfEmpty( "s3://test2" ) );
-            fileSystem.deleteContainer( "s3://test2" );
+            assertFalse( fileSystem.deleteContainerIfEmpty( new CloudURI( "s3://test2" ) ) );
+            fileSystem.deleteContainer( new CloudURI( "s3://test2" ) );
 
-            assertFalse( fileSystem.blobExists( "s3://test2/logs/file1.txt" ) );
-            assertFalse( fileSystem.blobExists( "s3://test2/logs/file2.txt" ) );
-            assertFalse( fileSystem.containerExists( "s3://test2" ) );
-            assertTrue( fileSystem.containerExists( "s3://" + TEST_BUCKET ) );
+            assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
+            assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
+            assertFalse( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
+            assertTrue( fileSystem.containerExists( new CloudURI( "s3://" + TEST_BUCKET ) ) );
         }
     }
 

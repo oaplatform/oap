@@ -21,7 +21,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.core.async.BlockingInputStreamAsyncRequestBody;
@@ -34,22 +33,14 @@ import software.amazon.awssdk.services.s3.endpoints.internal.DefaultS3EndpointPr
 import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.CreateBucketResponse;
 import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketResponse;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -58,8 +49,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
-import software.amazon.awssdk.transfer.s3.model.CompletedCopy;
-import software.amazon.awssdk.transfer.s3.model.CompletedFileDownload;
 import software.amazon.awssdk.transfer.s3.model.CompletedUpload;
 import software.amazon.awssdk.transfer.s3.model.Copy;
 import software.amazon.awssdk.transfer.s3.model.CopyRequest;
@@ -82,9 +71,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -138,188 +125,155 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     }
 
     @Override
-    public boolean blobExists( CloudURI path ) throws CloudException {
-        try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( path.container ).key( path.path ).build();
+    public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) {
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( path.container ).key( path.path ).build();
 
-            HeadObjectResponse headObjectResponse = s3Client.headObject( headObjectRequest ).get();
-            log.trace( " response {}", headObjectResponse );
-            return true;
-        } catch( ExecutionException e ) {
-            Throwable cause = e.getCause();
-            if( cause instanceof NoSuchBucketException || cause instanceof NoSuchKeyException ) {
-                return false;
-            }
-            throw new CloudException( cause );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    @Override
-    public boolean containerExists( CloudURI path ) throws CloudException {
-        try {
-            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
-                .bucket( path.container )
-                .build();
-
-            HeadBucketResponse headBucketResponse = s3Client.headBucket( headBucketRequest ).get();
-            log.trace( " response {}", headBucketResponse );
-
-            return true;
-        } catch( ExecutionException e ) {
-            if( e.getCause() instanceof NoSuchBucketException ) {
-                return false;
-            }
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    @Override
-    public void deleteBlob( CloudURI path ) throws CloudException {
-        try {
-            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket( path.container ).key( path.path ).build();
-
-            DeleteObjectResponse deleteObjectResponse = s3Client.deleteObject( deleteRequest ).get();
-            log.trace( " response {}", deleteObjectResponse );
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    @Override
-    public void deleteContainer( CloudURI path ) throws CloudException {
-        try {
-            ListObjectsV2Response listResponse = s3Client.listObjectsV2( ListObjectsV2Request.builder().bucket( path.container ).build() ).get();
-            List<S3Object> listObjects = listResponse.contents();
-
-            ArrayList<ObjectIdentifier> objectsToDelete = new ArrayList<>();
-            for( S3Object s3Object : listObjects ) {
-                objectsToDelete.add( ObjectIdentifier.builder().key( s3Object.key() ).build() );
-            }
-
-            DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
-                .bucket( path.container )
-                .delete( Delete.builder().objects( objectsToDelete ).build() )
-                .build();
-
-            DeleteObjectsResponse deleteObjectsResponse = s3Client.deleteObjects( deleteObjectsRequest ).get();
-            log.trace( " response {}", deleteObjectsResponse );
-
-            DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket( path.container ).build();
-
-            DeleteBucketResponse deleteBucketResponse = s3Client.deleteBucket( deleteBucketRequest ).get();
-            log.trace( " response {}", deleteBucketResponse );
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    @Override
-    public boolean createContainer( CloudURI path ) {
-        try {
-            CreateBucketRequest createBucketRequest = CreateBucketRequest.builder().bucket( path.container ).build();
-            CreateBucketResponse createBucketResponse = s3Client.createBucket( createBucketRequest ).get();
-            log.trace( " response {}", createBucketResponse );
-
-            return true;
-        } catch( ExecutionException e ) {
-            if( e.getCause() instanceof BucketAlreadyExistsException ) {
-                return false;
-            }
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    @Override
-    public boolean deleteContainerIfEmpty( CloudURI path ) {
-        try {
-            DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket( path.container ).build();
-
-            DeleteBucketResponse deleteBucketResponse = s3Client.deleteBucket( deleteBucketRequest ).get();
-            log.trace( " response {}", deleteBucketResponse );
-            return true;
-        } catch( ExecutionException e ) {
-            if( e.getCause().getMessage().contains( "The bucket you tried to delete is not empty" ) ) {
-                return false;
-            }
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    @Override
-    public FileSystem.StorageItem getMetadata( CloudURI path ) throws CloudException {
-        try {
-            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( path.container ).key( path.path ).build();
-
-            HeadObjectResponse headObjectResponse = s3Client.headObject( headObjectRequest ).get();
-            log.trace( " response {}", headObjectResponse );
-
-            return new FileSystem.StorageItem() {
-                @Override
-                public String getName() {
-                    return path.toString();
+        return s3Client
+            .headObject( headObjectRequest )
+            .thenApply( _ -> true )
+            .exceptionallyCompose( ex -> {
+                if( ex.getCause() instanceof NoSuchBucketException || ex.getCause() instanceof NoSuchKeyException ) {
+                    return CompletableFuture.completedFuture( false );
                 }
 
-                @Override
-                public URI getUri() {
-                    try {
-                        return s3Client.utilities().getUrl( builder -> builder.bucket( path.container ).key( path.path ).build() ).toURI();
-                    } catch( URISyntaxException e ) {
-                        throw new CloudException( e );
+                return CompletableFuture.failedFuture( propagate( ex ) );
+            } );
+    }
+
+    @Override
+    public CompletableFuture<Boolean> containerExistsAsync( CloudURI path ) {
+        HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+            .bucket( path.container )
+            .build();
+
+        return s3Client.headBucket( headBucketRequest )
+            .thenApply( _ -> true )
+            .exceptionallyCompose( e -> {
+                if( e.getCause() instanceof NoSuchBucketException ) {
+                    return CompletableFuture.completedFuture( false );
+                }
+
+                return CompletableFuture.failedFuture( propagate( e ) );
+            } );
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteBlobAsync( CloudURI path ) {
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket( path.container ).key( path.path ).build();
+
+        return s3Client.deleteObject( deleteRequest )
+            .thenAccept( _ -> {} )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteContainerAsync( CloudURI path ) {
+        return s3Client.listObjectsV2( ListObjectsV2Request.builder().bucket( path.container ).build() )
+            .thenCompose( listResponse -> {
+                List<S3Object> listObjects = listResponse.contents();
+
+                ArrayList<ObjectIdentifier> objectsToDelete = new ArrayList<>();
+                for( S3Object s3Object : listObjects ) {
+                    objectsToDelete.add( ObjectIdentifier.builder().key( s3Object.key() ).build() );
+                }
+
+                DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                    .bucket( path.container )
+                    .delete( Delete.builder().objects( objectsToDelete ).build() )
+                    .build();
+
+                return s3Client.deleteObjects( deleteObjectsRequest ).thenCompose( deleteObjectsResponse -> {
+                    DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket( path.container ).build();
+
+                    return s3Client.deleteBucket( deleteBucketRequest ).thenAccept( _ -> {} );
+                } );
+            } )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
+    }
+
+    @Override
+    public CompletableFuture<Boolean> createContainerAsync( CloudURI path ) {
+        CreateBucketRequest createBucketRequest = CreateBucketRequest.builder().bucket( path.container ).build();
+        return s3Client.createBucket( createBucketRequest )
+            .thenApply( _ -> true )
+            .exceptionallyCompose( e -> {
+                if( e.getCause() instanceof BucketAlreadyExistsException ) {
+                    return CompletableFuture.completedFuture( false );
+                }
+                return CompletableFuture.failedFuture( propagate( e ) );
+            } );
+    }
+
+    @Override
+    public CompletableFuture<Boolean> deleteContainerIfEmptyAsync( CloudURI path ) {
+        DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket( path.container ).build();
+
+        return s3Client.deleteBucket( deleteBucketRequest )
+            .thenApply( _ -> true )
+            .exceptionallyCompose( e -> {
+                if( e.getMessage().contains( "The bucket you tried to delete is not empty" ) ) {
+                    return CompletableFuture.completedFuture( false );
+                }
+
+                return CompletableFuture.failedFuture( propagate( e ) );
+            } );
+    }
+
+    @Override
+    public CompletableFuture<? extends FileSystem.StorageItem> getMetadataAsync( CloudURI path ) {
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( path.container ).key( path.path ).build();
+
+        return s3Client.headObject( headObjectRequest )
+            .thenApply( headObjectResponse -> {
+                return new FileSystem.StorageItem() {
+                    @Override
+                    public String getName() {
+                        return path.toString();
                     }
+
+                    @Override
+                    public URI getUri() {
+                        try {
+                            return s3Client.utilities().getUrl( builder -> builder.bucket( path.container ).key( path.path ).build() ).toURI();
+                        } catch( URISyntaxException e ) {
+                            throw new CloudException( e );
+                        }
+                    }
+
+                    @Override
+                    public String getETag() {
+                        return headObjectResponse.eTag();
+                    }
+
+                    @Override
+                    public DateTime getLastModified() {
+                        return instantToDateTime( headObjectResponse.lastModified() );
+                    }
+
+                    @Override
+                    public Long getSize() {
+                        return headObjectResponse.contentLength();
+                    }
+                };
+            } )
+            .exceptionallyCompose( e -> {
+                if( e.getCause() instanceof NoSuchKeyException ) {
+                    return CompletableFuture.completedFuture( null );
                 }
 
-                @Override
-                public String getETag() {
-                    return headObjectResponse.eTag();
-                }
-
-                @Override
-                public DateTime getLastModified() {
-                    return instantToDateTime( headObjectResponse.lastModified() );
-                }
-
-                @Override
-                public Long getSize() {
-                    return headObjectResponse.contentLength();
-                }
-            };
-        } catch( ExecutionException e ) {
-            if( e.getCause() instanceof NoSuchKeyException ) {
-                return null;
-            }
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
+                return CompletableFuture.failedFuture( propagate( e ) );
+            } );
     }
 
     @Override
-    public void downloadFile( CloudURI source, Path destination ) throws CloudException {
-        try {
-            S3TransferManager s3TransferManager = getS3TransferManager();
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket( source.container ).key( source.path ).build();
-            DownloadFileRequest downloadFileRequest = DownloadFileRequest.builder().getObjectRequest( getObjectRequest ).destination( destination ).build();
-            FileDownload fileDownload = s3TransferManager.downloadFile( downloadFileRequest );
-            CompletableFuture<CompletedFileDownload> completedFileDownloadCompletableFuture = fileDownload.completionFuture();
-            CompletedFileDownload completedFileDownload = completedFileDownloadCompletableFuture.get();
-            log.trace( "completedFileDownload {}", completedFileDownload );
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
+    public CompletableFuture<Void> downloadFileAsync( CloudURI source, Path destination ) throws CloudException {
+        S3TransferManager s3TransferManager = getS3TransferManager();
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket( source.container ).key( source.path ).build();
+        DownloadFileRequest downloadFileRequest = DownloadFileRequest.builder().getObjectRequest( getObjectRequest ).destination( destination ).build();
+        FileDownload fileDownload = s3TransferManager.downloadFile( downloadFileRequest );
+        return fileDownload.completionFuture()
+            .thenAccept( future -> {} )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
     }
 
     private S3TransferManager getS3TransferManager() {
@@ -334,36 +288,25 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     }
 
     @Override
-    public void copy( CloudURI source, CloudURI destination ) throws CloudException {
-        try {
-            S3TransferManager s3TransferManager = getS3TransferManager();
-            CopyObjectRequest build = CopyObjectRequest.builder()
-                .sourceBucket( source.container )
-                .destinationBucket( destination.container )
-                .sourceKey( source.path )
-                .destinationKey( destination.path )
-                .build();
-            Copy copy = s3TransferManager.copy( CopyRequest.builder().copyObjectRequest( build ).build() );
-            CompletableFuture<CompletedCopy> completedCopyCompletableFuture = copy.completionFuture();
-            CompletedCopy completedCopy = completedCopyCompletableFuture.get();
-            log.trace( "completedCopy {}", completedCopy );
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
+    public CompletableFuture<Void> copyAsync( CloudURI source, CloudURI destination ) {
+        S3TransferManager s3TransferManager = getS3TransferManager();
+        CopyObjectRequest build = CopyObjectRequest.builder()
+            .sourceBucket( source.container )
+            .destinationBucket( destination.container )
+            .sourceKey( source.path )
+            .destinationKey( destination.path )
+            .build();
+        Copy copy = s3TransferManager.copy( CopyRequest.builder().copyObjectRequest( build ).build() );
+        return copy.completionFuture()
+            .thenAccept( _ -> {} )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
     }
 
     @Override
-    public InputStream getInputStream( CloudURI path ) throws CloudException {
-        try {
-            CompletableFuture<ResponseInputStream<GetObjectResponse>> responseInputStreamCompletableFuture = s3Client.getObject( GetObjectRequest.builder().bucket( path.container ).key( path.path ).build(), AsyncResponseTransformer.toBlockingInputStream() );
-            return responseInputStreamCompletableFuture.get();
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
-        }
+    public CompletableFuture<? extends InputStream> getInputStreamAsync( CloudURI path ) {
+        return s3Client
+            .getObject( GetObjectRequest.builder().bucket( path.container ).key( path.path ).build(), AsyncResponseTransformer.toBlockingInputStream() )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
     }
 
     @Override
@@ -410,102 +353,92 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     }
 
     @Override
-    public void upload( CloudURI cloudURI, BlobData blobData ) {
+    public CompletableFuture<Void> uploadAsync( CloudURI cloudURI, BlobData blobData ) {
         Preconditions.checkNotNull( blobData.content );
 
-        try {
-            S3TransferManager s3TransferManager = getS3TransferManager();
-            AsyncRequestBody body = switch( blobData.content ) {
-                case InputStream _ -> AsyncRequestBody.forBlockingInputStream( null );
-                case String str -> AsyncRequestBody.fromString( str, UTF_8 );
-                case byte[] bytes -> AsyncRequestBody.fromBytes( bytes );
-                case ByteBuffer byteBuffer -> AsyncRequestBody.fromByteBuffer( byteBuffer );
-                case File file -> AsyncRequestBody.fromFile( file );
-                case Path path -> AsyncRequestBody.fromFile( path );
-                case null, default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
-            };
+        S3TransferManager s3TransferManager = getS3TransferManager();
+        AsyncRequestBody body = switch( blobData.content ) {
+            case InputStream _ -> AsyncRequestBody.forBlockingInputStream( null );
+            case String str -> AsyncRequestBody.fromString( str, UTF_8 );
+            case byte[] bytes -> AsyncRequestBody.fromBytes( bytes );
+            case ByteBuffer byteBuffer -> AsyncRequestBody.fromByteBuffer( byteBuffer );
+            case File file -> AsyncRequestBody.fromFile( file );
+            case Path path -> AsyncRequestBody.fromFile( path );
+            case null, default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
+        };
 
 
-            PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
-                .bucket( cloudURI.container )
-                .key( cloudURI.path )
-                .tagging( getTagging( blobData.tags ) );
+        PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
+            .bucket( cloudURI.container )
+            .key( cloudURI.path )
+            .tagging( getTagging( blobData.tags ) );
 
-            if( blobData.contentType != null ) {
-                putObjectRequestBuilder.contentType( blobData.contentType );
-            }
-            if( blobData.contentLength != null ) {
-                putObjectRequestBuilder.contentLength( blobData.contentLength );
-            }
-
-            UploadRequest uploadRequest = UploadRequest.builder()
-                .requestBody( body )
-                .putObjectRequest( putObjectRequestBuilder.build() )
-                .build();
-
-            Upload upload = s3TransferManager.upload( uploadRequest );
-
-            if( blobData.content instanceof InputStream is ) {
-                ( ( BlockingInputStreamAsyncRequestBody ) body ).writeInputStream( is );
-            }
-
-            CompletableFuture<CompletedUpload> completedUploadCompletableFuture = upload.completionFuture();
-            CompletedUpload completedUpload = completedUploadCompletableFuture.join();
-            log.trace( "completedUpload {}", completedUpload );
-        } catch( CompletionException e ) {
-            log.error( e.getMessage(), e );
-            throw new CloudException( e.getCause() );
-        } catch( CancellationException e ) {
-            throw new CloudException( e );
+        if( blobData.contentType != null ) {
+            putObjectRequestBuilder.contentType( blobData.contentType );
         }
+        if( blobData.contentLength != null ) {
+            putObjectRequestBuilder.contentLength( blobData.contentLength );
+        }
+
+        UploadRequest uploadRequest = UploadRequest.builder()
+            .requestBody( body )
+            .putObjectRequest( putObjectRequestBuilder.build() )
+            .build();
+
+        Upload upload = s3TransferManager.upload( uploadRequest );
+
+        if( blobData.content instanceof InputStream is ) {
+            ( ( BlockingInputStreamAsyncRequestBody ) body ).writeInputStream( is );
+        }
+
+        return upload.completionFuture()
+            .thenAccept( _ -> {} )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
     }
 
     @Override
-    public PageSet<? extends FileSystem.StorageItem> list( CloudURI path, ListOptions listOptions ) {
-        try {
-            ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder().bucket( path.container );
-            if( !path.path.isEmpty() ) {
-                builder.prefix( path.path );
-            }
-            if( listOptions.continuationToken != null ) {
-                builder.continuationToken( listOptions.continuationToken );
-            }
-            if( listOptions.maxKeys != null ) {
-                builder.maxKeys( listOptions.maxKeys );
-            }
-            ListObjectsV2Response listObjectsV2Response = s3Client.listObjectsV2( builder.build() ).get();
-            log.trace( " response {}", listObjectsV2Response );
-            return new PageSet<>( listObjectsV2Response.nextContinuationToken(), Lists.map( listObjectsV2Response.contents(), obj -> new FileSystem.StorageItem() {
-                @Override
-                public String getName() {
-                    return obj.key();
-                }
-
-                @Override
-                public URI getUri() {
-                    return s3Client.utilities().parseUri( URI.create( new CloudURI( path.scheme, path.container, obj.key() ).toString() ) ).uri();
-                }
-
-                @Override
-                public String getETag() {
-                    return obj.eTag();
-                }
-
-                @Override
-                public DateTime getLastModified() {
-                    return instantToDateTime( obj.lastModified() );
-                }
-
-                @Override
-                public Long getSize() {
-                    return obj.size();
-                }
-            } ) );
-        } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
-        } catch( InterruptedException e ) {
-            throw new CloudException( e );
+    public CompletableFuture<? extends PageSet<? extends FileSystem.StorageItem>> listAsync( CloudURI path, ListOptions listOptions ) {
+        ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder().bucket( path.container );
+        if( !path.path.isEmpty() ) {
+            builder.prefix( path.path );
         }
+        if( listOptions.continuationToken != null ) {
+            builder.continuationToken( listOptions.continuationToken );
+        }
+        if( listOptions.maxKeys != null ) {
+            builder.maxKeys( listOptions.maxKeys );
+        }
+        return s3Client.listObjectsV2( builder.build() )
+            .thenApply( listObjectsV2Response -> {
+                log.trace( " response {}", listObjectsV2Response );
+                return new PageSet<>( listObjectsV2Response.nextContinuationToken(), Lists.map( listObjectsV2Response.contents(), obj -> new FileSystem.StorageItem() {
+                    @Override
+                    public String getName() {
+                        return obj.key();
+                    }
+
+                    @Override
+                    public URI getUri() {
+                        return s3Client.utilities().parseUri( URI.create( new CloudURI( path.scheme, path.container, obj.key() ).toString() ) ).uri();
+                    }
+
+                    @Override
+                    public String getETag() {
+                        return obj.eTag();
+                    }
+
+                    @Override
+                    public DateTime getLastModified() {
+                        return instantToDateTime( obj.lastModified() );
+                    }
+
+                    @Override
+                    public Long getSize() {
+                        return obj.size();
+                    }
+                } ) );
+            } )
+            .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
     }
 
     @Override

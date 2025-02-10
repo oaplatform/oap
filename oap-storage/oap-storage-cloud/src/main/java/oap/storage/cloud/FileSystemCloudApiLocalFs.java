@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     private final Path root;
@@ -25,8 +26,8 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     @Override
-    public boolean blobExists( CloudURI path ) throws CloudException {
-        return getPath( path ).toFile().exists();
+    public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) throws CloudException {
+        return CompletableFuture.completedFuture( getPath( path ).toFile().exists() );
     }
 
     private Path getPath( CloudURI path ) {
@@ -34,37 +35,39 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     @Override
-    public boolean containerExists( CloudURI path ) throws CloudException {
-        return true;
+    public CompletableFuture<Boolean> containerExistsAsync( CloudURI path ) throws CloudException {
+        return CompletableFuture.completedFuture( true );
     }
 
     @Override
-    public void deleteBlob( CloudURI path ) throws CloudException {
+    public CompletableFuture<Void> deleteBlobAsync( CloudURI path ) {
         try {
             Files.delete( getPath( path ) );
+
+            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            throw new CloudException( e );
+            return CompletableFuture.failedFuture( new CloudException( e ) );
         }
     }
 
     @Override
-    public void deleteContainer( CloudURI path ) throws CloudException {
-
+    public CompletableFuture<Void> deleteContainerAsync( CloudURI path ) {
+        return CompletableFuture.completedFuture( null );
     }
 
     @Override
-    public boolean createContainer( CloudURI path ) throws CloudException {
-        return false;
+    public CompletableFuture<Boolean> createContainerAsync( CloudURI path ) {
+        return CompletableFuture.completedFuture( false );
     }
 
     @Override
-    public boolean deleteContainerIfEmpty( CloudURI path ) throws CloudException {
-        return false;
+    public CompletableFuture<Boolean> deleteContainerIfEmptyAsync( CloudURI path ) {
+        return CompletableFuture.completedFuture( false );
     }
 
     @Override
-    public FileSystem.StorageItem getMetadata( CloudURI path ) throws CloudException {
-        return new FileSystem.StorageItem() {
+    public CompletableFuture<FileSystem.StorageItem> getMetadataAsync( CloudURI path ) {
+        return CompletableFuture.completedFuture( new FileSystem.StorageItem() {
             @Override
             public String getName() {
                 return getPath( path ).toString();
@@ -97,35 +100,39 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                     throw new CloudException( e );
                 }
             }
-        };
+        } );
     }
 
     @Override
-    public void downloadFile( CloudURI source, Path destination ) throws CloudException {
+    public CompletableFuture<Void> downloadFileAsync( CloudURI source, Path destination ) {
         try {
             Files.copy( getPath( source ), destination );
+
+            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            throw new CloudException( e );
+            return CompletableFuture.failedFuture( new CloudException( e ) );
         }
     }
 
     @Override
-    public void copy( CloudURI source, CloudURI destination ) throws CloudException {
+    public CompletableFuture<Void> copyAsync( CloudURI source, CloudURI destination ) {
         Preconditions.checkArgument( source.scheme.equals( destination.scheme ) );
 
         try {
             Files.copy( getPath( source ), getPath( destination ) );
+
+            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            throw new CloudException( e );
+            return CompletableFuture.failedFuture( new CloudException( e ) );
         }
     }
 
     @Override
-    public InputStream getInputStream( CloudURI path ) throws CloudException {
+    public CompletableFuture<? extends InputStream> getInputStreamAsync( CloudURI path ) {
         try {
-            return Files.newInputStream( getPath( path ) );
+            return CompletableFuture.completedFuture( Files.newInputStream( getPath( path ) ) );
         } catch( IOException e ) {
-            throw new CloudException( e );
+            return CompletableFuture.failedFuture( new CloudException( e ) );
         }
     }
 
@@ -139,7 +146,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     @Override
-    public void upload( CloudURI destination, BlobData blobData ) throws CloudException {
+    public CompletableFuture<Void> uploadAsync( CloudURI destination, BlobData blobData ) throws CloudException {
         try {
             switch( blobData.content ) {
                 case InputStream inputStream -> IoStreams.write( getPath( destination ), IoStreams.Encoding.PLAIN, inputStream );
@@ -150,17 +157,18 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                 case Path path -> Files.copy( path, getPath( destination ) );
                 case null, default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
             }
+            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            throw new CloudException( e );
+            return CompletableFuture.failedFuture( new CloudException( e ) );
         }
     }
 
     @Override
-    public PageSet<? extends FileSystem.StorageItem> list( CloudURI path, ListOptions listOptions ) {
+    public CompletableFuture<PageSet<? extends FileSystem.StorageItem>> listAsync( CloudURI path, ListOptions listOptions ) {
         try {
             Path filePath = getPath( path );
 
-            return new PageSet<>( null, Files.walk( filePath )
+            return CompletableFuture.completedFuture( new PageSet<>( null, Files.walk( filePath )
                 .filter( p -> !Files.isDirectory( p ) )
                 .map( p -> new FileSystem.StorageItem() {
                     @Override
@@ -196,9 +204,9 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                         }
                     }
                 } )
-                .toList() );
+                .toList() ) );
         } catch( IOException e ) {
-            throw new CloudException( e );
+            return CompletableFuture.failedFuture( new CloudException( e ) );
         }
     }
 
