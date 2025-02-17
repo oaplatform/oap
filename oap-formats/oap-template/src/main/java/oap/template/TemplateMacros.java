@@ -26,6 +26,7 @@ package oap.template;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.SneakyThrows;
+import oap.json.Binder;
 import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -125,5 +126,9 @@ public class TemplateMacros {
         );
 
         return dateTimeFormatter.print( dateTime );
+    }
+
+    public static String toJson( Object obj ) {
+        return Binder.json.marshal( obj );
     }
 }
