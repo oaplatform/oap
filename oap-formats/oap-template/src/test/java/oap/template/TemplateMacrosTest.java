@@ -24,9 +24,14 @@
 
 package oap.template;
 
+import oap.reflect.TypeRef;
+import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
+import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -44,5 +49,17 @@ public class TemplateMacrosTest {
             .isEqualTo( "2022-09-20" );
         assertThat( TemplateMacros.format( new DateTime( 2022, 9, 20, 17, 1, 2, UTC ), "YYYY-dd" ) )
             .isEqualTo( "2022-20" );
+    }
+
+    @Test
+    public void testListFieldDefaultValue() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.list = null;
+        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ list; toJson() ?? [] }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "[]" );
+
+        c.listString = List.of( "1", "2", "3" );
+        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ listString; toJson() ?? [] }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "[\"1\",\"2\",\"3\"]" );
     }
 }
