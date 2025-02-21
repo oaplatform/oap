@@ -47,7 +47,7 @@ public class AbstractWriterTest {
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_FORMAT_TSV_GZ}-${INTERVAL}  -${LOG_VERSION}-#if(${ORGANIZATION})${ORGANIZATION}#else#**#UNKNOWN#end.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
             .isEqualTo( "ln/tsv.gz-01-85594397-1-UNKNOWN.tsv.gz" );
 
-        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "$}INTERVAL}-${LOG_VERSION}-${ORGANIZATION|''}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
+        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION|''}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
             .isEqualTo( "ln/01-85594397-1-.tsv.gz" );
 
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_TIME_INTERVAL}.log.gz", lid1, Timestamp.BPH_6, 1, Dates.nowUtc() ) )
