@@ -23,6 +23,7 @@
  */
 package oap.logstream;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
@@ -61,6 +62,7 @@ public class Timestamp implements Serializable {
 
     public final int bucketsPerHour;
 
+    @JsonCreator
     public Timestamp( int bucketsPerHour ) {
         this.bucketsPerHour = bucketsPerHour;
     }
