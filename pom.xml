@@ -124,7 +124,7 @@
 
         <!--oap-mail-->
         <oap.deps.javax.mail.version>1.6.2</oap.deps.javax.mail.version>
-        <oap.deps.apache.velocity.version>2.3</oap.deps.apache.velocity.version>
+        <oap.deps.apache.velocity.version>2.4.1</oap.deps.apache.velocity.version>
         <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
     </properties>
 </project>
