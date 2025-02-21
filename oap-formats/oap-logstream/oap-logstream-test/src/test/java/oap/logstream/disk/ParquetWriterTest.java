@@ -45,7 +45,7 @@ import static oap.logstream.formats.parquet.ParquetAssertion.row;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class ParquetWriterTest extends Fixtures {
-    private static final String FILE_PATTERN = "<p>-file-<INTERVAL>-<LOG_VERSION>.parquet";
+    private static final String FILE_PATTERN = "$p-file-$INTERVAL-${LOG_VERSION}.parquet";
     private final TestDirectoryFixture testDirectoryFixture;
 
     public ParquetWriterTest() {
@@ -76,7 +76,7 @@ public class ParquetWriterTest extends Fixtures {
         LogId logId = new LogId( "", "log", "log",
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
-        try( var writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, new WriterConfiguration.ParquetConfiguration(), 1024, BPH_12, 20 ) ) {
+        try( ParquetLogWriter writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, new WriterConfiguration.ParquetConfiguration(), 1024, BPH_12, 20 ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }

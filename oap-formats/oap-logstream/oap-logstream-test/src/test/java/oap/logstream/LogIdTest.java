@@ -35,19 +35,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LogIdTest {
     @Test
     public void hashAndEquals() {
-        var h1Headers = new String[] { "h1" };
-        var h2Headers = new String[] { "h2" };
-        var strTypes = new byte[][] { new byte[] { Types.STRING.id } };
-        var dtTypes = new byte[][] { new byte[] { Types.DATETIME.id } };
+        String[] h1Headers = new String[] { "h1" };
+        String[] h2Headers = new String[] { "h2" };
+        byte[][] strTypes = new byte[][] { new byte[] { Types.STRING.id } };
+        byte[][] dtTypes = new byte[][] { new byte[] { Types.DATETIME.id } };
 
-        var lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid2 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid3 = new LogId( "ln1", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid4 = new LogId( "ln", "lt1", "chn", Map.of(), h1Headers, strTypes );
-        var lid5 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        var lid6 = new LogId( "ln", "lt", "chn", Map.of(), h2Headers, strTypes );
-        var lid7 = new LogId( "ln", "lt", "chn----!", Map.of(), h1Headers, strTypes );
-        var lid8 = new LogId( "ln", "lt", "chn----!", Map.of(), h1Headers, dtTypes );
+        LogId lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid2 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid3 = new LogId( "ln1", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid4 = new LogId( "ln", "lt1", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid5 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid6 = new LogId( "ln", "lt", "chn", Map.of(), h2Headers, strTypes );
+        LogId lid7 = new LogId( "ln", "lt", "chn----!", Map.of(), h1Headers, strTypes );
+        LogId lid8 = new LogId( "ln", "lt", "chn----!", Map.of(), h1Headers, dtTypes );
 
         assertThat( lid1.hashCode() ).isEqualTo( lid2.hashCode() );
         assertThat( lid1.hashCode() ).isNotEqualTo( lid3.hashCode() );

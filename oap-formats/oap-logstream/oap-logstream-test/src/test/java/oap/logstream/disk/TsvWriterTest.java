@@ -48,7 +48,7 @@ import static oap.logstream.Timestamp.BPH_12;
 import static oap.testng.Asserts.assertFile;
 
 public class TsvWriterTest extends Fixtures {
-    private static final String FILE_PATTERN = "<p>-file-<INTERVAL>-<LOG_VERSION>-<if(ORGANIZATION)><ORGANIZATION><else>UNKNOWN<endif>.log.gz";
+    private static final String FILE_PATTERN = "$p-file-$INTERVAL-$LOG_VERSION-#if($ORGANIZATION)$ORGANIZATION>#else#**#UNKNOWN#end.log.gz";
     private final TestDirectoryFixture testDirectoryFixture;
 
     public TsvWriterTest() {

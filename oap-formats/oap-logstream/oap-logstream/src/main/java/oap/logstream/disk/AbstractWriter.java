@@ -68,7 +68,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         this.maxVersions = maxVersions;
 
         log.trace( "filePattern {}", filePattern );
-        Preconditions.checkArgument( filePattern.contains( "<LOG_VERSION>" ) );
+        Preconditions.checkArgument( filePattern.contains( "$LOG_VERSION" ) || filePattern.contains( "${LOG_VERSION}" ) );
 
         this.logId = logId;
         this.bufferSize = bufferSize;
@@ -85,9 +85,6 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
 
         var pattern = logId.filePrefixPattern + suffix;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
-
-        pattern = StringUtils.replace( pattern, "${", "<" );
-        pattern = StringUtils.replace( pattern, "}", ">" );
 
         LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
 
