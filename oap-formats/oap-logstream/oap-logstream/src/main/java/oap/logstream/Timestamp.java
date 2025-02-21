@@ -24,6 +24,7 @@
 package oap.logstream;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.common.base.Preconditions;
 import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
@@ -42,9 +43,6 @@ import java.util.stream.IntStream;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class Timestamp implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 2253058730098056001L;
-
     public static final Pattern FILE_NAME_WITH_TIMESTAMP = Pattern.compile( ".+-(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2})\\..+" );
     public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat
         .forPattern( "yyyy-MM-dd-HH" )
@@ -59,12 +57,16 @@ public class Timestamp implements Serializable {
     public static final Timestamp BPH_3 = new Timestamp( 60 / 20 );
     public static final Timestamp BPH_2 = new Timestamp( 60 / 30 );
     public static final Timestamp BPH_1 = new Timestamp( 60 / 60 );
-
+    @Serial
+    private static final long serialVersionUID = 2253058730098056001L;
     public final int bucketsPerHour;
 
     @JsonCreator
     public Timestamp( int bucketsPerHour ) {
         this.bucketsPerHour = bucketsPerHour;
+
+        Preconditions.checkArgument( bucketsPerHour > 0, "bucketsPerHour must be greater than 0" );
+        Preconditions.checkArgument( 60 / bucketsPerHour * bucketsPerHour == 60 );
     }
 
     @Deprecated
