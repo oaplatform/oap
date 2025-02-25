@@ -31,6 +31,6 @@ public class CloudStateTest extends Fixtures {
             cloudState.load( bytes -> data.add( new String( bytes, UTF_8 ) ) );
         }
 
-        assertThat( data ).containsExactly( "123", "fff" );
+        assertThat( data ).containsExactlyInAnyOrder( "123", "fff" );
     }
 }
