@@ -22,17 +22,17 @@ import java.util.function.Consumer;
 public class CloudState implements AutoCloseable {
     public final boolean concurrent;
     public final FileSystem fileSystem;
-    public final String container;
+    public final String path;
 
-    public CloudState( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        this( false, fileSystemConfiguration, container );
+    public CloudState( FileSystemConfiguration fileSystemConfiguration, String path ) {
+        this( false, fileSystemConfiguration, path );
     }
 
-    public CloudState( boolean concurrent, FileSystemConfiguration fileSystemConfiguration, String container ) {
+    public CloudState( boolean concurrent, FileSystemConfiguration fileSystemConfiguration, String path ) {
         this.concurrent = concurrent;
 
         fileSystem = new FileSystem( fileSystemConfiguration );
-        this.container = container;
+        this.path = path;
     }
 
     public void save( List<byte[]> items ) {
@@ -41,7 +41,7 @@ public class CloudState implements AutoCloseable {
         for( byte[] item : items ) {
             String md5 = DigestUtils.md5Hex( item ).toUpperCase();
 
-            CloudURI uri = new CloudURI( fileSystem.fileSystemConfiguration.getDefaultScheme(), container, md5 + ".data" );
+            CloudURI uri = new CloudURI( path ).resolve( md5 + ".data" );
 
             log.info( "uploading " + uri + "..." );
 
@@ -61,13 +61,13 @@ public class CloudState implements AutoCloseable {
             PageSet<? extends FileSystem.StorageItem> list;
 
             do {
-                list = fileSystem.list( new CloudURI( fileSystem.fileSystemConfiguration.getDefaultScheme(), container, "/" ), ListOptions.builder().maxKeys( 1000 ).build() );
+                list = fileSystem.list( new CloudURI( path ), ListOptions.builder().maxKeys( 1000 ).build() );
 
                 for( int i = 0; i < list.size(); i++ ) {
                     FileSystem.StorageItem storageItem = list.get( i );
-                    CloudURI path = new CloudURI( fileSystem.fileSystemConfiguration.getDefaultScheme(), container, storageItem.getName() );
+                    CloudURI itemPath = new CloudURI( path ).resolve( storageItem.getName() );
                     CompletableFuture<Void> completableFuture = fileSystem
-                        .getInputStreamAsync( path )
+                        .getInputStreamAsync( itemPath )
                         .thenCompose( inputStream -> {
                             log.info( "downloading " + path + "..." );
 
@@ -75,7 +75,7 @@ public class CloudState implements AutoCloseable {
                                 byte[] bytes = inputStream.readAllBytes();
                                 found.accept( bytes );
 
-                                return fileSystem.deleteBlobAsync( path );
+                                return fileSystem.deleteBlobAsync( itemPath );
                             } catch( IOException e ) {
                                 throw Throwables.propagate( e );
                             }

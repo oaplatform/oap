@@ -21,13 +21,13 @@ public class CloudStateTest extends Fixtures {
 
     @Test
     public void reload() {
-        try( CloudState cloudState = new CloudState( s3MockFixture.getFileSystemConfiguration( "test-bucket" ), "test-bucket" ) ) {
+        try( CloudState cloudState = new CloudState( s3MockFixture.getFileSystemConfiguration( "test-bucket" ), "s3://test-bucket/folder" ) ) {
             cloudState.save( List.of( "123".getBytes( UTF_8 ), "fff".getBytes( UTF_8 ) ) );
         }
 
         ArrayList<String> data = new ArrayList<>();
 
-        try( CloudState cloudState = new CloudState( s3MockFixture.getFileSystemConfiguration( "test-bucket" ), "test-bucket" ) ) {
+        try( CloudState cloudState = new CloudState( s3MockFixture.getFileSystemConfiguration( "test-bucket" ), "s3://test-bucket/folder" ) ) {
             cloudState.load( bytes -> data.add( new String( bytes, UTF_8 ) ) );
         }
 
