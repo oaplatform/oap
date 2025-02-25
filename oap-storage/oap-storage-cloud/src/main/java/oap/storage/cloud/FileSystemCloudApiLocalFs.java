@@ -74,6 +74,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
             }
 
             @Override
+            public CloudURI getCloudURI() {
+                return path;
+            }
+
+            @Override
             public URI getUri() {
                 return getPath( path ).toUri();
             }
@@ -174,6 +179,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                     @Override
                     public String getName() {
                         return p.toString();
+                    }
+
+                    @Override
+                    public CloudURI getCloudURI() {
+                        return new CloudURI( path.scheme, path.container, p.toUri().getPath() );
                     }
 
                     @Override

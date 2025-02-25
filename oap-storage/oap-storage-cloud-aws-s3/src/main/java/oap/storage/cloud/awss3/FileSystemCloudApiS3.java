@@ -232,6 +232,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                     }
 
                     @Override
+                    public CloudURI getCloudURI() {
+                        return path;
+                    }
+
+                    @Override
                     public URI getUri() {
                         try {
                             return s3Client.utilities().getUrl( builder -> builder.bucket( path.container ).key( path.path ).build() ).toURI();
@@ -415,6 +420,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                     @Override
                     public String getName() {
                         return obj.key();
+                    }
+
+                    @Override
+                    public CloudURI getCloudURI() {
+                        return new CloudURI( path.scheme, path.container, obj.key() );
                     }
 
                     @Override

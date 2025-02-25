@@ -65,7 +65,7 @@ public class CloudState implements AutoCloseable {
 
                 for( int i = 0; i < list.size(); i++ ) {
                     FileSystem.StorageItem storageItem = list.get( i );
-                    CloudURI itemPath = new CloudURI( path ).resolve( storageItem.getName() );
+                    CloudURI itemPath = storageItem.getCloudURI();
                     CompletableFuture<Void> completableFuture = fileSystem
                         .getInputStreamAsync( itemPath )
                         .thenCompose( inputStream -> {

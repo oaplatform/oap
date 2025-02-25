@@ -61,11 +61,11 @@ public class CloudURI implements Serializable {
     }
 
     public CloudURI resolve( String name ) {
-        return new CloudURI( scheme + "://" + container + path + "/" + name );
+        return new CloudURI( scheme + "://" + container + '/' + path + ( name.startsWith( "/" ) ? name : '/' + name ) );
     }
 
     @Override
     public String toString() {
-        return scheme + "://" + container + "/" + path;
+        return scheme + "://" + container + '/' + path;
     }
 }

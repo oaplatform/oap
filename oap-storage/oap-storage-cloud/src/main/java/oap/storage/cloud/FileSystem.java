@@ -271,6 +271,8 @@ public class FileSystem implements AutoCloseable {
     public interface StorageItem {
         String getName();
 
+        CloudURI getCloudURI();
+
         URI getUri();
 
         String getETag();
@@ -289,6 +291,7 @@ public class FileSystem implements AutoCloseable {
 
         private final String name;
         private final String eTag;
+        private final CloudURI cloudURI;
         private final URI uri;
         private final DateTime creationDate;
         private final DateTime lastModified;
