@@ -33,5 +33,7 @@
         <module>oap-storage-cloud</module>
         <module>oap-storage-cloud-aws-s3</module>
         <module>oap-storage-cloud-test</module>
+
+        <module>oap-storage-state-cloud</module>
     </modules>
 </project>
