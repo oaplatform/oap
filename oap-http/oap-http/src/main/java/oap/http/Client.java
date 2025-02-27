@@ -261,7 +261,7 @@ public final class Client implements Closeable, AutoCloseable {
     }
 
     public Result<Response, Throwable> post( String uri, byte[] content, long timeout ) {
-        var request = new HttpPost( uri );
+        HttpPost request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.APPLICATION_OCTET_STREAM ) );
         return getResponse( request, timeout, execute( request, Map.of() ) );
     }
@@ -317,6 +317,12 @@ public final class Client implements Closeable, AutoCloseable {
         request.setEntity( new ByteArrayEntity( content, ContentType.create( contentType ) ) );
         return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( Throwables::propagate );
+    }
+
+    public CompletableFuture<Response> postAsync( String uri, byte[] content, long timeout ) {
+        HttpPost request = new HttpPost( uri );
+        request.setEntity( new ByteArrayEntity( content, ContentType.APPLICATION_OCTET_STREAM ) );
+        return execute( request, Map.of() );
     }
 
     private Result<Response, Throwable> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {

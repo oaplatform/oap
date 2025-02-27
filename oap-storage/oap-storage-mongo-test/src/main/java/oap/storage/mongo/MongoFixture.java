@@ -43,7 +43,6 @@ import static oap.testng.Asserts.contentOfTestResource;
  *     <li>HOST</li>
  *     <li>DATABASE</li>
  * </ul>
- *
  */
 @Slf4j
 public class MongoFixture extends AbstractFixture<MongoFixture> {
@@ -69,10 +68,7 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
     protected void before() {
         super.before();
 
-        this.server = createMongoServer();
-        log.info( "mongo port = {}", port );
-        this.server.bind( HOST, port );
-        this.mongoClient = createMongoClient();
+        start();
     }
 
     @NotNull
@@ -102,10 +98,21 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
 
     @Override
     protected void after() {
-        this.mongoClient.close();
-        this.server.shutdownNow();
+        stop();
 
         super.after();
+    }
+
+    public void start() {
+        this.server = createMongoServer();
+        log.info( "mongo port = {}", port );
+        this.server.bind( HOST, port );
+        this.mongoClient = createMongoClient();
+    }
+
+    public void stop() {
+        this.mongoClient.close();
+        this.server.shutdownNow();
     }
 
     public void insertDocument( Class<?> contextClass, String collection, String resourceName ) {
