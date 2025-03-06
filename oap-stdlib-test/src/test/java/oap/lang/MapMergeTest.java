@@ -32,4 +32,33 @@ public class MapMergeTest {
                   }
                 }""" );
     }
+
+    @Test
+    public void testMergeArray() {
+        assertJson( MapMerge.mergeHocon( """
+            a {
+              b = [
+                {c: 1}
+              ]
+            }
+            """, """
+            a {
+              b = [
+                {d: 1}
+                {e: str}
+              ]
+            }
+            """ ) ).isEqualTo(
+            """
+                {
+                   "a" : {
+                     "b" : [ {
+                       "c" : 1,
+                       "d" : 1
+                     }, {
+                       "e" : "str"
+                     } ]
+                   }
+                 }""" );
+    }
 }
