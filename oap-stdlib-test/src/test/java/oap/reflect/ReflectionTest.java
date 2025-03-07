@@ -36,17 +36,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.AbstractCollection;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedCollection;
-import java.util.SequencedSet;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
@@ -55,6 +50,16 @@ import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+
+interface I {
+    void m( String a );
+}
+
+@Target( ElementType.FIELD )
+@Retention( RetentionPolicy.RUNTIME )
+@interface Ann {
+    int a() default 1;
+}
 
 public class ReflectionTest {
     @Test
@@ -164,13 +169,9 @@ public class ReflectionTest {
     public void assignableTo() {
         assertThat( Reflect.reflect( StringAssocList.class ).assignableTo() )
             .containsOnly(
-                StringAssocList.class, AssocList.class, LinkedHashSet.class, Set.class,
-                Collection.class, Iterable.class, HashSet.class, Cloneable.class,
-                SequencedCollection.class, SequencedSet.class,
-                Serializable.class, AbstractSet.class, AbstractCollection.class, Object.class );
-    }
-
-    public static class Bug extends ArrayList<String> implements Serializable {
+                StringAssocList.class, AssocList.class,
+                Collection.class, Iterable.class, Cloneable.class,
+                SequencedCollection.class, Serializable.class, Object.class );
     }
 
     @Test
@@ -250,18 +251,10 @@ public class ReflectionTest {
         assertThat( params._2 ).isEqualTo( Reflect.reflect( String.class ) );
     }
 
-}
+    public static class Bug extends ArrayList<String> implements Serializable {
+    }
 
-interface I {
-    void m( String a );
 }
-
-@Target( ElementType.FIELD )
-@Retention( RetentionPolicy.RUNTIME )
-@interface Ann {
-    int a() default 1;
-}
-
 
 class C implements I {
     public void m( String a ) {
