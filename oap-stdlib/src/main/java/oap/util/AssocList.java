@@ -120,7 +120,7 @@ public abstract class AssocList<K, V> implements Collection<V>, SequencedCollect
         return result;
     }
 
-    public V computeIfAbsent( K key, Supplier<V> supplier ) {
+    public synchronized V computeIfAbsent( K key, Supplier<V> supplier ) {
         return get( key ).orElseGet( () -> {
             V v = supplier.get();
             Preconditions.checkArgument( Objects.equals( key, keyOf( v ) ) );
