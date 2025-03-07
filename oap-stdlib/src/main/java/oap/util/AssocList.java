@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
 
 @ThreadSafe
 @SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class AssocList<K, V> implements Collection<V> {
+public abstract class AssocList<K, V> implements Collection<V>, SequencedCollection<V>, Cloneable {
     private final CopyOnWriteArrayList<V> list = new CopyOnWriteArrayList<>();
 
     public AssocList() {
@@ -222,5 +223,30 @@ public abstract class AssocList<K, V> implements Collection<V> {
     @Override
     public Stream<V> parallelStream() {
         return list.parallelStream();
+    }
+
+    @Override
+    public void addFirst( V v ) {
+        list.addFirst( v );
+    }
+
+    @Override
+    public void addLast( V v ) {
+        list.addLast( v );
+    }
+
+    @Override
+    public V removeFirst() {
+        return list.removeFirst();
+    }
+
+    @Override
+    public SequencedCollection<V> reversed() {
+        return list.reversed();
+    }
+
+    @Override
+    public V removeLast() {
+        return list.removeLast();
     }
 }
