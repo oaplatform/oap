@@ -26,6 +26,7 @@ package oap.util;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -44,7 +45,7 @@ import java.util.stream.Stream;
 
 @ThreadSafe
 @SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class AssocList<K, V> implements Collection<V>, SequencedCollection<V>, Cloneable {
+public abstract class AssocList<K, V> implements Collection<V>, SequencedCollection<V>, Cloneable, Serializable {
     private final CopyOnWriteArrayList<V> list = new CopyOnWriteArrayList<>();
 
     public AssocList() {
