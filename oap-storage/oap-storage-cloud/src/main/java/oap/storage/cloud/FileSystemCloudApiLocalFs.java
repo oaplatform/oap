@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
+    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
+    }
+
     @Override
     public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) throws CloudException {
         return CompletableFuture.completedFuture( getPath( path ).toFile().exists() );
