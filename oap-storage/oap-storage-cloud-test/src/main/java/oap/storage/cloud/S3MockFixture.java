@@ -208,8 +208,6 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             "fs.s3.clouds.endpoint", "http://localhost:" + getHttpPort(),
             "fs.s3.clouds.headers", "DEBUG",
 
-            "fs.file.clouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
-
             "fs.default.clouds.scheme", "s3",
             "fs.default.clouds.container", container
         ) );

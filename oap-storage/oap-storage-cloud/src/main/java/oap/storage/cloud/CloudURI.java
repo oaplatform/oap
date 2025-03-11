@@ -1,6 +1,7 @@
 package oap.storage.cloud;
 
 import lombok.EqualsAndHashCode;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -23,6 +24,7 @@ public class CloudURI implements Serializable {
             scheme = u.getScheme();
             container = u.getHost();
             String uriPath = u.getPath();
+            uriPath = FilenameUtils.separatorsToUnix( uriPath );
             if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
             path = uriPath;
 
@@ -35,7 +37,10 @@ public class CloudURI implements Serializable {
     public CloudURI( String scheme, String container, String path ) {
         this.scheme = scheme;
         this.container = container;
-        this.path = path.startsWith( "/" ) ? path.substring( 1 ) : path;
+
+        String unixPath = FilenameUtils.separatorsToUnix( path );
+
+        this.path = unixPath.startsWith( "/" ) ? unixPath.substring( 1 ) : unixPath;
     }
 
     public CloudURI withContainer( String container ) {
@@ -60,12 +65,8 @@ public class CloudURI implements Serializable {
         };
     }
 
-    public CloudURI resolve( String name ) {
-        return new CloudURI( scheme + "://" + container + path + "/" + name );
-    }
-
     @Override
     public String toString() {
-        return scheme + "://" + container + "/" + path;
+        return scheme + "://" + ( container != null ? container : "" ) + "/" + path;
     }
 }

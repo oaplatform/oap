@@ -128,10 +128,11 @@ public class FileSystemTest extends Fixtures {
 
     @Test
     public void testCopy() {
-        Files.write( testDirectoryFixture.testPath( "folder/my-file.txt.gz" ), "test string", ContentWriter.ofString() );
+        Path path = testDirectoryFixture.testPath( "folder/my-file.txt.gz" );
+        Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.copyAsync( new CloudURI( "file://folder/my-file.txt.gz" ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) ) )
+            assertThat( fileSystem.copyAsync( fileSystem.toLocalFilePath( path ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) ) )
                 .succeedsWithin( 30, TimeUnit.SECONDS );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ) );
@@ -155,13 +156,11 @@ public class FileSystemTest extends Fixtures {
     @Test
     public void testToLocalFilePath() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.file.clouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
-
             "fs.default.clouds.scheme", "s3",
             "fs.default.clouds.container", TEST_BUCKET
         ) ) ) ) {
-            assertThat( fileSystem.toLocalFilePath( testDirectoryFixture.testPath( "/container/test.file" ) ) )
-                .isEqualTo( new CloudURI( "file", "container", "test.file" ) );
+            Path path = testDirectoryFixture.testPath( "/container/test.file" );
+            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", null, path.toString() ) );
         }
     }
 
@@ -214,16 +213,13 @@ public class FileSystemTest extends Fixtures {
     public void testToFile() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.file.clouds.filesystem.basedir", "/tmp",
-                "fs.file.tmp.clouds.filesystem.basedir", "/container",
                 "fs.default.clouds.scheme", "s3",
                 "fs.default.clouds.container", "test-bucket"
             )
         );
 
         try( FileSystem fileSystem = new FileSystem( fileSystemConfiguration ) ) {
-            assertThat( fileSystem.toFile( new CloudURI( "file://container/a/file1" ) ) ).isEqualTo( new File( "/tmp/container/a/file1" ) );
-            assertThat( fileSystem.toFile( new CloudURI( "file://tmp/a/file1" ) ) ).isEqualTo( new File( "/container/tmp/a/file1" ) );
+            assertThat( fileSystem.toFile( new CloudURI( "file:///tmp/a/file1" ) ) ).isEqualTo( new File( "/tmp/a/file1" ) );
         }
     }
 
