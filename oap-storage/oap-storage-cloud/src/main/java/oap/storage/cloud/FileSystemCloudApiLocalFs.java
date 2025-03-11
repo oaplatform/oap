@@ -14,24 +14,18 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
-    private final Path root;
-
-    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        Object baseDir = fileSystemConfiguration.get( "file", "", "jclouds.filesystem.basedir" );
-        root = baseDir != null ? Path.of( baseDir.toString() ) : Path.of( "/" );
-    }
-
     @Override
     public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) throws CloudException {
         return CompletableFuture.completedFuture( getPath( path ).toFile().exists() );
     }
 
     private Path getPath( CloudURI path ) {
-        return root.resolve( path.container, path.path );
+        return Paths.get( "/" + path.path );
     }
 
     @Override

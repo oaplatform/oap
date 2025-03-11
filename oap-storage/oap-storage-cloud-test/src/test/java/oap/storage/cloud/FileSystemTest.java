@@ -155,8 +155,6 @@ public class FileSystemTest extends Fixtures {
     @Test
     public void testToLocalFilePath() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.file.clouds.filesystem.basedir", testDirectoryFixture.testDirectory(),
-
             "fs.default.clouds.scheme", "s3",
             "fs.default.clouds.container", TEST_BUCKET
         ) ) ) ) {
@@ -214,7 +212,6 @@ public class FileSystemTest extends Fixtures {
     public void testToFile() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.file.clouds.filesystem.basedir", "/tmp",
                 "fs.file.tmp.clouds.filesystem.basedir", "/container",
                 "fs.default.clouds.scheme", "s3",
                 "fs.default.clouds.container", "test-bucket"
@@ -222,8 +219,7 @@ public class FileSystemTest extends Fixtures {
         );
 
         try( FileSystem fileSystem = new FileSystem( fileSystemConfiguration ) ) {
-            assertThat( fileSystem.toFile( new CloudURI( "file://container/a/file1" ) ) ).isEqualTo( new File( "/tmp/container/a/file1" ) );
-            assertThat( fileSystem.toFile( new CloudURI( "file://tmp/a/file1" ) ) ).isEqualTo( new File( "/container/tmp/a/file1" ) );
+            assertThat( fileSystem.toFile( new CloudURI( "file://tmp/a/file1" ) ) ).isEqualTo( new File( "/tmp/a/file1" ) );
         }
     }
 
