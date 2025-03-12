@@ -250,17 +250,13 @@ public class FileSystem implements AutoCloseable {
     public CloudURI toLocalFilePath( Path path ) {
         log.debug( "toLocalFilePath {}", path );
 
-        Object baseDir = fileSystemConfiguration.getOrThrow( "file", "", "jclouds.filesystem.basedir" );
-
-        return new CloudURI( FilenameUtils.separatorsToUnix( "file://" + Paths.get( baseDir.toString() ).relativize( path ) ) );
+        return new CloudURI( "file", null, path.toString() );
     }
 
     public File toFile( CloudURI cloudURI ) {
         Preconditions.checkArgument( "file".equals( cloudURI.scheme ) );
 
-        String basedir = ( String ) fileSystemConfiguration.getOrThrow( "file", cloudURI.container, "jclouds.filesystem.basedir" );
-
-        return Paths.get( basedir ).resolve( cloudURI.container ).resolve( cloudURI.path ).toFile();
+        return Paths.get( "/" + cloudURI.path ).toFile();
     }
 
     @Override
