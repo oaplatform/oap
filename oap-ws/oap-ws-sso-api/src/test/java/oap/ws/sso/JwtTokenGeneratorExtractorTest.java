@@ -70,7 +70,7 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
     }
 
     private static @NotNull TestUser getUser() {
-        return new TestUser("email@email.com", "password", Pair.of("org1", "ADMIN"));
+        return new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) );
     }
 
     @Test
