@@ -65,11 +65,11 @@ public class MongoClient implements Closeable {
 
         Preconditions.checkNotNull( this.connectionString.getDatabase(), "database is required" );
 
-        final MongoClientSettings.Builder settingsBuilder = defaultBuilder()
+        MongoClientSettings.Builder settingsBuilder = defaultBuilder()
             .applyConnectionString( this.connectionString );
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( this.connectionString.getDatabase() );
-        log.debug( "creating connectionString {} migrationPackage {}",
+        log.debug( "creating connectionString: {}, migrationPackage: {}",
             this.connectionString, migrationPackage );
     }
 
@@ -88,7 +88,8 @@ public class MongoClient implements Closeable {
      * @param <R>
      * @return result of function or null otherwise
      */
-    public <R> Optional<R> doWithCollectionIfExist( String collectionName, Function<MongoCollection<Document>, R> consumer ) {
+    public <R> Optional<R> doWithCollectionIfExist( String collectionName,
+                                                    Function<MongoCollection<Document>, R> consumer ) {
         Objects.requireNonNull( collectionName );
         if( collectionExists( collectionName ) ) {
             var collection = this.getCollection( collectionName );
@@ -107,10 +108,11 @@ public class MongoClient implements Closeable {
 
     public void preStart() {
         try {
-            MongoSync4Driver driver = MongoSync4Driver.withDefaultLock( mongoClient, database.getName() );
+            var driver = MongoSync4Driver.withDefaultLock( mongoClient, database.getName() );
             driver.disableTransaction();
 
             if( migrationPackage != null ) {
+                log.info( "migrationPackage is set to '{}', processing...", migrationPackage );
                 MongockStandalone
                     .builder()
                     .addMigrationScanPackage( migrationPackage )
@@ -120,9 +122,9 @@ public class MongoClient implements Closeable {
 
             }
         } catch( Exception ex ) {
-            log.error( "Cannot perform migration" );
-            log.error( ex.getMessage(), ex );
+            log.error( "Cannot perform migration in package: {}", migrationPackage, ex );
         }
+        log.info( "client is ready" );
     }
 
     public CodecRegistry getCodecRegistry() {
@@ -149,7 +151,7 @@ public class MongoClient implements Closeable {
     }
 
     public void dropDatabase() {
-        log.debug( "dropping database {}", this );
+        log.debug( "dropping database: {}", this );
         this.database.drop();
     }
 }
