@@ -77,7 +77,7 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
             Path filename = filename();
             if( out == null )
                 if( !java.nio.file.Files.exists( filename ) ) {
-                    log.debug( "[{}] open new file v{}", filename, fileVersion );
+                    log.info( "[{}] open new file v{}", filename, fileVersion );
                     outFilename = filename;
                     out = new CountingOutputStream( IoStreams.out( filename, IoStreams.Encoding.from( filename ), bufferSize ) );
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
