@@ -109,16 +109,16 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
 
         Types.MessageTypeBuilder messageTypeBuilder = Types.buildMessage();
 
-        for( var i = 0; i < logId.headers.length; i++ ) {
-            var header = logId.headers[i];
-            var type = logId.types[i];
+        for( int i = 0; i < logId.headers.length; i++ ) {
+            String header = logId.headers[i];
+            byte[] type = logId.types[i];
 
             if( excludeFields.contains( header ) ) {
                 continue;
             }
 
             Types.Builder<?, ?> fieldType = null;
-            for( var idx = type.length - 1; idx >= 0; idx-- ) {
+            for( int idx = type.length - 1; idx >= 0; idx-- ) {
                 Function<List<Types.Builder<?, ?>>, Types.Builder<?, ?>> builderFunction = types.get( type[idx] );
                 Preconditions.checkArgument( builderFunction != null, "" );
                 fieldType = builderFunction.apply( fieldType != null ? List.of( fieldType ) : List.of() );
@@ -137,7 +137,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
     }
 
     private static void addValue( int col, Object obj, byte[] colType, int typeIdx, Group group ) {
-        var type = colType[typeIdx];
+        byte type = colType[typeIdx];
         if( type == oap.template.Types.BOOLEAN.id ) {
             group.add( col, ( boolean ) obj );
         } else if( type == oap.template.Types.BYTE.id ) {
@@ -157,8 +157,8 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         } else if( type == oap.template.Types.DATETIME.id ) {
             group.add( col, ( ( DateTime ) obj ).getMillis() / 1000 );
         } else if( type == oap.template.Types.LIST.id ) {
-            var listGroup = group.addGroup( col );
-            for( var item : ( List<?> ) obj ) {
+            Group listGroup = group.addGroup( col );
+            for( Object item : ( List<?> ) obj ) {
                 addValue( 0, item, colType, typeIdx + 1, listGroup.addGroup( "list" ) );
             }
         } else {
@@ -177,13 +177,13 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         }
         try {
             refresh();
-            var filename = filename();
+            Path filename = filename();
             if( out == null )
                 if( !java.nio.file.Files.exists( filename ) ) {
                     log.info( "[{}] open new file v{}", filename, fileVersion );
                     outFilename = filename;
 
-                    var conf = new Configuration();
+                    Configuration conf = new Configuration();
                     GroupWriteSupport.setSchema( messageType, conf );
 
                     out = new ParquetWriteBuilder( HadoopOutputFile.fromPath( new org.apache.hadoop.fs.Path( filename.toString() ), conf ) )
@@ -215,7 +215,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
     }
 
     private void convertToParquet( byte[] buffer, int offset, int length, byte[][] types, String[] headers ) throws IOException {
-        var bis = new BinaryInputStream( new ByteArrayInputStream( buffer, offset, length ) );
+        BinaryInputStream bis = new BinaryInputStream( new ByteArrayInputStream( buffer, offset, length ) );
         int col = 0;
         ParquetSimpleGroup group = new ParquetSimpleGroup( messageType );
         Object obj = bis.readObject();
@@ -232,7 +232,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
                             Lists.map( List.of( ArrayUtils.toObject( types[col] ) ), oap.template.Types::valueOf ),
                             parquetCol );
 
-                        var data = BinaryUtils.read( buffer, offset, length );
+                        List<List<Object>> data = BinaryUtils.read( buffer, offset, length );
                         log.error( "object data {}", data );
 
                         throw e;
@@ -257,8 +257,8 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
             super.closeOutput();
         } finally {
             if( parquetFile != null ) {
-                var name = FilenameUtils.getName( parquetFile.toString() );
-                var parent = FilenameUtils.getFullPathNoEndSeparator( parquetFile.toString() );
+                String name = FilenameUtils.getName( parquetFile.toString() );
+                String parent = FilenameUtils.getFullPathNoEndSeparator( parquetFile.toString() );
                 java.nio.file.Path crcPath = Paths.get( parent + "/." + name + ".crc" );
 
                 if( Files.exists( crcPath ) )

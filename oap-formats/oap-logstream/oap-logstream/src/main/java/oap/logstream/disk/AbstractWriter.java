@@ -79,11 +79,11 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
 
     @SneakyThrows
     static String currentPattern( LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time ) {
-        var suffix = filePattern;
+        String suffix = filePattern;
         if( filePattern.startsWith( "/" ) && filePattern.endsWith( "/" ) ) suffix = suffix.substring( 1 );
         else if( !filePattern.startsWith( "/" ) && !logId.filePrefixPattern.endsWith( "/" ) ) suffix = "/" + suffix;
 
-        var pattern = logId.filePrefixPattern + suffix;
+        String pattern = logId.filePrefixPattern + suffix;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
 
         pattern = StringUtils.replace( pattern, "${", "<" );
@@ -118,7 +118,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     public synchronized void refresh( boolean forceSync ) {
         log.debug( "refresh {}...", lastPattern );
 
-        var currentPattern = currentPattern();
+        String currentPattern = currentPattern();
 
         if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
             log.debug( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
@@ -146,8 +146,8 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         if( out != null ) try {
             stopwatch.count( out::close );
 
-            var fileSize = Files.size( outFilename );
-            log.trace( "closing output {} ({} bytes)", this, fileSize );
+            long fileSize = Files.size( outFilename );
+            log.info( "closing output {} ({} bytes)", this, fileSize );
             Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
             Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
         } catch( IOException e ) {
