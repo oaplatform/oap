@@ -68,12 +68,28 @@ public class FileSystem implements AutoCloseable {
         this.fileSystemConfiguration = fileSystemConfiguration;
     }
 
-    private FileSystemCloudApi getCloudApi( CloudURI cloudURI ) {
+    private FileSystemCloudApi getCloudApi( CloudURI cloudURI ) throws CloudException {
         try {
             return apis.get( cloudURI.scheme,
-                () -> providers.get( cloudURI.scheme ).getConstructor( FileSystemConfiguration.class, String.class ).newInstance( fileSystemConfiguration, cloudURI.container ) );
+                () -> {
+                    try {
+                        Class<? extends FileSystemCloudApi> impl = providers.get( cloudURI.scheme );
+
+                        if( impl == null ) {
+                            throw new CloudException( "Unknown provider for the scheme " + cloudURI.scheme );
+                        }
+
+                        return impl.getConstructor( FileSystemConfiguration.class, String.class ).newInstance( fileSystemConfiguration, cloudURI.container );
+                    } catch( Exception e ) {
+                        throw new CloudException( "Invlid provider for the scheme " + cloudURI.scheme, e );
+                    }
+                } );
         } catch( ExecutionException e ) {
-            throw new CloudException( e.getCause() );
+            if( e.getCause() instanceof CloudException ) {
+                throw ( CloudException ) e.getCause();
+            } else {
+                throw new CloudException( e.getCause() );
+            }
         }
     }
 
