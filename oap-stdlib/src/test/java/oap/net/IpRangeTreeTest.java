@@ -25,4 +25,15 @@ public class IpRangeTreeTest {
 
         assertThat( tree.lookUp( IpUtils.ipv4AsLong( "255.255.255.245" ) ) ).isNull();
     }
+
+    @Test
+    public void testIp() {
+        IpRangeTree<String> tree = new IpRangeTree<>( 8 );
+        tree.addRange( IpUtils.ipv4AsLong( "126.126.126.126" ), IpUtils.ipv4AsLong( "126.126.126.126" ), "1" );
+
+        assertThat( tree.lookUp( IpUtils.ipv4AsLong( "126.126.126.126" ) ) ).isEqualTo( "1" );
+
+        assertThat( tree.lookUp( IpUtils.ipv4AsLong( "126.126.126.125" ) ) ).isNull();
+        assertThat( tree.lookUp( IpUtils.ipv4AsLong( "126.126.126.127" ) ) ).isNull();
+    }
 }
