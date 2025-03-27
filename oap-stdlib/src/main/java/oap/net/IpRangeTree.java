@@ -75,7 +75,7 @@ public class IpRangeTree<Data> implements Serializable, Iterable<Data> {
         }
         Int2ObjectSortedMap<IpRange<Data>> tailMap = map.tailMap( suffix );
         Map.Entry<Integer, IpRange<Data>> firstEntry = tailMap.firstEntry();
-        if( firstEntry != null && firstEntry.getValue().highAddress >= suffix ) {
+        if( firstEntry != null && firstEntry.getValue().highAddress >= suffix && firstEntry.getKey() <= suffix ) {
             return firstEntry.getValue().data;
         }
 
