@@ -28,16 +28,16 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PrinterTest {
     @Test
     public void print() {
-        assertString( Printer.print( List.of( 1, 2, 3 ), Tsv.DELIMITER_TAB ) )
+        assertThat( Printer.print( List.of( 1, 2, 3 ), Tsv.DELIMITER_TAB ) )
             .isEqualTo( "1\t2\t3\n" );
-        assertString( Printer.print( List.of( 1, 2, 3 ), Tsv.DELIMITER_COMMA, true ) )
+        assertThat( Printer.print( List.of( 1, 2, 3 ), Tsv.DELIMITER_COMMA, true ) )
             .isEqualTo( "\"1\",\"2\",\"3\"\n" );
-        assertString( Printer.print( List.of( 1, "\"2\\\"", 3 ), Tsv.DELIMITER_COMMA, true ) )
+        assertThat( Printer.print( List.of( 1, "\"2\\\"", 3 ), Tsv.DELIMITER_COMMA, true ) )
             .isEqualTo( "\"1\",\"\"\"2\\\\\"\"\",\"3\"\n" );
     }
 }

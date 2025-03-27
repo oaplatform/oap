@@ -49,7 +49,6 @@ import static oap.template.ErrorStrategy.IGNORE;
 import static oap.template.TemplateAccumulators.BINARY;
 import static oap.template.TemplateAccumulators.OBJECT;
 import static oap.template.TemplateAccumulators.STRING;
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.joda.time.DateTimeZone.UTC;
@@ -502,7 +501,7 @@ public class TemplateEngineTest extends Fixtures {
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
 
-        assertString( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
+        assertThat( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
     }
 
     @SuppressWarnings( "checkstyle:NoWhitespaceBefore" )
@@ -522,7 +521,7 @@ public class TemplateEngineTest extends Fixtures {
             , templateAccumulator, ERROR, null ).render( templateClass ).get();
 
 
-        assertString( str ).isEqualTo( "booleanField:false_b,booleanObjectField:true_b"
+        assertThat( str ).isEqualTo( "booleanField:false_b,booleanObjectField:true_b"
             + ",byteField:0,byteObjectField:1"
             + ",shortField:0,shortObjectField:1"
             + ",intField:0_i,intObjectField:1_i"

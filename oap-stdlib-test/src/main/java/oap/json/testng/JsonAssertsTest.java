@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static oap.json.testng.JsonAsserts.assertJson;
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class JsonAssertsTest {
 
@@ -40,7 +40,7 @@ public class JsonAssertsTest {
         try {
             assertJson( "{\"a\":\"b\", \"c\":null}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
         } catch( AssertionError e ) {
-            assertString( e.getMessage() ).isEqualTo( """
+            assertThat( e.getMessage() ).isEqualTo( """
                 expected [{
                   "a" : "b",
                   "c" : {

@@ -42,8 +42,8 @@ import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LoggerJsonTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
@@ -64,7 +64,7 @@ public class LoggerJsonTest extends Fixtures {
 
             var o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
             String jsonContent = Binder.json.marshal( o );
-            assertString( jsonContent ).isEqualTo( content );
+            assertThat( jsonContent ).isEqualTo( content );
 
             logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, BinaryUtils.line( jsonContent ) );
         }

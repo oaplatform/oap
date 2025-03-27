@@ -31,7 +31,6 @@ import static oap.id.Identifier.Option.COMPACT;
 import static oap.id.Identifier.Option.FILL;
 import static oap.storage.Storage.Lock.CONCURRENT;
 import static oap.storage.Storage.Lock.SERIALIZED;
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultIdentifierTest {
@@ -91,8 +90,8 @@ public class DefaultIdentifierTest {
         storage.store( a );
         storage.store( b );
 
-        assertString( a.id ).isEqualTo( "SMTXTXX" );
-        assertString( b.id ).isEqualTo( "NTHRTXT" );
+        assertThat( a.id ).isEqualTo( "SMTXTXX" );
+        assertThat( b.id ).isEqualTo( "NTHRTXT" );
 
     }
 
@@ -120,13 +119,13 @@ public class DefaultIdentifierTest {
         storage.store( f );
         storage.store( g );
 
-        assertString( a.id ).isEqualTo( "SMTXTXX" );
-        assertString( b.id ).isEqualTo( "SMTXTX0" );
-        assertString( c.id ).isEqualTo( "SMTXTX1" );
-        assertString( d.id ).isEqualTo( "SMTXTX2" );
-        assertString( e.id ).isEqualTo( "SMTXTX3" );
-        assertString( f.id ).isEqualTo( "SMTXTX4" );
-        assertString( g.id ).isEqualTo( "SMTXTX5" );
+        assertThat( a.id ).isEqualTo( "SMTXTXX" );
+        assertThat( b.id ).isEqualTo( "SMTXTX0" );
+        assertThat( c.id ).isEqualTo( "SMTXTX1" );
+        assertThat( d.id ).isEqualTo( "SMTXTX2" );
+        assertThat( e.id ).isEqualTo( "SMTXTX3" );
+        assertThat( f.id ).isEqualTo( "SMTXTX4" );
+        assertThat( g.id ).isEqualTo( "SMTXTX5" );
     }
 
 }

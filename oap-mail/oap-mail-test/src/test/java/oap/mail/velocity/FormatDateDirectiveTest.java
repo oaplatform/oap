@@ -6,7 +6,7 @@ import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import static oap.mail.Template.Type.TEXT;
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class FormatDateDirectiveTest {
 
@@ -16,7 +16,7 @@ public class FormatDateDirectiveTest {
         Template template = new Template( TEXT, "--subject--\nsubj\n--body--\n#formatDate($o.d 'yyyy-MM-dd')\n" );
         template.bind( "o", bean );
         Message message = template.buildMessage();
-        assertString( message.body ).isEqualTo( "1970-01-01" );
+        assertThat( message.body ).isEqualTo( "1970-01-01" );
     }
 
     public static class Bean {

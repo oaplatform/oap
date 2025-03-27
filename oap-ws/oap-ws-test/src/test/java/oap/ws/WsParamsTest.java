@@ -26,11 +26,11 @@ package oap.ws;
 
 import org.testng.annotations.Test;
 
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class WsParamsTest {
     @Test
     public void uncamelHeaderName() {
-        assertString( WsParams.uncamelHeaderName( "xCustomHeader" ) ).isEqualTo( "X-Custom-Header" );
+        assertThat( WsParams.uncamelHeaderName( "xCustomHeader" ) ).isEqualTo( "X-Custom-Header" );
     }
 }

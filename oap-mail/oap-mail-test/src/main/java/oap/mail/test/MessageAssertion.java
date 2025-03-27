@@ -32,7 +32,6 @@ import javax.mail.Folder;
 import javax.mail.MessagingException;
 import java.util.Map;
 
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -53,7 +52,7 @@ public final class MessageAssertion extends AbstractAssert<MessageAssertion, Mes
     }
 
     public MessageAssertion isFrom( String email ) {
-        assertString( this.actual.from.mail ).isEqualTo( email );
+        assertThat( this.actual.from.mail ).isEqualTo( email );
         return this;
     }
 
@@ -79,7 +78,7 @@ public final class MessageAssertion extends AbstractAssert<MessageAssertion, Mes
     }
 
     public MessageAssertion hasSubject( String subject ) {
-        assertString( this.actual.subject ).isEqualTo( subject );
+        assertThat( this.actual.subject ).isEqualTo( subject );
         return this;
     }
 
@@ -89,7 +88,7 @@ public final class MessageAssertion extends AbstractAssert<MessageAssertion, Mes
     }
 
     public MessageAssertion hasBody( String body ) {
-        assertString( this.actual.body ).isEqualTo( body );
+        assertThat( this.actual.body ).isEqualTo( body );
         return this;
     }
 

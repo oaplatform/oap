@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FuturesTest {
@@ -51,7 +50,7 @@ public class FuturesTest {
             assertThat( failed.join() ).isNotEqualTo( List.of( "a" ) );
         } catch( CompletionException e ) {
             assertThat( failed ).isCompletedExceptionally();
-            assertString( e.getCause().getMessage() ).isEqualTo( "fail" );
+            assertThat( e.getCause().getMessage() ).isEqualTo( "fail" );
         }
     }
 

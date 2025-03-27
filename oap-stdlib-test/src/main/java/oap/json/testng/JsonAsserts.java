@@ -43,7 +43,6 @@ import java.util.function.Function;
 import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofString;
 import static oap.json.Binder.json;
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -114,6 +113,20 @@ public class JsonAsserts {
                 : Either.right( json.unmarshal( new TypeRef<>() {}, content ) );
         }
 
+        @SuppressWarnings( "unchecked" )
+        private static <R> R substitute( Object o, Map<String, Object> substitutions ) {
+            substitutions.forEach( ( k, v ) -> Reflect.set( o, k, v, true ) );
+            return ( R ) o;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        private static <R> R deepSort( Object o ) {
+            if( o == null ) return null;
+            if( o instanceof List<?> list ) return ( R ) list.stream().map( JsonAssertion::deepSort ).toList();
+            if( o instanceof Map<?, ?> map ) return ( R ) BiStream.of( map ).map( ( k, v ) -> __( k, deepSort( v ) ) ).collect( Maps.Collectors.toTreeMap() );
+            return ( R ) o;
+        }
+
         public JsonAssertion isEqualTo( String expected ) {
             return isEqualTo( expected, Map.of() );
         }
@@ -127,7 +140,7 @@ public class JsonAsserts {
             String expectedJson = unmarshal( expected )
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
                 .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
-            assertString( actualJson ).isEqualTo( expectedJson );
+            assertThat( actualJson ).isEqualTo( expectedJson );
             return this;
         }
 
@@ -138,20 +151,6 @@ public class JsonAsserts {
         @Override
         public JsonAssertion isEqualTo( Object expected ) {
             return isEqualTo( String.valueOf( expected ) );
-        }
-
-        @SuppressWarnings( "unchecked" )
-        private static <R> R substitute( Object o, Map<String, Object> substitutions ) {
-            substitutions.forEach( ( k, v ) -> Reflect.set( o, k, v, true ) );
-            return ( R ) o;
-        }
-
-        @SuppressWarnings( "unchecked" )
-        private static <R> R deepSort( Object o ) {
-            if( o == null ) return null;
-            if( o instanceof List<?> list ) return ( R ) list.stream().map( JsonAssertion::deepSort ).toList();
-            if( o instanceof Map<?, ?> map ) return ( R ) BiStream.of( map ).map( ( k, v ) -> __( k, deepSort( v ) ) ).collect( Maps.Collectors.toTreeMap() );
-            return ( R ) o;
         }
 
         /**
