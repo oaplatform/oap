@@ -53,13 +53,12 @@ public class Mailman implements Runnable, Closeable {
         while( !done ) {
             try {
                 semaphore.acquire();
-
-                log.debug( "sending {} messages from queue ...", queue.size() );
+                if( queue.size() > 0 ) log.debug( "sending {} messages from queue ...", queue.size() );
                 queue.processing( this::sendMessage );
             } catch( InterruptedException e ) {
                 done = true;
             } catch( Exception e ) {
-                log.error( e.getMessage(), e );
+                log.error( "Cannot process queue", e );
             }
         }
     }
@@ -75,11 +74,13 @@ public class Mailman implements Runnable, Closeable {
     }
 
     public void send( Message message ) {
-        log.debug( "enqueue message {}", message );
+        try {
+            log.debug( "enqueue message {}", message );
 
-        this.queue.add( message );
-
-        semaphore.release();
+            this.queue.add( message );
+        } finally {
+            semaphore.release();
+        }
     }
 
     @Override
