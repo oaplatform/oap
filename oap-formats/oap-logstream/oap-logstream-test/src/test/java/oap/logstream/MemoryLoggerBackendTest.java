@@ -31,7 +31,6 @@ import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.logstream.LogStreamProtocol.CURRENT_PROTOCOL_VERSION;
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MemoryLoggerBackendTest {
@@ -47,11 +46,11 @@ public class MemoryLoggerBackendTest {
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ) ) )
                 .containsExactly( "line1", "line2" );
 
-            assertString( backend.logged( new LogId( "file1", "type1", "test1", Map.of(),
+            assertThat( backend.logged( new LogId( "file1", "type1", "test1", Map.of(),
                 new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } ) ) )
                 .isEqualTo( "line1\nline2\n" );
 
-            assertString( backend.logged() )
+            assertThat( backend.logged() )
                 .isEqualTo( "line1\nline2\n" );
         }
     }

@@ -33,7 +33,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
-import static oap.testng.Asserts.assertString;
 import static oap.ws.sso.JWTExtractor.TokenStatus.VALID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
@@ -54,7 +53,7 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
 
         Authentication.Token token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
         assertNotNull( token.expires );
-        assertString( token.jwt ).isNotEmpty();
+        assertThat( token.jwt ).isNotEmpty();
         assertThat( token.expires ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
         assertThat( jwtExtractor.verifyToken( token.jwt ) ).isEqualTo( VALID );
 

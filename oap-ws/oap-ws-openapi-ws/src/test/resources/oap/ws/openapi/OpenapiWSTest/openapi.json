@@ -3554,6 +3554,10 @@
             "content" : {
               "application/json" : {
                 "schema" : {
+                  "items" : {
+                    "format" : "byte",
+                    "type" : "string"
+                  },
                   "type" : "array"
                 }
               }
@@ -3581,6 +3585,10 @@
             "content" : {
               "application/json" : {
                 "schema" : {
+                  "items" : {
+                    "format" : "byte",
+                    "type" : "string"
+                  },
                   "type" : "array"
                 }
               }

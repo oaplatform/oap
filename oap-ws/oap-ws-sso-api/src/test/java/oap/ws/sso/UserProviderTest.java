@@ -31,19 +31,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 public class UserProviderTest {
     @Test
     public void toAccessKey() {
-        assertString( UserProvider.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "HXMLFVRJTSMS" );
-        assertString( UserProvider.toAccessKey( "j@smith.com" ) ).isEqualTo( "HUMMFNRJNSQC" );
-        assertString( UserProvider.toAccessKey( "a" ) ).isEqualTo( "ZIWJXUYTMVKL" );
-        assertString( UserProvider.toAccessKey( "A" ) ).isEqualTo( "TYQXROSNUPWV" );
-        assertString( UserProvider.toAccessKey( "b" ) ).isEqualTo( "HMELFCGBIDKJ" );
-        assertString( UserProvider.toAccessKey( "/" ) ).isEqualTo( "PKYLZWQVOXMN" );
-        assertString( UserProvider.toAccessKey( "@" ) ).isEqualTo( "SXPWQNRMTOVU" );
+        assertThat( UserProvider.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "HXMLFVRJTSMS" );
+        assertThat( UserProvider.toAccessKey( "j@smith.com" ) ).isEqualTo( "HUMMFNRJNSQC" );
+        assertThat( UserProvider.toAccessKey( "a" ) ).isEqualTo( "ZIWJXUYTMVKL" );
+        assertThat( UserProvider.toAccessKey( "A" ) ).isEqualTo( "TYQXROSNUPWV" );
+        assertThat( UserProvider.toAccessKey( "b" ) ).isEqualTo( "HMELFCGBIDKJ" );
+        assertThat( UserProvider.toAccessKey( "/" ) ).isEqualTo( "PKYLZWQVOXMN" );
+        assertThat( UserProvider.toAccessKey( "@" ) ).isEqualTo( "SXPWQNRMTOVU" );
     }
 
     @Test

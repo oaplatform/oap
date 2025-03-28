@@ -30,7 +30,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-import static oap.testng.Asserts.assertString;
 import static oap.tsv.test.TsvAssertion.assertTsv;
 import static oap.tsv.test.TsvAssertion.header;
 import static oap.tsv.test.TsvAssertion.row;
@@ -43,7 +42,7 @@ public class TsvStreamTest {
             "1","2","3"
             "1","2","3"
             """;
-        assertString( ContentReader.read( csv, Tsv.csv.ofSeparatedValues() )
+        assertThat( ContentReader.read( csv, Tsv.csv.ofSeparatedValues() )
             .toCsvString() )
             .isEqualTo( csv );
     }
@@ -54,7 +53,7 @@ public class TsvStreamTest {
             1,2,3
             1,2,3
             """;
-        assertString( ContentReader.read( csv, Tsv.csv.ofSeparatedValues() )
+        assertThat( ContentReader.read( csv, Tsv.csv.ofSeparatedValues() )
             .toCsvString( false ) )
             .isEqualTo( csv );
     }
@@ -70,7 +69,7 @@ public class TsvStreamTest {
 
     @Test
     public void toStrng() {
-        assertString( ContentReader.read( "1\t2\t3\n1\t2\t3", Tsv.tsv.ofSeparatedValues() )
+        assertThat( ContentReader.read( "1\t2\t3\n1\t2\t3", Tsv.tsv.ofSeparatedValues() )
             .toTsvString() )
             .isEqualTo( "1\t2\t3\n1\t2\t3\n" );
     }
@@ -171,7 +170,7 @@ public class TsvStreamTest {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         ContentReader.read( "a\tb\tc\n1\t2\t3\n1\t2\t3", Tsv.tsv.ofSeparatedValues() )
             .collect( TsvStream.Collectors.toTsvOutputStream( bytes ) );
-        assertString( bytes.toString() ).isEqualTo( "a\tb\tc\n1\t2\t3\n1\t2\t3\n" );
+        assertThat( bytes.toString() ).isEqualTo( "a\tb\tc\n1\t2\t3\n1\t2\t3\n" );
     }
 
     @Test

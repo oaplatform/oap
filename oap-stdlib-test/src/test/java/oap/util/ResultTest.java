@@ -26,7 +26,7 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
-import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -58,7 +58,7 @@ public class ResultTest {
 
     @Test
     public void resultToString() {
-        assertString( Result.success( "aaaa" ).toString() ).isEqualTo( "Result.success (reason: aaaa)" );
-        assertString( Result.failure( "aaaa" ).toString() ).isEqualTo( "Result.failure (reason: aaaa)" );
+        assertThat( Result.success( "aaaa" ).toString() ).isEqualTo( "Result.success (reason: aaaa)" );
+        assertThat( Result.failure( "aaaa" ).toString() ).isEqualTo( "Result.failure (reason: aaaa)" );
     }
 }

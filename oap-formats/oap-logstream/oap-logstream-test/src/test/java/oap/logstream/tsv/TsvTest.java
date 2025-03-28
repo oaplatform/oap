@@ -29,7 +29,6 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -80,6 +79,6 @@ public class TsvTest {
 
     @Test
     public void testEscape() {
-        assertString( TsvInputStream.escape( "1\n2\r3\t4\\5\\" ) ).isEqualTo( "1\\n2\\r3\\t4\\\\5\\\\" );
+        assertThat( TsvInputStream.escape( "1\n2\r3\t4\\5\\" ) ).isEqualTo( "1\\n2\\r3\\t4\\\\5\\\\" );
     }
 }
