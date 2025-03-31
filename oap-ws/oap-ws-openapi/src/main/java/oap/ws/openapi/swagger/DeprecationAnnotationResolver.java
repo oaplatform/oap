@@ -40,6 +40,7 @@ import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.NumberSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.ext.Ext;
@@ -48,7 +49,6 @@ import oap.util.Pair;
 import oap.util.Strings;
 
 import javax.annotation.Nullable;
-import javax.xml.bind.annotation.XmlAccessorType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -60,7 +60,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -68,13 +67,34 @@ import java.util.stream.Stream;
 @Slf4j
 @ToString
 public class DeprecationAnnotationResolver extends ModelResolver implements ModelConverter {
-    private ModelConverterContext context;
     private final LinkedHashSet<String> toBeResolvedClassName = new LinkedHashSet<>();
-    private final Map<Pair<String, String>, Schema> extensionsSchemas = new HashMap<>();
-    private final Map<Pair<String, String>, Schema> collectionsSchemas = new HashMap<>();
+    private final HashMap<Pair<String, String>, Schema> extensionsSchemas = new HashMap<>();
+    private final HashMap<Pair<String, String>, Schema> collectionsSchemas = new HashMap<>();
+    private ModelConverterContext context;
 
     public DeprecationAnnotationResolver( ModelResolver modelResolver ) {
         super( modelResolver.objectMapper() );
+    }
+
+    @Nullable
+    public static Schema detectInnerSchema( String innerType ) {
+        Schema typeSchema = switch( innerType ) {
+            case "java.lang.Integer" -> new IntegerSchema();
+            case "java.lang.Long",
+                 "java.lang.Double",
+                 "java.lang.Float",
+                 "java.lang.Byte" -> new NumberSchema();
+            case "java.lang.String" -> new StringSchema();
+            case "byte[]" -> new ByteArraySchema();
+            case "java.util.Date" -> new DateSchema();
+            case "boolean" -> new BooleanSchema();
+            default -> null;
+        };
+        if( typeSchema == null ) {
+            log.debug( "Cannot inline schema for non-primitive type " + innerType );
+
+        }
+        return typeSchema;
     }
 
     @Override
@@ -83,13 +103,13 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
                            Iterator<ModelConverter> next ) {
         this.context = context;
         String canonName = null;
-        if ( annotatedType.getType().getClass() != SimpleType.class ) {
+        if( annotatedType.getType().getClass() != SimpleType.class ) {
             this.toBeResolvedClassName.add( annotatedType.getType().getTypeName() );
         } else {
             canonName = ( ( SimpleType ) annotatedType.getType() ).getRawClass().getCanonicalName();
         }
         Schema resolved = super.resolve( annotatedType, context, next );
-        if ( canonName != null
+        if( canonName != null
             && resolved != null
             && "object".equals( resolved.getType() )
             && !canonName.startsWith( "io.swagger." )
@@ -116,7 +136,8 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
     /**
      * This method is called for every property in every bean, so we use that fact to catch up extension field like
      * 'private Ext ext' to identify which exact type is there.
-     * @param member field in class to analyze
+     *
+     * @param member                    field in class to analyze
      * @param xmlAccessorTypeAnnotation
      * @param propName
      * @param propertiesToIgnore
@@ -138,14 +159,14 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
                 try {
                     log.debug( "Looking for '{}.{}' ...", clazz.getCanonicalName(), propDef.getName() );
                     Class<?> ext = ExtDeserializer.extensionOf( clazz, propDef.getName() );
-                    if ( ext == null && !toBeResolvedClassName.isEmpty() ) {
+                    if( ext == null && !toBeResolvedClassName.isEmpty() ) {
                         //maybe a subclass of clazz? let's check up 'toBeResolved'
                         log.debug( "Looking for '{}.{}' ...", toBeResolvedClassName, propDef.getName() );
                         Class concreteClass = getConcreteClass();
                         ext = ExtDeserializer.extensionOf( concreteClass, propDef.getName() );
                         memberClassName = concreteClass.getSimpleName();
                     }
-                    if ( ext != null ) {
+                    if( ext != null ) {
                         Pair<String, String> key = Pair.__( memberClassName, fieldName );
                         AnnotatedType annotatedType = new AnnotatedType( ext );
                         Schema extensionSchema = super.resolve( annotatedType, context, context.getConverters() );
@@ -177,9 +198,9 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
         Class result = null;
         List<String> classesToCheck = new ArrayList<>( toBeResolvedClassName );
         Collections.reverse( classesToCheck );
-        for ( String name : classesToCheck ) {
+        for( String name : classesToCheck ) {
             result = Class.forName( name );
-            if ( !result.isInterface() && !Modifier.isAbstract( result.getModifiers() ) ) break;
+            if( !result.isInterface() && !Modifier.isAbstract( result.getModifiers() ) ) break;
         }
         return result;
     }
@@ -223,27 +244,6 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
 //        schemaTo.setExternalDocs( schemaFrom.getExternalDocs() );
 //        schemaTo.setFormat( schemaFrom.getFormat() );
         return schemaTo;
-    }
-
-    @Nullable
-    public static Schema detectInnerSchema( String innerType ) {
-        Schema typeSchema = switch( innerType ) {
-            case "java.lang.Integer" -> new IntegerSchema();
-            case "java.lang.Long",
-                 "java.lang.Double",
-                 "java.lang.Float",
-                 "java.lang.Byte" ->  new NumberSchema();
-            case "java.lang.String" -> new StringSchema();
-            case "byte[]" -> new ByteArraySchema();
-            case "java.util.Date" -> new DateSchema();
-            case "boolean" -> new BooleanSchema();
-            default -> null;
-        };
-        if( typeSchema == null ) {
-            log.debug( "Cannot inline schema for non-primitive type " + innerType );
-
-        }
-        return typeSchema;
     }
 
     public boolean isArrayType( Class rawType ) {
