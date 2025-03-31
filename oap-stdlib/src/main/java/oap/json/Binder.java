@@ -36,6 +36,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -302,11 +304,7 @@ public class Binder {
     }
 
     public String marshalWithDefaultPrettyPrinter( Object value ) {
-        try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );
-        } catch( IOException e ) {
-            throw new JsonException( e );
-        }
+        return marshal( value, true );
     }
 
     public String marshal( Object value ) {
@@ -316,7 +314,7 @@ public class Binder {
     public String marshal( Object value, boolean prettyPrinter ) {
         try {
             if( prettyPrinter )
-                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString( value );
+                return mapper.writerWithDefaultPrettyPrinter().with( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) ).writeValueAsString( value );
             else return mapper.writeValueAsString( value );
         } catch( IOException e ) {
             throw new JsonException( e );

@@ -36,19 +36,20 @@ public class JsonAssertsTest {
     @Test
     public void isEqualTo() {
         assertJson( "{\"a\":\"b\", \"c\":{\"a\":\"b\"}}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
+        assertJson( "{\"a\":\"b\", \"c\":{\"a\":\"bb\"}}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}", str -> str.replace( "bb", "b" ) );
         assertJson( "[{\"a\":\"b\", \"c\":{\"a\":\"b\"}}]" ).isEqualTo( "[{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}]" );
         try {
             assertJson( "{\"a\":\"b\", \"c\":null}" ).isEqualTo( "{\"c\":{\"a\":\"b\"}, \"a\":\"b\"}" );
         } catch( AssertionError e ) {
             assertThat( e.getMessage() ).isEqualTo( """
-                expected [{
-                  "a" : "b",
+                expected:<"{
+                  "a" : "b"[,
                   "c" : {
                     "a" : "b"
-                  }
-                }] but found [{
-                  "a" : "b"
-                }]""" );
+                  }]
+                }"> but was:<"{
+                  "a" : "b"[]
+                }">""" );
         }
     }
 
