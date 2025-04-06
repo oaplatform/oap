@@ -25,6 +25,7 @@
 package oap.storage.mongo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.common.base.Preconditions;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
@@ -39,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -58,15 +60,15 @@ public class MongoIndex {
     }
 
     private void refresh() {
-        var indexes = new ArrayList<Document>();
+        ArrayList<Document> indexes = new ArrayList<Document>();
         collection.listIndexes().into( indexes );
 
         log.debug( "refreshing indexes: {} ...", indexes );
 
         this.indexes.clear();
 
-        for( var indexDoc : indexes ) {
-            var info = new IndexConfiguration( indexDoc );
+        for( Document indexDoc : indexes ) {
+            IndexConfiguration info = new IndexConfiguration( indexDoc );
             this.indexes.put( info.name, info );
         }
 
@@ -75,54 +77,56 @@ public class MongoIndex {
 
     public void update( IndexConfiguration... indexConfigurations ) {
         try {
-            var expected = Stream.of( indexConfigurations )
+            Set<String> expected = Stream.of( indexConfigurations )
                 .map( ic -> ic.name )
                 .collect( toSet() );
 
-            for( var name : new ArrayList<>( indexes.keySet() ) ) {
+            for( String name : new ArrayList<>( indexes.keySet() ) ) {
                 if( !"_id_".equals( name ) && !expected.contains( name ) ) {
                     collection.dropIndex( name );
                     this.indexes.remove( name );
                 }
             }
 
-            for( var ic : indexConfigurations ) {
-                update( ic.name, new ArrayList<>( ic.keys.keySet() ), ic.unique, ic.expireAfterSeconds, false );
+            for( IndexConfiguration ic : indexConfigurations ) {
+                update( ic.name, new ArrayList<>( ic.keys.keySet() ), ic.unique, ic.expireAfter, false );
             }
         } finally {
             refresh();
         }
     }
 
-    public void update( String indexName, List<String> keys, boolean unique, Long expireAfterSeconds ) {
-        update( indexName, keys, unique, expireAfterSeconds, true );
+    public void update( String indexName, List<String> keys, boolean unique, Long expireAfter ) {
+        update( indexName, keys, unique, expireAfter, true );
     }
 
-    private void update( String indexName, List<String> keys, boolean unique, Long expireAfterSeconds, boolean refresh ) {
+    private void update( String indexName, List<String> keys, boolean unique, Long expireAfter, boolean refresh ) {
         try {
-            log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...",
+            log.info( "Creating index {}, keys={}, unique={}, expireAfter={}...",
                 indexName, keys, unique,
-                expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
-            var info = this.indexes.get( indexName );
+                expireAfter != null ? Dates.durationToString( expireAfter ) : "-" );
+            IndexConfiguration info = this.indexes.get( indexName );
             if( info != null ) {
-                if( info.equals( keys, unique, expireAfterSeconds ) ) {
-                    log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...... Already exists",
+                if( info.equals( keys, unique, expireAfter ) ) {
+                    log.info( "Creating index {}, keys={}, unique={}, expireAfter={}...... Already exists",
                         indexName, keys, unique,
-                        expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
+                        expireAfter != null ? Dates.durationToString( expireAfter ) : "-" );
                     return;
                 } else {
                     log.info( "Delete old index {}", info );
                     collection.dropIndex( indexName );
                 }
             }
-            var indexOptions = new IndexOptions().name( indexName ).unique( unique );
-            if( expireAfterSeconds != null ) indexOptions.expireAfter( expireAfterSeconds, TimeUnit.SECONDS );
+            IndexOptions indexOptions = new IndexOptions().name( indexName ).unique( unique );
+            if( expireAfter != null ) indexOptions.expireAfter( expireAfter, TimeUnit.MILLISECONDS );
             collection.createIndex( Indexes.ascending( keys ), indexOptions );
-            log.info( "Creating index {}, keys={}, unique={}, expireAfterSeconds={}...... Done",
+            log.info( "Creating index {}, keys={}, unique={}, expireAfter={}...... Done",
                 indexName, keys, unique,
-                expireAfterSeconds != null ? Dates.durationToString( expireAfterSeconds ) : "-" );
+                expireAfter != null ? Dates.durationToString( expireAfter ) : "-" );
         } finally {
-            if( refresh ) refresh();
+            if( refresh ) {
+                refresh();
+            }
         }
     }
 
@@ -135,18 +139,22 @@ public class MongoIndex {
     public static class IndexConfiguration {
         public final String name;
         public final boolean unique;
-        public final Long expireAfterSeconds;
+        public final Long expireAfter;
         public final LinkedHashMap<String, Direction> keys = new LinkedHashMap<>();
 
 
+        @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
         @JsonCreator
-        public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique, Long expireAfterSeconds ) {
+        public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique, Long expireAfter ) {
             this.name = name;
             keys.forEach( ( key, direction ) -> {
                 this.keys.put( key, direction == 1 ? Direction.ASC : Direction.DESC );
             } );
             this.unique = unique;
-            this.expireAfterSeconds = expireAfterSeconds;
+
+            Preconditions.checkArgument( expireAfter == null || ( expireAfter >= 1000L && ( expireAfter / 1000L * 1000L ) == expireAfter ), "ttl only works with seconds" );
+
+            this.expireAfter = expireAfter;
         }
 
         public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique ) {
@@ -156,23 +164,32 @@ public class MongoIndex {
         public IndexConfiguration( Document document ) {
             name = document.getString( "name" );
             unique = document.getBoolean( "unique", false );
-            expireAfterSeconds = document.getLong( "expireAfterSeconds" );
+            Long expireAfterSeconds = document.getLong( "expireAfterSeconds" );
+            expireAfter = expireAfterSeconds != null ? expireAfterSeconds * 1000L : null;
 
-            var keyDocument = document.get( "key", Document.class );
+            Document keyDocument = document.get( "key", Document.class );
             keyDocument.forEach( ( k, v ) ->
                 keys.put( k, ( ( Number ) v ).intValue() == 1 ? Direction.ASC : Direction.DESC ) );
         }
 
-        public boolean equals( List<String> keys, boolean unique, Long expireAfterSeconds ) {
-            if( unique != this.unique ) return false;
+        public boolean equals( List<String> keys, boolean unique, Long expireAfter ) {
+            if( unique != this.unique ) {
+                return false;
+            }
 
-            if( this.keys.size() != keys.size() ) return false;
+            if( this.keys.size() != keys.size() ) {
+                return false;
+            }
 
-            if( !Objects.equals( this.expireAfterSeconds, expireAfterSeconds ) ) return false;
+            if( !Objects.equals( this.expireAfter, expireAfter ) ) {
+                return false;
+            }
 
-            for( var key : keys ) {
-                var d = this.keys.get( key );
-                if( d != Direction.ASC ) return false;
+            for( String key : keys ) {
+                Direction d = this.keys.get( key );
+                if( d != Direction.ASC ) {
+                    return false;
+                }
             }
 
             return true;

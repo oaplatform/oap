@@ -24,8 +24,10 @@
 
 package oap.storage.mongo;
 
+import com.mongodb.client.MongoCollection;
 import oap.testng.Fixtures;
 import oap.util.LinkedHashMaps;
+import org.bson.Document;
 import org.testng.annotations.Test;
 
 import static java.util.List.of;
@@ -48,38 +50,38 @@ public class MongoIndexTest extends Fixtures {
 
     @Test
     public void testUpdateCreateNewIndex() {
-        try( var client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
-            var collection = client.getCollection( "test" );
-            var mongoIndex = new MongoIndex( collection );
+        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
+            MongoCollection<Document> collection = client.getCollection( "test" );
+            MongoIndex mongoIndex = new MongoIndex( collection );
 
-            mongoIndex.update( "idx1", of( "a" ), true, 10L );
+            mongoIndex.update( "idx1", of( "a" ), true, 10000L );
             mongoIndex.update( "idx1", of( "a", "b" ), true, null );
             mongoIndex.update( "idx1", of( "a", "b" ), true, null );
             mongoIndex.update( "idx1", of( "a", "b" ), false, null );
 
-            mongoIndex.update( "idx2", of( "c" ), false, 1L );
-            mongoIndex.update( "idx2", of( "c" ), false, 11L );
+            mongoIndex.update( "idx2", of( "c" ), false, 1000L );
+            mongoIndex.update( "idx2", of( "c" ), false, 11001L );
 
-            var info = mongoIndex.getInfo( "idx1" );
+            MongoIndex.IndexConfiguration info = mongoIndex.getInfo( "idx1" );
             assertNotNull( info );
             assertFalse( info.unique );
             assertThat( info.keys ).containsExactly( entry( "a", ASC ), entry( "b", ASC ) );
-            assertNull( info.expireAfterSeconds );
+            assertNull( info.expireAfter );
 
             info = mongoIndex.getInfo( "idx2" );
             assertNotNull( info );
-            assertThat( info.expireAfterSeconds ).isEqualTo( 11L );
+            assertThat( info.expireAfter ).isEqualTo( 11000L );
         }
     }
 
     @Test
     public void testSync() {
-        try( var client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
-            var collection = client.getCollection( "test" );
-            var mongoIndex = new MongoIndex( collection );
+        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
+            MongoCollection<Document> collection = client.getCollection( "test" );
+            MongoIndex mongoIndex = new MongoIndex( collection );
 
-            mongoIndex.update( "idx1", of( "a" ), true, 1L );
-            mongoIndex.update( "idx2", of( "b" ), true, 10L );
+            mongoIndex.update( "idx1", of( "a" ), true, 1000L );
+            mongoIndex.update( "idx2", of( "b" ), true, 10000L );
 
 
             mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", LinkedHashMaps.of( "c", 1, "d", 1 ), false, null ) );
@@ -87,7 +89,7 @@ public class MongoIndexTest extends Fixtures {
             assertNull( mongoIndex.getInfo( "idx2" ) );
             assertNotNull( mongoIndex.getInfo( "idx1" ) );
             assertFalse( mongoIndex.getInfo( "idx1" ).unique );
-            assertNull( mongoIndex.getInfo( "idx1" ).expireAfterSeconds );
+            assertNull( mongoIndex.getInfo( "idx1" ).expireAfter );
             assertThat( mongoIndex.getInfo( "idx1" ).keys ).containsExactly( entry( "c", ASC ), entry( "d", ASC ) );
         }
     }
