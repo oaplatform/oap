@@ -30,6 +30,8 @@ import oap.util.LinkedHashMaps;
 import org.bson.Document;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 import static java.util.List.of;
 import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.ASC;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,7 +86,7 @@ public class MongoIndexTest extends Fixtures {
             mongoIndex.update( "idx2", of( "b" ), true, 10000L );
 
 
-            mongoIndex.update( new MongoIndex.IndexConfiguration( "idx1", LinkedHashMaps.of( "c", 1, "d", 1 ), false, null ) );
+            mongoIndex.update( Map.of( "idx1", new MongoIndex.IndexConfiguration( LinkedHashMaps.of( "c", 1, "d", 1 ), false, null ) ) );
 
             assertNull( mongoIndex.getInfo( "idx2" ) );
             assertNotNull( mongoIndex.getInfo( "idx1" ) );
