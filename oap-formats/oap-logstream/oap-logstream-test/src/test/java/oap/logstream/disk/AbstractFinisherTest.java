@@ -28,7 +28,7 @@ public class AbstractFinisherTest extends Fixtures {
 
     @Test
     public void testSort() throws IOException {
-        int safeInterval = 10;
+        long safeInterval = 10;
         Timestamp timestamp = Timestamp.BPH_6;
 
         Path logs = testDirectoryFixture.testPath( "logs" );
@@ -52,27 +52,56 @@ public class AbstractFinisherTest extends Fixtures {
         type1.writeFor( file21 );
         type2.writeFor( file22 );
 
-        Files.setLastModifiedTime( file11, FileTime.fromMillis( 123453 ) );
-        Files.setLastModifiedTime( file12, FileTime.fromMillis( 123454 ) );
-        Files.setLastModifiedTime( file21, FileTime.fromMillis( 123455 ) );
-        Files.setLastModifiedTime( file22, FileTime.fromMillis( 123456 ) );
+        long time = new DateTime( 2025, 4, 6, 14, 13, 39, 0, UTC ).getMillis();
+        Files.setLastModifiedTime( file11, FileTime.fromMillis( time + 1 ) );
+        Files.setLastModifiedTime( file12, FileTime.fromMillis( time + 2 ) );
+        Files.setLastModifiedTime( file21, FileTime.fromMillis( time + 3 ) );
+        Files.setLastModifiedTime( file22, FileTime.fromMillis( time + 4 ) );
 
-        Dates.setTimeFixed( 123456 + Dates.m( 60 / timestamp.bucketsPerHour ) + safeInterval + 1 );
+        Dates.setTimeFixed( time + Dates.m( 60 / timestamp.bucketsPerHour ) + safeInterval + 10 );
 
 
         finisher.run();
 
-        assertThat( finisher.files )
-            .hasSize( 4 );
+        assertThat( finisher.files ).hasSize( 4 );
 
         assertThat( finisher.files.subList( 0, 2 ) ).containsAnyOf(
-            __( file12, new DateTime( 123454, UTC ).withMillisOfSecond( 0 ).withSecondOfMinute( 0 ) ),
-            __( file22, new DateTime( 123456, UTC ).withMillisOfSecond( 0 ).withSecondOfMinute( 0 ) )
+            __( file12, new DateTime( 2025, 4, 6, 14, 10, 0, 0, UTC ) ),
+            __( file22, new DateTime( 2025, 4, 6, 14, 10, 0, 0, UTC ) )
         );
 
         assertThat( finisher.files.subList( 2, 4 ) ).containsAnyOf(
-            __( file11, new DateTime( 123453, UTC ).withMillisOfSecond( 0 ).withSecondOfMinute( 0 ) ),
-            __( file21, new DateTime( 123455, UTC ).withMillisOfSecond( 0 ).withSecondOfMinute( 0 ) )
+            __( file11, new DateTime( 2025, 4, 6, 14, 10, 0, 0, UTC ) ),
+            __( file21, new DateTime( 2025, 4, 6, 14, 10, 0, 0, UTC ) )
         );
+    }
+
+    @Test
+    public void testSafeInterval() throws IOException {
+        long safeInterval = Dates.s( 30 );
+
+        Timestamp timestamp = Timestamp.BPH_6;
+
+        Path logs = testDirectoryFixture.testPath( "logs" );
+        Files.createDirectory( logs );
+        MockFinisher finisher = new MockFinisher( new FileSystemConfiguration( Map.of(
+            "fs.default.clouds.scheme", "s3", "fs.default.jclouds.container", "test" ) ), logs, safeInterval, List.of( "*.txt" ), timestamp );
+        finisher.start();
+
+        Path file11 = Files.createFile( logs.resolve( "file1-type1-2025-04-05-15-02-10m.txt" ) );
+
+        LogMetadata type1 = new LogMetadata( "", "type1", "", Map.of(), new String[] {}, new byte[][] {} );
+        type1.writeFor( file11 );
+
+        Files.setLastModifiedTime( file11, FileTime.fromMillis( new DateTime( 2025, 4, 5, 15, 20, 31, 0, UTC ).getMillis() ) );
+
+        Dates.setTimeFixed( 2025, 4, 5, 15, 21, 0, 0 );
+
+        System.out.println( timestamp.currentBucket( new DateTime( UTC ) ) );
+        System.out.println( timestamp.toStartOfBucket( new DateTime( UTC ) ) );
+
+        finisher.run();
+
+        assertThat( finisher.files ).isEmpty();
     }
 }

@@ -112,7 +112,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             .build( new CacheLoader<>() {
                 @Override
                 public AbstractWriter<? extends Closeable> load( LogId id ) {
-                    var fp = filePatternByType.getOrDefault( id.logType.toUpperCase(), new FilePatternConfiguration( filePattern ) );
+                    FilePatternConfiguration fp = filePatternByType.getOrDefault( id.logType.toUpperCase(), new FilePatternConfiguration( filePattern ) );
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 

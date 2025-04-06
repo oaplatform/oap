@@ -145,4 +145,22 @@ public class TimestampTest {
         assertThat( Timestamp.BPH_12.parse( Paths.get( "/tmp/test/2016-02/01/tes-t1-2016-02-01-01-00.tsv.gz" ) ) )
             .contains( new DateTime( 2016, 2, 1, 1, 0, UTC ) );
     }
+
+    @Test
+    public void testToStartOfBucket() {
+        assertThat( Timestamp.BPH_6.toStartOfBucket( new DateTime( 2025, 4, 5, 15, 20, 0, 0, UTC ) ) )
+            .isEqualTo( new DateTime( 2025, 4, 5, 15, 20, 0, 0, UTC ) );
+
+        assertThat( Timestamp.BPH_6.toStartOfBucket( new DateTime( 2025, 4, 5, 15, 20, 59, 999, UTC ) ) )
+            .isEqualTo( new DateTime( 2025, 4, 5, 15, 20, 0, 0, UTC ) );
+
+        assertThat( Timestamp.BPH_6.toStartOfBucket( new DateTime( 2025, 4, 5, 15, 21, 0, 0, UTC ) ) )
+            .isEqualTo( new DateTime( 2025, 4, 5, 15, 20, 0, 0, UTC ) );
+
+        assertThat( Timestamp.BPH_6.toStartOfBucket( new DateTime( 2025, 4, 5, 15, 29, 59, 999, UTC ) ) )
+            .isEqualTo( new DateTime( 2025, 4, 5, 15, 20, 0, 0, UTC ) );
+
+        assertThat( Timestamp.BPH_6.toStartOfBucket( new DateTime( 2025, 4, 5, 15, 0, 0, 0, UTC ) ) )
+            .isEqualTo( new DateTime( 2025, 4, 5, 15, 0, 0, 0, UTC ) );
+    }
 }

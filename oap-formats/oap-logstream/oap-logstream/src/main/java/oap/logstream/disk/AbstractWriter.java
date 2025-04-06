@@ -118,12 +118,12 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     public synchronized void refresh( boolean forceSync ) {
         log.debug( "refresh {}...", lastPattern );
 
-        var currentPattern = currentPattern();
+        String currentPattern = currentPattern();
 
         if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
             log.debug( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
 
-            var patternWithPreviousVersion = currentPattern( fileVersion - 1 );
+            String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
             if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
                 fileVersion = 1;
             }
