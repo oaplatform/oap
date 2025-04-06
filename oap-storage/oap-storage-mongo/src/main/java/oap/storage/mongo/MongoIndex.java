@@ -33,6 +33,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
+import oap.util.Pair;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -42,9 +43,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
+import static oap.util.Pair.__;
 
 /**
  * Created by igor.petrenko on 2020-11-02.
@@ -68,18 +68,16 @@ public class MongoIndex {
         this.indexes.clear();
 
         for( Document indexDoc : indexes ) {
-            IndexConfiguration info = new IndexConfiguration( indexDoc );
-            this.indexes.put( info.name, info );
+            Pair<String, IndexConfiguration> info = IndexConfiguration.parse( indexDoc );
+            this.indexes.put( info._1, info._2 );
         }
 
         log.debug( "new indexes: {}", this.indexes );
     }
 
-    public void update( IndexConfiguration... indexConfigurations ) {
+    public void update( Map<String, IndexConfiguration> indexConfigurations ) {
         try {
-            Set<String> expected = Stream.of( indexConfigurations )
-                .map( ic -> ic.name )
-                .collect( toSet() );
+            Set<String> expected = indexConfigurations.keySet();
 
             for( String name : new ArrayList<>( indexes.keySet() ) ) {
                 if( !"_id_".equals( name ) && !expected.contains( name ) ) {
@@ -88,9 +86,10 @@ public class MongoIndex {
                 }
             }
 
-            for( IndexConfiguration ic : indexConfigurations ) {
-                update( ic.name, new ArrayList<>( ic.keys.keySet() ), ic.unique, ic.expireAfter, false );
-            }
+            indexConfigurations.forEach( ( name, conf ) -> {
+                update( name, new ArrayList<>( conf.keys.keySet() ), conf.unique, conf.expireAfter, false );
+            } );
+
         } finally {
             refresh();
         }
@@ -137,16 +136,15 @@ public class MongoIndex {
     @ToString
     @EqualsAndHashCode
     public static class IndexConfiguration {
-        public final String name;
         public final boolean unique;
         public final Long expireAfter;
         public final LinkedHashMap<String, Direction> keys = new LinkedHashMap<>();
+        public String name;
 
 
         @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
         @JsonCreator
-        public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique, Long expireAfter ) {
-            this.name = name;
+        public IndexConfiguration( Map<String, Integer> keys, boolean unique, Long expireAfter ) {
             keys.forEach( ( key, direction ) -> {
                 this.keys.put( key, direction == 1 ? Direction.ASC : Direction.DESC );
             } );
@@ -157,19 +155,24 @@ public class MongoIndex {
             this.expireAfter = expireAfter;
         }
 
-        public IndexConfiguration( String name, Map<String, Integer> keys, boolean unique ) {
-            this( name, keys, unique, null );
+        public IndexConfiguration( Map<String, Integer> keys, boolean unique ) {
+            this( keys, unique, null );
         }
 
-        public IndexConfiguration( Document document ) {
-            name = document.getString( "name" );
-            unique = document.getBoolean( "unique", false );
+        public static Pair<String, IndexConfiguration> parse( Document document ) {
+            String name = document.getString( "name" );
+            boolean unique = document.getBoolean( "unique", false );
             Long expireAfterSeconds = document.getLong( "expireAfterSeconds" );
-            expireAfter = expireAfterSeconds != null ? expireAfterSeconds * 1000L : null;
+            Long expireAfter = expireAfterSeconds != null ? expireAfterSeconds * 1000L : null;
 
             Document keyDocument = document.get( "key", Document.class );
+
+            LinkedHashMap<String, Integer> keys = new LinkedHashMap<>();
+
             keyDocument.forEach( ( k, v ) ->
-                keys.put( k, ( ( Number ) v ).intValue() == 1 ? Direction.ASC : Direction.DESC ) );
+                keys.put( k, ( ( Number ) v ).intValue() ) );
+
+            return __( name, new IndexConfiguration( keys, unique, expireAfter ) );
         }
 
         public boolean equals( List<String> keys, boolean unique, Long expireAfter ) {
