@@ -15,6 +15,7 @@ import oap.util.Dates;
 import oap.util.Lists;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.Duration;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,13 +67,13 @@ public abstract class AbstractFinisher implements Runnable {
     @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     @SneakyThrows
     public void run( boolean forceSync ) {
-        long start = DateTimeUtils.currentTimeMillis();
+        DateTime start = new DateTime( UTC );
         log.debug( "force {} let's start packing of {} in {}", forceSync, mask, sourceDirectory );
 
         log.debug( "current timestamp is {}", timestamp.toStartOfBucket( DateTime.now( UTC ) ) );
-        long bucketStartTime = timestamp.currentBucketStartMillis();
-        long elapsed = DateTimeUtils.currentTimeMillis() - bucketStartTime;
-        if( elapsed < safeInterval ) {
+        DateTime bucketStartTime = timestamp.toStartOfBucket( start );
+        Duration elapsed = new Duration( bucketStartTime, start );
+        if( elapsed.getMillis() < safeInterval ) {
             log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
             cleanup();
             log.debug( "packing is skipped" );
@@ -151,7 +152,7 @@ public abstract class AbstractFinisher implements Runnable {
         cleanup();
         if( !logInfos.isEmpty() ) {
             log.info( "uploading... Done. (files {} duration {})",
-                logInfos.size(), Dates.durationToString( DateTimeUtils.currentTimeMillis() - start ) );
+                logInfos.size(), Dates.durationToString( DateTimeUtils.currentTimeMillis() - start.getMillis() ) );
         } else {
             log.debug( "packing is done" );
         }

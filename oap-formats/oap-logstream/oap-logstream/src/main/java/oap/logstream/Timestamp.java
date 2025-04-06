@@ -115,14 +115,6 @@ public class Timestamp implements Serializable {
         return ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
     }
 
-    public long currentBucketStartMillis() {
-        DateTime date = DateTime.now();
-        return date.withMinuteOfHour( 60 / bucketsPerHour * currentBucket( date ) )
-            .withSecondOfMinute( 0 )
-            .withMillisOfSecond( 0 )
-            .getMillis();
-    }
-
     public Stream<String> timestampsBeforeNow( int back ) {
         return timestampsBefore( DateTime.now(), back );
     }
