@@ -75,4 +75,33 @@ public class AbstractFinisherTest extends Fixtures {
             __( file21, new DateTime( 123455, UTC ).withMillisOfSecond( 0 ).withSecondOfMinute( 0 ) )
         );
     }
+
+    @Test
+    public void testSafeInterval() throws IOException {
+        long safeInterval = Dates.s( 30 );
+
+        Timestamp timestamp = Timestamp.BPH_6;
+
+        Path logs = testDirectoryFixture.testPath( "logs" );
+        Files.createDirectory( logs );
+        MockFinisher finisher = new MockFinisher( new FileSystemConfiguration( Map.of(
+            "fs.default.clouds.scheme", "s3", "fs.default.jclouds.container", "test" ) ), logs, safeInterval, List.of( "*.txt" ), timestamp );
+        finisher.start();
+
+        Path file11 = Files.createFile( logs.resolve( "file1-type1-2025-04-05-15-02-10m.txt" ) );
+
+        LogMetadata type1 = new LogMetadata( "", "type1", "", Map.of(), new String[] {}, new byte[][] {} );
+        type1.writeFor( file11 );
+
+        Files.setLastModifiedTime( file11, FileTime.fromMillis( new DateTime( 2025, 4, 5, 15, 20, 31, 0, UTC ).getMillis() ) );
+
+        Dates.setTimeFixed( 2025, 4, 5, 15, 21, 0, 0 );
+
+        System.out.println( timestamp.currentBucket( new DateTime( UTC ) ) );
+        System.out.println( timestamp.toStartOfBucket( new DateTime( UTC ) ) );
+
+        finisher.run();
+
+        assertThat( finisher.files ).isEmpty();
+    }
 }

@@ -145,7 +145,7 @@ public class Timestamp implements Serializable {
     }
 
     public DateTime toStartOfBucket( DateTime dateTime ) {
-        long ms = 60L * 1000 / bucketsPerHour;
+        long ms = 60L * 60L * 1000 / bucketsPerHour;
 
         return new DateTime( dateTime.getMillis() / ms * ms, UTC );
     }
