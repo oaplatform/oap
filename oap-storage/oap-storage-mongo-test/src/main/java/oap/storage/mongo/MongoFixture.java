@@ -97,7 +97,7 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
 
     @NotNull
     protected MongoServer createMongoServer() {
-        return new MongoServer( new MemoryBackend().version( ServerVersion.MONGO_3_6 ) );
+        return new MongoServer( new MemoryBackend().version( ServerVersion.MONGO_4_0 ) );
     }
 
     @Override
