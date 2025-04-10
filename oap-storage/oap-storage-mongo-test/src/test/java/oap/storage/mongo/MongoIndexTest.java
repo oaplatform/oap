@@ -64,6 +64,10 @@ public class MongoIndexTest extends Fixtures {
             mongoIndex.update( "idx2", of( "c" ), false, 1000L );
             mongoIndex.update( "idx2", of( "c" ), false, 11001L );
 
+            mongoIndex.update( "idx2", of( "c" ), false, 90 * 24 * 60 * 60 * 1000L );
+
+            mongoIndex.refresh();
+
             MongoIndex.IndexConfiguration info = mongoIndex.getInfo( "idx1" );
             assertNotNull( info );
             assertFalse( info.unique );
@@ -72,7 +76,7 @@ public class MongoIndexTest extends Fixtures {
 
             info = mongoIndex.getInfo( "idx2" );
             assertNotNull( info );
-            assertThat( info.expireAfter ).isEqualTo( 11000L );
+            assertThat( info.expireAfter ).isEqualTo( 90 * 24 * 60 * 60 * 1000L );
         }
     }
 

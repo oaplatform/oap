@@ -59,7 +59,7 @@ public class MongoIndex {
         refresh();
     }
 
-    private void refresh() {
+    public void refresh() {
         ArrayList<Document> indexes = new ArrayList<Document>();
         collection.listIndexes().into( indexes );
 
@@ -162,8 +162,8 @@ public class MongoIndex {
         public static Pair<String, IndexConfiguration> parse( Document document ) {
             String name = document.getString( "name" );
             boolean unique = document.getBoolean( "unique", false );
-            Long expireAfterSeconds = document.getLong( "expireAfterSeconds" );
-            Long expireAfter = expireAfterSeconds != null ? expireAfterSeconds * 1000L : null;
+            Number expireAfterSeconds = ( Number ) document.get( "expireAfterSeconds" );
+            Long expireAfter = expireAfterSeconds != null ? expireAfterSeconds.longValue() * 1000L : null;
 
             Document keyDocument = document.get( "key", Document.class );
 
