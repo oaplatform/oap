@@ -85,6 +85,13 @@ public final class Coercions {
                 URL url = Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp );
                 return reflection.assignableTo( String.class )
                     ? IOUtils.toString( url, UTF_8 )
+                    : Binder.Format.of( cp, true ).binder.unmarshal( reflection, url );
+            } ),
+            "classpath-wsp" );
+        addFunction( Try.biMap( ( cp, reflection ) -> {
+                URL url = Preconditions.checkNotNull( Coercions.class.getResource( cp ), "Resource not found: " + cp );
+                return reflection.assignableTo( String.class )
+                    ? IOUtils.toString( url, UTF_8 )
                     : Binder.Format.of( cp, false ).binder.unmarshal( reflection, url );
             } ),
             "classpath" );
@@ -108,35 +115,35 @@ public final class Coercions {
 
         convertors.put( Optional.class, Optional::ofNullable );
 
-        var booleanConvertor = new BooleanConvertor();
+        BooleanConvertor booleanConvertor = new BooleanConvertor();
         convertors.put( boolean.class, booleanConvertor );
         convertors.put( Boolean.class, booleanConvertor );
 
-        var intConvertor = new IntConvertor();
+        IntConvertor intConvertor = new IntConvertor();
         convertors.put( int.class, intConvertor );
         convertors.put( Integer.class, intConvertor );
 
-        var longFunc = new LongConvertor();
+        LongConvertor longFunc = new LongConvertor();
         convertors.put( long.class, longFunc );
         convertors.put( Long.class, longFunc );
 
-        var doubleFunc = new DoubleConvertor();
+        DoubleConvertor doubleFunc = new DoubleConvertor();
         convertors.put( double.class, doubleFunc );
         convertors.put( Double.class, doubleFunc );
 
-        var charConvertor = new CharConvertor();
+        CharConvertor charConvertor = new CharConvertor();
         convertors.put( char.class, charConvertor );
         convertors.put( Character.class, charConvertor );
 
-        var shortConvertor = new ShortConvertor();
+        ShortConvertor shortConvertor = new ShortConvertor();
         convertors.put( short.class, shortConvertor );
         convertors.put( Short.class, shortConvertor );
 
-        var byteConvertor = new ByteConvertor();
+        ByteConvertor byteConvertor = new ByteConvertor();
         convertors.put( byte.class, byteConvertor );
         convertors.put( Byte.class, byteConvertor );
 
-        var floatConvertor = new FloatConvertor();
+        FloatConvertor floatConvertor = new FloatConvertor();
         convertors.put( float.class, floatConvertor );
         convertors.put( Float.class, floatConvertor );
 
@@ -185,7 +192,7 @@ public final class Coercions {
     }
 
     private static void addFunction( BiFunction<String, Reflection, Object> func, String... names ) {
-        for( var name : names ) {
+        for( String name : names ) {
             functions.put( name, func );
         }
     }
@@ -208,12 +215,12 @@ public final class Coercions {
     }
 
     public static Object castFunction( Reflection r, Object value ) {
-        var str = ( ( String ) value ).trim();
-        var sv = str.indexOf( '(' );
+        String str = ( ( String ) value ).trim();
+        int sv = str.indexOf( '(' );
         if( sv > 0 && str.endsWith( ")" ) ) {
-            var funcName = str.substring( 0, sv );
-            var func = functions.get( funcName );
-            var funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
+            String funcName = str.substring( 0, sv );
+            BiFunction<String, Reflection, Object> func = functions.get( funcName );
+            String funcValue = str.substring( sv + 1, str.length() - 1 ).trim();
             if( func != null ) {
                 return func.apply( funcValue, r );
             }
@@ -410,11 +417,13 @@ public final class Coercions {
                     try {
                         yield new URL( str );
                     } catch( MalformedURLException e ) {
-                        if( str.startsWith( "classpath(" ) ) {
+                        if( str.startsWith( "classpath-wsp(" ) ) {
+                            str = str.substring( 14, str.length() - 1 );
+                        } else if( str.startsWith( "classpath(" ) ) {
                             str = str.substring( 10, str.length() - 1 );
                         }
 
-                        var url = getClass().getResource( str );
+                        URL url = getClass().getResource( str );
                         if( url != null ) yield url;
 
                         try {

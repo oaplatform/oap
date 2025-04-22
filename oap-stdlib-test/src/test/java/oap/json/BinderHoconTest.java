@@ -36,21 +36,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BinderHoconTest {
     @Test
     public void pattern() {
-        var pattern = "{test = \"[^a]+\"}";
-        var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, pattern );
+        String pattern = "{test = \"[^a]+\"}";
+        BeanPattern obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, pattern );
 
         assertThat( obj.test.pattern() ).isEqualTo( "[^a]+" );
     }
 
     @Test
     public void envList() {
-        var json = "{list = [${?LIST_ENV}]}";
+        String json = "{list = [${?LIST_ENV}]}";
         System.setProperty( "LIST_ENV", "1a,2a" );
 
         ConfigImpl.reloadEnvVariablesConfig();
         ConfigImpl.reloadSystemPropertiesConfig();
 
-        var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
+        BeanPattern obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
 
         assertThat( obj.list ).isEqualTo( List.of( "1a,2a" ) );
     }

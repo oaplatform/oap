@@ -46,19 +46,19 @@ public class HoconFactoryWithSystemProperties extends OapHoconFactory {
     @SneakyThrows
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) {
-        var options = ConfigParseOptions.defaults();
+        ConfigParseOptions options = ConfigParseOptions.defaults();
 
         Object rawContent = ctxt.contentReference().getRawContent();
         log.trace( "rawContent {} rawContentClazz {}", rawContent, rawContent.getClass() );
 
         options = fixClassLoader( log, rawContent, options );
 
-        var config = ConfigFactory.parseReader( r, options );
+        Config config = ConfigFactory.parseReader( r, options );
 
-        var unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
+        Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
 //        log.trace( unresolvedConfig.root().render() );
         try {
-            final Config resolvedConfig = unresolvedConfig.resolve();
+            Config resolvedConfig = unresolvedConfig.resolve();
             return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
         } catch( ConfigException e ) {
             log.error( unresolvedConfig.root().render() );

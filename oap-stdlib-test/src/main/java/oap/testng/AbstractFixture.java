@@ -135,11 +135,19 @@ public abstract class AbstractFixture<Self extends AbstractFixture<Self>> {
     }
 
     public Self defineLocalClasspath( String property, Class<?> clazz, String resourceName ) {
-        return define( property, "classpath(" + locationOfTestResource( clazz, resourceName ) + ")" );
+        return defineLocalClasspath( property, clazz, resourceName, false );
+    }
+
+    public Self defineLocalClasspath( String property, Class<?> clazz, String resourceName, boolean withSystemProperties ) {
+        return define( property, ( withSystemProperties ? "classpath-wsp(" : "classpath(" ) + locationOfTestResource( clazz, resourceName ) + ")" );
     }
 
     public Self defineClasspath( String property, String resourceLocation ) {
-        return define( property, "classpath(" + resourceLocation + ")" );
+        return defineClasspath( property, resourceLocation, false );
+    }
+
+    public Self defineClasspath( String property, String resourceLocation, boolean withSystemProperties ) {
+        return define( property, ( withSystemProperties ? "classpath-wsp(" : "classpath(" ) + resourceLocation + ")" );
     }
 
     public Self definePath( String property, Path path ) {
