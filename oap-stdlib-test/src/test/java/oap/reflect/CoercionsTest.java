@@ -24,6 +24,7 @@
 
 package oap.reflect;
 
+import com.typesafe.config.impl.ConfigImpl;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -53,7 +54,7 @@ public class CoercionsTest extends Fixtures {
 
     @Test
     public void cast() {
-        var coercions = Coercions.basic().withIdentity();
+        Coercions coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( int.class ), 1L ) ).isEqualTo( 1 );
         assertThat( coercions.cast( Reflect.reflect( int.class ), "1" ) ).isEqualTo( 1 );
         assertThat( coercions.cast( Reflect.reflect( int.class ), "-1" ) ).isEqualTo( -1 );
@@ -68,39 +69,47 @@ public class CoercionsTest extends Fixtures {
         assertThat( coercions.cast( Reflect.reflect( Class.class ), "java.lang.String" ) ).isEqualTo( String.class );
         assertThat( coercions.cast( Reflect.reflect( RetentionPolicy.class ), "SOURCE" ) ).isEqualTo( RetentionPolicy.SOURCE );
 
-        var expected = new BitSet();
+        BitSet expected = new BitSet();
         expected.set( 1, 6 );
         assertThat( coercions.cast( Reflect.reflect( BitSet.class ), "1-5" ) ).isEqualTo( expected );
     }
 
     @Test
     public void testJsonFunction() {
-        var coercions = Coercions.basic().withIdentity();
+        Coercions coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( new TypeRef<Map<String, TestConfiguration>>() {} ), "json({\"k\":{\"key1\":\"1\",\"key2\":\"2\"}})" ) )
             .isEqualTo( LinkedHashMaps.of( "k", new TestConfiguration( "1", "2" ) ) );
     }
 
     @Test
     public void testCastOptional() {
-        var coercions = Coercions.basic().withIdentity();
+        Coercions coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( new TypeRef<Optional<String>>() {} ), "va" ) ).isEqualTo( Optional.of( "va" ) );
     }
 
     @Test
     public void testCastFunctionString() {
-        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "classpath(/oap/reflect/CoercionsTest/test.yaml)" ) ).isEqualTo( "a: b" );
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<TestConfiguration2>() {} ), "classpath(/oap/reflect/CoercionsTest/test.yaml)" ) )
+            .isEqualTo( new TestConfiguration2( "b" ) );
+
+        System.setProperty( "testCastFunctionString", "123" );
+
+        ConfigImpl.reloadSystemPropertiesConfig();
+
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<TestConfiguration2>() {} ), "classpath-wsp(/oap/reflect/CoercionsTest/test.conf)" ) )
+            .isEqualTo( new TestConfiguration2( "b-123" ) );
     }
 
     @Test
     public void testCastFunctionPathWithEnv() {
         Env.set( "TEST_ENV", testDirectoryFixture.testDirectory().toString() );
 
-        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "path(${ENV.TEST_ENV}/test.yaml)" ) ).isEqualTo( "a: b" );
+        assertThat( Coercions.castFunction( Reflect.reflect( new TypeRef<String>() {} ), "path(${ENV.TEST_ENV}/test.yaml)" ) ).isEqualTo( "key1: b" );
     }
 
     @Test
     public void testUrl() throws MalformedURLException {
-        var coercions = Coercions.basic().withIdentity();
+        Coercions coercions = Coercions.basic().withIdentity();
 
         assertThat( coercions.cast( Reflect.reflect( URL.class ), "file:///tmp" ) ).isEqualTo( new URL( "file:/tmp" ) );
         assertThat( coercions.cast( Reflect.reflect( URL.class ), "/tmp" ) ).isEqualTo( Paths.get( "/tmp" ).toUri().toURL() );
@@ -109,11 +118,13 @@ public class CoercionsTest extends Fixtures {
             .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
         assertThat( coercions.cast( Reflect.reflect( URL.class ), "classpath(/oap/reflect/CoercionsTest.class)" ) )
             .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
+        assertThat( coercions.cast( Reflect.reflect( URL.class ), "classpath-wsp(/oap/reflect/CoercionsTest.class)" ) )
+            .isEqualTo( Coercions.class.getResource( "/oap/reflect/CoercionsTest.class" ) );
     }
 
     @Test
     public void testCastWithFunctions() {
-        var coercions = Coercions.basic().withIdentity();
+        Coercions coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( new TypeRef<Map<String, TestConfiguration2>>() {} ), Map.of( "k", Map.of( "key1", "str(1)" ) ) ) )
             .isEqualTo( LinkedHashMaps.of( "k", new TestConfiguration2( "1" ) ) );
     }
@@ -127,9 +138,15 @@ public class CoercionsTest extends Fixtures {
     }
 
     @ToString
-    @AllArgsConstructor
     @EqualsAndHashCode
     public static class TestConfiguration2 {
-        public final String key1;
+        public String key1;
+
+        public TestConfiguration2() {
+        }
+
+        public TestConfiguration2( String key1 ) {
+            this.key1 = key1;
+        }
     }
 }
