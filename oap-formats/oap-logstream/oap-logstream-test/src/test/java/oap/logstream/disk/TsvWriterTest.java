@@ -48,7 +48,7 @@ import static oap.logstream.Timestamp.BPH_12;
 import static oap.testng.Asserts.assertFile;
 
 public class TsvWriterTest extends Fixtures {
-    private static final String FILE_PATTERN = "<p>-file-<INTERVAL>-<LOG_VERSION>-<if(ORGANIZATION)><ORGANIZATION><else>UNKNOWN<endif>.log.gz";
+    private static final String FILE_PATTERN = "${p}-file-${INTERVAL}-${LOG_VERSION}-#{if}($ORGANIZATION)${ORGANIZATION}#{else}UNKNOWN#{end}.log.gz";
     private final TestDirectoryFixture testDirectoryFixture;
 
     public TsvWriterTest() {
@@ -66,7 +66,7 @@ public class TsvWriterTest extends Fixtures {
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
-            new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1" ), headers, types ),
+            new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1", "ORGANIZATION", "" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
 
             writer.write( CURRENT_PROTOCOL_VERSION, bytes );

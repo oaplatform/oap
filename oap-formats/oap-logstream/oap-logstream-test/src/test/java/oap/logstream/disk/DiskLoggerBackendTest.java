@@ -76,9 +76,9 @@ public class DiskLoggerBackendTest extends Fixtures {
         var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
 
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
-            backend.filePattern = "<LOG_TYPE>_<LOG_VERSION>_<INTERVAL>.tsv.gz";
+            backend.filePattern = "${LOG_TYPE}_${LOG_VERSION}_${INTERVAL}.tsv.gz";
             backend.filePatternByType.put( "LOG_TYPE_WITH_DIFFERENT_FILE_PATTERN",
-                new DiskLoggerBackend.FilePatternConfiguration( "<LOG_TYPE>_<LOG_VERSION>_<MINUTE>.parquet" ) );
+                new DiskLoggerBackend.FilePatternConfiguration( "${LOG_TYPE}_${LOG_VERSION}_${MINUTE}.parquet" ) );
             backend.start();
 
             Logger logger = new Logger( backend );
