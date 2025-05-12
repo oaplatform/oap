@@ -21,8 +21,8 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     }
 
     @Test
-    public void testCloseConnection() throws IOException {
-        LinkedHashSet<Long> ids = new LinkedHashSet<Long>();
+    public void testCloseConnectionBlocking() throws IOException {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) ) ) {
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
@@ -34,7 +34,34 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 long id = exchange.exchange.getConnection().getId();
                 ids.add( id );
                 exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
-            } );
+            }, true );
+
+            Client client = Client.custom().setMaxConnTotal( 10 ).setMaxConnPerRoute( 10 ).build();
+
+            for( int i = 0; i < 101; i++ ) {
+                assertThat( client.get( "http://localhost:" + testHttpPort + "/test" ).contentString() ).isEqualTo( "ok" );
+            }
+
+            assertThat( ids ).hasSize( 51 );
+            assertThat( keepaliveRequestsHandler.requests ).hasSize( 1 );
+        }
+    }
+
+    @Test
+    public void testCloseConnectionAsync() throws IOException {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) ) ) {
+
+            KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
+            httpServer.handlers.add( keepaliveRequestsHandler );
+
+            httpServer.start();
+
+            httpServer.bind( "/test", exchange -> {
+                long id = exchange.exchange.getConnection().getId();
+                ids.add( id );
+                exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
+            }, false );
 
             Client client = Client.custom().setMaxConnTotal( 10 ).setMaxConnPerRoute( 10 ).build();
 

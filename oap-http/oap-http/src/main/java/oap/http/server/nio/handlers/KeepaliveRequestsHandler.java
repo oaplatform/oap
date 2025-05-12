@@ -1,7 +1,6 @@
 package oap.http.server.nio.handlers;
 
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import io.undertow.util.Headers;
 import oap.http.server.nio.NioHandlerBuilder;
@@ -24,28 +23,19 @@ public class KeepaliveRequestsHandler implements NioHandlerBuilder, ServerConnec
 
     @Override
     public HttpHandler build( HttpHandler next ) {
-        return new HttpHandler() {
-            @Override
-            public void handleRequest( HttpServerExchange exchange ) throws Exception {
-                ServerConnection connection = exchange.getConnection();
-                long id = connection.getId();
-                AtomicLong count = requests.computeIfAbsent( id, connectionId -> {
-                    connection.addCloseListener( KeepaliveRequestsHandler.this );
-                    return new AtomicLong( 0L );
-                } );
-                long requests = count.incrementAndGet();
+        return exchange -> {
+            ServerConnection connection = exchange.getConnection();
+            long id = connection.getId();
+            AtomicLong count = requests.computeIfAbsent( id, connectionId -> {
+                connection.addCloseListener( KeepaliveRequestsHandler.this );
+                return new AtomicLong( 0L );
+            } );
+            long requests = count.incrementAndGet();
 
-                try {
-                    if( requests >= keepaliveRequests ) {
-                        exchange.getResponseHeaders().put( Headers.CONNECTION, "close" );
-                    }
-                    next.handleRequest( exchange );
-                } finally {
-                    if( requests >= keepaliveRequests ) {
-                        connection.close();
-                    }
-                }
+            if( requests >= keepaliveRequests ) {
+                exchange.getResponseHeaders().put( Headers.CONNECTION, "close" );
             }
+            next.handleRequest( exchange );
         };
     }
 }
