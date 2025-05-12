@@ -109,7 +109,7 @@ public class Kernel implements Closeable, AutoCloseable {
             if( moduleConfig == null ) {
                 continue;
             }
-            for( var entry : module.services.entrySet() ) {
+            for( Map.Entry<String, Service> entry : module.services.entrySet() ) {
                 String serviceName = entry.getKey();
                 Service service = entry.getValue();
 
@@ -220,7 +220,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
         log.debug( "init modules from main {}", config.boot.main );
 
-        var map = new ModuleItemTree();
+        ModuleItemTree map = new ModuleItemTree();
 
         ModuleHelper.init( map, modules, implementations, config.boot.main, config.boot.allowActiveByDefault );
         resolveImplementations( map, implementations );
@@ -278,7 +278,7 @@ public class Kernel implements Closeable, AutoCloseable {
         for( ModuleWithLocation module : modules.values() ) {
             ApplicationConfigurationModule moduleServices = services.get( module.module.name );
             if( moduleServices != null ) {
-                var applicationConfigurationServices = new LinkedHashSet<>( moduleServices.keySet() );
+                LinkedHashSet<String> applicationConfigurationServices = new LinkedHashSet<>( moduleServices.keySet() );
 
                 for( String serviceName : module.module.services.keySet() ) {
                     applicationConfigurationServices.remove( serviceName );
@@ -321,7 +321,7 @@ public class Kernel implements Closeable, AutoCloseable {
                 if( serviceItem.instance == null ) {
                     KernelHelper.ServiceConfigurationParameters parametersWithoutLinks = fixLinksForConstructor( this, serviceItem, servicesMap );
 
-                    var p = new LinkedHashMap<String, Object>();
+                    LinkedHashMap<String, Object> p = new LinkedHashMap<>();
                     p.putAll( parametersWithoutLinks.serviceReferenceParameters );
                     p.putAll( parametersWithoutLinks.configurationParameters );
 
@@ -395,10 +395,10 @@ public class Kernel implements Closeable, AutoCloseable {
             ServiceKernelCommand.INSTANCE.get( serviceRef, this, serviceItem, services )
                 .ifSuccessOrElse(
                     service -> {
-                        var reflect = Reflect.reflect( service.service.implementation );
-                        var methodSuffix = StringUtils.capitalize( fieldName );
+                        Reflection reflect = Reflect.reflect( service.service.implementation );
+                        String methodSuffix = StringUtils.capitalize( fieldName );
 
-                        var linkMethod = reflect.method( "add" + methodSuffix ).orElse( null );
+                        Reflection.Method linkMethod = reflect.method( "add" + methodSuffix ).orElse( null );
                         if( linkMethod == null ) {
                             linkMethod = reflect.method( "set" + methodSuffix ).orElse( null );
                         }
@@ -409,7 +409,7 @@ public class Kernel implements Closeable, AutoCloseable {
                         if( linkMethod != null && linkMethod.parameters.size() == 1 ) {
                             linkMethod.invoke( service.instance, serviceItem.instance );
                         } else {
-                            var linkField = reflect.field( fieldName ).orElse( null );
+                            Reflection.Field linkField = reflect.field( fieldName ).orElse( null );
                             if( linkField != null ) {
                                 if( linkField.type().assignableTo( Collection.class ) ) {
                                     ( ( Collection<Object> ) linkField.get( service.instance ) )
@@ -438,13 +438,13 @@ public class Kernel implements Closeable, AutoCloseable {
         if( parameterValue instanceof List<?> parameterList ) {
             Object instance = lRef.get();
             if( instance instanceof List<?> ) {
-                var instanceList = ( List<Object> ) instance;
+                List<Object> instanceList = ( List<Object> ) instance;
                 ListIterator<Object> instanceIterator = instanceList.listIterator();
                 for( Object parameter : parameterList )
                     linkService( new ListLinkReflection<>( instanceIterator ), parameter, si, false );
             }
         } else if( parameterValue instanceof Map ) {
-            var parameterMap = ( Map<Object, Object> ) parameterValue;
+            Map<Object, Object> parameterMap = ( Map<Object, Object> ) parameterValue;
             Object instance = lRef.get();
 
             if( instance == null ) return;
@@ -556,7 +556,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
     @SuppressWarnings( "unchecked" )
     public <T> List<T> ofClass( String moduleName, Class<T> clazz ) {
-        var ret = new ArrayList<T>();
+        ArrayList<T> ret = new ArrayList<>();
 
         this.services.forEach( serviceItem -> {
             if( ServiceStorage.ALL_MODULES.contains( moduleName ) || serviceItem.getModuleName().equals( moduleName ) )
@@ -583,7 +583,7 @@ public class Kernel implements Closeable, AutoCloseable {
     }
 
     public <T> List<ServiceExt<T>> servicesByExt( String ext ) {
-        var ret = new ArrayList<ServiceExt<T>>();
+        ArrayList<ServiceExt<T>> ret = new ArrayList<>();
 
         for( ModuleItem.ServiceItem si : services.values() ) {
             T extConfiguration = si.service.getExt( ext );
