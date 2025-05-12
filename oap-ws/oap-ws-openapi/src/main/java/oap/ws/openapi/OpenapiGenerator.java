@@ -27,6 +27,7 @@ package oap.ws.openapi;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.core.converter.ResolvedSchema;
 import io.swagger.v3.core.util.RefUtils;
 import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -154,7 +155,7 @@ public class OpenapiGenerator {
         if( !processedClasses.add( clazz.getCanonicalName() ) ) return Result.SKIPPED_DUE_TO_ALREADY_PROCESSED;
         if( clazz.isAnnotationPresent( OpenapiIgnore.class ) ) return Result.SKIPPED_DUE_TO_ANNOTATED_TO_IGNORE;
         oap.ws.api.Info.WebServiceInfo wsInfo = new oap.ws.api.Info.WebServiceInfo( Reflect.reflect( clazz ), context );
-        var tag = createTag( wsInfo.name );
+        Tag tag = createTag( wsInfo.name );
         if( uniqueTags.add( tag.getName() ) ) api.addTagsItem( tag );
         if( uniqueVersions.add( wsInfo.name ) )
             versions.put(
@@ -169,13 +170,13 @@ public class OpenapiGenerator {
                 continue;
             }
             methodNumber++;
-            var paths = getPaths();
-            var pathString = method.path( wsInfo );
-            var pathItem = getPathItem( pathString, paths );
+            Paths paths = getPaths();
+            String pathString = method.path( wsInfo );
+            PathItem pathItem = getPathItem( pathString, paths );
 
             for( HttpServerExchange.HttpMethod httpMethod : method.methods ) {
                 atLeastOneMethodProcessed = true;
-                var operation = prepareOperation( method, tag, httpMethod, methodNumber );
+                Operation operation = prepareOperation( method, tag, httpMethod, methodNumber );
                 pathItem.operation( convertMethod( httpMethod ), operation );
             }
         }
@@ -186,8 +187,8 @@ public class OpenapiGenerator {
     }
 
     private Operation prepareOperation( WebMethodInfo method, Tag tag, HttpServerExchange.HttpMethod httpMethod, int methodNumber ) {
-        var params = method.parameters();
-        var returnType = prepareType( method.resultType() );
+        List<oap.ws.api.Info.WebMethodParameterInfo> params = method.parameters();
+        Type returnType = prepareType( method.resultType() );
 
         Operation operation = new Operation()
             .addTagsItem( tag.getName() )
@@ -229,7 +230,7 @@ public class OpenapiGenerator {
     }
 
     private ApiResponses prepareResponse( Type returnType, WebMethodInfo method ) {
-        var responses = new ApiResponses();
+        ApiResponses responses = new ApiResponses();
         ApiResponse response = new ApiResponse();
         response.description( "" );
         responses.addApiResponse( "200", response );
@@ -266,7 +267,7 @@ public class OpenapiGenerator {
             }
         }
 
-        var resolvedSchema = openapiSchema.prepareSchema( returnType, api, method );
+        ResolvedSchema resolvedSchema = openapiSchema.prepareSchema( returnType, api, method );
         Map<String, Schema> schemas = api.getComponents() == null
             ? Collections.emptyMap()
             : api.getComponents().getSchemas();
@@ -274,7 +275,7 @@ public class OpenapiGenerator {
         //check and replace Extensions schemas if any
         if ( resolvedSchema.schema != null && resolvedSchema.schema.getProperties() != null ) {
             resolvedSchema.schema.getProperties().forEach( ( key, value ) -> {
-                var sc = ( Schema ) value;
+                Schema sc = ( Schema ) value;
                 openapiSchema.processExtensionsInSchemas( sc, resolvedSchema.schema.getName(), ( String ) key );
             } );
         }
@@ -308,11 +309,11 @@ public class OpenapiGenerator {
     }
 
     private RequestBody createBody( oap.ws.api.Info.WebMethodParameterInfo parameter ) {
-        var resolvedSchema = openapiSchema.prepareSchema( prepareType( parameter.type() ), api, null );
+        ResolvedSchema resolvedSchema = openapiSchema.prepareSchema( prepareType( parameter.type() ), api, null );
         Map<String, Schema> schemas = api.getComponents() == null
             ? Map.of()
             : api.getComponents().getSchemas();
-        var result = new RequestBody();
+        RequestBody result = new RequestBody();
         Schema schemaRef = openapiSchema.createSchemaRef( resolvedSchema.schema, schemas, false );
         result.setContent( createContent( ContentType.APPLICATION_JSON.getMimeType(), schemaRef ) );
         if( resolvedSchema.schema != null
@@ -324,13 +325,13 @@ public class OpenapiGenerator {
     }
 
     private Parameter createParameter( oap.ws.api.Info.WebMethodParameterInfo parameter ) {
-        var result = new Parameter();
+        Parameter result = new Parameter();
         result.setName( parameter.name );
         result.setIn( parameter.from.name().toLowerCase() );
         result.setRequired( parameter.from == WsParam.From.PATH
             || parameter.from == WsParam.From.QUERY && !parameter.type().isOptional() );
         if( !Strings.isEmpty( parameter.description ) ) result.description( parameter.description );
-        var resolvedSchema = this.converters.readAllAsResolvedSchema( prepareType( parameter.type() ) );
+        ResolvedSchema resolvedSchema = this.converters.readAllAsResolvedSchema( prepareType( parameter.type() ) );
         if( resolvedSchema != null ) result.setSchema( resolvedSchema.schema );
         return result;
     }
@@ -346,21 +347,21 @@ public class OpenapiGenerator {
     }
 
     private Content createContent( String mimeType, Schema schema ) {
-        var content = new Content();
-        var mediaType = new MediaType();
+        Content content = new Content();
+        MediaType mediaType = new MediaType();
         mediaType.schema( schema );
         content.addMediaType( mimeType, mediaType );
         return content;
     }
 
     private Tag createTag( String name ) {
-        var tag = new Tag();
+        Tag tag = new Tag();
         tag.setName( name );
         return tag;
     }
 
     private PathItem getPathItem( String pathString, Paths paths ) {
-        var pathItem = paths.get( pathString );
+        PathItem pathItem = paths.get( pathString );
         if( pathItem == null ) {
             pathItem = new PathItem();
             paths.put( pathString, pathItem );
@@ -369,7 +370,7 @@ public class OpenapiGenerator {
     }
 
     private Paths getPaths() {
-        var paths = api.getPaths();
+        Paths paths = api.getPaths();
         if( paths == null ) {
             paths = new Paths();
             api.setPaths( paths );
@@ -433,17 +434,19 @@ public class OpenapiGenerator {
             return;
         }
         try {
-            api.getComponents().getSchemas().forEach( ( className, parentSchema ) -> {
+            for( Map.Entry<String, Schema> entry : api.getComponents().getSchemas().entrySet() ) {
+                String className = entry.getKey();
+                Schema parentSchema = entry.getValue();
                 if( "object".equals( parentSchema.getType() ) && parentSchema.getProperties() != null ) {
                     parentSchema.getProperties().forEach( ( name, childSchema ) -> {
-                        var fieldName = ( String ) name;
-                        var schema = ( Schema ) childSchema;
+                        String fieldName = ( String ) name;
+                        Schema schema = ( Schema ) childSchema;
                         if( !Strings.isEmpty( schema.get$ref() ) ) {
                             openapiSchema.processExtensionsInSchemas( schema, className, fieldName );
                         }
                     } );
                 }
-            } );
+            }
         } catch( Exception ex ) {
             log.error( "Cannot process extensions in schemas", ex );
         }

@@ -211,7 +211,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             handler = nioHandlerBuilder.build( handler );
         }
 
-        handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
         if( port == defaultPort.httpsPort ) {
@@ -242,17 +241,17 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
     }
 
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, List<PortType> types ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, boolean async, List<PortType> types ) {
         if( types.isEmpty() || types.contains( PortType.HTTP ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTP_PORT );
+            bind( prefix, handler, compressionSupport, async, DEFAULT_HTTP_PORT );
         }
 
         if( isHttpsEnabled() && ( types.isEmpty() || types.contains( PortType.HTTPS ) ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTPS_PORT );
+            bind( prefix, handler, compressionSupport, async, DEFAULT_HTTPS_PORT );
         }
     }
 
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, String portName ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, boolean async, String portName ) {
         Preconditions.checkNotNull( portName );
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
@@ -276,20 +275,33 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler( pathHandlerCacheSize ) );
+
+        if( !async ) {
+            httpHandler = new BlockingHandler( httpHandler );
+        }
+
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
         log.debug( "binding '{}' on port: {}:{}", prefix, portName, port );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
-        bind( prefix, handler, DEFAULT_HTTP_PORT );
+        bind( prefix, handler, false );
+    }
+
+    public void bind( String prefix, HttpHandler handler, boolean async ) {
+        bind( prefix, handler, async, DEFAULT_HTTP_PORT );
         if( isHttpsEnabled() ) {
-            bind( prefix, handler, DEFAULT_HTTPS_PORT );
+            bind( prefix, handler, async, DEFAULT_HTTPS_PORT );
         }
     }
 
+    public void bind( String prefix, HttpHandler handler, boolean async, String port ) {
+        bind( prefix, handler, true, async, port );
+    }
+
     public void bind( String prefix, HttpHandler handler, String port ) {
-        bind( prefix, handler, true, port );
+        bind( prefix, handler, true, false, port );
     }
 
     public void preStop() {

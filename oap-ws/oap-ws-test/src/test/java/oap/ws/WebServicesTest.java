@@ -123,7 +123,10 @@ public class WebServicesTest extends Fixtures {
             .respondedJson( OK, "OK", "{\"i\":1,\"s\":\"sss\"}" );
         assertGet( kernel.httpUrl( "/x/v/math/code?code=204" ) )
             .hasCode( Http.StatusCode.NO_CONTENT );
+
         assertGet( kernel.httpUrl( "/x/h/" ) ).hasCode( Http.StatusCode.NO_CONTENT );
+        assertGet( kernel.httpUrl( "/async" ) ).hasCode( Http.StatusCode.NO_CONTENT );
+
         assertGet( kernel.httpUrl( "" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
         assertGet( kernel.httpUrl( "/" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
         assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
@@ -224,6 +227,20 @@ public class WebServicesTest extends Fixtures {
     static class TestHandler implements HttpHandler {
         @Override
         public void handleRequest( HttpServerExchange exchange ) {
+            assertThat( exchange.exchange.isBlocking() ).isTrue();
+            assertThat( exchange.exchange.isInIoThread() ).isFalse();
+
+            exchange.responseNoContent();
+        }
+    }
+
+    @SuppressWarnings( "unused" )
+    static class TestAsyncHandler implements HttpHandler {
+        @Override
+        public void handleRequest( HttpServerExchange exchange ) {
+            assertThat( exchange.exchange.isBlocking() ).isFalse();
+            assertThat( exchange.exchange.isInIoThread() ).isTrue();
+
             exchange.responseNoContent();
         }
     }

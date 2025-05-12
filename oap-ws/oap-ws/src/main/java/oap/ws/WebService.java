@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import com.google.common.base.Preconditions;
 import io.undertow.server.handlers.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Http;
@@ -48,38 +49,43 @@ import java.util.Optional;
 @Slf4j
 public class WebService implements HttpHandler {
     public final boolean compressionSupport;
-    private final boolean sessionAware;
-    private final SessionManager sessionManager;
-    private final List<Interceptor> interceptors;
-    private final Object instance;
-    private final WsMethodMatcher methodMatcher;
+    public final boolean async;
+    public final boolean sessionAware;
+    public final SessionManager sessionManager;
+    public final List<Interceptor> interceptors;
+    public final Object instance;
+    public final WsMethodMatcher methodMatcher;
 
     public WebService( Object instance, boolean sessionAware,
-                       SessionManager sessionManager, List<Interceptor> interceptors, boolean compressionSupport ) {
+                       SessionManager sessionManager, List<Interceptor> interceptors, boolean compressionSupport, boolean async ) {
         this.instance = instance;
         this.methodMatcher = new WsMethodMatcher( instance.getClass() );
         this.sessionAware = sessionAware;
         this.sessionManager = sessionManager;
         this.interceptors = interceptors;
         this.compressionSupport = compressionSupport;
+        this.async = async;
+
+        Preconditions.checkArgument( !async, "async is not supported" );
     }
 
     private void wsError( HttpServerExchange exchange, Throwable e ) {
-        if( e instanceof ReflectException && e.getCause() != null )
-            wsError( exchange, e.getCause() );
-        else if( e instanceof InvocationTargetException itException )
-            wsError( exchange, itException.getTargetException() );
-        else if( e instanceof WsClientException clientException ) {
-            log.debug( this + ": " + clientException, clientException );
-            if( !exchange.isResponseStarted() ) {
-                exchange.setStatusCodeReasonPhrase( clientException.code, e.getMessage() );
-                if( !clientException.errors.isEmpty() )
-                    exchange.responseJson( new ValidationErrors.ErrorResponse( clientException.errors ) );
+        switch( e ) {
+            case ReflectException _ when e.getCause() != null -> wsError( exchange, e.getCause() );
+            case InvocationTargetException itException -> wsError( exchange, itException.getTargetException() );
+            case WsClientException clientException -> {
+                log.debug( this + ": " + clientException, clientException );
+                if( !exchange.isResponseStarted() ) {
+                    exchange.setStatusCodeReasonPhrase( clientException.code, e.getMessage() );
+                    if( !clientException.errors.isEmpty() )
+                        exchange.responseJson( new ValidationErrors.ErrorResponse( clientException.errors ) );
+                }
             }
-        } else {
-            log.error( this + ": " + e.toString(), e );
-            if( !exchange.isResponseStarted() )
-                exchange.responseJson( Http.StatusCode.INTERNAL_SERVER_ERROR, e.getMessage(), new JsonStackTraceResponse( e ) );
+            default -> {
+                log.error( this + ": " + e.toString(), e );
+                if( !exchange.isResponseStarted() )
+                    exchange.responseJson( Http.StatusCode.INTERNAL_SERVER_ERROR, e.getMessage(), new JsonStackTraceResponse( e ) );
+            }
         }
     }
 

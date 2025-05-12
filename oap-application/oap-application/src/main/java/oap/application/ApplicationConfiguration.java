@@ -108,7 +108,7 @@ public final class ApplicationConfiguration {
     static ApplicationConfiguration load( Map<String, Object> properties ) {
         var sj = new StringJoiner( "\n" );
         properties.forEach( ( k, v ) -> sj.add( k + " = " + v ) );
-        return Binder.hocon.unmarshal( ApplicationConfiguration.class, sj.toString() + "\n" + getEnvConfig() );
+        return Binder.hocon.unmarshal( ApplicationConfiguration.class, sj + "\n" + getEnvConfig() );
     }
 
     public static List<URL> getConfdUrls( Path confd ) {
