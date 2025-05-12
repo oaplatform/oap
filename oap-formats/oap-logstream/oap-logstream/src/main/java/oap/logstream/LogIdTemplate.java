@@ -28,6 +28,9 @@ import oap.io.Closeables;
 import oap.net.Inet;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.app.event.EventCartridge;
+import org.apache.velocity.app.event.ReferenceInsertionEventHandler;
+import org.apache.velocity.context.Context;
 import org.joda.time.DateTime;
 
 import java.io.StringWriter;
@@ -64,6 +67,14 @@ public class LogIdTemplate {
 
     public String render( String template, DateTime time, Timestamp timestamp, int version ) {
         VelocityContext context = new VelocityContext();
+        EventCartridge eventCartridge = new EventCartridge();
+        context.attachEventCartridge( eventCartridge );
+        eventCartridge.addReferenceInsertionEventHandler( new ReferenceInsertionEventHandler() {
+            @Override
+            public Object referenceInsert( Context context, String s, Object o ) {
+                return o == null ? "" : o;
+            }
+        } );
 
         init( context, time, timestamp, version );
 
