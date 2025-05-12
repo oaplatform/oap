@@ -24,13 +24,11 @@
 
 package oap.logstream;
 
+import oap.io.Closeables;
 import oap.net.Inet;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.VelocityEngine;
 import org.joda.time.DateTime;
-import org.stringtemplate.v4.NoIndentWriter;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.misc.ErrorBuffer;
-import org.stringtemplate.v4.misc.ErrorType;
-import org.stringtemplate.v4.misc.STMessage;
 
 import java.io.StringWriter;
 import java.util.LinkedHashMap;
@@ -43,6 +41,8 @@ import java.util.Map;
  * @see oap.logstream.disk.AbstractWriter
  */
 public class LogIdTemplate {
+    private final VelocityEngine engine = new VelocityEngine();
+
     private final LogId logId;
     private final LinkedHashMap<String, String> variables = new LinkedHashMap<>();
 
@@ -63,41 +63,35 @@ public class LogIdTemplate {
     }
 
     public String render( String template, DateTime time, Timestamp timestamp, int version ) {
-        ST st = new ST( template );
+        VelocityContext context = new VelocityContext();
 
-        init( st, time, timestamp, version );
+        init( context, time, timestamp, version );
 
-        variables.forEach( st::add );
+        variables.forEach( context::put );
 
-        StringWriter stringWriter = new StringWriter();
-        st.write( new NoIndentWriter( stringWriter ), new ErrorBuffer() {
-            @Override
-            public void runTimeError( STMessage msg ) {
-                if( msg.error != ErrorType.NO_SUCH_ATTRIBUTE ) {
-                    super.runTimeError( msg );
-                }
-            }
-        } );
+        StringWriter writer = new StringWriter();
+        engine.evaluate( context, writer, "log-id-template", template );
+        Closeables.close( writer );
 
-        return stringWriter.toString();
+        return writer.toString();
     }
 
-    public void init( ST st, DateTime time, Timestamp timestamp, int version ) {
-        st.add( "LOG_TYPE", logId.logType );
-        st.add( "LOG_VERSION", getHashWithVersion( version ) );
-        st.add( "SERVER_HOST", Inet.HOSTNAME );
-        st.add( "CLIENT_HOST", logId.clientHostname );
-        st.add( "YEAR", String.valueOf( time.getYear() ) );
-        st.add( "MONTH", print2Chars( time.getMonthOfYear() ) );
-        st.add( "DAY", print2Chars( time.getDayOfMonth() ) );
-        st.add( "HOUR", print2Chars( time.getHourOfDay() ) );
-        st.add( "MINUTE", print2Chars( time.getMinuteOfHour() ) );
-        st.add( "SECOND", print2Chars( time.getSecondOfMinute() ) );
-        st.add( "INTERVAL", print2Chars( timestamp.currentBucket( time ) ) );
-        st.add( "LOG_TIME_INTERVAL", String.valueOf( 60 / timestamp.bucketsPerHour ) );
-        st.add( "REGION", System.getenv( "REGION" ) );
+    public void init( VelocityContext context, DateTime time, Timestamp timestamp, int version ) {
+        context.put( "LOG_TYPE", logId.logType );
+        context.put( "LOG_VERSION", getHashWithVersion( version ) );
+        context.put( "SERVER_HOST", Inet.HOSTNAME );
+        context.put( "CLIENT_HOST", logId.clientHostname );
+        context.put( "YEAR", String.valueOf( time.getYear() ) );
+        context.put( "MONTH", print2Chars( time.getMonthOfYear() ) );
+        context.put( "DAY", print2Chars( time.getDayOfMonth() ) );
+        context.put( "HOUR", print2Chars( time.getHourOfDay() ) );
+        context.put( "MINUTE", print2Chars( time.getMinuteOfHour() ) );
+        context.put( "SECOND", print2Chars( time.getSecondOfMinute() ) );
+        context.put( "INTERVAL", print2Chars( timestamp.currentBucket( time ) ) );
+        context.put( "LOG_TIME_INTERVAL", String.valueOf( 60 / timestamp.bucketsPerHour ) );
+        context.put( "REGION", System.getenv( "REGION" ) );
 
-        logId.properties.forEach( st::add );
+        logId.properties.forEach( context::put );
     }
 
     public String getHashWithVersion( int version ) {

@@ -80,7 +80,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     private final int bufferSize;
     private final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
     private final ScheduledExecutorService pool;
-    public String filePattern = "/<YEAR>-<MONTH>/<DAY>/<LOG_TYPE>_v<LOG_VERSION>_<CLIENT_HOST>-<YEAR>-<MONTH>-<DAY>-<HOUR>-<INTERVAL>.tsv.gz";
+    public String filePattern = "/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
     public long refreshInitDelay = Dates.s( 10 );
@@ -152,7 +152,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         String previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ) );
 
         if( currentPattern.equals( previousPattern ) ) {
-            throw new IllegalArgumentException( "filepattern(" + type + ") must contain a variable <INTERVAL> or <MINUTE>" );
+            log.error( "cp {}", currentPattern );
+            log.error( "pp {}", previousPattern );
+            throw new IllegalArgumentException( "filepattern(" + type + ") must contain a variable ${INTERVAL} or ${MINUTE}" );
         }
     }
 
