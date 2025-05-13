@@ -7,7 +7,7 @@
  *
  */
 
-package oap.http.pnio;
+package oap.http.pniov2;
 
 import lombok.AllArgsConstructor;
 

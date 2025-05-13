@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.http.pnio;
+package oap.http.pniov2;
 
 public class TestState {
     public StringBuilder sb = new StringBuilder();
