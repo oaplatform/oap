@@ -211,7 +211,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             handler = nioHandlerBuilder.build( handler );
         }
 
-        handler = new BlockingHandler( handler );
         handler = new GracefulShutdownHandler( handler );
 
         if( port == defaultPort.httpsPort ) {
@@ -242,17 +241,17 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
     }
 
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, List<PortType> types ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, boolean blocking, List<PortType> types ) {
         if( types.isEmpty() || types.contains( PortType.HTTP ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTP_PORT );
+            bind( prefix, handler, compressionSupport, blocking, DEFAULT_HTTP_PORT );
         }
 
         if( isHttpsEnabled() && ( types.isEmpty() || types.contains( PortType.HTTPS ) ) ) {
-            bind( prefix, handler, compressionSupport, DEFAULT_HTTPS_PORT );
+            bind( prefix, handler, compressionSupport, blocking, DEFAULT_HTTPS_PORT );
         }
     }
 
-    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, String portName ) {
+    public void bind( String prefix, HttpHandler handler, boolean compressionSupport, boolean blocking, String portName ) {
         Preconditions.checkNotNull( portName );
         Preconditions.checkNotNull( prefix );
         Preconditions.checkArgument( !prefix.isEmpty() );
@@ -266,9 +265,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             port = additionalHttpPorts.get( portName );
         }
 
-        io.undertow.server.HttpHandler httpHandler = exchange -> {
-            HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
-            handler.handleRequest( serverExchange );
+        io.undertow.server.HttpHandler httpHandler = new io.undertow.server.HttpHandler() {
+            @Override
+            public void handleRequest( io.undertow.server.HttpServerExchange exchange ) throws Exception {
+                HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet(), this );
+                handler.handleRequest( serverExchange );
+            }
         };
 
         if( !hasHandler( CompressionNioHandler.class ) && compressionSupport ) {
@@ -276,20 +278,33 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         }
 
         PathHandler assignedHandler = pathHandler.computeIfAbsent( port, p -> new PathHandler( pathHandlerCacheSize ) );
+
+        if( blocking ) {
+            httpHandler = new BlockingHandler( httpHandler );
+        }
+
         assignedHandler.addPrefixPath( prefix, httpHandler );
 
         log.debug( "binding '{}' on port: {}:{}", prefix, portName, port );
     }
 
     public void bind( String prefix, HttpHandler handler ) {
-        bind( prefix, handler, DEFAULT_HTTP_PORT );
+        bind( prefix, handler, true );
+    }
+
+    public void bind( String prefix, HttpHandler handler, boolean blocking ) {
+        bind( prefix, handler, blocking, DEFAULT_HTTP_PORT );
         if( isHttpsEnabled() ) {
-            bind( prefix, handler, DEFAULT_HTTPS_PORT );
+            bind( prefix, handler, blocking, DEFAULT_HTTPS_PORT );
         }
     }
 
+    public void bind( String prefix, HttpHandler handler, boolean blocking, String port ) {
+        bind( prefix, handler, true, blocking, port );
+    }
+
     public void bind( String prefix, HttpHandler handler, String port ) {
-        bind( prefix, handler, true, port );
+        bind( prefix, handler, true, true, port );
     }
 
     public void preStop() {

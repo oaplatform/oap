@@ -28,6 +28,7 @@ import io.undertow.io.Receiver;
 import io.undertow.io.Sender;
 import io.undertow.server.BlockingHttpExchange;
 import io.undertow.server.ConnectorStatisticsImpl;
+import io.undertow.server.Connectors;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import io.undertow.server.protocol.http.HttpServerConnection;
@@ -60,7 +61,7 @@ public class HttpServerExchangeStub {
     private static final AtomicLong requestId = new AtomicLong();
 
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2() {
-        return new oap.http.server.nio.HttpServerExchange( createHttpExchange(), requestId.incrementAndGet() );
+        return new oap.http.server.nio.HttpServerExchange( createHttpExchange(), requestId.incrementAndGet(), null );
     }
 
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2( oap.http.server.nio.HttpServerExchange.HttpMethod method, String uri ) {
@@ -78,10 +79,10 @@ public class HttpServerExchangeStub {
     }
 
     public static HttpServerExchange createHttpExchange() {
-        final HeaderMap headerMap = new HeaderMap();
-        final StreamConnection streamConnection = createStreamConnection();
-        final OptionMap options = OptionMap.EMPTY;
-        final ServerConnection connection = new HttpServerConnection( streamConnection, null, null, options, 0, new ConnectorStatisticsImpl() );
+        HeaderMap headerMap = new HeaderMap();
+        StreamConnection streamConnection = createStreamConnection();
+        OptionMap options = OptionMap.EMPTY;
+        ServerConnection connection = new HttpServerConnection( streamConnection, null, null, options, 0, new ConnectorStatisticsImpl() );
         return createHttpExchange( connection, headerMap );
     }
 
@@ -110,6 +111,7 @@ public class HttpServerExchangeStub {
         return sourceChannel;
     }
 
+    @SneakyThrows
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     private static HttpServerExchange createHttpExchange( ServerConnection connection, HeaderMap headerMap ) {
         HttpServerExchange httpServerExchange = new HttpServerExchange( connection, new HeaderMap(), headerMap, 200 );
@@ -117,6 +119,8 @@ public class HttpServerExchangeStub {
         httpServerExchange.setProtocol( Protocols.HTTP_1_1 );
         httpServerExchange.setDestinationAddress( new InetSocketAddress( 8081 ) );
         httpServerExchange.setSourceAddress( new InetSocketAddress( 8081 ) );
+
+        Connectors.setRequestStartTime( httpServerExchange );
 
         httpServerExchange.startBlocking( new BlockingHttpExchange() {
             @Override

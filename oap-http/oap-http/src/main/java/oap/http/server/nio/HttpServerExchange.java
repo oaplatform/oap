@@ -24,6 +24,7 @@
 
 package oap.http.server.nio;
 
+import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
 import io.undertow.util.HeaderMap;
@@ -37,6 +38,7 @@ import oap.util.HashMaps;
 import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
 import org.xnio.IoUtils;
+import org.xnio.XnioWorker;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -66,10 +68,12 @@ public class HttpServerExchange {
 
     public final io.undertow.server.HttpServerExchange exchange;
     public final long id;
+    public final HttpHandler httpHandler;
 
-    public HttpServerExchange( io.undertow.server.HttpServerExchange exchange, long id ) {
+    public HttpServerExchange( io.undertow.server.HttpServerExchange exchange, long id, HttpHandler httpHandler ) {
         this.exchange = exchange;
         this.id = id;
+        this.httpHandler = httpHandler;
     }
 
     public static String ua( io.undertow.server.HttpServerExchange hsExchange ) {
@@ -391,6 +395,10 @@ public class HttpServerExchange {
 
     public void closeConnection() {
         IoUtils.safeClose( exchange.getConnection() );
+    }
+
+    public XnioWorker getWorkerPool() {
+        return exchange.getConnection().getWorker();
     }
 
     public enum HttpMethod {

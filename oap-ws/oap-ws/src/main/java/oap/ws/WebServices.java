@@ -60,7 +60,7 @@ public class WebServices {
         log.info( "ws-service: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
         log.info( "ws-handler: {}", Lists.map( wsConfigServices, ws -> ws.name ) );
 
-        for( var config : wsConfigServices ) {
+        for( ServiceExt<WsConfig> config : wsConfigServices ) {
             log.trace( "service: module {} config {}", config.serviceItem.getModuleName(), config.ext );
 
             if( !config.ext.enabled ) {
@@ -68,16 +68,16 @@ public class WebServices {
                 continue;
             }
 
-            var interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
+            List<Interceptor> interceptors = Lists.map( config.ext.interceptors, name -> kernel.<Interceptor>service( name )
                 .orElseThrow( () -> new RuntimeException( "interceptor " + name + " not found" ) ) );
 
-            for( var path : config.ext.path ) {
+            for( String path : config.ext.path ) {
                 bind( path, config.getInstance(),
-                    config.ext.sessionAware, sessionManager, interceptors, config.ext.compression, config.ext.port, config.ext.portType );
+                    config.ext.sessionAware, sessionManager, interceptors, config.ext.compression, config.ext.blocking, config.ext.port, config.ext.portType );
             }
         }
 
-        for( var config : wsConfigHandlers ) {
+        for( ServiceExt<WsConfig> config : wsConfigHandlers ) {
             log.trace( "handler = {}", config );
 
             if( !config.ext.enabled ) {
@@ -85,8 +85,8 @@ public class WebServices {
                 continue;
             }
 
-            for( var path : config.ext.path ) {
-                bind( path, ( HttpHandler ) config.getInstance(), config.ext.compression, config.ext.port, config.ext.portType );
+            for( String path : config.ext.path ) {
+                bind( path, ( HttpHandler ) config.getInstance(), config.ext.compression, config.ext.blocking, config.ext.port, config.ext.portType );
             }
         }
     }
@@ -97,22 +97,23 @@ public class WebServices {
     }
 
     public void bind( String context, Object service, boolean sessionAware,
-                      SessionManager sessionManager, List<Interceptor> interceptors, boolean compressionSupport,
+                      SessionManager sessionManager, List<Interceptor> interceptors,
+                      boolean compressionSupport, boolean blocking,
                       Optional<String> port, List<NioHttpServer.PortType> portType ) {
 
         services.put( context, service );
-        bind( context, new WebService( service, sessionAware, sessionManager, interceptors, compressionSupport ), compressionSupport, port, portType );
+        bind( context, new WebService( service, sessionAware, sessionManager, interceptors, compressionSupport ), compressionSupport, blocking, port, portType );
     }
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )
-    public void bind( String context, HttpHandler handler, boolean compressionSupport,
+    public void bind( String context, HttpHandler handler, boolean compressionSupport, boolean blocking,
                       Optional<String> port, List<NioHttpServer.PortType> portType ) {
         if( context.isEmpty() ) context = "/";
 
         if( port.isEmpty() ) {
-            server.bind( context, handler, compressionSupport, portType );
+            server.bind( context, handler, compressionSupport, blocking, portType );
         } else {
-            server.bind( context, handler, compressionSupport, port.get() );
+            server.bind( context, handler, compressionSupport, blocking, port.get() );
         }
     }
 }

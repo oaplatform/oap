@@ -1,0 +1,276 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package oap.http.pniov2;
+
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import oap.http.Http;
+import oap.http.Http.ContentType;
+import oap.http.server.nio.NioHttpServer;
+import oap.io.Closeables;
+import oap.testng.Fixtures;
+import oap.testng.Ports;
+import oap.util.Dates;
+import org.testng.annotations.Test;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
+import java.util.zip.GZIPOutputStream;
+
+import static oap.http.Http.StatusCode.OK;
+import static oap.http.test.HttpAsserts.assertPost;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+public class PnioHttpHandlerTest extends Fixtures {
+    @Test
+    public void testProcess() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.compute( "cpu-1" ) )
+            .next( TestHandler.compute( "cpu-2" ) )
+            .next( TestHandler.block( "block-3" ) )
+            .next( TestHandler.async( "async-4" ) )
+            .next( TestHandler.block( "block-5" ) )
+            .next( TestHandler.compute( "cpu-6" ) )
+            .next( TestHandler.async( "async-7" ) )
+            .next( TestHandler.compute( "cpu-8" ) )
+            .build();
+
+        runWithWorkflow( workflow, port -> {
+
+            assertPost( "http://localhost:" + port + "/test", "{}" )
+                .hasCode( OK )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( """
+                    name 'cpu-1' type COMPUTE thread 'CPU-' new thread true
+                    name 'cpu-2' type COMPUTE thread 'CPU-' new thread false
+                    name 'block-3' type BLOCK thread 'BLK-' new thread true
+                    name 'async-4' type ASYNC thread 'CPU-' new thread true
+                    name 'block-5' type BLOCK thread 'BLK-' new thread true
+                    name 'cpu-6' type COMPUTE thread 'CPU-' new thread true
+                    name 'async-7' type ASYNC thread 'CPU-' new thread false
+                    name 'cpu-8' type COMPUTE thread 'CPU-' new thread true"""
+                );
+        } );
+    }
+
+    @Test
+    public void testProcessWithException() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) ) )
+            .build();
+
+        runWithWorkflow( workflow, port -> {
+            assertPost( "http://localhost:" + port + "/test", "{}" )
+                .hasCode( Http.StatusCode.BAD_GATEWAY )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "test exception" );
+        } );
+    }
+
+    @Test
+    public void testRequestBufferOverflow() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.compute( "cpu-2" ) )
+            .build();
+
+        runWithWorkflow( 2, 1024, 5, 40, 10, Dates.s( 100 ), workflow, port -> {
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "REQUEST_BUFFER_OVERFLOW" );
+        } );
+    }
+
+    @Test
+    public void testResponseBufferOverflow() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.compute( "cpu-2" ) )
+            .build();
+
+        runWithWorkflow( 1024, 2, 5, 40, 10, Dates.s( 100 ), workflow, port -> {
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "BO" );
+        } );
+    }
+
+    @Test
+    public void testTimeoutBlock() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
+            .build();
+
+        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, port -> {
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "TIMEOUT" );
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "TIMEOUT" );
+        } );
+    }
+
+    @Test
+    public void testTimeoutAsync() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) )
+            .build();
+
+        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, port -> {
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "TIMEOUT" );
+            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+                .hasCode( Http.StatusCode.BAD_REQUEST )
+                .hasContentType( ContentType.TEXT_PLAIN )
+                .hasBody( "TIMEOUT" );
+        } );
+    }
+
+    @Test
+    public void testValidateBlockingPool() throws IOException {
+        RequestWorkflow<TestState> workflow = RequestWorkflow
+            .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
+            .build();
+
+        assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 0, 200, workflow, _ -> {
+        } ) )
+            .isInstanceOf( IllegalArgumentException.class )
+            .hasMessage( "blockingPoolSize must be greater than 0" );
+    }
+
+    private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
+        runWithWorkflow( 1024, 1024, 10, 5, 10, Dates.s( 100 ), workflow, cons );
+    }
+
+    private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int maxQueueSize, int blockingPoolSize,
+                                  long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
+        int port = Ports.getFreePort( getClass() );
+
+        PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
+            .requestSize( requestSize )
+            .responseSize( responseSize )
+            .build();
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+            httpServer.ioThreads = ioThreads;
+            httpServer.start();
+
+            try( PnioController pnioController = new PnioController( 3, blockingPoolSize, maxQueueSize ) ) {
+                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener(), pnioController );
+                httpServer.bind( "/test",
+                    exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
+
+                cons.accept( port );
+            }
+        }
+    }
+
+    @Slf4j
+    public static class TestPnioListener extends PnioListener<TestState> {
+        private static void defaultResponse( PnioExchange<TestState> pnioExchange ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+            httpResponse.status = Http.StatusCode.BAD_REQUEST;
+            httpResponse.contentType = ContentType.TEXT_PLAIN;
+            pnioExchange.responseBuffer.setAndResize( pnioExchange.processState.name() );
+
+            pnioExchange.send();
+        }
+
+        @Override
+        @SneakyThrows
+        public void onDone( PnioExchange<TestState> pnioExchange ) {
+            if( log.isDebugEnabled() ) {
+                String data = "name 'TestResponseBuilder thread '" + Thread.currentThread().getName().substring( 7, 11 )
+                    + "' new thread " + !pnioExchange.workflowState.oldThreadName.equals( Thread.currentThread().getName() );
+
+                log.debug( data );
+            }
+
+            OutputStream outputStream = null;
+            try {
+                outputStream = pnioExchange.responseBuffer.getOutputStream();
+
+                if( pnioExchange.gzipSupported() ) {
+                    outputStream = new GZIPOutputStream( outputStream );
+                    pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
+                }
+                outputStream.write( pnioExchange.workflowState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+
+                pnioExchange.httpResponse.status = OK;
+                pnioExchange.httpResponse.contentType = ContentType.TEXT_PLAIN;
+            } finally {
+                Closeables.close( outputStream );
+            }
+
+            pnioExchange.send();
+        }
+
+        @Override
+        public void onException( PnioExchange<TestState> pnioExchange ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+            httpResponse.status = Http.StatusCode.BAD_GATEWAY;
+            httpResponse.contentType = ContentType.TEXT_PLAIN;
+            pnioExchange.responseBuffer.setAndResize( pnioExchange.throwable.getMessage() );
+
+            pnioExchange.send();
+        }
+
+        @Override
+        public void onRequestBufferOverflow( PnioExchange<TestState> pnioExchange ) {
+            defaultResponse( pnioExchange );
+        }
+
+        @Override
+        public void onRejected( PnioExchange<TestState> pnioExchange ) {
+            defaultResponse( pnioExchange );
+        }
+
+        @Override
+        public void onTimeout( PnioExchange<TestState> pnioExchange ) {
+            defaultResponse( pnioExchange );
+        }
+
+        @Override
+        public void onUnknown( PnioExchange<TestState> pnioExchange ) {
+            defaultResponse( pnioExchange );
+        }
+
+        @Override
+        public void onResponseBufferOverflow( PnioExchange<TestState> pnioExchange ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+            httpResponse.status = Http.StatusCode.BAD_REQUEST;
+            httpResponse.contentType = ContentType.TEXT_PLAIN;
+            pnioExchange.responseBuffer.setAndResize( "BO" );
+
+            pnioExchange.send();
+        }
+    }
+}

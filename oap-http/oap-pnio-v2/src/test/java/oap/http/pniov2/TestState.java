@@ -22,34 +22,9 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.http.pniov2;
 
-import io.undertow.util.HttpString;
-import oap.http.Cookie;
-import oap.http.server.nio.HttpServerExchange;
-
-public class RoHttpServerExchange extends HttpServerExchange {
-    public RoHttpServerExchange( HttpServerExchange exchange ) {
-        super( exchange.exchange, exchange.id, null );
-    }
-
-    @Override
-    public HttpServerExchange setStatusCode( int statusCode ) {
-        throw new IllegalStateException( "use oap.ws.Response" );
-    }
-
-    @Override
-    public HttpServerExchange setReasonPhrase( String message ) {
-        throw new IllegalStateException( "use oap.ws.Response" );
-    }
-
-    @Override
-    public HttpServerExchange setResponseHeader( HttpString name, String value ) {
-        throw new IllegalStateException( "use oap.ws.Response" );
-    }
-
-    @Override
-    public HttpServerExchange setResponseCookie( Cookie cookie ) {
-        throw new IllegalStateException( "use oap.ws.Response" );
-    }
+public class TestState {
+    public StringBuilder sb = new StringBuilder();
+    public String oldThreadName = Thread.currentThread().getName();
 }
