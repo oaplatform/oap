@@ -43,7 +43,7 @@ public class PnioController implements AutoCloseable {
         return CompletableFuture.runAsync( runnable, blockingPool );
     }
 
-    public <WorkflowState> boolean register( PnioExchange<WorkflowState> pnioExchange, PnioTask<WorkflowState> workflowStatePnioTask ) {
-        return workers.register( pnioExchange, workflowStatePnioTask );
+    public <WorkflowState> boolean register( PnioExchange<WorkflowState> pnioExchange, PnioTask<WorkflowState> workflowStatePnioTask, boolean important ) {
+        return workers.register( pnioExchange, workflowStatePnioTask, important );
     }
 }

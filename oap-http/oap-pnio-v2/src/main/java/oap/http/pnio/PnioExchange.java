@@ -44,6 +44,7 @@ public class PnioExchange<WorkflowState> {
     public final PnioListener<WorkflowState> pnioListener;
     public final long id = idGenerator.incrementAndGet();
     public final long startTimeNano;
+    public final boolean importance;
     public Throwable throwable;
     public ProcessState processState = ProcessState.RUNNING;
     public RequestWorkflow.Node<WorkflowState> currentTaskNode;
@@ -52,7 +53,8 @@ public class PnioExchange<WorkflowState> {
     public PnioExchange( byte[] requestBuffer, int responseSize, PnioController controller,
                          RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
                          HttpServerExchange oapExchange, long timeout,
-                         PnioListener<WorkflowState> pnioListener ) {
+                         PnioListener<WorkflowState> pnioListener,
+                         boolean importance ) {
         this.startTimeNano = System.nanoTime();
         this.requestBuffer = requestBuffer;
         this.responseBuffer = new PnioResponseBuffer( responseSize );
@@ -66,6 +68,8 @@ public class PnioExchange<WorkflowState> {
         this.timeoutNano = timeout * 1_000_000;
 
         this.pnioListener = pnioListener;
+
+        this.importance = importance;
 
         PnioMetrics.activeRequests.incrementAndGet();
     }
@@ -229,7 +233,7 @@ public class PnioExchange<WorkflowState> {
                 }
 
                 io.undertow.server.HttpServerExchange exchange = oapExchange.exchange;
-                controller.register( this, new PnioTask( this ) );
+                controller.register( this, new PnioTask( this ), importance );
             } );
     }
 

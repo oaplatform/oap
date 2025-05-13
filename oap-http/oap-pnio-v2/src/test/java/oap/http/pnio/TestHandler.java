@@ -89,8 +89,10 @@ public class TestHandler {
 
     public static void handle( String name, String type, PnioExchange<TestState> pnioExchange, TestState testState,
                                TestHandlerOptions testHandlerOptions ) throws InterruptedException {
-        String data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 7, 11 )
-            + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
+        String currentThreadName = Thread.currentThread().getName();
+
+        String data = "name '" + name + "' type " + type + " thread '" + currentThreadName.substring( 7, 11 )
+            + "' new thread " + !testState.oldThreadName.equals( currentThreadName );
 
         log.debug( data );
 
@@ -100,7 +102,7 @@ public class TestHandler {
 
         testState.sb.append( data );
 
-        testState.oldThreadName = Thread.currentThread().getName();
+        testState.oldThreadName = currentThreadName;
 
         if( testHandlerOptions.runtimeException != null ) {
             if( testHandlerOptions.async ) {

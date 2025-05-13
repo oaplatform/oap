@@ -43,17 +43,25 @@ public class TestHandler extends PnioRequestHandler<TestState> {
 
     @Override
     public void handle( PnioExchange<TestState> pnioExchange, TestState testState ) throws InterruptedException {
-        if( runtimeException != null ) throw new RuntimeException( runtimeException );
-        if( sleepTime > 0 ) Thread.sleep( sleepTime );
+        if( runtimeException != null ) {
+            throw new RuntimeException( runtimeException );
+        }
+        if( sleepTime > 0 ) {
+            Thread.sleep( sleepTime );
+        }
 
-        if( testState.sb.length() > 0 ) testState.sb.append( "\n" );
+        if( !testState.sb.isEmpty() ) {
+            testState.sb.append( "\n" );
+        }
 
-        var data = "name '" + name + "' type " + type + " thread '" + Thread.currentThread().getName().substring( 0, 2 )
-            + "' new thread " + !testState.oldThreadName.equals( Thread.currentThread().getName() );
+        String threadName = Thread.currentThread().getName();
+
+        String data = "name '" + name + "' type " + type + " thread '" + threadName.substring( 0, 2 )
+            + "' new thread " + !testState.oldThreadName.equals( threadName );
 
         testState.sb.append( data );
 
-        testState.oldThreadName = Thread.currentThread().getName();
+        testState.oldThreadName = threadName;
     }
 
     @Override
