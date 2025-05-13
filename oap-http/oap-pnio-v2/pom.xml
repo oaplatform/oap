@@ -10,7 +10,7 @@
         <version>${oap.project.version}</version>
     </parent>
 
-    <artifactId>oap-pnio</artifactId>
+    <artifactId>oap-pnio-v2</artifactId>
 
     <dependencies>
         <dependency>
@@ -26,6 +26,11 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-highload</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-ws</artifactId>
             <version>${project.version}</version>
         </dependency>
 

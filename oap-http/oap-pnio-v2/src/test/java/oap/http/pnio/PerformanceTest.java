@@ -25,10 +25,11 @@ public class PerformanceTest {
 //        int port = Ports.getFreePort( getClass() );
         int port = 12345;
 
+        PnioController pnioController = new PnioController( 10 );
+
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( 64000 )
             .responseSize( 64000 )
-            .blockingPoolSize( 10 )
             .threads( 10 )
             .maxQueueSize( 256 )
             .build();
@@ -37,7 +38,7 @@ public class PerformanceTest {
             httpServer.statistics = true;
             httpServer.start();
 
-            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener() ) ) {
+            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener(), pnioController ) ) {
 
                 Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                     System.out.println();

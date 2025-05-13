@@ -26,7 +26,6 @@ package oap.http.pnio;
 
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RequestWorkflowTest {
     @Test
     public void testSkip() {
-        var workflow = RequestWorkflow
+        RequestWorkflow<Object> workflow = RequestWorkflow
             .init( new TestPnioRequestHandler( "1" ) )
             .next( new TestPnioRequestHandler( "2" ) )
             .next( new TestPnioRequestHandler( "3" ) )
@@ -52,22 +51,17 @@ public class RequestWorkflowTest {
         public final String id;
 
         private TestPnioRequestHandler( String id ) {
+            super( Type.COMPUTE );
             this.id = id;
-        }
-
-        @Override
-        public Type getType() {
-            return Type.COMPUTE;
-        }
-
-        @Override
-        public void handle( PnioExchange<Object> pnioExchange, Object o ) throws InterruptedException, IOException {
-
         }
 
         @Override
         public String toString() {
             return id;
+        }
+
+        @Override
+        public void handle( PnioExchange<Object> pnioExchange, Object o ) {
         }
     }
 }

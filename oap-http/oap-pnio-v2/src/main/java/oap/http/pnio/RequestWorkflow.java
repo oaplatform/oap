@@ -14,12 +14,24 @@ import lombok.AllArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class RequestWorkflow<WorkflowState> {
+    Node<WorkflowState> root;
+
+    private RequestWorkflow( Node<WorkflowState> root ) {
+        this.root = root;
+    }
+
+    public static <WorkflowState> RequestWorkflowBuilder<WorkflowState> init( PnioRequestHandler<WorkflowState> task ) {
+        RequestWorkflow<WorkflowState> workflow = new RequestWorkflow<>( new Node<>( task, null ) );
+        return new RequestWorkflowBuilder<>( workflow );
+    }
+
     public RequestWorkflow<WorkflowState> skipBefore( Predicate<PnioRequestHandler<WorkflowState>> predicate ) {
-        var current = root;
+        Node<WorkflowState> current = root;
 
         while( current != null ) {
             if( predicate.test( current.handler ) ) {
@@ -32,21 +44,9 @@ public class RequestWorkflow<WorkflowState> {
         return new RequestWorkflow<>( null );
     }
 
-    @AllArgsConstructor
-    static class Node<WorkflowState> {
-        final PnioRequestHandler<WorkflowState> handler;
-        Node<WorkflowState> next;
-    }
-
-    Node<WorkflowState> root;
-
-    private RequestWorkflow( Node<WorkflowState> root ) {
-        this.root = root;
-    }
-
     public <T> List<T> map( Function<PnioRequestHandler<WorkflowState>, T> mapFunc ) {
-        var ret = new ArrayList<T>();
-        var current = root;
+        ArrayList<T> ret = new ArrayList<T>();
+        Node<WorkflowState> current = root;
         while( current != null ) {
             ret.add( mapFunc.apply( current.handler ) );
             current = current.next;
@@ -54,9 +54,22 @@ public class RequestWorkflow<WorkflowState> {
         return ret;
     }
 
-    public static <WorkflowState> RequestWorkflowBuilder<WorkflowState> init( PnioRequestHandler<WorkflowState> task ) {
-        RequestWorkflow<WorkflowState> workflow = new RequestWorkflow<>( new Node<>( task, null ) );
-        return new RequestWorkflowBuilder<>( workflow );
+    public void forEach( Consumer<PnioRequestHandler<WorkflowState>> cons ) {
+        Node<WorkflowState> current = root;
+        while( current != null ) {
+            cons.accept( current.handler );
+            current = current.next;
+        }
+    }
+
+    public void update( RequestWorkflow<WorkflowState> newWorkflow ) {
+        root = newWorkflow.root;
+    }
+
+    @AllArgsConstructor
+    static class Node<WorkflowState> {
+        final PnioRequestHandler<WorkflowState> handler;
+        Node<WorkflowState> next;
     }
 
     public static class RequestWorkflowBuilder<WorkflowState> {
@@ -80,21 +93,21 @@ public class RequestWorkflow<WorkflowState> {
             return next( list, next, null );
         }
 
-        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, PnioRequestHandler<WorkflowState>> next, BiConsumer<PnioExchange<WorkflowState>, WorkflowState> postProcess ) {
-            for( var item : list ) {
+        public <T> RequestWorkflowBuilder<WorkflowState> next( List<T> list, Function<T, PnioRequestHandler<WorkflowState>> next, PnioRequestHandlerPostProcess<WorkflowState> postProcess ) {
+            for( T item : list ) {
                 next( next.apply( item ) );
             }
 
             if( postProcess != null ) {
-                next( new PnioRequestHandler<WorkflowState>() {
-                    @Override
-                    public Type getType() {
-                        return Type.COMPUTE;
-                    }
-
+                next( new PnioRequestHandler<>( PnioRequestHandler.Type.COMPUTE ) {
                     @Override
                     public void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
                         postProcess.accept( pnioExchange, workflowState );
+                    }
+
+                    @Override
+                    public String description() {
+                        return postProcess.description();
                     }
                 } );
             }
@@ -105,9 +118,9 @@ public class RequestWorkflow<WorkflowState> {
         public RequestWorkflow<WorkflowState> build() {
             return workflow;
         }
-    }
 
-    public void update( RequestWorkflow<WorkflowState> newWorkflow ) {
-        root = newWorkflow.root;
+        public interface PnioRequestHandlerPostProcess<WorkflowState> extends BiConsumer<PnioExchange<WorkflowState>, WorkflowState> {
+            String description();
+        }
     }
 }

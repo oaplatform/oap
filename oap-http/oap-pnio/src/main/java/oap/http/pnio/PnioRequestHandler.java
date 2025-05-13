@@ -10,15 +10,9 @@
 package oap.http.pnio;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 
-public class PnioRequestHandler<State> {
-    public final Type type;
-
-    public PnioRequestHandler( Type type ) {
-        this.type = type;
-    }
-
+@SuppressWarnings( "checkstyle:AbstractClassName" )
+public abstract class PnioRequestHandler<State> {
     public String description() {
         return getClass().getName();
     }
@@ -28,14 +22,13 @@ public class PnioRequestHandler<State> {
         return description();
     }
 
-    public void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException {
+    public Type getType() {
+        return Type.IO;
     }
 
-    public void handle( PnioExchange<State> pnioExchange, State state,
-                        Runnable success, Consumer<Throwable> exception ) throws InterruptedException, IOException {
-    }
+    public abstract void handle( PnioExchange<State> pnioExchange, State state ) throws InterruptedException, IOException;
 
     public enum Type {
-        COMPUTE, BLOCKING, ASYNC
+        IO, COMPUTE
     }
 }

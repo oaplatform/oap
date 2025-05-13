@@ -10,97 +10,195 @@
 package oap.http.pnio;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.undertow.io.Receiver;
 import lombok.Builder;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Executors;
+import oap.LogConsolidated;
+import oap.highload.Affinity;
+import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
-import oap.io.Closeables;
+import oap.util.Dates;
+import org.slf4j.event.Level;
+import org.xnio.XnioExecutor;
+import org.xnio.XnioWorker;
 
 import java.io.Closeable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static oap.http.pnio.PnioExchange.ProcessState.CONNECTION_CLOSED;
+import static oap.http.pnio.PnioRequestHandler.Type.COMPUTE;
+import static oap.http.pnio.PnioRequestHandler.Type.IO;
 
 @Slf4j
 public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable {
     public final int requestSize;
     public final int responseSize;
-    public final NioHttpServer server;
-    public final PnioListener<WorkflowState> pnioListener;
-    public final ExecutorService blockingPool;
-    public final int maxQueueSize;
-    public final PnioWorkers<WorkflowState> workers;
-    public final ConcurrentHashMap<Long, PnioExchange<WorkflowState>> exchanges = new ConcurrentHashMap<>();
-    public RequestWorkflow<WorkflowState> workflow;
+    public final int threads;
+    public final double queueTimeoutPercent;
+    public final Affinity cpuAffinity;
+    public final Affinity ioAffinity;
+    private final NioHttpServer server;
+    private final ErrorResponse<WorkflowState> errorResponse;
+    private final ThreadPoolExecutor pool;
+    private final SynchronousQueue<PnioExchange<WorkflowState>> queue;
+    private final List<RequestTaskComputeRunner<WorkflowState>> tasks = new ArrayList<>();
+    private RequestWorkflow<WorkflowState> workflow;
+    private static final ThreadLocal<Boolean> affinityState = new ThreadLocal<>();
+
+    @Deprecated
+    // use builder for settings
+    public PnioHttpHandler( NioHttpServer server,
+                            int requestSize,
+                            int responseSize,
+                            double queueTimeoutPercent,
+                            int cpuThreads,
+                            boolean cpuQueueFair,
+                            Affinity cpuAffinity,
+                            Affinity ioAffinity,
+                            RequestWorkflow<WorkflowState> workflow,
+                            ErrorResponse<WorkflowState> errorResponse ) {
+        this( server,
+            PnioHttpSettings.builder()
+                .requestSize( requestSize )
+                .responseSize( responseSize )
+                .queueTimeoutPercent( queueTimeoutPercent )
+                .cpuThreads( cpuThreads )
+                .cpuQueueFair( cpuQueueFair )
+                .cpuAffinity( cpuAffinity )
+                .ioAffinity( ioAffinity )
+                .build(),
+            workflow,
+            errorResponse );
+    }
 
     public PnioHttpHandler( NioHttpServer server,
                             PnioHttpSettings settings,
                             RequestWorkflow<WorkflowState> workflow,
-                            PnioListener<WorkflowState> pnioListener ) {
+                            ErrorResponse<WorkflowState> errorResponse ) {
         this.server = server;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
-        this.maxQueueSize = settings.maxQueueSize;
+        this.queueTimeoutPercent = settings.queueTimeoutPercent;
 
+        if( settings.cpuThreads > 0 ) {
+            this.threads = settings.cpuThreads;
+        } else if( settings.cpuAffinity.isEnabled() ) {
+            this.threads = settings.cpuAffinity.size();
+        } else {
+            this.threads = Runtime.getRuntime().availableProcessors();
+        }
+        this.cpuAffinity = settings.cpuAffinity;
+        this.ioAffinity = settings.ioAffinity;
         this.workflow = workflow;
-        this.pnioListener = pnioListener;
+        this.errorResponse = errorResponse;
 
-        blockingPool = settings.blockingPoolSize > 0
-            ? Executors.newFixedThreadPool( settings.blockingPoolSize, new ThreadFactoryBuilder().setNameFormat( "PNIO - BLK-%d" ).build() )
-            : null;
+        Preconditions.checkArgument( this.threads <= Runtime.getRuntime().availableProcessors() );
 
-        Preconditions.checkArgument( settings.maxQueueSize > 0, "maxQueueSize must be greater than 0" );
+        this.queue = new SynchronousQueue<>( settings.cpuQueueFair );
 
-        if( settings.blockingPoolSize <= 0 ) {
-            workflow.forEach( h -> {
-                Preconditions.checkArgument( h.type != PnioRequestHandler.Type.BLOCKING, "blockingPoolSize must be greater than 0" );
-            } );
+        this.pool = new ThreadPoolExecutor( this.threads, this.threads, 1, TimeUnit.MINUTES, new SynchronousQueue<>(),
+            new ThreadFactoryBuilder().setNameFormat( "cpu-http-%d" ).build(),
+            new oap.concurrent.ThreadPoolExecutor.BlockingPolicy() );
+
+        for( var i = 0; i < settings.cpuThreads; i++ ) {
+            RequestTaskComputeRunner<WorkflowState> requestTaskComputeRunner = new RequestTaskComputeRunner<>( queue, cpuAffinity );
+            pool.submit( requestTaskComputeRunner );
+            tasks.add( requestTaskComputeRunner );
         }
 
-        workers = new PnioWorkers<>( settings.threads, settings.maxQueueSize );
+        setupIoWorkers();
     }
 
-    public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
-        PnioMetrics.REQUESTS.increment();
+    public int getPoolSize() {
+        return pool.getPoolSize();
+    }
 
-        oapExchange.exchange.addExchangeCompleteListener( ( _, nl ) -> {
-            PnioMetrics.activeRequests.decrementAndGet();
-            if( nl != null ) {
-                nl.proceed();
-            }
-        } );
+    public int getPoolActiveCount() {
+        return pool.getActiveCount();
+    }
 
-        oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
+    public long getPoolCompletedTaskCount() {
+        return pool.getCompletedTaskCount();
+    }
 
-        oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
-            PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( message, responseSize, blockingPool, workflow, workflowState, oapExchange, timeout, workers, pnioListener );
-            exchanges.put( pnioExchange.id, pnioExchange );
+    @SneakyThrows
+    private void setupIoWorkers() {
+        XnioWorker xnioWorker = server.undertow.getWorker();
 
-            if( !workers.register( pnioExchange, new PnioTask<>( pnioExchange ) ) ) {
-                exchanges.remove( pnioExchange.id );
+        Field workerThreadsField = xnioWorker.getClass().getDeclaredField( "workerThreads" );
+        workerThreadsField.setAccessible( true );
+        Object workerThreads = workerThreadsField.get( xnioWorker );
+        int length = Array.getLength( workerThreads );
+        for( int i = 0; i < length; i++ ) {
+            XnioExecutor xnioExecutor = ( XnioExecutor ) Array.get( workerThreads, i );
+            xnioExecutor.execute( ioAffinity::set );
+        }
+    }
+
+    public void handleRequest( HttpServerExchange exchange, long startTimeNano, long timeout, WorkflowState workflowState ) {
+        setAffinity();
+        var requestState = new PnioExchange<>( requestSize, responseSize, workflow, workflowState, exchange, startTimeNano, timeout );
+
+        while( !requestState.isDone() ) {
+            PnioRequestHandler<WorkflowState> task = requestState.currentTaskNode.handler;
+            if( task.getType() == COMPUTE ) {
+                requestState.register( queue, queueTimeoutPercent );
             } else {
-                pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
+                requestState.runTasks( IO );
             }
-        }, ( _, e ) -> {
-            PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( null, responseSize, blockingPool, workflow, workflowState, oapExchange, timeout, workers, pnioListener );
-            exchanges.put( pnioExchange.id, pnioExchange );
+
+            if( !requestState.waitForCompletion() ) {
+                break;
+            }
+        }
+
+        response( requestState, workflowState );
+    }
+
+    private void setAffinity() {
+        if ( affinityState.get() == null ) {
+            ioAffinity.set();
+            affinityState.set( true );
+        }
+    }
+
+    private void response( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState ) {
+        if( pnioExchange.currentTaskNode != null ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             try {
+                httpResponse.cookies.clear();
+                httpResponse.headers.clear();
 
-                if( e instanceof Receiver.RequestToLargeException ) {
-                    pnioExchange.completeWithBufferOverflow( true );
-                } else {
-                    pnioExchange.completeWithFail( e );
+                errorResponse.handle( pnioExchange, workflowState );
+            } catch( Throwable e ) {
+                if( e instanceof OutOfMemoryError ) {
+                    log.error( "OOM error, need restarting!", e );
                 }
+                LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), e.getMessage(), e );
 
-                pnioExchange.response();
-            } finally {
-                exchanges.remove( pnioExchange.id );
+                httpResponse.cookies.clear();
+                httpResponse.headers.clear();
+                httpResponse.status = Http.StatusCode.BAD_GATEWAY;
+                httpResponse.contentType = Http.ContentType.TEXT_PLAIN;
+                pnioExchange.responseBuffer.setAndResize( Throwables.getStackTraceAsString( e ) );
             }
-        } );
+        }
 
-        oapExchange.exchange.dispatch();
+        if( pnioExchange.processState == CONNECTION_CLOSED ) {
+            pnioExchange.exchange.closeConnection();
+            return;
+        }
+
+        pnioExchange.send();
     }
 
     public void updateWorkflow( RequestWorkflow<WorkflowState> newWorkflow ) {
@@ -109,17 +207,33 @@ public class PnioHttpHandler<WorkflowState> implements Closeable, AutoCloseable 
 
     @Override
     public void close() {
-        Closeables.close( blockingPool );
-        Closeables.close( workers );
+        pool.shutdownNow();
+        try {
+
+            for( var task : tasks ) {
+                task.interrupt();
+            }
+
+            if( !pool.awaitTermination( 60, TimeUnit.SECONDS ) ) {
+                log.trace( "timeout awaitTermination" );
+            }
+        } catch( InterruptedException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+    public interface ErrorResponse<WorkflowState> {
+        void handle( PnioExchange<WorkflowState> pnioExchange, WorkflowState workflowState );
     }
 
     @Builder
     public static class PnioHttpSettings {
         int requestSize;
         int responseSize;
-
-        int blockingPoolSize;
-        int maxQueueSize;
-        int threads;
+        double queueTimeoutPercent;
+        int cpuThreads;
+        boolean cpuQueueFair;
+        Affinity cpuAffinity;
+        Affinity ioAffinity;
     }
 }
