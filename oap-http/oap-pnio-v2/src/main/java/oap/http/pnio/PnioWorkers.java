@@ -7,10 +7,10 @@ import oap.io.Closeables;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 
-public class PnioWorkers<WorkflowState> implements AutoCloseable {
+public class PnioWorkers implements AutoCloseable {
     public final ExecutorService pool;
-    public final PnioWorker<WorkflowState>[] workers;
-    private final ArrayBlockingQueue<PnioTask<WorkflowState>> queue;
+    public final PnioWorker[] workers;
+    private final ArrayBlockingQueue<PnioTask<?>> queue;
 
     public PnioWorkers( int threads, int maxQueueSize ) {
         pool = Executors.newFixedThreadPool( threads > 0 ? threads : Runtime.getRuntime().availableProcessors(),
@@ -21,13 +21,13 @@ public class PnioWorkers<WorkflowState> implements AutoCloseable {
         queue = new ArrayBlockingQueue<>( maxQueueSize, true );
 
         for( int i = 0; i < threads; i++ ) {
-            PnioWorker<WorkflowState> pnioWorker = new PnioWorker<>( queue );
+            PnioWorker pnioWorker = new PnioWorker( queue );
             pool.execute( pnioWorker );
             workers[i] = pnioWorker;
         }
     }
 
-    public boolean register( PnioExchange<WorkflowState> pnioExchange, PnioTask<WorkflowState> task ) {
+    public boolean register( PnioExchange<?> pnioExchange, PnioTask<?> task ) {
         if( !queue.offer( task ) ) {
             pnioExchange.completeWithRejected();
             pnioExchange.response();
@@ -42,7 +42,7 @@ public class PnioWorkers<WorkflowState> implements AutoCloseable {
     public void close() {
         pool.shutdown();
 
-        for( PnioWorker<WorkflowState> worker : workers ) {
+        for( PnioWorker worker : workers ) {
             worker.interrupt();
         }
 

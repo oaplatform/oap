@@ -4,14 +4,14 @@ import javax.annotation.Nullable;
 import java.nio.BufferOverflowException;
 import java.util.concurrent.BlockingQueue;
 
-public class PnioWorker<WorkflowState> implements Runnable {
-    public final BlockingQueue<PnioTask<WorkflowState>> queue;
+public class PnioWorker implements Runnable {
+    public final BlockingQueue<PnioTask<?>> queue;
 
     public boolean done = false;
     @Nullable
     public Thread thread;
 
-    public PnioWorker( BlockingQueue<PnioTask<WorkflowState>> queue ) {
+    public PnioWorker( BlockingQueue<PnioTask<?>> queue ) {
         this.queue = queue;
     }
 
@@ -21,7 +21,7 @@ public class PnioWorker<WorkflowState> implements Runnable {
 
         while( !done && !thread.isInterrupted() ) {
             try {
-                PnioTask<WorkflowState> task = queue.take();
+                PnioTask<?> task = queue.take();
                 try {
                     task.pnioExchange.process();
                 } catch( BufferOverflowException e ) {

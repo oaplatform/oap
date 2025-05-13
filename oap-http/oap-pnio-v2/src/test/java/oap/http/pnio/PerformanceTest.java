@@ -25,34 +25,32 @@ public class PerformanceTest {
 //        int port = Ports.getFreePort( getClass() );
         int port = 12345;
 
-        PnioController pnioController = new PnioController( 10 );
 
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( 64000 )
             .responseSize( 64000 )
-            .threads( 10 )
-            .maxQueueSize( 256 )
             .build();
-        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+        try( PnioController pnioController = new PnioController( 10, 10, 256 );
+             NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = 4;
             httpServer.statistics = true;
             httpServer.start();
 
-            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener(), pnioController ) ) {
+            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
-                Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
-                    System.out.println();
-                    System.out.println();
-                    System.out.println();
-                    System.out.println();
-                    System.out.println( Binder.json.marshal( new PnioWS<>( httpHandler ).queue() ) );
-                } );
+            Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
+                System.out.println();
+                System.out.println();
+                System.out.println();
+                System.out.println();
+                System.out.println( Binder.json.marshal( new PnioWS<>( httpHandler ).queue() ) );
+            } );
 
-                httpServer.bind( "/test",
-                    exchange -> httpHandler.handleRequest( exchange, 100, new TestState() ), false );
+            httpServer.bind( "/test",
+                exchange -> httpHandler.handleRequest( exchange, 100, new TestState() ), false );
 
 
-                Threads.sleepSafely( 100000000 );
+            Threads.sleepSafely( 100000000 );
 
 //                Benchmark.benchmark( "test", 100000, i -> {
 //
@@ -61,7 +59,6 @@ public class PerformanceTest {
 //                            count.computeIfAbsent( r.code, k -> new LongAdder() ).increment();
 //                        } );
 //                } ).threads( 24 ).experiments( 5 ).run();
-            }
 
             System.out.println( count );
         }

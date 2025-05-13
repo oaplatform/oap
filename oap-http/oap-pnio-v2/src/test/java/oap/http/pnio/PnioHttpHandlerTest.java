@@ -175,19 +175,16 @@ public class PnioHttpHandlerTest extends Fixtures {
                                   long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
-        PnioController pnioController = new PnioController( blockingPoolSize );
-
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )
             .responseSize( responseSize )
-            .threads( 3 )
-            .maxQueueSize( maxQueueSize )
             .build();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            try( PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener(), pnioController ) ) {
+            try( PnioController pnioController = new PnioController( 3, blockingPoolSize, maxQueueSize ) ) {
+                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener(), pnioController );
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
