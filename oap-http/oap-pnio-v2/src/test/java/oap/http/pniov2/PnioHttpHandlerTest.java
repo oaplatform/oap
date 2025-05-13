@@ -72,7 +72,7 @@ public class PnioHttpHandlerTest extends Fixtures {
                     name 'block-5' type BLOCK thread 'BLK-' new thread true
                     name 'cpu-6' type COMPUTE thread 'CPU-' new thread true
                     name 'async-7' type ASYNC thread 'CPU-' new thread false
-                    name 'cpu-8' type COMPUTE thread 'CPU-' new thread false"""
+                    name 'cpu-8' type COMPUTE thread 'CPU-' new thread true"""
                 );
         } );
     }
