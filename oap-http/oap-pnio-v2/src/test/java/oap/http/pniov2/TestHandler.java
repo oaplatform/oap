@@ -120,7 +120,9 @@ public class TestHandler {
                 Thread.sleep( testHandlerOptions.sleepTime );
             }
         } else if( testHandlerOptions.async ) {
-            CompletableFuture.runAsync( () -> {} )
+            CompletableFuture.runAsync( () -> {
+                    Threads.sleepSafely( 500 );
+                } )
                 .thenRun( () -> testHandlerOptions.successCallback.run() );
         }
     }
