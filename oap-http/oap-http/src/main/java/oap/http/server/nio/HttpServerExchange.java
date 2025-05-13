@@ -24,6 +24,7 @@
 
 package oap.http.server.nio;
 
+import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
 import io.undertow.util.HeaderMap;
@@ -67,10 +68,12 @@ public class HttpServerExchange {
 
     public final io.undertow.server.HttpServerExchange exchange;
     public final long id;
+    public final HttpHandler httpHandler;
 
-    public HttpServerExchange( io.undertow.server.HttpServerExchange exchange, long id ) {
+    public HttpServerExchange( io.undertow.server.HttpServerExchange exchange, long id, HttpHandler httpHandler ) {
         this.exchange = exchange;
         this.id = id;
+        this.httpHandler = httpHandler;
     }
 
     public static String ua( io.undertow.server.HttpServerExchange hsExchange ) {

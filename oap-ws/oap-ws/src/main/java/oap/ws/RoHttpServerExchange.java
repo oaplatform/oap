@@ -30,7 +30,7 @@ import oap.http.server.nio.HttpServerExchange;
 
 public class RoHttpServerExchange extends HttpServerExchange {
     public RoHttpServerExchange( HttpServerExchange exchange ) {
-        super( exchange.exchange, exchange.id );
+        super( exchange.exchange, exchange.id, null );
     }
 
     @Override

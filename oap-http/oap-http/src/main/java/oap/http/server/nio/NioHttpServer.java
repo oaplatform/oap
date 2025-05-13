@@ -265,9 +265,12 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             port = additionalHttpPorts.get( portName );
         }
 
-        io.undertow.server.HttpHandler httpHandler = exchange -> {
-            HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet() );
-            handler.handleRequest( serverExchange );
+        io.undertow.server.HttpHandler httpHandler = new io.undertow.server.HttpHandler() {
+            @Override
+            public void handleRequest( io.undertow.server.HttpServerExchange exchange ) throws Exception {
+                HttpServerExchange serverExchange = new HttpServerExchange( exchange, requestId.incrementAndGet(), this );
+                handler.handleRequest( serverExchange );
+            }
         };
 
         if( !hasHandler( CompressionNioHandler.class ) && compressionSupport ) {

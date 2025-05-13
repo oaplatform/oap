@@ -61,7 +61,7 @@ public class HttpServerExchangeStub {
     private static final AtomicLong requestId = new AtomicLong();
 
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2() {
-        return new oap.http.server.nio.HttpServerExchange( createHttpExchange(), requestId.incrementAndGet() );
+        return new oap.http.server.nio.HttpServerExchange( createHttpExchange(), requestId.incrementAndGet(), null );
     }
 
     public static oap.http.server.nio.HttpServerExchange createHttpExchange2( oap.http.server.nio.HttpServerExchange.HttpMethod method, String uri ) {
