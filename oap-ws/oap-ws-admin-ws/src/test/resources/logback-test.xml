@@ -13,6 +13,7 @@
     <logger name="java" level="WARN"/>
     <logger name="jdk" level="WARN"/>
     <logger name="io" level="WARN"/>
+    <logger name="software" level="WARN"/>
 
     <root level="${APP_LOGGING_LEVEL:-DEBUG}">
         <appender-ref ref="STDOUT"/>
