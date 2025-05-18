@@ -14,7 +14,7 @@
     <logger name="jdk" level="WARN"/>
     <logger name="io" level="WARN"/>
 
-    <root level="${APP_LOGGING_LEVEL:-TRACE}">
+    <root level="${APP_LOGGING_LEVEL:-DEBUG}">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
