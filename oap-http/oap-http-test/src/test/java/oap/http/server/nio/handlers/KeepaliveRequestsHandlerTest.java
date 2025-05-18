@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 
+import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class KeepaliveRequestsHandlerTest extends Fixtures {
@@ -43,7 +44,9 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
             }
 
             assertThat( ids ).hasSize( 51 );
-            assertThat( keepaliveRequestsHandler.requests ).hasSize( 1 );
+            assertEventually( 500, 10, () -> {
+                assertThat( keepaliveRequestsHandler.requests ).hasSize( 1 );
+            } );
         }
     }
 
