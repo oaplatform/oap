@@ -421,7 +421,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                 break;
             }
 
-            var currentPeriod = currentPeriod( now );
+            long currentPeriod = currentPeriod( now );
             if( currentPeriod != period ) {
                 messages.retry();
                 period = currentPeriod;

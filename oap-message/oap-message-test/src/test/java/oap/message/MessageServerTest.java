@@ -555,7 +555,7 @@ public class MessageServerTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
-        var listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
 
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
