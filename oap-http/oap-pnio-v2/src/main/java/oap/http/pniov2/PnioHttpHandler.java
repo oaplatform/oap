@@ -44,6 +44,8 @@ public class PnioHttpHandler<WorkflowState> {
                 Preconditions.checkArgument( h.type != PnioRequestHandler.Type.BLOCKING, "blockingPoolSize must be greater than 0" );
             } );
         }
+
+        Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
     public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
@@ -56,7 +58,9 @@ public class PnioHttpHandler<WorkflowState> {
             }
         } );
 
-        oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
+        if( requestSize > 0 ) {
+            oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
+        }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
             PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, workflow, workflowState, oapExchange, timeout, pnioListener, importance );
