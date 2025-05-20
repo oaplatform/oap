@@ -53,9 +53,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class HttpServerExchangeStub {
     private static final AtomicLong requestId = new AtomicLong();
@@ -69,7 +71,7 @@ public class HttpServerExchangeStub {
         exchange.setRequestMethod( method );
         exchange.exchange.setQueryString( uri );
 
-        List<NameValuePair> params = URLEncodedUtils.parse( uri, StandardCharsets.UTF_8 );
+        List<NameValuePair> params = URLEncodedUtils.parse( uri, UTF_8 );
 
         for( var nvp : params ) {
             exchange.exchange.addQueryParam( nvp.getName(), nvp.getValue() );
@@ -139,13 +141,88 @@ public class HttpServerExchangeStub {
             }
 
             @Override
-            public void close() throws IOException {
+            public void close() {
 
             }
 
             @Override
             public Receiver getReceiver() {
-                return null;
+                return new Receiver() {
+                    @Override
+                    public void setMaxBufferSize( int maxBufferSize ) {
+
+                    }
+
+                    @Override
+                    public void receiveFullString( FullStringCallback callback, ErrorCallback errorCallback ) {
+
+                    }
+
+                    @Override
+                    public void receiveFullString( FullStringCallback callback ) {
+
+                    }
+
+                    @Override
+                    public void receivePartialString( PartialStringCallback callback, ErrorCallback errorCallback ) {
+
+                    }
+
+                    @Override
+                    public void receivePartialString( PartialStringCallback callback ) {
+
+                    }
+
+                    @Override
+                    public void receiveFullString( FullStringCallback callback, ErrorCallback errorCallback, Charset charset ) {
+
+                    }
+
+                    @Override
+                    public void receiveFullString( FullStringCallback callback, Charset charset ) {
+
+                    }
+
+                    @Override
+                    public void receivePartialString( PartialStringCallback callback, ErrorCallback errorCallback, Charset charset ) {
+
+                    }
+
+                    @Override
+                    public void receivePartialString( PartialStringCallback callback, Charset charset ) {
+
+                    }
+
+                    @Override
+                    public void receiveFullBytes( FullBytesCallback callback, ErrorCallback errorCallback ) {
+
+                    }
+
+                    @Override
+                    public void receiveFullBytes( FullBytesCallback callback ) {
+
+                    }
+
+                    @Override
+                    public void receivePartialBytes( PartialBytesCallback callback, ErrorCallback errorCallback ) {
+
+                    }
+
+                    @Override
+                    public void receivePartialBytes( PartialBytesCallback callback ) {
+
+                    }
+
+                    @Override
+                    public void pause() {
+
+                    }
+
+                    @Override
+                    public void resume() {
+
+                    }
+                };
             }
         } );
 
