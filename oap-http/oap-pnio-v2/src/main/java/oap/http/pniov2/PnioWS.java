@@ -10,9 +10,9 @@ import java.util.Map;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 
 public class PnioWS {
-    private final Map<String, PnioHttpHandler<?>> pnioHttpHandler;
+    private final Map<String, PnioHttpHandlerReference> pnioHttpHandler;
 
-    public PnioWS( Map<String, PnioHttpHandler<?>> pnioHttpHandler ) {
+    public PnioWS( Map<String, PnioHttpHandlerReference> pnioHttpHandler ) {
         this.pnioHttpHandler = pnioHttpHandler;
     }
 
@@ -21,7 +21,7 @@ public class PnioWS {
         ArrayList<PnoExchangeView> views = new ArrayList<>();
 
         pnioHttpHandler.forEach( ( name, handler ) -> {
-            for( PnioExchange<?> pnioExchange : handler.exchanges.values() ) {
+            for( PnioExchange<?> pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
                 views.add( new PnoExchangeView( name, pnioExchange.processState, pnioExchange.getCurrentTaskName(),
                     pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
                     pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );

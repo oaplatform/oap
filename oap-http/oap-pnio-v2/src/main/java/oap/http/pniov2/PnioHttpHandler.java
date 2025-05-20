@@ -18,7 +18,7 @@ import oap.http.server.nio.HttpServerExchange;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class PnioHttpHandler<WorkflowState> {
+public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference {
     public final int requestSize;
     public final int responseSize;
     public final PnioListener<WorkflowState> pnioListener;
@@ -93,6 +93,11 @@ public class PnioHttpHandler<WorkflowState> {
 
     public void updateWorkflow( RequestWorkflow<WorkflowState> newWorkflow ) {
         this.workflow = newWorkflow;
+    }
+
+    @Override
+    public PnioHttpHandler<?> getPnioHttpHandler() {
+        return this;
     }
 
     @Builder
