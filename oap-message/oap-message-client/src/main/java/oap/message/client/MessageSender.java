@@ -96,8 +96,8 @@ public class MessageSender implements Closeable, AutoCloseable {
     public long globalIoRetryTimeout = Dates.s( 1 );
     public long retryTimeout = Dates.s( 1 );
     public long keepAliveDuration = Dates.d( 30 );
-    protected long timeout = Dates.s( 5 );
-    protected long connectionTimeout = Dates.s( 30 );
+    public long timeout = Dates.s( 5 );
+    public long connectionTimeout = Dates.s( 30 );
     private volatile boolean closed = false;
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
