@@ -14,7 +14,6 @@ import io.undertow.io.Receiver;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
-import oap.http.server.nio.NioHttpServer;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,19 +21,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PnioHttpHandler<WorkflowState> {
     public final int requestSize;
     public final int responseSize;
-    public final NioHttpServer server;
     public final PnioListener<WorkflowState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<WorkflowState>> exchanges = new ConcurrentHashMap<>();
     public final boolean importance;
     private final PnioController pnioController;
     public RequestWorkflow<WorkflowState> workflow;
 
-    public PnioHttpHandler( NioHttpServer server,
-                            PnioHttpSettings settings,
+    public PnioHttpHandler( PnioHttpSettings settings,
                             RequestWorkflow<WorkflowState> workflow,
                             PnioListener<WorkflowState> pnioListener,
                             PnioController pnioController ) {
-        this.server = server;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
         this.importance = settings.importance;

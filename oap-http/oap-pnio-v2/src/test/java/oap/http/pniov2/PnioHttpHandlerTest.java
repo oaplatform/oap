@@ -184,7 +184,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.start();
 
             try( PnioController pnioController = new PnioController( 3, blockingPoolSize, maxQueueSize ) ) {
-                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new TestPnioListener(), pnioController );
+                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, new TestPnioListener(), pnioController );
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
@@ -194,7 +194,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     @Slf4j
-    public static class TestPnioListener extends PnioListener<TestState> {
+    public static class TestPnioListener implements PnioListener<TestState> {
         private static void defaultResponse( PnioExchange<TestState> pnioExchange ) {
             PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
