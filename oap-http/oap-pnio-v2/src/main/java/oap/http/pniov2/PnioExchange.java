@@ -67,6 +67,8 @@ public class PnioExchange<WorkflowState> {
         this.oapExchange = oapExchange;
         this.timeoutNano = timeout * 1_000_000;
 
+        Preconditions.checkArgument( timeoutNano > 0, "timeoutNano must be greater than 0" );
+
         this.pnioListener = pnioListener;
 
         this.importance = importance;
