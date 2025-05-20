@@ -14,27 +14,23 @@ import io.undertow.io.Receiver;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
-import oap.http.server.nio.NioHttpServer;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class PnioHttpHandler<WorkflowState> {
+public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference {
     public final int requestSize;
     public final int responseSize;
-    public final NioHttpServer server;
     public final PnioListener<WorkflowState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<WorkflowState>> exchanges = new ConcurrentHashMap<>();
     public final boolean importance;
     private final PnioController pnioController;
     public RequestWorkflow<WorkflowState> workflow;
 
-    public PnioHttpHandler( NioHttpServer server,
-                            PnioHttpSettings settings,
+    public PnioHttpHandler( PnioHttpSettings settings,
                             RequestWorkflow<WorkflowState> workflow,
                             PnioListener<WorkflowState> pnioListener,
                             PnioController pnioController ) {
-        this.server = server;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
         this.importance = settings.importance;
@@ -48,6 +44,8 @@ public class PnioHttpHandler<WorkflowState> {
                 Preconditions.checkArgument( h.type != PnioRequestHandler.Type.BLOCKING, "blockingPoolSize must be greater than 0" );
             } );
         }
+
+        Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
     public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
@@ -60,7 +58,9 @@ public class PnioHttpHandler<WorkflowState> {
             }
         } );
 
-        oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
+        if( requestSize > 0 ) {
+            oapExchange.exchange.getRequestReceiver().setMaxBufferSize( requestSize );
+        }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
             PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, workflow, workflowState, oapExchange, timeout, pnioListener, importance );
@@ -93,6 +93,11 @@ public class PnioHttpHandler<WorkflowState> {
 
     public void updateWorkflow( RequestWorkflow<WorkflowState> newWorkflow ) {
         this.workflow = newWorkflow;
+    }
+
+    @Override
+    public PnioHttpHandler<?> getPnioHttpHandler() {
+        return this;
     }
 
     @Builder

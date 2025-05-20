@@ -8,6 +8,7 @@ import oap.json.Binder;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -36,14 +37,14 @@ public class PerformanceTest {
             httpServer.statistics = true;
             httpServer.start();
 
-            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( httpServer, settings, workflow, new PnioHttpHandlerTest.TestPnioListener(), pnioController );
+            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
             Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                 System.out.println();
                 System.out.println();
                 System.out.println();
                 System.out.println();
-                System.out.println( Binder.json.marshal( new PnioWS<>( httpHandler ).queue() ) );
+                System.out.println( Binder.json.marshal( new PnioWS( Map.of( httpHandler.getClass().getSimpleName(), httpHandler ) ).queue() ) );
             } );
 
             httpServer.bind( "/test",

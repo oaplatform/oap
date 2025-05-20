@@ -5,13 +5,14 @@ import oap.ws.WsMethod;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 
-public class PnioWS<WorkflowState> {
-    private final PnioHttpHandler<WorkflowState> pnioHttpHandler;
+public class PnioWS {
+    private final Map<String, PnioHttpHandlerReference> pnioHttpHandler;
 
-    public PnioWS( PnioHttpHandler<WorkflowState> pnioHttpHandler ) {
+    public PnioWS( Map<String, PnioHttpHandlerReference> pnioHttpHandler ) {
         this.pnioHttpHandler = pnioHttpHandler;
     }
 
@@ -19,16 +20,19 @@ public class PnioWS<WorkflowState> {
     public List<PnoExchangeView> queue() {
         ArrayList<PnoExchangeView> views = new ArrayList<>();
 
-        for( PnioExchange<WorkflowState> pnioExchange : pnioHttpHandler.exchanges.values() ) {
-            views.add( new PnoExchangeView( pnioExchange.processState, pnioExchange.getCurrentTaskName(),
-                pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
-                pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );
-        }
+        pnioHttpHandler.forEach( ( name, handler ) -> {
+            for( PnioExchange<?> pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
+                views.add( new PnoExchangeView( name, pnioExchange.processState, pnioExchange.getCurrentTaskName(),
+                    pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
+                    pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );
+            }
+        } );
 
         return views;
     }
 
     public static class PnoExchangeView {
+        public final String pnioHandler;
         public final PnioExchange.ProcessState processState;
         public final String currentTaskName;
         public final long id;
@@ -37,8 +41,9 @@ public class PnioWS<WorkflowState> {
         public final String duration;
         public final String timeLeft;
 
-        public PnoExchangeView( PnioExchange.ProcessState processState, String currentTaskName, long id, boolean requestGzipped,
+        public PnoExchangeView( String pnioHandler, PnioExchange.ProcessState processState, String currentTaskName, long id, boolean requestGzipped,
                                 String requestURI, long requestStartTime, long timeLeftNano ) {
+            this.pnioHandler = pnioHandler;
             this.processState = processState;
             this.currentTaskName = currentTaskName;
             this.id = id;

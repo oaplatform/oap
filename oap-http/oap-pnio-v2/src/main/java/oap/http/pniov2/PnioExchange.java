@@ -67,6 +67,8 @@ public class PnioExchange<WorkflowState> {
         this.oapExchange = oapExchange;
         this.timeoutNano = timeout * 1_000_000;
 
+        Preconditions.checkArgument( timeoutNano > 0, "timeoutNano must be greater than 0" );
+
         this.pnioListener = pnioListener;
 
         this.importance = importance;
@@ -240,14 +242,35 @@ public class PnioExchange<WorkflowState> {
     public void response() {
         try {
             switch( processState ) {
-                case DONE -> pnioListener.fireOnDone( this );
+                case DONE -> {
+                    PnioMetrics.COMPLETED.increment();
+                    pnioListener.onDone( this );
+                }
                 case CONNECTION_CLOSED -> oapExchange.closeConnection();
-                case REJECTED -> pnioListener.fireOnRejected( this );
-                case REQUEST_BUFFER_OVERFLOW -> pnioListener.fireOnRequestBufferOverflow( this );
-                case RESPONSE_BUFFER_OVERFLOW -> pnioListener.fireOnResponseBufferOverflow( this );
-                case TIMEOUT -> pnioListener.fireOnTimeout( this );
-                case EXCEPTION -> pnioListener.fireOnException( this );
-                case null, default -> pnioListener.fireOnUnknown( this );
+                case REJECTED -> {
+                    PnioMetrics.REJECTED.increment();
+                    pnioListener.onRejected( this );
+                }
+                case REQUEST_BUFFER_OVERFLOW -> {
+                    PnioMetrics.REQUEST_BUFFER_OVERFLOW.increment();
+                    pnioListener.onRequestBufferOverflow( this );
+                }
+                case RESPONSE_BUFFER_OVERFLOW -> {
+                    PnioMetrics.RESPONSE_BUFFER_OVERFLOW.increment();
+                    pnioListener.onResponseBufferOverflow( this );
+                }
+                case TIMEOUT -> {
+                    PnioMetrics.TIMEOUT.increment();
+                    pnioListener.onTimeout( this );
+                }
+                case EXCEPTION -> {
+                    PnioMetrics.EXCEPTION.increment();
+                    pnioListener.onException( this );
+                }
+                case null, default -> {
+                    PnioMetrics.UNKNOWN.increment();
+                    pnioListener.onUnknown( this );
+                }
             }
         } finally {
             if( onDoneRunnable != null ) {

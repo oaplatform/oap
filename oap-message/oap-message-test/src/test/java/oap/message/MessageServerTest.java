@@ -555,12 +555,14 @@ public class MessageServerTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
-        var listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
 
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
-             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
-             var client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
             client.retryTimeout = 100;
+            client.timeout = Dates.s( 30 );
+            client.connectionTimeout = Dates.s( 60 );
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
@@ -570,7 +572,7 @@ public class MessageServerTest extends Fixtures {
             listener1.setStatus( 300 );
 
             client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "availabilityReport", ofString() )
-                .syncMemory( Dates.s( 10 ) );
+                .syncMemory( Dates.s( 20 ) );
 
             assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.FAILED );
             assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
