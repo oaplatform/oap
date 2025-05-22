@@ -64,12 +64,16 @@ public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference 
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
             PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, workflow, workflowState, oapExchange, timeout, pnioListener, importance );
+            pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
             exchanges.put( pnioExchange.id, pnioExchange );
 
-            if( !pnioController.register( pnioExchange, new PnioTask<>( pnioExchange ), importance ) ) {
+            try {
+                if( !pnioController.register( pnioExchange, new PnioTask<>( pnioExchange ), importance ) ) {
+                    exchanges.remove( pnioExchange.id );
+                }
+            } catch( Exception e ) {
                 exchanges.remove( pnioExchange.id );
-            } else {
-                pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
+                throw e;
             }
         }, ( _, e ) -> {
             PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, workflow, workflowState, oapExchange, timeout, pnioListener, importance );
