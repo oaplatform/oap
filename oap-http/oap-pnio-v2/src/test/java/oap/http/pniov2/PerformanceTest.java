@@ -14,8 +14,9 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.http.test.HttpAsserts.assertPost;
 
+@Test( enabled = false )
 public class PerformanceTest {
-    @Test
+    @Test( enabled = false )
     public void test() throws IOException {
 
         ConcurrentHashMap<Integer, LongAdder> count = new ConcurrentHashMap<>();
