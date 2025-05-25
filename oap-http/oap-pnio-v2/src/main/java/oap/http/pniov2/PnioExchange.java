@@ -203,8 +203,10 @@ public class PnioExchange<State> {
         return String.join( ", ", state );
     }
 
-    public AsyncRunnable asyncTask( AsyncTask<State> asyncTask ) {
-        return new AsyncRunnableForkJoinTask( new PnioAsyncTask<>( asyncTask, workflowState, this ) );
+    public <T> T runAsyncTask( AsyncTask<T, State> asyncTask ) {
+        PnioAsyncTask<T, State> pnioAsyncTask = new PnioAsyncTask<>( asyncTask, workflowState, this );
+        pnioAsyncTask.fork();
+        return pnioAsyncTask.join();
     }
 
     public long getTimeLeftNano() {
@@ -220,6 +222,11 @@ public class PnioExchange<State> {
 
     public boolean isRequestGzipped() {
         return oapExchange.isRequestGzipped();
+    }
+
+    public void completeAndSendResponse() {
+        complete();
+        response();
     }
 
     @SuppressWarnings( "checkstyle:InterfaceIsType" )

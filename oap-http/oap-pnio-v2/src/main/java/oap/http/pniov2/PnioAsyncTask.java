@@ -3,25 +3,26 @@ package oap.http.pniov2;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.TimeUnit;
 
-public class PnioAsyncTask<State> extends ForkJoinTask<Void> {
-    private final AsyncTask<State> task;
+public class PnioAsyncTask<T, State> extends ForkJoinTask<T> {
+    private final AsyncTask<T, State> task;
     private final State state;
     private final PnioExchange<State> pnioExchange;
+    protected T result;
 
-    public PnioAsyncTask( AsyncTask<State> task, State state, PnioExchange<State> pnioExchange ) {
+    public PnioAsyncTask( AsyncTask<T, State> task, State state, PnioExchange<State> pnioExchange ) {
         this.task = task;
         this.state = state;
         this.pnioExchange = pnioExchange;
     }
 
     @Override
-    public Void getRawResult() {
-        return null;
+    public T getRawResult() {
+        return result;
     }
 
     @Override
-    protected void setRawResult( Void value ) {
-
+    protected void setRawResult( T value ) {
+        this.result = value;
     }
 
     @Override
@@ -29,9 +30,11 @@ public class PnioAsyncTask<State> extends ForkJoinTask<Void> {
         try {
             task.apply( pnioExchange, state )
                 .orTimeout( pnioExchange.getTimeLeftNano(), TimeUnit.NANOSECONDS )
-                .whenComplete( ( _, t ) -> {
+                .whenComplete( ( result, t ) -> {
                     if( t != null ) {
                         pnioExchange.completeWithFail( t );
+                    } else {
+                        PnioAsyncTask.this.result = result;
                     }
                     quietlyComplete();
                 } );

@@ -25,11 +25,11 @@ public class TestHandler {
         };
     }
 
-    public static AsyncTask<TestState> async( String name ) {
+    public static AsyncTask<Void, TestState> async( String name ) {
         return async( name, _ -> {} );
     }
 
-    public static AsyncTask<TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static AsyncTask<Void, TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 

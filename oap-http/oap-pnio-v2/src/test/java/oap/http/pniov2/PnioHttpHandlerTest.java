@@ -53,18 +53,12 @@ public class PnioHttpHandlerTest extends Fixtures {
             TestHandler.handle( "cpu-1", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
             TestHandler.handle( "cpu-2", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
 
-            AsyncRunnable async4 = pnioExchange.asyncTask( TestHandler.async( "async-4" ) );
-            async4.fork();
-            async4.join();
+            pnioExchange.runAsyncTask( TestHandler.async( "async-4" ) );
 
             TestHandler.handle( "cpu-6", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
 
-            AsyncRunnable async7 = pnioExchange.asyncTask( TestHandler.async( "async-7" ) );
-            async7.fork();
-            async7.join();
-            AsyncRunnable async8 = pnioExchange.asyncTask( TestHandler.async( "async-8" ) );
-            async8.fork();
-            async8.join();
+            pnioExchange.runAsyncTask( TestHandler.async( "async-7" ) );
+            pnioExchange.runAsyncTask( TestHandler.async( "async-8" ) );
 
             TestHandler.handle( "cpu-9", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
 
@@ -128,12 +122,9 @@ public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testTimeoutAsync() throws IOException {
         ComputeTask<TestState> task = ( pnioExchange, testState ) -> {
-            AsyncRunnable block = pnioExchange.asyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
-            block.fork();
-            block.join();
+            pnioExchange.runAsyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
 
-            pnioExchange.complete();
-            pnioExchange.response();
+            pnioExchange.completeAndSendResponse();
         };
 
         runWithWorkflow( 1024, 1024, 1, 200, task, port -> {
