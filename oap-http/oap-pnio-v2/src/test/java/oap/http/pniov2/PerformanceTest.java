@@ -29,7 +29,7 @@ public class PerformanceTest {
             .requestSize( 64000 )
             .responseSize( 64000 )
             .build();
-        try( PnioController pnioController = new PnioController( 10, 10 );
+        try( PnioController pnioController = new PnioController( 10 );
              NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = 4;
             httpServer.statistics = true;

@@ -203,12 +203,8 @@ public class PnioExchange<State> {
         return String.join( ", ", state );
     }
 
-    public AsyncRunnable blockingTask( BlockingTask<State> blockingTask ) {
-        return new AsyncRunnableForkJoinTask( new PnioBlockingTask<>( blockingTask, workflowState, this, controller ) );
-    }
-
-    public AsyncRunnable asyncTask( AsyncTask<State> blockingTask ) {
-        return new AsyncRunnableForkJoinTask( new PnioAsyncTask<>( blockingTask, workflowState, this ) );
+    public AsyncRunnable asyncTask( AsyncTask<State> asyncTask ) {
+        return new AsyncRunnableForkJoinTask( new PnioAsyncTask<>( asyncTask, workflowState, this ) );
     }
 
     public long getTimeLeftNano() {

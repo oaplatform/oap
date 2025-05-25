@@ -25,19 +25,6 @@ public class TestHandler {
         };
     }
 
-    public static BlockingTask<TestState> block( String name ) {
-        return block( name, _ -> {} );
-    }
-
-    public static BlockingTask<TestState> block( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
-        TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
-        builder.accept( testHandlerOptionsBuilder );
-
-        return ( pnioExchange, testState ) -> {
-            TestHandler.handle( name, "BLOCK", pnioExchange, testState, testHandlerOptionsBuilder.build() );
-        };
-    }
-
     public static AsyncTask<TestState> async( String name ) {
         return async( name, _ -> {} );
     }
