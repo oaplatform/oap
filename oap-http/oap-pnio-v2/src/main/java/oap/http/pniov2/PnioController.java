@@ -1,49 +1,40 @@
 package oap.http.pniov2;
 
-import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Executors;
 import oap.io.Closeables;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RejectedExecutionException;
 
-@Slf4j
 public class PnioController implements AutoCloseable {
     public final ExecutorService blockingPool;
-    public final PnioWorkers workers;
-
-    public final int threads;
     public final int blockingPoolSize;
-    public final int maxQueueSize;
+    private final ForkJoinPool forkJoinPool;
 
-
-    public PnioController( int threads, int blockingPoolSize, int maxQueueSize ) {
-        this.threads = threads;
+    public PnioController( int parallelism, int blockingPoolSize ) {
         this.blockingPoolSize = blockingPoolSize;
-        this.maxQueueSize = maxQueueSize;
-
-        Preconditions.checkArgument( maxQueueSize > 0, "maxQueueSize must be greater than 0" );
+        forkJoinPool = parallelism > 0 ? new ForkJoinPool( parallelism ) : new ForkJoinPool();
 
         blockingPool = blockingPoolSize > 0
             ? Executors.newFixedThreadPool( blockingPoolSize, new ThreadFactoryBuilder().setNameFormat( "PNIO - BLK-%d" ).build() )
             : null;
-
-        workers = new PnioWorkers( threads, maxQueueSize );
     }
 
     @Override
     public void close() {
-        Closeables.close( workers );
+        Closeables.close( forkJoinPool );
         Closeables.close( blockingPool );
     }
 
-    public CompletableFuture<Void> runAsync( Runnable runnable ) {
-        return CompletableFuture.runAsync( runnable, blockingPool );
-    }
+    public boolean submit( PnioComputeTask<?> task ) {
+        try {
+            forkJoinPool.submit( task );
 
-    public <WorkflowState> boolean register( PnioExchange<WorkflowState> pnioExchange, PnioTask<WorkflowState> workflowStatePnioTask, boolean important ) {
-        return workers.register( pnioExchange, workflowStatePnioTask, important );
+            return true;
+        } catch( RejectedExecutionException e ) {
+            return false;
+        }
     }
 }

@@ -43,47 +43,67 @@ import java.util.zip.GZIPOutputStream;
 
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.test.HttpAsserts.assertPost;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class PnioHttpHandlerTest extends Fixtures {
     @Test
     public void testProcess() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.compute( "cpu-1" ) )
-            .next( TestHandler.compute( "cpu-2" ) )
-            .next( TestHandler.block( "block-3" ) )
-            .next( TestHandler.async( "async-4" ) )
-            .next( TestHandler.block( "block-5" ) )
-            .next( TestHandler.compute( "cpu-6" ) )
-            .next( TestHandler.async( "async-7" ) )
-            .next( TestHandler.compute( "cpu-8" ) )
-            .build();
+        ComputeTask<TestState> task = ( pnioExchange, testState ) -> {
+            TestHandler.TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandler.TestHandlerOptions.builder( false );
 
-        runWithWorkflow( workflow, port -> {
+            TestHandler.handle( "cpu-1", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+            TestHandler.handle( "cpu-2", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+
+            AsyncRunnable block3 = pnioExchange.blockingTask( TestHandler.block( "block3" ) );
+            block3.fork();
+            block3.join();
+
+            AsyncRunnable async4 = pnioExchange.asyncTask( TestHandler.async( "async-4" ) );
+            async4.fork();
+            async4.join();
+
+            AsyncRunnable block5 = pnioExchange.blockingTask( TestHandler.block( "block5" ) );
+            block5.fork();
+            block5.join();
+
+            TestHandler.handle( "cpu-6", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+
+            AsyncRunnable async7 = pnioExchange.asyncTask( TestHandler.async( "async-7" ) );
+            async7.fork();
+            async7.join();
+            AsyncRunnable async8 = pnioExchange.asyncTask( TestHandler.async( "async-8" ) );
+            async8.fork();
+            async8.join();
+
+            TestHandler.handle( "cpu-9", "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+
+            pnioExchange.complete();
+            pnioExchange.response();
+        };
+
+        runWithWorkflow( task, port -> {
 
             assertPost( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( OK )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( """
-                    name 'cpu-1' type COMPUTE thread 'CPU-' new thread true
-                    name 'cpu-2' type COMPUTE thread 'CPU-' new thread false
-                    name 'block-3' type BLOCK thread 'BLK-' new thread true
-                    name 'async-4' type ASYNC thread 'CPU-' new thread true
-                    name 'block-5' type BLOCK thread 'BLK-' new thread true
-                    name 'cpu-6' type COMPUTE thread 'CPU-' new thread true
-                    name 'async-7' type ASYNC thread 'CPU-' new thread false
-                    name 'cpu-8' type COMPUTE thread 'CPU-' new thread true"""
+                    name 'cpu-1' type COMPUTE thread 'nPoo' new thread true
+                    name 'cpu-2' type COMPUTE thread 'nPoo' new thread false
+                    name 'block3' type BLOCK thread 'BLK-' new thread true
+                    name 'async-4' type ASYNC thread 'nPoo' new thread true
+                    name 'block5' type BLOCK thread 'BLK-' new thread true
+                    name 'cpu-6' type COMPUTE thread 'nPoo' new thread true
+                    name 'async-7' type ASYNC thread 'nPoo' new thread false
+                    name 'async-8' type ASYNC thread 'nPoo' new thread false
+                    name 'cpu-9' type COMPUTE thread 'nPoo' new thread false"""
                 );
         } );
     }
 
     @Test
     public void testProcessWithException() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) ) )
-            .build();
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) );
 
-        runWithWorkflow( workflow, port -> {
+        runWithWorkflow( task, port -> {
             assertPost( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( Http.StatusCode.BAD_GATEWAY )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -93,11 +113,9 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testRequestBufferOverflow() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.compute( "cpu-2" ) )
-            .build();
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
-        runWithWorkflow( 2, 1024, 5, 40, 10, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 2, 1024, 5, 40, 10, Dates.s( 100 ), task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -107,11 +125,9 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testResponseBufferOverflow() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.compute( "cpu-2" ) )
-            .build();
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
-        runWithWorkflow( 1024, 2, 5, 40, 10, Dates.s( 100 ), workflow, port -> {
+        runWithWorkflow( 1024, 2, 5, 40, 10, Dates.s( 100 ), task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -121,58 +137,56 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testTimeoutBlock() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
-            .build();
+        ComputeTask<TestState> task = ( pnioExchange, testState ) -> {
+            AsyncRunnable block = pnioExchange.blockingTask( TestHandler.block( "async", builder -> builder.sleepTime( Dates.s( 20 ) ) ) );
+            block.fork();
+            block.join();
 
-        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, port -> {
+            pnioExchange.complete();
+            pnioExchange.response();
+        };
+
+        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( "TIMEOUT" );
+                .hasBody( "DONE, TIMEOUT" );
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( "TIMEOUT" );
+                .hasBody( "DONE, TIMEOUT" );
         } );
     }
 
     @Test
     public void testTimeoutAsync() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) )
-            .build();
+        ComputeTask<TestState> task = ( pnioExchange, testState ) -> {
+            AsyncRunnable block = pnioExchange.asyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
+            block.fork();
+            block.join();
 
-        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, workflow, port -> {
+            pnioExchange.complete();
+            pnioExchange.response();
+        };
+
+        runWithWorkflow( 1024, 1024, 1, 40, 10, 200, task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( "TIMEOUT" );
+                .hasBody( "DONE, TIMEOUT" );
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( "TIMEOUT" );
+                .hasBody( "DONE, TIMEOUT" );
         } );
     }
 
-    @Test
-    public void testValidateBlockingPool() throws IOException {
-        RequestWorkflow<TestState> workflow = RequestWorkflow
-            .init( TestHandler.block( "block", builder -> builder.sleepTime( Dates.s( 20 ) ) ) )
-            .build();
-
-        assertThatThrownBy( () -> runWithWorkflow( 1024, 1024, 1, 40, 0, 200, workflow, _ -> {
-        } ) )
-            .isInstanceOf( IllegalArgumentException.class )
-            .hasMessage( "blockingPoolSize must be greater than 0" );
-    }
-
-    private void runWithWorkflow( RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
-        runWithWorkflow( 1024, 1024, 10, 5, 10, Dates.s( 100 ), workflow, cons );
+    private void runWithWorkflow( ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
+        runWithWorkflow( 1024, 1024, 10, 5, 10, Dates.s( 100 ), task, cons );
     }
 
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads, int maxQueueSize, int blockingPoolSize,
-                                  long timeout, RequestWorkflow<TestState> workflow, Consumer<Integer> cons ) throws IOException {
+                                  long timeout, ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
@@ -183,8 +197,8 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            try( PnioController pnioController = new PnioController( 3, blockingPoolSize, maxQueueSize ) ) {
-                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, workflow, new TestPnioListener(), pnioController );
+            try( PnioController pnioController = new PnioController( ioThreads, blockingPoolSize ) ) {
+                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, task, new TestPnioListener(), pnioController );
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
@@ -199,7 +213,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
-            pnioExchange.responseBuffer.setAndResize( pnioExchange.processState.name() );
+            pnioExchange.responseBuffer.setAndResize( pnioExchange.printState() );
 
             pnioExchange.send();
         }

@@ -1,60 +1,59 @@
-/*
- *
- *  * Copyright (c) Xenoss
- *  * Unauthorized copying of this file, via any medium is strictly prohibited
- *  * Proprietary and confidential
- *
- *
- */
-
 package oap.http.pniov2;
 
 import com.google.common.base.Preconditions;
 import io.undertow.util.StatusCodes;
-import lombok.extern.slf4j.Slf4j;
 import oap.http.Cookie;
 import oap.http.Http;
 import oap.http.server.nio.HttpServerExchange;
 
-import java.nio.BufferOverflowException;
-import java.nio.charset.StandardCharsets;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
-@Slf4j
-@SuppressWarnings( { "all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue" } )
-public class PnioExchange<WorkflowState> {
+import static oap.http.pniov2.PnioExchange.ProcessState.CONNECTION_CLOSED;
+import static oap.http.pniov2.PnioExchange.ProcessState.DONE;
+import static oap.http.pniov2.PnioExchange.ProcessState.EXCEPTION;
+import static oap.http.pniov2.PnioExchange.ProcessState.INTERRUPTED;
+import static oap.http.pniov2.PnioExchange.ProcessState.REJECTED;
+import static oap.http.pniov2.PnioExchange.ProcessState.REQUEST_BUFFER_OVERFLOW;
+import static oap.http.pniov2.PnioExchange.ProcessState.RESPONSE_BUFFER_OVERFLOW;
+import static oap.http.pniov2.PnioExchange.ProcessState.TIMEOUT;
+
+public class PnioExchange<State> {
     private static final AtomicLong idGenerator = new AtomicLong();
+    private static final VarHandle PROCESS_STATE_HANDLE;
 
-    public final HttpServerExchange oapExchange;
+    static {
+        try {
+            PROCESS_STATE_HANDLE = MethodHandles.lookup().findVarHandle( PnioExchange.class, "processState", int.class );
+        } catch( NoSuchFieldException | IllegalAccessException e ) {
+            throw new Error( e );
+        }
+    }
 
+    public final long id = idGenerator.incrementAndGet();
+
+    public final long startTimeNano;
     public final byte[] requestBuffer;
     public final PnioResponseBuffer responseBuffer;
     public final long timeoutNano;
     public final HttpResponse httpResponse = new HttpResponse();
     public final PnioController controller;
-    public final WorkflowState workflowState;
-    public final PnioListener<WorkflowState> pnioListener;
-    public final long id = idGenerator.incrementAndGet();
-    public final long startTimeNano;
-    public final boolean importance;
-    public Throwable throwable;
-    public ProcessState processState = ProcessState.RUNNING;
-    public RequestWorkflow.Node<WorkflowState> currentTaskNode;
-    private Runnable onDoneRunnable;
+    public final State workflowState;
+    public final PnioListener<State> pnioListener;
+    public final HttpServerExchange oapExchange;
+    public final ComputeTask<State> task;
+    public volatile Throwable throwable;
+    public volatile int processState;
+    private volatile Runnable onDoneRunnable;
 
     public PnioExchange( byte[] requestBuffer, int responseSize, PnioController controller,
-                         RequestWorkflow<WorkflowState> workflow, WorkflowState inputState,
+                         ComputeTask<State> task, State inputState,
                          HttpServerExchange oapExchange, long timeout,
-                         PnioListener<WorkflowState> pnioListener,
-                         boolean importance ) {
+                         PnioListener<State> pnioListener ) {
         this.startTimeNano = System.nanoTime();
         this.requestBuffer = requestBuffer;
         this.responseBuffer = new PnioResponseBuffer( responseSize );
@@ -62,7 +61,7 @@ public class PnioExchange<WorkflowState> {
         this.controller = controller;
 
         this.workflowState = inputState;
-        this.currentTaskNode = workflow.root;
+        this.task = task;
 
         this.oapExchange = oapExchange;
         this.timeoutNano = timeout * 1_000_000;
@@ -71,212 +70,42 @@ public class PnioExchange<WorkflowState> {
 
         this.pnioListener = pnioListener;
 
-        this.importance = importance;
-
         PnioMetrics.activeRequests.incrementAndGet();
     }
 
-    public boolean gzipSupported() {
-        return oapExchange.gzipSupported();
-    }
-
-    public String getCurrentTaskName() {
-        RequestWorkflow.Node<WorkflowState> node = currentTaskNode;
-        if( node == null ) return "NONE";
-
-        return node.handler.getClass().getSimpleName();
-    }
-
-    public String getRequestAsString() {
-        return new String( requestBuffer, StandardCharsets.UTF_8 );
-    }
-
-    public void completeWithBufferOverflow( boolean request ) {
-        processState = request ? ProcessState.REQUEST_BUFFER_OVERFLOW : ProcessState.RESPONSE_BUFFER_OVERFLOW;
-    }
-
-    public void completeWithTimeout() {
-        processState = ProcessState.TIMEOUT;
-    }
-
-    public void completeWithConnectionClosed( Throwable throwable ) {
-        this.throwable = throwable;
-        this.processState = ProcessState.CONNECTION_CLOSED;
+    public void completeWithFail( Throwable throwable ) {
+        if( throwable instanceof TimeoutException ) {
+            completeWithTimeout();
+        } else if( throwable instanceof InterruptedException ) {
+            completeWithInterrupted();
+        } else {
+            this.throwable = throwable;
+            PROCESS_STATE_HANDLE.getAndBitwiseOr( this, EXCEPTION );
+        }
     }
 
     public void completeWithInterrupted() {
-        processState = ProcessState.INTERRUPTED;
+        PROCESS_STATE_HANDLE.getAndBitwiseOr( this, INTERRUPTED );
     }
 
-    public void completeWithFail( Throwable throwable ) {
-        this.throwable = throwable;
-        this.processState = ProcessState.EXCEPTION;
-    }
-
-    public void completeWithRejected() {
-        processState = ProcessState.REJECTED;
+    public void completeWithTimeout() {
+        PROCESS_STATE_HANDLE.getAndBitwiseOr( this, TIMEOUT );
     }
 
     public void complete() {
-        processState = ProcessState.DONE;
+        PROCESS_STATE_HANDLE.getAndBitwiseOr( this, DONE );
+    }
+
+    public void completeWithRejected() {
+        PROCESS_STATE_HANDLE.getAndBitwiseOr( this, REJECTED );
+    }
+
+    public void completeWithBufferOverflow( boolean request ) {
+        PROCESS_STATE_HANDLE.getAndBitwiseOr( this, request ? ProcessState.REQUEST_BUFFER_OVERFLOW : ProcessState.RESPONSE_BUFFER_OVERFLOW );
     }
 
     public final boolean isDone() {
-        return processState != ProcessState.RUNNING;
-    }
-
-    public boolean isRequestGzipped() {
-        return oapExchange.isRequestGzipped();
-    }
-
-    public long getTimeLeftNano() {
-        long now = System.nanoTime();
-        long durationInNano = now - getRequestStartTime();
-
-        return timeoutNano - durationInNano;
-    }
-
-    public long getRequestStartTime() {
-        return oapExchange.exchange.getRequestStartTime();
-    }
-
-    public void runComputeTask( PnioRequestHandler<WorkflowState> compute ) {
-        try {
-            compute.handle( this, workflowState );
-        } catch( BufferOverflowException e ) {
-            completeWithBufferOverflow( false );
-        } catch( Throwable e ) {
-            completeWithFail( e );
-        }
-    }
-
-    public CompletableFuture<Void> runBlockingTask( PnioRequestHandler<WorkflowState> blocking ) {
-        Preconditions.checkNotNull( controller.blockingPool );
-
-        return controller.runAsync( () -> {
-            try {
-                blocking.handle( this, workflowState );
-            } catch( Exception e ) {
-                throw new CompletionException( e );
-            }
-        } );
-    }
-
-    public void runAsyncTask( PnioRequestHandler<WorkflowState> async, Runnable success, Consumer<Throwable> exception ) {
-        try {
-            async.handle( this, workflowState, success, exception );
-        } catch( Throwable e ) {
-            exception.accept( e );
-        }
-    }
-
-    public void process() {
-        while( !isDone() ) {
-            if( currentTaskNode == null ) {
-                complete();
-                break;
-            }
-
-            PnioRequestHandler<WorkflowState> task = currentTaskNode.handler;
-
-            if( log.isTraceEnabled() ) {
-                log.trace( "[PNIO] Processing task: " + task.description() + ", type: " + task.type );
-            }
-
-            if( getTimeLeftNano() <= 0 ) {
-                completeWithTimeout();
-                break;
-            }
-
-            switch( task.type ) {
-                case COMPUTE -> {
-                    runComputeTask( task );
-                    currentTaskNode = currentTaskNode.next;
-                }
-
-                case BLOCKING -> {
-                    CompletableFuture<Void> completableFuture = runBlockingTask( task );
-                    asyncProcess( completableFuture, currentTaskNode );
-                    return;
-                }
-
-                case ASYNC -> {
-                    CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-                    runAsyncTask( task, () -> completableFuture.complete( null ), new Consumer<Throwable>() {
-                        @Override
-                        public void accept( Throwable throwable ) {
-                            completableFuture.completeExceptionally( throwable );
-                        }
-                    } );
-                    asyncProcess( completableFuture, currentTaskNode );
-                    return;
-                }
-                default -> throw new IllegalStateException( "Unexpected value: " + task.getClass() );
-            }
-        }
-
-        response();
-    }
-
-    private void asyncProcess( CompletableFuture<Void> completableFuture, RequestWorkflow.Node<WorkflowState> taskNode ) {
-        completableFuture
-            .orTimeout( getTimeLeftNano(), TimeUnit.NANOSECONDS )
-            .whenComplete( ( _, t ) -> {
-                if( t != null ) {
-                    if( t instanceof CancellationException || t instanceof InterruptedException ) {
-                        completeWithInterrupted();
-                    } else if( t instanceof TimeoutException ) {
-                        completeWithTimeout();
-                    } else {
-                        completeWithFail( t );
-                    }
-                } else {
-                    this.currentTaskNode = taskNode.next;
-                }
-
-                io.undertow.server.HttpServerExchange exchange = oapExchange.exchange;
-                controller.register( this, new PnioTask( this ), importance );
-            } );
-    }
-
-    public void response() {
-        try {
-            switch( processState ) {
-                case DONE -> {
-                    PnioMetrics.COMPLETED.increment();
-                    pnioListener.onDone( this );
-                }
-                case CONNECTION_CLOSED -> oapExchange.closeConnection();
-                case REJECTED -> {
-                    PnioMetrics.REJECTED.increment();
-                    pnioListener.onRejected( this );
-                }
-                case REQUEST_BUFFER_OVERFLOW -> {
-                    PnioMetrics.REQUEST_BUFFER_OVERFLOW.increment();
-                    pnioListener.onRequestBufferOverflow( this );
-                }
-                case RESPONSE_BUFFER_OVERFLOW -> {
-                    PnioMetrics.RESPONSE_BUFFER_OVERFLOW.increment();
-                    pnioListener.onResponseBufferOverflow( this );
-                }
-                case TIMEOUT -> {
-                    PnioMetrics.TIMEOUT.increment();
-                    pnioListener.onTimeout( this );
-                }
-                case EXCEPTION -> {
-                    PnioMetrics.EXCEPTION.increment();
-                    pnioListener.onException( this );
-                }
-                case null, default -> {
-                    PnioMetrics.UNKNOWN.increment();
-                    pnioListener.onUnknown( this );
-                }
-            }
-        } finally {
-            if( onDoneRunnable != null ) {
-                onDoneRunnable.run();
-            }
-        }
+        return processState > 0;
     }
 
     public void send() {
@@ -297,22 +126,117 @@ public class PnioExchange<WorkflowState> {
         }
     }
 
+    public void response() {
+        try {
+            if( ( processState & CONNECTION_CLOSED ) > 0 ) {
+                oapExchange.closeConnection();
+            } else if( ( processState & EXCEPTION ) > 0 ) {
+                PnioMetrics.EXCEPTION.increment();
+                pnioListener.onException( this );
+            } else if( ( processState & REQUEST_BUFFER_OVERFLOW ) > 0 ) {
+                PnioMetrics.REQUEST_BUFFER_OVERFLOW.increment();
+                pnioListener.onRequestBufferOverflow( this );
+            } else if( ( processState & RESPONSE_BUFFER_OVERFLOW ) > 0 ) {
+                PnioMetrics.RESPONSE_BUFFER_OVERFLOW.increment();
+                pnioListener.onResponseBufferOverflow( this );
+            } else if( ( processState & TIMEOUT ) > 0 ) {
+                PnioMetrics.TIMEOUT.increment();
+                pnioListener.onTimeout( this );
+            } else if( ( processState & REJECTED ) > 0 ) {
+                PnioMetrics.REJECTED.increment();
+                pnioListener.onRejected( this );
+            } else if( ( processState & DONE ) > 0 ) {
+                PnioMetrics.COMPLETED.increment();
+                pnioListener.onDone( this );
+            } else {
+                PnioMetrics.UNKNOWN.increment();
+                pnioListener.onUnknown( this );
+            }
+        } finally {
+            if( onDoneRunnable != null ) {
+                onDoneRunnable.run();
+            }
+        }
+    }
+
     public void onDone( Runnable onDoneRunnable ) {
         Preconditions.checkArgument( this.onDoneRunnable == null );
 
         this.onDoneRunnable = onDoneRunnable;
     }
 
-    public enum ProcessState {
-        RUNNING,
-        DONE,
-        TIMEOUT,
-        INTERRUPTED,
-        EXCEPTION,
-        CONNECTION_CLOSED,
-        REJECTED,
-        REQUEST_BUFFER_OVERFLOW,
-        RESPONSE_BUFFER_OVERFLOW
+    public boolean gzipSupported() {
+        return oapExchange.gzipSupported();
+    }
+
+    public String printState() {
+        ArrayList<String> state = new ArrayList<>();
+
+        if( ( processState & DONE ) > 0 ) {
+            state.add( "DONE" );
+        }
+        if( ( processState & TIMEOUT ) > 0 ) {
+            state.add( "TIMEOUT" );
+        }
+        if( ( processState & INTERRUPTED ) > 0 ) {
+            state.add( "INTERRUPTED" );
+        }
+        if( ( processState & EXCEPTION ) > 0 ) {
+            state.add( "EXCEPTION" );
+        }
+        if( ( processState & CONNECTION_CLOSED ) > 0 ) {
+            state.add( "CONNECTION_CLOSED" );
+        }
+        if( ( processState & REJECTED ) > 0 ) {
+            state.add( "REJECTED" );
+        }
+        if( ( processState & REQUEST_BUFFER_OVERFLOW ) > 0 ) {
+            state.add( "REQUEST_BUFFER_OVERFLOW" );
+        }
+        if( ( processState & RESPONSE_BUFFER_OVERFLOW ) > 0 ) {
+            state.add( "RESPONSE_BUFFER_OVERFLOW" );
+        }
+        if( processState == 0 ) {
+            state.add( "RUNNING" );
+        }
+
+        return String.join( ", ", state );
+    }
+
+    public AsyncRunnable blockingTask( BlockingTask<State> blockingTask ) {
+        return new AsyncRunnableForkJoinTask( new PnioBlockingTask<>( blockingTask, workflowState, this, controller ) );
+    }
+
+    public AsyncRunnable asyncTask( AsyncTask<State> blockingTask ) {
+        return new AsyncRunnableForkJoinTask( new PnioAsyncTask<>( blockingTask, workflowState, this ) );
+    }
+
+    public long getTimeLeftNano() {
+        long now = System.nanoTime();
+        long durationInNano = now - getRequestStartTime();
+
+        return timeoutNano - durationInNano;
+    }
+
+    public long getRequestStartTime() {
+        return oapExchange.exchange.getRequestStartTime();
+    }
+
+    public boolean isRequestGzipped() {
+        return oapExchange.isRequestGzipped();
+    }
+
+    @SuppressWarnings( "checkstyle:InterfaceIsType" )
+    public interface ProcessState {
+        int RUNNING = 0;
+        int DONE = 1 << 1;
+        int TIMEOUT = 1 << 2;
+        int INTERRUPTED = 1 << 3;
+        int EXCEPTION = 1 << 4;
+        int CONNECTION_CLOSED = 1 << 5;
+        int REJECTED = 1 << 6;
+        int REQUEST_BUFFER_OVERFLOW = 1 << 7;
+        int RESPONSE_BUFFER_OVERFLOW = 1 << 8;
     }
 
     public static class HttpResponse {
