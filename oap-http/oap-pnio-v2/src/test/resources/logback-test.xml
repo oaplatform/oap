@@ -8,7 +8,7 @@
     <logger name="net.openhft" level="ERROR"/>
     <logger name="org.apache" level="WARN"/>
 
-    <root level="OFF">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

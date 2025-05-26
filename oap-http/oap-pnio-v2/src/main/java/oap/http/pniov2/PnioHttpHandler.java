@@ -18,37 +18,29 @@ import oap.http.server.nio.HttpServerExchange;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference {
+public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public final int requestSize;
     public final int responseSize;
-    public final PnioListener<WorkflowState> pnioListener;
-    public final ConcurrentHashMap<Long, PnioExchange<WorkflowState>> exchanges = new ConcurrentHashMap<>();
-    public final boolean importance;
+    public final PnioListener<RequestState> pnioListener;
+    public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
     private final PnioController pnioController;
-    public RequestWorkflow<WorkflowState> workflow;
+    public ComputeTask<RequestState> task;
 
     public PnioHttpHandler( PnioHttpSettings settings,
-                            RequestWorkflow<WorkflowState> workflow,
-                            PnioListener<WorkflowState> pnioListener,
+                            ComputeTask<RequestState> task,
+                            PnioListener<RequestState> pnioListener,
                             PnioController pnioController ) {
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
-        this.importance = settings.importance;
 
-        this.workflow = workflow;
+        this.task = task;
         this.pnioListener = pnioListener;
         this.pnioController = pnioController;
-
-        if( pnioController.blockingPoolSize <= 0 ) {
-            workflow.forEach( h -> {
-                Preconditions.checkArgument( h.type != PnioRequestHandler.Type.BLOCKING, "blockingPoolSize must be greater than 0" );
-            } );
-        }
 
         Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
-    public void handleRequest( HttpServerExchange oapExchange, long timeout, WorkflowState workflowState ) {
+    public void handleRequest( HttpServerExchange oapExchange, long timeout, RequestState requestState ) {
         PnioMetrics.REQUESTS.increment();
 
         oapExchange.exchange.addExchangeCompleteListener( ( _, nl ) -> {
@@ -63,20 +55,24 @@ public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference 
         }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
-            PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, workflow, workflowState, oapExchange, timeout, pnioListener, importance );
+            PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
             pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                if( !pnioController.register( pnioExchange, new PnioTask<>( pnioExchange ), importance ) ) {
+                PnioComputeTask<RequestState> pnioComputeTask = new PnioComputeTask( task, pnioExchange );
+                if( !pnioController.submit( pnioComputeTask ) ) {
                     exchanges.remove( pnioExchange.id );
+                    pnioExchange.completeWithRejected();
+                    pnioExchange.response();
                 }
             } catch( Exception e ) {
                 exchanges.remove( pnioExchange.id );
-                throw e;
+                pnioExchange.completeWithFail( e );
+                pnioExchange.response();
             }
         }, ( _, e ) -> {
-            PnioExchange<WorkflowState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, workflow, workflowState, oapExchange, timeout, pnioListener, importance );
+            PnioExchange<RequestState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
             exchanges.put( pnioExchange.id, pnioExchange );
             try {
 
@@ -95,10 +91,6 @@ public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference 
         oapExchange.exchange.dispatch();
     }
 
-    public void updateWorkflow( RequestWorkflow<WorkflowState> newWorkflow ) {
-        this.workflow = newWorkflow;
-    }
-
     @Override
     public PnioHttpHandler<?> getPnioHttpHandler() {
         return this;
@@ -108,6 +100,5 @@ public class PnioHttpHandler<WorkflowState> implements PnioHttpHandlerReference 
     public static class PnioHttpSettings {
         int requestSize;
         int responseSize;
-        boolean importance;
     }
 }

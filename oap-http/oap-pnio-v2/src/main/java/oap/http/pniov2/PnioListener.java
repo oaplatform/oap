@@ -1,17 +1,17 @@
 package oap.http.pniov2;
 
-public interface PnioListener<WorkflowState> {
-    void onTimeout( PnioExchange<WorkflowState> pnioExchange );
+public interface PnioListener<RequestState> {
+    void onTimeout( PnioExchange<RequestState> pnioExchange );
 
-    void onException( PnioExchange<WorkflowState> pnioExchange );
+    void onException( PnioExchange<RequestState> pnioExchange );
 
-    void onRequestBufferOverflow( PnioExchange<WorkflowState> pnioExchange );
+    void onRequestBufferOverflow( PnioExchange<RequestState> pnioExchange );
 
-    void onResponseBufferOverflow( PnioExchange<WorkflowState> pnioExchange );
+    void onResponseBufferOverflow( PnioExchange<RequestState> pnioExchange );
 
-    void onRejected( PnioExchange<WorkflowState> pnioExchange );
+    void onRejected( PnioExchange<RequestState> pnioExchange );
 
-    void onDone( PnioExchange<WorkflowState> pnioExchange );
+    void onDone( PnioExchange<RequestState> pnioExchange );
 
-    void onUnknown( PnioExchange<WorkflowState> pnioExchange );
+    void onUnknown( PnioExchange<RequestState> pnioExchange );
 }

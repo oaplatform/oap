@@ -17,12 +17,12 @@ public class PnioWS {
     }
 
     @WsMethod( method = GET, path = "/" )
-    public List<PnoExchangeView> queue() {
-        ArrayList<PnoExchangeView> views = new ArrayList<>();
+    public List<PnioExchangeView> queue() {
+        ArrayList<PnioExchangeView> views = new ArrayList<>();
 
         pnioHttpHandler.forEach( ( name, handler ) -> {
-            for( PnioExchange<?> pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
-                views.add( new PnoExchangeView( name, pnioExchange.processState, pnioExchange.getCurrentTaskName(),
+            for( PnioExchange pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
+                views.add( new PnioExchangeView( name, pnioExchange.printState(),
                     pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
                     pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );
             }
@@ -31,21 +31,19 @@ public class PnioWS {
         return views;
     }
 
-    public static class PnoExchangeView {
+    public static class PnioExchangeView {
         public final String pnioHandler;
-        public final PnioExchange.ProcessState processState;
-        public final String currentTaskName;
+        public final String processState;
         public final long id;
         public final boolean requestGzipped;
         public final String requestURI;
         public final String duration;
         public final String timeLeft;
 
-        public PnoExchangeView( String pnioHandler, PnioExchange.ProcessState processState, String currentTaskName, long id, boolean requestGzipped,
-                                String requestURI, long requestStartTime, long timeLeftNano ) {
+        public PnioExchangeView( String pnioHandler, String processState, long id, boolean requestGzipped,
+                                 String requestURI, long requestStartTime, long timeLeftNano ) {
             this.pnioHandler = pnioHandler;
             this.processState = processState;
-            this.currentTaskName = currentTaskName;
             this.id = id;
             this.requestGzipped = requestGzipped;
             this.requestURI = requestURI;
