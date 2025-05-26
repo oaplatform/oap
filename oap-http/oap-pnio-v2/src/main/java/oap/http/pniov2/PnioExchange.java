@@ -227,8 +227,16 @@ public class PnioExchange<RequestState> {
         return oapExchange.isRequestGzipped();
     }
 
+    public final String getRequestURI() {
+        return oapExchange.getRequestURI();
+    }
+
     public final String getStringParameter( String name ) {
         return oapExchange.getStringParameter( name );
+    }
+
+    public final boolean getBooleanParameter( String name ) {
+        return oapExchange.getBooleanParameter( name );
     }
 
     public final String ip() {
