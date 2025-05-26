@@ -172,7 +172,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             AbstractPnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
-            httpResponse.responseBuffer.setAndResize( pnioExchange.processState.name() );
+            httpResponse.responseBuffer.setAndResize( pnioExchange.printState() );
 
             pnioExchange.send();
         }
