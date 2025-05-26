@@ -35,7 +35,7 @@ public class PerformanceTest {
             httpServer.statistics = true;
             httpServer.start();
 
-            DefaultPnioHttpHandler httpHandler = new DefaultPnioHttpHandler( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
+            TestPnioHandler httpHandler = new TestPnioHandler( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
             Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                 System.out.println();
