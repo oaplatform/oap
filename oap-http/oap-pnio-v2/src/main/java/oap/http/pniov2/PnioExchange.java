@@ -256,5 +256,10 @@ public class PnioExchange<State> {
         public void responseNoContent() {
             status = Http.StatusCode.NO_CONTENT;
         }
+
+        public void responseNotFound() {
+            status = Http.StatusCode.NOT_FOUND;
+        }
+
     }
 }
