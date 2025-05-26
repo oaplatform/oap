@@ -9,6 +9,7 @@ import oap.http.server.nio.HttpServerExchange;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,8 +44,8 @@ public class PnioExchange<State> {
     public final PnioController controller;
     public final State workflowState;
     public final PnioListener<State> pnioListener;
-    public final HttpServerExchange oapExchange;
     public final ComputeTask<State> task;
+    protected final HttpServerExchange oapExchange;
     public volatile Throwable throwable;
     public volatile int processState;
     private volatile Runnable onDoneRunnable;
@@ -216,12 +217,32 @@ public class PnioExchange<State> {
         return timeoutNano - durationInNano;
     }
 
-    public long getRequestStartTime() {
+    public final long getRequestStartTime() {
         return oapExchange.exchange.getRequestStartTime();
     }
 
-    public boolean isRequestGzipped() {
+    public final boolean isRequestGzipped() {
         return oapExchange.isRequestGzipped();
+    }
+
+    public final String getStringParameter( String name ) {
+        return oapExchange.getStringParameter( name );
+    }
+
+    public final String ip() {
+        return oapExchange.ip();
+    }
+
+    public final String ua() {
+        return oapExchange.ua();
+    }
+
+    public final String referrer() {
+        return oapExchange.referrer();
+    }
+
+    public final Deque<String> getQueryParameter( String name ) {
+        return oapExchange.exchange.getQueryParameters().get( name );
     }
 
     @SuppressWarnings( "checkstyle:InterfaceIsType" )
