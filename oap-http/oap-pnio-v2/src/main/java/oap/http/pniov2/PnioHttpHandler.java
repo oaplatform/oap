@@ -18,18 +18,18 @@ import oap.http.server.nio.HttpServerExchange;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public abstract class AbstractPnioHttpHandler<E extends AbstractPnioExchange<E>> implements PnioHttpHandlerReference {
+public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public final int requestSize;
     public final int responseSize;
-    public final PnioListener<E> pnioListener;
-    public final ConcurrentHashMap<Long, E> exchanges = new ConcurrentHashMap<>();
+    public final PnioListener<RequestState> pnioListener;
+    public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
     private final PnioController pnioController;
-    public ComputeTask<E> task;
+    public ComputeTask<RequestState> task;
 
-    public AbstractPnioHttpHandler( PnioHttpSettings settings,
-                                    ComputeTask<E> task,
-                                    PnioListener<E> pnioListener,
-                                    PnioController pnioController ) {
+    public PnioHttpHandler( PnioHttpSettings settings,
+                            ComputeTask<RequestState> task,
+                            PnioListener<RequestState> pnioListener,
+                            PnioController pnioController ) {
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
 
@@ -40,7 +40,7 @@ public abstract class AbstractPnioHttpHandler<E extends AbstractPnioExchange<E>>
         Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
-    public void handleRequest( HttpServerExchange oapExchange, long timeout ) {
+    public void handleRequest( HttpServerExchange oapExchange, long timeout, RequestState requestState ) {
         PnioMetrics.REQUESTS.increment();
 
         oapExchange.exchange.addExchangeCompleteListener( ( _, nl ) -> {
@@ -55,12 +55,12 @@ public abstract class AbstractPnioHttpHandler<E extends AbstractPnioExchange<E>>
         }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
-            E pnioExchange = createPnioExchange( oapExchange, timeout, message, pnioController, task, pnioListener );
+            PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
             pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                PnioComputeTask pnioComputeTask = new PnioComputeTask( task, pnioExchange );
+                PnioComputeTask<RequestState> pnioComputeTask = new PnioComputeTask( task, pnioExchange );
                 if( !pnioController.submit( pnioComputeTask ) ) {
                     exchanges.remove( pnioExchange.id );
                     pnioExchange.completeWithRejected();
@@ -72,7 +72,7 @@ public abstract class AbstractPnioHttpHandler<E extends AbstractPnioExchange<E>>
                 pnioExchange.response();
             }
         }, ( _, e ) -> {
-            E pnioExchange = createPnioExchange( oapExchange, timeout, null, pnioController, task, pnioListener );
+            PnioExchange<RequestState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
             exchanges.put( pnioExchange.id, pnioExchange );
             try {
 
@@ -91,11 +91,8 @@ public abstract class AbstractPnioHttpHandler<E extends AbstractPnioExchange<E>>
         oapExchange.exchange.dispatch();
     }
 
-    protected abstract E createPnioExchange( HttpServerExchange oapExchange, long timeout, byte[] message,
-                                             PnioController pnioController, ComputeTask<E> computeTask, PnioListener<E> pnioListener );
-
     @Override
-    public AbstractPnioHttpHandler<?> getPnioHttpHandler() {
+    public PnioHttpHandler<?> getPnioHttpHandler() {
         return this;
     }
 

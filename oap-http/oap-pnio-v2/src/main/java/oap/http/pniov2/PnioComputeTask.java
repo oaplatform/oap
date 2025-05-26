@@ -4,11 +4,11 @@ import java.nio.BufferOverflowException;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RejectedExecutionException;
 
-public class PnioComputeTask extends RecursiveAction {
-    private final ComputeTask task;
-    private final AbstractPnioExchange pnioExchange;
+public class PnioComputeTask<RequestState> extends RecursiveAction {
+    private final ComputeTask<RequestState> task;
+    private final PnioExchange<RequestState> pnioExchange;
 
-    public PnioComputeTask( ComputeTask task, AbstractPnioExchange pnioExchange ) {
+    public PnioComputeTask( ComputeTask<RequestState> task, PnioExchange<RequestState> pnioExchange ) {
         this.task = task;
         this.pnioExchange = pnioExchange;
     }

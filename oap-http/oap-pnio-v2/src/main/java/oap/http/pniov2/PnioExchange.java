@@ -14,22 +14,22 @@ import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.CONNECTION_CLOSED;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.DONE;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.EXCEPTION;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.INTERRUPTED;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.REJECTED;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.REQUEST_BUFFER_OVERFLOW;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.RESPONSE_BUFFER_OVERFLOW;
-import static oap.http.pniov2.AbstractPnioExchange.ProcessState.TIMEOUT;
+import static oap.http.pniov2.PnioExchange.ProcessState.CONNECTION_CLOSED;
+import static oap.http.pniov2.PnioExchange.ProcessState.DONE;
+import static oap.http.pniov2.PnioExchange.ProcessState.EXCEPTION;
+import static oap.http.pniov2.PnioExchange.ProcessState.INTERRUPTED;
+import static oap.http.pniov2.PnioExchange.ProcessState.REJECTED;
+import static oap.http.pniov2.PnioExchange.ProcessState.REQUEST_BUFFER_OVERFLOW;
+import static oap.http.pniov2.PnioExchange.ProcessState.RESPONSE_BUFFER_OVERFLOW;
+import static oap.http.pniov2.PnioExchange.ProcessState.TIMEOUT;
 
-public abstract class AbstractPnioExchange<E extends AbstractPnioExchange<E>> {
+public class PnioExchange<RequestState> {
     private static final AtomicLong idGenerator = new AtomicLong();
     private static final VarHandle PROCESS_STATE_HANDLE;
 
     static {
         try {
-            PROCESS_STATE_HANDLE = MethodHandles.lookup().findVarHandle( AbstractPnioExchange.class, "processState", int.class );
+            PROCESS_STATE_HANDLE = MethodHandles.lookup().findVarHandle( PnioExchange.class, "processState", int.class );
         } catch( NoSuchFieldException | IllegalAccessException e ) {
             throw new Error( e );
         }
@@ -42,17 +42,20 @@ public abstract class AbstractPnioExchange<E extends AbstractPnioExchange<E>> {
     public final long timeoutNano;
     public final HttpResponse httpResponse;
     public final PnioController controller;
-    public final PnioListener<E> pnioListener;
-    public final ComputeTask<E> task;
+    public final PnioListener<RequestState> pnioListener;
+    public final ComputeTask<RequestState> task;
+    public final RequestState requestState;
     protected final HttpServerExchange oapExchange;
     public volatile Throwable throwable;
     public volatile int processState;
     private volatile Runnable onDoneRunnable;
 
-    public AbstractPnioExchange( byte[] requestBuffer, int responseSize, PnioController controller,
-                                 ComputeTask<E> task,
-                                 HttpServerExchange oapExchange, long timeout,
-                                 PnioListener<E> pnioListener ) {
+    public PnioExchange( byte[] requestBuffer, int responseSize, PnioController controller,
+                         ComputeTask<RequestState> task,
+                         HttpServerExchange oapExchange, long timeout,
+                         PnioListener<RequestState> pnioListener,
+                         RequestState requestState ) {
+        this.requestState = requestState;
         this.startTimeNano = System.nanoTime();
         this.requestBuffer = requestBuffer;
         httpResponse = new HttpResponse( new PnioResponseBuffer( responseSize ) );
@@ -125,32 +128,31 @@ public abstract class AbstractPnioExchange<E extends AbstractPnioExchange<E>> {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public void response() {
         try {
             if( ( processState & CONNECTION_CLOSED ) > 0 ) {
                 oapExchange.closeConnection();
             } else if( ( processState & EXCEPTION ) > 0 ) {
                 PnioMetrics.EXCEPTION.increment();
-                pnioListener.onException( ( E ) this );
+                pnioListener.onException( this );
             } else if( ( processState & REQUEST_BUFFER_OVERFLOW ) > 0 ) {
                 PnioMetrics.REQUEST_BUFFER_OVERFLOW.increment();
-                pnioListener.onRequestBufferOverflow( ( E ) this );
+                pnioListener.onRequestBufferOverflow( this );
             } else if( ( processState & RESPONSE_BUFFER_OVERFLOW ) > 0 ) {
                 PnioMetrics.RESPONSE_BUFFER_OVERFLOW.increment();
-                pnioListener.onResponseBufferOverflow( ( E ) this );
+                pnioListener.onResponseBufferOverflow( this );
             } else if( ( processState & TIMEOUT ) > 0 ) {
                 PnioMetrics.TIMEOUT.increment();
-                pnioListener.onTimeout( ( E ) this );
+                pnioListener.onTimeout( this );
             } else if( ( processState & REJECTED ) > 0 ) {
                 PnioMetrics.REJECTED.increment();
-                pnioListener.onRejected( ( E ) this );
+                pnioListener.onRejected( this );
             } else if( ( processState & DONE ) > 0 ) {
                 PnioMetrics.COMPLETED.increment();
-                pnioListener.onDone( ( E ) this );
+                pnioListener.onDone( this );
             } else {
                 PnioMetrics.UNKNOWN.increment();
-                pnioListener.onUnknown( ( E ) this );
+                pnioListener.onUnknown( this );
             }
         } finally {
             if( onDoneRunnable != null ) {
@@ -204,8 +206,8 @@ public abstract class AbstractPnioExchange<E extends AbstractPnioExchange<E>> {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T runAsyncTask( AsyncTask<T, E> asyncTask ) {
-        PnioAsyncTask<T, E> pnioAsyncTask = new PnioAsyncTask<>( asyncTask, ( E ) this );
+    public <T> T runAsyncTask( AsyncTask<T, RequestState> asyncTask ) {
+        PnioAsyncTask<T, RequestState> pnioAsyncTask = new PnioAsyncTask<>( asyncTask, this );
         pnioAsyncTask.fork();
         return pnioAsyncTask.join();
     }

@@ -3,12 +3,12 @@ package oap.http.pniov2;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.TimeUnit;
 
-public class PnioAsyncTask<T, E extends AbstractPnioExchange<E>> extends ForkJoinTask<T> {
-    private final AsyncTask<T, E> task;
-    private final E pnioExchange;
+public class PnioAsyncTask<T, RequestState> extends ForkJoinTask<T> {
+    private final AsyncTask<T, RequestState> task;
+    private final PnioExchange<RequestState> pnioExchange;
     protected T result;
 
-    public PnioAsyncTask( AsyncTask<T, E> task, E pnioExchange ) {
+    public PnioAsyncTask( AsyncTask<T, RequestState> task, PnioExchange<RequestState> pnioExchange ) {
         this.task = task;
         this.pnioExchange = pnioExchange;
     }

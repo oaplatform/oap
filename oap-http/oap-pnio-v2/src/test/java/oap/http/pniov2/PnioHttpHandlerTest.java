@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PnioHttpHandlerTest extends Fixtures {
     @Test( invocationCount = 100 )
     public void testProcess() throws IOException {
-        ComputeTask<TestPnioExchange> task = pnioExchange -> {
+        ComputeTask<TestState> task = pnioExchange -> {
             TestHandler.TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandler.TestHandlerOptions.builder( false );
 
             TestHandler.handle( "cpu-1", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
@@ -80,7 +80,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testProcessWithException() throws IOException {
-        ComputeTask<TestPnioExchange> task = TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) );
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) );
 
         runWithWorkflow( task, port -> {
             assertPost( "http://localhost:" + port + "/test", "{}" )
@@ -92,7 +92,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testRequestBufferOverflow() throws IOException {
-        ComputeTask<TestPnioExchange> task = TestHandler.compute( "cpu-2" );
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
         runWithWorkflow( 2, 1024, 5, Dates.s( 100 ), task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
@@ -104,7 +104,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testResponseBufferOverflow() throws IOException {
-        ComputeTask<TestPnioExchange> task = TestHandler.compute( "cpu-2" );
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
         runWithWorkflow( 1024, 2, 5, Dates.s( 100 ), task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
@@ -116,7 +116,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testTimeoutAsync() throws IOException {
-        ComputeTask<TestPnioExchange> task = pnioExchange -> {
+        ComputeTask<TestState> task = pnioExchange -> {
             pnioExchange.runAsyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
 
             pnioExchange.complete();
@@ -135,15 +135,15 @@ public class PnioHttpHandlerTest extends Fixtures {
         } );
     }
 
-    private void runWithWorkflow( ComputeTask task, Consumer<Integer> cons ) throws IOException {
+    private void runWithWorkflow( ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
         runWithWorkflow( 1024, 1024, 10, Dates.s( 100 ), task, cons );
     }
 
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads,
-                                  long timeout, ComputeTask task, Consumer<Integer> cons ) throws IOException {
+                                  long timeout, ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
-        AbstractPnioHttpHandler.PnioHttpSettings settings = AbstractPnioHttpHandler.PnioHttpSettings.builder()
+        PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( requestSize )
             .responseSize( responseSize )
             .build();
@@ -152,9 +152,9 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.start();
 
             try( PnioController pnioController = new PnioController( ioThreads ) ) {
-                TestPnioHandler httpHandler = new TestPnioHandler( settings, task, new TestPnioListener(), pnioController );
+                PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, task, new TestPnioListener(), pnioController );
                 httpServer.bind( "/test",
-                    exchange -> httpHandler.handleRequest( exchange, timeout ), false );
+                    exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
 
                 cons.accept( port );
             }
@@ -162,9 +162,9 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     @Slf4j
-    public static class TestPnioListener implements PnioListener<TestPnioExchange> {
-        private static void defaultResponse( TestPnioExchange pnioExchange ) {
-            AbstractPnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+    public static class TestPnioListener implements PnioListener<TestState> {
+        private static void defaultResponse( PnioExchange pnioExchange ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
             httpResponse.responseBuffer.setAndResize( pnioExchange.printState() );
@@ -174,24 +174,24 @@ public class PnioHttpHandlerTest extends Fixtures {
 
         @Override
         @SneakyThrows
-        public void onDone( TestPnioExchange pnioExchange ) {
+        public void onDone( PnioExchange<TestState> pnioExchange ) {
             if( log.isDebugEnabled() ) {
                 String data = "name 'TestResponseBuilder thread '" + Thread.currentThread().getName().substring( 7, 11 )
-                    + "' new thread " + !pnioExchange.oldThreadName.equals( Thread.currentThread().getName() );
+                    + "' new thread " + !pnioExchange.requestState.oldThreadName.equals( Thread.currentThread().getName() );
 
                 log.debug( data );
             }
 
             OutputStream outputStream = null;
             try {
-                AbstractPnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+                PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
                 outputStream = httpResponse.responseBuffer.getOutputStream();
 
                 if( pnioExchange.gzipSupported() ) {
                     outputStream = new GZIPOutputStream( outputStream );
                     httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
                 }
-                outputStream.write( pnioExchange.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+                outputStream.write( pnioExchange.requestState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
 
                 httpResponse.status = OK;
                 httpResponse.contentType = ContentType.TEXT_PLAIN;
@@ -203,8 +203,8 @@ public class PnioHttpHandlerTest extends Fixtures {
         }
 
         @Override
-        public void onException( TestPnioExchange pnioExchange ) {
-            AbstractPnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+        public void onException( PnioExchange<TestState> pnioExchange ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_GATEWAY;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
             httpResponse.responseBuffer.setAndResize( pnioExchange.throwable.getMessage() );
@@ -213,28 +213,28 @@ public class PnioHttpHandlerTest extends Fixtures {
         }
 
         @Override
-        public void onRequestBufferOverflow( TestPnioExchange pnioExchange ) {
+        public void onRequestBufferOverflow( PnioExchange<TestState> pnioExchange ) {
             defaultResponse( pnioExchange );
         }
 
         @Override
-        public void onRejected( TestPnioExchange pnioExchange ) {
+        public void onRejected( PnioExchange<TestState> pnioExchange ) {
             defaultResponse( pnioExchange );
         }
 
         @Override
-        public void onTimeout( TestPnioExchange pnioExchange ) {
+        public void onTimeout( PnioExchange<TestState> pnioExchange ) {
             defaultResponse( pnioExchange );
         }
 
         @Override
-        public void onUnknown( TestPnioExchange pnioExchange ) {
+        public void onUnknown( PnioExchange<TestState> pnioExchange ) {
             defaultResponse( pnioExchange );
         }
 
         @Override
-        public void onResponseBufferOverflow( TestPnioExchange pnioExchange ) {
-            AbstractPnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+        public void onResponseBufferOverflow( PnioExchange<TestState> pnioExchange ) {
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
             httpResponse.responseBuffer.setAndResize( "BO" );

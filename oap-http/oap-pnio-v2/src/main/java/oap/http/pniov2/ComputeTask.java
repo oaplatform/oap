@@ -1,6 +1,6 @@
 package oap.http.pniov2;
 
 @FunctionalInterface
-public interface ComputeTask<E extends AbstractPnioExchange<E>> {
-    void accept( E pnioExchange ) throws Exception;
+public interface ComputeTask<RequestState> {
+    void accept( PnioExchange<RequestState> pnioExchange ) throws Exception;
 }

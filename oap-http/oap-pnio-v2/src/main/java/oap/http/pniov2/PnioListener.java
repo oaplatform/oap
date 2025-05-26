@@ -1,17 +1,17 @@
 package oap.http.pniov2;
 
-public interface PnioListener<E extends AbstractPnioExchange<E>> {
-    void onTimeout( E pnioExchange );
+public interface PnioListener<RequestState> {
+    void onTimeout( PnioExchange<RequestState> pnioExchange );
 
-    void onException( E pnioExchange );
+    void onException( PnioExchange<RequestState> pnioExchange );
 
-    void onRequestBufferOverflow( E pnioExchange );
+    void onRequestBufferOverflow( PnioExchange<RequestState> pnioExchange );
 
-    void onResponseBufferOverflow( E pnioExchange );
+    void onResponseBufferOverflow( PnioExchange<RequestState> pnioExchange );
 
-    void onRejected( E pnioExchange );
+    void onRejected( PnioExchange<RequestState> pnioExchange );
 
-    void onDone( E pnioExchange );
+    void onDone( PnioExchange<RequestState> pnioExchange );
 
-    void onUnknown( E pnioExchange );
+    void onUnknown( PnioExchange<RequestState> pnioExchange );
 }

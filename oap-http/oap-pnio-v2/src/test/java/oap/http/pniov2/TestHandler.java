@@ -9,11 +9,11 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class TestHandler {
-    public static ComputeTask<TestPnioExchange> compute( String name ) {
+    public static ComputeTask<TestState> compute( String name ) {
         return compute( name, _ -> {} );
     }
 
-    public static ComputeTask<TestPnioExchange> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static ComputeTask<TestState> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 
@@ -25,11 +25,11 @@ public class TestHandler {
         };
     }
 
-    public static AsyncTask<String, TestPnioExchange> async( String name ) {
+    public static AsyncTask<String, TestState> async( String name ) {
         return async( name, _ -> {} );
     }
 
-    public static AsyncTask<String, TestPnioExchange> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static AsyncTask<String, TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 
@@ -45,22 +45,22 @@ public class TestHandler {
         };
     }
 
-    public static void handle( String name, String type, TestPnioExchange pnioExchange,
+    public static void handle( String name, String type, PnioExchange<TestState> pnioExchange,
                                TestHandlerOptions testHandlerOptions ) throws InterruptedException {
         String currentThreadName = Thread.currentThread().getName();
 
         String data = "name '" + name + "' type " + type + " thread '" + currentThreadName.substring( 7, 11 )
-            + "' new thread " + !pnioExchange.oldThreadName.equals( currentThreadName );
+            + "' new thread " + !pnioExchange.requestState.oldThreadName.equals( currentThreadName );
 
         log.debug( "currentThreadName {} data {}", currentThreadName, data );
 
-        if( !pnioExchange.sb.isEmpty() ) {
-            pnioExchange.sb.append( "\n" );
+        if( !pnioExchange.requestState.sb.isEmpty() ) {
+            pnioExchange.requestState.sb.append( "\n" );
         }
 
-        pnioExchange.sb.append( data );
+        pnioExchange.requestState.sb.append( data );
 
-        pnioExchange.oldThreadName = currentThreadName;
+        pnioExchange.requestState.oldThreadName = currentThreadName;
 
         if( testHandlerOptions.runtimeException != null ) {
             if( testHandlerOptions.async ) {
