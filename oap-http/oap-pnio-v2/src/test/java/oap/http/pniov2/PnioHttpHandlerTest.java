@@ -124,7 +124,8 @@ public class PnioHttpHandlerTest extends Fixtures {
         ComputeTask<TestState> task = ( pnioExchange, testState ) -> {
             pnioExchange.runAsyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
 
-            pnioExchange.completeAndSendResponse();
+            pnioExchange.complete();
+            pnioExchange.response();
         };
 
         runWithWorkflow( 1024, 1024, 1, 200, task, port -> {
@@ -171,7 +172,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
-            pnioExchange.responseBuffer.setAndResize( pnioExchange.printState() );
+            httpResponse.responseBuffer.setAndResize( pnioExchange.printState() );
 
             pnioExchange.send();
         }
@@ -188,16 +189,17 @@ public class PnioHttpHandlerTest extends Fixtures {
 
             OutputStream outputStream = null;
             try {
-                outputStream = pnioExchange.responseBuffer.getOutputStream();
+                PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+                outputStream = httpResponse.responseBuffer.getOutputStream();
 
                 if( pnioExchange.gzipSupported() ) {
                     outputStream = new GZIPOutputStream( outputStream );
-                    pnioExchange.httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
+                    httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
                 }
                 outputStream.write( pnioExchange.workflowState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
 
-                pnioExchange.httpResponse.status = OK;
-                pnioExchange.httpResponse.contentType = ContentType.TEXT_PLAIN;
+                httpResponse.status = OK;
+                httpResponse.contentType = ContentType.TEXT_PLAIN;
             } finally {
                 Closeables.close( outputStream );
             }
@@ -210,7 +212,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_GATEWAY;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
-            pnioExchange.responseBuffer.setAndResize( pnioExchange.throwable.getMessage() );
+            httpResponse.responseBuffer.setAndResize( pnioExchange.throwable.getMessage() );
 
             pnioExchange.send();
         }
@@ -240,7 +242,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
-            pnioExchange.responseBuffer.setAndResize( "BO" );
+            httpResponse.responseBuffer.setAndResize( "BO" );
 
             pnioExchange.send();
         }

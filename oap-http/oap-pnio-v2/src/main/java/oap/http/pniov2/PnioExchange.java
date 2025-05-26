@@ -38,9 +38,8 @@ public class PnioExchange<State> {
 
     public final long startTimeNano;
     public final byte[] requestBuffer;
-    public final PnioResponseBuffer responseBuffer;
     public final long timeoutNano;
-    public final HttpResponse httpResponse = new HttpResponse();
+    public final HttpResponse httpResponse;
     public final PnioController controller;
     public final State workflowState;
     public final PnioListener<State> pnioListener;
@@ -56,7 +55,7 @@ public class PnioExchange<State> {
                          PnioListener<State> pnioListener ) {
         this.startTimeNano = System.nanoTime();
         this.requestBuffer = requestBuffer;
-        this.responseBuffer = new PnioResponseBuffer( responseSize );
+        httpResponse = new HttpResponse( new PnioResponseBuffer( responseSize ) );
 
         this.controller = controller;
 
@@ -119,6 +118,7 @@ public class PnioExchange<State> {
             oapExchange.setResponseHeader( Http.Headers.CONTENT_TYPE, contentType );
         }
 
+        PnioResponseBuffer responseBuffer = httpResponse.responseBuffer;
         if( !responseBuffer.isEmpty() ) {
             oapExchange.send( responseBuffer.buffer, 0, responseBuffer.length );
         } else {
@@ -224,11 +224,6 @@ public class PnioExchange<State> {
         return oapExchange.isRequestGzipped();
     }
 
-    public void completeAndSendResponse() {
-        complete();
-        response();
-    }
-
     @SuppressWarnings( "checkstyle:InterfaceIsType" )
     public interface ProcessState {
         int RUNNING = 0;
@@ -245,7 +240,21 @@ public class PnioExchange<State> {
     public static class HttpResponse {
         public final HashMap<String, String> headers = new HashMap<>();
         public final ArrayList<Cookie> cookies = new ArrayList<>();
+        public final PnioResponseBuffer responseBuffer;
         public int status = StatusCodes.NO_CONTENT;
         public String contentType;
+
+        public HttpResponse( PnioResponseBuffer responseBuffer ) {
+            this.responseBuffer = responseBuffer;
+        }
+
+        public void redirect( String location ) {
+            status = Http.StatusCode.FOUND;
+            headers.put( Http.Headers.LOCATION, location );
+        }
+
+        public void responseNoContent() {
+            status = Http.StatusCode.NO_CONTENT;
+        }
     }
 }
