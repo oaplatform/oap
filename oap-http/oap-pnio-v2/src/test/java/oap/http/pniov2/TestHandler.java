@@ -25,20 +25,20 @@ public class TestHandler {
         };
     }
 
-    public static AsyncTask<Void, TestPnioExchange> async( String name ) {
+    public static AsyncTask<String, TestPnioExchange> async( String name ) {
         return async( name, _ -> {} );
     }
 
-    public static AsyncTask<Void, TestPnioExchange> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static AsyncTask<String, TestPnioExchange> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 
         return pnioExchange -> {
-            CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+            CompletableFuture<String> completableFuture = new CompletableFuture<>();
             TestHandler.handle( name, "ASYNC", pnioExchange, testHandlerOptionsBuilder
                 .async( true )
                 .exceptionCallback( completableFuture::completeExceptionally )
-                .successCallback( () -> completableFuture.complete( null ) )
+                .successCallback( () -> completableFuture.complete( name ) )
                 .build() );
 
             return completableFuture;
@@ -52,7 +52,7 @@ public class TestHandler {
         String data = "name '" + name + "' type " + type + " thread '" + currentThreadName.substring( 7, 11 )
             + "' new thread " + !pnioExchange.oldThreadName.equals( currentThreadName );
 
-        log.debug( data );
+        log.debug( "currentThreadName {} data {}", currentThreadName, data );
 
         if( !pnioExchange.sb.isEmpty() ) {
             pnioExchange.sb.append( "\n" );

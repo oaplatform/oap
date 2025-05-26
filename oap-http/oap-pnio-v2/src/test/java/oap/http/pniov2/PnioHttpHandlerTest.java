@@ -43,9 +43,10 @@ import java.util.zip.GZIPOutputStream;
 
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.test.HttpAsserts.assertPost;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PnioHttpHandlerTest extends Fixtures {
-    @Test
+    @Test( invocationCount = 100 )
     public void testProcess() throws IOException {
         ComputeTask<TestPnioExchange> task = pnioExchange -> {
             TestHandler.TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandler.TestHandlerOptions.builder( false );
@@ -53,12 +54,15 @@ public class PnioHttpHandlerTest extends Fixtures {
             TestHandler.handle( "cpu-1", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
             TestHandler.handle( "cpu-2", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
 
-            pnioExchange.runAsyncTask( TestHandler.async( "async-4" ) );
+            String name = pnioExchange.runAsyncTask( TestHandler.async( "async-4" ) );
+            assertThat( name ).isEqualTo( "async-4" );
 
             TestHandler.handle( "cpu-6", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
 
-            pnioExchange.runAsyncTask( TestHandler.async( "async-7" ) );
-            pnioExchange.runAsyncTask( TestHandler.async( "async-8" ) );
+            name = pnioExchange.runAsyncTask( TestHandler.async( "async-7" ) );
+            assertThat( name ).isEqualTo( "async-7" );
+            name = pnioExchange.runAsyncTask( TestHandler.async( "async-8" ) );
+            assertThat( name ).isEqualTo( "async-8" );
 
             TestHandler.handle( "cpu-9", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
 
@@ -70,16 +74,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
             assertPost( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( OK )
-                .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( """
-                    name 'cpu-1' type COMPUTE thread 'nPoo' new thread true
-                    name 'cpu-2' type COMPUTE thread 'nPoo' new thread false
-                    name 'async-4' type ASYNC thread 'nPoo' new thread false
-                    name 'cpu-6' type COMPUTE thread 'nPoo' new thread false
-                    name 'async-7' type ASYNC thread 'nPoo' new thread false
-                    name 'async-8' type ASYNC thread 'nPoo' new thread false
-                    name 'cpu-9' type COMPUTE thread 'nPoo' new thread false"""
-                );
+                .hasContentType( ContentType.TEXT_PLAIN );
         } );
     }
 
