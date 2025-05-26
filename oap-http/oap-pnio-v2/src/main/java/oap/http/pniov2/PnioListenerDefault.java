@@ -15,7 +15,7 @@ public class PnioListenerDefault<RequestState> implements PnioListener<RequestSt
 
     protected void setResponseCode( PnioExchange<RequestState> pnioExchange, int internalServerError ) {
         pnioExchange.httpResponse.status = internalServerError;
-        pnioExchange.response();
+        pnioExchange.send();
     }
 
     @Override
@@ -35,7 +35,7 @@ public class PnioListenerDefault<RequestState> implements PnioListener<RequestSt
 
     @Override
     public void onDone( PnioExchange<RequestState> pnioExchange ) {
-        pnioExchange.response();
+        pnioExchange.send();
     }
 
     public void onUnknown( PnioExchange<RequestState> pnioExchange ) {

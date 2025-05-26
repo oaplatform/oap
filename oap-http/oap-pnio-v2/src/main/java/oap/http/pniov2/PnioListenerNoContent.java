@@ -3,7 +3,7 @@ package oap.http.pniov2;
 public class PnioListenerNoContent<RequestState> implements PnioListener<RequestState> {
     protected void noContextResponse( PnioExchange<RequestState> pnioExchange ) {
         pnioExchange.httpResponse.responseNoContent();
-        pnioExchange.response();
+        pnioExchange.send();
     }
 
     @Override
@@ -33,7 +33,7 @@ public class PnioListenerNoContent<RequestState> implements PnioListener<Request
 
     @Override
     public void onDone( PnioExchange<RequestState> pnioExchange ) {
-        pnioExchange.response();
+        pnioExchange.send();
     }
 
     public void onUnknown( PnioExchange<RequestState> pnioExchange ) {

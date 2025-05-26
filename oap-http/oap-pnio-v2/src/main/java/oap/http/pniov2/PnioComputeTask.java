@@ -17,6 +17,8 @@ public class PnioComputeTask<RequestState> extends RecursiveAction {
     protected void compute() {
         try {
             task.accept( pnioExchange );
+            pnioExchange.complete();
+            pnioExchange.response();
         } catch( RejectedExecutionException e ) {
             pnioExchange.completeWithRejected();
             pnioExchange.response();
