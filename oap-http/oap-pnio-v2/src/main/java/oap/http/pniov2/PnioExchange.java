@@ -239,6 +239,10 @@ public class PnioExchange<RequestState> {
         return oapExchange.getBooleanParameter( name );
     }
 
+    public final String getRequestCookieValue( String name ) {
+        return oapExchange.getRequestCookieValue( name );
+    }
+
     public final String ip() {
         return oapExchange.ip();
     }
