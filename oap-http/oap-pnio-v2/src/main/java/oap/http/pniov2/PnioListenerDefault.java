@@ -1,46 +1,43 @@
 package oap.http.pniov2;
 
-import io.undertow.server.HttpServerExchange;
 import oap.http.Http;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class PnioListenerDefault<State> implements PnioListener<State> {
+public abstract class PnioListenerDefault implements PnioListener {
     @Override
-    public void onTimeout( PnioExchange<State> pnioExchange ) {
+    public void onTimeout( AbstractPnioExchange pnioExchange ) {
         setResponseCode( pnioExchange, Http.StatusCode.BAD_GATEWAY );
     }
 
     @Override
-    public void onException( PnioExchange<State> pnioExchange ) {
+    public void onException( AbstractPnioExchange pnioExchange ) {
         setResponseCode( pnioExchange, Http.StatusCode.INTERNAL_SERVER_ERROR );
     }
 
-    protected <State> void setResponseCode( PnioExchange<State> pnioExchange, int internalServerError ) {
-        oap.http.server.nio.HttpServerExchange oapExchange = pnioExchange.oapExchange;
-        HttpServerExchange exchange = oapExchange.exchange;
-        exchange.setStatusCode( internalServerError );
-        exchange.endExchange();
+    protected void setResponseCode( AbstractPnioExchange pnioExchange, int internalServerError ) {
+        pnioExchange.httpResponse.status = internalServerError;
+        pnioExchange.response();
     }
 
     @Override
-    public void onRequestBufferOverflow( PnioExchange<State> pnioExchange ) {
+    public void onRequestBufferOverflow( AbstractPnioExchange pnioExchange ) {
         setResponseCode( pnioExchange, Http.StatusCode.BAD_REQUEST );
     }
 
     @Override
-    public void onResponseBufferOverflow( PnioExchange<State> pnioExchange ) {
+    public void onResponseBufferOverflow( AbstractPnioExchange pnioExchange ) {
         setResponseCode( pnioExchange, Http.StatusCode.BAD_GATEWAY );
     }
 
     @Override
-    public void onRejected( PnioExchange<State> pnioExchange ) {
+    public void onRejected( AbstractPnioExchange pnioExchange ) {
         setResponseCode( pnioExchange, Http.StatusCode.TOO_MANY_REQUESTS );
     }
 
     @Override
-    public abstract void onDone( PnioExchange<State> pnioExchange );
+    public abstract void onDone( AbstractPnioExchange pnioExchange );
 
-    public void onUnknown( PnioExchange<State> pnioExchange ) {
+    public void onUnknown( AbstractPnioExchange pnioExchange ) {
         setResponseCode( pnioExchange, Http.StatusCode.INTERNAL_SERVER_ERROR );
     }
 }

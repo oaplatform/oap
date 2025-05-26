@@ -17,7 +17,7 @@ public class PnioController implements AutoCloseable {
         Closeables.close( forkJoinPool );
     }
 
-    public boolean submit( PnioComputeTask<?> task ) {
+    public boolean submit( PnioComputeTask task ) {
         try {
             forkJoinPool.submit( task );
 

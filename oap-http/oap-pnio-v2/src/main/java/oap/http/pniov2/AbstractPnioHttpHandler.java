@@ -18,18 +18,18 @@ import oap.http.server.nio.HttpServerExchange;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class PnioHttpHandler<State> implements PnioHttpHandlerReference {
+public abstract class AbstractPnioHttpHandler<E extends AbstractPnioExchange<E>> implements PnioHttpHandlerReference {
     public final int requestSize;
     public final int responseSize;
-    public final PnioListener<State> pnioListener;
-    public final ConcurrentHashMap<Long, PnioExchange<State>> exchanges = new ConcurrentHashMap<>();
+    public final PnioListener<E> pnioListener;
+    public final ConcurrentHashMap<Long, E> exchanges = new ConcurrentHashMap<>();
     private final PnioController pnioController;
-    public ComputeTask<State> task;
+    public ComputeTask<E> task;
 
-    public PnioHttpHandler( PnioHttpSettings settings,
-                            ComputeTask<State> task,
-                            PnioListener<State> pnioListener,
-                            PnioController pnioController ) {
+    public AbstractPnioHttpHandler( PnioHttpSettings settings,
+                                    ComputeTask<E> task,
+                                    PnioListener<E> pnioListener,
+                                    PnioController pnioController ) {
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
 
@@ -40,7 +40,7 @@ public class PnioHttpHandler<State> implements PnioHttpHandlerReference {
         Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
-    public void handleRequest( HttpServerExchange oapExchange, long timeout, State workflowState ) {
+    public void handleRequest( HttpServerExchange oapExchange, long timeout ) {
         PnioMetrics.REQUESTS.increment();
 
         oapExchange.exchange.addExchangeCompleteListener( ( _, nl ) -> {
@@ -55,21 +55,24 @@ public class PnioHttpHandler<State> implements PnioHttpHandlerReference {
         }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
-            PnioExchange<State> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, workflowState, oapExchange, timeout, pnioListener );
+            E pnioExchange = createPnioExchange( oapExchange, timeout, message, pnioController, task, pnioListener );
             pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                PnioComputeTask<State> pnioComputeTask = new PnioComputeTask<>( task, pnioExchange, workflowState );
+                PnioComputeTask pnioComputeTask = new PnioComputeTask( task, pnioExchange );
                 if( !pnioController.submit( pnioComputeTask ) ) {
                     exchanges.remove( pnioExchange.id );
+                    pnioExchange.completeWithRejected();
+                    pnioExchange.response();
                 }
             } catch( Exception e ) {
                 exchanges.remove( pnioExchange.id );
-                throw e;
+                pnioExchange.completeWithFail( e );
+                pnioExchange.response();
             }
         }, ( _, e ) -> {
-            PnioExchange<State> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, task, workflowState, oapExchange, timeout, pnioListener );
+            E pnioExchange = createPnioExchange( oapExchange, timeout, null, pnioController, task, pnioListener );
             exchanges.put( pnioExchange.id, pnioExchange );
             try {
 
@@ -88,8 +91,11 @@ public class PnioHttpHandler<State> implements PnioHttpHandlerReference {
         oapExchange.exchange.dispatch();
     }
 
+    protected abstract E createPnioExchange( HttpServerExchange oapExchange, long timeout, byte[] message,
+                                             PnioController pnioController, ComputeTask<E> computeTask, PnioListener<E> pnioListener );
+
     @Override
-    public PnioHttpHandler<?> getPnioHttpHandler() {
+    public AbstractPnioHttpHandler<?> getPnioHttpHandler() {
         return this;
     }
 

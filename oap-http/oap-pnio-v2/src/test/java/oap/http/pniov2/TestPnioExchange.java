@@ -24,7 +24,14 @@
 
 package oap.http.pniov2;
 
-public class TestState {
+import oap.http.server.nio.HttpServerExchange;
+
+public class TestPnioExchange extends AbstractPnioExchange<TestPnioExchange> {
     public StringBuilder sb = new StringBuilder();
     public String oldThreadName = Thread.currentThread().getName();
+
+    public TestPnioExchange( byte[] requestBuffer, int responseSize, PnioController controller, ComputeTask<TestPnioExchange> task,
+                             HttpServerExchange oapExchange, long timeout, PnioListener<TestPnioExchange> pnioListener ) {
+        super( requestBuffer, responseSize, controller, task, oapExchange, timeout, pnioListener );
+    }
 }

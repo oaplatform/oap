@@ -25,7 +25,7 @@ public class PerformanceTest {
         int port = 12345;
 
 
-        PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
+        AbstractPnioHttpHandler.PnioHttpSettings settings = AbstractPnioHttpHandler.PnioHttpSettings.builder()
             .requestSize( 64000 )
             .responseSize( 64000 )
             .build();
@@ -35,7 +35,7 @@ public class PerformanceTest {
             httpServer.statistics = true;
             httpServer.start();
 
-            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
+            DefaultPnioHttpHandler httpHandler = new DefaultPnioHttpHandler( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
             Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                 System.out.println();
@@ -46,7 +46,7 @@ public class PerformanceTest {
             } );
 
             httpServer.bind( "/test",
-                exchange -> httpHandler.handleRequest( exchange, 100, new TestState() ), false );
+                exchange -> httpHandler.handleRequest( exchange, 100 ), false );
 
 
 //            Threads.sleepSafely( 100000000 );
@@ -64,9 +64,9 @@ public class PerformanceTest {
 
     }
 
-    public static class TestHandler implements ComputeTask<TestState> {
+    public static class TestHandler implements ComputeTask<TestPnioExchange> {
         @Override
-        public void accept( PnioExchange<TestState> pnioExchange, TestState testState ) throws Exception {
+        public void accept( TestPnioExchange pnioExchange ) {
             double sum = 0.0;
             for( int i = 0; i < 200; i++ ) {
                 for( int j = 0; j < 200; j++ ) {

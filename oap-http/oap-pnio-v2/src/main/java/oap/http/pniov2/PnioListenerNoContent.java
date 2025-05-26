@@ -1,46 +1,41 @@
 package oap.http.pniov2;
 
-import io.undertow.server.HttpServerExchange;
-import oap.http.Http;
-
 @SuppressWarnings( "checkstyle:AbstractClassName" )
-public abstract class PnioListenerNoContent<State> implements PnioListener<State> {
-    protected void noContextResponse( PnioExchange<State> pnioExchange ) {
-        oap.http.server.nio.HttpServerExchange oapExchange = pnioExchange.oapExchange;
-        HttpServerExchange exchange = oapExchange.exchange;
-        exchange.setStatusCode( Http.StatusCode.NO_CONTENT );
-        exchange.endExchange();
+public abstract class PnioListenerNoContent<State> implements PnioListener {
+    protected void noContextResponse( AbstractPnioExchange pnioExchange ) {
+        pnioExchange.httpResponse.responseNoContent();
+        pnioExchange.response();
     }
 
     @Override
-    public void onTimeout( PnioExchange<State> pnioExchange ) {
+    public void onTimeout( AbstractPnioExchange pnioExchange ) {
         noContextResponse( pnioExchange );
     }
 
     @Override
-    public void onException( PnioExchange<State> pnioExchange ) {
+    public void onException( AbstractPnioExchange pnioExchange ) {
         noContextResponse( pnioExchange );
     }
 
     @Override
-    public void onRequestBufferOverflow( PnioExchange<State> pnioExchange ) {
+    public void onRequestBufferOverflow( AbstractPnioExchange pnioExchange ) {
         noContextResponse( pnioExchange );
     }
 
     @Override
-    public void onResponseBufferOverflow( PnioExchange<State> pnioExchange ) {
+    public void onResponseBufferOverflow( AbstractPnioExchange pnioExchange ) {
         noContextResponse( pnioExchange );
     }
 
     @Override
-    public void onRejected( PnioExchange<State> pnioExchange ) {
+    public void onRejected( AbstractPnioExchange pnioExchange ) {
         noContextResponse( pnioExchange );
     }
 
     @Override
-    public abstract void onDone( PnioExchange<State> pnioExchange );
+    public abstract void onDone( AbstractPnioExchange pnioExchange );
 
-    public void onUnknown( PnioExchange<State> pnioExchange ) {
+    public void onUnknown( AbstractPnioExchange pnioExchange ) {
         noContextResponse( pnioExchange );
     }
 }

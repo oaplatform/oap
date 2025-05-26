@@ -21,8 +21,8 @@ public class PnioWS {
         ArrayList<PnioExchangeView> views = new ArrayList<>();
 
         pnioHttpHandler.forEach( ( name, handler ) -> {
-            for( PnioExchange<?> pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
-                views.add( new PnioExchangeView( name, pnioExchange.printState(),
+            for( AbstractPnioExchange pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
+                views.add( new PnioExchangeView( name, pnioExchange.processState.name(),
                     pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
                     pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );
             }

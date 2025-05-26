@@ -2,22 +2,24 @@ package oap.http.pniov2;
 
 import java.nio.BufferOverflowException;
 import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.RejectedExecutionException;
 
-public class PnioComputeTask<State> extends RecursiveAction {
-    private final ComputeTask<State> task;
-    private final PnioExchange<State> pnioExchange;
-    private final State state;
+public class PnioComputeTask extends RecursiveAction {
+    private final ComputeTask task;
+    private final AbstractPnioExchange pnioExchange;
 
-    public PnioComputeTask( ComputeTask<State> task, PnioExchange<State> pnioExchange, State state ) {
+    public PnioComputeTask( ComputeTask task, AbstractPnioExchange pnioExchange ) {
         this.task = task;
         this.pnioExchange = pnioExchange;
-        this.state = state;
     }
 
     @Override
     protected void compute() {
         try {
-            task.accept( pnioExchange, state );
+            task.accept( pnioExchange );
+        } catch( RejectedExecutionException e ) {
+            pnioExchange.completeWithRejected();
+            pnioExchange.response();
         } catch( BufferOverflowException e ) {
             pnioExchange.completeWithBufferOverflow( false );
             pnioExchange.response();

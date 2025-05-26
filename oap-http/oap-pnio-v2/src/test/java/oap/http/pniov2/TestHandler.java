@@ -9,33 +9,33 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class TestHandler {
-    public static ComputeTask<TestState> compute( String name ) {
+    public static ComputeTask<TestPnioExchange> compute( String name ) {
         return compute( name, _ -> {} );
     }
 
-    public static ComputeTask<TestState> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static ComputeTask<TestPnioExchange> compute( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 
-        return ( pnioExchange, testState ) -> {
-            TestHandler.handle( name, "COMPUTE", pnioExchange, testState, testHandlerOptionsBuilder.build() );
+        return pnioExchange -> {
+            TestHandler.handle( name, "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
 
             pnioExchange.complete();
             pnioExchange.response();
         };
     }
 
-    public static AsyncTask<Void, TestState> async( String name ) {
+    public static AsyncTask<Void, TestPnioExchange> async( String name ) {
         return async( name, _ -> {} );
     }
 
-    public static AsyncTask<Void, TestState> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
+    public static AsyncTask<Void, TestPnioExchange> async( String name, Consumer<TestHandlerOptions.TestHandlerOptionsBuilder> builder ) {
         TestHandlerOptions.TestHandlerOptionsBuilder testHandlerOptionsBuilder = TestHandlerOptions.builder( false );
         builder.accept( testHandlerOptionsBuilder );
 
-        return ( pnioExchange, testState ) -> {
+        return pnioExchange -> {
             CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-            TestHandler.handle( name, "ASYNC", pnioExchange, testState, testHandlerOptionsBuilder
+            TestHandler.handle( name, "ASYNC", pnioExchange, testHandlerOptionsBuilder
                 .async( true )
                 .exceptionCallback( completableFuture::completeExceptionally )
                 .successCallback( () -> completableFuture.complete( null ) )
@@ -45,22 +45,22 @@ public class TestHandler {
         };
     }
 
-    public static void handle( String name, String type, PnioExchange<TestState> pnioExchange, TestState testState,
+    public static void handle( String name, String type, TestPnioExchange pnioExchange,
                                TestHandlerOptions testHandlerOptions ) throws InterruptedException {
         String currentThreadName = Thread.currentThread().getName();
 
         String data = "name '" + name + "' type " + type + " thread '" + currentThreadName.substring( 7, 11 )
-            + "' new thread " + !testState.oldThreadName.equals( currentThreadName );
+            + "' new thread " + !pnioExchange.oldThreadName.equals( currentThreadName );
 
         log.debug( data );
 
-        if( !testState.sb.isEmpty() ) {
-            testState.sb.append( "\n" );
+        if( !pnioExchange.sb.isEmpty() ) {
+            pnioExchange.sb.append( "\n" );
         }
 
-        testState.sb.append( data );
+        pnioExchange.sb.append( data );
 
-        testState.oldThreadName = currentThreadName;
+        pnioExchange.oldThreadName = currentThreadName;
 
         if( testHandlerOptions.runtimeException != null ) {
             if( testHandlerOptions.async ) {
