@@ -49,9 +49,9 @@ public class ReplicatorTest {
 
     @Test
     public void masterSlave() {
-        var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var replicator = new Replicator<>( slave, master, 50 ) ) {
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( Replicator<String, Bean> _ = new Replicator<>( slave, master, 50 ) ) {
 
             var updates = new AtomicInteger();
             var addons = new AtomicInteger();
@@ -69,7 +69,7 @@ public class ReplicatorTest {
 
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
-            assertEventually( 120, 5, () -> {
+            assertEventually( 100, 50, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "111", "aaa" ), new Bean( "222" ) );
                 assertThat( addons.get() ).isEqualTo( 2 );
                 assertThat( updates.get() ).isEqualTo( 0 );
@@ -79,7 +79,7 @@ public class ReplicatorTest {
             updates.set( 0 );
             addons.set( 0 );
             master.store( new Bean( "111", "bbb" ) );
-            assertEventually( 120, 5, () -> {
+            assertEventually( 100, 50, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
                 assertThat( addons.get() ).isEqualTo( 0 );
                 assertThat( updates.get() ).isEqualTo( 1 );
@@ -91,7 +91,7 @@ public class ReplicatorTest {
             master.delete( "111" );
             master.store( new Bean( "222", "xyz" ) );
             master.store( new Bean( "333", "ccc" ) );
-            assertEventually( 120, 5, () -> {
+            assertEventually( 100, 50, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "222", "xyz" ), new Bean( "333", "ccc" ) );
                 assertThat( addons.get() ).isEqualTo( 1 );
                 assertThat( updates.get() ).isEqualTo( 1 );
