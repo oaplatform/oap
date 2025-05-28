@@ -43,7 +43,7 @@ public abstract class AbstractCounter<T extends AbstractCounter<T>> implements M
     private AbstractCounter() {
     }
 
-    protected abstract long getCurrentTick();
+    public abstract long getCurrentTick();
 
     public final void inc() {
         inc( 1 );
@@ -60,6 +60,10 @@ public abstract class AbstractCounter<T extends AbstractCounter<T>> implements M
 
     public final long get( long tick ) {
         return this.tick == tick ? value : 0;
+    }
+
+    public final long get() {
+        return get( getCurrentTick() );
     }
 
     @Override
@@ -95,13 +99,9 @@ public abstract class AbstractCounter<T extends AbstractCounter<T>> implements M
             this.value = count;
         }
 
-        public long currentTick() {
-            return DateTimeUtils.currentTimeMillis() / periodMs;
-        }
-
         @Override
-        protected long getCurrentTick() {
-            return currentTick();
+        public long getCurrentTick() {
+            return DateTimeUtils.currentTimeMillis() / periodMs;
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class AbstractCounter<T extends AbstractCounter<T>> implements M
         }
 
         @Override
-        protected long getCurrentTick() {
+        public long getCurrentTick() {
             return currentTick();
         }
     }
@@ -132,7 +132,7 @@ public abstract class AbstractCounter<T extends AbstractCounter<T>> implements M
         }
 
         @Override
-        protected long getCurrentTick() {
+        public long getCurrentTick() {
             return currentTick();
         }
     }
@@ -148,7 +148,7 @@ public abstract class AbstractCounter<T extends AbstractCounter<T>> implements M
         }
 
         @Override
-        protected long getCurrentTick() {
+        public long getCurrentTick() {
             return currentTick();
         }
     }
