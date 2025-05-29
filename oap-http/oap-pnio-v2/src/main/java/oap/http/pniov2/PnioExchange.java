@@ -259,6 +259,15 @@ public class PnioExchange<RequestState> {
         return oapExchange.exchange.getQueryParameters().get( name );
     }
 
+    public String getQueryString() {
+        return oapExchange.exchange.getQueryString();
+    }
+
+    public String getFullRequestURL() {
+        return ( !oapExchange.exchange.isHostIncludedInRequestURI() ? oapExchange.exchange.getRequestScheme() + "://" + oapExchange.exchange.getHostAndPort() : "" )
+            + oapExchange.getRequestURI() + "?" + oapExchange.exchange.getQueryString();
+    }
+
     @SuppressWarnings( "checkstyle:InterfaceIsType" )
     public interface ProcessState {
         int RUNNING = 0;
