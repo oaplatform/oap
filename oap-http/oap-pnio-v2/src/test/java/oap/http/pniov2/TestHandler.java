@@ -49,7 +49,7 @@ public class TestHandler {
                                TestHandlerOptions testHandlerOptions ) throws InterruptedException {
         String currentThreadName = Thread.currentThread().getName();
 
-        String data = "name '" + name + "' type " + type + " thread '" + currentThreadName.substring( 7, 11 )
+        String data = "name '" + name + "' type " + type + " thread '" + currentThreadName/*.substring( 7, 11 )*/
             + "' new thread " + !pnioExchange.requestState.oldThreadName.equals( currentThreadName );
 
         log.debug( "currentThreadName {} data {}", currentThreadName, data );
@@ -79,7 +79,7 @@ public class TestHandler {
             }
         } else if( testHandlerOptions.async ) {
             CompletableFuture.runAsync( () -> {
-                    Threads.sleepSafely( 500 );
+                    Threads.sleepSafely( 1 );
                 } )
                 .thenRun( () -> testHandlerOptions.successCallback.run() );
         }

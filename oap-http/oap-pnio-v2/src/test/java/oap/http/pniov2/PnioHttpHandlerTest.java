@@ -151,7 +151,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            try( PnioController pnioController = new PnioController( ioThreads ) ) {
+            try( PnioController pnioController = new PnioController( ioThreads, 10 ) ) {
                 PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, task, new TestPnioListener(), pnioController );
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
@@ -163,7 +163,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Slf4j
     public static class TestPnioListener implements PnioListener<TestState> {
-        private static void defaultResponse( PnioExchange pnioExchange ) {
+        private static void defaultResponse( PnioExchange<?> pnioExchange ) {
             PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
             httpResponse.status = Http.StatusCode.BAD_REQUEST;
             httpResponse.contentType = ContentType.TEXT_PLAIN;
@@ -176,7 +176,7 @@ public class PnioHttpHandlerTest extends Fixtures {
         @SneakyThrows
         public void onDone( PnioExchange<TestState> pnioExchange ) {
             if( log.isDebugEnabled() ) {
-                String data = "name 'TestResponseBuilder thread '" + Thread.currentThread().getName().substring( 7, 11 )
+                String data = "name 'TestResponseBuilder thread '" + Thread.currentThread().getName()/*.substring( 7, 11 )*/
                     + "' new thread " + !pnioExchange.requestState.oldThreadName.equals( Thread.currentThread().getName() );
 
                 log.debug( data );

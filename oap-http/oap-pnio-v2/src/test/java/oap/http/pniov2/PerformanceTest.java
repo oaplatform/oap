@@ -14,9 +14,9 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.http.test.HttpAsserts.assertPost;
 
-@Test( enabled = false )
+@Test
 public class PerformanceTest {
-    @Test( enabled = false )
+    @Test
     public void test() throws IOException {
 
         ConcurrentHashMap<Integer, LongAdder> count = new ConcurrentHashMap<>();
@@ -29,13 +29,13 @@ public class PerformanceTest {
             .requestSize( 64000 )
             .responseSize( 64000 )
             .build();
-        try( PnioController pnioController = new PnioController( 10 );
+        try( PnioController pnioController = new PnioController( 10, 10 );
              NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = 4;
             httpServer.statistics = true;
             httpServer.start();
 
-            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
+            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
             Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                 System.out.println();
@@ -66,7 +66,7 @@ public class PerformanceTest {
 
     public static class TestHandler implements ComputeTask<TestState> {
         @Override
-        public void accept( PnioExchange<TestState> pnioExchange ) {
+        public void run( PnioExchange<TestState> pnioExchange ) {
             double sum = 0.0;
             for( int i = 0; i < 200; i++ ) {
                 for( int j = 0; j < 200; j++ ) {

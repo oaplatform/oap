@@ -19,8 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
+    private static final ThreadLocal<PnioIoQueue> queue = new ThreadLocal<>();
     public final int requestSize;
     public final int responseSize;
+    public final int ioQueueSize;
+    public final boolean important;
     public final PnioListener<RequestState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
     private final PnioController pnioController;
@@ -32,6 +35,8 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
                             PnioController pnioController ) {
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
+        this.ioQueueSize = settings.ioQueueSize;
+        this.important = settings.important;
 
         this.task = task;
         this.pnioListener = pnioListener;
@@ -55,17 +60,23 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
         }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
+
+            PnioIoQueue pnioIoQueue = queue.get();
+            if( pnioIoQueue == null ) {
+                pnioIoQueue = new PnioIoQueue( ioQueueSize, pnioController.getPnioWorkQueues() );
+                queue.set( pnioIoQueue );
+            }
+
             PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
             pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                PnioComputeTask<RequestState> pnioComputeTask = new PnioComputeTask( task, pnioExchange );
-                if( !pnioController.submit( pnioComputeTask ) ) {
+                pnioIoQueue.pushTask( new PnioWorkerTask<>( pnioExchange, task ), pnioWorkerTask -> {
                     exchanges.remove( pnioExchange.id );
                     pnioExchange.completeWithRejected();
                     pnioExchange.response();
-                }
+                }, important );
             } catch( Exception e ) {
                 exchanges.remove( pnioExchange.id );
                 pnioExchange.completeWithFail( e );
@@ -100,5 +111,7 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public static class PnioHttpSettings {
         int requestSize;
         int responseSize;
+        int ioQueueSize;
+        boolean important;
     }
 }
