@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 public class PnioWorkQueueTest {
     @Test
     public void testQueue() throws InterruptedException {
+        PnioWorkerTask.counter.set( 0L );
         PnioWorkQueue pnioWorkQueue = new PnioWorkQueue( 5 );
 
         assertTrue( pnioWorkQueue.tryPushTask( new PnioWorkerTask<>( null, null ) ) );

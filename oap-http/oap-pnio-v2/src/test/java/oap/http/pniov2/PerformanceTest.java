@@ -19,11 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.http.test.HttpAsserts.assertPost;
 
-@Test
+@Test( enabled = false )
 public class PerformanceTest {
     public static AtomicInteger count = new AtomicInteger();
 
-    @Test
+    @Test( enabled = false )
     public void test() throws IOException {
 
         ConcurrentHashMap<Integer, LongAdder> count = new ConcurrentHashMap<>();

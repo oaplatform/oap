@@ -13,7 +13,7 @@ public class PnioWorkerTask<RequestState, R extends ComputeTask<RequestState>> {
     protected static final int COMPLETED = 0x1;
     protected static final int FORKED = 0x2;
     protected static final int INIT = 0;
-    protected static final AtomicLong counter = new AtomicLong();
+    public static final AtomicLong counter = new AtomicLong();
 
     public final long id;
     protected final PnioExchange<RequestState> pnioExchange;
