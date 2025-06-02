@@ -16,16 +16,17 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
-    private static final ThreadLocal<PnioIoQueue> queue = new ThreadLocal<>();
     public final int requestSize;
     public final int responseSize;
     public final int ioQueueSize;
     public final boolean important;
     public final PnioListener<RequestState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
+    public final AtomicLong rr = new AtomicLong();
     private final PnioController pnioController;
     public ComputeTask<RequestState> task;
 
@@ -60,19 +61,12 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
         }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
-
-            PnioIoQueue pnioIoQueue = queue.get();
-            if( pnioIoQueue == null ) {
-                pnioIoQueue = new PnioIoQueue( ioQueueSize, pnioController.getPnioWorkQueues() );
-                queue.set( pnioIoQueue );
-            }
-
             PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
             pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                pnioIoQueue.pushTask( new PnioWorkerTask<>( pnioExchange, task ), pnioWorkerTask -> {
+                pnioController.pushTask( rr, new PnioWorkerTask<>( pnioExchange, task ), pnioWorkerTask -> {
                     exchanges.remove( pnioExchange.id );
                     pnioExchange.completeWithRejected();
                     pnioExchange.response();

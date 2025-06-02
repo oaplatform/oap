@@ -215,6 +215,10 @@ public class PnioExchange<RequestState> {
         return pnioAsyncWorkerTask.result;
     }
 
+    public boolean isTimeout() {
+        return getTimeLeftNano() < 1;
+    }
+
     public long getTimeLeftNano() {
         long now = System.nanoTime();
         long durationInNano = now - getRequestStartTime();

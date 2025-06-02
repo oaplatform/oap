@@ -35,11 +35,13 @@ public class PnioAsyncWorkerTask<RequestState, T, R extends AsyncTask<T, Request
                         }
                     } finally {
                         state.set( COMPLETED );
+                        pnioWorkerThread.workQueue.signal();
                     }
                 } );
         } catch( Throwable e ) {
             pnioExchange.completeWithFail( e );
             state.set( COMPLETED );
+            pnioWorkerThread.workQueue.signal();
         }
 
 

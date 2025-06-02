@@ -17,10 +17,17 @@ public class PnioWorkerThread extends Thread {
     public void run() {
         while( !pnioController.done ) {
             try {
-                PnioWorkerTask<?, ?> currentTask = workQueue.peekTask();
-
-                currentTask.fork( this );
-                currentTask.join( this );
+                PnioWorkerTask<?, ?> currentTask = workQueue.takeTask();
+                if( currentTask != null ) {
+                    PnioExchange<?> pnioExchange = currentTask.pnioExchange;
+                    if( pnioExchange.isTimeout() ) {
+                        pnioExchange.completeWithTimeout();
+                        pnioExchange.response();
+                    } else {
+                        currentTask.fork( this );
+                        currentTask.join( this );
+                    }
+                }
             } catch( InterruptedException ignored ) {
 
             }

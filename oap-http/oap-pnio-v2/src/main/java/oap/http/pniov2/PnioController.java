@@ -3,11 +3,11 @@ package oap.http.pniov2;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 @Slf4j
 public class PnioController implements AutoCloseable {
-    private final PnioWorkerThread[] pool;
-    private final AtomicLong rr = new AtomicLong();
+    public final PnioWorkerThread[] pool;
     public volatile boolean done;
 
     public PnioController( int parallelism, int threadQueueSize ) {
@@ -53,5 +53,22 @@ public class PnioController implements AutoCloseable {
         }
 
         return count;
+    }
+
+    public void pushTask( AtomicLong counter, PnioWorkerTask<?, ?> task, Consumer<PnioWorkerTask<?, ?>> rejected, boolean important ) {
+        PnioWorkQueue queue = nextQueue( counter );
+        if( important ) {
+            queue.forcePushTask( task );
+        } else {
+            if( !queue.tryPushTask( task ) ) {
+                rejected.accept( task );
+            }
+        }
+    }
+
+    public PnioWorkQueue nextQueue( AtomicLong rr ) {
+        long rrValue = rr.incrementAndGet();
+
+        return pool[( int ) ( rrValue % pool.length )].workQueue;
     }
 }

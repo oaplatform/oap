@@ -10,12 +10,11 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @ToString
 public class PnioWorkerTask<RequestState, R extends ComputeTask<RequestState>> {
-
     protected static final int COMPLETED = 0x1;
     protected static final int FORKED = 0x2;
     protected static final int INIT = 0;
+    protected static final AtomicLong counter = new AtomicLong();
 
-    private static final AtomicLong counter = new AtomicLong();
     public final long id;
     protected final PnioExchange<RequestState> pnioExchange;
     protected final R computeTask;
@@ -49,19 +48,13 @@ public class PnioWorkerTask<RequestState, R extends ComputeTask<RequestState>> {
         run();
 
         while( state.get() != COMPLETED ) {
-            PnioWorkerTask<?, ?> pnioWorkerTask;
-
-            if( !workQueue.isEmpty() ) {
-                pnioWorkerTask = workQueue.tryPeekTask();
-
+            try {
+                PnioWorkerTask<?, ?> pnioWorkerTask = workQueue.takeTask();
                 if( pnioWorkerTask != null ) {
                     pnioWorkerTask.run();
-                } else {
-                    Thread.onSpinWait();
                 }
-
-            } else {
-                Thread.onSpinWait();
+            } catch( InterruptedException e ) {
+                pnioExchange.completeWithFail( e );
             }
         }
     }

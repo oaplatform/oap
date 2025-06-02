@@ -2,9 +2,9 @@ package oap.http.pniov2;
 
 import oap.util.Dates;
 import oap.ws.WsMethod;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
@@ -17,18 +17,37 @@ public class PnioWS {
     }
 
     @WsMethod( method = GET, path = "/" )
-    public List<PnioExchangeView> queue() {
-        ArrayList<PnioExchangeView> views = new ArrayList<>();
+    public PnioView queue() {
+        PnioView pnioView = new PnioView();
+
+        MutableObject<PnioController> pnioController = new MutableObject<>();
 
         pnioHttpHandler.forEach( ( name, handler ) -> {
-            for( PnioExchange pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
-                views.add( new PnioExchangeView( name, pnioExchange.printState(),
+            for( PnioExchange<?> pnioExchange : handler.getPnioHttpHandler().exchanges.values() ) {
+                if( pnioController.getValue() == null ) {
+                    pnioController.setValue( pnioExchange.controller );
+                }
+                pnioView.exchanges.add( new PnioExchangeView( name, pnioExchange.printState(),
                     pnioExchange.id, pnioExchange.isRequestGzipped(), pnioExchange.oapExchange.getRequestURI(),
                     pnioExchange.getRequestStartTime(), pnioExchange.getTimeLeftNano() ) );
             }
         } );
 
-        return views;
+        if( pnioController.getValue() != null ) {
+            PnioWorkQueue[] pnioWorkQueues = pnioController.getValue().getPnioWorkQueues();
+            for( PnioWorkQueue pnioWorkQueue : pnioWorkQueues ) {
+                pnioView.tasksPerWorker.add( pnioWorkQueue.size() );
+            }
+            pnioView.tasks = pnioController.getValue().getTaskCount();
+        }
+
+        return pnioView;
+    }
+
+    public static class PnioView {
+        public final ArrayList<PnioExchangeView> exchanges = new ArrayList<>();
+        public long tasks;
+        public ArrayList<Integer> tasksPerWorker = new ArrayList<>();
     }
 
     public static class PnioExchangeView {
