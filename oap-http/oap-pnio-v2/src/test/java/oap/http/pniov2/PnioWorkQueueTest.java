@@ -12,7 +12,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class PnioWorkQueueTest {
-    @Test
+    @Test( invocationCount = 1000 )
     public void testQueue() throws InterruptedException {
         PnioWorkerTask.counter.set( 0L );
         PnioWorkQueue pnioWorkQueue = new PnioWorkQueue( 5 );

@@ -11,6 +11,7 @@ public class PnioWorkQueue {
     protected Node first;
     protected Node last;
     protected int count;
+    protected volatile int signal;
 
     public PnioWorkQueue( int queueSize ) {
         this.queueSize = queueSize;
@@ -64,9 +65,11 @@ public class PnioWorkQueue {
     public PnioWorkerTask<?, ?> takeTask() throws InterruptedException {
         lock.lock();
         try {
-            if( first == null ) {
+            if( first == null && signal == 0 ) {
                 notEmpty.await();
             }
+
+            signal = 0;
 
             if( first == null ) {
                 return null;
@@ -97,7 +100,8 @@ public class PnioWorkQueue {
     public void signal() {
         lock.lock();
         try {
-            notEmpty.signalAll();
+            notEmpty.signal();
+            signal = 1;
         } finally {
             lock.unlock();
         }
