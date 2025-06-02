@@ -16,13 +16,17 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public final int requestSize;
     public final int responseSize;
+    public final int ioQueueSize;
+    public final boolean important;
     public final PnioListener<RequestState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
+    public final AtomicLong rr = new AtomicLong();
     private final PnioController pnioController;
     public ComputeTask<RequestState> task;
 
@@ -32,6 +36,8 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
                             PnioController pnioController ) {
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
+        this.ioQueueSize = settings.ioQueueSize;
+        this.important = settings.important;
 
         this.task = task;
         this.pnioListener = pnioListener;
@@ -60,12 +66,11 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                PnioComputeTask<RequestState> pnioComputeTask = new PnioComputeTask( task, pnioExchange );
-                if( !pnioController.submit( pnioComputeTask ) ) {
+                pnioController.pushTask( rr, new PnioWorkerTask<>( pnioExchange, task ), pnioWorkerTask -> {
                     exchanges.remove( pnioExchange.id );
                     pnioExchange.completeWithRejected();
                     pnioExchange.response();
-                }
+                }, important );
             } catch( Exception e ) {
                 exchanges.remove( pnioExchange.id );
                 pnioExchange.completeWithFail( e );
@@ -100,5 +105,7 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public static class PnioHttpSettings {
         int requestSize;
         int responseSize;
+        int ioQueueSize;
+        boolean important;
     }
 }

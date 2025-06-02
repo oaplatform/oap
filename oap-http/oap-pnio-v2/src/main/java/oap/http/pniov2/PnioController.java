@@ -1,29 +1,74 @@
 package oap.http.pniov2;
 
-import oap.io.Closeables;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
+@Slf4j
 public class PnioController implements AutoCloseable {
-    private final ForkJoinPool forkJoinPool;
+    public final PnioWorkerThread[] pool;
+    public volatile boolean done;
 
-    public PnioController( int parallelism ) {
-        forkJoinPool = parallelism > 0 ? new ForkJoinPool( parallelism ) : new ForkJoinPool();
+    public PnioController( int parallelism, int threadQueueSize ) {
+        pool = new PnioWorkerThread[parallelism];
+        for( int i = 0; i < parallelism; i++ ) {
+            pool[i] = new PnioWorkerThread( this, threadQueueSize );
+        }
+
+        for( int i = 0; i < parallelism; i++ ) {
+            pool[i].start();
+        }
     }
 
     @Override
     public void close() {
-        Closeables.close( forkJoinPool );
+        done = true;
+
+        for( PnioWorkerThread thread : pool ) {
+            try {
+                thread.interrupt();
+                thread.join();
+            } catch( InterruptedException e ) {
+                log.trace( e.getMessage(), e );
+            }
+        }
     }
 
-    public boolean submit( PnioComputeTask task ) {
-        try {
-            forkJoinPool.submit( task );
+    public PnioWorkQueue[] getPnioWorkQueues() {
+        PnioWorkQueue[] queues = new PnioWorkQueue[pool.length];
 
-            return true;
-        } catch( RejectedExecutionException e ) {
-            return false;
+        for( int i = 0; i < pool.length; i++ ) {
+            queues[i] = pool[i].workQueue;
         }
+
+        return queues;
+    }
+
+    public long getTaskCount() {
+        long count = 0;
+
+        for( PnioWorkerThread thread : pool ) {
+            count += thread.workQueue.size();
+        }
+
+        return count;
+    }
+
+    public void pushTask( AtomicLong counter, PnioWorkerTask<?, ?> task, Consumer<PnioWorkerTask<?, ?>> rejected, boolean important ) {
+        PnioWorkQueue queue = nextQueue( counter );
+        if( important ) {
+            queue.forcePushTask( task );
+        } else {
+            if( !queue.tryPushTask( task ) ) {
+                rejected.accept( task );
+            }
+        }
+    }
+
+    public PnioWorkQueue nextQueue( AtomicLong rr ) {
+        long rrValue = rr.incrementAndGet();
+
+        return pool[( int ) ( rrValue % pool.length )].workQueue;
     }
 }

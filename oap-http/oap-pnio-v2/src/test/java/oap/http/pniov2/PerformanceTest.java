@@ -2,6 +2,7 @@ package oap.http.pniov2;
 
 import oap.benchmark.Benchmark;
 import oap.concurrent.LongAdder;
+import oap.concurrent.Threads;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.server.nio.NioHttpServer;
 import oap.json.Binder;
@@ -9,13 +10,19 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.http.test.HttpAsserts.assertPost;
 
 @Test( enabled = false )
 public class PerformanceTest {
+    public static AtomicInteger count = new AtomicInteger();
+
     @Test( enabled = false )
     public void test() throws IOException {
 
@@ -29,13 +36,13 @@ public class PerformanceTest {
             .requestSize( 64000 )
             .responseSize( 64000 )
             .build();
-        try( PnioController pnioController = new PnioController( 10 );
+        try( PnioController pnioController = new PnioController( 10, 250 );
              NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            httpServer.ioThreads = 4;
+            httpServer.ioThreads = 1;
             httpServer.statistics = true;
             httpServer.start();
 
-            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
+            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
             Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                 System.out.println();
@@ -57,7 +64,7 @@ public class PerformanceTest {
                     .is( r -> {
                         count.computeIfAbsent( r.code, k -> new LongAdder() ).increment();
                     } );
-            } ).threads( 24 ).experiments( 5 ).run();
+            } ).threads( 1024 ).experiments( 5 ).run();
 
             System.out.println( count );
         }
@@ -65,21 +72,20 @@ public class PerformanceTest {
     }
 
     public static class TestHandler implements ComputeTask<TestState> {
+        public static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
+
         @Override
-        public void accept( PnioExchange<TestState> pnioExchange ) {
+        public void run( PnioExchange<TestState> pnioExchange ) {
             double sum = 0.0;
-            for( int i = 0; i < 200; i++ ) {
-                for( int j = 0; j < 200; j++ ) {
-                    sum += i + Math.pow( j * 1.0, 0.5 );
+            for( int x = 0; x < 1; x++ ) {
+                for( int i = 0; i < 200; i++ ) {
+                    for( int j = 0; j < 200; j++ ) {
+                        sum += i + Math.pow( j * 1.0, 0.5 );
+                    }
                 }
             }
 
-            double sum2 = 0.0;
-            for( int i = 0; i < 200; i++ ) {
-                for( int j = 0; j < 200; j++ ) {
-                    sum2 += i + Math.pow( j * 1.0, 0.5 );
-                }
-            }
+            pnioExchange.runAsyncTask( _ -> CompletableFuture.runAsync( () -> Threads.sleepSafely( 10 ), EXECUTOR_SERVICE ) );
 
             pnioExchange.complete();
             pnioExchange.response();

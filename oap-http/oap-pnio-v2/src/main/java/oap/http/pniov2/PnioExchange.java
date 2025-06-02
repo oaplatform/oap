@@ -207,9 +207,16 @@ public class PnioExchange<RequestState> {
 
     @SuppressWarnings( "unchecked" )
     public <T> T runAsyncTask( AsyncTask<T, RequestState> asyncTask ) {
-        PnioAsyncTask<T, RequestState> pnioAsyncTask = new PnioAsyncTask<>( asyncTask, this );
-        pnioAsyncTask.fork();
-        return pnioAsyncTask.join();
+        PnioAsyncWorkerTask<RequestState, T, AsyncTask<T, RequestState>> pnioAsyncWorkerTask = new PnioAsyncWorkerTask<>( this, asyncTask );
+        PnioWorkerThread pnioWorkerThread = ( PnioWorkerThread ) Thread.currentThread();
+        pnioAsyncWorkerTask.fork( pnioWorkerThread );
+        pnioAsyncWorkerTask.join( pnioWorkerThread );
+
+        return pnioAsyncWorkerTask.result;
+    }
+
+    public boolean isTimeout() {
+        return getTimeLeftNano() < 1;
     }
 
     public long getTimeLeftNano() {
