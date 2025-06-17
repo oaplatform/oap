@@ -73,8 +73,8 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void testEmptySync() {
-        try( var master = new StatsDBMaster( schema3, StatsDBStorage.NULL );
-             var node = new StatsDBNode( schema3, new StatsDBTransportMock( master ), null ) ) {
+        try( StatsDBMaster master = new StatsDBMaster( schema3, StatsDBStorage.NULL );
+             StatsDBNode node = new StatsDBNode( schema3, new StatsDBTransportMock( master ), null ) ) {
 
             assertThat( node.lastSyncSuccess ).isFalse();
             node.sync();
@@ -84,7 +84,7 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void children() {
-        try( var master = new StatsDBMaster( schema2, StatsDBStorage.NULL ) ) {
+        try( StatsDBMaster master = new StatsDBMaster( schema2, StatsDBStorage.NULL ) ) {
             master.<MockValue>update( "k1", "k2", c -> c.v = 10 );
             master.<MockValue>update( "k1", "k3", c -> c.v = 3 );
             master.<MockValue>update( "k2", "k4", c -> c.v = 4 );
@@ -107,8 +107,8 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void mergeChild() {
-        try( var master = new StatsDBMaster( schema3, StatsDBStorage.NULL );
-             var node = new StatsDBNode( schema3, new StatsDBTransportMock( master ) ) ) {
+        try( StatsDBMaster master = new StatsDBMaster( schema3, StatsDBStorage.NULL );
+             StatsDBNode node = new StatsDBNode( schema3, new StatsDBTransportMock( master ) ) ) {
 
             node.<MockChild1>update( "p1", p -> p.vc += 1 );
             node.<MockChild2>update( "p1", "c2", c -> c.vc += 1 );
@@ -139,7 +139,7 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void persistMaster() {
-        try( var masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
              StatsDBMaster master = new StatsDBMaster( schema3, masterStorage ) ) {
             master.<MockValue>update( "k1", "k2", "k3", c -> c.v += 8 );
             master.<MockValue>update( "k1", "k2", "k3", c -> c.v += 2 );
@@ -147,7 +147,7 @@ public class StatsDBTest extends Fixtures {
             master.<MockChild1>update( "k1", c -> c.vc += 111 );
         }
 
-        try( var masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
              StatsDBMaster master = new StatsDBMaster( schema3, masterStorage ) ) {
             assertThat( master.<MockValue>get( "k1", "k2", "k3" ).v ).isEqualTo( 10 );
 
@@ -157,10 +157,40 @@ public class StatsDBTest extends Fixtures {
     }
 
     @Test
+    public void testpermanentlyDelete() {
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+             StatsDBMaster master = new StatsDBMaster( schema3, masterStorage ) ) {
+
+            master.<MockValue>update( "k1", "k2", "k3", c -> c.v += 8 );
+            master.<MockValue>update( "k1", "k2", "k3", c -> c.v += 2 );
+            master.<MockValue>update( "k1", "k2", "k33", c -> c.v += 1 );
+            master.<MockChild1>update( "k1", c -> c.vc += 111 );
+
+            master.run();
+
+            master.permanentlyDelete( "k1", "k2", "k33" );
+
+            assertThat( master.<MockValue>get( "k1", "k2", "k33" ) ).isNull();
+
+            assertThat( master.<MockChild1>get( "k1" ).sum ).isEqualTo( 10L );
+            assertThat( master.<MockChild1>get( "k1" ).sum2 ).isEqualTo( 0L );
+        }
+
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+             StatsDBMaster master = new StatsDBMaster( schema3, masterStorage ) ) {
+
+            assertThat( master.<MockValue>get( "k1", "k2", "k33" ) ).isNull();
+
+            assertThat( master.<MockChild1>get( "k1" ).sum ).isEqualTo( 10L );
+            assertThat( master.<MockChild1>get( "k1" ).sum2 ).isEqualTo( 0L );
+        }
+    }
+
+    @Test
     public void sync() {
-        try( var masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
-             var master = new StatsDBMaster( schema2, masterStorage );
-             var node = new StatsDBNode( schema2, new StatsDBTransportMock( master ) ) ) {
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+             StatsDBMaster master = new StatsDBMaster( schema2, masterStorage );
+             StatsDBNode node = new StatsDBNode( schema2, new StatsDBTransportMock( master ) ) ) {
             node.sync();
 
             node.<MockValue>update( "k1", "k2", c -> c.v += 10 );
@@ -186,9 +216,9 @@ public class StatsDBTest extends Fixtures {
 
     @Test
     public void calculatedValuesAfterRestart() {
-        try( var masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
-             var master = new StatsDBMaster( schema2, masterStorage );
-             var node = new StatsDBNode( schema2, new StatsDBTransportMock( master ) ) ) {
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+             StatsDBMaster master = new StatsDBMaster( schema2, masterStorage );
+             StatsDBNode node = new StatsDBNode( schema2, new StatsDBTransportMock( master ) ) ) {
             node.sync();
 
             node.<MockValue>update( "k1", "k2", c -> c.v += 10 );
@@ -196,17 +226,17 @@ public class StatsDBTest extends Fixtures {
             node.<MockChild2>update( "k1", c -> c.vc += 20 );
         }
 
-        try( var masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
-             var master = new StatsDBMaster( schema2, masterStorage ) ) {
+        try( StatsDBStorageMongo masterStorage = new StatsDBStorageMongo( MONGO_FIXTURE.client(), "test" );
+             StatsDBMaster master = new StatsDBMaster( schema2, masterStorage ) ) {
             assertThat( master.<MockChild2>get( "k1" ).sum ).isEqualTo( 11L );
         }
     }
 
     @Test
     public void syncFailed() {
-        var transport = new StatsDBTransportMock();
+        StatsDBTransportMock transport = new StatsDBTransportMock();
 
-        try( var node = new StatsDBNode( schema2, transport ) ) {
+        try( StatsDBNode node = new StatsDBNode( schema2, transport ) ) {
             transport.syncWithException( _ -> new RuntimeException( "sync" ) );
             node.<MockValue>update( "k1", "k2", c -> c.v += 10 );
             node.sync();
@@ -225,12 +255,12 @@ public class StatsDBTest extends Fixtures {
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
-        var uid = Cuid.incremental( 0 );
-        try( var master = new StatsDBMaster( schema2, StatsDBStorage.NULL );
-             var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
-             var messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( new StatsDBMessageListener( master ) ), -1 );
-             var client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "msend" ), -1 );
-             var node = new StatsDBNode( schema2, new StatsDBTransportMessage( client ), uid ) ) {
+        Cuid.IncrementalCuid uid = Cuid.incremental( 0 );
+        try( StatsDBMaster master = new StatsDBMaster( schema2, StatsDBStorage.NULL );
+             NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( new StatsDBMessageListener( master ) ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "msend" ), -1 );
+             StatsDBNode node = new StatsDBNode( schema2, new StatsDBTransportMessage( client ), uid ) ) {
             server.bind( "/messages", messageHttpHandler );
             client.start();
             server.start();

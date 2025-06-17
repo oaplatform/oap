@@ -35,9 +35,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public class StatsDBMaster extends StatsDB implements Closeable, Runnable {
+    private final ReentrantLock storageLock = new ReentrantLock();
+
     private final StatsDBStorage storage;
 
     public StatsDBMaster( NodeSchema schema, StatsDBStorage storage ) {
@@ -145,8 +150,43 @@ public class StatsDBMaster extends StatsDB implements Closeable, Runnable {
     }
 
     public void reset() {
-        removeAll();
-        storage.removeAll();
+        storageLock.lock();
+        try {
+            removeAll();
+            storage.removeAll();
+        } finally {
+            storageLock.unlock();
+        }
+    }
+
+    public void permanentlyDelete( String... keys ) {
+        storageLock.lock();
+        try {
+            Stack<Node> stack = new Stack<>();
+
+            ConcurrentHashMap<String, Node> current = db;
+            for( int i = 0; i < keys.length - 1; i++ ) {
+                Node node = current.get( keys[i] );
+                if( node != null ) {
+                    stack.push( node );
+                    current = node.db;
+                } else {
+                    return;
+                }
+            }
+
+            if( current != null ) {
+                current.remove( keys[keys.length - 1] );
+
+                storage.permanentlyDelete( schema, keys );
+
+                while( !stack.isEmpty() ) {
+                    updateAggregates( stack.pop() );
+                }
+            }
+        } finally {
+            storageLock.unlock();
+        }
     }
 
     @Override
@@ -156,6 +196,11 @@ public class StatsDBMaster extends StatsDB implements Closeable, Runnable {
 
     @Override
     public void run() {
-        storage.store( schema, db );
+        storageLock.lock();
+        try {
+            storage.store( schema, db );
+        } finally {
+            storageLock.unlock();
+        }
     }
 }
