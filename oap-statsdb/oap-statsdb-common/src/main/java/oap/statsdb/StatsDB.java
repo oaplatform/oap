@@ -48,11 +48,11 @@ public abstract class StatsDB extends IStatsDB {
 
     @SuppressWarnings( "unchecked" )
     protected static void updateAggregates( Node mnode ) {
-        for( var node : mnode.db.values() ) {
+        for( Node node : mnode.db.values() ) {
             updateAggregates( node );
         }
 
-        var value = mnode.v;
+        Node.Value value = mnode.v;
         if( value instanceof Node.Container ) {
             ( ( Node.Container ) value ).aggregate( mnode.db.values().stream()
                 .map( n -> n.v )
@@ -66,7 +66,7 @@ public abstract class StatsDB extends IStatsDB {
         assert key != null;
         assert key.length > 0;
 
-        var rootKey = key[0];
+        String rootKey = key[0];
 
         db.compute( rootKey, ( k, n ) -> {
             Node newNode = n;
@@ -107,7 +107,7 @@ public abstract class StatsDB extends IStatsDB {
 
     @SuppressWarnings( "unchecked" )
     public <V extends Node.Value<V>> V get( String... key ) {
-        var node = getNode( key );
+        Node node = getNode( key );
         return node != null ? ( V ) node.v : null;
     }
 
@@ -146,12 +146,14 @@ public abstract class StatsDB extends IStatsDB {
         Node tNode = node;
 
         for( int i = 1; i < key.length; i++ ) {
-            var keyItem = key[i];
-            var finalI = i;
+            String keyItem = key[i];
+            int finalI = i;
             tNode = tNode.db.computeIfAbsent( keyItem, k -> new Node( schema.get( finalI ).newInstance() ) );
         }
 
         tNode.updateValue( update );
+
+        updateAggregates( node );
 
         return node;
     }

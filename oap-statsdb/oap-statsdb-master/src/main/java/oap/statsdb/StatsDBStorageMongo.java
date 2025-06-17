@@ -4,21 +4,26 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.DeleteResult;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
 import oap.storage.mongo.MongoClient;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.bson.BsonDocument;
 import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 /**
@@ -33,10 +38,10 @@ public class StatsDBStorageMongo implements StatsDBStorage, Closeable {
     private long lastFsync = -1;
 
     public StatsDBStorageMongo( MongoClient mongoClient, String table ) {
-        var ref = new TypeRef<MongoNode>() {
+        TypeRef<MongoNode> ref = new TypeRef<>() {
         };
 
-        var codecRegistry = CodecRegistries.fromRegistries(
+        CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonNodeCodec() ),
             mongoClient.getCodecRegistry()
         );
@@ -55,15 +60,15 @@ public class StatsDBStorageMongo implements StatsDBStorage, Closeable {
         final Consumer<MongoNode> cons = node -> {
             assert node.n.db.isEmpty();
 
-            var cdb = db;
+            Map<String, Node> cdb = db;
             for( int i = 0; i < node._id.size() - 1; i++ ) {
-                var nc = schema.get( i );
-                var key = node._id.get( nc.key );
+                NodeSchema.NodeConfiguration nc = schema.get( i );
+                String key = node._id.get( nc.key );
                 cdb = cdb.computeIfAbsent( key, k -> new Node( nc.newInstance() ) ).db;
             }
 
-            var lastId = node._id.get( schema.get( node._id.size() - 1 ).key );
-            var lastNode = cdb.get( lastId );
+            String lastId = node._id.get( schema.get( node._id.size() - 1 ).key );
+            Node lastNode = cdb.get( lastId );
             if( lastNode == null ) {
                 cdb.put( lastId, node.n );
             } else {
@@ -82,11 +87,11 @@ public class StatsDBStorageMongo implements StatsDBStorage, Closeable {
     @Override
     public void store( NodeSchema schema, Map<String, Node> db ) {
         log.debug( "store {}", schema );
-        var count = 0;
+        int count = 0;
 
-        var now = DateTimeUtils.currentTimeMillis();
+        long now = DateTimeUtils.currentTimeMillis();
 
-        var bulk = new ArrayList<WriteModel<MongoNode>>();
+        ArrayList<WriteModel<MongoNode>> bulk = new ArrayList<WriteModel<MongoNode>>();
         count += store( schema, 0, new HashMap<>(), db, bulk );
         if( !bulk.isEmpty() ) {
             collection.bulkWrite( bulk );
@@ -106,10 +111,10 @@ public class StatsDBStorageMongo implements StatsDBStorage, Closeable {
             throw new IllegalArgumentException( "index '" + index + "' is out of bounds [0.." + schema.size() + ")" );
         }
 
-        var count = new MutableInt();
+        MutableInt count = new MutableInt();
 
         db.forEach( ( key, value ) -> {
-            var newId = new HashMap<>( id );
+            HashMap<String, String> newId = new HashMap<>( id );
             newId.put( schema.get( index ).key, key );
 
             if( value.mt >= lastFsync ) {
@@ -130,6 +135,21 @@ public class StatsDBStorageMongo implements StatsDBStorage, Closeable {
     @Override
     public void removeAll() {
         collection.deleteMany( new BsonDocument() );
+    }
+
+    @Override
+    public void permanentlyDelete( NodeSchema schema, String... keys ) {
+        log.trace( "permanentlyDelete {}", Arrays.asList( keys ) );
+        ArrayList<Bson> query = new ArrayList<>();
+
+        for( int index = 0; index < keys.length; index++ ) {
+            query.add( eq( "_id." + schema.get( index ).key, keys[index] ) );
+        }
+
+        log.trace( "deleteMany( eq( _id, {}))", and( query ) );
+
+        DeleteResult deleteMany = collection.deleteMany( and( query ) );
+        log.trace( "DeletedCount {}", deleteMany.getDeletedCount() );
     }
 
     @Override

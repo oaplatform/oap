@@ -20,6 +20,9 @@ public class StatsDBStorageNull implements StatsDBStorage {
 
     @Override
     public void removeAll() {
+    }
 
+    @Override
+    public void permanentlyDelete( NodeSchema schema, String... keys ) {
     }
 }

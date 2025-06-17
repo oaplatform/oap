@@ -37,4 +37,6 @@ public interface StatsDBStorage {
     void store( NodeSchema schema, Map<String, Node> db );
 
     void removeAll();
+
+    void permanentlyDelete( NodeSchema schema, String... keys );
 }
