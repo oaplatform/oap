@@ -66,7 +66,7 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
             exchanges.put( pnioExchange.id, pnioExchange );
 
             try {
-                pnioController.pushTask( rr, new PnioWorkerTask<>( pnioExchange, task ), pnioWorkerTask -> {
+                pnioController.pushTask( rr, new PnioWorkerTask<>( pnioExchange, task ), _ -> {
                     exchanges.remove( pnioExchange.id );
                     pnioExchange.completeWithRejected();
                     pnioExchange.response();

@@ -97,6 +97,11 @@ public class PnioExchange<RequestState> {
     public void complete( Consumer<HttpResponse> response ) {
         response.accept( httpResponse );
 
+        complete();
+        response();
+    }
+
+    public void complete() {
         PROCESS_STATE_HANDLE.getAndBitwiseOr( this, DONE );
     }
 
