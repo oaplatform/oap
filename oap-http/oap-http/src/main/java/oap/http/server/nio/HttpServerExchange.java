@@ -307,7 +307,7 @@ public class HttpServerExchange {
     }
 
     public String header( String headerName, String defaultValue ) {
-        var values = exchange.getRequestHeaders().get( headerName );
+        HeaderValues values = exchange.getRequestHeaders().get( headerName );
         return values != null ? values.getFirst() : defaultValue;
     }
 

@@ -275,6 +275,10 @@ public class PnioExchange<RequestState> {
             + oapExchange.getRequestURI() + "?" + oapExchange.exchange.getQueryString();
     }
 
+    public String header( String headerName, String defaultValue ) {
+        return oapExchange.header( headerName, defaultValue );
+    }
+
     @SuppressWarnings( "checkstyle:InterfaceIsType" )
     public interface ProcessState {
         int RUNNING = 0;
@@ -299,18 +303,35 @@ public class PnioExchange<RequestState> {
             this.responseBuffer = responseBuffer;
         }
 
-        public void redirect( String location ) {
+        public HttpResponse redirect( String location ) {
             status = Http.StatusCode.FOUND;
             headers.put( Http.Headers.LOCATION, location );
+
+            return this;
         }
 
-        public void responseNoContent() {
+        public HttpResponse addResponseCookie( oap.http.Cookie cookie ) {
+            this.cookies.add( cookie );
+
+            return this;
+        }
+
+        public HttpResponse responseNoContent() {
             status = Http.StatusCode.NO_CONTENT;
+
+            return this;
         }
 
-        public void responseNotFound() {
+        public HttpResponse responseNotFound() {
             status = Http.StatusCode.NOT_FOUND;
+
+            return this;
         }
 
+        public HttpResponse setBody( String data ) {
+            responseBuffer.setAndResize( data );
+
+            return this;
+        }
     }
 }
