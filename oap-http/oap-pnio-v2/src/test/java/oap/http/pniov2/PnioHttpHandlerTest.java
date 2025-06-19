@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
@@ -116,23 +117,29 @@ public class PnioHttpHandlerTest extends Fixtures {
 
     @Test
     public void testTimeoutAsync() throws IOException {
+        AtomicInteger runAfterTimeout = new AtomicInteger( 0 );
+
         ComputeTask<TestState> task = pnioExchange -> {
             pnioExchange.runAsyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
+
+            runAfterTimeout.incrementAndGet();
 
             pnioExchange.complete();
             pnioExchange.response();
         };
 
-        runWithWorkflow( 1024, 1024, 1, 200, task, port -> {
+        runWithWorkflow( 1024, 1024, 1, 1000, task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( "DONE, TIMEOUT" );
+                .hasBody( "TIMEOUT" );
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
-                .hasBody( "DONE, TIMEOUT" );
+                .hasBody( "TIMEOUT" );
         } );
+
+        assertThat( runAfterTimeout.get() ).isEqualTo( 0 );
     }
 
     private void runWithWorkflow( ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {

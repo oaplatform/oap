@@ -22,6 +22,7 @@ import static oap.http.pniov2.PnioExchange.ProcessState.INTERRUPTED;
 import static oap.http.pniov2.PnioExchange.ProcessState.REJECTED;
 import static oap.http.pniov2.PnioExchange.ProcessState.REQUEST_BUFFER_OVERFLOW;
 import static oap.http.pniov2.PnioExchange.ProcessState.RESPONSE_BUFFER_OVERFLOW;
+import static oap.http.pniov2.PnioExchange.ProcessState.RUNNING;
 import static oap.http.pniov2.PnioExchange.ProcessState.TIMEOUT;
 
 public class PnioExchange<RequestState> {
@@ -219,6 +220,10 @@ public class PnioExchange<RequestState> {
         PnioWorkerThread pnioWorkerThread = ( PnioWorkerThread ) Thread.currentThread();
         pnioAsyncWorkerTask.fork( pnioWorkerThread );
         pnioAsyncWorkerTask.join( pnioWorkerThread );
+
+        if( processState != RUNNING ) {
+            throw new PnioForceTerminateException();
+        }
 
         return pnioAsyncWorkerTask.result;
     }
