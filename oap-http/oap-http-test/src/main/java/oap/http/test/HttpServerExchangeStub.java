@@ -119,6 +119,7 @@ public class HttpServerExchangeStub {
         HttpServerExchange httpServerExchange = new HttpServerExchange( connection, new HeaderMap(), headerMap, 200 );
         httpServerExchange.setRequestMethod( new HttpString( "GET" ) );
         httpServerExchange.setProtocol( Protocols.HTTP_1_1 );
+        httpServerExchange.setRequestScheme( "http" );
         httpServerExchange.setDestinationAddress( new InetSocketAddress( 8081 ) );
         httpServerExchange.setSourceAddress( new InetSocketAddress( 8081 ) );
 
