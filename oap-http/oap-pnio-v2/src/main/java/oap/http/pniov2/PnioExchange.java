@@ -13,6 +13,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import static oap.http.pniov2.PnioExchange.ProcessState.CONNECTION_CLOSED;
 import static oap.http.pniov2.PnioExchange.ProcessState.DONE;
@@ -93,7 +94,9 @@ public class PnioExchange<RequestState> {
         PROCESS_STATE_HANDLE.getAndBitwiseOr( this, TIMEOUT );
     }
 
-    public void complete() {
+    public void complete( Consumer<HttpResponse> response ) {
+        response.accept( httpResponse );
+
         PROCESS_STATE_HANDLE.getAndBitwiseOr( this, DONE );
     }
 
