@@ -16,7 +16,6 @@ public class TestUtilsTest {
             .isInstanceOf( IllegalArgumentException.class );
     }
 
-
     @Test
     public void testRandomName() {
         String rand = TestUtils.randomName( "{rand}" );
