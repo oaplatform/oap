@@ -10,7 +10,7 @@ public class TestUtilsTest {
     @BeforeMethod
     public void beforeMethod() {
         String rand = TestUtils.randomName( "{rand}" );
-        assertThat( TestUtils.randomName( "{test_class_name}-{rand}" ) ).isEqualTo( "UtilsTest-" + rand );
+        assertThat( TestUtils.randomName( "{test_class_name}-{rand}" ) ).isEqualTo( "TestUtilsTest-" + rand );
 
         assertThatThrownBy( () -> TestUtils.randomName( "{test_class_name}-{test_method_name}-{rand}" ) )
             .isInstanceOf( IllegalArgumentException.class );
@@ -19,6 +19,6 @@ public class TestUtilsTest {
     @Test
     public void testRandomName() {
         String rand = TestUtils.randomName( "{rand}" );
-        assertThat( TestUtils.randomName( "{test_class_name}-{test_method_name}-{rand}" ) ).isEqualTo( "UtilsTest-testRandomName-" + rand );
+        assertThat( TestUtils.randomName( "{test_class_name}-{test_method_name}-{rand}" ) ).isEqualTo( "TestUtilsTest-testRandomName-" + rand );
     }
 }
