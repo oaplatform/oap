@@ -52,8 +52,9 @@ import java.util.function.Function;
 public class MongoClient implements Closeable {
     final com.mongodb.client.MongoClient mongoClient;
     private final MongoDatabase database;
-    private ConnectionString connectionString;
     private final String migrationPackage;
+    public boolean throwIfMigrationFailed = true;
+    private ConnectionString connectionString;
 
     public MongoClient( String connectionString ) {
         this( connectionString, null );
@@ -120,8 +121,12 @@ public class MongoClient implements Closeable {
 
             }
         } catch( Exception ex ) {
-            log.error( "Cannot perform migration" );
-            log.error( ex.getMessage(), ex );
+            if( throwIfMigrationFailed ) {
+                throw ex;
+            } else {
+                log.error( "Cannot perform migration" );
+                log.error( ex.getMessage(), ex );
+            }
         }
     }
 
