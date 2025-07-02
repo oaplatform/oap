@@ -263,6 +263,10 @@ public class PnioExchange<RequestState> {
         return oapExchange.getRequestCookieValue( name );
     }
 
+    public final String getRequestHeader( String name ) {
+        return oapExchange.getRequestHeader( name );
+    }
+
     public final String ip() {
         return oapExchange.ip();
     }
@@ -325,6 +329,12 @@ public class PnioExchange<RequestState> {
 
         public HttpResponse addResponseCookie( oap.http.Cookie cookie ) {
             this.cookies.add( cookie );
+
+            return this;
+        }
+
+        public HttpResponse addResponseHeader( String name, String value ) {
+            this.headers.put( name, value );
 
             return this;
         }
