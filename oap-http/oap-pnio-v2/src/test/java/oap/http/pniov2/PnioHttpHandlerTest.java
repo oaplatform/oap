@@ -33,10 +33,17 @@ import oap.io.Closeables;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.entity.EntityBuilder;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -88,6 +95,37 @@ public class PnioHttpHandlerTest extends Fixtures {
                 .hasCode( Http.StatusCode.BAD_GATEWAY )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "test exception" );
+        } );
+    }
+
+    @Test
+    public void testProcessGzip() throws IOException {
+        ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
+
+        runWithWorkflow( task, port -> {
+            assertPost( "http://localhost:" + port + "/test", "{}" )
+                .hasCode( Http.StatusCode.OK );
+
+            try( CloseableHttpClient client = HttpClientBuilder.create()
+                .disableContentCompression()
+                .build() ) {
+
+                String request = "{}";
+                HttpEntity entity = EntityBuilder.create()
+                    .setText( request )
+                    .setContentType( org.apache.http.entity.ContentType.APPLICATION_JSON )
+                    .gzipCompress()
+                    .build();
+                HttpPost post = new HttpPost( "http://localhost:" + port + "/test" );
+                post.setEntity( entity );
+
+                CloseableHttpResponse actionPostRequest = client.execute( post );
+                assertThat( actionPostRequest.getStatusLine().getStatusCode() ).isEqualTo( 200 );
+                actionPostRequest = client.execute( post );
+                assertThat( actionPostRequest.getStatusLine().getStatusCode() ).isEqualTo( 200 );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
         } );
     }
 
