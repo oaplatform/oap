@@ -11,6 +11,7 @@ package oap.http.pniov2;
 
 import com.google.common.base.Preconditions;
 import io.undertow.io.Receiver;
+import io.undertow.util.SameThreadExecutor;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
@@ -61,39 +62,41 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
         }
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
-            PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
-            pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
-            exchanges.put( pnioExchange.id, pnioExchange );
+            oapExchange.exchange.dispatch( SameThreadExecutor.INSTANCE, () -> {
+                PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
+                pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
+                exchanges.put( pnioExchange.id, pnioExchange );
 
-            try {
-                pnioController.pushTask( rr, new PnioWorkerTask<>( pnioExchange, task ), _ -> {
+                try {
+                    pnioController.pushTask( rr, new PnioWorkerTask<>( pnioExchange, task ), _ -> {
+                        exchanges.remove( pnioExchange.id );
+                        pnioExchange.completeWithRejected();
+                        pnioExchange.response();
+                    }, important );
+                } catch( Exception e ) {
                     exchanges.remove( pnioExchange.id );
-                    pnioExchange.completeWithRejected();
-                    pnioExchange.response();
-                }, important );
-            } catch( Exception e ) {
-                exchanges.remove( pnioExchange.id );
-                pnioExchange.completeWithFail( e );
-                pnioExchange.response();
-            }
-        }, ( _, e ) -> {
-            PnioExchange<RequestState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
-            exchanges.put( pnioExchange.id, pnioExchange );
-            try {
-
-                if( e instanceof Receiver.RequestToLargeException ) {
-                    pnioExchange.completeWithBufferOverflow( true );
-                } else {
                     pnioExchange.completeWithFail( e );
+                    pnioExchange.response();
                 }
+            } );
+        }, ( _, e ) -> {
+            oapExchange.exchange.dispatch( SameThreadExecutor.INSTANCE, () -> {
+                PnioExchange<RequestState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
+                exchanges.put( pnioExchange.id, pnioExchange );
+                try {
 
-                pnioExchange.response();
-            } finally {
-                exchanges.remove( pnioExchange.id );
-            }
+                    if( e instanceof Receiver.RequestToLargeException ) {
+                        pnioExchange.completeWithBufferOverflow( true );
+                    } else {
+                        pnioExchange.completeWithFail( e );
+                    }
+
+                    pnioExchange.response();
+                } finally {
+                    exchanges.remove( pnioExchange.id );
+                }
+            } );
         } );
-
-        oapExchange.exchange.dispatch();
     }
 
     @Override
