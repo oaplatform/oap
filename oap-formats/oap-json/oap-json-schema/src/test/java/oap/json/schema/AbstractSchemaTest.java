@@ -44,10 +44,18 @@ public abstract class AbstractSchemaTest {
         return assertOk( schema, json, INSTANCE, ignoreRequiredDefault );
     }
 
+    protected static Object assertOk( String schema, String json, boolean ignoreRequiredDefault, boolean forceIgnoreAdditionalProperties ) {
+        return assertOk( schema, json, INSTANCE, ignoreRequiredDefault, forceIgnoreAdditionalProperties );
+    }
+
     protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
+        return assertOk( schema, json, storage, ignoreRequiredDefault, false );
+    }
+
+    protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault, boolean forceIgnoreAdditionalProperties ) {
         final Object obj = Binder.json.unmarshal( Object.class, json );
         List<String> result = JsonSchema.schemaFromString( schema, storage )
-            .validate( obj, ignoreRequiredDefault );
+            .validate( obj, ignoreRequiredDefault, forceIgnoreAdditionalProperties );
         if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
 
         return obj;

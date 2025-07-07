@@ -29,24 +29,27 @@ import org.testng.annotations.Test;
 public class SchemaEnabledTest extends AbstractSchemaTest {
     @Test
     public void objectPropertiesEnabled() {
-        String schema = "{"
-            + "  additionalProperties: false, "
-            + "  type: object, "
-            + "  properties {v1.type = string,v2 {type = string,enabled = false}}"
-            + "}";
+        String schema = """
+            {
+              additionalProperties: false,
+              type: object,
+              properties {v1.type = string,v2 {type = string,enabled = false}}
+            }""";
 
         assertOk( schema, "{}" );
         assertOk( schema, "{'v1':'10'}" );
+        assertOk( schema, "{'v2':'20'}", false, true );
         assertFailure( schema, "{'v2':'20'}", "additional properties are not permitted [v2]" );
     }
 
     @Test
     public void objectPropertiesEnabledDynamic() {
-        String schema = "{"
-            + "  additionalProperties: false, "
-            + "  type: object, "
-            + "  properties {v1.type = string,v2 {type = string,enabled = {json-path: v1,eq: test}}}"
-            + "}";
+        String schema = """
+            {
+              additionalProperties: false,
+              type: object,
+              properties {v1.type = string,v2 {type = string,enabled = {json-path: v1,eq: test}}}
+            }""";
 
         assertOk( schema, "{}" );
         assertOk( schema, "{'v1':'10'}" );
@@ -57,14 +60,15 @@ public class SchemaEnabledTest extends AbstractSchemaTest {
 
     @Test
     public void objectPropertiesEnabledDynamicArray() {
-        String schema = "{"
-            + "  additionalProperties: false,"
-            + "  type: array,"
-            + "  items: {"
-            + "    type: object, "
-            + "    properties {v1.type = string,v2 {type = string,enabled = {json-path: items.v1,eq: test}}}"
-            + "  }"
-            + "}";
+        String schema = """
+            {
+              additionalProperties: false,
+              type: array,
+              items: {
+                type: object,
+                properties {v1.type = string,v2 {type = string,enabled = {json-path: items.v1,eq: test}}}
+              }
+            }""";
 
         assertOk( schema, "[{}]" );
         assertOk( schema, "[{'v1':'10'}]" );
