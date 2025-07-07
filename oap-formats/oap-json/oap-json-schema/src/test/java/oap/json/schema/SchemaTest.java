@@ -45,6 +45,13 @@ public class SchemaTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void requiredIntNullIgnoreRequiredDefault() {
+        String schema = "{type: integer, required: true, }";
+
+        assertOk( schema, "null", true );
+    }
+
+    @Test
     public void requiredPropertyNull() {
         String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 

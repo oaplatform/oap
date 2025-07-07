@@ -33,6 +33,7 @@ import java.util.Optional;
 public class JsonValidatorProperties {
     public final Optional<Boolean> additionalProperties;
     public final boolean ignoreRequiredDefault;
+    public final boolean forceIgnoreAdditionalProperties;
     public final Object rootJson;
     public final AbstractSchemaAST rootSchema;
     public final TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>>
@@ -45,6 +46,7 @@ public class JsonValidatorProperties {
         Object rootJson,
         Optional<String> prefixPath,
         Optional<String> path,
+        boolean forceIgnoreAdditionalProperties,
         Optional<Boolean> additionalProperties,
         boolean ignoreRequiredDefault,
         TriFunction<JsonValidatorProperties, AbstractSchemaAST, Object, List<String>> validator ) {
@@ -52,6 +54,7 @@ public class JsonValidatorProperties {
         this.rootJson = rootJson;
         this.prefixPath = prefixPath;
         this.path = path;
+        this.forceIgnoreAdditionalProperties = forceIgnoreAdditionalProperties;
         this.additionalProperties = additionalProperties;
         this.ignoreRequiredDefault = ignoreRequiredDefault;
         this.validator = validator;
@@ -61,12 +64,12 @@ public class JsonValidatorProperties {
         Optional<String> jsonPathModified = this.path.map( p -> p + "/" + path );
 //        jsonPathModified.ifPresent( x -> log.trace( "JSON path: {}", x ) );
         Optional<String> jsonPath = jsonPathModified.or( () -> Optional.of( path ) );
-        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, jsonPath, additionalProperties, ignoreRequiredDefault, validator );
+        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, jsonPath, forceIgnoreAdditionalProperties, additionalProperties, ignoreRequiredDefault, validator );
     }
 
     public JsonValidatorProperties withAdditionalProperties( Optional<Boolean> additionalProperties ) {
         return additionalProperties.map( ap -> new JsonValidatorProperties(
-            rootSchema, rootJson, prefixPath, path, additionalProperties,
+            rootSchema, rootJson, prefixPath, path, forceIgnoreAdditionalProperties, additionalProperties,
             ignoreRequiredDefault, validator ) )
             .orElse( this );
     }

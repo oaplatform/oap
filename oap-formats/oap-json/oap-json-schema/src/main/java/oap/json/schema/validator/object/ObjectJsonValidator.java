@@ -55,8 +55,8 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
 
         schema.properties.forEach( ( k, ast ) -> {
             if( ast.common.enabled.map( e -> {
-                var np = properties
-                        .withPath( k );
+                JsonValidatorProperties np = properties
+                    .withPath( k );
                 boolean evaluated = e.apply( properties.rootJson, value, np.path, np.prefixPath );
                 log.trace( "evaluated '{}' with value '{}'", np.path, value );
                 return evaluated;
@@ -69,9 +69,9 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             if( v == null && ast.common.defaultValue.isPresent() )
                 mapValue.put( k, ast.common.defaultValue.get() );
             else {
-                var validatorProperties = properties
-                        .withPath( k )
-                        .withAdditionalProperties( schema.additionalProperties );
+                JsonValidatorProperties validatorProperties = properties
+                    .withPath( k )
+                    .withAdditionalProperties( schema.additionalProperties );
                 errors.addAll( properties.validator.apply( validatorProperties, ast, v ) );
             }
         } );
@@ -80,7 +80,8 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             .filter( v -> !objectProperties.containsKey( v ) )
             .toList();
 
-        if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
+        if( !properties.forceIgnoreAdditionalProperties
+            && !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
             && !additionalProperties.isEmpty() ) {
 
             errors.add( properties.error( "additional properties are not permitted " + additionalProperties ) );

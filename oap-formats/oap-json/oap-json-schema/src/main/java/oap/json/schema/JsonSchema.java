@@ -172,12 +172,13 @@ public class JsonSchema {
         }
     }
 
-    public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
+    public List<String> validate( Object json, boolean ignoreRequiredDefault, boolean forceIgnoreAdditionalProperties ) {
         JsonValidatorProperties properties = new JsonValidatorProperties(
             schema,
             json,
             Optional.empty(),
             Optional.empty(),
+            forceIgnoreAdditionalProperties,
             Optional.empty(),
             ignoreRequiredDefault,
             this::validate
@@ -185,6 +186,9 @@ public class JsonSchema {
         return validate( properties, schema, json );
     }
 
+    public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
+        return validate( json, ignoreRequiredDefault, false );
+    }
 
     private AbstractSchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
         NodeResponse nodeResponse = context.withNode( "", parseWithTemplate( schema, context.storage ) );
@@ -226,6 +230,7 @@ public class JsonSchema {
             root,
             Optional.of( path ),
             Optional.empty(),
+            false,
             traverseResult.additionalProperties,
             ignoreRequiredDefault,
             this::validate
