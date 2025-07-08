@@ -85,7 +85,7 @@ public class PerformanceTest {
                 }
             }
 
-            pnioExchange.runAsyncTask( _ -> CompletableFuture.runAsync( () -> Threads.sleepSafely( 10 ), EXECUTOR_SERVICE ) );
+            pnioExchange.runAsyncTask( "perf", _ -> CompletableFuture.runAsync( () -> Threads.sleepSafely( 10 ), EXECUTOR_SERVICE ) );
 
             pnioExchange.complete();
             pnioExchange.response();

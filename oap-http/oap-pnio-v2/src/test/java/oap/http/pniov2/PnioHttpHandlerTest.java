@@ -62,14 +62,14 @@ public class PnioHttpHandlerTest extends Fixtures {
             TestHandler.handle( "cpu-1", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
             TestHandler.handle( "cpu-2", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
 
-            String name = pnioExchange.runAsyncTask( TestHandler.async( "async-4" ) );
+            String name = pnioExchange.runAsyncTask( "async-4", TestHandler.async( "async-4" ) );
             assertThat( name ).isEqualTo( "async-4" );
 
             TestHandler.handle( "cpu-6", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
 
-            name = pnioExchange.runAsyncTask( TestHandler.async( "async-7" ) );
+            name = pnioExchange.runAsyncTask( "async-7", TestHandler.async( "async-7" ) );
             assertThat( name ).isEqualTo( "async-7" );
-            name = pnioExchange.runAsyncTask( TestHandler.async( "async-8" ) );
+            name = pnioExchange.runAsyncTask( "async-8", TestHandler.async( "async-8" ) );
             assertThat( name ).isEqualTo( "async-8" );
 
             TestHandler.handle( "cpu-9", "COMPUTE", pnioExchange, testHandlerOptionsBuilder.build() );
@@ -158,7 +158,7 @@ public class PnioHttpHandlerTest extends Fixtures {
         AtomicInteger runAfterTimeout = new AtomicInteger( 0 );
 
         ComputeTask<TestState> task = pnioExchange -> {
-            pnioExchange.runAsyncTask( TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
+            pnioExchange.runAsyncTask( "async", TestHandler.async( "async", builder -> builder.sleepTime( Dates.s( 5 ) ) ) );
 
             runAfterTimeout.incrementAndGet();
 
