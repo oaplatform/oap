@@ -232,7 +232,7 @@ public class PnioExchange<RequestState> {
             pnioAsyncWorkerTask.join( pnioWorkerThread );
 
             if( processState != RUNNING ) {
-                throw new PnioForceTerminateException();
+                throw new PnioForceTerminateException( asyncTaskType );
             }
 
             return pnioAsyncWorkerTask.result;
