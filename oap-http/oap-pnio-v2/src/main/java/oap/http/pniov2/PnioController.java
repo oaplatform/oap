@@ -1,5 +1,6 @@
 package oap.http.pniov2;
 
+import io.micrometer.core.instrument.Metrics;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -19,6 +20,8 @@ public class PnioController implements AutoCloseable {
         for( int i = 0; i < parallelism; i++ ) {
             pool[i].start();
         }
+
+        Metrics.gauge( "pnio_tasks", this, PnioController::getTaskCount );
     }
 
     @Override

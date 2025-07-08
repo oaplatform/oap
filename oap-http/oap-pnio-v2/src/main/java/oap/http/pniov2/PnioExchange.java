@@ -1,6 +1,7 @@
 package oap.http.pniov2;
 
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.Metrics;
 import io.undertow.util.StatusCodes;
 import oap.http.Cookie;
 import oap.http.Http;
@@ -11,6 +12,7 @@ import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -214,18 +216,31 @@ public class PnioExchange<RequestState> {
         return String.join( ", ", state );
     }
 
+    /**
+     * @param asyncTaskType - asynchronous task type name for monitoring ( pnio_async{type = asyncTaskType} )
+     * @param asyncTask
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings( "unchecked" )
-    public <T> T runAsyncTask( AsyncTask<T, RequestState> asyncTask ) {
-        PnioAsyncWorkerTask<RequestState, T, AsyncTask<T, RequestState>> pnioAsyncWorkerTask = new PnioAsyncWorkerTask<>( this, asyncTask );
-        PnioWorkerThread pnioWorkerThread = ( PnioWorkerThread ) Thread.currentThread();
-        pnioAsyncWorkerTask.fork( pnioWorkerThread );
-        pnioAsyncWorkerTask.join( pnioWorkerThread );
+    public <T> T runAsyncTask( String asyncTaskType, AsyncTask<T, RequestState> asyncTask ) {
+        long start = System.nanoTime();
+        try {
+            PnioAsyncWorkerTask<RequestState, T, AsyncTask<T, RequestState>> pnioAsyncWorkerTask = new PnioAsyncWorkerTask<>( this, asyncTask );
+            PnioWorkerThread pnioWorkerThread = ( PnioWorkerThread ) Thread.currentThread();
+            pnioAsyncWorkerTask.fork( pnioWorkerThread );
+            pnioAsyncWorkerTask.join( pnioWorkerThread );
 
-        if( processState != RUNNING ) {
-            throw new PnioForceTerminateException();
+            if( processState != RUNNING ) {
+                throw new PnioForceTerminateException();
+            }
+
+            return pnioAsyncWorkerTask.result;
+        } finally {
+            long end = System.nanoTime();
+
+            Metrics.timer( "pnio_async", "type", asyncTaskType ).record( end - start, TimeUnit.NANOSECONDS );
         }
-
-        return pnioAsyncWorkerTask.result;
     }
 
     public boolean isTimeout() {
