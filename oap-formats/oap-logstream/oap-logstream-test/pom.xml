@@ -73,5 +73,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.clickhouse</groupId>
+            <artifactId>client-v2</artifactId>
+            <version>0.8.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

@@ -25,28 +25,33 @@
 package oap.template;
 
 import com.google.common.base.Preconditions;
+import org.joda.time.DateTime;
+
+import java.util.Date;
 
 public enum Types {
-    EOL( 0 ),
-    RAW( 1 ),
-    DATETIME( 2 ),
-    DATE( 3 ),
-    BOOLEAN( 4 ),
-    BYTE( 5 ),
-    SHORT( 6 ),
-    INTEGER( 7 ),
-    LONG( 8 ),
-    FLOAT( 9 ),
-    DOUBLE( 10 ),
-    STRING( 11 ),
-    LIST( 12 );
+    EOL( 0, null ),
+    RAW( 1, null ),
+    DATETIME( 2, DateTime.class ),
+    DATE( 3, Date.class ),
+    BOOLEAN( 4, Boolean.class ),
+    BYTE( 5, Byte.class ),
+    SHORT( 6, Short.class ),
+    INTEGER( 7, Integer.class ),
+    LONG( 8, Long.class ),
+    FLOAT( 9, Float.class ),
+    DOUBLE( 10, Double.class ),
+    STRING( 11, String.class ),
+    LIST( 12, null );
 
     public final byte id;
+    public final Class<?> clazz;
 
-    Types( int id ) {
+    Types( int id, Class<?> clazz ) {
         Preconditions.checkArgument( id == ( id & 0xFF ) );
 
         this.id = ( byte ) id;
+        this.clazz = clazz;
     }
 
     public static Types valueOf( byte type ) {

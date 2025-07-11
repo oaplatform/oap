@@ -43,37 +43,37 @@ public class LinkedHashMaps implements Serializable {
     }
 
     public static <K, V> LinkedHashMap<K, V> of( K key1, V value1 ) {
-        var map = new LinkedHashMap<K, V>();
+        LinkedHashMap<K, V> map = new LinkedHashMap<K, V>();
         map.put( key1, value1 );
         return map;
     }
 
     public static <K, V> LinkedHashMap<K, V> of( K key1, V value1, K key2, V value2 ) {
-        var map = of( key1, value1 );
+        LinkedHashMap<K, V> map = of( key1, value1 );
         map.put( key2, value2 );
         return map;
     }
 
     public static <K, V> LinkedHashMap<K, V> of( K key1, V value1, K key2, V value2, K key3, V value3 ) {
-        var map = of( key1, value1, key2, value2 );
+        LinkedHashMap<K, V> map = of( key1, value1, key2, value2 );
         map.put( key3, value3 );
         return map;
     }
 
     public static <K, V> LinkedHashMap<K, V> of( K key1, V value1, K key2, V value2, K key3, V value3, K key4, V value4 ) {
-        var map = of( key1, value1, key2, value2, key3, value3 );
+        LinkedHashMap<K, V> map = of( key1, value1, key2, value2, key3, value3 );
         map.put( key4, value4 );
         return map;
     }
 
     public static <K, V> LinkedHashMap<K, V> of( K key1, V value1, K key2, V value2, K key3, V value3, K key4, V value4, K key5, V value5 ) {
-        var map = of( key1, value1, key2, value2, key3, value3, key4, value4 );
+        LinkedHashMap<K, V> map = of( key1, value1, key2, value2, key3, value3, key4, value4 );
         map.put( key5, value5 );
         return map;
     }
 
     public static <TKey, TValueIn, TValueOut> LinkedHashMap<TKey, TValueOut> mapValues( Map<TKey, TValueIn> map, BiFunction<TKey, TValueIn, TValueOut> func ) {
-        var res = new LinkedHashMap<TKey, TValueOut>();
+        LinkedHashMap<TKey, TValueOut> res = new LinkedHashMap<>();
 
         map.forEach( ( key, value ) -> {
             res.put( key, func.apply( key, value ) );
