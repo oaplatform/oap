@@ -27,19 +27,22 @@ package oap.logstream;
 import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
-import oap.util.BiStream;
+import oap.logstream.formats.rowbinary.RowBinaryInputStream;
+import oap.util.LinkedHashMaps;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
-import static oap.util.Pair.__;
 
 public class MemoryLoggerBackend extends AbstractLoggerBackend {
     private final LinkedHashMap<LogId, ByteArrayOutputStream> outputs = new LinkedHashMap<>();
@@ -58,22 +61,25 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     }
 
     public synchronized List<String> loggedLines( LogId id ) {
-        var log = logged( id );
+        String log = logged( id );
         return new BufferedReader( new StringReader( log ) )
             .lines()
             .collect( toList() );
     }
 
     public synchronized List<String> loggedLines() {
-        var ret = new ArrayList<String>();
-        for( var id : outputs.keySet() ) ret.addAll( loggedLines( id ) );
+        ArrayList<String> ret = new ArrayList<String>();
+        for( LogId id : outputs.keySet() ) {
+            ret.addAll( loggedLines( id ) );
+        }
         return ret;
     }
 
     public synchronized String logged() {
-        var ret = new StringBuilder();
-        for( var id : outputs.keySet() )
+        StringBuilder ret = new StringBuilder();
+        for( LogId id : outputs.keySet() ) {
             ret.append( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toString() );
+        }
         return ret.toString();
     }
 
@@ -87,10 +93,11 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
 
     @SneakyThrows
     public synchronized byte[] loggedBytes( Predicate<LogId> filter ) {
-        var ret = new ByteArrayOutputStream();
-        for( var id : outputs.keySet() ) {
-            if( filter.test( id ) )
+        ByteArrayOutputStream ret = new ByteArrayOutputStream();
+        for( LogId id : outputs.keySet() ) {
+            if( filter.test( id ) ) {
                 ret.write( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
+            }
         }
         return ret.toByteArray();
     }
@@ -101,9 +108,7 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     }
 
     public synchronized Map<LogId, String> logs() {
-        return BiStream.of( outputs )
-            .map( ( logId, bytes ) -> __( logId, bytes.toString() ) )
-            .toMap();
+        return LinkedHashMaps.mapValues( outputs, ( _, bytes ) -> bytes.toString() );
     }
 
     @Override
@@ -118,5 +123,37 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
 
     public void reset() {
         outputs.clear();
+    }
+
+    @SneakyThrows
+    public List<List<Object>> asRowBinary( Predicate<LogId> filter, String... headers ) {
+        List<List<Object>> ret = new ArrayList<>();
+
+        for( LogId id : outputs.keySet() ) {
+            if( filter.test( id ) ) {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
+                HashMap<String, byte[][]> map = new HashMap<>();
+                for( int i = 0; i < id.headers.length; i++ ) {
+                    map.put( id.headers[i], id.types );
+                }
+
+                RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, map );
+
+                List<Object> objects;
+                while( ( objects = rowBinaryInputStream.readRow() ) != null ) {
+                    ArrayList<Object> filtered = new ArrayList<>();
+                    for( int i = 0; i < id.headers.length; i++ ) {
+                        if( headers.length == 0 || ArrayUtils.contains( headers, id.headers[i] ) ) {
+                            filtered.add( objects.get( i ) );
+                        }
+                    }
+
+
+                    ret.add( filtered );
+                }
+            }
+        }
+
+        return ret;
     }
 }
