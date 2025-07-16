@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
+    public final String uniqueName;
+
     public final int requestSize;
     public final int responseSize;
     public final int ioQueueSize;
@@ -29,12 +31,15 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
     public final AtomicLong rr = new AtomicLong();
     private final PnioController pnioController;
+    private final PnioMetrics metrics;
     public ComputeTask<RequestState> task;
 
-    public PnioHttpHandler( PnioHttpSettings settings,
+    public PnioHttpHandler( String uniqueName,
+                            PnioHttpSettings settings,
                             ComputeTask<RequestState> task,
                             PnioListener<RequestState> pnioListener,
                             PnioController pnioController ) {
+        this.uniqueName = uniqueName;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
         this.ioQueueSize = settings.ioQueueSize;
@@ -44,14 +49,16 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
         this.pnioListener = pnioListener;
         this.pnioController = pnioController;
 
+        this.metrics = new PnioMetrics( uniqueName );
+
         Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
     public void handleRequest( HttpServerExchange oapExchange, long timeout, RequestState requestState ) {
-        PnioMetrics.REQUESTS.increment();
+        metrics.requests.increment();
 
         oapExchange.exchange.addExchangeCompleteListener( ( _, nl ) -> {
-            PnioMetrics.activeRequests.decrementAndGet();
+            metrics.activeRequests.decrementAndGet();
             if( nl != null ) {
                 nl.proceed();
             }
@@ -63,7 +70,7 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
 
         oapExchange.exchange.getRequestReceiver().receiveFullBytes( ( _, message ) -> {
             oapExchange.exchange.dispatch( SameThreadExecutor.INSTANCE, () -> {
-                PnioExchange<RequestState> pnioExchange = new PnioExchange<>( message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
+                PnioExchange<RequestState> pnioExchange = new PnioExchange<>( uniqueName, message, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState, metrics );
                 pnioExchange.onDone( () -> exchanges.remove( pnioExchange.id ) );
                 exchanges.put( pnioExchange.id, pnioExchange );
 
@@ -81,7 +88,7 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
             } );
         }, ( _, e ) -> {
             oapExchange.exchange.dispatch( SameThreadExecutor.INSTANCE, () -> {
-                PnioExchange<RequestState> pnioExchange = new PnioExchange<>( null, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState );
+                PnioExchange<RequestState> pnioExchange = new PnioExchange<>( uniqueName, null, responseSize, pnioController, task, oapExchange, timeout, pnioListener, requestState, metrics );
                 exchanges.put( pnioExchange.id, pnioExchange );
                 try {
 
