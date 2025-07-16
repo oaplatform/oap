@@ -2,6 +2,7 @@ package oap.http.pniov2;
 
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import io.undertow.util.StatusCodes;
 import oap.http.Cookie;
 import oap.http.Http;
@@ -12,6 +13,7 @@ import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +33,9 @@ public class PnioExchange<RequestState> {
     private static final AtomicLong idGenerator = new AtomicLong();
     private static final VarHandle PROCESS_STATE_HANDLE;
 
+    private static ConcurrentHashMap<String, Timer> timers = new ConcurrentHashMap<>();
+
+
     static {
         try {
             PROCESS_STATE_HANDLE = MethodHandles.lookup().findVarHandle( PnioExchange.class, "processState", int.class );
@@ -48,18 +53,25 @@ public class PnioExchange<RequestState> {
     public final PnioController controller;
     public final PnioListener<RequestState> pnioListener;
     public final ComputeTask<RequestState> task;
+    public final String handlerName;
     public final RequestState requestState;
     protected final HttpServerExchange oapExchange;
+    private final PnioMetrics metrics;
     public volatile Throwable throwable;
     public volatile int processState;
     private volatile Runnable onDoneRunnable;
 
-    public PnioExchange( byte[] requestBuffer, int responseSize, PnioController controller,
+    public PnioExchange( String handlerName,
+                         byte[] requestBuffer, int responseSize,
+                         PnioController controller,
                          ComputeTask<RequestState> task,
                          HttpServerExchange oapExchange, long timeout,
                          PnioListener<RequestState> pnioListener,
-                         RequestState requestState ) {
+                         RequestState requestState,
+                         PnioMetrics metrics ) {
+        this.handlerName = handlerName;
         this.requestState = requestState;
+        this.metrics = metrics;
         this.startTimeNano = System.nanoTime();
         this.requestBuffer = requestBuffer;
         httpResponse = new HttpResponse( new PnioResponseBuffer( responseSize ) );
@@ -75,7 +87,7 @@ public class PnioExchange<RequestState> {
 
         this.pnioListener = pnioListener;
 
-        PnioMetrics.activeRequests.incrementAndGet();
+        metrics.activeRequests.incrementAndGet();
     }
 
     public void completeWithFail( Throwable throwable ) {
@@ -144,25 +156,25 @@ public class PnioExchange<RequestState> {
             if( ( processState & CONNECTION_CLOSED ) > 0 ) {
                 oapExchange.closeConnection();
             } else if( ( processState & EXCEPTION ) > 0 ) {
-                PnioMetrics.EXCEPTION.increment();
+                metrics.exception.increment();
                 pnioListener.onException( this );
             } else if( ( processState & REQUEST_BUFFER_OVERFLOW ) > 0 ) {
-                PnioMetrics.REQUEST_BUFFER_OVERFLOW.increment();
+                metrics.requestBufferOverflow.increment();
                 pnioListener.onRequestBufferOverflow( this );
             } else if( ( processState & RESPONSE_BUFFER_OVERFLOW ) > 0 ) {
-                PnioMetrics.RESPONSE_BUFFER_OVERFLOW.increment();
+                metrics.responseBufferOverflow.increment();
                 pnioListener.onResponseBufferOverflow( this );
             } else if( ( processState & TIMEOUT ) > 0 ) {
-                PnioMetrics.TIMEOUT.increment();
+                metrics.timeout.increment();
                 pnioListener.onTimeout( this );
             } else if( ( processState & REJECTED ) > 0 ) {
-                PnioMetrics.REJECTED.increment();
+                metrics.rejected.increment();
                 pnioListener.onRejected( this );
             } else if( ( processState & DONE ) > 0 ) {
-                PnioMetrics.COMPLETED.increment();
+                metrics.completed.increment();
                 pnioListener.onDone( this );
             } else {
-                PnioMetrics.UNKNOWN.increment();
+                metrics.unknown.increment();
                 pnioListener.onUnknown( this );
             }
         } finally {
@@ -239,7 +251,13 @@ public class PnioExchange<RequestState> {
         } finally {
             long end = System.nanoTime();
 
-            Metrics.timer( "pnio_async", "type", asyncTaskType ).record( end - start, TimeUnit.NANOSECONDS );
+            timers
+                .computeIfAbsent( asyncTaskType, _ -> Timer
+                    .builder( "pnio_async" )
+                    .publishPercentileHistogram()
+                    .tags( "type", asyncTaskType, "id", handlerName )
+                    .register( Metrics.globalRegistry ) )
+                .record( end - start, TimeUnit.NANOSECONDS );
         }
     }
 
