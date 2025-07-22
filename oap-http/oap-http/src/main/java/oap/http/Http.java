@@ -304,5 +304,8 @@ public interface Http {
         String ApplicationXhtmlXml = "application/xhtml+xml";
         ///<summary>ZIP archive files; Registered[7]</summary>
         String ApplicationZip = "application/zip";
+
+        ///<summary>AWS S3 Folder</summary>
+        String ApplicationXDirectory = "application/x-directory";
     }
 }

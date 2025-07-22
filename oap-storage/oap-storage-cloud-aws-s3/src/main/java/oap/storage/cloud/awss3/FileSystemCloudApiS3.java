@@ -1,6 +1,5 @@
 package oap.storage.cloud.awss3;
 
-import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.util.NamedThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Executors;
@@ -17,6 +16,7 @@ import oap.storage.cloud.PageSet;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Throwables;
+import org.apache.commons.lang3.NotImplementedException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -254,6 +254,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                     public Long getSize() {
                         return headObjectResponse.contentLength();
                     }
+
+                    @Override
+                    public String getContentType() {
+                        return headObjectResponse.contentType();
+                    }
                 };
             } )
             .exceptionallyCompose( e -> {
@@ -354,8 +359,6 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     @Override
     public CompletableFuture<Void> uploadAsync( CloudURI cloudURI, BlobData blobData ) {
-        Preconditions.checkNotNull( blobData.content );
-
         S3TransferManager s3TransferManager = getS3TransferManager();
         AsyncRequestBody body = switch( blobData.content ) {
             case InputStream _ -> AsyncRequestBody.forBlockingInputStream( null );
@@ -364,7 +367,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             case ByteBuffer byteBuffer -> AsyncRequestBody.fromByteBuffer( byteBuffer );
             case File file -> AsyncRequestBody.fromFile( file );
             case Path path -> AsyncRequestBody.fromFile( path );
-            case null, default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
+            case null -> AsyncRequestBody.empty(); // "folder"
+            default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
         };
 
 
@@ -435,6 +439,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                     @Override
                     public Long getSize() {
                         return obj.size();
+                    }
+
+                    @Override
+                    public String getContentType() {
+                        throw new NotImplementedException();
                     }
                 } ) );
             } )

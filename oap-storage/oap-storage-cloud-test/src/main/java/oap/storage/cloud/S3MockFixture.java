@@ -3,6 +3,7 @@ package oap.storage.cloud;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
@@ -130,6 +131,23 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
         return Lists.toLinkedHashMap( s3.getObjectTagging( GetObjectTaggingRequest.builder().bucket( container ).key( path ).build() )
             .tagSet(), k -> URLDecoder.decode( k.key(), UTF_8 ), v -> URLDecoder.decode( v.value(), UTF_8 ) );
+    }
+
+    public void createFolder( String container, String path ) {
+        createFolder( container, path, Map.of() );
+    }
+
+    public void createFolder( String container, String path, Map<String, String> tags ) {
+        final S3Client s3 = getS3();
+
+        Preconditions.checkArgument( path.endsWith( "/" ) );
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket( container ).key( path )
+            .contentType( "application/x-directory" )
+            .tagging( Tagging.builder().tagSet( Maps.toList( tags, ( k, v ) -> Tag.builder().key( k ).value( v ).build() ) ).build() )
+            .build();
+
+        s3.putObject( putObjectRequest, RequestBody.empty() );
     }
 
     public void uploadFile( String container, String name, Path file ) {

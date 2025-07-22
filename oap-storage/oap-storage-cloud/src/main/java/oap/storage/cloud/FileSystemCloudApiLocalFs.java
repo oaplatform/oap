@@ -97,6 +97,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                     throw new CloudException( e );
                 }
             }
+
+            @Override
+            public String getContentType() {
+                return "";
+            }
         } );
     }
 
@@ -199,6 +204,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                         } catch( IOException e ) {
                             throw new CloudException( e );
                         }
+                    }
+
+                    @Override
+                    public String getContentType() {
+                        return "";
                     }
                 } )
                 .toList() ) );
