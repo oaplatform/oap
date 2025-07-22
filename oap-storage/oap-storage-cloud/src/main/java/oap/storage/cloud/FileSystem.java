@@ -290,6 +290,8 @@ public class FileSystem implements AutoCloseable {
         DateTime getLastModified();
 
         Long getSize();
+
+        String getContentType();
     }
 
     @ToString
@@ -305,5 +307,6 @@ public class FileSystem implements AutoCloseable {
         private final DateTime creationDate;
         private final DateTime lastModified;
         private final Long size;
+        private final String contentType;
     }
 }
