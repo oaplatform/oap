@@ -32,6 +32,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListBucketsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -172,6 +174,12 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             .build();
 
         s3.putObject( putObjectRequest, RequestBody.fromString( content ) );
+    }
+
+    public HeadObjectResponse headObject( String container, String path ) {
+        final S3Client s3 = getS3();
+
+        return s3.headObject( HeadObjectRequest.builder().bucket( container ).key( path ).build() );
     }
 
     public <T> T readFile( String container, String name, ContentReader<T> contentReader, Encoding encoding ) {

@@ -196,6 +196,8 @@ public class FileSystemTest extends Fixtures {
 
             fileSystem.deleteBlob( new CloudURI( "s3://test2/logs/file1.txt" ) );
 
+            assertThat( s3mockFixture.headObject( "test2", "logs/folder1/" ) ).isNotNull();
+
             assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
             assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
             assertTrue( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
