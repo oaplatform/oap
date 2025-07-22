@@ -132,6 +132,20 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             .tagSet(), k -> URLDecoder.decode( k.key(), UTF_8 ), v -> URLDecoder.decode( v.value(), UTF_8 ) );
     }
 
+    public void createFolder( String container, String path ) {
+        createFolder( container, path );
+    }
+
+    public void createFolder( String container, String path, Map<String, String> tags ) {
+        final S3Client s3 = getS3();
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket( container ).key( path )
+            .tagging( Tagging.builder().tagSet( Maps.toList( tags, ( k, v ) -> Tag.builder().key( k ).value( v ).build() ) ).build() )
+            .build();
+
+        s3.putObject( putObjectRequest, RequestBody.empty() );
+    }
+
     public void uploadFile( String container, String name, Path file ) {
         uploadFile( container, name, file, Map.of() );
     }
