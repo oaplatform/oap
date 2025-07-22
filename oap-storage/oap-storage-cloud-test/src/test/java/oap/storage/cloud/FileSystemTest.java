@@ -175,11 +175,11 @@ public class FileSystemTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             s3mockFixture.uploadFile( "test2", "logs/file1.txt", path1 );
             s3mockFixture.uploadFile( "test2", "logs/file2.txt", path2 );
-            s3mockFixture.createFolder( "test2", "logs/folder1" );
+            s3mockFixture.createFolder( "test2", "logs/folder1/" );
 
             assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
             assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
-            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/folder1" ) ) );
+            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/folder1/" ) ) );
             assertTrue( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().build() );
