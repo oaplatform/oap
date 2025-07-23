@@ -118,7 +118,7 @@ public class RowBinaryTest extends Fixtures {
                 .succeedsWithin( Duration.ofSeconds( 10 ) )
                 .satisfies( resp -> {
                     RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( resp.getInputStream(), true );
-                    assertThat( rowBinaryInputStream.headers ).isEqualTo( List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ) );
+                    assertThat( List.of( rowBinaryInputStream.headers ) ).isEqualTo( List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ) );
 
                     assertThat( rowBinaryInputStream.readBoolean() ).isTrue();
                     assertThat( rowBinaryInputStream.readByte() ).isEqualTo( ( byte ) 134 );

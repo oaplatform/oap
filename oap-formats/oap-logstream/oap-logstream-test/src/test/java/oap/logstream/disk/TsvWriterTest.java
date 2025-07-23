@@ -27,7 +27,7 @@ package oap.logstream.disk;
 import oap.io.Files;
 import oap.io.content.ContentWriter;
 import oap.logstream.LogId;
-import oap.template.BinaryUtils;
+import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -62,7 +62,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1\n2\n\r3\t4";
-        byte[] bytes = BinaryUtils.line( content );
+        byte[] bytes = RowBinaryUtils.line( content );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
@@ -83,7 +83,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890";
-        byte[] bytes = BinaryUtils.line( content );
+        byte[] bytes = RowBinaryUtils.line( content );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
@@ -145,7 +145,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890";
-        byte[] bytes = BinaryUtils.line( content );
+        byte[] bytes = RowBinaryUtils.line( content );
         Path logs = testDirectoryFixture.testPath( "logs" );
         Files.write(
             logs.resolve( "1-file-00-80723ad6-1-UNKNOWN.log.gz" ),
@@ -290,7 +290,7 @@ public class TsvWriterTest extends Fixtures {
         try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", Map.of( "p", "1" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
-            writer.write( CURRENT_PROTOCOL_VERSION, BinaryUtils.line( "111", "222" ) );
+            writer.write( CURRENT_PROTOCOL_VERSION, RowBinaryUtils.line( "111", "222" ) );
         }
 
         assertFile( logs.resolve( "1-file-00-ab96b20e-1-UNKNOWN.log.gz" ) )
@@ -427,7 +427,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        byte[] bytes = BinaryUtils.lines( List.of( List.of( "", "a" ), List.of( "", "a" ) ) );
+        byte[] bytes = RowBinaryUtils.lines( List.of( List.of( "", "a" ), List.of( "", "a" ) ) );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,

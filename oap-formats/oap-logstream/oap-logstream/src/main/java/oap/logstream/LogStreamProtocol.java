@@ -7,10 +7,10 @@ import java.util.stream.Stream;
 
 @SuppressWarnings( "checkstyle:InterfaceIsType" )
 public interface LogStreamProtocol {
-    ProtocolVersion CURRENT_PROTOCOL_VERSION = ProtocolVersion.BINARY_V2;
+    ProtocolVersion CURRENT_PROTOCOL_VERSION = ProtocolVersion.ROW_BINARY_V3;
 
     enum ProtocolVersion {
-        TSV_V1( 1 ), BINARY_V2( 2 );
+        TSV_V1( 1 ), BINARY_V2( 2 ), ROW_BINARY_V3( 3 );
         public final int version;
 
         ProtocolVersion( int version ) {
