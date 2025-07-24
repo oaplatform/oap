@@ -56,13 +56,13 @@ public class LoggerJsonTest extends Fixtures {
     public void diskJSON() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        var content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
-        var headers = new String[] { "test" };
-        var types = new byte[][] { new byte[] { Types.STRING.id } };
+        String content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
+        String[] headers = new String[] { "test" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             Logger logger = new Logger( backend );
 
-            var o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
+            SimpleJson o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
             String jsonContent = Binder.json.marshal( o );
             assertThat( jsonContent ).isEqualTo( content );
 

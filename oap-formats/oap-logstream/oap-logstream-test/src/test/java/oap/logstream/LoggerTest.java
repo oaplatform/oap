@@ -27,11 +27,11 @@ package oap.logstream;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.NioHttpServer;
 import oap.logstream.disk.DiskLoggerBackend;
+import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.logstream.net.client.SocketLoggerBackend;
 import oap.logstream.net.server.SocketLoggerServer;
 import oap.message.client.MessageSender;
 import oap.message.server.MessageHttpHandler;
-import oap.template.BinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
@@ -68,12 +68,12 @@ public class LoggerTest extends Fixtures {
     public void disk() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1 );
 
-        byte[] line1 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
+        byte[] line1 = RowBinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
         String loggedLine1 = "2015-10-10 01:00:00\t12345678\t12345678\n";
         String[] headers1 = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types1 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         String loggedHeaders1 = String.join( "\t", headers1 ) + "\n";
-        byte[] line2 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
+        byte[] line2 = RowBinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
         String loggedLine2 = "2015-10-10 01:00:00\t12345678\n";
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
@@ -105,10 +105,10 @@ public class LoggerTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
-        byte[] line1 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
+        byte[] line1 = RowBinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
         String[] headers1 = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types1 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        byte[] line2 = BinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
+        byte[] line2 = RowBinaryUtils.line( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
 
