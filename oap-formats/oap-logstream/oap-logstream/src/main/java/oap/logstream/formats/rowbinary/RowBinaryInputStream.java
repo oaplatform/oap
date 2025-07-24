@@ -210,7 +210,6 @@ public class RowBinaryInputStream extends InputStream {
             ArrayList<Object> row = new ArrayList<>( headers.length );
 
             for( int i = 0; i < headers.length; i++ ) {
-                String header = headers[i];
                 byte[] bytes = types[i];
                 Types types = Types.valueOf( bytes[0] );
 
