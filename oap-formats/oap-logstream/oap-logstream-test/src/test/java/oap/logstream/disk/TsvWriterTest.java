@@ -62,7 +62,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1\n2\n\r3\t4";
-        byte[] bytes = RowBinaryUtils.line( content );
+        byte[] bytes = RowBinaryUtils.line( List.of( content ) );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
@@ -83,7 +83,7 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890";
-        byte[] bytes = RowBinaryUtils.line( content );
+        byte[] bytes = RowBinaryUtils.line( List.of( content ) );
         Path logs = testDirectoryFixture.testPath( "logs" );
 
         TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
@@ -145,7 +145,9 @@ public class TsvWriterTest extends Fixtures {
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890";
-        byte[] bytes = RowBinaryUtils.line( content );
+        byte[] bytes = RowBinaryUtils.line( List.of( content ) );
+        List<String> newContent = List.of( "1234567890", "" );
+        byte[] newBytes = RowBinaryUtils.line( newContent );
         Path logs = testDirectoryFixture.testPath( "logs" );
         Files.write(
             logs.resolve( "1-file-00-80723ad6-1-UNKNOWN.log.gz" ),
@@ -192,7 +194,7 @@ public class TsvWriterTest extends Fixtures {
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
-        writer.write( CURRENT_PROTOCOL_VERSION, bytes );
+        writer.write( CURRENT_PROTOCOL_VERSION, newBytes );
         writer.close();
 
 
@@ -250,7 +252,7 @@ public class TsvWriterTest extends Fixtures {
                 """ );
 
         assertFile( logs.resolve( "1-file-02-ab96b20e-1-UNKNOWN.log.gz" ) )
-            .hasContent( "REQUEST_ID\tH2\n" + content + "\n", GZIP );
+            .hasContent( "REQUEST_ID\tH2\n" + String.join( "\t", newContent ) + "\n", GZIP );
     }
 
     @Test
@@ -290,7 +292,7 @@ public class TsvWriterTest extends Fixtures {
         try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
             new LogId( "", "type", "log", Map.of( "p", "1" ), headers, types ),
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
-            writer.write( CURRENT_PROTOCOL_VERSION, RowBinaryUtils.line( "111", "222" ) );
+            writer.write( CURRENT_PROTOCOL_VERSION, RowBinaryUtils.line( List.of( "111", "222" ) ) );
         }
 
         assertFile( logs.resolve( "1-file-00-ab96b20e-1-UNKNOWN.log.gz" ) )

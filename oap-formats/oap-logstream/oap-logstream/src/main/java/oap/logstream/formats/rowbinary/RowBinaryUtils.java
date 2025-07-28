@@ -35,15 +35,13 @@ public class RowBinaryUtils {
         return baos.toByteArray();
     }
 
-    public static byte[] line( Object... cols ) throws IOException {
-        return line( List.of( cols ) );
-    }
-
-    public static byte[] line( List<Object> cols ) throws IOException {
+    public static <T> byte[] line( List<T> cols ) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         RowBinaryOutputStream bos = new RowBinaryOutputStream( baos );
 
-        for( Object col : cols ) bos.writeObject( col );
+        for( Object col : cols ) {
+            bos.writeObject( col );
+        }
 
         return baos.toByteArray();
     }
