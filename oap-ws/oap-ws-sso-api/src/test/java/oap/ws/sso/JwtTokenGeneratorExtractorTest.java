@@ -44,7 +44,7 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
     private static final JWTExtractor jwtExtractor = new JWTExtractor( "secret", "issuer", new SecurityRoles( new TestSecurityRolesProvider() ) );
 
     public JwtTokenGeneratorExtractorTest() {
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
     }
 
     @Test

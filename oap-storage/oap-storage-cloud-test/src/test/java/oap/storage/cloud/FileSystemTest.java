@@ -44,7 +44,7 @@ public class FileSystemTest extends Fixtures {
     }
 
     public FileSystemTest() {
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
     }
 
     @BeforeMethod

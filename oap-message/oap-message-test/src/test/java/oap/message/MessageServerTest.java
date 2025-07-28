@@ -60,7 +60,7 @@ public class MessageServerTest extends Fixtures {
 
     public MessageServerTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
     }
 
     @Test

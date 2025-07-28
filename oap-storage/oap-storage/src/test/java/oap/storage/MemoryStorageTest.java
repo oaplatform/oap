@@ -44,7 +44,7 @@ import static org.joda.time.DateTimeZone.UTC;
 @Test
 public class MemoryStorageTest extends Fixtures {
     public MemoryStorageTest() {
-        fixtures( new SystemTimerFixture() );
+        fixtures( new SystemTimerFixture( true ) );
     }
 
     @Test

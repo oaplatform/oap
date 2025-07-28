@@ -45,15 +45,15 @@ public class FilePersistenceTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
     public FilePersistenceTest() {
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
     @Test
     public void fsync() {
         Path path = testDirectoryFixture.testPath( "fsync-storage.json.gz" );
-        var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var persistence = new FilePersistence<>( path, 10, storage ) ) {
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( FilePersistence<String, Bean> persistence = new FilePersistence<>( path, 10, storage ) ) {
             persistence.preStart();
             storage.store( new Bean( "123" ) );
 
@@ -64,14 +64,14 @@ public class FilePersistenceTest extends Fixtures {
     @Test
     public void persist() {
         Path path = testDirectoryFixture.testPath( "persist-storage.json.gz" );
-        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var persistence = new FilePersistence<>( path, 10, storage1 ) ) {
+        MemoryStorage<String, Bean> storage1 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( FilePersistence<String, Bean> persistence = new FilePersistence<>( path, 10, storage1 ) ) {
             persistence.preStart();
             storage1.store( new Bean( "123" ) );
         }
 
-        var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var persistence = new FilePersistence<>( path, 10, storage2 ) ) {
+        MemoryStorage<String, Bean> storage2 = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( FilePersistence<String, Bean> persistence = new FilePersistence<>( path, 10, storage2 ) ) {
             persistence.preStart();
             assertThat( storage2.select() ).containsExactly( new Bean( "123" ) );
         }
