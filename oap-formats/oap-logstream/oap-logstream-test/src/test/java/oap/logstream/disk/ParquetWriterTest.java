@@ -26,6 +26,7 @@ package oap.logstream.disk;
 
 import oap.logstream.LogId;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
+import oap.template.BinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 import static oap.logstream.LogStreamProtocol.CURRENT_PROTOCOL_VERSION;
+import static oap.logstream.LogStreamProtocol.ProtocolVersion.BINARY_V2;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.formats.parquet.ParquetAssertion.assertParquet;
 import static oap.logstream.formats.parquet.ParquetAssertion.row;
@@ -79,6 +81,49 @@ public class ParquetWriterTest extends Fixtures {
         try( ParquetLogWriter writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, new WriterConfiguration.ParquetConfiguration(), 1024, BPH_12, 20 ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
+        }
+
+        assertParquet( logs.resolve( "1-file-02-4cd64dae-1.parquet" ) )
+            .containOnlyHeaders( "COL1", "COL2", "COL3", "DATETIME" )
+            .containsExactly(
+                row( "s11", 21L, List.of( "1" ), s( 2022, 3, 11, 15, 16, 12 ) ),
+                row( "s12", 22L, List.of( "1", "2" ), s( 2022, 3, 11, 15, 16, 13 ) ),
+                row( "s111", 121L, List.of( "rr" ), s( 2022, 3, 11, 15, 16, 14 ) ),
+                row( "s112", 122L, List.of( "zz", "66" ), s( 2022, 3, 11, 15, 16, 15 ) )
+            );
+
+        assertParquet( logs.resolve( "1-file-02-4cd64dae-1.parquet" ), "COL3", "COL2" )
+            .containOnlyHeaders( "COL3", "COL2" )
+            .contains( row( List.of( "1" ), 21L ) );
+    }
+
+    @Test
+    public void testWriteV2() throws IOException {
+        Dates.setTimeFixed( 2022, 3, 8, 21, 11 );
+
+        byte[] content1 = BinaryUtils.lines( List.of(
+            List.of( "s11", 21L, List.of( "1" ), new DateTime( 2022, 3, 11, 15, 16, 12, UTC ) ),
+            List.of( "s12", 22L, List.of( "1", "2" ), new DateTime( 2022, 3, 11, 15, 16, 13, UTC ) )
+        ) );
+
+        byte[] content2 = BinaryUtils.lines( List.of(
+            List.of( "s111", 121L, List.of( "rr" ), new DateTime( 2022, 3, 11, 15, 16, 14, UTC ) ),
+            List.of( "s112", 122L, List.of( "zz", "66" ), new DateTime( 2022, 3, 11, 15, 16, 15, UTC ) )
+        ) );
+
+
+        String[] headers = new String[] { "COL1", "COL2", "COL3", "DATETIME" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id },
+            new byte[] { Types.LONG.id },
+            new byte[] { Types.LIST.id, Types.STRING.id },
+            new byte[] { Types.DATETIME.id }
+        };
+        LogId logId = new LogId( "", "log", "log",
+            Map.of( "p", "1" ), headers, types );
+        Path logs = testDirectoryFixture.testPath( "logs" );
+        try( ParquetLogWriter writer = new ParquetLogWriter( logs, FILE_PATTERN, logId, new WriterConfiguration.ParquetConfiguration(), 1024, BPH_12, 20 ) ) {
+            writer.write( BINARY_V2, content1 );
+            writer.write( BINARY_V2, content2 );
         }
 
         assertParquet( logs.resolve( "1-file-02-4cd64dae-1.parquet" ) )

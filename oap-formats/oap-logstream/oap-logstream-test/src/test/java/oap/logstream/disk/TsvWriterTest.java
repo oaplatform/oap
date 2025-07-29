@@ -28,6 +28,7 @@ import oap.io.Files;
 import oap.io.content.ContentWriter;
 import oap.logstream.LogId;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
+import oap.template.BinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -43,6 +44,7 @@ import java.util.Map;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.logstream.LogStreamProtocol.CURRENT_PROTOCOL_VERSION;
+import static oap.logstream.LogStreamProtocol.ProtocolVersion.BINARY_V2;
 import static oap.logstream.LogStreamProtocol.ProtocolVersion.TSV_V1;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.testng.Asserts.assertFile;
@@ -70,6 +72,27 @@ public class TsvWriterTest extends Fixtures {
             new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
 
             writer.write( CURRENT_PROTOCOL_VERSION, bytes );
+        }
+
+        assertFile( logs.resolve( "1-file-00-198163-1-UNKNOWN.log.gz" ) )
+            .hasContent( "RAW\n1\\n2\\n\\r3\\t4\n", GZIP );
+    }
+
+    @Test
+    public void testEscapeV2() throws IOException {
+        String[] headers = new String[] { "RAW" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+        String content = "1\n2\n\r3\t4";
+        byte[] bytes = BinaryUtils.line( List.of( content ) );
+        Path logs = testDirectoryFixture.testPath( "logs" );
+
+        try( TsvWriter writer = new TsvWriter( logs, FILE_PATTERN,
+            new LogId( "", "type", "log", LinkedHashMaps.of( "p", "1", "ORGANIZATION", "" ), headers, types ),
+            new WriterConfiguration.TsvConfiguration(), 10, BPH_12, 20 ) ) {
+
+            writer.write( BINARY_V2, bytes );
         }
 
         assertFile( logs.resolve( "1-file-00-198163-1-UNKNOWN.log.gz" ) )
