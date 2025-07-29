@@ -29,6 +29,7 @@ import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
+import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.message.server.MessageListener;
 import oap.template.BinaryUtils;
 import oap.tsv.Tsv;
@@ -68,9 +69,9 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         if( !backend.isLoggingAvailable() ) {
             return LogStreamProtocol.STATUS_BACKEND_LOGGER_NOT_AVAILABLE;
         }
-        try( var in = new DataInputStream( new ByteArrayInputStream( data ) ) ) {
+        try( DataInputStream in = new DataInputStream( new ByteArrayInputStream( data ) ) ) {
             switch( protocolVersion ) {
-                case 1, 2 -> readBinaryV2( ProtocolVersion.valueOf( protocolVersion ), hostName, in );
+                case 1, 2, 3 -> readBinaryV3( ProtocolVersion.valueOf( protocolVersion ), hostName, in );
                 default -> {
                     return LogStreamProtocol.INVALID_VERSION;
                 }
@@ -89,36 +90,36 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         return LogStreamProtocol.STATUS_OK;
     }
 
-    private void readBinaryV2( ProtocolVersion version, String hostName, DataInputStream in ) throws IOException {
+    private void readBinaryV3( ProtocolVersion version, String hostName, DataInputStream in ) throws IOException {
         in.readLong(); // digestion control
-        var length = in.readInt();
-        var filePreffix = in.readUTF();
-        var logType = in.readUTF();
-        var clientHostname = in.readUTF();
+        int length = in.readInt();
+        String filePreffix = in.readUTF();
+        String logType = in.readUTF();
+        String clientHostname = in.readUTF();
 
         int headersSize = in.readInt();
-        var headers = new String[headersSize];
-        for( var i = 0; i < headersSize; i++ ) {
+        String[] headers = new String[headersSize];
+        for( int i = 0; i < headersSize; i++ ) {
             headers[i] = in.readUTF();
         }
 
-        var types = new byte[headersSize][];
-        for( var x = 0; x < headersSize; x++ ) {
-            var tSize = in.readByte();
-            var t = new byte[tSize];
-            for( var y = 0; y < tSize; y++ ) {
+        byte[][] types = new byte[headersSize][];
+        for( int x = 0; x < headersSize; x++ ) {
+            byte tSize = in.readByte();
+            byte[] t = new byte[tSize];
+            for( int y = 0; y < tSize; y++ ) {
                 t[y] = in.readByte();
             }
             types[x] = t;
         }
 
-        var propertiesSize = in.readByte();
-        var properties = new LinkedHashMap<String, String>();
-        for( var i = 0; i < propertiesSize; i++ ) {
+        byte propertiesSize = in.readByte();
+        LinkedHashMap<String, String> properties = new LinkedHashMap<String, String>();
+        for( int i = 0; i < propertiesSize; i++ ) {
             properties.put( in.readUTF(), in.readUTF() );
         }
 
-        var buffer = new byte[length];
+        byte[] buffer = new byte[length];
         in.readFully( buffer, 0, length );
 
         if( log.isTraceEnabled() ) {
@@ -127,6 +128,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
                 case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
                     .forEach( line -> lines.add( Collections.singletonList( line ) ) );
                 case BINARY_V2 -> lines.addAll( BinaryUtils.read( buffer ) );
+                case ROW_BINARY_V3 -> lines.addAll( RowBinaryUtils.read( buffer, headers, types ) );
             }
 
             lines.forEach( line ->

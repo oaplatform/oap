@@ -36,7 +36,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,13 +130,11 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
 
         for( LogId id : outputs.keySet() ) {
             if( filter.test( id ) ) {
-                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
-                HashMap<String, byte[][]> map = new HashMap<>();
-                for( int i = 0; i < id.headers.length; i++ ) {
-                    map.put( id.headers[i], id.types );
-                }
 
-                RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, map );
+                String[] queryHeader = headers.length == 0 ? id.headers : headers;
+
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
+                RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, queryHeader, id.types );
 
                 List<Object> objects;
                 while( ( objects = rowBinaryInputStream.readRow() ) != null ) {

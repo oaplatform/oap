@@ -27,7 +27,7 @@ package oap.logstream;
 import oap.io.IoStreams.Encoding;
 import oap.json.Binder;
 import oap.logstream.disk.DiskLoggerBackend;
-import oap.template.BinaryUtils;
+import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -35,6 +35,7 @@ import oap.util.Dates;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static oap.io.content.ContentReader.ofJson;
@@ -56,17 +57,17 @@ public class LoggerJsonTest extends Fixtures {
     public void diskJSON() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        var content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
-        var headers = new String[] { "test" };
-        var types = new byte[][] { new byte[] { Types.STRING.id } };
+        String content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
+        String[] headers = new String[] { "test" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             Logger logger = new Logger( backend );
 
-            var o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
+            SimpleJson o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
             String jsonContent = Binder.json.marshal( o );
             assertThat( jsonContent ).isEqualTo( content );
 
-            logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, BinaryUtils.line( jsonContent ) );
+            logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, RowBinaryUtils.line( List.of( jsonContent ) ) );
         }
 
         assertFile( testDirectoryFixture.testPath( "logs/open_rtb_json/2015-10/10/request_response_v3b5d9e1b-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )

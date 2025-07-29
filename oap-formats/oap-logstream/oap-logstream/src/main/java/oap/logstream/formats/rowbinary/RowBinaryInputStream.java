@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.joda.time.DateTimeZone.UTC;
@@ -19,29 +18,32 @@ import static org.joda.time.DateTimeZone.UTC;
  * https://clickhouse.com/docs/interfaces/formats/RowBinary
  */
 public class RowBinaryInputStream extends InputStream {
-    public final List<String> headers = new ArrayList<>();
     private final InputStream in;
-    private final Map<String, byte[][]> types;
+    public final String[] headers;
+    private final byte[][] types;
     protected byte[] readBuffer = new byte[8];
 
-    public RowBinaryInputStream( InputStream in, boolean withHeaders ) throws IOException {
-        this( in, withHeaders, null );
+    public RowBinaryInputStream( InputStream in, boolean readHeaders ) throws IOException {
+        this( in, readHeaders, null, null );
     }
 
-    public RowBinaryInputStream( InputStream in, Map<String, byte[][]> types ) throws IOException {
-        this( in, false, types );
+    public RowBinaryInputStream( InputStream in, String[] headers, byte[][] types ) throws IOException {
+        this( in, false, headers, types );
     }
 
-    protected RowBinaryInputStream( InputStream in, boolean withHeaders, Map<String, byte[][]> types ) throws IOException {
+    protected RowBinaryInputStream( InputStream in, boolean readHeaders, String[] headers, byte[][] types ) throws IOException {
         this.in = in;
 
-        if( withHeaders ) {
+        if( readHeaders ) {
             int count = readVarInt();
+            this.headers = new String[count];
             for( int i = 0; i < count; i++ ) {
-                headers.add( readString() );
+                this.headers[i] = readString();
             }
         } else if( types != null ) {
-            headers.addAll( types.keySet() );
+            this.headers = headers;
+        } else {
+            throw new IllegalArgumentException( "unknown headers" );
         }
 
         this.types = types;
@@ -205,12 +207,11 @@ public class RowBinaryInputStream extends InputStream {
             Preconditions.checkNotNull( types );
             Preconditions.checkNotNull( headers );
 
-            ArrayList<Object> row = new ArrayList<>( headers.size() );
+            ArrayList<Object> row = new ArrayList<>( headers.length );
 
-            for( int i = 0; i < headers.size(); i++ ) {
-                String header = headers.get( i );
-                byte[][] bytes = types.get( header );
-                Types types = Types.valueOf( bytes[i][0] );
+            for( int i = 0; i < headers.length; i++ ) {
+                byte[] bytes = types[i];
+                Types types = Types.valueOf( bytes[0] );
 
                 row.add( switch( types ) {
                     case DATETIME -> readDateTime();
@@ -224,7 +225,7 @@ public class RowBinaryInputStream extends InputStream {
                     case STRING -> readString();
                     case BOOLEAN -> readBoolean();
                     case LIST -> {
-                        Types listItemType = Types.valueOf( bytes[i][1] );
+                        Types listItemType = Types.valueOf( bytes[1] );
                         yield readList( listItemType.clazz );
                     }
                     default -> throw new IllegalArgumentException( "unknown type " + types );

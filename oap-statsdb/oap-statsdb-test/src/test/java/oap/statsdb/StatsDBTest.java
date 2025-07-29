@@ -68,7 +68,7 @@ public class StatsDBTest extends Fixtures {
     public StatsDBTest() {
         fixture( MONGO_FIXTURE );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
     }
 
     @Test

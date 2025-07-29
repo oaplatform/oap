@@ -62,7 +62,7 @@ public class FilesTest extends Fixtures {
 
     public FilesTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
     }
 
     @Test

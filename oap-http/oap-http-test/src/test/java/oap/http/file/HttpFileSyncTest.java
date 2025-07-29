@@ -51,7 +51,7 @@ public class HttpFileSyncTest extends Fixtures {
     private ClientAndServer mockServer;
 
     public HttpFileSyncTest() {
-        fixture( new SystemTimerFixture() );
+        fixture( new SystemTimerFixture( true ) );
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 

@@ -27,7 +27,7 @@ package oap.logstream.disk;
 import oap.io.IoStreams;
 import oap.logstream.Logger;
 import oap.logstream.Timestamp;
-import oap.template.BinaryUtils;
+import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -71,9 +71,9 @@ public class DiskLoggerBackendTest extends Fixtures {
     @Test
     public void testPatternByType() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 16 );
-        var headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
-        var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
+        String[] headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+        byte[] lines = RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
 
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
             backend.filePattern = "${LOG_TYPE}_${LOG_VERSION}_${INTERVAL}.tsv.gz";
@@ -104,9 +104,9 @@ public class DiskLoggerBackendTest extends Fixtures {
     @Test
     public void testRefreshForceSync() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1 );
-        var headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
-        var types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        var lines = BinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
+        String[] headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
+        byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
+        byte[] lines = RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
         //init new logger
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             backend.start();

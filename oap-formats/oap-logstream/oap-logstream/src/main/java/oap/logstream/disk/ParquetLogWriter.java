@@ -33,6 +33,7 @@ import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.parquet.ParquetSimpleGroup;
 import oap.logstream.formats.parquet.ParquetWriteBuilder;
+import oap.logstream.formats.rowbinary.RowBinaryInputStream;
 import oap.template.BinaryInputStream;
 import oap.template.BinaryUtils;
 import oap.util.Lists;
@@ -201,7 +202,13 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
                     return;
                 }
             log.trace( "writing {} bytes to {}", length, this );
-            convertToParquet( buffer, offset, length, logId.types, logId.headers );
+            if( protocolVersion == ProtocolVersion.BINARY_V2 ) {
+                convertToParquetV2( buffer, offset, length, logId.types, logId.headers );
+            } else if( protocolVersion == ProtocolVersion.ROW_BINARY_V3 ) {
+                convertToParquetV3( buffer, offset, length, logId.types, logId.headers );
+            } else {
+                throw new IllegalArgumentException( "Unknown protocol version: " + protocolVersion );
+            }
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
             try {
@@ -214,8 +221,8 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         }
     }
 
-    private void convertToParquet( byte[] buffer, int offset, int length, byte[][] types, String[] headers ) throws IOException {
-        var bis = new BinaryInputStream( new ByteArrayInputStream( buffer, offset, length ) );
+    private void convertToParquetV2( byte[] buffer, int offset, int length, byte[][] types, String[] headers ) throws IOException {
+        BinaryInputStream bis = new BinaryInputStream( new ByteArrayInputStream( buffer, offset, length ) );
         int col = 0;
         ParquetSimpleGroup group = new ParquetSimpleGroup( messageType );
         Object obj = bis.readObject();
@@ -246,6 +253,37 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
             col = 0;
             group = new ParquetSimpleGroup( messageType );
             obj = bis.readObject();
+        }
+    }
+
+    private void convertToParquetV3( byte[] buffer, int offset, int length, byte[][] types, String[] headers ) throws IOException {
+        RowBinaryInputStream bis = new RowBinaryInputStream( new ByteArrayInputStream( buffer, offset, length ), headers, types );
+        ParquetSimpleGroup group = new ParquetSimpleGroup( messageType );
+
+        List<Object> row = bis.readRow();
+        while( row != null ) {
+            int col = 0;
+            for( int i = 0; i < row.size(); i++ ) {
+                Object obj = row.get( i );
+                byte[] colType = types[i];
+                String header = headers[i];
+                if( !excludeFields.contains( header ) ) {
+                    try {
+                        addValue( col, obj, colType, 0, group );
+                    } catch( Exception e ) {
+                        log.error( "header {} class {} type {} col {}", header, obj.getClass().getName(),
+                            Lists.map( List.of( ArrayUtils.toObject( types[i] ) ), oap.template.Types::valueOf ),
+                            col );
+
+                        throw e;
+                    }
+                    col++;
+                }
+            }
+            out.write( group );
+            group = new ParquetSimpleGroup( messageType );
+
+            row = bis.readRow();
         }
     }
 
