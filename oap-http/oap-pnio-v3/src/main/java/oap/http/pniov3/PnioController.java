@@ -2,12 +2,15 @@ package oap.http.pniov3;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
-import jdk.internal.misc.CarrierThread;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -18,6 +21,7 @@ import java.util.function.Consumer;
 @Slf4j
 public class PnioController implements AutoCloseable {
     private static final VarHandle scheduler;
+    private static final MethodHandle carrierThread;
 
     static {
         try {
@@ -26,7 +30,13 @@ public class PnioController implements AutoCloseable {
             field.setAccessible( true );
             MethodHandles.Lookup lookup = MethodHandles.privateLookupIn( aClass, MethodHandles.lookup() );
             scheduler = lookup.findVarHandle( aClass, "scheduler", Executor.class );
-        } catch( ClassNotFoundException | IllegalAccessException | NoSuchFieldException e ) {
+
+            aClass = Class.forName( "jdk.internal.misc.CarrierThread" );
+            Constructor<?> constructor = aClass.getDeclaredConstructor( ForkJoinPool.class );
+            constructor.setAccessible( true );
+            lookup = MethodHandles.privateLookupIn( aClass, MethodHandles.lookup() );
+            carrierThread = lookup.findConstructor( aClass, MethodType.methodType( void.class, ForkJoinPool.class ) );
+        } catch( ClassNotFoundException | IllegalAccessException | NoSuchFieldException | NoSuchMethodException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -37,9 +47,10 @@ public class PnioController implements AutoCloseable {
 
     public PnioController( int parallelism, int importantParallelism ) {
         pool = new ForkJoinPool( parallelism, new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+            @SneakyThrows
             @Override
             public ForkJoinWorkerThread newThread( ForkJoinPool pool ) {
-                return new CarrierThread( pool );
+                return ( ForkJoinWorkerThread ) carrierThread.invoke( pool );
             }
         }, new Thread.UncaughtExceptionHandler() {
             @Override
@@ -49,9 +60,10 @@ public class PnioController implements AutoCloseable {
         }, true, parallelism, parallelism, parallelism, null, 60_000L, TimeUnit.MILLISECONDS );
 
         importantPool = new ForkJoinPool( parallelism, new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+            @SneakyThrows
             @Override
             public ForkJoinWorkerThread newThread( ForkJoinPool pool ) {
-                return new CarrierThread( pool );
+                return ( ForkJoinWorkerThread ) carrierThread.invoke( pool );
             }
         }, new Thread.UncaughtExceptionHandler() {
             @Override
