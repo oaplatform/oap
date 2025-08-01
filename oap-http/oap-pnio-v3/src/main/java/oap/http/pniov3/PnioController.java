@@ -87,11 +87,11 @@ public class PnioController implements AutoCloseable {
     public void pushTask( PnioWorkerTask<?, ?> task, Consumer<PnioWorkerTask<?, ?>> rejected, boolean important ) {
         if( important ) {
             Thread.Builder.OfVirtual ofVirtual = Thread.ofVirtual();
-            scheduler.set( ofVirtual, pool );
+            scheduler.set( ofVirtual, importantPool );
             ofVirtual.start( task::run );
         } else {
             Thread.Builder.OfVirtual ofVirtual = Thread.ofVirtual();
-            scheduler.set( ofVirtual, importantPool );
+            scheduler.set( ofVirtual, pool );
             ofVirtual.start( task::run );
         }
     }
