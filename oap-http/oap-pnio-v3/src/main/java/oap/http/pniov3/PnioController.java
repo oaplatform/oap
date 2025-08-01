@@ -55,7 +55,7 @@ public class PnioController implements AutoCloseable {
         }, new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException( Thread t, Throwable e ) {
-
+                log.error( e.getMessage(), e );
             }
         }, true, parallelism, parallelism, parallelism, null, 60_000L, TimeUnit.MILLISECONDS );
 
@@ -68,7 +68,7 @@ public class PnioController implements AutoCloseable {
         }, new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException( Thread t, Throwable e ) {
-
+                log.error( e.getMessage(), e );
             }
         }, true, importantParallelism, importantParallelism, importantParallelism, _ -> true, 60_000L, TimeUnit.MILLISECONDS );
 
