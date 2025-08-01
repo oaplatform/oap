@@ -126,4 +126,25 @@
         <oap.deps.apache.velocity.version>2.3</oap.deps.apache.velocity.version>
         <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${oap.deps.maven.compiler.version}</version>
+                <configuration>
+                    <useIncrementalCompilation>true</useIncrementalCompilation>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                        <arg>-Xlint:unchecked</arg>
+                        <arg>--add-modules</arg>
+                        <arg>java.xml,java.compiler</arg>
+                        <arg>-J--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
