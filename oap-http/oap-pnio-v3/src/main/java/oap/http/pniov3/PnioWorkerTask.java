@@ -27,7 +27,12 @@ public class PnioWorkerTask<RequestState, R extends ComputeTask<RequestState>> {
     @SuppressWarnings( "checkstyle:CatchParameterName" )
     protected void run() {
         try {
-            computeTask.run( pnioExchange );
+            if( pnioExchange.isTimeout() ) {
+                pnioExchange.completeWithTimeout();
+                pnioExchange.response();
+            } else {
+                computeTask.run( pnioExchange );
+            }
         } catch( PnioForceTerminateException _ ) {
             pnioExchange.response();
         } catch( BufferOverflowException e ) {

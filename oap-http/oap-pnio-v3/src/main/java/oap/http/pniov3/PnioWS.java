@@ -1,5 +1,6 @@
 package oap.http.pniov3;
 
+import lombok.ToString;
 import oap.util.Dates;
 import oap.ws.WsMethod;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -34,17 +35,28 @@ public class PnioWS {
         } );
 
         if( pnioController.getValue() != null ) {
-            pnioView.tasks = pnioController.getValue().pool.getQueuedTaskCount();
-            pnioView.importantTasks = pnioController.getValue().importantPool.getQueuedTaskCount();
+            pnioView.queuedTaskCount = pnioController.getValue().forkJoinPool.getQueuedTaskCount();
+            pnioView.activeThreadCount = pnioController.getValue().forkJoinPool.getActiveThreadCount();
+            pnioView.runningThreadCount = pnioController.getValue().forkJoinPool.getRunningThreadCount();
+            pnioView.queuedSubmissionCount = pnioController.getValue().forkJoinPool.getQueuedSubmissionCount();
+            pnioView.stealCount = pnioController.getValue().forkJoinPool.getStealCount();
         }
 
         return pnioView;
     }
 
+    @ToString
     public static class PnioView {
         public final ArrayList<PnioExchangeView> exchanges = new ArrayList<>();
-        public long tasks;
-        public long importantTasks;
+        public long queuedTaskCount;
+        public long activeThreadCount;
+        public long runningThreadCount;
+        public long queuedSubmissionCount;
+        public long stealCount;
+
+        public long getTotal() {
+            return exchanges.size();
+        }
     }
 
     public static class PnioExchangeView {

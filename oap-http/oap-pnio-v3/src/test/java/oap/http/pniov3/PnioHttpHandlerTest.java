@@ -26,6 +26,7 @@ package oap.http.pniov3;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.http.Http;
 import oap.http.Http.ContentType;
 import oap.http.server.nio.NioHttpServer;
@@ -34,25 +35,36 @@ import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.http.Http.StatusCode.OK;
+import static oap.http.Http.StatusCode.TOO_MANY_REQUESTS;
 import static oap.http.test.HttpAsserts.assertPost;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 public class PnioHttpHandlerTest extends Fixtures {
     @Test( invocationCount = 100 )
     public void testProcess() throws IOException {
@@ -133,7 +145,7 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testRequestBufferOverflow() throws IOException {
         ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
-        runWithWorkflow( 2, 1024, 5, Dates.s( 100 ), task, port -> {
+        runWithWorkflow( 2, 1024, 5, 1000, Dates.s( 100 ), task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -145,12 +157,85 @@ public class PnioHttpHandlerTest extends Fixtures {
     public void testResponseBufferOverflow() throws IOException {
         ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
-        runWithWorkflow( 1024, 2, 5, Dates.s( 100 ), task, port -> {
+        runWithWorkflow( 1024, 2, 5, 1000, Dates.s( 100 ), task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "BO" );
         } );
+    }
+
+    @Test
+    public void testReject() throws IOException {
+        AtomicInteger runAfterTimeout = new AtomicInteger( 0 );
+
+        ComputeTask<TestState> task = pnioExchange -> {
+            pnioExchange.runAsyncTask( "async", _ -> {
+                Threads.sleepSafely( 10000 );
+                return CompletableFuture.completedFuture( null );
+            } );
+
+            runAfterTimeout.incrementAndGet();
+
+            pnioExchange.complete();
+            pnioExchange.response();
+        };
+
+        try( CloseableHttpAsyncClient client = HttpAsyncClients
+            .custom()
+            .setMaxConnPerRoute( 100_000 )
+            .setMaxConnTotal( 100_000 )
+            .build() ) {
+            client.start();
+
+
+            runWithWorkflow( 1024, 1024, 1, 1000, 100000, task, port -> {
+                ArrayList<CompletableFuture<HttpResponse>> futures = new ArrayList<>();
+
+                for( int i = 0; i < 10_000; i++ ) {
+                    CompletableFuture<HttpResponse> future = new CompletableFuture<>();
+                    HttpPost httpPost = new HttpPost( "http://localhost:" + port + "/test" );
+                    httpPost.setEntity( new ByteArrayEntity( "[{}]".getBytes( UTF_8 ) ) );
+                    client.execute( httpPost, new FutureCallback<>() {
+                        @Override
+                        public void completed( HttpResponse httpResponse ) {
+                            future.complete( httpResponse );
+
+                        }
+
+                        @Override
+                        public void failed( Exception e ) {
+                            future.completeExceptionally( e );
+                        }
+
+                        @Override
+                        public void cancelled() {
+                            future.completeExceptionally( new CancellationException() );
+                        }
+                    } );
+                    futures.add( future );
+                }
+
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) ).join();
+
+                AtomicLong counter200 = new AtomicLong( 0 );
+                AtomicLong counter429 = new AtomicLong( 0 );
+                AtomicLong counterOther = new AtomicLong( 0 );
+
+                for( CompletableFuture<HttpResponse> future : futures ) {
+                    switch( future.resultNow().getStatusLine().getStatusCode() ) {
+                        case OK -> counter200.incrementAndGet();
+                        case TOO_MANY_REQUESTS -> counter429.incrementAndGet();
+                        default -> counterOther.incrementAndGet();
+                    }
+                }
+
+                log.info( "OK {} TOO_MANY_REQUESTS {} other {}", counter200, counter429, counterOther );
+                assertThat( counter200.get() ).isGreaterThan( 0 );
+                assertThat( counter429.get() ).isGreaterThan( 0 );
+                assertThat( counterOther.get() ).isZero();
+            } );
+        }
     }
 
     @Test
@@ -166,7 +251,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             pnioExchange.response();
         };
 
-        runWithWorkflow( 1024, 1024, 1, 1000, task, port -> {
+        runWithWorkflow( 1024, 1024, 1, 1000, 1000, task, port -> {
             assertPost( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
@@ -181,11 +266,11 @@ public class PnioHttpHandlerTest extends Fixtures {
     }
 
     private void runWithWorkflow( ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
-        runWithWorkflow( 1024, 1024, 10, Dates.s( 100 ), task, cons );
+        runWithWorkflow( 1024, 1024, 10, 1000, Dates.s( 100 ), task, cons );
     }
 
     private void runWithWorkflow( int requestSize, int responseSize, int ioThreads,
-                                  long timeout, ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
+                                  int maxThreads, long timeout, ComputeTask<TestState> task, Consumer<Integer> cons ) throws IOException {
         int port = Ports.getFreePort( getClass() );
 
         PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
@@ -196,7 +281,7 @@ public class PnioHttpHandlerTest extends Fixtures {
             httpServer.ioThreads = ioThreads;
             httpServer.start();
 
-            try( PnioController pnioController = new PnioController( ioThreads, 10 ) ) {
+            try( PnioController pnioController = new PnioController( ioThreads, maxThreads ) ) {
                 PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( "test", settings, task, new TestPnioListener(), pnioController );
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
@@ -236,7 +321,7 @@ public class PnioHttpHandlerTest extends Fixtures {
                     outputStream = new GZIPOutputStream( outputStream );
                     httpResponse.headers.put( Http.Headers.CONTENT_ENCODING, "gzip" );
                 }
-                outputStream.write( pnioExchange.requestState.sb.toString().getBytes( StandardCharsets.UTF_8 ) );
+                outputStream.write( pnioExchange.requestState.sb.toString().getBytes( UTF_8 ) );
 
                 httpResponse.status = OK;
                 httpResponse.contentType = ContentType.TEXT_PLAIN;
@@ -264,7 +349,12 @@ public class PnioHttpHandlerTest extends Fixtures {
 
         @Override
         public void onRejected( PnioExchange<TestState> pnioExchange ) {
-            defaultResponse( pnioExchange );
+            PnioExchange.HttpResponse httpResponse = pnioExchange.httpResponse;
+            httpResponse.status = Http.StatusCode.TOO_MANY_REQUESTS;
+            httpResponse.contentType = ContentType.TEXT_PLAIN;
+            httpResponse.responseBuffer.setAndResize( pnioExchange.printState() );
+
+            pnioExchange.send();
         }
 
         @Override

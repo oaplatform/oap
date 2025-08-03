@@ -36,9 +36,9 @@ public class PerformanceTest {
             .requestSize( 64000 )
             .responseSize( 64000 )
             .build();
-        try( PnioController pnioController = new PnioController( 10, 250 );
+        try( PnioController pnioController = new PnioController( 10, 10000 );
              NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            httpServer.ioThreads = 1;
+            httpServer.ioThreads = 2;
             httpServer.statistics = true;
             httpServer.start();
 
@@ -53,7 +53,7 @@ public class PerformanceTest {
             } );
 
             httpServer.bind( "/test",
-                exchange -> httpHandler.handleRequest( exchange, 100, new TestState() ), false );
+                exchange -> httpHandler.handleRequest( exchange, 1000, new TestState() ), false );
 
 
 //            Threads.sleepSafely( 100000000 );
@@ -64,7 +64,7 @@ public class PerformanceTest {
                     .is( r -> {
                         count.computeIfAbsent( r.code, k -> new LongAdder() ).increment();
                     } );
-            } ).threads( 1024 ).experiments( 5 ).run();
+            } ).threads( 10000 ).experiments( 5 ).warming( 10 ).run();
 
             System.out.println( count );
         }
@@ -85,7 +85,7 @@ public class PerformanceTest {
                 }
             }
 
-            pnioExchange.runAsyncTask( "perf", _ -> CompletableFuture.runAsync( () -> Threads.sleepSafely( 10 ), EXECUTOR_SERVICE ) );
+            pnioExchange.runAsyncTask( "perf", _ -> CompletableFuture.runAsync( () -> Threads.sleepSafely( 100 ), EXECUTOR_SERVICE ) );
 
             pnioExchange.complete();
             pnioExchange.response();

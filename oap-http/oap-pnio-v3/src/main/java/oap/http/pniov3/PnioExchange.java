@@ -236,7 +236,6 @@ public class PnioExchange<RequestState> {
      * @param <T>
      * @return
      */
-    @SuppressWarnings( "unchecked" )
     public <T> T runAsyncTask( String asyncTaskType, AsyncTask<T, RequestState> asyncTask ) {
         long start = System.nanoTime();
         try {
@@ -245,7 +244,12 @@ public class PnioExchange<RequestState> {
                 .orTimeout( getTimeLeftNano(), TimeUnit.NANOSECONDS )
                 .join();
 
-            if( processState != RUNNING ) {
+            if( processState == RUNNING ) {
+                if( isTimeout() ) {
+                    completeWithTimeout();
+                    throw new PnioForceTerminateException( asyncTaskType );
+                }
+            } else {
                 throw new PnioForceTerminateException( asyncTaskType );
             }
 
