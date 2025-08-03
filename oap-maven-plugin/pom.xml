@@ -52,12 +52,13 @@
                 <version>${oap.deps.maven-plugin-plugin.version}</version>
                 <configuration>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+                    <goalPrefix>oap</goalPrefix>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>9.6</version>
+                        <version>9.8</version>
                     </dependency>
                 </dependencies>
                 <executions>
