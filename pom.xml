@@ -111,6 +111,7 @@
         <oap.deps.maven-plugin-annotations.version>3.15.1</oap.deps.maven-plugin-annotations.version>
         <oap.deps.maven-plugin-plugin.version>3.15.1</oap.deps.maven-plugin-plugin.version>
         <oap.deps.plugins.antlr4.version>4.13.0</oap.deps.plugins.antlr4.version>
+        <oap.deps.asm.version>9.8</oap.deps.asm.version>
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
