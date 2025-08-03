@@ -37,8 +37,6 @@
         <oap.deps.maven-compat.version>3.9.11</oap.deps.maven-compat.version>
         <oap.deps.versions-maven-plugin.version>2.18.0</oap.deps.versions-maven-plugin.version>
         <oap.deps.plexus-component-metadata.version>2.2.0</oap.deps.plexus-component-metadata.version>
-
-        <oap.deps.asm.version>9.6</oap.deps.asm.version>
     </properties>
 
     <dependencies>
@@ -124,7 +122,6 @@
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>${oap.deps.asm.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -136,7 +133,6 @@
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>${oap.deps.asm.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>
