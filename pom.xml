@@ -77,7 +77,7 @@
         <oap.deps.oap-teamcity.version>24.0.0</oap.deps.oap-teamcity.version>
 
         <oap.deps.localstack.version>1.20.4</oap.deps.localstack.version>
-        <oap.deps.mockito.version>5.11.0</oap.deps.mockito.version>
+        <oap.deps.mockito.version>5.18.0</oap.deps.mockito.version>
 
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
