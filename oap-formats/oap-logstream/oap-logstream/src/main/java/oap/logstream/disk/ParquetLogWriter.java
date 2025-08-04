@@ -178,16 +178,18 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         }
         try {
             refresh();
-            var filename = filename();
+            Path filename = filename();
             if( out == null )
                 if( !java.nio.file.Files.exists( filename ) ) {
                     log.info( "[{}] open new file v{}", filename, fileVersion );
                     outFilename = filename;
 
-                    var conf = new Configuration();
+                    Configuration conf = new Configuration();
                     GroupWriteSupport.setSchema( messageType, conf );
+                    // https://issues.apache.org/jira/browse/HADOOP-19212
+                    conf.setBoolean( "fs.file.impl.disable.cache", true );
 
-                    out = new ParquetWriteBuilder( HadoopOutputFile.fromPath( new org.apache.hadoop.fs.Path( filename.toString() ), conf ) )
+                    out = new ParquetWriteBuilder( HadoopOutputFile.fromPath( new org.apache.hadoop.fs.Path( filename.toUri() ), conf ) )
                         .withConf( conf )
                         .withCompressionCodec( configuration.compressionCodecName )
                         .build();

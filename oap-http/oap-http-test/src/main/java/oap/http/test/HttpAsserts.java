@@ -56,6 +56,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
     private static final Client client = Client.custom()
+        .setMaxConnTotal( 100_000 )
+        .setMaxConnPerRoute( 100_000 )
         .withCookieStore( new MockCookieStore() )
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();

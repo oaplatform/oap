@@ -61,7 +61,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.14.11</version>
+            <version>${oap.deps.byte-buddy.version}</version>
         </dependency>
 
         <dependency>

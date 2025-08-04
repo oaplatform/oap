@@ -68,6 +68,8 @@ public class ParquetTest extends Fixtures {
 
 
         Configuration conf = new Configuration();
+        // https://issues.apache.org/jira/browse/HADOOP-19212
+        conf.setBoolean( "fs.file.impl.disable.cache", true );
         MessageType messageType = ( MessageType ) schema.schema.named( "group" );
         GroupWriteSupport.setSchema( messageType, conf );
 
