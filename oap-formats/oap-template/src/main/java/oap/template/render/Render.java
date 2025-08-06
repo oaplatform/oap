@@ -34,18 +34,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @ToString
 public class Render {
-    private final AtomicInteger ids;
     public final String templateName;
     public final TemplateType parentType;
     public final TemplateAccumulator<?, ?, ?> templateAccumulator;
     public final String field;
     public final String templateAccumulatorName;
     public final int tab;
-    private final StringBuilder sb;
     public final String content;
     public final String tryVariable;
     public final String prefix;
-
+    private final AtomicInteger ids;
+    private final StringBuilder sb;
     private final ArrayDeque<HashSet<String>> variables;
 
     private Render( String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
@@ -193,6 +192,10 @@ public class Render {
             this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, newStack );
     }
 
+    private String variableNameWithPrefix( String name ) {
+        return prefix.isEmpty() ? name : prefix + "_" + name;
+    }
+
     @ToString
     public static class NewVariable {
         public final String name;
@@ -202,9 +205,5 @@ public class Render {
             this.name = name;
             this.isNew = isNew;
         }
-    }
-
-    private String variableNameWithPrefix( String name ) {
-        return prefix.isEmpty() ? name : prefix + "_" + name;
     }
 }
