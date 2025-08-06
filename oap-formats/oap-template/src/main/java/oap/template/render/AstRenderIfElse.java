@@ -42,21 +42,23 @@ public abstract class AstRenderIfElse extends AstRender {
         render
             .ntab().append( "if ( %s%s ) {", render.field, getTrue() );
 
-        var iv = getInnerVariable( render::newVariable );
+        String iv = getInnerVariable( render::newVariable );
         if( iv != null ) {
             render.tabInc().ntab().append( getInnerVariableSetter( iv, render ) );
         }
 
-        var newRender = render.withParentType( type ).tabInc();
-        if( iv != null ) newRender = newRender.withField( iv );
-        for( var c : children ) {
+        Render newRender = render.withParentType( type ).tabInc();
+        if( iv != null ) {
+            newRender = newRender.withField( iv );
+        }
+        for( AstRender c : children ) {
             c.render( newRender.newBlock() );
         }
 
         render.ntab().append( "}" );
 
         if( elseAstRender != null ) {
-            var nRender = render.append( " else {" )
+            Render nRender = render.append( " else {" )
                 .tabInc();
             if( nRender.tryVariable != null ) nRender.ntab().append( "%s = true;", nRender.tryVariable );
             elseAstRender.render( nRender.newBlock() );

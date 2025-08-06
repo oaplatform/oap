@@ -184,7 +184,7 @@ public class TemplateAstUtils {
                 ast.addChild( astRenderFunction );
                 astRenderFunction.addChild( new AstRenderPrintField( templateType, castFieldType ) );
             } else
-                ast.addChild( new AstRenderPrintField( templateType, castFieldType ) );
+                ast.addChild( new AstRenderPrintField( templateType, null ) );
             list.add( ast );
         } else {
             list.add( orAst.get( 0 ) );

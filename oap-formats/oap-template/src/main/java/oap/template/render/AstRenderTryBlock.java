@@ -34,8 +34,8 @@ public class AstRenderTryBlock extends AstRender {
 
     @Override
     public void render( Render render ) {
-        var newFunctionId = render.newVariable();
-        var templateAccumulatorName = "acc_" + newFunctionId;
+        String newFunctionId = render.newVariable();
+        String templateAccumulatorName = "acc_" + newFunctionId;
 
         render( newFunctionId, templateAccumulatorName, render );
     }
@@ -49,7 +49,7 @@ public class AstRenderTryBlock extends AstRender {
             .tabInc()
             .ntab().append( "boolean %s = false;", emptyVariable );
 
-        var newRender = render.withParentType( type )
+        Render newRender = render.withParentType( type )
             .withTryVariable( emptyVariable )
             .withTemplateAccumulatorName( templateAccumulatorName )
             .tabInc();
