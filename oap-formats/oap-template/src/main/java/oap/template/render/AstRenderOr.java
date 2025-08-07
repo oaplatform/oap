@@ -37,7 +37,7 @@ public class AstRenderOr extends AstRenderIfElse {
     public AstRenderOr( TemplateType type, List<AstRender> or ) {
         super( type );
 
-        for( var ast : or ) {
+        for( AstRender ast : or ) {
             AstRenderTryBlock astTryBlock = new AstRenderTryBlock( type );
             astTryBlock.addChild( ast );
             this.or.add( astTryBlock );
@@ -50,8 +50,8 @@ public class AstRenderOr extends AstRenderIfElse {
         buffer.append( childrenPrefix ).append( "│OR" );
         buffer.append( '\n' );
 
-        for( var i = 0; i < or.size(); i++ ) {
-            var cp = "│".repeat( or.size() - i );
+        for( int i = 0; i < or.size(); i++ ) {
+            String cp = "│".repeat( or.size() - i );
             or.get( i ).print( buffer, childrenPrefix + cp + "└── ", childrenPrefix + cp + "    " );
         }
 
@@ -80,18 +80,18 @@ public class AstRenderOr extends AstRenderIfElse {
 
     @Override
     public void render( Render render ) {
-        var orVariable = render.newVariable();
+        String orVariable = render.newVariable();
 
-        var ast = or.get( 0 );
+        AstRender ast;
 
-        var r = render;
+        Render r = render;
         r.ntab().append( render.templateAccumulator.getClass().getTypeName() ).append( " " ).append( orVariable ).append( " = acc.newInstance();" );
-        for( var i = 0; i < or.size(); i++ ) {
+        for( int i = 0; i < or.size(); i++ ) {
             ast = or.get( i );
-            var astRunnable = ( AstRenderTryBlock ) ast;
+            AstRenderTryBlock astRunnable = ( AstRenderTryBlock ) ast;
 
-            var newFunctionId = render.newVariable();
-            var templateAccumulatorName = "acc_" + newFunctionId;
+            String newFunctionId = render.newVariable();
+            String templateAccumulatorName = "acc_" + newFunctionId;
 
             astRunnable.render( newFunctionId, templateAccumulatorName, r.newBlock() );
             r = r
@@ -100,12 +100,16 @@ public class AstRenderOr extends AstRenderIfElse {
                 .tabInc().ntab().append( "%s = %s;", orVariable, templateAccumulatorName )
                 .tabDec();
 
-            if( i < or.size() - 1 ) r = r.ntab().append( "} else {" ).tabInc();
+            if( i < or.size() - 1 ) {
+                r = r.ntab().append( "} else {" ).tabInc();
+            }
         }
 
-        for( var i = 0; i < or.size(); i++ ) r = r.tabDec().ntab().append( "}" );
+        for( int i = 0; i < or.size(); i++ ) {
+            r = r.tabDec().ntab().append( "}" );
+        }
 
-        var newRender = r.withField( orVariable );
+        Render newRender = r.withField( orVariable );
         super.render( newRender );
     }
 }

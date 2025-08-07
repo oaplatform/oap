@@ -29,6 +29,7 @@ import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryRoot;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
+import oap.logstream.LogStreamProtocol;
 import oap.net.Inet;
 import oap.reflect.TypeRef;
 import oap.template.Template;
@@ -46,7 +47,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static oap.logstream.LogStreamProtocol.CURRENT_PROTOCOL_VERSION;
 import static oap.template.ErrorStrategy.ERROR;
 
 /**
@@ -54,22 +54,7 @@ import static oap.template.ErrorStrategy.ERROR;
  */
 public class BinaryObjectLogger {
     public static final String COLLECTION_SUFFIX = "_ARRAY";
-    public final DictionaryRoot model;
-    public final TemplateEngine engine;
-
-    public final AbstractLoggerBackend backend;
-
     public static final HashMap<String, TypeConfiguration> types = new HashMap<>();
-
-    public static class TypeConfiguration {
-        public final String javaType;
-        public final Types templateType;
-
-        public TypeConfiguration( String javaType, Types templateType ) {
-            this.javaType = javaType;
-            this.templateType = templateType;
-        }
-    }
 
     static {
         types.put( "DATETIME", new TypeConfiguration( "org.joda.time.DateTime", Types.DATETIME ) );
@@ -83,6 +68,10 @@ public class BinaryObjectLogger {
         types.put( "DOUBLE", new TypeConfiguration( "java.lang.Double", Types.DOUBLE ) );
     }
 
+    public final DictionaryRoot model;
+    public final TemplateEngine engine;
+    public final AbstractLoggerBackend backend;
+
     public BinaryObjectLogger( DictionaryRoot model, AbstractLoggerBackend backend, TemplateEngine engine ) {
         this.model = model;
         this.backend = backend;
@@ -91,6 +80,12 @@ public class BinaryObjectLogger {
 
     public BinaryObjectLogger( DictionaryRoot model, AbstractLoggerBackend backend, @Nonnull Path diskCache, long ttl ) {
         this( model, backend, new TemplateEngine( diskCache, ttl ) );
+    }
+
+    private static String checkStringAndGet( Dictionary dictionary, String fieldName ) {
+        Object fieldObject = dictionary.getProperty( fieldName ).orElseThrow( () -> new TemplateException( dictionary.getId() + ": type is required" ) );
+        Preconditions.checkArgument( fieldObject instanceof String, dictionary.getId() + ": type must be String, but is " + fieldObject.getClass() );
+        return ( String ) fieldObject;
     }
 
     public <D> TypedBinaryLogger<D> typed( TypeRef<D> typeRef, String id ) {
@@ -154,12 +149,6 @@ public class BinaryObjectLogger {
         return backend.availabilityReport();
     }
 
-    private static String checkStringAndGet( Dictionary dictionary, String fieldName ) {
-        Object fieldObject = dictionary.getProperty( fieldName ).orElseThrow( () -> new TemplateException( dictionary.getId() + ": type is required" ) );
-        Preconditions.checkArgument( fieldObject instanceof String, dictionary.getId() + ": type must be String, but is " + fieldObject.getClass() );
-        return ( String ) fieldObject;
-    }
-
     private String toJavaType( String javaType, boolean collection ) {
         StringBuilder sb = new StringBuilder( "<" );
         if( collection ) sb.append( "java.util.Collection<" );
@@ -169,10 +158,20 @@ public class BinaryObjectLogger {
         return sb.toString();
     }
 
+    public static class TypeConfiguration {
+        public final String javaType;
+        public final Types templateType;
+
+        public TypeConfiguration( String javaType, Types templateType ) {
+            this.javaType = javaType;
+            this.templateType = templateType;
+        }
+    }
+
     public class TypedBinaryLogger<D> {
-        private final Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorBinary> renderer;
         public final String[] headers;
         public final byte[][] types;
+        private final Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorBinary> renderer;
 
         public TypedBinaryLogger( Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorBinary> renderer, String[] headers, byte[][] types ) {
             this.renderer = renderer;
@@ -183,7 +182,7 @@ public class BinaryObjectLogger {
 
         public void log( D data, String filePreffix, Map<String, String> properties, String logType ) {
             byte[] bytes = renderer.render( data, true ).getBytes();
-            backend.log( CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, bytes );
+            backend.log( LogStreamProtocol.ProtocolVersion.BINARY_V2, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, bytes );
         }
     }
 }

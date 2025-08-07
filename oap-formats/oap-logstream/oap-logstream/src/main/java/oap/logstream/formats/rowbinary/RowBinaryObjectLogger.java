@@ -29,6 +29,7 @@ import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryRoot;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.AvailabilityReport;
+import oap.logstream.LogStreamProtocol;
 import oap.net.Inet;
 import oap.reflect.TypeRef;
 import oap.template.Template;
@@ -45,7 +46,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static oap.logstream.LogStreamProtocol.CURRENT_PROTOCOL_VERSION;
 import static oap.template.ErrorStrategy.ERROR;
 
 /**
@@ -181,7 +181,7 @@ public class RowBinaryObjectLogger {
 
         public void log( D data, String filePreffix, Map<String, String> properties, String logType ) {
             byte[] bytes = renderer.render( data, true ).getBytes();
-            backend.log( CURRENT_PROTOCOL_VERSION, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, bytes );
+            backend.log( LogStreamProtocol.ProtocolVersion.ROW_BINARY_V3, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, bytes );
         }
     }
 }

@@ -24,17 +24,50 @@
 
 package oap.template.render;
 
+import com.google.common.base.Preconditions;
 import lombok.ToString;
+
+import javax.annotation.Nullable;
 
 @ToString( callSuper = true )
 public class AstRenderPrintField extends AstRender {
-    public AstRenderPrintField( TemplateType type ) {
+    @Nullable
+    private final FieldType castType;
+
+    public AstRenderPrintField( TemplateType type, @Nullable FieldType castType ) {
         super( type );
+        this.castType = castType;
     }
 
     @Override
     public void render( Render render ) {
-        var r = render.ntab();
-        r.append( "%s.accept( %s );", r.templateAccumulatorName, r.field );
+        Render r = render.ntab();
+        r.append( "%s.accept( %s );", r.templateAccumulatorName, format( castType != null ? new TemplateType( castType.type ) : type, r.field ) );
+    }
+
+    @SuppressWarnings( { "checkstyle:ParameterAssignment" } )
+    private String format( TemplateType castType, String value ) {
+        Preconditions.checkNotNull( value );
+
+        if( castType == null || type.equals( castType ) ) {
+            return value;
+        }
+
+        Class<?> typeClass = castType.isOptional() ? castType.getActualTypeArguments0().getTypeClass() : castType.getTypeClass();
+
+        if( byte.class.equals( typeClass ) ) return "(byte)%s".formatted( value );
+        if( Byte.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).byteValue()".formatted( value );
+        else if( short.class.equals( typeClass ) ) return "(short)%s".formatted( value );
+        else if( Short.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).shortValue()".formatted( value );
+        else if( int.class.equals( typeClass ) ) return "(int)%s".formatted( value );
+        else if( Integer.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).intValue()".formatted( value );
+        else if( long.class.equals( typeClass ) ) return "(long)%s".formatted( value );
+        else if( Long.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).longValue()".formatted( value );
+        else if( float.class.equals( typeClass ) ) return "(float)%s".formatted( value );
+        else if( Float.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).floatValue()".formatted( value );
+        else if( double.class.equals( typeClass ) ) return "(double)%s".formatted( value );
+        else if( Double.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).doubleValue()".formatted( value );
+
+        return value;
     }
 }
