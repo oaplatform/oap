@@ -14,6 +14,7 @@ import java.nio.BufferOverflowException;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -344,6 +345,14 @@ public class PnioExchange<RequestState> {
     public String getFullRequestURL() {
         return ( !oapExchange.exchange.isHostIncludedInRequestURI() ? oapExchange.exchange.getRequestScheme() + "://" + oapExchange.exchange.getHostAndPort() : "" )
             + oapExchange.getRequestURI() + "?" + oapExchange.exchange.getQueryString();
+    }
+
+    public HttpServerExchange.HttpMethod getRequestMethod() {
+        return oapExchange.getRequestMethod();
+    }
+
+    public Map<String, Deque<String>> getQueryParameters() {
+        return oapExchange.exchange.getQueryParameters();
     }
 
     public String header( String headerName, String defaultValue ) {
