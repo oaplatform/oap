@@ -30,15 +30,14 @@ import oap.util.LinkedHashMaps;
 import org.bson.Document;
 import org.testng.annotations.Test;
 
-import java.util.Map;
-
-import static java.util.List.of;
 import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.ASC;
+import static oap.storage.mongo.MongoIndex.IndexConfiguration.Direction.DESC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Created by igor.petrenko on 2020-11-02.
@@ -56,15 +55,15 @@ public class MongoIndexTest extends Fixtures {
             MongoCollection<Document> collection = client.getCollection( "test" );
             MongoIndex mongoIndex = new MongoIndex( collection );
 
-            mongoIndex.update( "idx1", of( "a" ), true, 10000L );
-            mongoIndex.update( "idx1", of( "a", "b" ), true, null );
-            mongoIndex.update( "idx1", of( "a", "b" ), true, null );
-            mongoIndex.update( "idx1", of( "a", "b" ), false, null );
+            mongoIndex.update( "idx1", LinkedHashMaps.of( "a", ASC ), true, 10000L );
+            mongoIndex.update( "idx1", LinkedHashMaps.of( "a", ASC, "b", ASC ), true, null );
+            mongoIndex.update( "idx1", LinkedHashMaps.of( "a", ASC, "b", ASC ), true, null );
+            mongoIndex.update( "idx1", LinkedHashMaps.of( "a", ASC, "b", ASC ), false, null );
 
-            mongoIndex.update( "idx2", of( "c" ), false, 1000L );
-            mongoIndex.update( "idx2", of( "c" ), false, 11001L );
+            mongoIndex.update( "idx2", LinkedHashMaps.of( "c", ASC ), false, 1000L );
+            mongoIndex.update( "idx2", LinkedHashMaps.of( "c", ASC ), false, 11001L );
 
-            mongoIndex.update( "idx2", of( "c" ), false, 90 * 24 * 60 * 60 * 1000L );
+            mongoIndex.update( "idx2", LinkedHashMaps.of( "c", ASC ), false, 90 * 24 * 60 * 60 * 1000L );
 
             mongoIndex.refresh();
 
@@ -81,16 +80,35 @@ public class MongoIndexTest extends Fixtures {
     }
 
     @Test
+    public void testReorderKeys() {
+        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
+            MongoCollection<Document> collection = client.getCollection( "test" );
+            MongoIndex mongoIndex = new MongoIndex( collection );
+
+            assertTrue( mongoIndex.update( "test", LinkedHashMaps.of( "k1", ASC, "k2", ASC ), true, null ) );
+            assertThat( mongoIndex.getInfo( "test" ).keys ).containsExactly( entry( "k1", ASC ), entry( "k2", ASC ) );
+
+            assertTrue( mongoIndex.update( "test", LinkedHashMaps.of( "k1", DESC, "k2", ASC ), true, null ) );
+            assertThat( mongoIndex.getInfo( "test" ).keys ).containsExactly( entry( "k1", DESC ), entry( "k2", ASC ) );
+
+            assertTrue( mongoIndex.update( "test", LinkedHashMaps.of( "k2", DESC, "k1", ASC ), true, null ) );
+            assertThat( mongoIndex.getInfo( "test" ).keys ).containsExactly( entry( "k2", DESC ), entry( "k1", ASC ) );
+
+            assertFalse( mongoIndex.update( "test", LinkedHashMaps.of( "k2", DESC, "k1", ASC ), true, null ) );
+        }
+    }
+
+    @Test
     public void testSync() {
         try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" ) ) {
             MongoCollection<Document> collection = client.getCollection( "test" );
             MongoIndex mongoIndex = new MongoIndex( collection );
 
-            mongoIndex.update( "idx1", of( "a" ), true, 1000L );
-            mongoIndex.update( "idx2", of( "b" ), true, 10000L );
+            mongoIndex.update( "idx1", LinkedHashMaps.of( "a", ASC ), true, 1000L );
+            mongoIndex.update( "idx2", LinkedHashMaps.of( "b", ASC ), true, 10000L );
 
 
-            mongoIndex.update( Map.of( "idx1", new MongoIndex.IndexConfiguration( LinkedHashMaps.of( "c", 1, "d", 1 ), false, null ) ) );
+            mongoIndex.update( LinkedHashMaps.of( "idx1", new MongoIndex.IndexConfiguration( LinkedHashMaps.of( "c", 1, "d", 1 ), false, null ) ) );
 
             assertNull( mongoIndex.getInfo( "idx2" ) );
             assertNotNull( mongoIndex.getInfo( "idx1" ) );

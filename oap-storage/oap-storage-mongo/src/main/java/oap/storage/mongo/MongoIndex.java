@@ -33,14 +33,17 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Dates;
+import oap.util.Lists;
 import oap.util.Pair;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +63,7 @@ public class MongoIndex {
     }
 
     public void refresh() {
-        ArrayList<Document> indexes = new ArrayList<Document>();
+        ArrayList<Document> indexes = new ArrayList<>();
         collection.listIndexes().into( indexes );
 
         log.debug( "refreshing indexes: {} ...", indexes );
@@ -75,7 +78,7 @@ public class MongoIndex {
         log.debug( "new indexes: {}", this.indexes );
     }
 
-    public void update( Map<String, IndexConfiguration> indexConfigurations ) {
+    public void update( SequencedMap<String, IndexConfiguration> indexConfigurations ) {
         try {
             Set<String> expected = indexConfigurations.keySet();
 
@@ -87,7 +90,7 @@ public class MongoIndex {
             }
 
             indexConfigurations.forEach( ( name, conf ) -> {
-                update( name, new ArrayList<>( conf.keys.keySet() ), conf.unique, conf.expireAfter, false );
+                update( name, conf.keys, conf.unique, conf.expireAfter, false );
             } );
 
         } finally {
@@ -95,11 +98,11 @@ public class MongoIndex {
         }
     }
 
-    public void update( String indexName, List<String> keys, boolean unique, Long expireAfter ) {
-        update( indexName, keys, unique, expireAfter, true );
+    public boolean update( String indexName, SequencedMap<String, IndexConfiguration.Direction> keys, boolean unique, Long expireAfter ) {
+        return update( indexName, keys, unique, expireAfter, true );
     }
 
-    private void update( String indexName, List<String> keys, boolean unique, Long expireAfter, boolean refresh ) {
+    private boolean update( String indexName, SequencedMap<String, IndexConfiguration.Direction> keys, boolean unique, Long expireAfter, boolean refresh ) {
         try {
             log.info( "Creating index {}, keys={}, unique={}, expireAfter={}...",
                 indexName, keys, unique,
@@ -110,23 +113,33 @@ public class MongoIndex {
                     log.info( "Creating index {}, keys={}, unique={}, expireAfter={}...... Already exists",
                         indexName, keys, unique,
                         expireAfter != null ? Dates.durationToString( expireAfter ) : "-" );
-                    return;
+                    return false;
                 } else {
                     log.info( "Delete old index {}", info );
                     collection.dropIndex( indexName );
                 }
             }
             IndexOptions indexOptions = new IndexOptions().name( indexName ).unique( unique );
-            if( expireAfter != null ) indexOptions.expireAfter( expireAfter, TimeUnit.MILLISECONDS );
-            collection.createIndex( Indexes.ascending( keys ), indexOptions );
+            if( expireAfter != null ) {
+                indexOptions.expireAfter( expireAfter, TimeUnit.MILLISECONDS );
+            }
+            collection.createIndex( toBson( keys ), indexOptions );
             log.info( "Creating index {}, keys={}, unique={}, expireAfter={}...... Done",
                 indexName, keys, unique,
                 expireAfter != null ? Dates.durationToString( expireAfter ) : "-" );
+
+            return true;
         } finally {
             if( refresh ) {
                 refresh();
             }
         }
+    }
+
+    private Bson toBson( SequencedMap<String, IndexConfiguration.Direction> keys ) {
+        return Indexes.compoundIndex(
+            Lists.map( keys.entrySet(), e -> e.getValue() == IndexConfiguration.Direction.ASC ? Indexes.ascending( e.getKey() ) : Indexes.descending( e.getKey() ) )
+        );
     }
 
     public IndexConfiguration getInfo( String indexName ) {
@@ -144,9 +157,9 @@ public class MongoIndex {
 
         @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
         @JsonCreator
-        public IndexConfiguration( Map<String, Integer> keys, boolean unique, Long expireAfter ) {
+        public IndexConfiguration( SequencedMap<String, Integer> keys, boolean unique, Long expireAfter ) {
             keys.forEach( ( key, direction ) -> {
-                this.keys.put( key, direction == 1 ? Direction.ASC : Direction.DESC );
+                this.keys.put( key, direction == Direction.ASC.mongo ? Direction.ASC : Direction.DESC );
             } );
             this.unique = unique;
 
@@ -155,7 +168,7 @@ public class MongoIndex {
             this.expireAfter = expireAfter;
         }
 
-        public IndexConfiguration( Map<String, Integer> keys, boolean unique ) {
+        public IndexConfiguration( SequencedMap<String, Integer> keys, boolean unique ) {
             this( keys, unique, null );
         }
 
@@ -175,7 +188,7 @@ public class MongoIndex {
             return __( name, new IndexConfiguration( keys, unique, expireAfter ) );
         }
 
-        public boolean equals( List<String> keys, boolean unique, Long expireAfter ) {
+        public boolean equals( SequencedMap<String, Direction> keys, boolean unique, Long expireAfter ) {
             if( unique != this.unique ) {
                 return false;
             }
@@ -188,9 +201,14 @@ public class MongoIndex {
                 return false;
             }
 
-            for( String key : keys ) {
-                Direction d = this.keys.get( key );
-                if( d != Direction.ASC ) {
+            Iterator<Map.Entry<String, Direction>> thisKeyIterator = this.keys.entrySet().iterator();
+            Iterator<Map.Entry<String, Direction>> inKeyIterator = keys.entrySet().iterator();
+
+            while( thisKeyIterator.hasNext() ) {
+                Map.Entry<String, Direction> thisEntry = thisKeyIterator.next();
+                Map.Entry<String, Direction> inEntry = inKeyIterator.next();
+
+                if( !thisEntry.getKey().equals( inEntry.getKey() ) || thisEntry.getValue() != inEntry.getValue() ) {
                     return false;
                 }
             }
@@ -199,7 +217,13 @@ public class MongoIndex {
         }
 
         public enum Direction {
-            ASC, DESC
+            ASC( 1 ), DESC( -1 );
+
+            public final int mongo;
+
+            Direction( int mongo ) {
+                this.mongo = mongo;
+            }
         }
     }
 }
