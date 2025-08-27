@@ -1899,7 +1899,7 @@
   "info" : {
     "description" : "Test description",
     "title" : "Test title",
-    "version" : "UNDEFINED (oap.ws.openapi.OpenapiWS, oap.ws.openapi.ExtTestWS, oap.ws.openapi.ExampleNewWS, oap.ws.openapi.IgnoredPermissionsTestWS, oap.ws.openapi.TestWS)"
+    "version" : "UNDEFINED (oap.ws.openapi.OpenapiWS, oap.ws.openapi.TestWS, oap.ws.openapi.ExtTestWS, oap.ws.openapi.IgnoredPermissionsTestWS, oap.ws.openapi.ExampleNewWS)"
   },
   "openapi" : "3.0.3",
   "paths" : {
@@ -4133,12 +4133,12 @@
   "tags" : [ {
     "name" : "oap.ws.openapi.OpenapiWS"
   }, {
-    "name" : "oap.ws.openapi.ExtTestWS"
+    "name" : "oap.ws.openapi.TestWS"
   }, {
-    "name" : "oap.ws.openapi.ExampleNewWS"
+    "name" : "oap.ws.openapi.ExtTestWS"
   }, {
     "name" : "oap.ws.openapi.IgnoredPermissionsTestWS"
   }, {
-    "name" : "oap.ws.openapi.TestWS"
+    "name" : "oap.ws.openapi.ExampleNewWS"
   } ]
 }
