@@ -1,16 +1,4 @@
 # SERVICES #####################################################################
-## oap.ws.api.TestRecursiveWS ##################################################
-Bound to recursion
-Methods:
-	Method methodWithRecursiveObject
-	[GET] /recursion/getRecursiveObject
-	Produces application/json
-	Realm param <no realm>
-	Permissions []
-	Returns oap.ws.api.TestRecursiveWS.SomeClass
-	No parameters
-
-
 ## oap.ws.api.ExampleWS ########################################################
 Bound to example
 Methods:
@@ -189,6 +177,18 @@ Methods:
 		s: QUERY String
 
 
+## oap.ws.api.TestRecursiveWS ##################################################
+Bound to recursion
+Methods:
+	Method methodWithRecursiveObject
+	[GET] /recursion/getRecursiveObject
+	Produces application/json
+	Realm param <no realm>
+	Permissions []
+	Returns oap.ws.api.TestRecursiveWS.SomeClass
+	No parameters
+
+
 ## oap.ws.api.ApiWS ############################################################
 Bound to system/api
 Methods:
@@ -204,12 +204,6 @@ Methods:
 
 
 # TYPES ########################################################################
-## oap.ws.api.TestRecursiveWS.SomeClass ########################################
-SomeClass
-{
-	otherObject: oap.ws.api.TestRecursiveWS.OtherClass
-}
-
 ## oap.ws.api.ExampleWS.Bean ###################################################
 Bean
 {
@@ -224,10 +218,10 @@ Bean
 	something: String
 }
 
-## oap.ws.api.TestRecursiveWS.OtherClass #######################################
-OtherClass
+## oap.ws.api.TestRecursiveWS.SomeClass ########################################
+SomeClass
 {
-	someObject: oap.ws.api.TestRecursiveWS.SomeClass
+	otherObject: oap.ws.api.TestRecursiveWS.OtherClass
 }
 
 ## oap.ws.api.ExampleWS.Bean2 ##################################################
@@ -240,5 +234,11 @@ Bean2
 BeanExt
 {
 	extension: String
+}
+
+## oap.ws.api.TestRecursiveWS.OtherClass #######################################
+OtherClass
+{
+	someObject: oap.ws.api.TestRecursiveWS.SomeClass
 }
 

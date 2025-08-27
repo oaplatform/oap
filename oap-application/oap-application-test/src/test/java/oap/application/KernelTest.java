@@ -427,26 +427,20 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testFinalParameter() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "testFinalParameter.conf" ) )
-        );
-
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "testFinalParameter.conf" ) ) ) ) {
             testDirectoryFixture.deployTestData( getClass() );
-
 
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testFinalParameter" ) ) )
                 .isInstanceOf( ApplicationException.class )
-                .hasMessageContaining( "al=[val1], a=new value" );
+                .hasMessageContaining( "a=new value, al=[val1]" );
         } finally {
-            kernel.stop();
             TestDirectoryFixture.deleteDirectory( testDirectoryFixture.testDirectory() );
         }
     }
 
     @Test
     public void testInclude() {
-        try( var kernel = new Kernel(
+        try( Kernel kernel = new Kernel(
             List.of( urlOfTestResource( getClass(), "testInclude.conf" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "testInclude" ) );
 
