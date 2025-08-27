@@ -71,7 +71,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>24.0.3</oap.project.version>
+        <oap.project.version>24.0.4</oap.project.version>
 
         <oap.deps.config.version>22.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>24.0.0</oap.deps.oap-teamcity.version>
