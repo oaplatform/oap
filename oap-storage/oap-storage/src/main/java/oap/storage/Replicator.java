@@ -50,6 +50,7 @@ import static oap.util.Pair.__;
  * @param <T>
  */
 @Slf4j
+@Deprecated
 public class Replicator<I, T> implements Closeable {
     static final AtomicLong stored = new AtomicLong();
     static final AtomicLong deleted = new AtomicLong();

@@ -58,6 +58,7 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
 
+@Deprecated
 public class DirectoryPersistence<I, T> implements Closeable {
     private final Path path;
     private final BiFunction<Path, T, Path> fsResolve;

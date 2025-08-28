@@ -47,6 +47,7 @@ import static oap.concurrent.Threads.synchronizedOn;
 
 @Slf4j
 @ToString( of = { "tableName", "delay", "batchSize", "watch", "uniqueName" } )
+@Deprecated
 public abstract class AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
     public static final Path DEFAULT_CRASH_DUMP_PATH = Path.of( "/tmp/mongo-persistance-crash-dump" );

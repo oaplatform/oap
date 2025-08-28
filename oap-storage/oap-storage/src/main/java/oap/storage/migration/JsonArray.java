@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import static oap.util.Optionals.toStream;
 
+@Deprecated
 public class JsonArray extends Json<List<?>> {
     public JsonArray( Optional<String> field, Optional<Json<?>> parent, List<?> array ) {
         super( array, field, parent );

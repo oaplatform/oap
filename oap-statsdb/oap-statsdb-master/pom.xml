@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-storage-mongo</artifactId>
+            <artifactId>oap-storagev2-mongo</artifactId>
             <version>${project.version}</version>
         </dependency>
 

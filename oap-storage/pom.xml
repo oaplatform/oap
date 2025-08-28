@@ -25,6 +25,9 @@
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
         <module>oap-storage-mongo-test</module>
+        <module>oap-storagev2</module>
+        <module>oap-storagev2-mongo</module>
+        <module>oap-storagev2-mongo-test</module>
 
         <module>oap-storage-cloud</module>
         <module>oap-storage-cloud-aws-s3</module>

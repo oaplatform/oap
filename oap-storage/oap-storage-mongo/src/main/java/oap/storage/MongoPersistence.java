@@ -58,6 +58,7 @@ import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.util.Pair.__;
 
+@Deprecated
 @Slf4j
 public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 

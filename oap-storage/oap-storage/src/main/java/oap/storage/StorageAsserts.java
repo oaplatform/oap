@@ -24,6 +24,7 @@
 
 package oap.storage;
 
+@Deprecated
 public class StorageAsserts {
     public static void clearMemory( MemoryStorage<?, ?> storage ) {
         storage.memory.clear();

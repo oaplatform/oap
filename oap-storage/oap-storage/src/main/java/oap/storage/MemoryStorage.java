@@ -51,6 +51,7 @@ import static java.util.Objects.requireNonNull;
 import static oap.storage.Storage.DataListener.IdObject.__io;
 
 @Slf4j
+@Deprecated
 public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMaster<Id, Data>, RemoteStorage<Id, Data> {
     public final Identifier<Id, Data> identifier;
     protected final Lock lock;

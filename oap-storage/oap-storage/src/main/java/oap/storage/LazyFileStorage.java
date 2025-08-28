@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
+@Deprecated
 public class LazyFileStorage<T> extends MemoryStorage<String, T> implements AutoCloseable {
     private final Path path;
     private boolean closed = true;
