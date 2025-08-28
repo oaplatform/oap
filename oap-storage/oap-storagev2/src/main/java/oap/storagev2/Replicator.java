@@ -141,8 +141,8 @@ public class Replicator<I, T> implements Closeable {
                     log.trace( "[{}] skipping unmodified {}", uniqueName, id );
                     continue;
                 }
-                if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata.object ) );
-                else updated.add( __io( id, metadata.object ) );
+                if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata ) );
+                else updated.add( __io( id, metadata ) );
             }
             slave.fireAdded( added );
             slave.fireUpdated( updated );
@@ -162,7 +162,7 @@ public class Replicator<I, T> implements Closeable {
 
         List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
             .filter( id -> !ids.contains( id ) )
-            .map( id -> slave.memory.removePermanently( id ).map( m -> __io( id, m.object ) ) )
+            .map( id -> slave.memory.removePermanently( id ).map( m -> __io( id, m ) ) )
             .filter( Optional::isPresent )
             .map( Optional::get )
             .toList();

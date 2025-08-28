@@ -127,24 +127,24 @@ public interface Storage<Id, Data> extends Iterable<Data> {
             private static final long serialVersionUID = -5793630001926149000L;
 
             public final DI id;
-            public final D object;
+            public final Metadata<D> metadata;
 
-            public IdObject( DI id, D object ) {
+            public IdObject( DI id, Metadata<D> metadata ) {
                 this.id = id;
-                this.object = object;
+                this.metadata = metadata;
             }
 
             @SuppressWarnings( "checkstyle:MethodName" )
-            public static <DI, D> IdObject<DI, D> __io( DI id, D object ) {
-                return new IdObject<>( id, object );
+            public static <DI, D> IdObject<DI, D> __io( DI id, Metadata<D> metadata ) {
+                return new IdObject<>( id, metadata );
             }
 
             public final DI id() {
                 return id;
             }
 
-            public final D object() {
-                return object;
+            public final Metadata<D> metadata() {
+                return metadata;
             }
         }
     }

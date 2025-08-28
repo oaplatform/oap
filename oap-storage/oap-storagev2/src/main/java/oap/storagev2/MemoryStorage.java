@@ -103,9 +103,9 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         Id id = identifier.getOrInit( object, conflict );
         lock.synchronizedOn( id, () -> {
             if( memory.put( id, object, modifiedBy ) ) {
-                fireAdded( id, object );
+                fireAdded( id, memory.data.get( id ) );
             } else {
-                fireUpdated( id, object );
+                fireUpdated( id, memory.data.get( id ) );
             }
         } );
         return object;
@@ -120,9 +120,9 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             Metadata<Data> metadata = memory.get( id ).orElse( null );
             if( ( metadata == null && hash == 0L ) || ( metadata != null && metadata.hash == hash ) ) {
                 if( memory.put( id, object, MODIFIED_BY_SYSTEM ) ) {
-                    fireAdded( id, object );
+                    fireAdded( id, memory.data.get( id ) );
                 } else {
-                    fireUpdated( id, object );
+                    fireUpdated( id, memory.data.get( id ) );
                 }
 
                 return object;
@@ -141,9 +141,9 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             Id id = identifier.getOrInit( object, conflict );
             lock.synchronizedOn( id, () -> {
                 if( memory.put( id, object, modifiedBy ) ) {
-                    added.add( __io( id, object ) );
+                    added.add( __io( id, memory.data.get( id ) ) );
                 } else {
-                    updated.add( __io( id, object ) );
+                    updated.add( __io( id, memory.data.get( id ) ) );
                 }
             } );
         }
@@ -156,7 +156,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         requireNonNull( id );
 
         Optional<Metadata<Data>> result = memory.remap( id, update, modifiedBy );
-        result.ifPresent( m -> fireUpdated( id, m.object ) );
+        result.ifPresent( m -> fireUpdated( id, m ) );
         return result.map( m -> m.object );
     }
 
@@ -171,7 +171,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         requireNonNull( id );
 
         Optional<Metadata<Data>> result = memory.tryRemap( id, tryUpdate, modifiedBy );
-        result.ifPresent( m -> fireUpdated( id, m.object ) );
+        result.ifPresent( m -> fireUpdated( id, m ) );
         return result.isPresent();
     }
 
@@ -193,7 +193,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     @Override
     public void deleteAll() {
-        fireDeleted( Lists.map( memory.markDeletedAll(), p -> __io( p._1, p._2.object ) ) );
+        fireDeleted( Lists.map( memory.markDeletedAll(), p -> __io( p._1, p._2 ) ) );
     }
 
     @Override
@@ -205,16 +205,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     public Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id, String modifiedBy ) {
         requireNonNull( id );
         Optional<Metadata<Data>> old = memory.markDeleted( id, modifiedBy );
-        old.ifPresent( o -> fireDeleted( id, o.object ) );
+        old.ifPresent( o -> fireDeleted( id, o ) );
         return old;
     }
 
     @Override
     public Optional<Data> permanentlyDelete( @Nonnull Id id ) {
         requireNonNull( id );
-        Optional<Data> old = memory.removePermanently( id ).map( m -> m.object );
+        Optional<Metadata<Data>> old = memory.removePermanently( id );
         old.ifPresent( o -> firePermanentlyDeleted( id, o ) );
-        return old;
+        return old.map( m -> m.object );
     }
 
     @Override
@@ -222,46 +222,60 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         return memory.selectLiveIds().count();
     }
 
-    protected void fireAdded( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
-            dataListener.added( List.of( __io( id, object ) ) );
+    protected void fireAdded( Id id, Metadata<Data> medatada ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+            dataListener.added( List.of( __io( id, medatada ) ) );
+        }
     }
 
     protected void fireAdded( List<IdObject<Id, Data>> objects ) {
-        if( !objects.isEmpty() )
-            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.added( objects );
+        if( !objects.isEmpty() ) {
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+                dataListener.added( objects );
+            }
+        }
     }
 
-    protected void fireUpdated( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
-            dataListener.updated( List.of( __io( id, object ) ) );
+    protected void fireUpdated( Id id, Metadata<Data> metadata ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+            dataListener.updated( List.of( __io( id, metadata ) ) );
+        }
     }
 
     protected void fireUpdated( List<IdObject<Id, Data>> objects ) {
-        if( !objects.isEmpty() )
-            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.updated( objects );
+        if( !objects.isEmpty() ) {
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+                dataListener.updated( objects );
+            }
+        }
     }
 
     protected void fireDeleted( List<IdObject<Id, Data>> objects ) {
-        if( !objects.isEmpty() )
-            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.deleted( objects );
+        if( !objects.isEmpty() ) {
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+                dataListener.deleted( objects );
+            }
+        }
     }
 
-    protected void fireDeleted( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
+    protected void fireDeleted( Id id, Metadata<Data> object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.deleted( List.of( __io( id, object ) ) );
+        }
     }
 
-    protected void firePermanentlyDeleted( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
+    protected void firePermanentlyDeleted( Id id, Metadata<Data> object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.permanentlyDeleted( __io( id, object ) );
+        }
     }
 
     protected void fireChanged( List<DataListener.IdObject<Id, Data>> added,
                                 List<DataListener.IdObject<Id, Data>> updated,
                                 List<DataListener.IdObject<Id, Data>> deleted ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( added, updated, deleted );
+        }
     }
 
     @Override
