@@ -38,6 +38,8 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import java.nio.file.Path;
+
 import static oap.storagev2.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,9 +86,9 @@ public class MongoPersistenceTest extends Fixtures {
         }
 
         // Make sure that for a new connection the objects still present in MongoDB
-        var storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+        MemoryStorage<String, Bean> storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.preStart();
             persistence.preStart();
             assertThat( storage2.select() ).containsOnly(
@@ -99,12 +101,12 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void delete() {
-        var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
             mongoClient.preStart();
             persistence.preStart();
-            var bean1 = storage.store( new Bean( "test1" ), Storage.MODIFIED_BY_SYSTEM );
+            Bean bean1 = storage.store( new Bean( "test1" ), Storage.MODIFIED_BY_SYSTEM );
             storage.store( new Bean( "test2" ), Storage.MODIFIED_BY_SYSTEM );
 
             storage.delete( bean1.id, Storage.MODIFIED_BY_SYSTEM );
@@ -115,11 +117,11 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test()
     public void update() {
-        var storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+        MemoryStorage<String, Bean> storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.preStart();
             persistence.preStart();
             storage1.store( new Bean( "111", "initialName" ), Storage.MODIFIED_BY_SYSTEM );
@@ -128,11 +130,11 @@ public class MongoPersistenceTest extends Fixtures {
                 return bean;
             }, Storage.MODIFIED_BY_SYSTEM );
         }
-        var storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
+        MemoryStorage<String, Bean> storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
             .build(), SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.preStart();
             persistence.preStart();
             assertThat( storage2.select() )
@@ -142,11 +144,11 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void storeTooBig() {
-        var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        var crashDumpPath = testDirectoryFixture.testPath( "failures" );
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        Path crashDumpPath = testDirectoryFixture.testPath( "failures" );
         String table = "test";
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, table, 6000, storage, crashDumpPath ) ) {
             mongoClient.preStart();
             persistence.preStart();
             //this generates 16 MiB of XXXXXXXXXXXXXXXXXXXXXXX
@@ -161,9 +163,9 @@ public class MongoPersistenceTest extends Fixtures {
         mongoFixture.insertDocument( getClass(), table, "migration/1.json" );
         mongoFixture.insertDocument( getClass(), table, "migration/2.json" );
         mongoFixture.initializeVersion( new Version( 1 ) );
-        var storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storagev2.mongo.mongomigrationtest" );
+             MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
             mongoClient.preStart();
             persistence.preStart();
             assertThat( storage.list() ).containsOnly(
@@ -180,8 +182,8 @@ public class MongoPersistenceTest extends Fixtures {
     public void accidentalPolymorphism() {
 
         MemoryStorage<String, Object> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Object> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.preStart();
             persistence.preStart();
             PolyBeanA bean1 = ( PolyBeanA ) storage1.store( new PolyBeanA( "test1" ), Storage.MODIFIED_BY_SYSTEM );
@@ -192,8 +194,8 @@ public class MongoPersistenceTest extends Fixtures {
         }
 
         MemoryStorage<String, Object> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-        try( var mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
-             var persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
+        try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
+             MongoPersistence<String, Object> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.preStart();
             persistence.preStart();
             assertThat( storage2.select() ).containsOnly(
