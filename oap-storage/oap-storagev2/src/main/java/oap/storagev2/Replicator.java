@@ -24,6 +24,7 @@
 
 package oap.storagev2;
 
+import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static oap.storagev2.Storage.DataListener.IdObject.__io;
 import static oap.util.Pair.__;
@@ -63,7 +65,7 @@ public class Replicator<I, T> implements Closeable {
         this.slave = slave;
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
-            var newLastModified = replicate( lastModified );
+            Pair<Long, String> newLastModified = replicate( lastModified );
             log.trace( "[{}] newLastModified = {}, lastModified = {}", uniqueName, newLastModified, lastModified );
             if( newLastModified._2.equals( lastModified._2 ) ) {
                 lastModified = newLastModified.map( ( t, m ) -> __( t + 1, m ) );
@@ -93,7 +95,7 @@ public class Replicator<I, T> implements Closeable {
 
         List<Metadata<T>> newUpdates;
 
-        try( var updates = master.updatedSince( last._1 ) ) {
+        try( Stream<Metadata<T>> updates = master.updatedSince( last._1 ) ) {
             log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, uniqueName );
             newUpdates = updates.toList();
             log.trace( "[{}] updated objects {}", uniqueName, newUpdates.size() );
@@ -108,33 +110,33 @@ public class Replicator<I, T> implements Closeable {
             throw e;
         }
 
-        var added = new ArrayList<IdObject<I, T>>();
-        var updated = new ArrayList<IdObject<I, T>>();
+        ArrayList<IdObject<I, T>> added = new ArrayList<>();
+        ArrayList<IdObject<I, T>> updated = new ArrayList<>();
 
-        var lastUpdate = newUpdates.stream().mapToLong( m -> m.modified ).max().orElse( last._1 );
+        long lastUpdate = newUpdates.stream().mapToLong( m -> m.modified ).max().orElse( last._1 );
 
-        var hasher = Hashing.murmur3_128().newHasher();
+        Hasher hasher = Hashing.murmur3_128().newHasher();
 
-        var finalLastUpdate = lastUpdate;
-        var list = newUpdates
+        long finalLastUpdate = lastUpdate;
+        List<String> list = newUpdates
             .stream()
             .filter( metadata -> metadata.modified == finalLastUpdate )
             .map( metadata -> slave.identifier.get( metadata.object ).toString() )
             .sorted()
             .toList();
 
-        for( var id : list ) {
+        for( String id : list ) {
             hasher = hasher.putUnencodedChars( id );
         }
-        var hash = hasher.hash().toString();
+        String hash = hasher.hash().toString();
 
 
         if( lastUpdate != last._1 || !hash.equals( last._2 ) ) {
-            for( var metadata : newUpdates ) {
+            for( Metadata<T> metadata : newUpdates ) {
                 log.trace( "[{}] replicate {}", metadata, uniqueName );
 
-                var id = slave.identifier.get( metadata.object );
-                var unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
+                I id = slave.identifier.get( metadata.object );
+                Boolean unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
                 if( unmodified ) {
                     log.trace( "[{}] skipping unmodified {}", uniqueName, id );
                     continue;
@@ -152,7 +154,7 @@ public class Replicator<I, T> implements Closeable {
             log.trace( "[{}] added {} updated {}", uniqueName, Lists.map( added, a -> a.id ), Lists.map( updated, a -> a.id ) );
         }
 
-        var ids = master.ids();
+        List<I> ids = master.ids();
         log.trace( "[{}] master ids {}", uniqueName, ids );
         if( ids.isEmpty() ) {
             lastUpdate = -1;
