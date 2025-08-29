@@ -39,6 +39,7 @@ import static oap.util.Lists.headOf;
 import static oap.util.Lists.tailOf;
 
 @Slf4j
+@Deprecated
 public class JsonObject extends Json<Map<String, Object>> {
     public final Map<String, Object> underlying;
 

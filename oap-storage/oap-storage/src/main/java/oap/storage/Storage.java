@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@Deprecated
 public interface Storage<Id, Data> extends Iterable<Data> {
 
     Stream<Data> select();

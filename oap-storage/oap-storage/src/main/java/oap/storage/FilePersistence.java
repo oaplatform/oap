@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static oap.concurrent.Threads.synchronizedOn;
 import static org.slf4j.LoggerFactory.getLogger;
 
+@Deprecated
 public class FilePersistence<I, T> implements Closeable {
     private final long fsync;
     private final MemoryStorage<I, T> storage;

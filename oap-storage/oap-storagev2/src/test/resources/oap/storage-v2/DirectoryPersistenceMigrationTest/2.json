@@ -1,0 +1,10 @@
+{
+  "object": {
+    "idx": "2",
+    "in": {
+      "s": "aaa"
+    }
+  },
+  "object:type": "oap.storage.Bean",
+  "modified": 1544724326055
+}

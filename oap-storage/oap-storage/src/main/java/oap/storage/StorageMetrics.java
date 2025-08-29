@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 @ToString
+@Deprecated
 public class StorageMetrics<I, T> implements Storage.DataListener<I, T> {
     private final String storageName;
     private final Storage<I, T> storage;

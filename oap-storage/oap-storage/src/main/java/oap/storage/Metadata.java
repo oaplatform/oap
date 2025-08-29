@@ -34,6 +34,7 @@ import org.joda.time.DateTimeUtils;
 import java.io.Serial;
 import java.io.Serializable;
 
+@Deprecated
 @EqualsAndHashCode
 public class Metadata<T> implements Serializable {
     @Serial

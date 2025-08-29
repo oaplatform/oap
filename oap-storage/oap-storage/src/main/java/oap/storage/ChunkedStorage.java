@@ -13,6 +13,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Slf4j
+@Deprecated
 public class ChunkedStorage<T> {
     private static final String pattern = "chunk*.gz";
 

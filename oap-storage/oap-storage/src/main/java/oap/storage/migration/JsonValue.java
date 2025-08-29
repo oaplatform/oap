@@ -26,6 +26,7 @@ package oap.storage.migration;
 
 import java.util.Optional;
 
+@Deprecated
 public class JsonValue<T> extends Json<T> {
     protected JsonValue( T underlying, Optional<String> field, Optional<Json<?>> parent ) {
         super( underlying, field, parent );
