@@ -36,6 +36,7 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -50,30 +51,32 @@ public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator
     public JavaTemplate( String name, String template, TypeRef<TIn> type, Path diskCache, TA acc, AstRenderRoot ast ) {
         this.acc = acc;
         try {
-            var render = Render.init( name, template, new TemplateType( type.type() ), acc );
+            Render render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
 
-            var line = new AtomicInteger( 0 );
+            AtomicInteger line = new AtomicInteger( 0 );
             log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )
                 .lines()
                 .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
                 .collect( joining( "\n" ) )
             );
 
-            var fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
+            String fullTemplateName = getClass().getPackage().getName() + "." + render.nameEscaped();
             try( MemoryClassLoaderJava mcl = new MemoryClassLoaderJava( fullTemplateName, render.out(), diskCache ) ) {
                 cons = ( TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> ) mcl
-                        .loadClass( fullTemplateName )
-                        .getDeclaredConstructor()
-                        .newInstance();
+                    .loadClass( fullTemplateName )
+                    .getDeclaredConstructor()
+                    .newInstance();
             }
+        } catch( RejectedExecutionException e ) {
+            throw e;
         } catch( Exception e ) {
             throw new TemplateException( e );
         }
     }
 
     public TA render( TIn obj, boolean eol ) {
-        var newAcc = acc.newInstance();
+        TA newAcc = acc.newInstance();
         cons.accept( obj, Map.of(), newAcc );
 
         return newAcc.addEol( eol );
