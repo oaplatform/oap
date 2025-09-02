@@ -139,7 +139,6 @@ public class TemplateAstUtils {
             }
 
             log.error( "class {} field {}", clazz, fieldName );
-            e.printStackTrace();
 
             throw e;
         }

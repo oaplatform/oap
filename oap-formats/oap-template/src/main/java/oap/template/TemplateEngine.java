@@ -59,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -201,6 +202,8 @@ public class TemplateEngine implements Runnable {
             } );
 
             return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
+        } catch( RejectedExecutionException e ) {
+            throw e;
         } catch( Exception e ) {
             if( e.getCause() == null ) throw new RuntimeException( e );
             if( e.getCause() instanceof TemplateException ) {
