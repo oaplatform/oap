@@ -25,6 +25,7 @@
 package oap.ws.admin;
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
@@ -34,6 +35,7 @@ import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import org.slf4j.LoggerFactory;
 
+import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,10 +49,10 @@ public class LogWS {
     public Map<String, String> getAll() {
         log.debug( "get all" );
 
-        var map = new LinkedHashMap<String, String>();
+        LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
-        var loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
-        for( var logger : loggerContext.getLoggerList() ) {
+        LoggerContext loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
+        for( Logger logger : loggerContext.getLoggerList() ) {
             if( logger.getLevel() != null ) {
                 map.put( logger.getName(), logger.getLevel().toString() );
             }
@@ -63,11 +65,11 @@ public class LogWS {
     public void reset() {
         log.debug( "reset" );
 
-        var loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
-        var url = urlOrThrow( getClass(), "/logback-test.xml" );
+        LoggerContext loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
+        URL url = urlOrThrow( getClass(), "/logback.xml" );
 
         try {
-            var configurator = new JoranConfigurator();
+            JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext( loggerContext );
             loggerContext.reset();
             configurator.doConfigure( url );
@@ -89,8 +91,8 @@ public class LogWS {
 
         log.trace( "logger class {}", slf4jLogger.getClass() );
 
-        var logger = ( ch.qos.logback.classic.Logger ) slf4jLogger;
-        log.debug( "{} current logger level: {}", packageName, logger.getLevel() );
+        Logger logger = ( ch.qos.logback.classic.Logger ) slf4jLogger;
+        log.debug( "{} current logger level {}", packageName, logger.getLevel() );
         logger.setLevel( Level.toLevel( level ) );
     }
 }
