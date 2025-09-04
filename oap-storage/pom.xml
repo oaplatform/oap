@@ -18,16 +18,13 @@
 
         <oap.deps.dynamodb.version>2.23.17</oap.deps.dynamodb.version>
 
-        <oap.deps.mongo-java-server.version>1.46.0</oap.deps.mongo-java-server.version>
+        <oap.deps.mongo-java-server.version>1.47.0</oap.deps.mongo-java-server.version>
     </properties>
 
     <modules>
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
         <module>oap-storage-mongo-test</module>
-        <module>oap-storagev2</module>
-        <module>oap-storagev2-mongo</module>
-        <module>oap-storagev2-mongo-test</module>
 
         <module>oap-storage-cloud</module>
         <module>oap-storage-cloud-aws-s3</module>

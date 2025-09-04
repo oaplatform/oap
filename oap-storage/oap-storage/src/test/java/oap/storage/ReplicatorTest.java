@@ -67,8 +67,8 @@ public class ReplicatorTest {
                 }
             } );
 
-            master.store( new Bean( "111" ) );
-            master.store( new Bean( "222" ) );
+            master.store( new Bean( "111" ), Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "222" ), Storage.MODIFIED_BY_SYSTEM );
             assertEventually( 100, 50, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "111", "aaa" ), new Bean( "222" ) );
                 assertThat( addons.get() ).isEqualTo( 2 );
@@ -78,7 +78,7 @@ public class ReplicatorTest {
             deletions.set( 0 );
             updates.set( 0 );
             addons.set( 0 );
-            master.store( new Bean( "111", "bbb" ) );
+            master.store( new Bean( "111", "bbb" ), Storage.MODIFIED_BY_SYSTEM );
             assertEventually( 100, 50, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
                 assertThat( addons.get() ).isEqualTo( 0 );
@@ -88,9 +88,9 @@ public class ReplicatorTest {
             deletions.set( 0 );
             updates.set( 0 );
             addons.set( 0 );
-            master.delete( "111" );
-            master.store( new Bean( "222", "xyz" ) );
-            master.store( new Bean( "333", "ccc" ) );
+            master.delete( "111", Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "222", "xyz" ), Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "333", "ccc" ), Storage.MODIFIED_BY_SYSTEM );
             assertEventually( 100, 50, () -> {
                 assertThat( slave.select() ).containsExactly( new Bean( "222", "xyz" ), new Bean( "333", "ccc" ) );
                 assertThat( addons.get() ).isEqualTo( 1 );
@@ -106,8 +106,8 @@ public class ReplicatorTest {
         var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( var replicator = new Replicator<>( slave, master, 5000 ) ) {
-            master.store( new Bean( "1" ) );
-            master.store( new Bean( "2" ) );
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+            master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ) );
         }
@@ -120,17 +120,17 @@ public class ReplicatorTest {
         try( var replicator = new Replicator<>( slave, master, 5000 ) ) {
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
-            master.store( new Bean( "1" ) );
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
 
             assertCounter( 1L, 0L );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
-            master.store( new Bean( "2" ) );
+            master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
             assertCounter( 3L, 0L );
 
-            master.store( new Bean( "3" ) );
+            master.store( new Bean( "3" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();
             assertCounter( 5L, 0L );
@@ -142,7 +142,7 @@ public class ReplicatorTest {
             assertCounter( 5L, 0L );
 
             DateTimeUtils.setCurrentMillisFixed( 3 );
-            master.store( new Bean( "4" ) );
+            master.store( new Bean( "4" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
             assertCounter( 6L, 0L );
 

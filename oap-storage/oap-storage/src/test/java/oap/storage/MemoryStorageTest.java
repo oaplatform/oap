@@ -62,7 +62,7 @@ public class MemoryStorageTest extends Fixtures {
             }
         } );
         Bean noId = new Bean();
-        storage.update( noId.id, b -> noId, () -> noId );
+        storage.update( noId.id, b -> noId, () -> noId, Storage.MODIFIED_BY_SYSTEM );
         assertThat( storage.list() ).containsOnly( noId );
         assertThat( noId.id ).isNotNull();
         assertThat( ids ).containsOnly( noId.id );
@@ -80,14 +80,14 @@ public class MemoryStorageTest extends Fixtures {
                 .build(),
             SERIALIZED );
 
-        storage.store( new Bean( "id1" ) );
+        storage.store( new Bean( "id1" ), Storage.MODIFIED_BY_SYSTEM );
 
         Metadata<Bean> metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.created, UTC ) ).isEqualTo( created );
         assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created );
 
         Dates.incFixed( Dates.m( 3 ) );
-        storage.store( new Bean( "id1", "v" ) );
+        storage.store( new Bean( "id1", "v" ), Storage.MODIFIED_BY_SYSTEM );
 
         metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.created, UTC ) ).isEqualTo( created );
@@ -106,17 +106,17 @@ public class MemoryStorageTest extends Fixtures {
                 .build(),
             SERIALIZED );
 
-        storage.store( new Bean( "id1" ) );
+        storage.store( new Bean( "id1" ), Storage.MODIFIED_BY_SYSTEM );
 
         Metadata<Bean> metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created );
 
         Dates.incFixed( Dates.m( 3 ) );
-        storage.tryUpdate( "id1", b -> null );
+        storage.tryUpdate( "id1", b -> null, Storage.MODIFIED_BY_SYSTEM );
         metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created );
 
-        storage.tryUpdate( "id1", b -> b );
+        storage.tryUpdate( "id1", b -> b, Storage.MODIFIED_BY_SYSTEM );
         metadata = storage.getMetadata( "id1" ).orElseThrow();
         assertThat( new DateTime( metadata.modified, UTC ) ).isEqualTo( created.plusMinutes( 3 ) );
     }
@@ -136,7 +136,7 @@ public class MemoryStorageTest extends Fixtures {
             }
         } );
         Bean id = new Bean( "id" );
-        storage.update( id.id, b -> id, () -> id );
+        storage.update( id.id, b -> id, () -> id, Storage.MODIFIED_BY_SYSTEM );
         assertThat( storage.list() ).containsOnly( id );
         assertThat( id.id ).isNotNull();
         assertThat( ids ).containsOnly( id.id );
@@ -150,10 +150,10 @@ public class MemoryStorageTest extends Fixtures {
                 .build(),
             SERIALIZED );
         Bean bean = new Bean( "id" );
-        assertThat( storage.get( bean.id, () -> bean ) ).isEqualTo( bean );
+        assertThat( storage.get( bean.id, () -> bean, Storage.MODIFIED_BY_SYSTEM ) ).isEqualTo( bean );
         assertThat( storage.list() ).containsOnly( bean );
         Bean beanNoId = new Bean();
-        assertThat( storage.get( beanNoId.id, () -> beanNoId ) ).isEqualTo( beanNoId );
+        assertThat( storage.get( beanNoId.id, () -> beanNoId, Storage.MODIFIED_BY_SYSTEM ) ).isEqualTo( beanNoId );
         assertThat( storage.list() ).containsOnly( bean, beanNoId );
     }
 
@@ -163,9 +163,9 @@ public class MemoryStorageTest extends Fixtures {
         var a = new IntBean( null, "a" );
         var b = new IntBean( 2, "b" );
         var c = new IntBean( null, "c" );
-        storage.store( a );
-        storage.store( b );
-        storage.store( c );
+        storage.store( a, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( b, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( c, Storage.MODIFIED_BY_SYSTEM );
         assertThat( storage.list() ).containsOnly(
             new IntBean( 1, "a" ),
             new IntBean( 2, "b" ),

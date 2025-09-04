@@ -34,7 +34,6 @@ import org.joda.time.DateTimeUtils;
 import java.io.Serial;
 import java.io.Serializable;
 
-@Deprecated
 @EqualsAndHashCode
 public class Metadata<T> implements Serializable {
     @Serial
@@ -42,6 +41,8 @@ public class Metadata<T> implements Serializable {
 
     public long modified = DateTimeUtils.currentTimeMillis();
     public long created = DateTimeUtils.currentTimeMillis();
+    public String createdBy;
+    public String modifiedBy;
     public long hash = 0;
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
@@ -49,24 +50,30 @@ public class Metadata<T> implements Serializable {
     private boolean deleted = false;
 
     @JsonCreator
-    protected Metadata( T object ) {
-        update( object );
+    protected Metadata( T object, String createdBy ) {
+        update( object, createdBy );
     }
 
     protected Metadata() {
     }
 
     public static <T> Metadata<T> from( Metadata<T> metadata ) {
-        Metadata<T> m = new Metadata<>( metadata.object );
+        Metadata<T> m = new Metadata<>( metadata.object, metadata.modifiedBy );
         m.modified = metadata.modified;
+        m.createdBy = metadata.createdBy;
+        m.modifiedBy = metadata.modifiedBy;
         m.created = metadata.created;
         m.hash = metadata.hash;
         return m;
     }
 
-    public Metadata<T> update( T t ) {
+    public Metadata<T> update( T t, String modifiedBy ) {
         this.object = t;
         this.deleted = false;
+        if( this.createdBy == null ) {
+            this.createdBy = modifiedBy;
+        }
+        this.modifiedBy = modifiedBy;
         refresh();
         return this;
     }
@@ -80,8 +87,9 @@ public class Metadata<T> implements Serializable {
         return deleted;
     }
 
-    public void delete() {
+    public void delete( String modifiedBy ) {
         this.deleted = true;
+        this.modifiedBy = modifiedBy;
         refresh();
     }
 

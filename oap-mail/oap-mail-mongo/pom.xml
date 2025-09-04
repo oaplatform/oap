@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-storagev2-mongo</artifactId>
+            <artifactId>oap-storage-mongo</artifactId>
             <version>${project.version}</version>
         </dependency>
 

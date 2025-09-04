@@ -39,8 +39,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@Deprecated
 public interface Storage<Id, Data> extends Iterable<Data> {
+    String MODIFIED_BY_SYSTEM = "SYSTEM";
 
     Stream<Data> select();
 
@@ -52,25 +52,25 @@ public interface Storage<Id, Data> extends Iterable<Data> {
 
     Optional<Data> get( @Nonnull Id id );
 
-    Data get( Id id, @Nonnull Supplier<Data> init );
+    Data get( Id id, @Nonnull Supplier<Data> init, String modifiedBy );
 
     long size();
 
-    Data store( @Nonnull Data object );
+    Data store( @Nonnull Data object, String modifiedBy );
 
-    void store( Collection<Data> objects );
+    void store( Collection<Data> objects, String modifiedBy );
 
     void forEach( Consumer<? super Data> action );
 
-    Optional<Data> update( @Nonnull Id id, @Nonnull Function<Data, Data> update );
+    Optional<Data> update( @Nonnull Id id, @Nonnull Function<Data, Data> update, String modifiedBy );
 
-    Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init );
+    Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init, String modifiedBy );
 
-    boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate );
+    boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate, String modifiedBy );
 
-    Optional<Data> delete( @Nonnull Id id );
+    Optional<Data> delete( @Nonnull Id id, String modifiedBy );
 
-    Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id );
+    Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id, String modifiedBy );
 
     Optional<Data> permanentlyDelete( @Nonnull Id id );
 
@@ -127,24 +127,24 @@ public interface Storage<Id, Data> extends Iterable<Data> {
             private static final long serialVersionUID = -5793630001926149000L;
 
             public final DI id;
-            public final D object;
+            public final Metadata<D> metadata;
 
-            public IdObject( DI id, D object ) {
+            public IdObject( DI id, Metadata<D> metadata ) {
                 this.id = id;
-                this.object = object;
+                this.metadata = metadata;
             }
 
             @SuppressWarnings( "checkstyle:MethodName" )
-            public static <DI, D> IdObject<DI, D> __io( DI id, D object ) {
-                return new IdObject<>( id, object );
+            public static <DI, D> IdObject<DI, D> __io( DI id, Metadata<D> metadata ) {
+                return new IdObject<>( id, metadata );
             }
 
             public final DI id() {
                 return id;
             }
 
-            public final D object() {
-                return object;
+            public final Metadata<D> metadata() {
+                return metadata;
             }
         }
     }
