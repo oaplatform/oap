@@ -24,7 +24,6 @@
 
 package oap.storage.migration;
 
-@Deprecated
 public interface Migration {
     long fromVersion();
 

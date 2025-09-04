@@ -7,7 +7,6 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-@Deprecated
 public interface RemoteStorage<Id, Data> extends ReplicationMaster<Id, Data> {
     Optional<Data> get( @Nonnull Id id );
 

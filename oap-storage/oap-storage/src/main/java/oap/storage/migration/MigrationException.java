@@ -24,7 +24,6 @@
 
 package oap.storage.migration;
 
-@Deprecated
 public class MigrationException extends RuntimeException {
     public MigrationException( String message ) {
         super( message );

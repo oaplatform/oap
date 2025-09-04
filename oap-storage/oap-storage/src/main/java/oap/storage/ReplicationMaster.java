@@ -27,7 +27,6 @@ package oap.storage;
 import java.util.List;
 import java.util.stream.Stream;
 
-@Deprecated
 public interface ReplicationMaster<Id, Data> {
     Stream<Metadata<Data>> updatedSince( long since );
 

@@ -48,10 +48,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static oap.storage.Storage.DataListener.IdObject.__io;
 
 @Slf4j
-@Deprecated
 public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMaster<Id, Data>, RemoteStorage<Id, Data> {
     public final Identifier<Id, Data> identifier;
     protected final Lock lock;
@@ -98,13 +96,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public Data store( @Nonnull Data object ) {
+    public Data store( @Nonnull Data object, String modifiedBy ) {
 //        this is not thread-safe
 //        new acquired id does not lead to conflicts
         Id id = identifier.getOrInit( object, conflict );
         lock.synchronizedOn( id, () -> {
-            if( memory.put( id, object ) ) fireAdded( id, object );
-            else fireUpdated( id, object );
+            if( memory.put( id, object, modifiedBy ) ) {
+                fireAdded( id, memory.data.get( id ) );
+            } else {
+                fireUpdated( id, memory.data.get( id ) );
+            }
         } );
         return object;
     }
@@ -117,8 +118,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         return lock.synchronizedOn( id, () -> {
             Metadata<Data> metadata = memory.get( id ).orElse( null );
             if( ( metadata == null && hash == 0L ) || ( metadata != null && metadata.hash == hash ) ) {
-                if( memory.put( id, object ) ) fireAdded( id, object );
-                else fireUpdated( id, object );
+                if( memory.put( id, object, Storage.MODIFIED_BY_SYSTEM ) ) {
+                    fireAdded( id, memory.data.get( id ) );
+                } else {
+                    fireUpdated( id, memory.data.get( id ) );
+                }
 
                 return object;
             } else {
@@ -128,15 +132,18 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public void store( Collection<Data> objects ) {
+    public void store( Collection<Data> objects, String modifiedBy ) {
         List<IdObject<Id, Data>> added = new ArrayList<>();
         List<IdObject<Id, Data>> updated = new ArrayList<>();
 
         for( Data object : objects ) {
             Id id = identifier.getOrInit( object, conflict );
             lock.synchronizedOn( id, () -> {
-                if( memory.put( id, object ) ) added.add( __io( id, object ) );
-                else updated.add( __io( id, object ) );
+                if( memory.put( id, object, modifiedBy ) ) {
+                    added.add( IdObject.__io( id, memory.data.get( id ) ) );
+                } else {
+                    updated.add( IdObject.__io( id, memory.data.get( id ) ) );
+                }
             } );
         }
         fireAdded( added );
@@ -144,26 +151,26 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public Optional<Data> update( @Nonnull Id id, @Nonnull Function<Data, Data> update ) {
+    public Optional<Data> update( @Nonnull Id id, @Nonnull Function<Data, Data> update, String modifiedBy ) {
         requireNonNull( id );
 
-        Optional<Metadata<Data>> result = memory.remap( id, update );
-        result.ifPresent( m -> fireUpdated( id, m.object ) );
+        Optional<Metadata<Data>> result = memory.remap( id, update, modifiedBy );
+        result.ifPresent( m -> fireUpdated( id, m ) );
         return result.map( m -> m.object );
     }
 
     @Override
-    public Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init ) {
-        if( id == null ) return store( init.get() );
-        else return lock.synchronizedOn( id, () -> update( id, update ).orElseGet( () -> store( init.get() ) ) );
+    public Data update( Id id, @Nonnull Function<Data, Data> update, @Nonnull Supplier<Data> init, String modifiedBy ) {
+        if( id == null ) return store( init.get(), modifiedBy );
+        else return lock.synchronizedOn( id, () -> update( id, update, modifiedBy ).orElseGet( () -> store( init.get(), modifiedBy ) ) );
     }
 
     @Override
-    public boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate ) {
+    public boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate, String modifiedBy ) {
         requireNonNull( id );
 
-        Optional<Metadata<Data>> result = memory.tryRemap( id, tryUpdate );
-        result.ifPresent( m -> fireUpdated( id, m.object ) );
+        Optional<Metadata<Data>> result = memory.tryRemap( id, tryUpdate, modifiedBy );
+        result.ifPresent( m -> fireUpdated( id, m ) );
         return result.isPresent();
     }
 
@@ -178,35 +185,35 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public Data get( Id id, @Nonnull Supplier<Data> init ) {
-        return id == null ? store( init.get() )
-            : lock.synchronizedOn( id, () -> get( id ).orElseGet( () -> store( init.get() ) ) );
+    public Data get( Id id, @Nonnull Supplier<Data> init, String modifiedBy ) {
+        return id == null ? store( init.get(), modifiedBy )
+            : lock.synchronizedOn( id, () -> get( id ).orElseGet( () -> store( init.get(), modifiedBy ) ) );
     }
 
     @Override
     public void deleteAll() {
-        fireDeleted( Lists.map( memory.markDeletedAll(), p -> __io( p._1, p._2.object ) ) );
+        fireDeleted( Lists.map( memory.markDeletedAll(), p -> IdObject.__io( p._1, p._2 ) ) );
     }
 
     @Override
-    public Optional<Data> delete( @Nonnull Id id ) {
-        return deleteMetadata( id ).map( m -> m.object );
+    public Optional<Data> delete( @Nonnull Id id, String modifiedBy ) {
+        return deleteMetadata( id, modifiedBy ).map( m -> m.object );
     }
 
     @Override
-    public Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id ) {
+    public Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id, String modifiedBy ) {
         requireNonNull( id );
-        Optional<Metadata<Data>> old = memory.markDeleted( id );
-        old.ifPresent( o -> fireDeleted( id, o.object ) );
+        Optional<Metadata<Data>> old = memory.markDeleted( id, modifiedBy );
+        old.ifPresent( o -> fireDeleted( id, o ) );
         return old;
     }
 
     @Override
     public Optional<Data> permanentlyDelete( @Nonnull Id id ) {
         requireNonNull( id );
-        Optional<Data> old = memory.removePermanently( id ).map( m -> m.object );
+        Optional<Metadata<Data>> old = memory.removePermanently( id );
         old.ifPresent( o -> firePermanentlyDeleted( id, o ) );
-        return old;
+        return old.map( m -> m.object );
     }
 
     @Override
@@ -214,46 +221,60 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         return memory.selectLiveIds().count();
     }
 
-    protected void fireAdded( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
-            dataListener.added( List.of( __io( id, object ) ) );
+    protected void fireAdded( Id id, Metadata<Data> medatada ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+            dataListener.added( List.of( IdObject.__io( id, medatada ) ) );
+        }
     }
 
     protected void fireAdded( List<IdObject<Id, Data>> objects ) {
-        if( !objects.isEmpty() )
-            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.added( objects );
+        if( !objects.isEmpty() ) {
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+                dataListener.added( objects );
+            }
+        }
     }
 
-    protected void fireUpdated( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
-            dataListener.updated( List.of( __io( id, object ) ) );
+    protected void fireUpdated( Id id, Metadata<Data> metadata ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+            dataListener.updated( List.of( IdObject.__io( id, metadata ) ) );
+        }
     }
 
     protected void fireUpdated( List<IdObject<Id, Data>> objects ) {
-        if( !objects.isEmpty() )
-            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.updated( objects );
+        if( !objects.isEmpty() ) {
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+                dataListener.updated( objects );
+            }
+        }
     }
 
     protected void fireDeleted( List<IdObject<Id, Data>> objects ) {
-        if( !objects.isEmpty() )
-            for( DataListener<Id, Data> dataListener : this.dataListeners ) dataListener.deleted( objects );
+        if( !objects.isEmpty() ) {
+            for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+                dataListener.deleted( objects );
+            }
+        }
     }
 
-    protected void fireDeleted( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
-            dataListener.deleted( List.of( __io( id, object ) ) );
+    protected void fireDeleted( Id id, Metadata<Data> object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+            dataListener.deleted( List.of( IdObject.__io( id, object ) ) );
+        }
     }
 
-    protected void firePermanentlyDeleted( Id id, Data object ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
-            dataListener.permanentlyDeleted( __io( id, object ) );
+    protected void firePermanentlyDeleted( Id id, Metadata<Data> object ) {
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
+            dataListener.permanentlyDeleted( IdObject.__io( id, object ) );
+        }
     }
 
     protected void fireChanged( List<DataListener.IdObject<Id, Data>> added,
                                 List<DataListener.IdObject<Id, Data>> updated,
                                 List<DataListener.IdObject<Id, Data>> deleted ) {
-        for( DataListener<Id, Data> dataListener : this.dataListeners )
+        for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( added, updated, deleted );
+        }
     }
 
     @Override
@@ -328,9 +349,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             return data.put( id, m ) == null;
         }
 
-        public boolean put( @Nonnull I id, @Nonnull T object ) {
+        public boolean put( @Nonnull I id, @Nonnull T object, String modifiedBy ) {
             requireNonNull( id );
             requireNonNull( object );
+            requireNonNull( modifiedBy );
+
             return lock.synchronizedOn( id, () -> {
                 // time: 123 - new Metadata()
                 // time: 124 - fsync()
@@ -338,25 +361,25 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
                 // lastmodified must be set after placing the metadata object in the "data"
                 final Metadata<T> oldMetadata = data.get( id );
                 if( oldMetadata == null ) {
-                    Metadata<T> newMetadata = new Metadata<>( object );
+                    Metadata<T> newMetadata = new Metadata<>( object, modifiedBy );
                     data.put( id, newMetadata );
                     newMetadata.refresh();
                 } else {
-                    oldMetadata.update( object );
+                    oldMetadata.update( object, modifiedBy );
                 }
                 log.trace( "storing {}", oldMetadata );
                 return oldMetadata == null;
             } );
         }
 
-        public Optional<Metadata<T>> remap( @Nonnull I id, @Nonnull Function<T, T> update ) {
+        public Optional<Metadata<T>> remap( @Nonnull I id, @Nonnull Function<T, T> update, String modifiedBy ) {
             return lock.synchronizedOn( id, () ->
                 Optional.ofNullable( data.compute( id, ( anId, m ) -> m == null
                     ? null
-                    : m.update( update.apply( m.object ) ) ) ) );
+                    : m.update( update.apply( m.object ), modifiedBy ) ) ) );
         }
 
-        public Optional<Metadata<T>> tryRemap( I id, Function<T, T> tryUpdate ) {
+        public Optional<Metadata<T>> tryRemap( I id, Function<T, T> tryUpdate, String modifiedBy ) {
             MutableObject<Metadata<T>> ret = new MutableObject<>();
 
             return lock.synchronizedOn( id, () -> {
@@ -367,7 +390,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
                         T apply = tryUpdate.apply( m.object );
                         if( apply != null ) {
-                            m.update( apply );
+                            m.update( apply, modifiedBy );
                             ret.setValue( m );
                         }
 
@@ -381,15 +404,15 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
         public List<Pair<I, Metadata<T>>> markDeletedAll() {
             List<Pair<I, Metadata<T>>> ms = selectLive().toList();
-            ms.forEach( p -> p._2.delete() );
+            ms.forEach( p -> p._2.delete( Storage.MODIFIED_BY_SYSTEM ) );
             return ms;
         }
 
-        public Optional<Metadata<T>> markDeleted( @Nonnull I id ) {
+        public Optional<Metadata<T>> markDeleted( @Nonnull I id, String modifiedBy ) {
             return lock.synchronizedOn( id, () -> {
                 Metadata<T> metadata = data.get( id );
                 if( metadata != null ) {
-                    metadata.delete();
+                    metadata.delete( modifiedBy );
                     return Optional.of( metadata );
                 } else return Optional.empty();
             } );

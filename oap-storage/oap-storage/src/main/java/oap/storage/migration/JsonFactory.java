@@ -26,7 +26,6 @@ package oap.storage.migration;
 
 import java.util.Optional;
 
-@Deprecated
 public class JsonFactory {
     public static Optional<Json<?>> map( Object obj ) {
         return Json.map( Optional.empty(), obj, Optional.empty() );

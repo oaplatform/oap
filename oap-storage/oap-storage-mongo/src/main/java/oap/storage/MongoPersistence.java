@@ -25,6 +25,7 @@
 package oap.storage;
 
 import com.mongodb.ReadConcern;
+import com.mongodb.client.ChangeStreamIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
 import com.mongodb.client.model.DeleteOneModel;
@@ -32,6 +33,7 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import com.mongodb.client.model.changestream.OperationType;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.json.Binder;
@@ -40,6 +42,8 @@ import oap.storage.mongo.JsonCodec;
 import oap.storage.mongo.MongoClient;
 import oap.util.Pair;
 import oap.util.Stream;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -49,6 +53,7 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -58,7 +63,6 @@ import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.util.Pair.__;
 
-@Deprecated
 @Slf4j
 public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements Closeable, AutoCloseable {
 
@@ -104,21 +108,27 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
 
     @Override
     protected void processRecords( CountDownLatch cdl ) {
-        var changeStreamDocuments = mongoClient.getCollection( tableName ).withReadConcern( ReadConcern.MAJORITY ).watch();
+        ChangeStreamIterable<Document> changeStreamDocuments = mongoClient.getCollection( tableName ).withReadConcern( ReadConcern.MAJORITY ).watch();
         cdl.countDown();
         changeStreamDocuments.forEach( ( Consumer<? super ChangeStreamDocument<Document>> ) csd -> {
             log.trace( "mongo notification: {} ", csd );
-            var op = csd.getOperationType();
-            var key = csd.getDocumentKey();
-            if( key == null ) return;
+            OperationType op = csd.getOperationType();
+            BsonDocument key = csd.getDocumentKey();
+            if( key == null ) {
+                return;
+            }
 
-            var bid = key.getString( "_id" );
-            if( bid == null ) return;
+            BsonString bid = key.getString( "_id" );
+            if( bid == null ) {
+                return;
+            }
 
-            var id = bid.getValue();
+            String id = bid.getValue();
             switch( op ) {
                 case DELETE -> deleteById( id );
                 case INSERT, UPDATE, REPLACE -> refreshById( id );
+                case null, default -> {
+                }
             }
         } );
     }
@@ -178,16 +188,21 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
     }
 
     private void refreshById( String mongoId ) {
-        var m = collection.find( eq( "_id", mongoId ) ).first();
-        if( m == null ) return;
+        Metadata<T> m = collection.find( eq( "_id", mongoId ) ).first();
+        if( m == null ) {
+            return;
+        }
         storage.lock.synchronizedOn( mongoId, () -> {
-            var id = storage.identifier.fromString( mongoId );
-            var old = storage.memory.get( id );
+            I id = storage.identifier.fromString( mongoId );
+            Optional<Metadata<T>> old = storage.memory.get( id );
             if( old.isEmpty() || m.modified > old.get().modified ) {
                 log.debug( "refresh from mongo {}", mongoId );
                 storage.memory.put( id, m );
-                if( old.isEmpty() ) storage.fireAdded( id, m.object );
-                else storage.fireUpdated( id, m.object );
+                if( old.isEmpty() ) {
+                    storage.fireAdded( id, m );
+                } else {
+                    storage.fireUpdated( id, m );
+                }
             } else log.debug( "[{}] m.modified <= oldM.modified", mongoId );
         } );
     }

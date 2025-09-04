@@ -37,9 +37,9 @@ public class DefaultIdentifierTest {
 
     @Test
     public void forPath() {
-        var storage = new MemoryStorage<>( Identifier.<Bean>forPath( "s" ).build(), SERIALIZED );
-        storage.store( new Bean( "1", "aaaa" ) );
-        storage.store( new Bean( "2", "bbbb" ) );
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( Identifier.<Bean>forPath( "s" ).build(), SERIALIZED );
+        storage.store( new Bean( "1", "aaaa" ), Storage.MODIFIED_BY_SYSTEM );
+        storage.store( new Bean( "2", "bbbb" ), Storage.MODIFIED_BY_SYSTEM );
         assertThat( storage.get( "aaaa" ) )
             .isPresent()
             .hasValue( new Bean( "1", "aaaa" ) );
@@ -50,9 +50,9 @@ public class DefaultIdentifierTest {
 
     @Test
     public void forId() {
-        var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        storage.store( new Bean( "1", "aaaa" ) );
-        storage.store( new Bean( "2", "bbbb" ) );
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        storage.store( new Bean( "1", "aaaa" ), Storage.MODIFIED_BY_SYSTEM );
+        storage.store( new Bean( "2", "bbbb" ), Storage.MODIFIED_BY_SYSTEM );
         assertThat( storage.get( "1" ) )
             .isPresent()
             .hasValue( new Bean( "1", "aaaa" ) );
@@ -63,11 +63,11 @@ public class DefaultIdentifierTest {
 
     @Test
     public void forIdWithSetter() {
-        var storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.s )
             .build(), SERIALIZED );
-        storage.store( new Bean( "1", "aaaa" ) );
-        storage.store( new Bean( "2", "bbbb" ) );
+        storage.store( new Bean( "1", "aaaa" ), Storage.MODIFIED_BY_SYSTEM );
+        storage.store( new Bean( "2", "bbbb" ), Storage.MODIFIED_BY_SYSTEM );
         assertThat( storage.get( "1" ) )
             .isPresent()
             .hasValue( new Bean( "1", "aaaa" ) );
@@ -87,8 +87,8 @@ public class DefaultIdentifierTest {
         var a = new Bean( null, "some text" );
         var b = new Bean( null, "another text" );
 
-        storage.store( a );
-        storage.store( b );
+        storage.store( a, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( b, Storage.MODIFIED_BY_SYSTEM );
 
         assertThat( a.id ).isEqualTo( "SMTXTXX" );
         assertThat( b.id ).isEqualTo( "NTHRTXT" );
@@ -111,13 +111,13 @@ public class DefaultIdentifierTest {
         var f = new Bean( null, "some text" );
         var g = new Bean( null, "some text" );
 
-        storage.store( a );
-        storage.store( b );
-        storage.store( c );
-        storage.store( d );
-        storage.store( e );
-        storage.store( f );
-        storage.store( g );
+        storage.store( a, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( b, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( c, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( d, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( e, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( f, Storage.MODIFIED_BY_SYSTEM );
+        storage.store( g, Storage.MODIFIED_BY_SYSTEM );
 
         assertThat( a.id ).isEqualTo( "SMTXTXX" );
         assertThat( b.id ).isEqualTo( "SMTXTX0" );
