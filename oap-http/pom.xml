@@ -15,7 +15,6 @@
         <module>oap-http</module>
         <module>oap-http-prometheus</module>
         <module>oap-pnio</module>
-        <module>oap-pnio-v2</module>
         <module>oap-pnio-v3</module>
         <module>oap-http-test</module>
         <module>oap-remote</module>
