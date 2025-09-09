@@ -311,7 +311,7 @@
         </dependency>
         <dependency>
             <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-core</artifactId>
+            <artifactId>bucket4j_jdk17-core</artifactId>
             <version>${oap.deps.bucket4j.version}</version>
         </dependency>
     </dependencies>

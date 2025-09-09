@@ -92,7 +92,7 @@
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
-        <oap.deps.bucket4j.version>8.7.0</oap.deps.bucket4j.version>
+        <oap.deps.bucket4j.version>8.15.0</oap.deps.bucket4j.version>
 
         <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
