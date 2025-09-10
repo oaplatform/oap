@@ -29,6 +29,8 @@ import oap.http.server.nio.NioHttpServer;
 import oap.http.server.nio.handlers.BandwidthHandler;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
+import oap.testng.SystemTimerFixture;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -43,6 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BandwidthHandlerTest extends Fixtures {
     private NioHttpServer server;
     private BandwidthHandler bandwidthHandler;
+
+    public BandwidthHandlerTest() {
+        fixtures( new SystemTimerFixture( true ) );
+    }
 
     @BeforeMethod
     public void beforeMethod() {
@@ -75,6 +81,8 @@ public class BandwidthHandlerTest extends Fixtures {
 
     @Test
     public void coupleBandwidths() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed( 1 );
+
         bandwidthHandler.bandwidths.clear();
         bandwidthHandler.bandwidths.add( Bandwidth.simple( 2, Duration.ofMinutes( 1 ) ) );
         bandwidthHandler.bandwidths.add( Bandwidth.simple( 1, Duration.ofSeconds( 2 ) ) );
@@ -87,9 +95,9 @@ public class BandwidthHandlerTest extends Fixtures {
 
         assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( HTTP_OK );
         assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
-        Thread.currentThread().sleep( 2_100L );
+        DateTimeUtils.setCurrentMillisFixed( 1 + 2_100L );
         assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( HTTP_OK );
-        Thread.currentThread().sleep( 2_100L );
+        DateTimeUtils.setCurrentMillisFixed( 1 + 2_100L + 2_100L );
         assertThat( Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" ).code ).isEqualTo( TOO_MANY_REQUESTS );
     }
 }

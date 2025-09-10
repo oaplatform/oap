@@ -26,6 +26,8 @@ package oap.storage;
 
 import oap.id.Identifier;
 import oap.json.TypeIdFactory;
+import oap.testng.Fixtures;
+import oap.testng.SystemTimerFixture;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -37,9 +39,13 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReplicatorTest {
+public class ReplicatorTest extends Fixtures {
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
+    }
+
+    public ReplicatorTest() {
+        fixtures( new SystemTimerFixture( true ) );
     }
 
     @BeforeMethod
@@ -53,9 +59,9 @@ public class ReplicatorTest {
         MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( Replicator<String, Bean> _ = new Replicator<>( slave, master, 50 ) ) {
 
-            var updates = new AtomicInteger();
-            var addons = new AtomicInteger();
-            var deletions = new AtomicInteger();
+            AtomicInteger updates = new AtomicInteger();
+            AtomicInteger addons = new AtomicInteger();
+            AtomicInteger deletions = new AtomicInteger();
             slave.addDataListener( new Storage.DataListener<>() {
                 @Override
                 public void changed( List<Storage.DataListener.IdObject<String, Bean>> added,
@@ -103,9 +109,9 @@ public class ReplicatorTest {
 
     @Test
     public void replicateNow() {
-        var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var replicator = new Replicator<>( slave, master, 5000 ) ) {
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 5000 ) ) {
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
@@ -115,9 +121,9 @@ public class ReplicatorTest {
 
     @Test
     public void testSyncSafe() {
-        var slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        var master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( var replicator = new Replicator<>( slave, master, 5000 ) ) {
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 5000 ) ) {
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
