@@ -217,6 +217,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
+    public void permanentlyDelete() {
+        memory.removePermanently();
+    }
+
+    @Override
     public long size() {
         return memory.selectLiveIds().count();
     }
@@ -420,6 +425,10 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
         public Optional<Metadata<T>> removePermanently( @Nonnull I id ) {
             return Optional.ofNullable( data.remove( id ) );
+        }
+
+        public void removePermanently() {
+            data.clear();
         }
 
         public void clear() {

@@ -74,6 +74,8 @@ public interface Storage<Id, Data> extends Iterable<Data> {
 
     Optional<Data> permanentlyDelete( @Nonnull Id id );
 
+    void permanentlyDelete();
+
     void deleteAll();
 
     void addDataListener( DataListener<Id, Data> dataListener );
