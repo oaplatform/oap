@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FSTTest {
     @Test
     public void optional() {
-        final FST fst = new FST( FST.SerializationMethod.DEFAULT );
+        FST fst = new FST( FST.SerializationMethod.DEFAULT );
 
         assertThat( fst.configuration.asObject( fst.configuration.asByteArray( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
         assertThat( fst.configuration.asObject( fst.configuration.asByteArray( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );

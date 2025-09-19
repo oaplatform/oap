@@ -121,6 +121,10 @@ import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
 
+@Deprecated( since = "24.2.4" )
+/**
+ * replaced by okhttp
+ */
 @Slf4j
 public final class Client implements Closeable, AutoCloseable {
     public static final Client DEFAULT = custom()

@@ -33,6 +33,7 @@ import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.testng.annotations.Test;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,11 +47,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RemoteTest extends Fixtures {
     @Test
     public void invoke() {
-        var port = Ports.getFreePort( getClass() );
+        int port = Ports.getFreePort( getClass() );
 
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
                 Map.of( "HTTP_PORT", port ) ) );
@@ -85,10 +86,10 @@ public class RemoteTest extends Fixtures {
 
     @Test
     public void testStream() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
                 Map.of( "HTTP_PORT", Ports.getFreePort( getClass() ) ) ) );
@@ -105,10 +106,10 @@ public class RemoteTest extends Fixtures {
 
     @Test
     public void testEmptyStream() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "module.conf" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
                 Map.of( "HTTP_PORT", Ports.getFreePort( getClass() ) ) ) );
@@ -119,10 +120,10 @@ public class RemoteTest extends Fixtures {
 
     @Test
     public void testRemotingUri() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "invalid_remote.conf" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "oap-module-with-invalid-remoting" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "error: [remote.url == null: service oap-module-with-invalid-remoting.remote-client]" );
