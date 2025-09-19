@@ -91,7 +91,7 @@ public class Remote implements HttpHandler {
     public void handleRequest( HttpServerExchange exchange ) {
         RemoteInvocation invocation = null;
         try {
-            var fst = new FST( serialization );
+            FST fst = new FST( serialization );
 
             invocation = getRemoteInvocation( fst, exchange.getInputStream() );
 
