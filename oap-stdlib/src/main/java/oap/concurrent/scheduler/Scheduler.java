@@ -29,11 +29,15 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Throwables;
 import oap.util.function.Try;
 import org.quartz.CronScheduleBuilder;
+import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
+import org.quartz.SchedulerConfigException;
 import org.quartz.SimpleScheduleBuilder;
+import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
+import org.quartz.spi.ThreadPool;
 
 import java.util.Date;
 import java.util.Properties;
@@ -59,8 +63,7 @@ public final class Scheduler {
             Properties props = new Properties();
 //            props.setProperty( StdSchedulerFactory.PROP_SCHED_SKIP_UPDATE_CHECK, "true" );
             props.setProperty( StdSchedulerFactory.PROP_JOB_STORE_CLASS, "org.quartz.simpl.RAMJobStore" );
-            props.setProperty( "org.quartz.threadPool.threadCount",
-                String.valueOf( Runtime.getRuntime().availableProcessors() * 4 ) );
+            props.setProperty( "org.quartz.threadPool.class", QuartzVirtualThreadRunner.class.getName() );
             sf.initialize( props );
 
             scheduler = sf.getScheduler();
@@ -80,21 +83,21 @@ public final class Scheduler {
 
     @SneakyThrows
     private static Scheduled schedule( long delay, TimeUnit unit, Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
-        var identity = identity( runnable );
+        String identity = identity( runnable );
 
 
-        var jobDetail = newJob( RunnableJob.class )
+        JobDetail jobDetail = newJob( RunnableJob.class )
             .withIdentity( identity + "/job" )
             .storeDurably()
             .build();
 
-        var trigger = newTrigger()
+        Trigger trigger = newTrigger()
             .withIdentity( identity + "/trigger" )
             .startAt( new Date( System.currentTimeMillis() + unit.toMillis( delay ) ) )
             .withSchedule( scheduleBuilder )
             .build();
 
-        var runnableJob = jobFactory.register( jobDetail, runnable );
+        RunnableJob runnableJob = jobFactory.register( jobDetail, runnable );
 
         scheduler.scheduleJob( jobDetail, trigger );
         log.trace( "scheduling job {} with trigger {}", jobDetail, trigger );
@@ -152,5 +155,52 @@ public final class Scheduler {
     @SneakyThrows
     public static Set<JobKey> getAllJobKeys() {
         return scheduler.getJobKeys( GroupMatcher.anyGroup() );
+    }
+
+    public static class QuartzVirtualThreadRunner implements ThreadPool {
+        private final AtomicLong threadOrdinal = new AtomicLong();
+        private String instanceName;
+
+        @Override
+        public boolean runInThread( Runnable runnable ) {
+            if( runnable == null ) {
+                return false;
+            }
+
+            Thread.ofVirtual()
+                .name( instanceName + "-virtual-#" + threadOrdinal.incrementAndGet() )
+                .start( runnable );
+            return true;
+        }
+
+        @Override
+        public int blockForAvailableThreads() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public void initialize() throws SchedulerConfigException {
+
+        }
+
+        @Override
+        public void shutdown( boolean b ) {
+
+        }
+
+        @Override
+        public int getPoolSize() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public void setInstanceId( String s ) {
+
+        }
+
+        @Override
+        public void setInstanceName( String instanceName ) {
+            this.instanceName = instanceName;
+        }
     }
 }
