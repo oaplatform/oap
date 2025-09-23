@@ -25,17 +25,14 @@
 package oap.message.client;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
-import oap.concurrent.Executors;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.http.Client;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.content.ContentReader;
@@ -49,6 +46,12 @@ import oap.util.Dates;
 import oap.util.FastByteArrayOutputStream;
 import oap.util.Pair;
 import oap.util.Throwables;
+import okhttp3.Dispatcher;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -66,19 +69,21 @@ import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @ToString
 public class MessageSender implements Closeable, AutoCloseable {
+    public static final MediaType MEDIA_TYPE = MediaType.parse( "application/octet-stream" );
     private static final Pair<MessageStatus, Short> STATUS_OK = Pair.__( MessageStatus.OK, MessageProtocol.STATUS_OK );
-
     private final Object syncDiskLock = new Object();
     private final String host;
     private final int port;
@@ -101,7 +106,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     private volatile boolean closed = false;
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
-    private Client httpClient;
+    private OkHttpClient httpClient;
     private ExecutorService executor;
     private long ioExceptionStartRetryTimeout = -1;
 
@@ -124,7 +129,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public static Path lock( String uniqueName, Path file, long storageLockExpiration ) {
-        var lockFile = Paths.get( FilenameUtils.removeExtension( file.toString() ) + ".lock" );
+        Path lockFile = Paths.get( FilenameUtils.removeExtension( file.toString() ) + ".lock" );
 
         if( Files.createFile( lockFile ) ) return lockFile;
         if( storageLockExpiration <= 0 ) return null;
@@ -150,14 +155,17 @@ public class MessageSender implements Closeable, AutoCloseable {
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
 
-        executor = Executors.newFixedBlockingThreadPool(
-            poolSize > 0 ? poolSize : Runtime.getRuntime().availableProcessors(),
-            new ThreadFactoryBuilder().setNameFormat( uniqueName + "-%d" ).build() );
+        executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        Client.ClientBuilder clientBuilder = Client.custom().setConnectTimeout( connectionTimeout );
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
+            .connectTimeout( Duration.ofMillis( connectionTimeout ) )
+            .callTimeout( Duration.ofMillis( timeout ) );
 
         if( poolSize > 0 ) {
-            clientBuilder.setMaxConnPerRoute( poolSize ).setMaxConnTotal( poolSize );
+            Dispatcher dispatcher = new Dispatcher();
+            dispatcher.setMaxRequests( poolSize );
+            dispatcher.setMaxRequestsPerHost( poolSize );
+            clientBuilder.dispatcher( dispatcher );
         }
 
         httpClient = clientBuilder.build();
@@ -187,8 +195,8 @@ public class MessageSender implements Closeable, AutoCloseable {
         Preconditions.checkNotNull( data );
         Preconditions.checkArgument( ( messageType & 0xFF ) <= 200, "reserved" );
 
-        var md5 = DigestUtils.getMd5Digest().digest( data );
-        var message = new Message( clientId, messageType, version, ByteSequence.of( md5 ), data, offset, length );
+        byte[] md5 = DigestUtils.getMd5Digest().digest( data );
+        Message message = new Message( clientId, messageType, version, ByteSequence.of( md5 ), data, offset, length );
         messages.add( message );
 
         return this;
@@ -219,7 +227,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
     private void saveMessagesToDirectory( Path directory ) {
         while( true ) {
-            var messageInfo = messages.poll( false );
+            Messages.MessageInfo messageInfo = messages.poll( false );
             if( messageInfo == null ) {
                 messageInfo = messages.pollInProgress();
             }
@@ -231,14 +239,14 @@ public class MessageSender implements Closeable, AutoCloseable {
             if( messageInfo == null ) break;
             Message message = messageInfo.message;
 
-            var parentDirectory = directory
+            Path parentDirectory = directory
                 .resolve( Long.toHexString( clientId ) )
                 .resolve( String.valueOf( Byte.toUnsignedInt( message.messageType ) ) );
-            var tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin.tmp" );
+            Path tmpMsgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin.tmp" );
             log.debug( "[{}] writing unsent message to {}", uniqueName, tmpMsgPath );
             try {
                 Files.write( tmpMsgPath, message.data, ContentWriter.ofBytes() );
-                var msgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin" );
+                Path msgPath = parentDirectory.resolve( message.getHexMd5() + '-' + message.version + ".bin" );
                 Files.rename( tmpMsgPath, msgPath );
             } catch( Exception e ) {
                 log.error( "[{}] type: {}, md5: {}, data: {}",
@@ -248,7 +256,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public MessageAvailabilityReport availabilityReport( byte messageType ) {
-        var operational = networkAvailable
+        boolean operational = networkAvailable
             && !closed
             && lastStatus.getOrDefault( messageType, STATUS_OK )._1 != MessageStatus.ERROR;
         return new MessageAvailabilityReport( operational ? State.OPERATIONAL : State.FAILED );
@@ -275,11 +283,15 @@ public class MessageSender implements Closeable, AutoCloseable {
                 out.writeInt( message.data.length );
                 out.write( message.data );
 
-                Client.Response response = httpClient.post( messageUrl, buf.array, 0, buf.length, timeout )
-                    .orElseThrow( f -> f );
+                Request request = new Request.Builder()
+                    .url( messageUrl )
+                    .post( RequestBody.create( buf.array, MEDIA_TYPE, 0, buf.length ) )
+                    .build();
 
-                if( response.code >= 300 || response.code < 200 ) {
-                    throw new IOException( "Not OK (" + response.code + ") response code returned for url: " + messageUrl );
+                Response response = httpClient.newCall( request ).execute();
+
+                if( response.code() >= 300 || response.code() < 200 ) {
+                    throw new IOException( "Not OK (" + response.code() + ") response code returned for url: " + messageUrl );
                 }
                 return onOkRespone( messageInfo, response, now );
 
@@ -305,20 +317,13 @@ public class MessageSender implements Closeable, AutoCloseable {
         messages.retry( messageInfo, now + retryTimeout );
     }
 
-    private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Client.Response response, long now ) {
+    private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Response response, long now ) {
         Message message = messageInfo.message;
 
-        InputStream body = response.getInputStream();
-        if( body == null ) {
-            Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "io_error" ).increment();
-            log.error( "[{}] unknown error (BODY == null)", uniqueName );
-            lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR, ( short ) -1 ) );
-            messages.retry( messageInfo, now + retryTimeout );
-            return messageInfo;
-        }
+        InputStream body = response.body().byteStream();
 
-        try( var in = new DataInputStream( body ) ) {
-            var version = in.readByte();
+        try( DataInputStream in = new DataInputStream( body ) ) {
+            byte version = in.readByte();
             if( version != MessageProtocol.PROTOCOL_VERSION_1 ) {
                 log.error( "[{}] Version mismatch, expected: {}, received: {}", uniqueName, MessageProtocol.PROTOCOL_VERSION_1, version );
                 throw new MessageException( "Version mismatch" );
@@ -326,7 +331,7 @@ public class MessageSender implements Closeable, AutoCloseable {
             in.readLong(); // clientId
             in.skipNBytes( MessageProtocol.MD5_LENGTH ); // digestionId
             in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
-            var status = in.readShort();
+            short status = in.readShort();
 
             log.trace( "[{}] sending done, server status: {}", uniqueName, MessageProtocol.messageStatusToString( status ) );
 
@@ -359,7 +364,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                     lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR, status ) );
                 }
                 default -> {
-                    var clientStatus = MessageProtocol.getStatus( status );
+                    String clientStatus = MessageProtocol.getStatus( status );
                     if( clientStatus != null ) {
                         log.trace( "[{}] retry: {}", uniqueName, clientStatus );
                         Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
@@ -401,7 +406,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             if( messageInfo != null ) {
                 log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
-                var future = send( messageInfo, now );
+                CompletableFuture<Messages.MessageInfo> future = send( messageInfo, now );
                 future.handle( ( mi, e ) -> {
                     messages.removeInProgress( mi );
                     log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
@@ -444,26 +449,26 @@ public class MessageSender implements Closeable, AutoCloseable {
         if( closed ) return this;
 
         try( DirectoryStream<Path> clientIdStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
-            for( var clientIdPath : clientIdStream ) {
+            for( Path clientIdPath : clientIdStream ) {
                 if( !isValidClientId( clientIdPath ) ) {
                     log.warn( "invalid client id {}", clientIdPath );
                     Files.deleteSafely( clientIdPath );
                     continue;
                 }
 
-                var msgClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
+                long msgClientId = Long.parseLong( FilenameUtils.getName( clientIdPath.toString() ), 16 );
                 try( DirectoryStream<Path> messageTypeStream = java.nio.file.Files.newDirectoryStream( clientIdPath ) ) {
-                    for( var messageTypePath : messageTypeStream ) {
+                    for( Path messageTypePath : messageTypeStream ) {
                         if( !isValidMessageType( messageTypePath ) ) {
                             log.warn( "invalid message type {}", messageTypePath );
                             Files.deleteSafely( messageTypePath );
                             continue;
                         }
 
-                        var messageType = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
+                        byte messageType = ( byte ) Integer.parseInt( FilenameUtils.getName( messageTypePath.toString() ) );
 
                         try( DirectoryStream<Path> messageStream = java.nio.file.Files.newDirectoryStream( messageTypePath ) ) {
-                            for( var messagePath : messageStream ) {
+                            for( Path messagePath : messageStream ) {
                                 if( !isValidMessage( messagePath ) ) {
                                     log.warn( "invalid message {}", messagePath );
                                     Files.deleteSafely( messagePath );
@@ -471,7 +476,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                                 }
 
                                 if( messagePath.toString().endsWith( ".lock" ) ) {
-                                    var binFile = Paths.get( FilenameUtils.removeExtension( messagePath.toString() ) + ".bin" );
+                                    Path binFile = Paths.get( FilenameUtils.removeExtension( messagePath.toString() ) + ".bin" );
                                     if( !java.nio.file.Files.exists( binFile ) ) {
                                         log.warn( "invalid lock file {}", messagePath );
                                         Files.deleteSafely( messagePath );
@@ -483,7 +488,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                                 String md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
                                 String md5Hex;
                                 short version;
-                                var versionStart = md5HexWithVersion.lastIndexOf( '-' );
+                                int versionStart = md5HexWithVersion.lastIndexOf( '-' );
                                 if( versionStart > 0 ) {
                                     version = Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
                                     md5Hex = md5HexWithVersion.substring( 0, versionStart );
@@ -491,7 +496,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                                     version = 1;
                                     md5Hex = md5HexWithVersion;
                                 }
-                                var md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
+                                ByteSequence md5 = ByteSequence.of( Hex.decodeHex( md5Hex ) );
 
                                 Path lockFile;
 
@@ -501,12 +506,12 @@ public class MessageSender implements Closeable, AutoCloseable {
                                     if( ( lockFile = lock( uniqueName, messagePath, storageLockExpiration ) ) != null ) {
                                         log.info( "[{}] reading unsent message {}", uniqueName, messagePath );
                                         try {
-                                            var data = Files.read( messagePath, ContentReader.ofBytes() );
+                                            byte[] data = Files.read( messagePath, ContentReader.ofBytes() );
 
                                             log.info( "[{}] client id {} message type {} md5 {}",
                                                 uniqueName, msgClientId, MessageProtocol.messageTypeToString( messageType ), md5Hex );
 
-                                            var message = new Message( clientId, messageType, version, md5, data );
+                                            Message message = new Message( clientId, messageType, version, md5, data );
                                             messages.add( message );
 
                                             Files.delete( messagePath );
@@ -535,8 +540,8 @@ public class MessageSender implements Closeable, AutoCloseable {
             String messageFile = messagePath.toString();
             if( !messageFile.endsWith( ".bin" ) && !messageFile.endsWith( ".lock" ) ) return false;
 
-            var md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
-            var versionStart = md5HexWithVersion.lastIndexOf( '-' );
+            String md5HexWithVersion = FilenameUtils.removeExtension( FilenameUtils.getName( messagePath.toString() ) );
+            int versionStart = md5HexWithVersion.lastIndexOf( '-' );
             if( versionStart > 0 ) {
                 Short.parseShort( md5HexWithVersion.substring( versionStart + 1 ) );
                 ByteSequence.of( Hex.decodeHex( md5HexWithVersion.substring( 0, versionStart ) ) );
