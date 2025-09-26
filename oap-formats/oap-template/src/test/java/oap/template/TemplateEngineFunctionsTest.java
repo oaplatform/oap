@@ -32,6 +32,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
 import static oap.template.TemplateAccumulators.OBJECT;
@@ -55,7 +56,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testMethod() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.field = "val2";
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM()}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2" );
@@ -63,7 +64,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testMethodDefault() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldM()??'d'}", STRING, null ).render( c ).get() )
             .isEqualTo( "d" );
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${childM().field??'d'}", STRING, null ).render( c ).get() )
@@ -72,7 +73,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testMethodWithIntParameter() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.field = "val2";
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMInt(1  )}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2-1" );
@@ -80,7 +81,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testMethodWithNegativeIntParameter() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.field = "val2";
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMInt( -1)}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2--1" );
@@ -88,7 +89,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testMethodWithFloatParameter() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.field = "val2";
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMDouble(1.2  )}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2-1.2" );
@@ -96,7 +97,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testMethodWithStringParameter() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.field = "val2";
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${fieldMString( 'str')}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2-str" );
@@ -114,6 +115,12 @@ public class TemplateEngineFunctionsTest extends Fixtures {
             .isEqualTo( "id=a%2Bi%252Fd" );
         assertThat( engine.getTemplate( "testFunctionUrlencode", new TypeRef<Map<String, String>>() {}, "id=${ v ; urlencodePercent() }", STRING, null ).render( Map.of( "v", "a i/d" ) ).get() )
             .isEqualTo( "id=a%20i%2Fd" );
+    }
+
+    @Test
+    public void testFunctionUrlencodeCollection() {
+        assertThat( engine.getTemplate( "testFunctionUrlencodeList", new TypeRef<Map<String, List<String>>>() {}, "id=${v; urlencode()}", STRING, null ).render( Map.of( "v", List.of( "a i/d", "X" ) ) ).get() )
+            .isEqualTo( "id=%5B%27a+i%2Fd%27%2C%27X%27%5D" );
     }
 
     @Test
@@ -146,7 +153,7 @@ public class TemplateEngineFunctionsTest extends Fixtures {
 
     @Test
     public void testAlias() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.intField = 10;
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intField ; testInc() }}", STRING, null ).render( c ).get() )
             .isEqualTo( "11" );
