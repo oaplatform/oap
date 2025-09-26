@@ -42,15 +42,30 @@ public class AstRenderFunction extends AstRender {
 
     @Override
     public void render( Render render ) {
-        var funcVariable = render.newVariable();
+        String funcVariable = render.newVariable();
+
+        String funcMethodVariable = render.field;
+
+        if( method.getParameterTypes()[0].equals( String.class )
+            && !render.parentType.getTypeClass().equals( String.class ) ) {
+            String newTemplateAccName = render.newVariable();
+            render
+                .ntab().append( "%s %s = %s.newInstance();", render.templateAccumulator.getClass().getTypeName(), newTemplateAccName, render.templateAccumulatorName )
+                .ntab().append( "%s.accept( %s );", newTemplateAccName, render.field );
+
+            funcMethodVariable = newTemplateAccName + ".get()";
+        }
 
         render.ntab().append( "%s %s = %s.%s( %s",
             method.getGenericReturnType().getTypeName(), funcVariable,
-            method.getDeclaringClass().getName(), method.getName(), render.field );
-        if( !parameters.isEmpty() ) render.append( ", " );
+            method.getDeclaringClass().getName(), method.getName(), funcMethodVariable );
+
+        if( !parameters.isEmpty() ) {
+            render.append( ", " );
+        }
         render.append( String.join( ", ", parameters ) ).append( " );" );
 
-        var newRender = render.withField( funcVariable ).withParentType( type );
+        Render newRender = render.withField( funcVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
     }
 }
