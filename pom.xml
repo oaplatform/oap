@@ -71,7 +71,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>24.2.7</oap.project.version>
+        <oap.project.version>24.3.0</oap.project.version>
 
         <oap.deps.config.version>22.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>24.0.0</oap.deps.oap-teamcity.version>
@@ -117,7 +117,7 @@
 
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
 
-        <oap.deps.undertow.version>2.3.18.Final</oap.deps.undertow.version>
+        <oap.deps.undertow.version>2.3.19.Final</oap.deps.undertow.version>
         <oap.deps.affinity.version>3.23.3</oap.deps.affinity.version>
 
         <oap.deps.docker-java.version>3.3.4</oap.deps.docker-java.version>

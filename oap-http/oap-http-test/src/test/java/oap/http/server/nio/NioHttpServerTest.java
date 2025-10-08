@@ -138,6 +138,8 @@ public class NioHttpServerTest extends Fixtures {
 
         @Override
         public void handleRequest( HttpServerExchange exchange ) {
+            assertThat( Thread.currentThread().isVirtual() ).isTrue();
+
             exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
         }
     }
