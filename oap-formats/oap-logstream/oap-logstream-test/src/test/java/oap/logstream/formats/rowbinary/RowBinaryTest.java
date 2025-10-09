@@ -57,7 +57,6 @@ public class RowBinaryTest extends Fixtures {
         container = new GenericContainer<>( DockerImageName.parse( CLICKHOUSE_REPOASITORY + ":" + CLICKHOUSE_VERSION ) )
             .withCreateContainerCmdModifier( cmd )
             .withExposedPorts( HTTP_PORT )
-            .withAccessToHost( true )
             .withLogConsumer( new Slf4jLogConsumer( log ) );
 
         container.waitingFor(
