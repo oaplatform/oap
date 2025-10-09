@@ -31,8 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
-import oap.util.Result;
 import oap.util.function.Try;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -41,6 +41,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -106,13 +107,19 @@ public class Remote implements HttpHandler {
                 exchange.setReasonPhrase( invocation.service + " not found among " + services.keySet() + " in " + services.getName() );
                 return;
             }
-            Result<Object, Throwable> result;
-            int status = HTTP_OK;
+            CompletableFuture<?> result;
+            MutableInt status = new MutableInt( HTTP_OK );
             try {
                 Object invokeResult = service.getClass()
                     .getMethod( invocation.method, invocation.types() )
                     .invoke( service, invocation.values() );
-                result = Result.success( invokeResult );
+
+                if( invokeResult instanceof CompletableFuture<?> cf ) {
+                    result = cf;
+                } else {
+                    result = CompletableFuture.completedFuture( invokeResult );
+                }
+
             } catch( NoSuchMethodException | IllegalAccessException e ) {
                 // transport error - illegal setup
                 // wrapping into RIE to be handled at client's properly
@@ -122,11 +129,11 @@ public class Remote implements HttpHandler {
                     invocation.method,
                     invocation.types() != null ? List.of( invocation.types() ) : null,
                     invocation.values() != null ? List.of( invocation.values() ) : null );
-                status = HTTP_NOT_FOUND;
-                result = Result.failure( new RemoteInvocationException( e ) );
+                status.setValue( HTTP_NOT_FOUND );
+                result = CompletableFuture.failedFuture( new RemoteInvocationException( e ) );
             } catch( InvocationTargetException e ) {
                 // application error
-                result = Result.failure( e.getCause() );
+                result = CompletableFuture.failedFuture( e.getCause() );
                 log.warn( "{} occurred on call to method [{}#{}]",
                     e.getCause().getClass().getCanonicalName(), service.getClass().getCanonicalName(), invocation.method, e );
                 log.debug( "method '{}' types {} parameters {}",
@@ -134,34 +141,41 @@ public class Remote implements HttpHandler {
                     invocation.types() != null ? List.of( invocation.types() ) : null,
                     invocation.values() != null ? List.of( invocation.values() ) : null );
             }
-            exchange.setStatusCode( status );
-            exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
-            try( OutputStream outputStream = exchange.getOutputStream();
-                 BufferedOutputStream bos = new BufferedOutputStream( outputStream );
-                 DataOutputStream dos = new DataOutputStream( bos ) ) {
-                dos.writeBoolean( result.isSuccess() );
+            RemoteInvocation finalInvocation = invocation;
+            result.whenComplete( ( v, ex ) -> {
+                exchange.setStatusCode( status.getValue() );
+                exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
-                if( !result.isSuccess() ) {
-                    fst.writeObjectWithSize( dos, result.failureValue );
-                } else if( result.successValue instanceof Stream<?> ) {
-                    dos.writeBoolean( true );
+                try( OutputStream outputStream = exchange.getOutputStream();
+                     BufferedOutputStream bos = new BufferedOutputStream( outputStream );
+                     DataOutputStream dos = new DataOutputStream( bos ) ) {
+                    dos.writeBoolean( ex == null );
 
-                    ( ( Stream<?> ) result.successValue ).forEach( Try.consume( obj ->
-                        fst.writeObjectWithSize( dos, obj ) ) );
-                    dos.writeInt( 0 );
-                } else {
-                    dos.writeBoolean( false );
-                    fst.writeObjectWithSize( dos, result.successValue );
+                    if( ex != null ) {
+                        fst.writeObjectWithSize( dos, ex );
+                    } else if( v instanceof Stream<?> ) {
+                        dos.writeBoolean( true );
+
+                        ( ( Stream<?> ) v ).forEach( Try.consume( obj ->
+                            fst.writeObjectWithSize( dos, obj ) ) );
+                        dos.writeInt( 0 );
+                    } else {
+                        dos.writeBoolean( false );
+                        fst.writeObjectWithSize( dos, v );
+                    }
+                } catch( Throwable e ) {
+                    log.error( "invocation {}", finalInvocation, e );
                 }
-            }
-            if( result.isSuccess() ) {
-                successMetrics.increment();
-            } else {
-                errorMetrics.increment();
-            }
+                if( ex != null ) {
+                    successMetrics.increment();
+                } else {
+                    errorMetrics.increment();
+                }
+            } );
+
         } catch( Throwable e ) {
-            log.error( "invocation = {}", invocation, e );
+            log.error( "invocation {}", invocation, e );
         }
     }
 

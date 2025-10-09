@@ -35,7 +35,6 @@ public class RemoteLocation {
     public String name;
     public long timeout = DEFAULT_TIMEOUT;
     public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
-    public int retry = 0;
 
     public RemoteLocation() {
     }
@@ -43,12 +42,10 @@ public class RemoteLocation {
     public RemoteLocation( URI url,
                            String name,
                            long timeout,
-                           FST.SerializationMethod serialization,
-                           int retry ) {
+                           FST.SerializationMethod serialization ) {
         this.url = url;
         this.name = name;
         this.timeout = timeout;
         this.serialization = serialization;
-        this.retry = retry;
     }
 }

@@ -39,7 +39,7 @@ public class RemoteStorageTest extends Fixtures {
             server.start();
 
             URI url = new URI( "http://localhost:" + server.defaultPort.httpPort + "/remote" );
-            RemoteLocation remoteLocation = new RemoteLocation( url, "module.service", Dates.s( 10 ), FST.SerializationMethod.DEFAULT, 1 );
+            RemoteLocation remoteLocation = new RemoteLocation( url, "module.service", Dates.s( 10 ), FST.SerializationMethod.DEFAULT );
             RemoteStorage<String, TestRemoteStorage> storage = ( RemoteStorage<String, TestRemoteStorage> ) RemoteInvocationHandler.proxy( "test", remoteLocation, RemoteStorage.class );
 
             assertThat( storage.store( new TestRemoteStorage( "id1", "v1" ), 0L ) ).isNotNull();

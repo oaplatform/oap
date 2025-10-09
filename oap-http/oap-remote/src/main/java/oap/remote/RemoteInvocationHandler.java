@@ -25,22 +25,22 @@ package oap.remote;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
-import com.google.common.util.concurrent.UncheckedTimeoutException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.LogConsolidated;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.slf4j.event.Level;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -60,14 +60,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static oap.util.Dates.s;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
@@ -90,7 +90,6 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final String source;
     private final URI uri;
     private final FST fst;
-    private final int retry;
     private final String service;
     private final long timeout;
 
@@ -98,14 +97,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                      URI uri,
                                      String service,
                                      long timeout,
-                                     FST.SerializationMethod serialization,
-                                     int retry ) {
+                                     FST.SerializationMethod serialization ) {
         this.source = source;
         this.uri = uri;
         this.service = service;
         this.timeout = timeout;
         this.fst = new FST( serialization );
-        this.retry = retry;
 
         Preconditions.checkNotNull( uri );
         Preconditions.checkNotNull( service );
@@ -118,28 +115,33 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     public static Object proxy( String source, RemoteLocation remote, Class<?> clazz ) {
-        return proxy( source, remote.url, remote.name, clazz, remote.timeout, remote.serialization, remote.retry );
+        return proxy( source, remote.url, remote.name, clazz, remote.timeout, remote.serialization );
     }
 
     private static Object proxy( String source, URI uri, String service, Class<?> clazz,
-                                 long timeout, FST.SerializationMethod serialization, int retry ) {
+                                 long timeout, FST.SerializationMethod serialization ) {
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( source, uri, service, timeout, serialization, retry ) );
+            new RemoteInvocationHandler( source, uri, service, timeout, serialization ) );
     }
 
-    private RemoteInvocationException throwException( String methodName, Throwable throwable ) {
-        if( throwable instanceof RemoteInvocationException riex ) return riex;
-        else if( throwable instanceof ExecutionException ) return throwException( methodName, throwable.getCause() );
-        else
-            return new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + methodName, throwable );
+    @NotNull
+    private static CompletionStage<Result<Object, Throwable>> retException( Throwable e, boolean async ) {
+        if( async ) {
+            return CompletableFuture.failedStage( e );
+        } else {
+            return CompletableFuture.completedStage( Result.failure( e ) );
+        }
     }
 
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
-        if( uri == null )
+        if( uri == null ) {
             throw new RemoteInvocationException( "uri == null, source " + source + " -> service " + service + "#" + method.getName() );
+        }
 
-        if( method.getDeclaringClass() == Object.class ) return method.invoke( this, args );
+        if( method.getDeclaringClass() == Object.class ) {
+            return method.invoke( this, args );
+        }
         if( method.isDefault() ) {
             return MethodHandles.lookup()
                 .unreflectSpecial( method, method.getDeclaringClass() )
@@ -147,12 +149,15 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 .invokeWithArguments( args );
         }
 
-        Result<Object, Throwable> result = invoke( method, args );
-        if( result.isSuccess() ) return result.successValue;
-        else throw result.failureValue;
+        Result<?, Throwable> result = invoke( method, args );
+        if( result.isSuccess() ) {
+            return result.successValue;
+        } else {
+            throw result.failureValue;
+        }
     }
 
-    private Result<Object, Throwable> invoke( Method method, Object[] args ) {
+    private Result<?, Throwable> invoke( Method method, Object[] args ) {
         Parameter[] parameters = method.getParameters();
         List<RemoteInvocation.Argument> arguments = new ArrayList<>();
 
@@ -163,81 +168,127 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         byte[] invocationB = getInvocation( method, arguments );
 
-        Throwable lastException = null;
-        for( int i = 0; i <= retry; i++ ) {
-            log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
-            try {
-                OkHttpClient client = globalClient.newBuilder().callTimeout( Duration.ofMillis( timeout ) ).build();
-                Request request = new Request.Builder()
-                    .url( uri.toURL() )
-                    .post( RequestBody.create( invocationB ) )
-                    .build();
-                Response response = client.newCall( request ).execute();
+        boolean async = CompletableFuture.class.isAssignableFrom( method.getReturnType() );
 
-                if( response.code() == HTTP_OK ) {
-                    InputStream inputStream = response.body().byteStream();
-                    BufferedInputStream bis = new BufferedInputStream( inputStream );
-                    DataInputStream dis = new DataInputStream( bis );
-                    Boolean success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
+        try {
+            OkHttpClient client = globalClient.newBuilder().callTimeout( Duration.ofMillis( timeout ) ).build();
+            Request request = new Request.Builder()
+                .url( uri.toURL() )
+                .post( RequestBody.create( invocationB ) )
+                .build();
+            Call call = client.newCall( request );
 
-                    try {
-                        if( Boolean.FALSE.equals( success ) ) {
-                            try {
-                                Throwable throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
-                                    () -> fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
+            CompletableFuture<Response> responseAsync = new CompletableFuture<>();
 
-                                if( throwable instanceof RemoteInvocationException riex ) {
-                                    errorMetrics.increment();
-                                    throw riex;
-                                }
+            if( async ) {
+                call.enqueue( new Callback() {
+                    @Override
+                    public void onFailure( @NotNull Call call, @NotNull IOException e ) {
+                        responseAsync.completeExceptionally( e );
+                    }
 
-                                Result<Object, Throwable> failure = Result.failure( throwable );
-                                errorMetrics.increment();
-                                return failure;
-                            } finally {
-                                dis.close();
-                            }
-                        } else {
-                            Boolean stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
-                            if( Boolean.TRUE.equals( stream ) ) {
-                                ChainIterator it = new ChainIterator( dis );
+                    @Override
+                    public void onResponse( @NotNull Call call, @NotNull Response response ) {
+                        responseAsync.complete( response );
+                    }
+                } );
+            } else {
+                try {
+                    responseAsync.complete( call.execute() );
+                } catch( IOException e ) {
+                    responseAsync.completeExceptionally( e );
+                }
+            }
 
-                                return Result.success( Stream.of( it ).onClose( Try.run( () -> {
-                                    dis.close();
-                                    successMetrics.increment();
-                                } ) ) );
-                            } else {
+            CompletableFuture<Result<Object, Throwable>> ret = responseAsync.thenCompose( response -> {
+                try {
+                    if( response.code() == HTTP_OK ) {
+                        InputStream inputStream = response.body().byteStream();
+                        BufferedInputStream bis = new BufferedInputStream( inputStream );
+                        DataInputStream dis = new DataInputStream( bis );
+                        Boolean success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
+
+                        try {
+                            if( Boolean.FALSE.equals( success ) ) {
                                 try {
-                                    Result<Object, Throwable> ret = Result.<Object, Throwable>success( fst.readObjectWithSize( dis ) );
-                                    successMetrics.increment();
-                                    return ret;
+                                    Throwable throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
+                                        () -> fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
+
+                                    if( throwable instanceof RemoteInvocationException riex ) {
+                                        errorMetrics.increment();
+                                        return retException( riex, async );
+                                    }
+
+                                    errorMetrics.increment();
+                                    return async ? CompletableFuture.<Result<Object, Throwable>>failedStage( throwable ) : CompletableFuture.completedStage( Result.failure( throwable ) );
                                 } finally {
                                     dis.close();
                                 }
+                            } else {
+                                Boolean stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
+                                if( Boolean.TRUE.equals( stream ) ) {
+                                    ChainIterator it = new ChainIterator( dis );
+
+                                    return CompletableFuture.completedStage( Result.success( Stream.of( it ).onClose( Try.run( () -> {
+                                        dis.close();
+                                        successMetrics.increment();
+                                    } ) ) ) );
+                                } else {
+                                    try {
+                                        Result<Object, Throwable> r = Result.success( fst.readObjectWithSize( dis ) );
+                                        successMetrics.increment();
+                                        return CompletableFuture.completedStage( r );
+                                    } finally {
+                                        dis.close();
+                                    }
+                                }
                             }
+                        } catch( Exception e ) {
+                            dis.close();
+                            return retException( e, async );
                         }
-                    } catch( Exception e ) {
-                        dis.close();
-                        throw e;
+                    } else {
+                        RemoteInvocationException ex = new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
+                            + " code " + response.code()
+                            + " body '" + response.body().string() + "'"
+                            + " message '" + response.message() + "'" );
+
+                        return retException( ex, async );
                     }
-                } else {
-                    throw new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
-                        + " code " + response.code()
-                        + " body '" + response.body().string() + "'"
-                        + " message '" + response.message() + "'" );
+                } catch( Throwable e ) {
+                    return retException( e, async );
                 }
-            } catch( HttpTimeoutException | TimeoutException | UncheckedTimeoutException e ) {
-                LogConsolidated.log( log, Level.WARN, s( 5 ), "timeout invoking " + method.getName() + "#" + this, null );
-                timeoutMetrics.increment();
-                lastException = e;
-            } catch( Throwable e ) {
-                LogConsolidated.log( log, Level.WARN, s( 5 ), "error invoking " + this + "#" + method.getName() + ": " + e.getMessage(), null );
-                errorMetrics.increment();
-                lastException = e;
+            } );
+
+            ret.whenComplete( ( _, ex ) -> {
+                if( ex != null ) {
+                    checkException( ex );
+                }
+            } );
+
+            if( async ) {
+                return Result.success( ret.thenApply( r -> r.successValue ) );
+            } else {
+                return ret.get();
             }
+        } catch( Exception e ) {
+            if( async ) {
+                return Result.success( CompletableFuture.failedFuture( e ) );
+            }
+
+            return Result.failure( e );
+        }
+    }
+
+    private void checkException( Throwable ex ) {
+        if( ex instanceof RemoteInvocationException riex ) {
+            checkException( riex.getCause() );
+            return;
         }
 
-        throw throwException( method.getName(), lastException );
+        if( ex instanceof HttpTimeoutException || ex instanceof TimeoutException ) {
+            timeoutMetrics.increment();
+        }
     }
 
     @SneakyThrows
@@ -253,7 +304,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
     @Override
     public String toString() {
-        return "source:" + source + " -> remote:" + service + "(retry=" + retry + ")@" + uri;
+        return "source:" + source + " -> remote:" + service + "@" + uri;
     }
 
     private class ChainIterator implements Iterator<Object> {
