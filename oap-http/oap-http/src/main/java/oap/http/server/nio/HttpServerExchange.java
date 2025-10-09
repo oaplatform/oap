@@ -37,6 +37,7 @@ import oap.json.Binder;
 import oap.util.HashMaps;
 import oap.util.function.Try;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.xnio.IoUtils;
 import org.xnio.XnioWorker;
 
@@ -399,6 +400,21 @@ public class HttpServerExchange {
 
     public XnioWorker getWorkerPool() {
         return exchange.getConnection().getWorker();
+    }
+
+    public String getFullRequestURL() {
+        String queryString = exchange.getQueryString();
+
+        return ( !exchange.isHostIncludedInRequestURI() ? exchange.getRequestScheme() + "://" + exchange.getHostAndPort() : "" )
+            + exchange.getRequestURI() + ( StringUtils.isNotBlank( queryString ) ? "?" + queryString : "" );
+    }
+
+    public Map<String, Deque<String>> getQueryParameters() {
+        return exchange.getQueryParameters();
+    }
+
+    public final Deque<String> getQueryParameter( String name ) {
+        return exchange.getQueryParameters().get( name );
     }
 
     public enum HttpMethod {
