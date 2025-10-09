@@ -335,7 +335,7 @@ public class PnioExchange<RequestState> {
     }
 
     public final Deque<String> getQueryParameter( String name ) {
-        return oapExchange.exchange.getQueryParameters().get( name );
+        return oapExchange.getQueryParameter( name );
     }
 
     public String getQueryString() {
@@ -343,8 +343,7 @@ public class PnioExchange<RequestState> {
     }
 
     public String getFullRequestURL() {
-        return ( !oapExchange.exchange.isHostIncludedInRequestURI() ? oapExchange.exchange.getRequestScheme() + "://" + oapExchange.exchange.getHostAndPort() : "" )
-            + oapExchange.getRequestURI() + "?" + oapExchange.exchange.getQueryString();
+        return oapExchange.getFullRequestURL();
     }
 
     public HttpServerExchange.HttpMethod getRequestMethod() {
@@ -352,7 +351,7 @@ public class PnioExchange<RequestState> {
     }
 
     public Map<String, Deque<String>> getQueryParameters() {
-        return oapExchange.exchange.getQueryParameters();
+        return oapExchange.getQueryParameters();
     }
 
     public String header( String headerName, String defaultValue ) {
