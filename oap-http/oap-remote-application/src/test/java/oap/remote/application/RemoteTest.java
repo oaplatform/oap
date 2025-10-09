@@ -28,15 +28,17 @@ import oap.application.ApplicationConfiguration;
 import oap.application.ApplicationException;
 import oap.application.Kernel;
 import oap.application.module.Module;
-import oap.remote.RemoteInvocationException;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
+import oap.util.Dates;
 import org.testng.annotations.Test;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,24 +65,46 @@ public class RemoteTest extends Fixtures {
                 .satisfies( remote -> {
                     assertThat( remote.accessible() ).isTrue();
                     //this tests local methods of Object.class
-                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:oap-module-with-remoting.remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:oap-module-with-remoting.remote-service@http://localhost:" + port + "/remote/" );
                 } );
 
             assertThat( service )
                 .get()
                 .satisfies( remote -> {
                     assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class );
-                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:oap-module-with-remoting.remote-service(retry=5)@http://localhost:" + port + "/remote/" );
+                    assertThat( remote.toString() ).isEqualTo( "source:oap-module-with-remoting:remote-client -> remote:oap-module-with-remoting.remote-service@http://localhost:" + port + "/remote/" );
                 } );
-
-            assertThat( service )
-                .get()
-                .satisfies( RemoteClient::testRetry );
 
             assertThat( kernel.<RemoteClient>service( "*.remote-client-unreachable" ) )
                 .isPresent()
                 .get()
-                .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( RemoteInvocationException.class ) );
+                .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
+    public void testAsync() {
+        int port = Ports.getFreePort( getClass() );
+
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "module.conf" ) );
+        try( Kernel kernel = new Kernel( modules ) ) {
+            kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
+                List.of(),
+                Map.of( "HTTP_PORT", port ) ) );
+
+            Optional<RemoteClient> service = kernel.service( "*.remote-client" );
+            assertThat( service ).isPresent();
+            assertThat( service )
+                .get()
+                .satisfies( remote -> {
+                    CompletableFuture<Boolean> actual = remote.accessibleAsync();
+                    long timeStart = System.currentTimeMillis();
+                    assertThat( actual ).succeedsWithin( Duration.ofSeconds( 10 ) ).isEqualTo( true );
+                    long timeEnd = System.currentTimeMillis();
+
+                    assertThat( timeEnd - timeStart ).isGreaterThanOrEqualTo( Dates.s( 2 ) );
+                } );
         }
     }
 

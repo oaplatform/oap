@@ -25,30 +25,29 @@
 package oap.remote.application;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.remote.RemoteInvocationException;
+import oap.concurrent.Threads;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 @Slf4j
 public class RemoteService implements RemoteClient {
-    int transportErrors = 3;
-
     @Override
     public boolean accessible() {
         return true;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> accessibleAsync() {
+        Threads.sleepSafely( 2000 );
+        return CompletableFuture.completedFuture( true );
     }
 
 
     @Override
     public void erroneous() {
         throw new IllegalStateException( "this method always produces exception" );
-    }
-
-    @Override
-    public void testRetry() {
-        log.debug( "errors {}", --transportErrors );
-        if( transportErrors > 0 ) throw new RemoteInvocationException( "transport error" );
     }
 
     @Override

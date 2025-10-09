@@ -25,14 +25,15 @@
 package oap.remote.application;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 public interface RemoteClient {
     boolean accessible();
 
-    void erroneous();
+    CompletableFuture<Boolean> accessibleAsync();
 
-    void testRetry();
+    void erroneous();
 
     Stream<Optional<String>> testStream( String... values );
 }
