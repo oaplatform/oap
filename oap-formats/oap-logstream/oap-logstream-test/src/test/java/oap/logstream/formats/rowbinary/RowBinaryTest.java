@@ -65,6 +65,7 @@ public class RowBinaryTest extends Fixtures {
                 .forPort( HTTP_PORT )
                 .forStatusCode( 200 )
                 .forResponsePredicate( "Ok."::equals )
+                .withReadTimeout( Duration.ofSeconds( 5 ) )
                 .withStartupTimeout( Duration.ofMinutes( 2 ) )
         );
 
