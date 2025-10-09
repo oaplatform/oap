@@ -38,6 +38,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.stream.Stream;
@@ -65,8 +66,9 @@ public class Remote implements HttpHandler {
     public Remote( FST.SerializationMethod serialization, String context, RemoteServices services, NioHttpServer server, String port ) {
         this.serialization = serialization;
         this.context = context;
-        log.debug( "Initializing remote for {}...", services.getName() );
         this.services = services;
+
+        log.debug( "Initializing remote for {}...", services.getName() );
 
         if( port != null ) {
             server.bind( context, this, port );
@@ -135,9 +137,9 @@ public class Remote implements HttpHandler {
             exchange.setStatusCode( status );
             exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
-            try( var outputStream = exchange.getOutputStream();
-                 var bos = new BufferedOutputStream( outputStream );
-                 var dos = new DataOutputStream( bos ) ) {
+            try( OutputStream outputStream = exchange.getOutputStream();
+                 BufferedOutputStream bos = new BufferedOutputStream( outputStream );
+                 DataOutputStream dos = new DataOutputStream( bos ) ) {
                 dos.writeBoolean( result.isSuccess() );
 
                 if( !result.isSuccess() ) {
@@ -165,10 +167,10 @@ public class Remote implements HttpHandler {
 
     @SneakyThrows
     public RemoteInvocation getRemoteInvocation( FST fst, InputStream body ) {
-        var dis = new DataInputStream( body );
-        var version = dis.readInt();
+        DataInputStream dis = new DataInputStream( body );
+        int version = dis.readInt();
 
-        var invocation = ( RemoteInvocation ) fst.readObjectWithSize( dis );
+        RemoteInvocation invocation = ( RemoteInvocation ) fst.readObjectWithSize( dis );
         log.trace( "invoke v{} - {}", version, invocation );
         return invocation;
     }

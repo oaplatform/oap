@@ -32,8 +32,8 @@ import static org.joda.time.DateTimeZone.UTC;
 public class RowBinaryTest extends Fixtures {
     public static final int HTTP_PORT = 8123;
 
-    public static final String CLICKHOUSE_VERSION = "25.3.2-debian-12-r4";
-    public static final String CLICKHOUSE_REPOASITORY = "bitnami/clickhouse";
+    public static final String CLICKHOUSE_VERSION = "25.9.3.48-alpine";
+    public static final String CLICKHOUSE_REPOASITORY = "clickhouse/clickhouse-server";
     private GenericContainer<?> container;
 
     public RowBinaryTest() {
@@ -48,8 +48,8 @@ public class RowBinaryTest extends Fixtures {
             e.withName( "clickhouse-server-RowBinaryTest-testcontainers-" + RandomStringUtils.secure().nextAlphanumeric( 5 ) );
             e.withHostName( "clickhouse-server-RowBinaryTest-testcontainers" );
             e.withEnv(
-                "CLICKHOUSE_ADMIN_USER=default",
-                "CLICKHOUSE_ADMIN_PASSWORD=pwd",
+                "CLICKHOUSE_DO_NOT_CHOWN=1",
+                "CLICKHOUSE_SKIP_USER_SETUP=1",
                 "AWS_EC2_METADATA_DISABLED=true"
             );
         };
@@ -57,7 +57,6 @@ public class RowBinaryTest extends Fixtures {
         container = new GenericContainer<>( DockerImageName.parse( CLICKHOUSE_REPOASITORY + ":" + CLICKHOUSE_VERSION ) )
             .withCreateContainerCmdModifier( cmd )
             .withExposedPorts( HTTP_PORT )
-            .withAccessToHost( true )
             .withLogConsumer( new Slf4jLogConsumer( log ) );
 
         container.waitingFor(
@@ -66,7 +65,8 @@ public class RowBinaryTest extends Fixtures {
                 .forPort( HTTP_PORT )
                 .forStatusCode( 200 )
                 .forResponsePredicate( "Ok."::equals )
-                .withStartupTimeout( Duration.ofMinutes( 1 ) )
+                .withReadTimeout( Duration.ofSeconds( 5 ) )
+                .withStartupTimeout( Duration.ofMinutes( 2 ) )
         );
 
         container.start();
@@ -84,7 +84,7 @@ public class RowBinaryTest extends Fixtures {
     public void testFormat() {
         try( Client client = new Client.Builder().addEndpoint( "http://localhost:" + container.getMappedPort( HTTP_PORT ) + "/" )
             .setUsername( "default" )
-            .setPassword( "pwd" )
+            .setPassword( "" )
             .build() ) {
 
             assertThat( client.execute( "CREATE TABLE TEST ( b Bool, bt UInt8, i Int32, l Int64, f Float32, d Float64, dt DateTime, date Date, ls Array(String) ) ENGINE=Memory" ) )

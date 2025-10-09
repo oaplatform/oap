@@ -37,8 +37,12 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.handlers.CompressionNioHandler;
+import oap.io.Closeables;
 import oap.util.Lists;
+import org.xnio.OptionMap;
 import org.xnio.Options;
+import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -56,6 +60,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -89,6 +94,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public int pathHandlerCacheSize = 0; // without cache
 
     public Undertow undertow;
+    private XnioWorker xnioWorker;
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
@@ -168,6 +174,15 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             .setSocketOption( Options.REUSE_ADDRESSES, true )
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
             .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
+
+        xnioWorker = Xnio.getInstance( Undertow.class.getClassLoader() ).createWorkerBuilder()
+            .populateFromOptions( OptionMap.builder()
+                .set( Options.TCP_NODELAY, true )
+                .set( Options.CORK, true )
+                .getMap() )
+            .setExternalExecutorService( Executors.newVirtualThreadPerTaskExecutor() )
+            .build();
+        builder.setWorker( xnioWorker );
 
         if( backlog > 0 ) builder.setSocketOption( Options.BACKLOG, backlog );
         if( ioThreads > 0 ) builder.setIoThreads( ioThreads );
@@ -322,6 +337,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     @Override
     public void close() throws IOException {
         preStop();
+
+        Closeables.close( xnioWorker );
     }
 
     public boolean hasHandler( Class<? extends NioHandler> handlerClass ) {
