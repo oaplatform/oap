@@ -132,6 +132,7 @@ boot.main = [oap-http, oap-ws, hello-app]
 ### Getting Started
 - **[Getting Started Guide](docs/getting-started.md)** - Build your first application
 - **[Developer Guide](docs/developer-guide.md)** - Architecture, patterns, and best practices
+- **[Configuration Reference](docs/configuration-reference.md)** - Complete HOCON configuration guide
 
 ### Core Modules
 - **[oap-application](oap-application/README.md)** - Application framework, Kernel, Module system

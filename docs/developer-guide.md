@@ -377,6 +377,8 @@ supervision {
 
 ## Configuration System
 
+> **Note:** This section provides a quick overview of OAP configuration. For comprehensive reference including all configuration options, advanced patterns, and troubleshooting, see the [Configuration Reference](configuration-reference.md).
+
 ### HOCON Format
 
 OAP uses TypeSafe Config (HOCON) for configuration:

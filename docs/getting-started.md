@@ -236,6 +236,8 @@ public class TaskService {
 
 ## Step 5: Create Module Configuration
 
+> **Note:** For complete configuration reference including all options, syntax, and patterns, see the [Configuration Reference](configuration-reference.md).
+
 Create `src/main/resources/META-INF/oap-module.conf`:
 
 ```hocon
