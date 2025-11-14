@@ -686,4 +686,25 @@ The OAP framework handled:
 - Service lifecycle
 - Configuration loading
 
-Continue to the [Developer Guide](developer-guide.md) for advanced topics and best practices.
+## What's Next?
+
+Now that you've built your first OAP application, you're ready for more advanced topics:
+
+### Advanced Tutorials
+
+Dive into production-ready applications with our [Advanced Tutorials](tutorials/README.md):
+
+1. **[Real-time Event Processing Pipeline](tutorials/01-event-processing-pipeline.md)** - Build a log analytics system with messaging, MongoDB, and real-time stats
+2. **[Multi-tenant SaaS Application](tutorials/02-multi-tenant-saas.md)** - Create a SaaS with authentication, tenant isolation, and RBAC
+3. **[Async File Processing Service](tutorials/03-async-file-processing.md)** - Build a background job processor with file uploads and email notifications
+4. **[Distributed Microservices](tutorials/04-distributed-microservices.md)** - Create a microservices system with RPC communication and distributed transactions
+
+### Deep Dive
+
+Continue to the [Developer Guide](developer-guide.md) for:
+- Architecture patterns and best practices
+- Module system deep dive
+- Lifecycle management
+- Configuration system
+- Error handling strategies
+- Testing approaches
