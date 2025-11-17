@@ -143,7 +143,6 @@ public final class ApplicationConfiguration {
     @ToString
     public static class ModuleBoot {
         public final LinkedHashSet<String> main = new LinkedHashSet<>();
-        public boolean allowActiveByDefault = false;
     }
 
     @ToString

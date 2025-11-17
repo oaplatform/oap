@@ -46,7 +46,6 @@ public class Module {
     public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
     @JsonAlias( { "service", "services" } )
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-    public final ModuleActivation activation = new ModuleActivation();
     public String name;
     @JsonIgnore
     public LinkedHashMap<String, Object> ext = new LinkedHashMap<>();
@@ -65,10 +64,5 @@ public class Module {
     @JsonAnyGetter
     public Map<String, Object> getUnknown() {
         return ext;
-    }
-
-    @ToString
-    public static class ModuleActivation {
-        public boolean activeByDefault = false;
     }
 }

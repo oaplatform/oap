@@ -1,0 +1,16 @@
+name = field-references-unknown-interface
+services {
+  m {
+    implementation = oap.application.KernelLinkImplementationsTest.FieldReferences
+    parameters {
+      tis = []
+    }
+  }
+  ti1 {
+    enabled = false
+    implementation = oap.application.KernelLinkImplementationsTest.TestInterfaceImpl1
+    link {
+    tis = <modules.this.m>
+    }
+  }
+}

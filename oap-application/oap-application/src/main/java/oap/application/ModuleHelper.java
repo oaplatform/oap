@@ -58,12 +58,11 @@ class ModuleHelper {
     public static void init( ModuleItemTree map,
                              LinkedHashMap<String, Kernel.ModuleWithLocation> modules,
                              LinkedHashMap<Reference, Reference> implementations,
-                             LinkedHashSet<String> main,
-                             boolean allowActiveByDefault ) throws ApplicationException {
-        log.trace( "Init modules {} main {} allowActiveByDefault {}", modules, main, allowActiveByDefault );
+                             LinkedHashSet<String> main ) throws ApplicationException {
+        log.trace( "Init modules {} main {}", modules, main );
 
         init( map, modules );
-        loadOnlyMainModuleAndDependsOn( map, main, allowActiveByDefault );
+        loadOnlyMainModuleAndDependsOn( map, main );
 
         validateModuleName( map );
         validateServiceName( map );
@@ -130,7 +129,7 @@ class ModuleHelper {
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )
     private static Pair<ModuleItem, ModuleItem.ServiceItem> findService( ModuleItemTree map, String thisModuleName, String moduleName, String serviceName ) {
-        var found = new ArrayList<Pair<ModuleItem, ModuleItem.ServiceItem>>();
+        ArrayList<Pair<ModuleItem, ModuleItem.ServiceItem>> found = new ArrayList<>();
 
         for( ModuleItem moduleInfo : map.values() ) {
             if( KernelHelper.THIS.contains( moduleName ) ) moduleName = thisModuleName;
@@ -146,7 +145,7 @@ class ModuleHelper {
 
         if( found.isEmpty() ) return null;
 
-        var enabled = Lists.find2( found, f -> f._1.isEnabled() && f._2.enabled == ServiceEnabledStatus.ENABLED );
+        Pair<ModuleItem, ModuleItem.ServiceItem> enabled = Lists.find2( found, f -> f._1.isEnabled() && f._2.enabled == ServiceEnabledStatus.ENABLED );
         if( enabled != null ) return enabled;
 
         return Lists.head2( found );
@@ -187,7 +186,7 @@ class ModuleHelper {
             moduleItem.services.forEach( ( serviceName, serviceItem ) -> {
                 if( !serviceItem.isEnabled() ) return;
 
-                for( var dService : serviceItem.service.dependsOn ) {
+                for( String dService : serviceItem.service.dependsOn ) {
                     String dModuleName;
                     String dServiceName;
                     if( ServiceKernelCommand.INSTANCE.matches( dService ) ) {
@@ -258,11 +257,10 @@ class ModuleHelper {
         }
     }
 
-    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main,
-                                                        boolean allowActiveByDefault ) {
+    private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree map, LinkedHashSet<String> main ) {
         ModuleItemTree modules = map.clone();
         log.info( "loading main modules {}", main );
-        loadOnlyMainModuleAndDependsOn( modules, main, allowActiveByDefault, new LinkedHashSet<>() );
+        loadOnlyMainModuleAndDependsOn( modules, main, new LinkedHashSet<>() );
 
         for( ModuleItem moduleItem : modules.values() ) {
             log.debug( "unload module {}", moduleItem.getName() );
@@ -272,20 +270,9 @@ class ModuleHelper {
 
     private static void loadOnlyMainModuleAndDependsOn( ModuleItemTree modules,
                                                         final LinkedHashSet<String> main,
-                                                        boolean allowActiveByDefault,
                                                         final LinkedHashSet<String> loaded ) {
 
-        var mainWithAllowActiveByDefault = new LinkedHashSet<>( main );
-        if( allowActiveByDefault ) {
-            for( String moduleName : modules.keySet() ) {
-                ModuleItem moduleItem = modules.get( moduleName );
-                if( moduleItem.module.activation.activeByDefault ) {
-                    mainWithAllowActiveByDefault.add( moduleName );
-                }
-            }
-        }
-
-        for( String module : mainWithAllowActiveByDefault ) {
+        for( String module : main ) {
             ModuleItem moduleItem = modules.get( module );
 
             if( moduleItem == null && !loaded.contains( module ) ) {
@@ -299,13 +286,13 @@ class ModuleHelper {
 
                 modules.remove( module );
 
-                loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, allowActiveByDefault, loaded );
+                loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, loaded );
             }
         }
     }
 
     private static void validateServices( ModuleItemTree map ) throws ApplicationException {
-        var errors = new ArrayList<String>();
+        ArrayList<String> errors = new ArrayList<>();
 
         for( ModuleItem moduleItem : map.values() ) {
             for( ModuleItem.ServiceItem serviceItem : moduleItem.services.values() ) {
@@ -395,10 +382,10 @@ class ModuleHelper {
     }
 
     private static void sortModules( ModuleItemTree map ) {
-        var graph = new LinkedList<>( map.values() );
+        LinkedList<ModuleItem> graph = new LinkedList<>( map.values() );
 
-        var newMap = new LinkedHashMap<String, ModuleItem>();
-        var noIncomingEdges = new LinkedList<ModuleItem>();
+        LinkedHashMap<String, ModuleItem> newMap = new LinkedHashMap<>();
+        LinkedList<ModuleItem> noIncomingEdges = new LinkedList<>();
 
         graph.removeIf( moduleItem -> {
             if( moduleItem.getDependsOn().isEmpty() ) {
@@ -427,7 +414,7 @@ class ModuleHelper {
 
         if( !graph.isEmpty() ) {
             log.error( "cyclic dependency detected:" );
-            for( var node : graph ) {
+            for( ModuleItem node : graph ) {
                 log.error( "  module: {} dependsOn {}", node.module.name, Lists.map( node.getDependsOn().values(), d -> d.moduleItem.module.name ) );
             }
 
@@ -441,10 +428,10 @@ class ModuleHelper {
     }
 
     private static void sortServices( ModuleItemTree map ) {
-        var graph = new LinkedList<>( map.services );
+        LinkedList<ModuleItem.ServiceItem> graph = new LinkedList<>( map.services );
 
-        var newMap = new LinkedHashMap<Reference, ModuleItem.ServiceItem>();
-        var noIncomingEdges = new LinkedList<ModuleItem.ServiceItem>();
+        LinkedHashMap<Reference, ModuleItem.ServiceItem> newMap = new LinkedHashMap<>();
+        LinkedList<ModuleItem.ServiceItem> noIncomingEdges = new LinkedList<>();
 
         graph.removeIf( serviceItem -> {
             if( serviceItem.dependsOn.isEmpty() ) {

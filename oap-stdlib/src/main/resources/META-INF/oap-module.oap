@@ -1,0 +1,12 @@
+name = oap
+services {
+}
+
+configurations = [
+  {
+    loader = oap.json.TypeIdFactory
+    config {
+      oap-pair = oap.util.Pair
+    }
+  }
+]

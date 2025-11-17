@@ -1,0 +1,14 @@
+name = cyclic2
+
+dependsOn = cyclic1
+
+services {
+  sc21 {
+  implementation = oap.application.ServiceOne
+    parameters {
+      i = 1
+      list = [
+      ]
+    }
+  }
+}

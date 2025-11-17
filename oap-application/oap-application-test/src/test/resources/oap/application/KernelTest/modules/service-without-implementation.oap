@@ -1,0 +1,6 @@
+name = service-without-implementation
+services {
+  test-service-without-implementation {
+    parameters.a = 4
+  }
+}

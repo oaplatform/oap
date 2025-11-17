@@ -27,6 +27,8 @@ package oap.application;
 import oap.application.module.Module;
 import org.testng.annotations.Test;
 
+import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
 import static oap.testng.Asserts.urlOfTestResource;
@@ -35,17 +37,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelServiceNameTest {
     @Test
     public void testServiceName() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/servicename.conf" ) );
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "modules/servicename.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "servicename" ) );
 
-            var fServiceName = kernel.serviceOfClass( TestServiceNameField.class ).orElseThrow();
+            TestServiceNameField fServiceName = kernel.serviceOfClass( TestServiceNameField.class ).orElseThrow();
             System.out.println( fServiceName.serviceName );
             assertThat( fServiceName.serviceName ).isEqualTo( "field" );
 
-            var sServiceName = kernel.serviceOfClass( TestServiceNameFSetter.class ).orElseThrow();
+            TestServiceNameFSetter sServiceName = kernel.serviceOfClass( TestServiceNameFSetter.class ).orElseThrow();
             assertThat( sServiceName.serviceName ).isEqualTo( "setter" );
         }
     }

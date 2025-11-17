@@ -52,7 +52,7 @@ public class RemoteTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
 
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "module.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "module.oap" ) );
         try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
@@ -87,7 +87,7 @@ public class RemoteTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
 
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "module.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "module.oap" ) );
         try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
                 List.of(),
@@ -111,7 +111,7 @@ public class RemoteTest extends Fixtures {
     @Test
     public void testStream() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "module.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "module.oap" ) );
 
         try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
@@ -131,7 +131,7 @@ public class RemoteTest extends Fixtures {
     @Test
     public void testEmptyStream() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "module.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "module.oap" ) );
 
         try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),

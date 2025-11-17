@@ -1,0 +1,19 @@
+name = disabled
+services {
+  s1 {
+    implementation = oap.application.ServiceOne
+    parameters {
+      i = 1
+      list = [
+        <modules.this.s2>
+      ]
+    }
+  }
+  s2 {
+    enabled = false
+    implementation = oap.application.ServiceOne
+    parameters {
+      i = 2
+    }
+  }
+}

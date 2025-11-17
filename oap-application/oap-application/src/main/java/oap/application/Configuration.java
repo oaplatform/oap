@@ -56,6 +56,7 @@ public class Configuration<T> {
         ret.addAll( Resources.urls( META_INF + name + ".conf" ) );
         ret.addAll( Resources.urls( META_INF + name + ".yaml" ) );
         ret.addAll( Resources.urls( META_INF + name + ".yml" ) );
+        ret.addAll( Resources.urls( META_INF + name + ".oap" ) );
 
         return ret;
     }

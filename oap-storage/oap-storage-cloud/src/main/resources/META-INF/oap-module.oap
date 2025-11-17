@@ -1,0 +1,19 @@
+name = oap-storage-cloud
+
+services {
+  oap-cloud-configuration {
+    implementation = oap.storage.cloud.FileSystemConfiguration
+    parameters {
+      configuration {
+//        fs.s3.clouds.identity = access_key
+//        fs.s3.clouds.credential = access_secret
+//        fs.s3.clouds.s3.virtual-host-buckets = false
+//        fs.s3.clouds.endpoint = "http://localhost:1234"
+//        fs.s3.clouds.headers = DEBUG
+
+        fs.default.clouds.scheme = s3
+        fs.default.clouds.container = test-bucket
+      }
+    }
+  }
+}

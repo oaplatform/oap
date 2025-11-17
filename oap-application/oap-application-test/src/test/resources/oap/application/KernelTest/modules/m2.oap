@@ -1,0 +1,23 @@
+name = m2
+dependsOn = m1
+
+services {
+  ServiceTwo {
+    implementation = oap.application.ServiceTwo
+    listen {
+      some = <modules.m1.ServiceOneP1>
+    }
+    parameters {
+      j = 1
+      one = <modules.m1.ServiceOneP1>
+    }
+    supervision.supervise = true
+  }
+  ServiceScheduled {
+    implementation = oap.application.ServiceScheduled
+    supervision {
+      schedule = true
+      delay = 1s
+    }
+  }
+}

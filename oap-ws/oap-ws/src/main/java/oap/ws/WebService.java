@@ -51,12 +51,12 @@ public class WebService implements HttpHandler {
     public final boolean compressionSupport;
     private final boolean sessionAware;
     private final SessionManager sessionManager;
-    private final List<Interceptor> interceptors;
+    private final List<? extends Interceptor> interceptors;
     private final Object instance;
     private final WsMethodMatcher methodMatcher;
 
     public WebService( Object instance, boolean sessionAware,
-                       SessionManager sessionManager, List<Interceptor> interceptors, boolean compressionSupport ) {
+                       SessionManager sessionManager, List<? extends Interceptor> interceptors, boolean compressionSupport ) {
         this.instance = instance;
         this.methodMatcher = new WsMethodMatcher( instance.getClass() );
         this.sessionAware = sessionAware;

@@ -1,0 +1,8 @@
+name = thread
+
+services {
+  thread {
+    implementation = oap.application.KernelSupervisionTest.TestThread
+    supervision.thread = true
+  }
+}

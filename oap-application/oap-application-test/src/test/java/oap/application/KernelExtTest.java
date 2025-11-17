@@ -27,6 +27,8 @@ package oap.application;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.application.module.ServiceExt;
+import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -40,19 +42,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelExtTest {
     @Test
     public void testServiceExt() {
-        var modules = List.of( url( "module-ext.conf" ) );
+        List<URL> modules = List.of( url( "module-ext.oap" ) );
 
-        var kernel = new Kernel( modules );
-        try {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "module-ext" ) );
 
-            var found = kernel.servicesByExt( "ws" );
+            List<ServiceExt<Object>> found = kernel.servicesByExt( "ws" );
             assertThat( found ).hasSize( 1 );
             assertThat( found.get( 0 ).ext ).isEqualTo( new TestKernelExt( "/s", "service" ) );
             assertThat( found.get( 0 ).name ).isEqualTo( "s1" );
-
-        } finally {
-            kernel.stop();
         }
     }
 

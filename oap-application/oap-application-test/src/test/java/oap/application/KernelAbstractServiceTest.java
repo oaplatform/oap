@@ -15,9 +15,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class KernelAbstractServiceTest {
     @Test
     public void testAbstractFalseError() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractFalseError-module.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractFalseError-module.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testAbstractFalseError" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "Service <testAbstractFalseError.service1> has an abstract implementation, but the \"abstract = true\" property is missing" );
@@ -26,9 +26,9 @@ public class KernelAbstractServiceTest {
 
     @Test
     public void testImplementationNotFound() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testImplementationNotFound-module.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testImplementationNotFound-module.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testImplementationNotFound" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "No implementation has been declared for the abstract service <testImplementationNotFound.service1> with interface oap.application.IService" );
@@ -38,11 +38,11 @@ public class KernelAbstractServiceTest {
     @Test
     public void testImplementationNotDeclared() {
         List<URL> modules = List.of(
-            urlOfTestResource( getClass(), "testImplementationNotDeclared1-module.conf" ),
-            urlOfTestResource( getClass(), "testImplementationNotDeclared2-module.conf" )
+            urlOfTestResource( getClass(), "testImplementationNotDeclared1-module.oap" ),
+            urlOfTestResource( getClass(), "testImplementationNotDeclared2-module.oap" )
         );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testImplementationNotDeclared2" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "No implementation specified for abstract service <testImplementationNotDeclared1.service1> with interface oap.application.IService. Available implementations [<modules.testImplementationNotDeclared1.serviceImpl>,<modules.testImplementationNotDeclared2.serviceImpl>]" );
@@ -51,9 +51,9 @@ public class KernelAbstractServiceTest {
 
     @Test
     public void testAbstractImplementation() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractImplementation-module.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractImplementation-module.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "testAbstractImplementation-application.conf" ) );
 
             assertThat( kernel.service( "testAbstractImplementation.service1" ) )
@@ -67,9 +67,9 @@ public class KernelAbstractServiceTest {
 
     @Test
     public void testAbstractImplementationWithDefault() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractImplementationWithDefault-module.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testAbstractImplementationWithDefault-module.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "testAbstractImplementationWithDefault-application.conf" ) );
 
             assertThat( kernel.<ServiceRef>service( "testAbstractImplementationWithDefault.service" ).get().service )
@@ -86,11 +86,11 @@ public class KernelAbstractServiceTest {
     @Test
     public void testAbstractImplementationDifferentModules() {
         List<URL> modules = List.of(
-            urlOfTestResource( getClass(), "testAbstractImplementationDifferentModules1-module.conf" ),
-            urlOfTestResource( getClass(), "testAbstractImplementationDifferentModules2-module.conf" )
+            urlOfTestResource( getClass(), "testAbstractImplementationDifferentModules1-module.oap" ),
+            urlOfTestResource( getClass(), "testAbstractImplementationDifferentModules2-module.oap" )
         );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "testAbstractImplementationDifferentModules-application.conf" ) );
 
             assertThat( kernel.service( "testAbstractImplementationDifferentModules1.service1" ) )
@@ -104,9 +104,9 @@ public class KernelAbstractServiceTest {
 
     @Test
     public void testReferenceToAbstractService() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testReferenceToAbstractService-module.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testReferenceToAbstractService-module.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "testReferenceToAbstractService-application.conf" ) );
 
             ServiceRef ref = kernel.<ServiceRef>service( "testReferenceToAbstractService.ref" ).get();
@@ -129,15 +129,15 @@ public class KernelAbstractServiceTest {
 
     @Test
     public void testInvalidImplementationReference() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testInvalidImplementationReference-module.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testInvalidImplementationReference-module.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( pathOfTestResource( getClass(), "testInvalidImplementationReference-application.conf" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "Unknown module unknown-module in reference <modules.unknown-module.serviceImpl>" );
         }
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( pathOfTestResource( getClass(), "testInvalidImplementationReference2-application.conf" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "Unknown service unknown-service in reference <modules.testInvalidImplementationReference.unknown-service>" );
