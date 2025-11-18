@@ -13,7 +13,7 @@ services {
   oap-ws-sso-user-provider {
     implementation = oap.ws.sso.UserProvider
     remote {
-      name = oap-account.default-user-provider
+      name = <modules.oap-account.default-user-provider>
     }
   }
 
