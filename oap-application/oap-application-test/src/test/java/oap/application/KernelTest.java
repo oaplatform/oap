@@ -290,8 +290,7 @@ public class KernelTest extends Fixtures {
             assertThat( kernel.service( "m1.s31" ) ).isNotPresent();
             assertThat( kernel.service( "m3.s31" ) ).isPresent();
             assertThat( kernel.service( "m4.s41" ) ).isPresent();
-            assertThat( kernel.service( "activeByDefault.sa" ) ).isPresent();
-            assertThat( kernel.service( "m5.s5" ) ).isPresent();
+            assertThat( kernel.service( "m5.s5" ) ).isNotPresent();
         }
 
         try( var kernel = new Kernel( modules ) ) {

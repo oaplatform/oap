@@ -32,14 +32,14 @@ public class RemoteStorageTest extends Fixtures {
 
         Mockito.doReturn( serverStorage ).when( remoteServices ).get( "module.service" );
 
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", remoteServices, server );
             remote.start();
 
             server.start();
 
             URI url = new URI( "http://localhost:" + server.defaultPort.httpPort + "/remote" );
-            RemoteLocation remoteLocation = new RemoteLocation( url, "module.service", Dates.s( 10 ), FST.SerializationMethod.DEFAULT );
+            RemoteLocation remoteLocation = new RemoteLocation( url, "<modules.module.service>", Dates.s( 10 ), FST.SerializationMethod.DEFAULT );
             RemoteStorage<String, TestRemoteStorage> storage = ( RemoteStorage<String, TestRemoteStorage> ) RemoteInvocationHandler.proxy( "test", remoteLocation, RemoteStorage.class );
 
             assertThat( storage.store( new TestRemoteStorage( "id1", "v1" ), 0L ) ).isNotNull();

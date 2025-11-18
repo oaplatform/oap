@@ -4,7 +4,7 @@ services {
     implementation = oap.application.KernelTest.Service3
     parameters {
       name = a
-      service3 = classpath(/oap/application/KernelTest/beanFromClasspathFile.oap)
+      service3 = classpath(/oap/application/KernelTest/beanFromClasspathFile.conf)
     }
   }
 }

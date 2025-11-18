@@ -2,6 +2,7 @@ name = reference
 services {
   s1 {
     implementation = oap.application.ServiceOne
+    dependsOn = s2
     parameters {
       i = 1
       list = [
