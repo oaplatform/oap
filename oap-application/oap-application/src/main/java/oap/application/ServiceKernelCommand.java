@@ -49,7 +49,7 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ModuleItem.Servi
     @Override
     public Result<ModuleItem.ServiceItem, ErrorStatus> get( Object value, Kernel kernel,
                                                             @Nullable ModuleItem.ServiceItem serviceItem, ServiceStorage storage ) {
-        var reference = reference( ( String ) value, serviceItem != null ? serviceItem.moduleItem : null );
+        Reference reference = reference( ( String ) value, serviceItem != null ? serviceItem.moduleItem : null );
 
         return storage.findByName( reference.module, reference.service ).mapSuccess( v -> ( ModuleItem.ServiceItem ) v );
     }
@@ -58,10 +58,10 @@ public class ServiceKernelCommand extends AbstractKernelCommand<ModuleItem.Servi
         var matcher = pattern.matcher( value );
         Preconditions.checkArgument( matcher.find(), "invalid reference " + value + ", pattern = " + pattern );
 
-        var moduleName = matcher.group( 1 );
+        String moduleName = matcher.group( 1 );
         if( moduleItem != null && THIS.contains( moduleName ) ) moduleName = moduleItem.getName();
         if( "".equals( moduleName ) ) moduleName = "*";
-        var linkName = matcher.group( 2 );
+        String linkName = matcher.group( 2 );
 
         if( linkName.endsWith( ">" ) ) {
             linkName = linkName.substring( 0, linkName.length() - 1 );

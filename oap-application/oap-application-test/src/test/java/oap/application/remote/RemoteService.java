@@ -21,58 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application.supervision;
+
+package oap.application.remote;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.remote.RemoteInvocationException;
-import oap.concurrent.scheduler.Scheduled;
+import oap.concurrent.Threads;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 @Slf4j
-public abstract class AbstractScheduledService implements WrapperService<Runnable>, Runnable {
-    protected final Runnable runnable;
-    private Scheduled scheduled;
-    private final String type;
-
-    public AbstractScheduledService( String type, Runnable runnable ) {
-        this.type = type;
-        this.runnable = runnable;
+public class RemoteService implements RemoteClient {
+    @Override
+    public boolean accessible() {
+        return true;
     }
 
     @Override
-    public String type() {
-        return type;
+    public CompletableFuture<Boolean> accessibleAsync() {
+        Threads.sleepSafely( 2000 );
+        return CompletableFuture.completedFuture( true );
+    }
+
+
+    @Override
+    public void erroneous() {
+        throw new IllegalStateException( "this method always produces exception" );
     }
 
     @Override
-    public Runnable service() {
-        return runnable;
-    }
-
-    public void start() {
-        this.scheduled = schedule();
-    }
-
-    protected abstract Scheduled schedule();
-
-    @Override
-    public void preStop() {
-        Scheduled.cancel( scheduled );
-    }
-
-    @Override
-    public void stop() {
-    }
-
-    @Override
-    public void run() {
-        try {
-            this.runnable.run();
-        } catch( Exception e ) {
-            if( e instanceof RemoteInvocationException && e.getCause() instanceof java.net.http.HttpTimeoutException ) {
-                log.error( e.getMessage() );
-            } else {
-                log.error( e.getMessage(), e );
-            }
-        }
+    public Stream<Optional<String>> testStream( String... values ) {
+        return Stream.of( values ).map( Optional::ofNullable );
     }
 }

@@ -1,0 +1,40 @@
+name = oap-module-with-remoting
+dependsOn = [
+  oap
+  oap-http
+  oap-remote
+]
+
+services {
+  remote-service {
+    implementation = oap.application.remote.RemoteService
+  }
+
+  remote-client {
+    implementation = oap.application.remote.RemoteClient
+    remote {
+      url = "http://localhost/remote/"
+      name = <modules.oap-module-with-remoting.remote-service>
+      serialization = JSON
+    }
+  }
+
+  remote-client2 {
+    implementation = oap.application.remote.RemoteClient
+    remote {
+      url = "http://localhost/remote/"
+      name = <modules.oap-module-with-remoting.remote-service>
+      serialization = JSON
+    }
+  }
+
+  # error port
+  remote-client-unreachable {
+    implementation = oap.application.remote.RemoteClient
+    remote {
+      url = "http://localhost:0/remote/"
+      name = <modules.oap-module-with-remoting.remote-service>
+      serialization = JSON
+    }
+  }
+}
