@@ -35,8 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ExtDeserializerTest {
     @Test
     public void extOk() {
-        var aaa = new Bean( TestExt.newExt( "aaa" ) );
-        var json = "{\"ext\":{\"value\":\"aaa\"}}";
+        Bean aaa = new Bean( TestExt.newExt( "aaa" ) );
+        String json = "{\"ext\":{\"value\":\"aaa\"}}";
         assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
         assertThat( Binder.json.unmarshal( Bean.class, json ) )
                 .isEqualTo( aaa );
@@ -44,8 +44,8 @@ public class ExtDeserializerTest {
 
     @Test
     public void extOverwritten() {
-        var aaa = new Bean( TestExtOverwritten.newExt( "aaa" ) );
-        var json = "{\"ext\":{\"value\":\"aaa\"}}";
+        Bean aaa = new Bean( TestExtOverwritten.newExt( "aaa" ) );
+        String json = "{\"ext\":{\"value\":\"aaa\"}}";
         assertThat( Binder.json.marshal( aaa ) ).isEqualTo( json );
         assertThat( Binder.json.unmarshal( Bean.class, json ) )
             .isEqualTo( aaa );
@@ -53,7 +53,7 @@ public class ExtDeserializerTest {
 
     @Test
     public void ext2() {
-        var aaa = new Bean();
+        Bean aaa = new Bean();
         aaa.ext2 = Ext2.newExt( Bean.class, "ext2", new Class[] { String.class }, new Object[] { "aaa" } );
         assertThat( Binder.json.clone( aaa ).ext2 ).isEqualTo( new TestExt( "aaa" ) );
     }
