@@ -379,7 +379,7 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testBeanFromPath() {
-        try(Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "beanFromPath.oap" ) ) )) {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "beanFromPath.oap" ) ) ) ) {
             testDirectoryFixture.deployTestData( getClass() );
             System.setProperty( "TEST_PATH", testDirectoryFixture.testDirectory().toString() );
             ConfigImpl.reloadSystemPropertiesConfig();

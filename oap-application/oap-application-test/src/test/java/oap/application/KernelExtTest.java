@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.module.ServiceExt;
-import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 
 import java.net.URL;
