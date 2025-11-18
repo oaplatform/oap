@@ -1,0 +1,12 @@
+name = start_stop
+services {
+  c1 {
+    implementation = oap.application.KernelSupervisionTest.TestCloseable
+    supervision.supervise = true
+  }
+  c2 {
+    implementation = oap.application.KernelSupervisionTest.TestCloseable2
+    dependsOn = [c1]
+    supervision.supervise = true
+  }
+}

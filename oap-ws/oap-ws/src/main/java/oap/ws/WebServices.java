@@ -97,7 +97,7 @@ public class WebServices {
     }
 
     public void bind( String context, Object service, boolean sessionAware,
-                      SessionManager sessionManager, List<Interceptor> interceptors,
+                      SessionManager sessionManager, List<? extends Interceptor> interceptors,
                       boolean compressionSupport, boolean blocking,
                       Optional<String> port, List<NioHttpServer.PortType> portType ) {
 

@@ -1,0 +1,55 @@
+name = oap-mail
+services {
+  oap-mail-password-authenticator.implementation = oap.mail.PasswordAuthenticator
+
+  oap-mail-transport {
+    abstract = true
+    implementation = oap.mail.Transport
+  }
+
+  oap-mail-transport-smtp {
+    implementation = oap.mail.SmtpTransport
+    parameters {
+      authenticator = <modules.this.oap-mail-password-authenticator>
+    }
+  }
+
+  mail-queue-persistence {
+    abstract = true
+    implementation = oap.mail.MailQueuePersistence
+    default = <modules.this.mail-queue-persistence-file>
+  }
+
+  mail-queue-persistence-file {
+    implementation = oap.mail.MailQueuePersistenceFile
+    parameters {
+      location = change me
+    }
+  }
+
+  mail-queue-persistence-memory {
+    enabled = false
+    implementation = oap.mail.MailQueuePersistenceMemory
+  }
+
+  oap-mail-queue {
+    implementation = oap.mail.MailQueue
+    parameters {
+      mailQueuePersistence = <modules.this.mail-queue-persistence>
+      brokenMessageTTL = 2w
+    }
+  }
+
+  oap-mail-mailman {
+    implementation = oap.mail.Mailman
+    parameters {
+      transport = <modules.this.oap-mail-transport>
+      queue = <modules.this.oap-mail-queue>
+      retryPeriod = 1m
+    }
+    supervision {
+      supervise = true
+      thread = true
+    }
+  }
+}

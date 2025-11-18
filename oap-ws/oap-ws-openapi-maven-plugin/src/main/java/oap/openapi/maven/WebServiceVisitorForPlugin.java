@@ -104,7 +104,7 @@ public class WebServiceVisitorForPlugin implements WebServiceVisitor {
             .toList() );
         if( classpath != null && !classpath.isEmpty() ) {
             outputPath = classpath.get( 0 ) + "/swagger";
-            File file = new File( classpath.get( 0 ) + "/META-INF/oap-module.conf" );
+            File file = new File( classpath.get( 0 ) + "/META-INF/oap-module.oap" );
             if( !Files.exists( Paths.get( file.getPath() ) ) ) {
                 log.info( "File " + file.getPath() + " is missing, nothing to do" );
                 return urls;

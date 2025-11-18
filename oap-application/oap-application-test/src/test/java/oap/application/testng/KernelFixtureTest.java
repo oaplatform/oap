@@ -48,7 +48,7 @@ public class KernelFixtureTest extends Fixtures {
         kernelFixture = new KernelFixture(
             new TestDirectoryFixture(),
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
-            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.oap" ) )
         );
         kernelFixture.definePort( "TEST_PORT" );
 
@@ -71,7 +71,7 @@ public class KernelFixtureTest extends Fixtures {
         kernelFixture = new KernelFixture(
             new TestDirectoryFixture(),
             urlOfTestResource( KernelFixtureTest.class, "application.test.conf" ),
-            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.oap" ) )
         );
         kernelFixture.definePort( "TEST_PORT" );
 
@@ -114,12 +114,12 @@ public class KernelFixtureTest extends Fixtures {
         KernelFixture kernelFixture1 = new KernelFixture1(
             testDirectoryFixture,
             urlOfTestResource( KernelFixtureTest.class, "application-fixture-confd.conf" ),
-            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.oap" ) )
         ).withConfResource( getClass(), "/oap/application/testng/KernelFixtureTest/application-confd1.conf" );
         KernelFixture kernelFixture2 = new KernelFixture2(
             testDirectoryFixture,
             urlOfTestResource( KernelFixtureTest.class, "application-fixture-confd.conf" ),
-            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+            List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.oap" ) )
         ).withConfResource( getClass(), "/oap/application/testng/KernelFixtureTest/application-confd2.conf" );
 
         Fixtures f = Fixtures.fixtures( testDirectoryFixture, kernelFixture1, kernelFixture2 );
@@ -142,7 +142,7 @@ public class KernelFixtureTest extends Fixtures {
     public static class TestFixture extends AbstractKernelFixture<TestFixture> {
         public TestFixture() {
             super( new TestDirectoryFixture(), urlOfTestResource( KernelFixtureTest.class, "application.fixture.conf" ),
-                List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+                List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.oap" ) )
             );
             definePort( "TEST_PORT" );
         }
@@ -152,7 +152,7 @@ public class KernelFixtureTest extends Fixtures {
         public TestFixtureC( String name ) {
             super( new TestDirectoryFixture(),
                 urlOfTestResource( KernelFixtureTest.class, "application.fixture-" + name + ".conf" ),
-                List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.conf" ) )
+                List.of( urlOfTestResource( KernelFixtureTest.class, "oap-module.oap" ) )
             );
             definePort( "TEST_PORT" );
         }

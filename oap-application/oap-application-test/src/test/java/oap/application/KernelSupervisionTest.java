@@ -29,6 +29,8 @@ import oap.application.module.Module;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
+import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,10 +41,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelSupervisionTest {
     @Test
     public void testSupervisionThread() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/thread.conf" ) );
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "modules/thread.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "thread" ) );
 
             var srv = kernel.serviceOfClass2( TestThread.class );
@@ -58,13 +60,13 @@ public class KernelSupervisionTest {
     @Test
     public void testSupervisionCron() {
         TestCron.str.setLength( 0 );
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/cron.conf" ) );
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "modules/cron.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "cron" ) );
 
-            var srv = kernel.serviceOfClass2( TestCron.class );
+            TestCron srv = kernel.serviceOfClass2( TestCron.class );
 
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
@@ -78,13 +80,13 @@ public class KernelSupervisionTest {
     @Test
     public void testSupervisionCronWithSupervise() {
         TestCron.str.setLength( 0 );
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/cronWithSupervise.conf" ) );
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "modules/cronWithSupervise.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "cron" ) );
 
-            var srv = kernel.serviceOfClass2( TestCron.class );
+            TestCron srv = kernel.serviceOfClass2( TestCron.class );
 
             assertEventually( 100, 100, () ->
                 assertThat( srv.count.get() ).isGreaterThan( 1 )
@@ -98,18 +100,19 @@ public class KernelSupervisionTest {
 
     @Test
     public void testStopCloseable() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "modules/start_stop.oap" ) );
 
-        var kernel = new Kernel( modules );
-        kernel.start( Map.of( "boot.main", "start_stop" ) );
-        var tc = kernel.<TestCloseable>service( "*.c1" ).orElseThrow();
-        var tc2 = kernel.<TestCloseable2>service( "*.c2" ).orElseThrow();
-        kernel.stop();
+        try( Kernel kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot.main", "start_stop" ) );
+            var tc = kernel.<TestCloseable>service( "*.c1" ).orElseThrow();
+            var tc2 = kernel.<TestCloseable2>service( "*.c2" ).orElseThrow();
+            kernel.stop();
 
-        assertThat( tc.closed ).isTrue();
-        assertThat( tc2.closed ).isFalse();
-        assertThat( tc2.stopped ).isTrue();
+            assertThat( tc.closed ).isTrue();
+            assertThat( tc2.closed ).isFalse();
+            assertThat( tc2.stopped ).isTrue();
+        }
     }
 
     @Slf4j

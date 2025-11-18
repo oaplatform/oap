@@ -26,6 +26,7 @@ package oap.json.ext;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -63,7 +64,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
                     for( Configuration c : conf ) {
                         for( ClassConfiguration cc : c.config ) {
                             String key = extensionKey( cc.clazz, cc.field );
-                            var oldConf = extmap.get( key );
+                            ClassConfiguration oldConf = extmap.get( key );
                             if( oldConf != null && oldConf.disableOverwrite ) continue;
                             extmap.put( key, cc );
                             log.debug( "add ext rule: {} = {}", key, cc.implementation );
@@ -82,7 +83,7 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
     public static Class<?> extensionOf( Class<?> clazz, String field ) {
         init();
 
-        var classConfiguration = extmap.get( extensionKey( clazz, field ) );
+        ClassConfiguration classConfiguration = extmap.get( extensionKey( clazz, field ) );
         if( classConfiguration != null ) return classConfiguration.implementation;
         return null;
     }
@@ -91,12 +92,12 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
     public static Map<Class, ExtDeserializer> getDeserializers() {
         init();
 
-        var ret = new HashMap<Class, ExtDeserializer>();
+        HashMap<Class, ExtDeserializer> ret = new HashMap<>();
 
         ret.put( Ext.class, new ExtDeserializer() );
-        for( var c : extmap.values() ) {
+        for( ClassConfiguration c : extmap.values() ) {
             if( c.abstractClass == null ) continue;
-            var clazz = c.abstractClass;
+            Class<?> clazz = c.abstractClass;
 
             ret.put( clazz, new ExtDeserializer( c.implementation ) );
         }
@@ -106,11 +107,11 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
 
     @Override
     public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
-        var parsingContext = jsonParser.getParsingContext();
-        var contextParent = parsingContext.getParent();
-        var field = contextParent.getCurrentName();
-        var clazz = contextParent.getCurrentValue().getClass();
-        var implementation = extensionOf( clazz, field );
+        JsonStreamContext parsingContext = jsonParser.getParsingContext();
+        JsonStreamContext contextParent = parsingContext.getParent();
+        String field = contextParent.getCurrentName();
+        Class<?> clazz = contextParent.getCurrentValue().getClass();
+        Class<?> implementation = extensionOf( clazz, field );
         if( implementation == null ) {
             log.trace( "extension class lookup failed for {}#{}", clazz, field );
             return null;

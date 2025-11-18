@@ -1,0 +1,10 @@
+name = field-references
+services {
+  m {
+    implementation = oap.application.KernelLinkImplementationsTest.FieldReferences
+    parameters {
+      tis = []
+    }
+    supervision.supervise = true
+  }
+}

@@ -12,6 +12,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.json.HoconFactoryWithSystemProperties;
+import oap.util.Lists;
 
 import java.io.IOException;
 import java.net.URL;
@@ -30,19 +31,22 @@ public class ConfigurationLoader {
                 if( configurations == null ) {
                     configurations = new HashMap<>();
                     try {
-                        List<URL> urls = Resources.urls( "META-INF/oap-module.conf" );
+                        List<URL> urls = Lists.concat(
+                            Resources.urls( "META-INF/oap-module.oap" ),
+                            Resources.urls( "META-INF/oap-module.conf" )
+                        );
                         log.trace( "urls {}", urls );
 
-                        var objectMapper = new ObjectMapper( new HoconFactoryWithSystemProperties( log ) );
+                        ObjectMapper objectMapper = new ObjectMapper( new HoconFactoryWithSystemProperties( log ) );
                         objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
                         objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
                         objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
 
-                        for( var url : urls ) {
-                            var conf = objectMapper.readValue( url, Configurations.class );
+                        for( URL url : urls ) {
+                            Configurations conf = objectMapper.readValue( url, Configurations.class );
                             log.trace( "conf {}", conf );
 
-                            for( var c : conf.configurations ) {
+                            for( ClassConfiguration<?> c : conf.configurations ) {
                                 ArrayList<Configuration<?>> list = configurations.computeIfAbsent( c.loader, l -> new ArrayList<>() );
                                 list.add( c );
                             }
@@ -66,7 +70,7 @@ public class ConfigurationLoader {
             return List.of();
         }
 
-        var objectMapper = new ObjectMapper( new JsonFactory() );
+        ObjectMapper objectMapper = new ObjectMapper( new JsonFactory() );
         objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
         objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
         objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );

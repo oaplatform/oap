@@ -48,7 +48,7 @@ public class OpenapiWS {
     }
 
     /**
-     * Generates openapi documentation for all web services in appropriate oap-module.conf
+     * Generates openapi documentation for all web services in appropriate oap-module.oap
      *
      * @return openapi documentation
      */

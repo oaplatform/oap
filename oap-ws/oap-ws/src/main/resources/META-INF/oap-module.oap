@@ -1,0 +1,21 @@
+name = oap-ws
+dependsOn = oap-http
+services {
+  session-manager {
+    implementation = oap.ws.SessionManager
+    parameters {
+      expirationTime = 24h
+      cookiePath = "/"
+    }
+    supervision.supervise = true
+  }
+  oap-ws-webservices {
+    implementation = oap.ws.WebServices
+    parameters {
+      kernel = <kernel.self>
+      server = <modules.oap-http.oap-http-server>
+      sessionManager = <modules.this.session-manager>
+    }
+    supervision.supervise = true
+  }
+}

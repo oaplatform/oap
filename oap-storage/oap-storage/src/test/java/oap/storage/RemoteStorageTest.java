@@ -4,11 +4,11 @@ import lombok.ToString;
 import oap.http.server.nio.NioHttpServer;
 import oap.id.Id;
 import oap.id.Identifier;
-import oap.remote.FST;
-import oap.remote.Remote;
-import oap.remote.RemoteInvocationHandler;
-import oap.remote.RemoteLocation;
-import oap.remote.RemoteServices;
+import oap.application.remote.FST;
+import oap.application.remote.Remote;
+import oap.application.remote.RemoteInvocationHandler;
+import oap.application.remote.RemoteLocation;
+import oap.application.remote.RemoteServices;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
@@ -32,14 +32,14 @@ public class RemoteStorageTest extends Fixtures {
 
         Mockito.doReturn( serverStorage ).when( remoteServices ).get( "module.service" );
 
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             Remote remote = new Remote( FST.SerializationMethod.DEFAULT, "/remote", remoteServices, server );
             remote.start();
 
             server.start();
 
             URI url = new URI( "http://localhost:" + server.defaultPort.httpPort + "/remote" );
-            RemoteLocation remoteLocation = new RemoteLocation( url, "module.service", Dates.s( 10 ), FST.SerializationMethod.DEFAULT );
+            RemoteLocation remoteLocation = new RemoteLocation( url, "<modules.module.service>", Dates.s( 10 ), FST.SerializationMethod.DEFAULT );
             RemoteStorage<String, TestRemoteStorage> storage = ( RemoteStorage<String, TestRemoteStorage> ) RemoteInvocationHandler.proxy( "test", remoteLocation, RemoteStorage.class );
 
             assertThat( storage.store( new TestRemoteStorage( "id1", "v1" ), 0L ) ).isNotNull();

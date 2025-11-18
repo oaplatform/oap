@@ -1,0 +1,10 @@
+name = testBeanFromJsonField
+services {
+  service3 {
+    implementation = oap.application.KernelTest.Service3
+    parameters {
+      name = a
+      service3Field = json("{\"name\":\"from resource\",\"timeout\":1234}")
+    }
+  }
+}

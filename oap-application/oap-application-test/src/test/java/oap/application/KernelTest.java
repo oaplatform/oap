@@ -37,6 +37,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -79,13 +80,13 @@ public class KernelTest extends Fixtures {
     @Test
     public void testLifecycle() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.oap" ) );
 
         TestLifecycle service;
         TestLifecycle thread;
         TestLifecycle delayScheduled;
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "lifecycle", "shutdown.serviceTimeout", 1 ) );
 
             service = kernel.<TestLifecycle>service( "lifecycle", "service" ).orElseThrow();
@@ -102,13 +103,12 @@ public class KernelTest extends Fixtures {
     public void start() {
         System.setProperty( "failedValue", "value that can fail config parsing" );
         var modules = List.of(
-            url( "modules/m1.conf" ),
-            url( "modules/m2.conf" ),
-            url( "modules/m3.conf" )
+            url( "modules/m1.oap" ),
+            url( "modules/m2.oap" ),
+            url( "modules/m3.oap" )
         );
 
-        var kernel = new Kernel( modules );
-        try {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
@@ -146,24 +146,19 @@ public class KernelTest extends Fixtures {
 //                ServiceOne.ComplexMap complexMap = Application.service2( ServiceOne.ComplexMap.class );
                 //                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void disabled() {
-        List<URL> modules = List.of( url( "disabled/disabled.conf" ) );
+        List<URL> modules = List.of( url( "disabled/disabled.oap" ) );
 
-        Kernel kernel = new Kernel( modules );
-        try {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "disabled" ) );
 
             assertThat( kernel.<ServiceOne>service( "disabled.s1" ) ).isPresent().get()
                 .satisfies( s1 -> assertThat( s1.list ).isEmpty() );
             assertThat( kernel.<ServiceOne>service( "disabled.s2" ) ).isNotPresent();
-        } finally {
-            kernel.stop();
         }
     }
 
@@ -173,7 +168,7 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void map() {
-        List<URL> modules = List.of( url( "map/map.conf" ) );
+        List<URL> modules = List.of( url( "map/map.oap" ) );
 
         Kernel kernel = new Kernel( modules );
         try {
@@ -192,7 +187,7 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void mapWithEntries() {
-        List<URL> modules = List.of( url( "modules/map.conf" ) );
+        List<URL> modules = List.of( url( "modules/map.oap" ) );
 
         Kernel kernel = new Kernel( modules );
         try {
@@ -212,7 +207,7 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void mapEnvToConfig() {
-        List<URL> modules = List.of( url( "env/env.conf" ) );
+        List<URL> modules = List.of( url( "env/env.oap" ) );
 
         Env.set( "CONFIG.services.env.s1.enabled", "false" );
         Env.set( "CONFIG.services.env.s2.parameters.val", "\"test$value\"" );
@@ -229,13 +224,13 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testUnknownService() {
-        var modules = List.of( url( "env/env.conf" ) );
+        List<URL> modules = List.of( url( "env/env.oap" ) );
 
         Env.set( "CONFIG.services.env.s1.enabled", "false" );
         Env.set( "CONFIG.services.env.s2.parameters.val", "\"test$value\"" );
         Env.set( "CONFIG.services.env.unknownservice.val1", "false" );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "env" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "unknown application configuration services: env.[unknownservice]" );
@@ -244,9 +239,9 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testReference() {
-        var modules = List.of( url( "reference/reference.conf" ) );
+        List<@NotNull URL> modules = List.of( url( "reference/reference.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "reference" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "[reference:s1] dependencies are not enabled. Required service [s2] is disabled by 'enabled' flag." );
@@ -255,11 +250,11 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testCyclicReferences() {
-        var modules = List.of(
-            url( "reference/cyclic.conf" ),
-            url( "reference/cyclic2.conf" ) );
+        List<URL> modules = List.of(
+            url( "reference/cyclic.oap" ),
+            url( "reference/cyclic2.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "cyclic1" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "cyclic dependency detected" );
@@ -268,9 +263,9 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testServiceWithoutImplementation() {
-        var modules = List.of( url( "modules/service-without-implementation.conf" ) );
+        List<URL> modules = List.of( url( "modules/service-without-implementation.oap" ) );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             assertThatCode( () -> kernel.start( Map.of( "boot.main", "service-without-implementation" ) ) )
                 .isInstanceOf( ApplicationException.class )
                 .hasMessage( "failed to initialize service: service-without-implementation:test-service-without-implementation. implementation == null" );
@@ -279,25 +274,23 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testLoadModules() {
-        var modules = List.of(
-            url( "deps/m1.conf" ),
-            url( "deps/m2.conf" ),
-            url( "deps/m3.conf" ),
-            url( "deps/m4.conf" ),
-            url( "deps/activeByDefault.conf" ),
-            url( "deps/m5.conf" )
+        List<URL> modules = List.of(
+            url( "deps/m1.oap" ),
+            url( "deps/m2.oap" ),
+            url( "deps/m3.oap" ),
+            url( "deps/m4.oap" ),
+            url( "deps/m5.oap" )
         );
 
-        try( var kernel = new Kernel( modules ) ) {
-            kernel.start( Map.of( "boot", Map.of( "main", "m1", "allowActiveByDefault", true ) ) );
+        try( Kernel kernel = new Kernel( modules ) ) {
+            kernel.start( Map.of( "boot", Map.of( "main", "m1" ) ) );
 
             assertThat( kernel.service( "m1.s11" ) ).isPresent();
             assertThat( kernel.service( "m2.s21" ) ).isNotPresent();
             assertThat( kernel.service( "m1.s31" ) ).isNotPresent();
             assertThat( kernel.service( "m3.s31" ) ).isPresent();
             assertThat( kernel.service( "m4.s41" ) ).isPresent();
-            assertThat( kernel.service( "activeByDefault.sa" ) ).isPresent();
-            assertThat( kernel.service( "m5.s5" ) ).isPresent();
+            assertThat( kernel.service( "m5.s5" ) ).isNotPresent();
         }
 
         try( var kernel = new Kernel( modules ) ) {
@@ -310,12 +303,12 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testDuplicateServices() {
-        var modules = List.of(
-            url( "duplicate/d1.conf" ),
-            url( "duplicate/d2.conf" )
+        List<@NotNull URL> modules = List.of(
+            url( "duplicate/d1.oap" ),
+            url( "duplicate/d2.oap" )
         );
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", List.of( "d1", "d2" ) ) );
 
             assertThat( kernel.ofClass( ServiceOne.class ) ).hasSize( 2 );
@@ -328,61 +321,45 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testListOfEnums() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "enum.conf" ) )
-        );
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "enum.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "enum" ) );
-            var enumList = kernel.serviceOfClass( TestEnum.class ).orElseThrow();
+            TestEnum enumList = kernel.serviceOfClass( TestEnum.class ).orElseThrow();
             assertThat( enumList.enums ).containsExactly( ONE, TWO );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testBeanFromString() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "beanFromString.conf" ) )
-        );
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "beanFromString.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "beanFromString" ) );
-            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            Service3 s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3 ).isNotNull();
             assertThat( s3.service3.name ).isEqualTo( "b()" );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testBeanFromClasspath() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "beanFromClasspath.conf" ) )
-        );
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "beanFromClasspath.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "beanFromClasspath" ) );
-            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            Service3 s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3 ).isNotNull();
             assertThat( s3.service3.name ).isEqualTo( "from resource" );
             assertThat( s3.service3.timeout ).isEqualTo( 1234 );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testBeanFromJsonField() {
-        List<URL> modules = List.of( urlOfTestResource( getClass(), "testBeanFromJsonField.conf" ) );
+        List<URL> modules = List.of( urlOfTestResource( getClass(), "testBeanFromJsonField.oap" ) );
 
-        Env.set( "VAR_SERVICE3FIELD", "{\"name\":\"from resource\",\"timeout\":1234}" );
         ConfigFactory.invalidateCaches();
 
-        try( var kernel = new Kernel( modules ) ) {
+        try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "testBeanFromJsonField" ) );
-            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            Service3 s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3Field ).isNotNull();
             assertThat( s3.service3Field.name ).isEqualTo( "from resource" );
@@ -392,42 +369,31 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testMapFromClasspath() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "mapFromClasspath.conf" ) )
-        );
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "mapFromClasspath.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "mapFromClasspath" ) );
-            var s4 = kernel.serviceOfClass( Service4.class ).orElseThrow();
+            Service4 s4 = kernel.serviceOfClass( Service4.class ).orElseThrow();
             assertThat( s4.services ).containsOnly( entry( "a", new Service3( "a" ) ), entry( "b", new Service3( "b" ) ) );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testBeanFromPath() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "beanFromPath.conf" ) )
-        );
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "beanFromPath.oap" ) ) ) ) {
             testDirectoryFixture.deployTestData( getClass() );
             System.setProperty( "TEST_PATH", testDirectoryFixture.testDirectory().toString() );
             ConfigImpl.reloadSystemPropertiesConfig();
 
             kernel.start( Map.of( "boot.main", "beanFromPath" ) );
-            var s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
+            Service3 s3 = kernel.serviceOfClass( Service3.class ).orElseThrow();
             assertThat( s3.name ).isEqualTo( "a" );
             assertThat( s3.service3 ).isNotNull();
             assertThat( s3.service3.name ).isEqualTo( "from path" );
-        } finally {
-            kernel.stop();
-            TestDirectoryFixture.deleteDirectory( testDirectoryFixture.testDirectory() );
         }
     }
 
     @Test
     public void testFinalParameter() {
-        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "testFinalParameter.conf" ) ) ) ) {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "testFinalParameter.oap" ) ) ) ) {
             testDirectoryFixture.deployTestData( getClass() );
 
             assertThatThrownBy( () -> kernel.start( Map.of( "boot.main", "testFinalParameter" ) ) )
@@ -441,7 +407,7 @@ public class KernelTest extends Fixtures {
     @Test
     public void testInclude() {
         try( Kernel kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "testInclude.conf" ) ) ) ) {
+            List.of( urlOfTestResource( getClass(), "testInclude.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "testInclude" ) );
 
             assertThat( kernel.<Service3>service( "testInclude.service3" ).get().name ).isEqualTo( "a" );
@@ -451,10 +417,10 @@ public class KernelTest extends Fixtures {
 
     @Test
     public void testDisableModule() {
-        try( var kernel = new Kernel(
+        try( Kernel kernel = new Kernel(
             List.of(
-                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule.conf" ),
-                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule-disabled.conf" )
+                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule.oap" ),
+                urlOfTestResource( getClass(), "testDisableModule/oap-module-testDisableModule-disabled.oap" )
             ) ) ) {
             kernel.start( Map.of( "boot.main", "testDisableModule" ) );
 

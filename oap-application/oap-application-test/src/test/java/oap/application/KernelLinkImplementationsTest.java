@@ -40,93 +40,67 @@ public class KernelLinkImplementationsTest {
 
     @Test
     public void fieldReference() {
-        var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference.conf" ) ) );
-
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "field-reference" ) );
             FieldReference service = kernel.<FieldReference>service( "*.m" ).orElseThrow();
 
             assertThat( service.ti ).isNotNull();
             assertThat( service.ti.toString() ).isEqualTo( "TestInterfaceImpl1" );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void fieldReferences() {
-        var kernel = new Kernel(
+        try( Kernel kernel = new Kernel(
             List.of(
-                urlOfTestResource( getClass(), "field-references.conf" ),
-                urlOfTestResource( getClass(), "field-references2.conf" )
+                urlOfTestResource( getClass(), "field-references.oap" ),
+                urlOfTestResource( getClass(), "field-references2.oap" )
             )
-        );
-
-        try {
+        ) ) {
             kernel.start( Map.of( "boot.main", "field-references2" ) );
             FieldReferences service = kernel.<FieldReferences>service( "*.m" ).orElseThrow();
 
             assertThat( service.tis ).isNotNull();
             assertThat( service.tis.stream().map( Object::toString ).collect( toList() ) )
                 .containsExactlyInAnyOrder( "TestInterfaceImpl1", "TestInterfaceImpl3" );
-        } finally {
-            kernel.stop();
         }
     }
 
 
     @Test
     public void fieldReferencesUnknownInterface() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) )
-        );
-
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-references-unknown-interface.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "field-references-unknown-interface" ) );
             FieldReferences service = kernel.<FieldReferences>service( "*.m" ).orElseThrow();
 
             assertThat( service.tis ).isEmpty();
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testDifferentTypesOfFieldAndConstructor() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "cons-field-diff-types.conf" ) )
-        );
-
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "cons-field-diff-types.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "cons-field-diff-types" ) );
-            var list = kernel.serviceOfClass( TestList.class ).orElseThrow();
+            TestList list = kernel.serviceOfClass( TestList.class ).orElseThrow();
 
             assertThat( list.list ).containsExactly( entry( "a", "a" ), entry( "b", "b" ), entry( "c", "c" ) );
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testCyclicReferences() {
-        var kernel = new Kernel(
-            List.of( urlOfTestResource( getClass(), "creference.conf" ) )
-        );
-
-        try {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "creference.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "creference" ) );
 
             assertThat( kernel.serviceOfClass2( TestCLinks.class ).references ).hasSize( 2 );
             assertThat( kernel.<TestCLink>service( "creference.link1" ).orElseThrow().reference ).isNull();
             assertThat( kernel.<TestCLink>service( "creference.link2" ).orElseThrow().reference ).isNotNull();
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testConstructorReferenceFinalField() {
-        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference-constructor.conf" ) ) ) ) {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference-constructor.oap" ) ) ) ) {
             kernel.start( Map.of( "boot.main", "field-reference-constructor" ) );
 
             assertThat( kernel.serviceOfClass2( FieldReferenceFinal.class ).ti ).isNotNull();

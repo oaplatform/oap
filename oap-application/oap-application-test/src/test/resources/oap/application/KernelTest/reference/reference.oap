@@ -1,0 +1,19 @@
+name = reference
+services {
+  s1 {
+    implementation = oap.application.ServiceOne
+    dependsOn = s2
+    parameters {
+      i = 1
+      list = [
+      ]
+    }
+  }
+  s2 {
+    enabled = false
+    implementation = oap.application.ServiceOne
+    parameters {
+      i = 2
+    }
+  }
+}

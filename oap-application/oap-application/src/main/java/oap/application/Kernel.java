@@ -222,7 +222,7 @@ public class Kernel implements Closeable, AutoCloseable {
 
         var map = new ModuleItemTree();
 
-        ModuleHelper.init( map, modules, implementations, config.boot.main, config.boot.allowActiveByDefault );
+        ModuleHelper.init( map, modules, implementations, config.boot.main );
         resolveImplementations( map, implementations );
 
         ServiceTree servicesMap = new ServiceTree();

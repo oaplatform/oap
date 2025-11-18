@@ -16,7 +16,7 @@ public class KernelMapParametersTest extends Fixtures {
     @Test
     public void testOrderMapParameter() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "order-map.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "order-map.oap" ) );
 
         try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "order-map" ) );
