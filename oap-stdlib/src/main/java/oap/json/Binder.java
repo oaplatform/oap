@@ -60,6 +60,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
+import de.undercouch.bson4jackson.BsonFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
@@ -72,6 +73,7 @@ import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
+import oap.util.FastByteArrayOutputStream;
 import oap.util.function.Try;
 import org.joda.time.ReadableInstant;
 
@@ -95,6 +97,7 @@ public class Binder {
     public static final Binder hocon;
     public static final Binder hoconWithoutSystemProperties;
     public static final Binder json;
+    public static final Binder bson;
     public static final Binder jsonWithTyping;
     public static final Binder xml;
     public static final Binder xmlWithTyping;
@@ -111,7 +114,9 @@ public class Binder {
             .map( Try.map( clazz -> ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) )
             .toSet();
 
-        JsonFactory jsonFactory = JsonFactory.builder()
+        BsonFactory bsonFactory = new BsonFactory();
+
+        JsonFactory jsonFactory = BsonFactory.builder()
             .enable( StreamReadFeature.USE_FAST_DOUBLE_PARSER )
             .enable( StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER )
             .build();
@@ -138,6 +143,7 @@ public class Binder {
 
         json = new Binder( initialize( new ObjectMapper( jsonFactory ), false, false, true ) );
         jsonWithTyping = new Binder( initialize( new ObjectMapper( jsonFactory ), true, false, true ) );
+        bson = new Binder( initialize( new ObjectMapper( bsonFactory ), false, false, true ) );
         xml = new Binder( initialize( new XmlMapper( xmlFactory ), false, false, true ) );
         xmlWithTyping = new Binder( initialize( new XmlMapper( xmlFactory ), true, false, true ) );
         hoconWithoutSystemProperties =
@@ -565,6 +571,14 @@ public class Binder {
         }
     }
 
+    public <T> T unmarshal( TypeRef<T> ref, byte[] bytes, int offset, int len ) throws JsonException {
+        try {
+            return mapper.readValue( bytes, offset, len, toTypeReference( ref ) );
+        } catch( Exception e ) {
+            throw new JsonException( "Cannot deserialize to class: " + ref.type().getClass().getCanonicalName(), e );
+        }
+    }
+
     public <T> T unmarshal( TypeRef<T> ref, Object fromValue ) throws JsonException {
         try {
             return mapper.convertValue( fromValue, toTypeReference( ref ) );
@@ -652,7 +666,9 @@ public class Binder {
 
     @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
-        return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
+        FastByteArrayOutputStream baos = new FastByteArrayOutputStream();
+        marshal( object, baos );
+        return unmarshal( ( Class<T> ) object.getClass(), baos.getInputStream() );
     }
 
     public enum Format {
