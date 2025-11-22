@@ -120,17 +120,19 @@ public class DeprecationAnnotationResolver extends ModelResolver implements Mode
     }
 
     @Override
-    protected void applyBeanValidatorAnnotations( Schema property, Annotation[] annotations, Schema parent, boolean applyNotNullAnnotations ) {
-        super.applyBeanValidatorAnnotations( property, annotations, parent, applyNotNullAnnotations );
-        if( annotations == null || annotations.length == 0 ) return;
-        Optional<Annotation> deprecated = Arrays.stream( annotations ).filter( anno -> anno.annotationType().equals( Deprecated.class ) ).findAny();
-        deprecated.ifPresent( annotation -> {
-            Deprecated anno = ( Deprecated ) annotation;
-            property.setDeprecated( true );
-            String since = !Strings.isEmpty( anno.since() ) ? " since: " + anno.since() : "";
-            if( property.getName() != null )
-                log.debug( "Field '{}' marked as deprecated{}", property.getName(), since );
-        } );
+    protected boolean applyBeanValidatorAnnotations( Schema property, Annotation[] annotations, Schema parent, boolean applyNotNullAnnotations ) {
+        if( annotations != null && annotations.length > 0 ) {
+            Optional<Annotation> deprecated = Arrays.stream( annotations ).filter( anno -> anno.annotationType().equals( Deprecated.class ) ).findAny();
+            deprecated.ifPresent( annotation -> {
+                Deprecated anno = ( Deprecated ) annotation;
+                property.setDeprecated( true );
+                String since = !Strings.isEmpty( anno.since() ) ? " since: " + anno.since() : "";
+                if( property.getName() != null )
+                    log.debug( "Field '{}' marked as deprecated{}", property.getName(), since );
+            } );
+        }
+
+        return super.applyBeanValidatorAnnotations( property, annotations, parent, applyNotNullAnnotations );
     }
 
     /**

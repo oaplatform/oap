@@ -64,8 +64,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get$ref" : {
             "type" : "string"
@@ -100,8 +99,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           }
         },
         "type" : "object"
@@ -177,8 +175,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get$ref" : {
             "type" : "string"
@@ -212,8 +209,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "headers" : {
             "additionalProperties" : {
@@ -269,8 +265,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "name" : {
             "type" : "string"
@@ -411,6 +406,7 @@
             "type" : "string"
           },
           "extension" : {
+            "deprecated" : true,
             "type" : "string"
           },
           "score" : {
@@ -435,8 +431,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "headers" : {
             "additionalProperties" : {
@@ -460,8 +455,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "externalValue" : {
             "type" : "string"
@@ -490,8 +484,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "url" : {
             "type" : "string"
@@ -501,17 +494,6 @@
       },
       "Header" : {
         "properties" : {
-          "content" : {
-            "additionalProperties" : {
-              "$ref" : "#/components/schemas/MediaType"
-            },
-            "properties" : {
-              "empty" : {
-                "type" : "boolean"
-              }
-            },
-            "type" : "object"
-          },
           "deprecated" : {
             "type" : "boolean"
           },
@@ -534,8 +516,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get$ref" : {
             "type" : "string"
@@ -565,8 +546,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "license" : {
             "$ref" : "#/components/schemas/License"
@@ -589,8 +569,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "name" : {
             "type" : "string"
@@ -610,8 +589,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get$ref" : {
             "type" : "string"
@@ -665,8 +643,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "schema" : {
             "$ref" : "#/components/schemas/Schema"
@@ -727,6 +704,7 @@
             "type" : "string"
           },
           "something" : {
+            "deprecated" : true,
             "type" : "string"
           },
           "stringStream" : {
@@ -763,8 +741,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "refreshUrl" : {
             "type" : "string"
@@ -779,12 +756,10 @@
               },
               "extensions" : {
                 "additionalProperties" : {
-                  "deprecated" : true,
                   "type" : "object"
                 },
                 "deprecated" : true,
-                "type" : "object",
-                "writeOnly" : true
+                "type" : "object"
               }
             },
             "type" : "object"
@@ -807,8 +782,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "implicit" : {
             "$ref" : "#/components/schemas/OAuthFlow"
@@ -828,8 +802,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "externalDocs" : {
             "$ref" : "#/components/schemas/ExternalDocumentation"
@@ -855,8 +828,7 @@
                 "additionalProperties" : {
                   "type" : "object"
                 },
-                "type" : "object",
-                "writeOnly" : true
+                "type" : "object"
               }
             },
             "type" : "object"
@@ -900,8 +872,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "externalDocs" : {
             "$ref" : "#/components/schemas/ExternalDocumentation"
@@ -933,8 +904,7 @@
                 "additionalProperties" : {
                   "type" : "object"
                 },
-                "type" : "object",
-                "writeOnly" : true
+                "type" : "object"
               }
             },
             "type" : "object"
@@ -1004,8 +974,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get$ref" : {
             "type" : "string"
@@ -1041,8 +1010,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get" : {
             "$ref" : "#/components/schemas/Operation"
@@ -1098,8 +1066,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           }
         },
         "type" : "object"
@@ -1124,8 +1091,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "get$ref" : {
             "type" : "string"
@@ -1217,8 +1183,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "externalDocs" : {
             "$ref" : "#/components/schemas/ExternalDocumentation"
@@ -1227,6 +1192,9 @@
             "type" : "string"
           },
           "get$dynamicAnchor" : {
+            "type" : "string"
+          },
+          "get$dynamicRef" : {
             "type" : "string"
           },
           "get$ref" : {
@@ -1367,8 +1335,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "externalDocs" : {
             "$ref" : "#/components/schemas/ExternalDocumentation"
@@ -1377,6 +1344,9 @@
             "type" : "string"
           },
           "get$dynamicAnchor" : {
+            "type" : "string"
+          },
+          "get$dynamicRef" : {
             "type" : "string"
           },
           "get$ref" : {
@@ -1479,12 +1449,10 @@
           },
           "extensions" : {
             "additionalProperties" : {
-              "deprecated" : true,
               "type" : "object"
             },
             "deprecated" : true,
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           }
         },
         "type" : "object"
@@ -1515,8 +1483,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "flows" : {
             "$ref" : "#/components/schemas/OAuthFlows"
@@ -1553,8 +1520,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "url" : {
             "type" : "string"
@@ -1569,12 +1535,10 @@
               },
               "extensions" : {
                 "additionalProperties" : {
-                  "deprecated" : true,
                   "type" : "object"
                 },
                 "deprecated" : true,
-                "type" : "object",
-                "writeOnly" : true
+                "type" : "object"
               }
             },
             "type" : "object"
@@ -1600,8 +1564,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           }
         },
         "type" : "object"
@@ -1616,12 +1579,10 @@
           },
           "extensions" : {
             "additionalProperties" : {
-              "deprecated" : true,
               "type" : "object"
             },
             "deprecated" : true,
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           }
         },
         "type" : "object"
@@ -1659,8 +1620,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "externalDocs" : {
             "$ref" : "#/components/schemas/ExternalDocumentation"
@@ -1680,8 +1640,7 @@
             "additionalProperties" : {
               "type" : "object"
             },
-            "type" : "object",
-            "writeOnly" : true
+            "type" : "object"
           },
           "name" : {
             "type" : "string"
@@ -1822,6 +1781,7 @@
             "type" : "string"
           },
           "something" : {
+            "deprecated" : true,
             "type" : "string"
           },
           "stringStream" : {
