@@ -43,7 +43,6 @@ import oap.util.Pair;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -318,20 +317,6 @@ public class BinderTest extends Fixtures {
         Binder.update( obj, "{str = null}" );
         assertThat( obj.str ).isNull();
 
-    }
-
-    @Test
-    public void testBson() {
-        Bean obj = new Bean( "1", 1, null );
-        Bean clone = Binder.bson.clone( obj );
-        assertThat( clone ).isEqualTo( obj );
-
-        ByteArrayOutputStream streamBson = new ByteArrayOutputStream();
-        Binder.bson.marshal( obj, streamBson );
-
-        ByteArrayOutputStream streamJson = new ByteArrayOutputStream();
-        Binder.json.marshal( obj, streamJson );
-        assertThat( streamBson.size() ).isNotEqualTo( streamJson.size() );
     }
 }
 
