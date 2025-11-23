@@ -71,7 +71,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>25.0.1</oap.project.version>
+        <oap.project.version>25.0.2</oap.project.version>
 
         <oap.deps.config.version>22.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
@@ -90,8 +90,9 @@
         <oap.deps.hadoop.version>3.4.1</oap.deps.hadoop.version>
         <oap.deps.testcontainers.version>1.20.3</oap.deps.testcontainers.version>
 
-        <oap.deps.jackson.version>2.17.2</oap.deps.jackson.version>
+        <oap.deps.jackson.version>2.19.4</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
+        <oap.deps.bson4jackson.version>2.18.0</oap.deps.bson4jackson.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
         <oap.deps.bucket4j.version>8.15.0</oap.deps.bucket4j.version>

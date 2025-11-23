@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.impl.ConfigImpl;
 import lombok.EqualsAndHashCode;
@@ -458,6 +459,7 @@ public class KernelTest extends Fixtures {
         public String name;
         public int timeout;
 
+        @JsonCreator
         public Service3( String name ) {
             this.name = name;
         }

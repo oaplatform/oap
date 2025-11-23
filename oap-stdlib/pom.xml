@@ -122,22 +122,6 @@
             <artifactId>commons-configuration2</artifactId>
         </dependency>
         <dependency>
-            <groupId>cn.danielw</groupId>
-            <artifactId>fast-object-pool</artifactId>
-            <version>${oap.deps.fop.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.conversantmedia</groupId>
-            <artifactId>disruptor</artifactId>
-            <version>${oap.deps.disruptor.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>aircompressor</artifactId>
             <version>${oap.deps.aircompressor.version}</version>
@@ -174,6 +158,11 @@
                     <artifactId>config</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>de.undercouch</groupId>
+            <artifactId>bson4jackson</artifactId>
+            <version>${oap.deps.bson4jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>

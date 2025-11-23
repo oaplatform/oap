@@ -304,7 +304,7 @@ public class BinderTest extends Fixtures {
 
     @Test
     public void testUpdate() {
-        var obj = new Bean( "1", 1, null );
+        Bean obj = new Bean( "1", 1, null );
         Binder.update( obj, Map.of( "str", "test" ) );
         assertThat( obj.str ).isEqualTo( "test" );
 //todo fix it after kernel cleanup
