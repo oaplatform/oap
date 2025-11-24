@@ -175,7 +175,13 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             .setSocketOption( Options.TCP_NODELAY, tcpNodelay )
             .setServerOption( UndertowOptions.RECORD_REQUEST_START_TIME, true );
 
-        xnioWorker = Xnio.getInstance( Undertow.class.getClassLoader() ).createWorkerBuilder()
+        XnioWorker.Builder workerBuilder = Xnio.getInstance( Undertow.class.getClassLoader() ).createWorkerBuilder();
+        if( ioThreads > 0 ) {
+            workerBuilder.setWorkerIoThreads( ioThreads );
+        } else {
+            workerBuilder.setWorkerIoThreads( Math.max( Runtime.getRuntime().availableProcessors(), 2 ) );
+        }
+        xnioWorker = workerBuilder
             .populateFromOptions( OptionMap.builder()
                 .set( Options.TCP_NODELAY, true )
                 .set( Options.CORK, true )
