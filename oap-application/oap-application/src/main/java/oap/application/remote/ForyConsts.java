@@ -19,6 +19,9 @@ public abstract class ForyConsts {
             .withAsyncCompilation( true )
             .requireClassRegistration( false )
             .withRefTracking( true )
+            .serializeEnumByName( true )
+            .withCodegen( true )
+
             .buildThreadSafeForyPool( ForyConsts.MIN_POOL_SIZE, ForyConsts.MAX_POOL_SIZE );
     }
 }
