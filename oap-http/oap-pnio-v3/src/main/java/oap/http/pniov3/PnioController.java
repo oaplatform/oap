@@ -60,11 +60,12 @@ public class PnioController implements AutoCloseable {
             true, parallelism, parallelism, parallelism, null, 60_000L, TimeUnit.MILLISECONDS );
         this.maxThreads = maxThreads;
 
-        Metrics.gauge( "pnio_controller", Tags.of( "important", "false", "type", "QueuedTask" ), this, _ -> forkJoinPool.getQueuedTaskCount() );
-        Metrics.gauge( "pnio_controller", Tags.of( "important", "false", "type", "ActiveThread" ), this, _ -> forkJoinPool.getActiveThreadCount() );
-        Metrics.gauge( "pnio_controller", Tags.of( "important", "false", "type", "RunningThread" ), this, _ -> forkJoinPool.getRunningThreadCount() );
-        Metrics.gauge( "pnio_controller", Tags.of( "important", "false", "type", "QueuedSubmission" ), this, _ -> forkJoinPool.getQueuedSubmissionCount() );
-        Metrics.gauge( "pnio_controller", Tags.of( "important", "false", "type", "Steal" ), this, _ -> forkJoinPool.getStealCount() );
+        Metrics.gauge( "pnio_controller", Tags.of( "type", "QueuedTask" ), this, _ -> forkJoinPool.getQueuedTaskCount() );
+        Metrics.gauge( "pnio_controller", Tags.of( "type", "ActiveThread" ), this, _ -> forkJoinPool.getActiveThreadCount() );
+        Metrics.gauge( "pnio_controller", Tags.of( "type", "RunningThread" ), this, _ -> forkJoinPool.getRunningThreadCount() );
+        Metrics.gauge( "pnio_controller", Tags.of( "type", "QueuedSubmission" ), this, _ -> forkJoinPool.getQueuedSubmissionCount() );
+        Metrics.gauge( "pnio_controller", Tags.of( "type", "Steal" ), this, _ -> forkJoinPool.getStealCount() );
+        Metrics.gauge( "pnio_controller", Tags.of( "type", "RequestQueue" ), this, _ -> threadCounter.get() );
     }
 
     @Override
