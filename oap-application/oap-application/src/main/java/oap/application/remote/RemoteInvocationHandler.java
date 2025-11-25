@@ -42,6 +42,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.fory.exception.DeserializationException;
+import org.apache.fory.io.ForyInputStream;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
@@ -50,7 +52,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -69,7 +70,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
@@ -91,20 +91,17 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final Counter successMetrics;
     private final String source;
     private final URI uri;
-    private final FST fst;
     private final String service;
     private final long timeout;
 
     private RemoteInvocationHandler( String source,
                                      URI uri,
                                      String service,
-                                     long timeout,
-                                     FST.SerializationMethod serialization ) {
+                                     long timeout ) {
         this.source = source;
         this.uri = uri;
         this.service = service;
         this.timeout = timeout;
-        this.fst = new FST( serialization );
 
         Preconditions.checkNotNull( uri );
         Preconditions.checkNotNull( service );
@@ -117,13 +114,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     public static Object proxy( String source, RemoteLocation remote, Class<?> clazz ) {
-        return proxy( source, remote.url, remote.name, clazz, remote.timeout, remote.serialization );
+        return proxy( source, remote.url, remote.name, clazz, remote.timeout );
     }
 
-    private static Object proxy( String source, URI uri, String service, Class<?> clazz,
-                                 long timeout, FST.SerializationMethod serialization ) {
+    private static Object proxy( String source, URI uri, String service, Class<?> clazz, long timeout ) {
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( source, uri, service, timeout, serialization ) );
+            new RemoteInvocationHandler( source, uri, service, timeout ) );
     }
 
     @NotNull
@@ -207,14 +203,14 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     if( response.code() == HTTP_OK ) {
                         InputStream inputStream = response.body().byteStream();
                         BufferedInputStream bis = new BufferedInputStream( inputStream );
-                        DataInputStream dis = new DataInputStream( bis );
-                        Boolean success = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
+                        ForyInputStream foryInputStream = new ForyInputStream( bis );
+                        DataInputStream dis = new DataInputStream( foryInputStream );
+                        boolean success = dis.readBoolean();
 
                         try {
-                            if( Boolean.FALSE.equals( success ) ) {
+                            if( !success ) {
                                 try {
-                                    Throwable throwable = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout(
-                                        () -> fst.readObjectWithSize( dis ), timeout, MILLISECONDS );
+                                    Throwable throwable = ( Throwable ) ForyConsts.fory.deserialize( foryInputStream );
 
                                     if( throwable instanceof RemoteInvocationException riex ) {
                                         errorMetrics.increment();
@@ -227,9 +223,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     dis.close();
                                 }
                             } else {
-                                Boolean stream = SIMPLE_TIME_LIMITER.callUninterruptiblyWithTimeout( dis::readBoolean, timeout, MILLISECONDS );
-                                if( Boolean.TRUE.equals( stream ) ) {
-                                    ChainIterator it = new ChainIterator( dis );
+                                boolean stream = dis.readBoolean();
+                                if( stream ) {
+                                    ChainIterator it = new ChainIterator( foryInputStream );
 
                                     return CompletableFuture.completedStage( Result.success( Stream.of( it ).onClose( Try.run( () -> {
                                         dis.close();
@@ -237,7 +233,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     } ) ) ) );
                                 } else {
                                     try {
-                                        Result<Object, Throwable> r = Result.success( fst.readObjectWithSize( dis ) );
+                                        Result<Object, Throwable> r = Result.success( ForyConsts.fory.deserialize( foryInputStream ) );
                                         successMetrics.increment();
                                         return CompletableFuture.completedStage( r );
                                     } finally {
@@ -301,7 +297,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream( baos );
         dos.writeInt( RemoteInvocation.VERSION );
-        fst.writeObjectWithSize( dos, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
+        ForyConsts.fory.serialize( dos, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
         baos.close();
 
         return baos.toByteArray();
@@ -313,11 +309,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     private class ChainIterator implements Iterator<Object> {
-        private final DataInputStream dis;
+        private final ForyInputStream dis;
         private Object obj;
         private boolean end;
 
-        ChainIterator( DataInputStream dis ) {
+        ChainIterator( ForyInputStream dis ) {
             this.dis = dis;
             obj = null;
             end = false;
@@ -330,20 +326,17 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
             if( obj != null ) return true;
 
-            SIMPLE_TIME_LIMITER.runWithTimeout( () -> {
-                try {
-                    int next = dis.readInt();
-                    if( next > 0 ) {
-                        obj = fst.readObject( dis, next );
-                    } else {
-                        end = true;
-                        obj = null;
-                        dis.close();
-                    }
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
+            try {
+                obj = ForyConsts.fory.deserialize( dis );
+            } catch( RuntimeException e ) {
+                if( e.getCause() instanceof DeserializationException de && de.getCause() instanceof IndexOutOfBoundsException iobe && iobe.getMessage().startsWith( "No enough data in the stream" ) ) {
+                    end = true;
+                    obj = null;
+                    dis.close();
+                } else {
+                    throw e;
                 }
-            }, timeout, MILLISECONDS );
+            }
 
             return obj != null;
         }

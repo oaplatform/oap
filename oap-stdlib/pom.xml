@@ -269,25 +269,13 @@
             <version>${oap.deps.plugins.antlr4.version}</version>
         </dependency>
 
+
         <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>${oap.deps.fst.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.javassist</groupId>
-                    <artifactId>javassist</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>maven-bundle-plugin</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.apache.fory</groupId>
+            <artifactId>fory-core</artifactId>
+            <version>${oap.deps.apache.fory.version}</version>
         </dependency>
+
         <dependency>
             <groupId>javax.activation</groupId>
             <artifactId>activation</artifactId>

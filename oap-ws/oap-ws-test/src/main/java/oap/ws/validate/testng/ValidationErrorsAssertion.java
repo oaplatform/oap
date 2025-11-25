@@ -26,6 +26,7 @@ package oap.ws.validate.testng;
 import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.ProxyFactory;
 import javassist.util.proxy.ProxyObject;
+import lombok.SneakyThrows;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
@@ -36,7 +37,6 @@ import oap.ws.WsClientException;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
-import org.objenesis.ObjenesisStd;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -50,13 +50,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @see oap.application.testng.KernelFixture
- * @see oap.http.testng.HttpAsserts
+ * @see oap.http.test.HttpAsserts
  * @see ValidationAssertion
  */
 //do not remove!!! used in production projects!!!
 public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAssertion, ValidationErrors> {
-
-    private static final ObjenesisStd objenesis = new ObjenesisStd();
 
     protected ValidationErrorsAssertion( ValidationErrors actual ) {
         super( actual, ValidationErrorsAssertion.class );
@@ -103,6 +101,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         public final I instance;
         private List<Function<ValidationErrorsAssertion, ValidationErrorsAssertion>> assertions = new ArrayList<>();
 
+        @SneakyThrows
         @SuppressWarnings( "unchecked" )
         public ValidatedInvocation( I instance ) {
             var factory = new ProxyFactory();
@@ -167,7 +166,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
 
             var klass = factory.createClass();
 
-            this.instance = ( I ) objenesis.getInstantiatorOf( klass ).newInstance();
+            this.instance = ( I ) klass.getDeclaredConstructor().newInstance();
 
             ( ( ProxyObject ) this.instance ).setHandler( handler );
         }

@@ -34,16 +34,10 @@ import java.util.List;
 public final class RemoteSerialization<T> implements InvocationHandler {
     private final Class<?> interfaze;
     private final T master;
-    private final FST fst;
-
-    private RemoteSerialization( Class<T> interfaze, T master, FST.SerializationMethod serialization ) {
-        this.interfaze = interfaze;
-        this.master = master;
-        this.fst = new FST( serialization );
-    }
 
     private RemoteSerialization( Class<T> interfaze, T master ) {
-        this( interfaze, master, FST.SerializationMethod.JSON );
+        this.interfaze = interfaze;
+        this.master = master;
     }
 
     public static <P> P proxy( Class<P> clazz, P master ) {
@@ -68,16 +62,16 @@ public final class RemoteSerialization<T> implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        final byte[] content = fst.configuration.asByteArray( new RemoteInvocation( "service", method.getName(), arguments ) );
-        var ri = ( RemoteInvocation ) fst.configuration.asObject( content );
+        final byte[] content = ForyConsts.fory.serialize( new RemoteInvocation( "service", method.getName(), arguments ) );
+        RemoteInvocation ri = ( RemoteInvocation ) ForyConsts.fory.deserialize( content );
 
         var result = master.getClass()
             .getMethod( ri.method, ri.types() )
             .invoke( master, ri.values() );
 
 
-        var resultContent = fst.configuration.asByteArray( result );
+        byte[] resultContent = ForyConsts.fory.serialize( result );
 
-        return fst.configuration.asObject( resultContent );
+        return ForyConsts.fory.deserialize( resultContent );
     }
 }

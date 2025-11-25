@@ -26,26 +26,27 @@ package oap.application.remote;
 
 import lombok.ToString;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.net.URI;
 
 @ToString
-public class RemoteLocation {
+public class RemoteLocation implements Serializable {
     public static final long DEFAULT_TIMEOUT = 5000L;
+
+    @Serial
+    private static final long serialVersionUID = -1865149942304910605L;
+
     public URI url;
     public String name;
     public long timeout = DEFAULT_TIMEOUT;
-    public FST.SerializationMethod serialization = FST.SerializationMethod.JSON;
 
     public RemoteLocation() {
     }
 
-    public RemoteLocation( URI url,
-                           String name,
-                           long timeout,
-                           FST.SerializationMethod serialization ) {
+    public RemoteLocation( URI url, String name, long timeout ) {
         this.url = url;
         this.name = name;
         this.timeout = timeout;
-        this.serialization = serialization;
     }
 }
