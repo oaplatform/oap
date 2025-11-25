@@ -15,7 +15,6 @@ services {
     remote {
       url = "http://localhost/remote/"
       name = <modules.oap-module-with-remoting.remote-service>
-      serialization = JSON
     }
   }
 
@@ -24,7 +23,6 @@ services {
     remote {
       url = "http://localhost/remote/"
       name = <modules.oap-module-with-remoting.remote-service>
-      serialization = JSON
     }
   }
 
@@ -34,7 +32,6 @@ services {
     remote {
       url = "http://localhost:0/remote/"
       name = <modules.oap-module-with-remoting.remote-service>
-      serialization = JSON
     }
   }
 }
