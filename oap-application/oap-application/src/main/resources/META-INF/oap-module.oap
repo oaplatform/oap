@@ -12,7 +12,7 @@ services {
     parameters {
       server = <modules.oap-http.oap-http-server>
       context = /remote/
-      serialization = DEFAULT
+      serialization = JSON
       services = <modules.this.remoting-kernel>
       port = httpprivate
     }
