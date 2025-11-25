@@ -33,6 +33,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Optional;
 
 @Slf4j
@@ -47,7 +48,15 @@ public class Inet {
 
     @SneakyThrows
     public static String hostname() {
-        return Env.get( "HOSTNAME", InetAddress.getLocalHost().getHostName() );
+        String hostname = Env.get( "HOSTNAME" ).orElse( null );
+        if( hostname == null ) {
+            try {
+                hostname = InetAddress.getLocalHost().getHostName();
+            } catch( UnknownHostException e ) {
+                hostname = InetAddress.getLoopbackAddress().getHostName();
+            }
+        }
+        return hostname;
     }
 
     public static boolean isLocalAddress( InetAddress addr ) {
