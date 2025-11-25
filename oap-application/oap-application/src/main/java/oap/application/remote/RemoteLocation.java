@@ -34,7 +34,7 @@ public class RemoteLocation {
     public URI url;
     public String name;
     public long timeout = DEFAULT_TIMEOUT;
-    public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
+    public FST.SerializationMethod serialization = FST.SerializationMethod.JSON;
 
     public RemoteLocation() {
     }
