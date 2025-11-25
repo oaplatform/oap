@@ -43,7 +43,7 @@ public final class RemoteSerialization<T> implements InvocationHandler {
     }
 
     private RemoteSerialization( Class<T> interfaze, T master ) {
-        this( interfaze, master, FST.SerializationMethod.DEFAULT );
+        this( interfaze, master, FST.SerializationMethod.JSON );
     }
 
     public static <P> P proxy( Class<P> clazz, P master ) {
