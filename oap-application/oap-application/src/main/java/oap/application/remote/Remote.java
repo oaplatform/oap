@@ -155,9 +155,11 @@ public class Remote implements HttpHandler {
                     } else if( v instanceof Stream<?> ) {
                         dos.writeBoolean( true );
 
-                        ( ( Stream<?> ) v ).forEach( Try.consume( obj ->
-                            ForyConsts.fory.serialize( dos, obj ) ) );
-                        dos.writeInt( 0 );
+                        ( ( Stream<?> ) v ).forEach( Try.consume( obj -> {
+                            dos.write( 1 );
+                            ForyConsts.fory.serialize( dos, obj );
+                        } ) );
+                        dos.write( 0 );
                     } else {
                         dos.writeBoolean( false );
                         ForyConsts.fory.serialize( dos, v );

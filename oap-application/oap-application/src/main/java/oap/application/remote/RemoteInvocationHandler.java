@@ -42,7 +42,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.fory.exception.DeserializationException;
 import org.apache.fory.io.ForyInputStream;
 import org.jetbrains.annotations.NotNull;
 
@@ -326,16 +325,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
             if( obj != null ) return true;
 
-            try {
+            int b = dis.read();
+            if( b == 1 ) {
                 obj = ForyConsts.fory.deserialize( dis );
-            } catch( RuntimeException e ) {
-                if( e.getCause() instanceof DeserializationException de && de.getCause() instanceof NullPointerException iobe && iobe.getMessage().startsWith( "Cannot read field" ) ) {
-                    end = true;
-                    obj = null;
-                    dis.close();
-                } else {
-                    throw e;
-                }
+            } else {
+                end = true;
+                obj = null;
+                dis.close();
             }
 
             return obj != null;
