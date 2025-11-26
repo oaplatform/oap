@@ -20,6 +20,8 @@ public abstract class ForyConsts {
             .requireClassRegistration( false )
             .withRefTracking( true )
             .serializeEnumByName( true )
+            .registerGuavaTypes( true )
+            .withMetaShare( false )
             .withCodegen( true )
 
             .buildThreadSafeForyPool( ForyConsts.MIN_POOL_SIZE, ForyConsts.MAX_POOL_SIZE );
