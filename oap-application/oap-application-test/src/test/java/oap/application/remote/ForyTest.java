@@ -30,12 +30,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FSTTest {
+public class ForyTest {
     @Test
     public void optional() {
-        FST fst = new FST( FST.SerializationMethod.JSON );
-
-        assertThat( fst.configuration.asObject( fst.configuration.asByteArray( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
-        assertThat( fst.configuration.asObject( fst.configuration.asByteArray( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
+        assertThat( ForyConsts.fory.deserialize( ForyConsts.fory.serialize( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
+        assertThat( ForyConsts.fory.deserialize( ForyConsts.fory.serialize( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
     }
 }

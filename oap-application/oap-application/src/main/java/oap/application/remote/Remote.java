@@ -33,6 +33,7 @@ import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import oap.util.function.Try;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.fory.io.ForyInputStream;
 
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -56,16 +57,14 @@ public class Remote implements HttpHandler {
     private final Counter errorMetrics;
     private final Counter successMetrics;
 
-    private final FST.SerializationMethod serialization;
     private final String context;
     private final RemoteServices services;
 
-    public Remote( FST.SerializationMethod serialization, String context, RemoteServices services, NioHttpServer server ) {
-        this( serialization, context, services, server, null );
+    public Remote( String context, RemoteServices services, NioHttpServer server ) {
+        this( context, services, server, null );
     }
 
-    public Remote( FST.SerializationMethod serialization, String context, RemoteServices services, NioHttpServer server, String port ) {
-        this.serialization = serialization;
+    public Remote( String context, RemoteServices services, NioHttpServer server, String port ) {
         this.context = context;
         this.services = services;
 
@@ -82,7 +81,7 @@ public class Remote implements HttpHandler {
     }
 
     public void start() {
-        log.info( "serialization = {}, context = {}", serialization, context );
+        log.info( "context {} MIN_POOL_SIZE {} MAX_POOL_SIZE {}", context, ForyConsts.MIN_POOL_SIZE, ForyConsts.MAX_POOL_SIZE );
     }
 
     @Override
@@ -94,9 +93,8 @@ public class Remote implements HttpHandler {
     public void handleRequest( HttpServerExchange exchange ) {
         RemoteInvocation invocation = null;
         try {
-            FST fst = new FST( serialization );
 
-            invocation = getRemoteInvocation( fst, exchange.getInputStream() );
+            invocation = getRemoteInvocation( exchange.getInputStream() );
 
             Object service = services.get( invocation.service );
 
@@ -153,16 +151,18 @@ public class Remote implements HttpHandler {
                     dos.writeBoolean( ex == null );
 
                     if( ex != null ) {
-                        fst.writeObjectWithSize( dos, ex );
+                        ForyConsts.fory.serialize( dos, ex );
                     } else if( v instanceof Stream<?> ) {
                         dos.writeBoolean( true );
 
-                        ( ( Stream<?> ) v ).forEach( Try.consume( obj ->
-                            fst.writeObjectWithSize( dos, obj ) ) );
-                        dos.writeInt( 0 );
+                        ( ( Stream<?> ) v ).forEach( Try.consume( obj -> {
+                            dos.write( 1 );
+                            ForyConsts.fory.serialize( dos, obj );
+                        } ) );
+                        dos.write( 0 );
                     } else {
                         dos.writeBoolean( false );
-                        fst.writeObjectWithSize( dos, v );
+                        ForyConsts.fory.serialize( dos, v );
                     }
                 } catch( Throwable e ) {
                     log.error( "invocation {}", finalInvocation, e );
@@ -180,11 +180,11 @@ public class Remote implements HttpHandler {
     }
 
     @SneakyThrows
-    public RemoteInvocation getRemoteInvocation( FST fst, InputStream body ) {
+    public RemoteInvocation getRemoteInvocation( InputStream body ) {
         DataInputStream dis = new DataInputStream( body );
         int version = dis.readInt();
 
-        RemoteInvocation invocation = ( RemoteInvocation ) fst.readObjectWithSize( dis );
+        RemoteInvocation invocation = ( RemoteInvocation ) ForyConsts.fory.deserialize( new ForyInputStream( dis ) );
         log.trace( "invoke v{} - {}", version, invocation );
         return invocation;
     }

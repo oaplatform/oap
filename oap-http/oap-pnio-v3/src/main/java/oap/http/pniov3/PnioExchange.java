@@ -36,7 +36,7 @@ public class PnioExchange<RequestState> {
     private static final AtomicLong idGenerator = new AtomicLong();
     private static final VarHandle PROCESS_STATE_HANDLE;
 
-    private static ConcurrentHashMap<String, Timer> timers = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Timer> timers = new ConcurrentHashMap<>();
 
 
     static {
@@ -51,7 +51,6 @@ public class PnioExchange<RequestState> {
 
     public final long startTimeNano;
     public final byte[] requestBuffer;
-    public final long timeoutNano;
     public final HttpResponse httpResponse;
     public final PnioController controller;
     public final PnioListener<RequestState> pnioListener;
@@ -60,6 +59,7 @@ public class PnioExchange<RequestState> {
     public final RequestState requestState;
     protected final HttpServerExchange oapExchange;
     private final PnioMetrics metrics;
+    public long timeoutNano;
     public volatile Throwable throwable;
     public volatile int processState;
     private volatile Runnable onDoneRunnable;
@@ -356,6 +356,14 @@ public class PnioExchange<RequestState> {
 
     public String header( String headerName, String defaultValue ) {
         return oapExchange.header( headerName, defaultValue );
+    }
+
+    public void updateTimeoutNano( long timeoutNano ) {
+        this.timeoutNano = timeoutNano;
+    }
+
+    public void updateTimeoutMs( long timeoutMs ) {
+        this.timeoutNano = timeoutMs * 1_000_000;
     }
 
     @SuppressWarnings( "checkstyle:InterfaceIsType" )
