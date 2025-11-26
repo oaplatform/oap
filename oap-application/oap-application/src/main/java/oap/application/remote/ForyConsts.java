@@ -7,8 +7,8 @@ import org.apache.fory.config.CompatibleMode;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
 public abstract class ForyConsts {
-    public static final int MIN_POOL_SIZE = Integer.parseInt( Env.get( "FORY_MIN_POOL_SIZE", "128" ) );
-    public static final int MAX_POOL_SIZE = Integer.parseInt( Env.get( "FORY_MAX_POOL_SIZE", "1024" ) );
+    public static final int MIN_POOL_SIZE = Integer.parseInt( Env.get( "FORY_MIN_POOL_SIZE", "32" ) );
+    public static final int MAX_POOL_SIZE = Integer.parseInt( Env.get( "FORY_MAX_POOL_SIZE", "128" ) );
 
     public static ThreadSafeFory fory;
 
