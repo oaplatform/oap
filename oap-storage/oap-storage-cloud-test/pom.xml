@@ -33,8 +33,19 @@
 
         <dependency>
             <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${oap.deps.testcontainers.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
             <artifactId>localstack</artifactId>
             <version>${oap.deps.localstack.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>testcontainers</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

@@ -28,10 +28,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class FileSystemTest extends Fixtures {
     public static final String TEST_BUCKET = "test-bucket";

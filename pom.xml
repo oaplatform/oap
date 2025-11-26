@@ -76,7 +76,7 @@
         <oap.deps.config.version>22.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
 
-        <oap.deps.localstack.version>1.20.4</oap.deps.localstack.version>
+        <oap.deps.localstack.version>1.21.3</oap.deps.localstack.version>
         <oap.deps.mockito.version>5.18.0</oap.deps.mockito.version>
         <oap.deps.byte-buddy.version>1.17.6</oap.deps.byte-buddy.version>
 
@@ -90,7 +90,7 @@
         <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
 
         <oap.deps.hadoop.version>3.4.1</oap.deps.hadoop.version>
-        <oap.deps.testcontainers.version>1.20.3</oap.deps.testcontainers.version>
+        <oap.deps.testcontainers.version>2.0.2</oap.deps.testcontainers.version>
 
         <oap.deps.jackson.version>2.19.4</oap.deps.jackson.version>
         <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
