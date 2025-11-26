@@ -329,7 +329,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             try {
                 obj = ForyConsts.fory.deserialize( dis );
             } catch( RuntimeException e ) {
-                if( e.getCause() instanceof DeserializationException de && de.getCause() instanceof IndexOutOfBoundsException iobe && iobe.getMessage().startsWith( "No enough data in the stream" ) ) {
+                if( e.getCause() instanceof DeserializationException de && de.getCause() instanceof NullPointerException iobe && iobe.getMessage().startsWith( "Cannot read field" ) ) {
                     end = true;
                     obj = null;
                     dis.close();
