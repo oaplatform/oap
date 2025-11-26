@@ -16,13 +16,10 @@ public abstract class ForyConsts {
         fory = Fory
             .builder()
             .withCompatibleMode( CompatibleMode.COMPATIBLE )
-            .withAsyncCompilation( true )
             .requireClassRegistration( false )
             .withRefTracking( true )
             .serializeEnumByName( true )
             .registerGuavaTypes( true )
-            .withScopedMetaShare( true )
-            .withCodegen( true )
 
             .buildThreadSafeForyPool( ForyConsts.MIN_POOL_SIZE, ForyConsts.MAX_POOL_SIZE );
     }
