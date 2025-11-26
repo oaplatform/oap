@@ -32,10 +32,10 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.StringSchema;
-import junit.framework.TestCase;
 import oap.reflect.Reflect;
 import oap.ws.api.Info;
 import org.testng.annotations.Test;
+
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OpenapiSchemaTest extends TestCase {
+public class OpenapiSchemaTest {
     private Info.WebMethodInfo method = null;
 
     @Test
