@@ -27,6 +27,11 @@
             <artifactId>oap-application-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>de.javakaffee</groupId>
+            <artifactId>kryo-serializers</artifactId>
+            <version>0.45</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
