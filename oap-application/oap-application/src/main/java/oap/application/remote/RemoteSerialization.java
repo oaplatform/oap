@@ -62,16 +62,16 @@ public final class RemoteSerialization<T> implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        final byte[] content = ForyConsts.fory.serialize( new RemoteInvocation( "service", method.getName(), arguments ) );
-        RemoteInvocation ri = ( RemoteInvocation ) ForyConsts.fory.deserialize( content );
+        byte[] content = KryoConsts.writeClassAndObject( new RemoteInvocation( "service", method.getName(), arguments ) );
+        RemoteInvocation ri = ( RemoteInvocation ) KryoConsts.readClassAndObject( content );
 
-        var result = master.getClass()
+        Object result = master.getClass()
             .getMethod( ri.method, ri.types() )
             .invoke( master, ri.values() );
 
 
-        byte[] resultContent = ForyConsts.fory.serialize( result );
+        content = KryoConsts.writeClassAndObject( result );
 
-        return ForyConsts.fory.deserialize( resultContent );
+        return KryoConsts.readClassAndObject( content );
     }
 }

@@ -23,21 +23,18 @@
  */
 package oap.application.remote;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
 import oap.http.server.nio.NioHttpServer;
 import oap.util.function.Try;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.fory.io.ForyInputStream;
 
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -81,7 +78,7 @@ public class Remote implements HttpHandler {
     }
 
     public void start() {
-        log.info( "context {} MIN_POOL_SIZE {} MAX_POOL_SIZE {}", context, ForyConsts.MIN_POOL_SIZE, ForyConsts.MAX_POOL_SIZE );
+        log.info( "context {}", context );
     }
 
     @Override
@@ -146,23 +143,22 @@ public class Remote implements HttpHandler {
                 exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
                 try( OutputStream outputStream = exchange.getOutputStream();
-                     BufferedOutputStream bos = new BufferedOutputStream( outputStream );
-                     DataOutputStream dos = new DataOutputStream( bos ) ) {
-                    dos.writeBoolean( ex == null );
+                     Output out = new Output( outputStream ) ) {
+                    out.writeBoolean( ex == null );
 
                     if( ex != null ) {
-                        ForyConsts.fory.serialize( dos, ex );
+                        KryoConsts.kryo.writeClassAndObject( out, ex );
                     } else if( v instanceof Stream<?> ) {
-                        dos.writeBoolean( true );
+                        out.writeBoolean( true );
 
                         ( ( Stream<?> ) v ).forEach( Try.consume( obj -> {
-                            dos.write( 1 );
-                            ForyConsts.fory.serialize( dos, obj );
+                            out.writeBoolean( true );
+                            KryoConsts.kryo.writeClassAndObject( out, obj );
                         } ) );
-                        dos.write( 0 );
+                        out.writeBoolean( false );
                     } else {
-                        dos.writeBoolean( false );
-                        ForyConsts.fory.serialize( dos, v );
+                        out.writeBoolean( false );
+                        KryoConsts.kryo.writeClassAndObject( out, v );
                     }
                 } catch( Throwable e ) {
                     log.error( "invocation {}", finalInvocation, e );
@@ -179,12 +175,11 @@ public class Remote implements HttpHandler {
         }
     }
 
-    @SneakyThrows
     public RemoteInvocation getRemoteInvocation( InputStream body ) {
-        DataInputStream dis = new DataInputStream( body );
-        int version = dis.readInt();
+        Input in = new Input( body );
+        int version = in.readInt();
 
-        RemoteInvocation invocation = ( RemoteInvocation ) ForyConsts.fory.deserialize( new ForyInputStream( dis ) );
+        RemoteInvocation invocation = ( RemoteInvocation ) KryoConsts.kryo.readClassAndObject( in );
         log.trace( "invoke v{} - {}", version, invocation );
         return invocation;
     }
