@@ -3,6 +3,8 @@ package oap.application.remote;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import org.objenesis.strategy.SerializingInstantiatorStrategy;
 
 import java.io.ByteArrayOutputStream;
 
@@ -14,6 +16,8 @@ public abstract class KryoConsts {
         kryo = new Kryo();
         kryo.setRegistrationRequired( false );
         kryo.setReferences( true );
+        kryo.setInstantiatorStrategy( new DefaultInstantiatorStrategy( new SerializingInstantiatorStrategy() ) );
+
     }
 
     public static byte[] writeClassAndObject( Object obj ) {
