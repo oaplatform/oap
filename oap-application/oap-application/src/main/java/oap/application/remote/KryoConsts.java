@@ -13,6 +13,7 @@ public abstract class KryoConsts {
     static {
         kryo = new Kryo();
         kryo.setRegistrationRequired( false );
+        kryo.setReferences( true );
     }
 
     public static byte[] writeClassAndObject( Object obj ) {

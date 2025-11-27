@@ -28,7 +28,6 @@ import com.esotericsoftware.kryo.io.Output;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
@@ -36,7 +35,6 @@ import oap.http.server.nio.NioHttpServer;
 import oap.util.function.Try;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -145,8 +143,7 @@ public class Remote implements HttpHandler {
                 exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
                 try( OutputStream outputStream = exchange.getOutputStream();
-                     BufferedOutputStream bos = new BufferedOutputStream( outputStream );
-                     Output out = new Output( bos ) ) {
+                     Output out = new Output( outputStream ) ) {
                     out.writeBoolean( ex == null );
 
                     if( ex != null ) {
@@ -178,7 +175,6 @@ public class Remote implements HttpHandler {
         }
     }
 
-    @SneakyThrows
     public RemoteInvocation getRemoteInvocation( InputStream body ) {
         Input in = new Input( body );
         int version = in.readInt();

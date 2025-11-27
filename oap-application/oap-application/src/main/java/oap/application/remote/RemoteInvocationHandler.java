@@ -292,10 +292,10 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         Reference reference = ServiceKernelCommand.INSTANCE.reference( service, null );
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Output out = new Output( baos );
-        out.writeInt( RemoteInvocation.VERSION );
-        KryoConsts.kryo.writeClassAndObject( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
-        baos.close();
+        try( Output out = new Output( baos ) ) {
+            out.writeInt( RemoteInvocation.VERSION );
+            KryoConsts.kryo.writeClassAndObject( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
+        }
 
         return baos.toByteArray();
     }
