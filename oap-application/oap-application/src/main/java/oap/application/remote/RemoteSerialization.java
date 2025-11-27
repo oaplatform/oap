@@ -24,6 +24,9 @@
 
 package oap.application.remote;
 
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -62,16 +65,18 @@ public final class RemoteSerialization<T> implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        final byte[] content = ForyConsts.fory.serialize( new RemoteInvocation( "service", method.getName(), arguments ) );
-        RemoteInvocation ri = ( RemoteInvocation ) ForyConsts.fory.deserialize( content );
+        ByteBufferOutput content = new ByteBufferOutput();
+        KryoConsts.kryo.writeClassAndObject( content, new RemoteInvocation( "service", method.getName(), arguments ) );
+        RemoteInvocation ri = ( RemoteInvocation ) KryoConsts.kryo.readClassAndObject( new Input( content.toBytes() ) );
 
         var result = master.getClass()
             .getMethod( ri.method, ri.types() )
             .invoke( master, ri.values() );
 
 
-        byte[] resultContent = ForyConsts.fory.serialize( result );
+        ByteBufferOutput resultContent = new ByteBufferOutput();
+        KryoConsts.kryo.writeClassAndObject( resultContent, result );
 
-        return ForyConsts.fory.deserialize( resultContent );
+        return KryoConsts.kryo.readClassAndObject( new Input( resultContent.toBytes() ) );
     }
 }

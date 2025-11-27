@@ -30,10 +30,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ForyTest {
+public class KryoTest {
     @Test
     public void optional() {
-        assertThat( ForyConsts.fory.deserialize( ForyConsts.fory.serialize( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
-        assertThat( ForyConsts.fory.deserialize( ForyConsts.fory.serialize( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
+        assertThat( KryoConsts.readClassAndObject( KryoConsts.writeClassAndObject( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
+        assertThat( KryoConsts.readClassAndObject( KryoConsts.writeClassAndObject( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
     }
 }

@@ -23,6 +23,8 @@
  */
 package oap.application.remote;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import io.micrometer.core.instrument.Counter;
@@ -42,13 +44,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.fory.io.ForyInputStream;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -202,14 +201,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     if( response.code() == HTTP_OK ) {
                         InputStream inputStream = response.body().byteStream();
                         BufferedInputStream bis = new BufferedInputStream( inputStream );
-                        ForyInputStream foryInputStream = new ForyInputStream( bis );
-                        DataInputStream dis = new DataInputStream( foryInputStream );
-                        boolean success = dis.readBoolean();
+                        Input in = new Input( bis );
+                        boolean success = in.readBoolean();
 
                         try {
                             if( !success ) {
                                 try {
-                                    Throwable throwable = ( Throwable ) ForyConsts.fory.deserialize( foryInputStream );
+                                    Throwable throwable = ( Throwable ) KryoConsts.kryo.readClassAndObject( in );
 
                                     if( throwable instanceof RemoteInvocationException riex ) {
                                         errorMetrics.increment();
@@ -219,29 +217,29 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     errorMetrics.increment();
                                     return async ? CompletableFuture.<Result<Object, Throwable>>failedStage( throwable ) : CompletableFuture.completedStage( Result.failure( throwable ) );
                                 } finally {
-                                    dis.close();
+                                    in.close();
                                 }
                             } else {
-                                boolean stream = dis.readBoolean();
+                                boolean stream = in.readBoolean();
                                 if( stream ) {
-                                    ChainIterator it = new ChainIterator( foryInputStream );
+                                    ChainIterator it = new ChainIterator( in );
 
                                     return CompletableFuture.completedStage( Result.success( Stream.of( it ).onClose( Try.run( () -> {
-                                        dis.close();
+                                        in.close();
                                         successMetrics.increment();
                                     } ) ) ) );
                                 } else {
                                     try {
-                                        Result<Object, Throwable> r = Result.success( ForyConsts.fory.deserialize( foryInputStream ) );
+                                        Result<Object, Throwable> r = Result.success( KryoConsts.kryo.readClassAndObject( in ) );
                                         successMetrics.increment();
                                         return CompletableFuture.completedStage( r );
                                     } finally {
-                                        dis.close();
+                                        in.close();
                                     }
                                 }
                             }
                         } catch( Exception e ) {
-                            dis.close();
+                            in.close();
                             return retException( e, async );
                         }
                     } else {
@@ -294,9 +292,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         Reference reference = ServiceKernelCommand.INSTANCE.reference( service, null );
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream( baos );
-        dos.writeInt( RemoteInvocation.VERSION );
-        ForyConsts.fory.serialize( dos, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
+        Output out = new Output( baos );
+        out.writeInt( RemoteInvocation.VERSION );
+        KryoConsts.kryo.writeClassAndObject( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
         baos.close();
 
         return baos.toByteArray();
@@ -307,13 +305,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         return "source:" + source + " -> remote:" + service + "@" + uri;
     }
 
-    private class ChainIterator implements Iterator<Object> {
-        private final ForyInputStream dis;
+    private static class ChainIterator implements Iterator<Object> {
+        private final Input in;
         private Object obj;
         private boolean end;
 
-        ChainIterator( ForyInputStream dis ) {
-            this.dis = dis;
+        ChainIterator( Input dis ) {
+            this.in = dis;
             obj = null;
             end = false;
         }
@@ -325,13 +323,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
             if( obj != null ) return true;
 
-            int b = dis.read();
-            if( b == 1 ) {
-                obj = ForyConsts.fory.deserialize( dis );
+            boolean b = in.readBoolean();
+            if( b ) {
+                obj = KryoConsts.kryo.readClassAndObject( in );
             } else {
                 end = true;
                 obj = null;
-                dis.close();
+                in.close();
             }
 
             return obj != null;
