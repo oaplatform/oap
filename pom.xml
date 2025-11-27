@@ -82,7 +82,7 @@
 
         <oap.deps.okhttp.version>5.1.0</oap.deps.okhttp.version>
 
-        <oap.deps.apache.fory.version>0.13.1</oap.deps.apache.fory.version>
+        <oap.deps.kryo.version>5.6.2</oap.deps.kryo.version>
 
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
