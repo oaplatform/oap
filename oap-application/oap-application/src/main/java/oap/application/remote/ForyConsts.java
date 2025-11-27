@@ -21,6 +21,9 @@ public abstract class ForyConsts {
             .serializeEnumByName( true )
             .registerGuavaTypes( true )
 
+            // buggy
+            .withCodegen( false )
+
             .buildThreadSafeForyPool( ForyConsts.MIN_POOL_SIZE, ForyConsts.MAX_POOL_SIZE );
     }
 }
