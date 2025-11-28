@@ -71,7 +71,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>25.0.12</oap.project.version>
+        <oap.project.version>25.0.13</oap.project.version>
 
         <oap.deps.config.version>22.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
@@ -81,8 +81,6 @@
         <oap.deps.byte-buddy.version>1.17.6</oap.deps.byte-buddy.version>
 
         <oap.deps.okhttp.version>5.1.0</oap.deps.okhttp.version>
-
-        <oap.deps.kryo.version>5.6.2</oap.deps.kryo.version>
 
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
@@ -104,6 +102,7 @@
         <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
         <oap.deps.aircompressor.version>0.25</oap.deps.aircompressor.version>
         <oap.deps.luben-zstd-jni.version>1.5.5-11</oap.deps.luben-zstd-jni.version>
+        <oap.deps.fst.version>3.0.4-jdk17</oap.deps.fst.version>
         <oap.deps.guava-retrying.version>3.0.3</oap.deps.guava-retrying.version>
         <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
         <oap.deps.disruptor.version>1.2.21</oap.deps.disruptor.version>

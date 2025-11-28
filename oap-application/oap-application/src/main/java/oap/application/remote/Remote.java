@@ -23,8 +23,6 @@
  */
 package oap.application.remote;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -35,6 +33,10 @@ import oap.http.server.nio.NioHttpServer;
 import oap.util.function.Try;
 import org.apache.commons.lang3.mutable.MutableInt;
 
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -143,22 +145,23 @@ public class Remote implements HttpHandler {
                 exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
 
                 try( OutputStream outputStream = exchange.getOutputStream();
-                     Output out = new Output( outputStream ) ) {
-                    out.writeBoolean( ex == null );
+                     BufferedOutputStream bos = new BufferedOutputStream( outputStream );
+                     DataOutputStream dos = new DataOutputStream( bos ) ) {
+                    dos.writeBoolean( ex == null );
 
                     if( ex != null ) {
-                        KryoConsts.writeClassAndObject( out, ex );
+                        FstConsts.writeObjectWithSize( dos, ex );
                     } else if( v instanceof Stream<?> ) {
-                        out.writeBoolean( true );
+                        dos.writeBoolean( true );
 
                         ( ( Stream<?> ) v ).forEach( Try.consume( obj -> {
-                            out.writeBoolean( true );
-                            KryoConsts.writeClassAndObject( out, obj );
+                            dos.writeBoolean( true );
+                            FstConsts.writeObjectWithSize( dos, obj );
                         } ) );
-                        out.writeBoolean( false );
+                        dos.writeBoolean( false );
                     } else {
-                        out.writeBoolean( false );
-                        KryoConsts.writeClassAndObject( out, v );
+                        dos.writeBoolean( false );
+                        FstConsts.writeObjectWithSize( dos, v );
                     }
                 } catch( Throwable e ) {
                     log.error( "invocation {}", finalInvocation, e );
@@ -175,11 +178,11 @@ public class Remote implements HttpHandler {
         }
     }
 
-    public RemoteInvocation getRemoteInvocation( InputStream body ) {
-        Input in = new Input( body );
-        int version = in.readInt();
+    public RemoteInvocation getRemoteInvocation( InputStream body ) throws IOException {
+        DataInputStream dis = new DataInputStream( body );
+        int version = dis.readInt();
 
-        RemoteInvocation invocation = ( RemoteInvocation ) KryoConsts.readClassAndObject( in );
+        RemoteInvocation invocation = FstConsts.<RemoteInvocation>readObjectWithSize( dis );
         log.trace( "invoke v{} - {}", version, invocation );
         return invocation;
     }

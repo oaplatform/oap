@@ -62,16 +62,15 @@ public final class RemoteSerialization<T> implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        byte[] content = KryoConsts.writeClassAndObject( new RemoteInvocation( "service", method.getName(), arguments ) );
-        RemoteInvocation ri = ( RemoteInvocation ) KryoConsts.readClassAndObject( content );
+        byte[] content = FstConsts.asByteArray( new RemoteInvocation( "service", method.getName(), arguments ) );
+        RemoteInvocation ri = ( RemoteInvocation ) FstConsts.asObject( content );
 
         Object result = master.getClass()
             .getMethod( ri.method, ri.types() )
             .invoke( master, ri.values() );
 
 
-        content = KryoConsts.writeClassAndObject( result );
-
-        return KryoConsts.readClassAndObject( content );
+        content = FstConsts.asByteArray( result );
+        return FstConsts.asObject( content );
     }
 }

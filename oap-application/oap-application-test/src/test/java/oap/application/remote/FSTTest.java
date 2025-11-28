@@ -26,14 +26,15 @@ package oap.application.remote;
 
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class KryoTest {
+public class FSTTest {
     @Test
-    public void optional() {
-        assertThat( KryoConsts.readClassAndObject( KryoConsts.writeClassAndObject( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
-        assertThat( KryoConsts.readClassAndObject( KryoConsts.writeClassAndObject( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
+    public void optional() throws IOException {
+        assertThat( FstConsts.asObject( FstConsts.asByteArray( Optional.empty() ) ) ).isEqualTo( Optional.empty() );
+        assertThat( FstConsts.asObject( FstConsts.asByteArray( Optional.of( "1" ) ) ) ).isEqualTo( Optional.of( "1" ) );
     }
 }
