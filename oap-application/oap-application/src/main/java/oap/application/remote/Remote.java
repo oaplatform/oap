@@ -147,18 +147,18 @@ public class Remote implements HttpHandler {
                     out.writeBoolean( ex == null );
 
                     if( ex != null ) {
-                        KryoConsts.kryo.writeClassAndObject( out, ex );
+                        KryoConsts.writeClassAndObject( out, ex );
                     } else if( v instanceof Stream<?> ) {
                         out.writeBoolean( true );
 
                         ( ( Stream<?> ) v ).forEach( Try.consume( obj -> {
                             out.writeBoolean( true );
-                            KryoConsts.kryo.writeClassAndObject( out, obj );
+                            KryoConsts.writeClassAndObject( out, obj );
                         } ) );
                         out.writeBoolean( false );
                     } else {
                         out.writeBoolean( false );
-                        KryoConsts.kryo.writeClassAndObject( out, v );
+                        KryoConsts.writeClassAndObject( out, v );
                     }
                 } catch( Throwable e ) {
                     log.error( "invocation {}", finalInvocation, e );
@@ -179,7 +179,7 @@ public class Remote implements HttpHandler {
         Input in = new Input( body );
         int version = in.readInt();
 
-        RemoteInvocation invocation = ( RemoteInvocation ) KryoConsts.kryo.readClassAndObject( in );
+        RemoteInvocation invocation = ( RemoteInvocation ) KryoConsts.readClassAndObject( in );
         log.trace( "invoke v{} - {}", version, invocation );
         return invocation;
     }

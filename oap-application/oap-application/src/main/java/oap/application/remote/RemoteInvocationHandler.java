@@ -207,7 +207,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                         try {
                             if( !success ) {
                                 try {
-                                    Throwable throwable = ( Throwable ) KryoConsts.kryo.readClassAndObject( in );
+                                    Throwable throwable = ( Throwable ) KryoConsts.readClassAndObject( in );
 
                                     if( throwable instanceof RemoteInvocationException riex ) {
                                         errorMetrics.increment();
@@ -230,7 +230,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     } ) ) ) );
                                 } else {
                                     try {
-                                        Result<Object, Throwable> r = Result.success( KryoConsts.kryo.readClassAndObject( in ) );
+                                        Result<Object, Throwable> r = Result.success( KryoConsts.readClassAndObject( in ) );
                                         successMetrics.increment();
                                         return CompletableFuture.completedStage( r );
                                     } finally {
@@ -294,7 +294,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try( Output out = new Output( baos ) ) {
             out.writeInt( RemoteInvocation.VERSION );
-            KryoConsts.kryo.writeClassAndObject( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
+            KryoConsts.writeClassAndObject( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
         }
 
         return baos.toByteArray();
@@ -325,7 +325,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
             boolean b = in.readBoolean();
             if( b ) {
-                obj = KryoConsts.kryo.readClassAndObject( in );
+                obj = KryoConsts.readClassAndObject( in );
             } else {
                 end = true;
                 obj = null;
