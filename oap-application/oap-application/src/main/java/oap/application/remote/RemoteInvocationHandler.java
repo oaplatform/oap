@@ -23,8 +23,6 @@
  */
 package oap.application.remote;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import io.micrometer.core.instrument.Counter;
@@ -48,6 +46,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -201,13 +201,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     if( response.code() == HTTP_OK ) {
                         InputStream inputStream = response.body().byteStream();
                         BufferedInputStream bis = new BufferedInputStream( inputStream );
-                        Input in = new Input( bis );
-                        boolean success = in.readBoolean();
+                        DataInputStream dis = new DataInputStream( bis );
+                        boolean success = dis.readBoolean();
 
                         try {
                             if( !success ) {
                                 try {
-                                    Throwable throwable = ( Throwable ) KryoConsts.readClassAndObject( in );
+                                    Throwable throwable = FstConsts.readObjectWithSize( dis );
 
                                     if( throwable instanceof RemoteInvocationException riex ) {
                                         errorMetrics.increment();
@@ -217,29 +217,29 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     errorMetrics.increment();
                                     return async ? CompletableFuture.<Result<Object, Throwable>>failedStage( throwable ) : CompletableFuture.completedStage( Result.failure( throwable ) );
                                 } finally {
-                                    in.close();
+                                    dis.close();
                                 }
                             } else {
-                                boolean stream = in.readBoolean();
+                                boolean stream = dis.readBoolean();
                                 if( stream ) {
-                                    ChainIterator it = new ChainIterator( in );
+                                    ChainIterator it = new ChainIterator( dis );
 
                                     return CompletableFuture.completedStage( Result.success( Stream.of( it ).onClose( Try.run( () -> {
-                                        in.close();
+                                        dis.close();
                                         successMetrics.increment();
                                     } ) ) ) );
                                 } else {
                                     try {
-                                        Result<Object, Throwable> r = Result.success( KryoConsts.readClassAndObject( in ) );
+                                        Result<Object, Throwable> r = Result.success( FstConsts.readObjectWithSize( dis ) );
                                         successMetrics.increment();
                                         return CompletableFuture.completedStage( r );
                                     } finally {
-                                        in.close();
+                                        dis.close();
                                     }
                                 }
                             }
                         } catch( Exception e ) {
-                            in.close();
+                            dis.close();
                             return retException( e, async );
                         }
                     } else {
@@ -292,9 +292,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         Reference reference = ServiceKernelCommand.INSTANCE.reference( service, null );
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try( Output out = new Output( baos ) ) {
+        try( DataOutputStream out = new DataOutputStream( baos ) ) {
             out.writeInt( RemoteInvocation.VERSION );
-            KryoConsts.writeClassAndObject( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
+            FstConsts.writeObjectWithSize( out, new RemoteInvocation( reference.toString(), method.getName(), arguments ) );
         }
 
         return baos.toByteArray();
@@ -306,12 +306,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     private static class ChainIterator implements Iterator<Object> {
-        private final Input in;
+        private final DataInputStream dis;
         private Object obj;
         private boolean end;
 
-        ChainIterator( Input dis ) {
-            this.in = dis;
+        ChainIterator( DataInputStream dis ) {
+            this.dis = dis;
             obj = null;
             end = false;
         }
@@ -323,13 +323,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
             if( obj != null ) return true;
 
-            boolean b = in.readBoolean();
+            boolean b = dis.readBoolean();
             if( b ) {
-                obj = KryoConsts.readClassAndObject( in );
+                obj = FstConsts.readObjectWithSize( dis );
             } else {
                 end = true;
                 obj = null;
-                in.close();
+                dis.close();
             }
 
             return obj != null;
