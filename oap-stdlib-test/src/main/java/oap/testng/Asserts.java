@@ -206,7 +206,6 @@ public final class Asserts {
         return "/" + contetClass.getName().replace( ".", "/" ) + ( resource.startsWith( "/" ) ? "" : "/" ) + resource;
     }
 
-    @Deprecated
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
         protected StringAssertion( CharSequence value ) {
             super( value, StringAssertion.class );
