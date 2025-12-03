@@ -35,11 +35,6 @@ import java.util.concurrent.ExecutionException;
 public class FileSystem implements AutoCloseable {
     private static final HashMap<String, Class<? extends FileSystemCloudApi>> providers = new HashMap<>();
 
-    private static final Cache<String, FileSystemCloudApi> apis = CacheBuilder
-        .newBuilder()
-        .removalListener( rl -> Closeables.close( ( FileSystemCloudApi ) rl.getValue() ) )
-        .build();
-
     static {
         try {
             List<URL> urls = Resources.urls( FileSystem.class, "/cloud-service.properties" );
@@ -63,6 +58,10 @@ public class FileSystem implements AutoCloseable {
     }
 
     public final FileSystemConfiguration fileSystemConfiguration;
+    private final Cache<String, FileSystemCloudApi> apis = CacheBuilder
+        .newBuilder()
+        .removalListener( rl -> Closeables.close( ( FileSystemCloudApi ) rl.getValue() ) )
+        .build();
 
     public FileSystem( FileSystemConfiguration fileSystemConfiguration ) {
         this.fileSystemConfiguration = fileSystemConfiguration;
