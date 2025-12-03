@@ -49,6 +49,7 @@ import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.test.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.test.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;
+import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -220,52 +221,52 @@ public class HttpAsserts {
         }
 
         public HttpAssertion hasReason( String reasonPhrase ) {
-            assertThat( response.reasonPhrase ).isEqualTo( reasonPhrase );
+            assertString( response.reasonPhrase ).isEqualTo( reasonPhrase );
             return this;
         }
 
         public HttpAssertion reasonContains( String values ) {
-            assertThat( response.reasonPhrase ).contains( values );
+            assertString( response.reasonPhrase ).contains( values );
             return this;
         }
 
         public HttpAssertion reasonContainsPattern( Pattern pattern ) {
-            assertThat( response.reasonPhrase ).containsPattern( pattern );
+            assertString( response.reasonPhrase ).containsPattern( pattern );
             return this;
         }
 
         public HttpAssertion reasonContainsPattern( String pattern ) {
-            assertThat( response.reasonPhrase ).containsPattern( pattern );
+            assertString( response.reasonPhrase ).containsPattern( pattern );
             return this;
         }
 
         public HttpAssertion hasContentType( String contentType ) {
-            assertThat( response.contentType ).isEqualTo( contentType );
+            assertString( response.contentType ).isEqualTo( contentType );
             return this;
         }
 
         public HttpAssertion hasBody( String body ) {
-            assertThat( response.contentString() ).isEqualTo( body );
+            assertString( response.contentString() ).isEqualTo( body );
             return this;
         }
 
         public HttpAssertion bodyContains( String values ) {
-            assertThat( response.contentString() ).contains( values );
+            assertString( response.contentString() ).contains( values );
             return this;
         }
 
         public HttpAssertion bodyContainsPattern( Pattern pattern ) {
-            assertThat( response.contentString() ).containsPattern( pattern );
+            assertString( response.contentString() ).containsPattern( pattern );
             return this;
         }
 
         public HttpAssertion bodyContainsPattern( String pattern ) {
-            assertThat( response.contentString() ).containsPattern( pattern );
+            assertString( response.contentString() ).containsPattern( pattern );
             return this;
         }
 
         public HttpAssertion containsHeader( String name, String value ) {
-            assertThat( response.header( name ).orElse( null ) ).isEqualTo( value );
+            assertString( response.header( name ).orElse( null ) ).isEqualTo( value );
             return this;
         }
 
@@ -362,7 +363,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasValue( String value ) {
-            assertThat( cookie.getValue() ).isEqualTo( value );
+            assertString( cookie.getValue() ).isEqualTo( value );
             return this;
         }
 
@@ -371,7 +372,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasDomain( String domain ) {
-            assertThat( cookie.getDomain() ).isEqualTo( domain );
+            assertString( cookie.getDomain() ).isEqualTo( domain );
             return this;
         }
 
@@ -386,7 +387,7 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion hasPath( String path ) {
-            assertThat( cookie.getPath() ).isEqualTo( path );
+            assertString( cookie.getPath() ).isEqualTo( path );
             return this;
         }
 
