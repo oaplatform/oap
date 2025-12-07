@@ -33,6 +33,8 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,7 +50,7 @@ public class DictionaryParserTest extends Fixtures {
 
     @Test
     public void serialize() {
-        var path = testDirectoryFixture.testPath( "test/test.json" );
+        Path path = testDirectoryFixture.testPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
         assertThat( Files.readString( path ) ).isEqualTo( """
@@ -86,7 +88,7 @@ public class DictionaryParserTest extends Fixtures {
         expectedExceptionsMessageRegExp = "duplicate eid: path: /id1; eid: 11; one: id11; two: id12, path: /id1/id12; eid: 50; one: id2; two: id3"
     )
     public void invalidEid() {
-        var url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
+        Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
 
         assertThat( url ).isPresent();
 
@@ -103,7 +105,7 @@ public class DictionaryParserTest extends Fixtures {
 
     @Test
     public void zeroStringEid() {
-        var dictionary = Dictionaries.getDictionary( "test-dictionary2" );
+        DictionaryRoot dictionary = Dictionaries.getDictionary( "test-dictionary2" );
         assertThat( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
         assertThat( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
 
@@ -112,15 +114,24 @@ public class DictionaryParserTest extends Fixtures {
 
     @Test
     public void testJsonParse() {
-        var dictionary = Binder.hoconWithoutSystemProperties.unmarshal( DictionaryRoot.class, getClass().getResource( "/dictionary/test-dictionary.conf" ) );
+        DictionaryRoot dictionary = Binder.hoconWithoutSystemProperties.unmarshal( DictionaryRoot.class, getClass().getResource( "/dictionary/test-dictionary.conf" ) );
 
         assertThat( dictionary.getId() ).isEqualTo( "test-dictionary" );
         assertThat( dictionary.getValues() ).hasSize( 3 );
     }
 
     @Test
+    public void testJsonParseMap() {
+        DictionaryRoot dictionary = Binder.hoconWithoutSystemProperties.unmarshal( DictionaryRoot.class, getClass().getResource( "/dictionary/test-dictionary-map.conf" ) );
+
+        assertThat( dictionary.getId() ).isEqualTo( "test-dictionary" );
+        assertThat( dictionary.getValues() ).hasSize( 3 );
+        assertThat( dictionary.getValue( "id1" ).getValues() ).hasSize( 2 );
+    }
+
+    @Test
     public void testDictionaryEnum() {
-        var test1 = Binder.hoconWithoutSystemProperties.unmarshal( TestDictionaryContainer.class, "{value = TEST1}" );
+        TestDictionaryContainer test1 = Binder.hoconWithoutSystemProperties.unmarshal( TestDictionaryContainer.class, "{value = TEST1}" );
 
         assertThat( test1.value ).isEqualTo( TestDictionary.TEST1 );
     }

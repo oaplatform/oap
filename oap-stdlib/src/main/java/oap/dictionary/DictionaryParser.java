@@ -89,10 +89,17 @@ public class DictionaryParser {
                 if( !defaultFields.contains( propertyName ) && ( !valueAsRoot || !NAME.equals( propertyName ) ) ) {
                     Object propertyValue = e.getValue();
 
-                    if( VALUES.equals( propertyName ) )
-                        values = parseValues( ( List<?> ) propertyValue, path, idStrategy );
-                    else
+                    if( VALUES.equals( propertyName ) ) {
+                        if( propertyValue instanceof List<?> list ) {
+                            values = parseValues( list, path, idStrategy );
+                        } else if( propertyValue instanceof Map<?, ?> map ) {
+                            values = parseValues( map, path, idStrategy );
+                        } else {
+                            throw new DictionaryFormatError( "values must be map or list" );
+                        }
+                    } else {
                         properties.put( propertyName, propertyValue );
+                    }
                 }
             }
 
@@ -281,6 +288,20 @@ public class DictionaryParser {
             Object value = values.get( i );
             dv.add( parseAsDictionaryValue( value, path + "[" + i + "]", false, idStrategy ) );
         }
+
+        return dv;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static ArrayList<Dictionary> parseValues( Map<?, ?> values, String path, IdStrategy idStrategy ) {
+        ArrayList<Dictionary> dv = new ArrayList<>();
+
+        values.forEach( ( key, value ) -> {
+            if( value instanceof Map map ) {
+                map.put( "id", key );
+            }
+            dv.add( parseAsDictionaryValue( value, path + "['" + key + "']", false, idStrategy ) );
+        } );
 
         return dv;
     }

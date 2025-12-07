@@ -30,6 +30,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +47,7 @@ public final class DictionaryRoot implements Dictionary {
     @JsonIgnore
     private final HashMap<Integer, String> indexByExternalId = new HashMap<>();
     @JsonIgnore
-    private final HashMap<String, Dictionary> indexById = new HashMap<>();
+    private final LinkedHashMap<String, Dictionary> mapValues = new LinkedHashMap<>();
     private final Map<String, Object> properties;
 
     public DictionaryRoot( String name, List<? extends Dictionary> values ) {
@@ -59,7 +60,7 @@ public final class DictionaryRoot implements Dictionary {
         this.properties = properties;
 
         for( Dictionary dv : values ) {
-            indexById.put( dv.getId(), dv );
+            mapValues.put( dv.getId(), dv );
             indexByExternalId.put( dv.getExternalId(), dv.getId() );
         }
     }
@@ -73,21 +74,21 @@ public final class DictionaryRoot implements Dictionary {
 
     @Override
     public int getOrDefault( String id, int defaultValue ) {
-        final Dictionary rtb = indexById.get( id );
+        final Dictionary rtb = mapValues.get( id );
         if( rtb == null ) return defaultValue;
         return rtb.getExternalId();
     }
 
     @Override
     public Integer get( String id ) {
-        final Dictionary rtb = indexById.get( id );
+        final Dictionary rtb = mapValues.get( id );
         if( rtb == null ) return null;
         return rtb.getExternalId();
     }
 
     @Override
     public boolean containsValueWithId( String id ) {
-        return indexById.containsKey( id );
+        return mapValues.containsKey( id );
     }
 
     @Override
@@ -123,19 +124,19 @@ public final class DictionaryRoot implements Dictionary {
 
     @Override
     public Optional<? extends Dictionary> getValueOpt( String name ) {
-        return Optional.ofNullable( indexById.get( name ) );
+        return Optional.ofNullable( mapValues.get( name ) );
     }
 
     @Override
     public Dictionary getValue( String name ) {
-        return indexById.get( name );
+        return mapValues.get( name );
     }
 
     @Override
     public Dictionary getValue( int externalId ) {
         final String name = indexByExternalId.get( externalId );
         if( name == null ) return null;
-        return indexById.get( name );
+        return mapValues.get( name );
     }
 
     @Override
