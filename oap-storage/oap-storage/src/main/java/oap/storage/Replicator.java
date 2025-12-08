@@ -26,11 +26,13 @@ package oap.storage;
 
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Cuid;
+import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Pair;
 
@@ -55,29 +57,46 @@ import static oap.util.Pair.__;
 public class Replicator<I, T> implements Closeable {
     static final AtomicLong stored = new AtomicLong();
     static final AtomicLong deleted = new AtomicLong();
+
+    public final RemovePermanentlyReplicatorConfiguration removePermanently = new RemovePermanentlyReplicatorConfiguration();
+    public final long interval;
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
-    private String uniqueName = Cuid.UNIQUE.next();
+    public long jitter = -1;
+    public String uniqueName = Cuid.UNIQUE.next();
+    public transient Pair<Long, String> lastModified = __( -1L, "" );
     private Scheduled scheduled;
-    private transient Pair<Long, String> lastModified = __( -1L, "" );
+    private Scheduled removePermanentlyScheduled;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
         this.slave = slave;
         this.master = master;
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
+        this.interval = interval;
+    }
+
+    public static void reset() {
+        stored.set( 0 );
+        deleted.set( 0 );
+    }
+
+    public void start() {
+        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, jitter, i -> {
             Pair<Long, String> newLastModified = replicate( lastModified );
-            log.trace( "[{}] newLastModified = {}, lastModified = {}", uniqueName, newLastModified, lastModified );
+            log.trace( "[{}] newLastModified {} lastModified {}", uniqueName, newLastModified, lastModified );
             if( newLastModified._2.equals( lastModified._2 ) ) {
                 lastModified = newLastModified.map( ( t, m ) -> __( t + 1, m ) );
             } else {
                 lastModified = newLastModified;
             }
         } );
-    }
 
-    public static void reset() {
-        stored.set( 0 );
-        deleted.set( 0 );
+        if( removePermanently.enabled ) {
+            removePermanentlyScheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, jitter, i -> {
+                long newLastModified = replicateRemovePermanently( lastModified._1 );
+                log.trace( "[{}] newLastModified  {} lastModified {}", uniqueName, newLastModified, lastModified );
+                lastModified = __( newLastModified, lastModified._2 );
+            } );
+        }
     }
 
     public void replicateNow() {
@@ -152,10 +171,19 @@ public class Replicator<I, T> implements Closeable {
             log.trace( "[{}] added {} updated {}", uniqueName, Lists.map( added, a -> a.id ), Lists.map( updated, a -> a.id ) );
         }
 
+
+        if( !added.isEmpty() || !updated.isEmpty() ) {
+            slave.fireChanged( added, updated, List.of() );
+        }
+
+        return __( lastUpdate, hash );
+    }
+
+    public long replicateRemovePermanently( long lastUpdate ) {
         List<I> ids = master.ids();
         log.trace( "[{}] master ids {}", uniqueName, ids );
         if( ids.isEmpty() ) {
-            lastUpdate = -1;
+            return -1;
         }
 
         List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
@@ -168,24 +196,39 @@ public class Replicator<I, T> implements Closeable {
 
         Replicator.deleted.addAndGet( deleted.size() );
 
-        if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
-            slave.fireChanged( added, updated, deleted );
+        if( !deleted.isEmpty() ) {
+            slave.fireChanged( List.of(), List.of(), deleted );
         }
 
-        return __( lastUpdate, hash );
+        return lastUpdate;
     }
 
     public void preStop() {
-        Scheduled.cancel( scheduled );
-        scheduled = null;
-    }
-
-    @Override
-    public void close() {
         try {
             Scheduled.cancel( scheduled );
         } catch( Exception e ) {
             log.error( e.getMessage(), e );
         }
+
+        try {
+            Scheduled.cancel( removePermanentlyScheduled );
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
+        }
+
+        scheduled = null;
+        removePermanentlyScheduled = null;
+    }
+
+    @Override
+    public void close() {
+        preStop();
+    }
+
+    @ToString
+    public static class RemovePermanentlyReplicatorConfiguration {
+        public boolean enabled = true;
+        public long interval = Dates.m( 10 );
+        public long jitter = Dates.s( 30 );
     }
 }

@@ -35,11 +35,13 @@ public class PeriodicScheduled extends Scheduled implements Runnable {
     private final AtomicLong lastTimeExecuted = new AtomicLong( 0 );
     Scheduled scheduled;
     private final Class<?> owner;
+    private final long jitter;
     private final long safePeriod;
     private final Consumer<Long> job;
 
-    public PeriodicScheduled( Class<?> owner, long safePeriod, Consumer<Long> job ) {
+    public PeriodicScheduled( Class<?> owner, long jitter, long safePeriod, Consumer<Long> job ) {
         this.owner = owner;
+        this.jitter = jitter;
         this.safePeriod = safePeriod;
         this.job = job;
     }
@@ -49,6 +51,7 @@ public class PeriodicScheduled extends Scheduled implements Runnable {
     }
 
     public void run() {
+        JitterUtils.parkRandomNanos( jitter );
         log.trace( "executing {}", scheduled );
         long current = DateTimeUtils.currentTimeMillis() - safePeriod;
         this.job.accept( lastTimeExecuted.get() );

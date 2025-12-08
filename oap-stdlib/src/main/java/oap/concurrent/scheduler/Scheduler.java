@@ -135,19 +135,19 @@ public final class Scheduler {
     }
 
     public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, Consumer<Long> consume ) {
-        return scheduleWithFixedDelay( owner, delay, safePeriod, MILLISECONDS, consume );
+        return scheduleWithFixedDelay( owner, delay, -1, safePeriod, MILLISECONDS, consume );
     }
 
     public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, Consumer<Long> consume ) {
-        return scheduleWithFixedDelay( owner, delay, 0, MILLISECONDS, consume );
+        return scheduleWithFixedDelay( owner, delay, -1, 0, MILLISECONDS, consume );
     }
 
     public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, TimeUnit timeUnit, Consumer<Long> consume ) {
-        return scheduleWithFixedDelay( owner, delay, 0, timeUnit, consume );
+        return scheduleWithFixedDelay( owner, delay, -1, 0, timeUnit, consume );
     }
 
-    public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
-        PeriodicScheduled scheduled = new PeriodicScheduled( owner, safePeriod, consume );
+    public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long jitter, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
+        PeriodicScheduled scheduled = new PeriodicScheduled( owner, jitter, safePeriod, consume );
         scheduled.scheduled = scheduleWithFixedDelay( delay, timeUnit, scheduled );
         return scheduled;
     }

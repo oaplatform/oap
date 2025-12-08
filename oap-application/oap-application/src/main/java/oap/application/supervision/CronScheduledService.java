@@ -24,30 +24,30 @@
 package oap.application.supervision;
 
 import lombok.ToString;
+import oap.concurrent.scheduler.JitterUtils;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.util.Numbers;
 
 import java.util.SplittableRandom;
-import java.util.concurrent.locks.LockSupport;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CronScheduledService extends AbstractScheduledService {
-    private static final SplittableRandom RANDOM = new SplittableRandom();
     public static final Pattern JITTER = Pattern.compile( "(.+)\\s+jitter\s++(\\d++\\w*)$" );
-
+    private static final SplittableRandom RANDOM = new SplittableRandom();
     public final String cron;
     public final long jitter;
 
     public CronScheduledService( Runnable runnable, String cron ) {
         super( "cron", runnable );
-        var info = parse( cron );
+        CronInfo info = parse( cron );
         this.cron = info.cron;
         this.jitter = info.jitter;
     }
 
     private static CronInfo parse( String cron ) {
-        var m = JITTER.matcher( cron );
+        Matcher m = JITTER.matcher( cron );
         if( m.matches() ) {
             return new CronInfo( m.group( 1 ).trim(), Numbers.parseLongWithUnits( m.group( 2 ) ) );
         }
@@ -62,10 +62,7 @@ public class CronScheduledService extends AbstractScheduledService {
 
     @Override
     public void run() {
-        if( jitter > 0 ) {
-            long nanos = RANDOM.nextLong( 0, jitter + 1 ) * 1_000_000L;
-            LockSupport.parkNanos( nanos );
-        }
+        JitterUtils.parkRandomNanos( jitter );
         super.run();
     }
 
