@@ -228,28 +228,28 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     protected void fireAdded( Id id, Metadata<Data> medatada ) {
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
-            dataListener.added( List.of( IdObject.__io( id, medatada ) ) );
+            dataListener.changed( List.of( IdObject.__io( id, medatada ) ), List.of(), List.of() );
         }
     }
 
     protected void fireAdded( List<IdObject<Id, Data>> objects ) {
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
-                dataListener.added( objects );
+                dataListener.changed( objects, List.of(), List.of() );
             }
         }
     }
 
     protected void fireUpdated( Id id, Metadata<Data> metadata ) {
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
-            dataListener.updated( List.of( IdObject.__io( id, metadata ) ) );
+            dataListener.changed( List.of(), List.of( IdObject.__io( id, metadata ) ), List.of() );
         }
     }
 
     protected void fireUpdated( List<IdObject<Id, Data>> objects ) {
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
-                dataListener.updated( objects );
+                dataListener.changed( List.of(), objects, List.of() );
             }
         }
     }
@@ -257,14 +257,14 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     protected void fireDeleted( List<IdObject<Id, Data>> objects ) {
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
-                dataListener.deleted( objects );
+                dataListener.changed( List.of(), List.of(), objects );
             }
         }
     }
 
     protected void fireDeleted( Id id, Metadata<Data> object ) {
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
-            dataListener.deleted( List.of( IdObject.__io( id, object ) ) );
+            dataListener.changed( List.of(), List.of(), List.of( IdObject.__io( id, object ) ) );
         }
     }
 

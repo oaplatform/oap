@@ -120,7 +120,17 @@ public interface Storage<Id, Data> extends Iterable<Data> {
          */
         default void changed( List<DataListener.IdObject<DI, D>> added,
                               List<DataListener.IdObject<DI, D>> updated,
-                              List<DataListener.IdObject<DI, D>> deleted ) {}
+                              List<DataListener.IdObject<DI, D>> deleted ) {
+            if( !added.isEmpty() ) {
+                added( added );
+            }
+            if( !updated.isEmpty() ) {
+                updated( updated );
+            }
+            if( !deleted.isEmpty() ) {
+                deleted( deleted );
+            }
+        }
 
         @ToString
         @EqualsAndHashCode

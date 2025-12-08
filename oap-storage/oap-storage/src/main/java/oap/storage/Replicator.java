@@ -144,8 +144,6 @@ public class Replicator<I, T> implements Closeable {
                 if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata ) );
                 else updated.add( __io( id, metadata ) );
             }
-            slave.fireAdded( added );
-            slave.fireUpdated( updated );
 
             stored.addAndGet( newUpdates.size() );
         }
@@ -167,12 +165,12 @@ public class Replicator<I, T> implements Closeable {
             .map( Optional::get )
             .toList();
         log.trace( "[{}] deleted {}", uniqueName, deleted );
-        slave.fireDeleted( deleted );
+
+        Replicator.deleted.addAndGet( deleted.size() );
+
         if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
             slave.fireChanged( added, updated, deleted );
         }
-
-        Replicator.deleted.addAndGet( deleted.size() );
 
         return __( lastUpdate, hash );
     }
