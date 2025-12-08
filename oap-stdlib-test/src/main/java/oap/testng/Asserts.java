@@ -104,7 +104,6 @@ public final class Asserts {
 
     }
 
-    @Deprecated
     public static StringAssertion assertString( CharSequence actual ) {
         return new StringAssertion( actual );
     }

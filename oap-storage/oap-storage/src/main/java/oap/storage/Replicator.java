@@ -136,7 +136,7 @@ public class Replicator<I, T> implements Closeable {
                 log.trace( "[{}] replicate {}", metadata, uniqueName );
 
                 I id = slave.identifier.get( metadata.object );
-                Boolean unmodified = slave.memory.get( id ).map( m -> m.looksUnmodified( metadata ) ).orElse( false );
+                Boolean unmodified = slave.memory.get( id ).map( m -> last._1 != -1 && m.looksUnmodified( metadata ) ).orElse( false );
                 if( unmodified ) {
                     log.trace( "[{}] skipping unmodified {}", uniqueName, id );
                     continue;
