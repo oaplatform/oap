@@ -90,6 +90,11 @@ public class Replicator<I, T> implements Closeable {
         }
     }
 
+    public void replicateNow( long last ) {
+        lastModified = __( last, "" );
+        replicateNow();
+    }
+
     public void replicateNow() {
         log.trace( "[{}] forcing replication...", uniqueName );
         scheduled.triggerNow();
@@ -99,8 +104,7 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public void replicateAllNow() {
-        lastModified = __( -1L, "" );
-        replicateNow();
+        replicateNow( -1L );
     }
 
     public synchronized Pair<Long, String> replicate( Pair<Long, String> last ) {
