@@ -180,10 +180,12 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public long replicateRemovePermanently( long lastUpdate ) {
+        long retLastUpdate = lastUpdate;
+
         List<I> ids = master.ids();
         log.trace( "[{}] master ids {}", uniqueName, ids );
         if( ids.isEmpty() ) {
-            return -1;
+            retLastUpdate = -1;
         }
 
         List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
@@ -200,7 +202,7 @@ public class Replicator<I, T> implements Closeable {
             slave.fireChanged( List.of(), List.of(), deleted );
         }
 
-        return lastUpdate;
+        return retLastUpdate;
     }
 
     public void preStop() {
