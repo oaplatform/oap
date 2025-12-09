@@ -42,7 +42,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static oap.storage.Storage.DataListener.IdObject.__io;
@@ -55,9 +54,6 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Replicator<I, T> implements Closeable {
-    static final AtomicLong stored = new AtomicLong();
-    static final AtomicLong deleted = new AtomicLong();
-
     public final RemovePermanentlyReplicatorConfiguration removePermanently = new RemovePermanentlyReplicatorConfiguration();
     public final long interval;
     private final MemoryStorage<I, T> slave;
@@ -74,13 +70,8 @@ public class Replicator<I, T> implements Closeable {
         this.interval = interval;
     }
 
-    public static void reset() {
-        stored.set( 0 );
-        deleted.set( 0 );
-    }
-
     public void start() {
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, jitter, i -> {
+        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, jitter, _ -> {
             Pair<Long, String> newLastModified = replicate( lastModified );
             log.trace( "[{}] newLastModified {} lastModified {}", uniqueName, newLastModified, lastModified );
             if( newLastModified._2.equals( lastModified._2 ) ) {
@@ -91,7 +82,7 @@ public class Replicator<I, T> implements Closeable {
         } );
 
         if( removePermanently.enabled ) {
-            removePermanentlyScheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, jitter, i -> {
+            removePermanentlyScheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, jitter, _ -> {
                 long newLastModified = replicateRemovePermanently( lastModified._1 );
                 log.trace( "[{}] newLastModified  {} lastModified {}", uniqueName, newLastModified, lastModified );
                 lastModified = __( newLastModified, lastModified._2 );
@@ -102,6 +93,9 @@ public class Replicator<I, T> implements Closeable {
     public void replicateNow() {
         log.trace( "[{}] forcing replication...", uniqueName );
         scheduled.triggerNow();
+        if( removePermanentlyScheduled != null ) {
+            removePermanentlyScheduled.triggerNow();
+        }
     }
 
     public void replicateAllNow() {
@@ -163,8 +157,6 @@ public class Replicator<I, T> implements Closeable {
                 if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata ) );
                 else updated.add( __io( id, metadata ) );
             }
-
-            stored.addAndGet( newUpdates.size() );
         }
 
         if( log.isTraceEnabled() ) {
@@ -195,8 +187,6 @@ public class Replicator<I, T> implements Closeable {
             .map( Optional::get )
             .toList();
         log.trace( "[{}] deleted {}", uniqueName, deleted );
-
-        Replicator.deleted.addAndGet( deleted.size() );
 
         if( !deleted.isEmpty() ) {
             slave.fireChanged( List.of(), List.of(), deleted );

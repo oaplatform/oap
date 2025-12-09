@@ -29,11 +29,11 @@ import oap.json.TypeIdFactory;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import org.joda.time.DateTimeUtils;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
@@ -46,11 +46,6 @@ public class ReplicatorTest extends Fixtures {
 
     public ReplicatorTest() {
         fixtures( new SystemTimerFixture( true ) );
-    }
-
-    @BeforeMethod
-    public void beforeMethod() {
-        Replicator.reset();
     }
 
     @Test
@@ -124,8 +119,20 @@ public class ReplicatorTest extends Fixtures {
 
     @Test
     public void testSyncSafe() {
-        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        AtomicLong addedCounter = new AtomicLong();
+        AtomicLong updatedCounter = new AtomicLong();
+
         MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+
+        slave.addDataListener( new Storage.DataListener<>() {
+            @Override
+            public void changed( List<IdObject<String, Bean>> added, List<IdObject<String, Bean>> updated, List<IdObject<String, Bean>> deleted ) {
+                addedCounter.addAndGet( added.size() );
+                updatedCounter.addAndGet( updated.size() );
+            }
+        } );
+
         try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 5000 ) ) {
             replicator.start();
 
@@ -134,35 +141,36 @@ public class ReplicatorTest extends Fixtures {
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
 
-            assertCounter( 1L, 0L );
+            assertThat( addedCounter.longValue() ).isOne();
+            assertThat( updatedCounter.longValue() ).isZero();
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
-            assertCounter( 3L, 0L );
+            assertThat( addedCounter.longValue() ).isEqualTo( 2L );
+            assertThat( updatedCounter.longValue() ).isZero();
 
             master.store( new Bean( "3" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();
-            assertCounter( 5L, 0L );
+            assertThat( addedCounter.longValue() ).isEqualTo( 3L );
+            assertThat( updatedCounter.longValue() ).isZero();
 
             replicator.replicateNow();
-            assertCounter( 5L, 0L );
+            assertThat( addedCounter.longValue() ).isEqualTo( 3L );
+            assertThat( updatedCounter.longValue() ).isZero();
 
             replicator.replicateNow();
-            assertCounter( 5L, 0L );
+            assertThat( addedCounter.longValue() ).isEqualTo( 3L );
+            assertThat( updatedCounter.longValue() ).isZero();
 
             DateTimeUtils.setCurrentMillisFixed( 3 );
             master.store( new Bean( "4" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
-            assertCounter( 6L, 0L );
+            assertThat( addedCounter.longValue() ).isEqualTo( 4L );
+            assertThat( updatedCounter.longValue() ).isZero();
 
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ), new Bean( "3" ), new Bean( "4" ) );
         }
-    }
-
-    private void assertCounter( long stored, long deleted ) {
-        assertThat( Replicator.stored.longValue() ).isEqualTo( stored );
-        assertThat( Replicator.deleted.longValue() ).isEqualTo( deleted );
     }
 }
