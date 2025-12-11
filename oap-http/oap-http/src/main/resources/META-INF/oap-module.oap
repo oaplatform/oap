@@ -47,7 +47,6 @@ services {
 
       handlers = [
         <modules.this.keepalive-requests-handler>
-        <modules.this.nio-bandwidth-handler>
         <modules.this.nio-compression-handler>
         <modules.this.blocking-read-timeout-handler>
       ]
