@@ -81,7 +81,6 @@
         <oap.deps.bson4jackson.version>2.18.0</oap.deps.bson4jackson.version>
 
         <oap.deps.jol.version>0.17</oap.deps.jol.version>
-        <oap.deps.bucket4j.version>8.15.0</oap.deps.bucket4j.version>
 
         <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
         <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
@@ -114,5 +113,8 @@
         <oap.deps.javax.mail.version>1.6.2</oap.deps.javax.mail.version>
         <oap.deps.apache.velocity.version>2.3</oap.deps.apache.velocity.version>
         <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
+
+        <!-- jsr305 -->
+        <oap.deps.spotbugs>4.9.8</oap.deps.spotbugs>
     </properties>
 </project>

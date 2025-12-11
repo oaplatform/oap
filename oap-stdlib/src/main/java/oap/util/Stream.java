@@ -23,7 +23,6 @@
  */
 package oap.util;
 
-import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -120,10 +119,6 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
         return of( java.util.stream.Stream.generate( s ) );
     }
 
-    public Stream<E> takeWhile( Predicate<? super E> predicate ) {
-        return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), underlying.isParallel() ) );
-    }
-
     static <T> Spliterator<T> takeWhile( Spliterator<T> spliterator, Predicate<? super T> predicate ) {
         return new Spliterators.AbstractSpliterator<>( spliterator.estimateSize(), 0 ) {
             boolean stillGoing = true;
@@ -140,6 +135,10 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
                 return false;
             }
         };
+    }
+
+    public Stream<E> takeWhile( Predicate<? super E> predicate ) {
+        return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), underlying.isParallel() ) );
     }
 
     public Stream<List<E>> grouped( int batchSize ) {
@@ -374,13 +373,11 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Object[] toArray() {
         return underlying.toArray();
     }
 
     @Override
-    @Nonnull
     public <A> A[] toArray( IntFunction<A[]> generator ) {
         return underlying.toArray( generator );
     }
@@ -398,7 +395,6 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Optional<E> reduce( BinaryOperator<E> accumulator ) {
         return underlying.reduce( accumulator );
     }
@@ -419,13 +415,11 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Optional<E> min( Comparator<? super E> comparator ) {
         return underlying.min( comparator );
     }
 
     @Override
-    @Nonnull
     public Optional<E> max( Comparator<? super E> comparator ) {
         return underlying.max( comparator );
     }
@@ -455,13 +449,11 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Optional<E> findFirst() {
         return underlying.findFirst();
     }
 
     @Override
-    @Nonnull
     public Optional<E> findAny() {
         return underlying.findAny();
     }
@@ -490,7 +482,6 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Iterator<E> iterator() {
         return underlying.iterator();
     }
@@ -500,7 +491,6 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Spliterator<E> spliterator() {
         return underlying.spliterator();
     }
@@ -511,25 +501,21 @@ public class Stream<E> implements java.util.stream.Stream<E>, Closeable, AutoClo
     }
 
     @Override
-    @Nonnull
     public Stream<E> sequential() {
         return of( underlying.sequential() );
     }
 
     @Override
-    @Nonnull
     public Stream<E> parallel() {
         return of( underlying.parallel() );
     }
 
     @Override
-    @Nonnull
     public Stream<E> unordered() {
         return of( underlying.unordered() );
     }
 
     @Override
-    @Nonnull
     public Stream<E> onClose( Runnable closeHandler ) {
         return of( underlying.onClose( closeHandler ) );
     }

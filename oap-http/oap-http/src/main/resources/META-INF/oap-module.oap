@@ -1,11 +1,5 @@
 name = oap-http
 services {
-  nio-bandwidth-handler {
-    implementation = oap.http.server.nio.handlers.BandwidthHandler
-
-    supervision.supervise = true
-  }
-
   nio-compression-handler {
     implementation = oap.http.server.nio.handlers.CompressionNioHandler
   }

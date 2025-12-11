@@ -298,10 +298,12 @@
             <artifactId>jol-core</artifactId>
             <version>${oap.deps.jol.version}</version>
         </dependency>
+
+        <!-- jsr305 -->
         <dependency>
-            <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j_jdk17-core</artifactId>
-            <version>${oap.deps.bucket4j.version}</version>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+            <version>${oap.deps.spotbugs}</version>
         </dependency>
     </dependencies>
 </project>
