@@ -56,11 +56,17 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     protected final List<DataListener<Id, Data>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<Data, Id> memory;
     private final Predicate<Id> conflict = Identifier.toConflict( this::get );
+    final TransactionLog<Id, Data> transactionLog;
 
     public MemoryStorage( Identifier<Id, Data> identifier, Lock lock ) {
+        this( identifier, lock, 0 );
+    }
+
+    public MemoryStorage( Identifier<Id, Data> identifier, Lock lock, int transactionLogSize ) {
         this.identifier = identifier;
         this.lock = lock;
         this.memory = new Memory<>( lock );
+        this.transactionLog = transactionLogSize > 0 ? new TransactionLogImpl<>( transactionLogSize ) : new TransactionLogZero<>();
     }
 
     @Override
@@ -222,12 +228,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireAdded( Id id, Metadata<Data> medatada ) {
+        transactionLog.insert( id, medatada );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( List.of( IdObject.__io( id, medatada ) ), List.of(), List.of() );
         }
     }
 
     protected void fireAdded( List<IdObject<Id, Data>> objects ) {
+        objects.forEach( o -> transactionLog.insert( o.id, o.metadata ) );
+
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
                 dataListener.changed( objects, List.of(), List.of() );
@@ -236,12 +246,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireUpdated( Id id, Metadata<Data> metadata ) {
+        transactionLog.update( id, metadata );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( List.of(), List.of( IdObject.__io( id, metadata ) ), List.of() );
         }
     }
 
     protected void fireUpdated( List<IdObject<Id, Data>> objects ) {
+        objects.forEach( o -> transactionLog.update( o.id, o.metadata ) );
+
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
                 dataListener.changed( List.of(), objects, List.of() );
@@ -250,6 +264,8 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireDeleted( List<IdObject<Id, Data>> objects ) {
+        objects.forEach( o -> transactionLog.delete( o.id, o.metadata ) );
+
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
                 dataListener.changed( List.of(), List.of(), objects );
@@ -258,12 +274,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireDeleted( Id id, Metadata<Data> object ) {
+        transactionLog.delete( id, object );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( List.of(), List.of(), List.of( IdObject.__io( id, object ) ) );
         }
     }
 
     protected void firePermanentlyDeleted( Id id, Metadata<Data> object ) {
+        transactionLog.delete( id, object );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.permanentlyDeleted( IdObject.__io( id, object ) );
         }
@@ -304,16 +324,10 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public Stream<Metadata<Data>> updatedSince( long since ) {
-        log.trace( "requested updated objects since={}, total objects={}", since, memory.data.size() );
-        return memory.selectLive()
-            .mapToObj( ( _, m ) -> m )
-            .filter( m -> m.modified >= since );
-    }
+    public TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp ) {
+        log.trace( "requested updated objects timestamp {}", timestamp );
 
-    @Override
-    public List<Id> ids() {
-        return memory.selectLiveIds().toList();
+        return transactionLog.updatedSince( timestamp, memory.data.entrySet() );
     }
 
     protected static class Memory<T, I> {

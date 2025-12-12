@@ -24,23 +24,21 @@
 
 package oap.storage;
 
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Cuid;
-import oap.util.Lists;
 
 import java.io.Closeable;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import static oap.storage.Storage.DataListener.IdObject.__io;
+import static oap.storage.TransactionLog.ReplicationResult.ReplicationStatusType.FULL_SYNC;
 
 /**
  * Replicator works on the MemoryStorage internals. It's intentional.
@@ -53,16 +51,19 @@ public class Replicator<I, T> implements Closeable {
     private final ReplicationMaster<I, T> master;
     private String uniqueName = Cuid.UNIQUE.next();
     private Scheduled scheduled;
-    private transient long lastModified = -1L;
+    private transient long timestamp = -1L;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
+
+        Preconditions.checkArgument( slave.transactionLog instanceof TransactionLogZero );
+
         this.slave = slave;
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
-            long newLastModified = replicate( lastModified );
-            log.trace( "[{}] newLastModified {}, lastModified {}", uniqueName, newLastModified, lastModified );
+            long newTimestamp = replicate( timestamp );
+            log.trace( "[{}] newTimestamp {}, lastModified {}", uniqueName, newTimestamp, timestamp );
 
-            lastModified = newLastModified;
+            timestamp = newTimestamp;
         } );
     }
 
@@ -72,65 +73,65 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public void replicateAllNow() {
-        lastModified = -1L;
+        timestamp = -1L;
         replicateNow();
     }
 
-    public synchronized long replicate( long last ) {
-        log.trace( "replicate service {} last {}", uniqueName, last );
+    public synchronized long replicate( long timestamp ) {
+        log.trace( "replicate service {} timestamp {}", uniqueName, timestamp );
 
-        List<Metadata<T>> newUpdates;
+        TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince;
 
-        try( Stream<Metadata<T>> updates = master.updatedSince( last ) ) {
-            log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, uniqueName );
-            newUpdates = updates.toList();
-            log.trace( "[{}] updated objects {}", uniqueName, newUpdates.size() );
+        try {
+            log.trace( "[{}] replicate {} to {} timestamp: {}", master, slave, timestamp, uniqueName );
+            updatedSince = master.updatedSince( timestamp );
+            log.trace( "[{}] type {} updated objects {}", uniqueName, updatedSince.type, updatedSince.data.size() );
         } catch( UncheckedIOException e ) {
             log.error( e.getCause().getMessage() );
-            return last;
+            return timestamp;
         } catch( Exception e ) {
             if( e.getCause() instanceof SocketException ) {
                 log.error( e.getCause().getMessage() );
-                return last;
+                return timestamp;
             }
             throw e;
         }
 
         ArrayList<IdObject<I, T>> added = new ArrayList<>();
         ArrayList<IdObject<I, T>> updated = new ArrayList<>();
+        ArrayList<IdObject<I, T>> deleted = new ArrayList<>();
 
-        long lastUpdate = newUpdates.stream().mapToLong( m -> m.modified ).max().orElse( last );
+        long lastUpdate = updatedSince.timestamp;
 
-        for( Metadata<T> metadata : newUpdates ) {
-            log.trace( "[{}] replicate {}", metadata, uniqueName );
+        if( updatedSince.type == FULL_SYNC ) {
+            slave.memory.removePermanently();
+        }
 
-            I id = slave.identifier.get( metadata.object );
-            Boolean unmodified = slave.memory.get( id ).map( m -> last != -1 && m.looksUnmodified( metadata ) ).orElse( false );
-            if( unmodified ) {
-                log.trace( "[{}] skipping unmodified {}", uniqueName, id );
-                continue;
+        for( TransactionLog.Transaction<I, Metadata<T>> transaction : updatedSince.data ) {
+            log.trace( "[{}] replicate {}", transaction, uniqueName );
+
+            Metadata<T> metadata = transaction.object;
+            I id = transaction.id;
+
+            switch( transaction.operation ) {
+                case INSERT -> {
+                    added.add( __io( id, metadata ) );
+                    slave.memory.put( id, metadata );
+                }
+                case UPDATE -> {
+                    if( updatedSince.type == FULL_SYNC ) {
+                        added.add( __io( id, metadata ) );
+                    } else {
+                        updated.add( __io( id, metadata ) );
+                    }
+                    slave.memory.put( id, metadata );
+                }
+                case DELETE -> {
+                    deleted.add( __io( id, metadata ) );
+                    slave.memory.removePermanently( id );
+                }
             }
-            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata ) );
-            else updated.add( __io( id, metadata ) );
         }
-
-        if( log.isTraceEnabled() ) {
-            log.trace( "[{}] added {} updated {}", uniqueName, Lists.map( added, a -> a.id ), Lists.map( updated, a -> a.id ) );
-        }
-
-        List<I> ids = master.ids();
-        log.trace( "[{}] master ids {}", uniqueName, ids );
-        if( ids.isEmpty() ) {
-            lastUpdate = -1;
-        }
-
-        List<IdObject<I, T>> deleted = slave.memory.selectLiveIds()
-            .filter( id -> !ids.contains( id ) )
-            .map( id -> slave.memory.removePermanently( id ).map( m -> __io( id, m ) ) )
-            .filter( Optional::isPresent )
-            .map( Optional::get )
-            .toList();
-        log.trace( "[{}] deleted {}", uniqueName, deleted );
 
         if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
             slave.fireChanged( added, updated, deleted );

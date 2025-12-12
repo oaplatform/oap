@@ -52,7 +52,7 @@ public class ReplicatorTest extends Fixtures {
         DateTimeUtils.setCurrentMillisProvider( System::nanoTime );
         try {
             MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-            MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+            MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
             try( Replicator<String, Bean> _ = new Replicator<>( slave, master, 50 ) ) {
                 AtomicInteger updates = new AtomicInteger();
                 AtomicInteger addons = new AtomicInteger();
@@ -108,7 +108,7 @@ public class ReplicatorTest extends Fixtures {
     @Test
     public void replicateNow() {
         MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
         try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 5000 ) ) {
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
@@ -132,7 +132,7 @@ public class ReplicatorTest extends Fixtures {
             }
         } );
 
-        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
         try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000 ) ) {
             DateTimeUtils.setCurrentMillisFixed( 1 );
 

@@ -24,11 +24,6 @@
 
 package oap.storage;
 
-import java.util.List;
-import java.util.stream.Stream;
-
 public interface ReplicationMaster<Id, Data> {
-    Stream<Metadata<Data>> updatedSince( long since );
-
-    List<Id> ids();
+    TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp );
 }
