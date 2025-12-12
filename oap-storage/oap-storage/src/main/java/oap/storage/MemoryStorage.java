@@ -36,6 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -55,8 +56,8 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     protected final Lock lock;
     protected final List<DataListener<Id, Data>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<Data, Id> memory;
-    private final Predicate<Id> conflict = Identifier.toConflict( this::get );
     final TransactionLog<Id, Data> transactionLog;
+    private final Predicate<Id> conflict = Identifier.toConflict( this::get );
 
     public MemoryStorage( Identifier<Id, Data> identifier, Lock lock ) {
         this( identifier, lock, 0 );
@@ -219,7 +220,9 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     @Override
     public void permanentlyDelete() {
-        memory.removePermanently();
+        HashMap<Id, Metadata<Data>> oldData = memory.removePermanently();
+
+        oldData.forEach( this::firePermanentlyDeleted );
     }
 
     @Override
@@ -436,8 +439,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             return Optional.ofNullable( data.remove( id ) );
         }
 
-        public void removePermanently() {
+        public HashMap<I, Metadata<T>> removePermanently() {
+            HashMap<I, Metadata<T>> oldData = new HashMap<>( data );
             data.clear();
+
+            return oldData;
         }
 
         public void clear() {
