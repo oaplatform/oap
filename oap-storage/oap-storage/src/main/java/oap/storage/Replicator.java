@@ -24,15 +24,13 @@
 
 package oap.storage;
 
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.io.Closeables;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Cuid;
 import oap.util.Lists;
-import oap.util.Pair;
 
 import java.io.Closeable;
 import java.io.UncheckedIOException;
@@ -40,11 +38,9 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static oap.storage.Storage.DataListener.IdObject.__io;
-import static oap.util.Pair.__;
 
 /**
  * Replicator works on the MemoryStorage internals. It's intentional.
@@ -53,31 +49,21 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Replicator<I, T> implements Closeable {
-    static final AtomicLong stored = new AtomicLong();
-    static final AtomicLong deleted = new AtomicLong();
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
     private String uniqueName = Cuid.UNIQUE.next();
     private Scheduled scheduled;
-    private transient Pair<Long, String> lastModified = __( -1L, "" );
+    private transient long lastModified = -1L;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
         this.slave = slave;
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
-            Pair<Long, String> newLastModified = replicate( lastModified );
-            log.trace( "[{}] newLastModified = {}, lastModified = {}", uniqueName, newLastModified, lastModified );
-            if( newLastModified._2.equals( lastModified._2 ) ) {
-                lastModified = newLastModified.map( ( t, m ) -> __( t + 1, m ) );
-            } else {
-                lastModified = newLastModified;
-            }
-        } );
-    }
+            long newLastModified = replicate( lastModified );
+            log.trace( "[{}] newLastModified {}, lastModified {}", uniqueName, newLastModified, lastModified );
 
-    public static void reset() {
-        stored.set( 0 );
-        deleted.set( 0 );
+            lastModified = newLastModified;
+        } );
     }
 
     public void replicateNow() {
@@ -86,16 +72,16 @@ public class Replicator<I, T> implements Closeable {
     }
 
     public void replicateAllNow() {
-        lastModified = __( -1L, "" );
+        lastModified = -1L;
         replicateNow();
     }
 
-    public synchronized Pair<Long, String> replicate( Pair<Long, String> last ) {
+    public synchronized long replicate( long last ) {
         log.trace( "replicate service {} last {}", uniqueName, last );
 
         List<Metadata<T>> newUpdates;
 
-        try( Stream<Metadata<T>> updates = master.updatedSince( last._1 ) ) {
+        try( Stream<Metadata<T>> updates = master.updatedSince( last ) ) {
             log.trace( "[{}] replicate {} to {} last: {}", master, slave, last, uniqueName );
             newUpdates = updates.toList();
             log.trace( "[{}] updated objects {}", uniqueName, newUpdates.size() );
@@ -113,39 +99,19 @@ public class Replicator<I, T> implements Closeable {
         ArrayList<IdObject<I, T>> added = new ArrayList<>();
         ArrayList<IdObject<I, T>> updated = new ArrayList<>();
 
-        long lastUpdate = newUpdates.stream().mapToLong( m -> m.modified ).max().orElse( last._1 );
+        long lastUpdate = newUpdates.stream().mapToLong( m -> m.modified ).max().orElse( last );
 
-        Hasher hasher = Hashing.murmur3_128().newHasher();
+        for( Metadata<T> metadata : newUpdates ) {
+            log.trace( "[{}] replicate {}", metadata, uniqueName );
 
-        long finalLastUpdate = lastUpdate;
-        List<String> list = newUpdates
-            .stream()
-            .filter( metadata -> metadata.modified == finalLastUpdate )
-            .map( metadata -> slave.identifier.get( metadata.object ).toString() )
-            .sorted()
-            .toList();
-
-        for( String id : list ) {
-            hasher = hasher.putUnencodedChars( id );
-        }
-        String hash = hasher.hash().toString();
-
-
-        if( lastUpdate != last._1 || !hash.equals( last._2 ) ) {
-            for( Metadata<T> metadata : newUpdates ) {
-                log.trace( "[{}] replicate {}", metadata, uniqueName );
-
-                I id = slave.identifier.get( metadata.object );
-                Boolean unmodified = slave.memory.get( id ).map( m -> last._1 != -1 && m.looksUnmodified( metadata ) ).orElse( false );
-                if( unmodified ) {
-                    log.trace( "[{}] skipping unmodified {}", uniqueName, id );
-                    continue;
-                }
-                if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata ) );
-                else updated.add( __io( id, metadata ) );
+            I id = slave.identifier.get( metadata.object );
+            Boolean unmodified = slave.memory.get( id ).map( m -> last != -1 && m.looksUnmodified( metadata ) ).orElse( false );
+            if( unmodified ) {
+                log.trace( "[{}] skipping unmodified {}", uniqueName, id );
+                continue;
             }
-
-            stored.addAndGet( newUpdates.size() );
+            if( slave.memory.put( id, Metadata.from( metadata ) ) ) added.add( __io( id, metadata ) );
+            else updated.add( __io( id, metadata ) );
         }
 
         if( log.isTraceEnabled() ) {
@@ -166,26 +132,23 @@ public class Replicator<I, T> implements Closeable {
             .toList();
         log.trace( "[{}] deleted {}", uniqueName, deleted );
 
-        Replicator.deleted.addAndGet( deleted.size() );
-
         if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
             slave.fireChanged( added, updated, deleted );
         }
 
-        return __( lastUpdate, hash );
+        return lastUpdate;
     }
 
     public void preStop() {
-        Scheduled.cancel( scheduled );
-        scheduled = null;
-    }
-
-    @Override
-    public void close() {
         try {
             Scheduled.cancel( scheduled );
         } catch( Exception e ) {
             log.error( e.getMessage(), e );
         }
+    }
+
+    @Override
+    public void close() {
+        Closeables.close( scheduled );
     }
 }
