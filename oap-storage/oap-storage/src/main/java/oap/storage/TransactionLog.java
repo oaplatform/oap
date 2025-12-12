@@ -2,6 +2,8 @@ package oap.storage;
 
 import lombok.ToString;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,7 +24,9 @@ public interface TransactionLog<Id, T> {
     }
 
     @ToString
-    class Transaction<Id, T> {
+    class Transaction<Id, T> implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 6671170052040953303L;
         public final long timestamp;
         public final Operation operation;
         public final Id id;
@@ -36,7 +40,10 @@ public interface TransactionLog<Id, T> {
         }
     }
 
-    class ReplicationResult<Id, T> {
+    class ReplicationResult<Id, T> implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 467235422368462526L;
+
         public final long timestamp;
         public final ReplicationStatusType type;
         public final List<Transaction<Id, T>> data;
