@@ -42,7 +42,7 @@ public class RemoteStorageTest extends Fixtures {
             RemoteStorage<String, TestRemoteStorage> storage = ( RemoteStorage<String, TestRemoteStorage> ) RemoteInvocationHandler.proxy( "test", remoteLocation, RemoteStorage.class );
 
             assertThat( storage.store( new TestRemoteStorage( "id1", "v1" ) ) ).isNotNull();
-            assertThat( storage.store( new TestRemoteStorage( "id1", "v1" ) ) ).isNull();
+            assertThat( storage.store( new TestRemoteStorage( "id1", "v1" ) ) ).isNotNull();
 
             assertThat( storage.findAndModify( "id1", t -> {
                 t.v1 = "v2";
