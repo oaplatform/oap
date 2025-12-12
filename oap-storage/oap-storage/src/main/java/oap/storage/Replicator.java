@@ -119,12 +119,17 @@ public class Replicator<I, T> implements Closeable {
                     slave.memory.put( id, metadata );
                 }
                 case UPDATE -> {
-                    if( updatedSince.type == FULL_SYNC ) {
-                        added.add( __io( id, metadata ) );
+                    if( metadata.isDeleted() ) {
+                        deleted.add( __io( id, metadata ) );
+                        slave.memory.removePermanently( id );
                     } else {
-                        updated.add( __io( id, metadata ) );
+                        if( updatedSince.type == FULL_SYNC ) {
+                            added.add( __io( id, metadata ) );
+                        } else {
+                            updated.add( __io( id, metadata ) );
+                        }
+                        slave.memory.put( id, metadata );
                     }
-                    slave.memory.put( id, metadata );
                 }
                 case DELETE -> {
                     deleted.add( __io( id, metadata ) );
