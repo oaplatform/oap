@@ -24,7 +24,7 @@ public class TransactionLogZero<Id, T> implements TransactionLog<Id, T> {
 
     @Override
     public ReplicationResult<Id, Metadata<T>> updatedSince( long timestamp, Set<Map.Entry<Id, Metadata<T>>> fullData ) {
-        return fullSync( fullData );
+        throw new IllegalStateException();
     }
 
     private @NonNull ReplicationResult<Id, Metadata<T>> fullSync( Set<Map.Entry<Id, Metadata<T>>> fullData ) {
