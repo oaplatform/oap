@@ -58,7 +58,6 @@ public class ReplicatorTest extends Fixtures {
         MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
         try( Replicator<String, Bean> _ = new Replicator<>( slave, master, 50 ) ) {
-
             AtomicInteger updates = new AtomicInteger();
             AtomicInteger addons = new AtomicInteger();
             AtomicInteger deletions = new AtomicInteger();

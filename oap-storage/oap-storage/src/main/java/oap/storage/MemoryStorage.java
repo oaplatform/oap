@@ -113,21 +113,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     @Nullable
     @Override
-    public Data store( @Nonnull Data object, long hash ) {
+    public Data store( @Nonnull Data object ) {
         Id id = identifier.getOrInit( object, conflict );
         return lock.synchronizedOn( id, () -> {
-            Metadata<Data> metadata = memory.get( id ).orElse( null );
-            if( ( metadata == null && hash == 0L ) || ( metadata != null && metadata.hash == hash ) ) {
-                if( memory.put( id, object, Storage.MODIFIED_BY_SYSTEM ) ) {
-                    fireAdded( id, memory.data.get( id ) );
-                } else {
-                    fireUpdated( id, memory.data.get( id ) );
-                }
-
-                return object;
+            if( memory.put( id, object, Storage.MODIFIED_BY_SYSTEM ) ) {
+                fireAdded( id, memory.data.get( id ) );
             } else {
-                return null;
+                fireUpdated( id, memory.data.get( id ) );
             }
+
+            return object;
         } );
     }
 
@@ -312,7 +307,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     public Stream<Metadata<Data>> updatedSince( long since ) {
         log.trace( "requested updated objects since={}, total objects={}", since, memory.data.size() );
         return memory.selectLive()
-            .mapToObj( ( id, m ) -> m )
+            .mapToObj( ( _, m ) -> m )
             .filter( m -> m.modified >= since );
     }
 
@@ -330,7 +325,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public BiStream<I, Metadata<T>> selectLive() {
-            return BiStream.of( data ).filter( ( id, m ) -> !m.isDeleted() );
+            return BiStream.of( data ).filter( ( _, m ) -> !m.isDeleted() );
         }
 
         public BiStream<I, Metadata<T>> selectAll() {
@@ -338,7 +333,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public BiStream<I, Metadata<T>> selectUpdatedSince( long since ) {
-            return BiStream.of( data ).filter( ( id, m ) -> m.modified > since );
+            return BiStream.of( data ).filter( ( _, m ) -> m.modified > since );
         }
 
         public Optional<Metadata<T>> get( @Nonnull I id ) {
@@ -379,7 +374,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
         public Optional<Metadata<T>> remap( @Nonnull I id, @Nonnull Function<T, T> update, String modifiedBy ) {
             return lock.synchronizedOn( id, () ->
-                Optional.ofNullable( data.compute( id, ( anId, m ) -> m == null
+                Optional.ofNullable( data.compute( id, ( _, m ) -> m == null
                     ? null
                     : m.update( update.apply( m.object ), modifiedBy ) ) ) );
         }
@@ -388,7 +383,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             MutableObject<Metadata<T>> ret = new MutableObject<>();
 
             return lock.synchronizedOn( id, () -> {
-                data.compute( id, ( anId, m ) -> {
+                data.compute( id, ( _, m ) -> {
                         if( m == null ) {
                             return null;
                         }
@@ -436,7 +431,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public Stream<I> selectLiveIds() {
-            return selectLive().mapToObj( ( id, m ) -> id );
+            return selectLive().mapToObj( ( id, _ ) -> id );
         }
     }
 }
