@@ -29,7 +29,6 @@ import oap.json.TypeIdFactory;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import org.joda.time.DateTimeUtils;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -48,61 +47,61 @@ public class ReplicatorTest extends Fixtures {
         fixtures( new SystemTimerFixture( true ) );
     }
 
-    @BeforeMethod
-    public void beforeMethod() {
-        Replicator.reset();
-    }
-
     @Test
     public void masterSlave() {
-        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( Replicator<String, Bean> _ = new Replicator<>( slave, master, 50 ) ) {
-            AtomicInteger updates = new AtomicInteger();
-            AtomicInteger addons = new AtomicInteger();
-            AtomicInteger deletions = new AtomicInteger();
-            slave.addDataListener( new Storage.DataListener<>() {
-                @Override
-                public void changed( List<Storage.DataListener.IdObject<String, Bean>> added,
-                                     List<Storage.DataListener.IdObject<String, Bean>> updated,
-                                     List<Storage.DataListener.IdObject<String, Bean>> deleted ) {
-                    addons.getAndAdd( added.size() );
-                    updates.getAndAdd( updated.size() );
-                    deletions.getAndAdd( deleted.size() );
-                }
-            } );
+        DateTimeUtils.setCurrentMillisProvider( System::nanoTime );
+        try {
+            MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+            MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+            try( Replicator<String, Bean> _ = new Replicator<>( slave, master, 50 ) ) {
+                AtomicInteger updates = new AtomicInteger();
+                AtomicInteger addons = new AtomicInteger();
+                AtomicInteger deletions = new AtomicInteger();
+                slave.addDataListener( new Storage.DataListener<>() {
+                    @Override
+                    public void changed( List<Storage.DataListener.IdObject<String, Bean>> added,
+                                         List<Storage.DataListener.IdObject<String, Bean>> updated,
+                                         List<Storage.DataListener.IdObject<String, Bean>> deleted ) {
+                        addons.getAndAdd( added.size() );
+                        updates.getAndAdd( updated.size() );
+                        deletions.getAndAdd( deleted.size() );
+                    }
+                } );
 
-            master.store( new Bean( "111" ), Storage.MODIFIED_BY_SYSTEM );
-            master.store( new Bean( "222" ), Storage.MODIFIED_BY_SYSTEM );
-            assertEventually( 100, 50, () -> {
-                assertThat( slave.select() ).containsExactly( new Bean( "111", "aaa" ), new Bean( "222" ) );
-                assertThat( addons.get() ).isEqualTo( 2 );
-                assertThat( updates.get() ).isEqualTo( 0 );
-                assertThat( deletions.get() ).isEqualTo( 0 );
-            } );
-            deletions.set( 0 );
-            updates.set( 0 );
-            addons.set( 0 );
-            master.store( new Bean( "111", "bbb" ), Storage.MODIFIED_BY_SYSTEM );
-            assertEventually( 100, 50, () -> {
-                assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
-                assertThat( addons.get() ).isEqualTo( 0 );
-                assertThat( updates.get() ).isEqualTo( 1 );
-                assertThat( deletions.get() ).isEqualTo( 0 );
-            } );
-            deletions.set( 0 );
-            updates.set( 0 );
-            addons.set( 0 );
-            master.delete( "111", Storage.MODIFIED_BY_SYSTEM );
-            master.store( new Bean( "222", "xyz" ), Storage.MODIFIED_BY_SYSTEM );
-            master.store( new Bean( "333", "ccc" ), Storage.MODIFIED_BY_SYSTEM );
-            assertEventually( 100, 50, () -> {
-                assertThat( slave.select() ).containsExactly( new Bean( "222", "xyz" ), new Bean( "333", "ccc" ) );
-                assertThat( addons.get() ).isEqualTo( 1 );
-                assertThat( updates.get() ).isEqualTo( 1 );
-                assertThat( deletions.get() ).isEqualTo( 1 );
-                assertThat( slave.get( "111" ).isEmpty() ).isTrue();
-            } );
+                master.store( new Bean( "111" ), Storage.MODIFIED_BY_SYSTEM );
+                master.store( new Bean( "222" ), Storage.MODIFIED_BY_SYSTEM );
+                assertEventually( 100, 50, () -> {
+                    assertThat( slave.select() ).containsExactly( new Bean( "111", "aaa" ), new Bean( "222" ) );
+                    assertThat( addons.get() ).isEqualTo( 2 );
+                    assertThat( updates.get() ).isEqualTo( 0 );
+                    assertThat( deletions.get() ).isEqualTo( 0 );
+                } );
+                deletions.set( 0 );
+                updates.set( 0 );
+                addons.set( 0 );
+                master.store( new Bean( "111", "bbb" ), Storage.MODIFIED_BY_SYSTEM );
+                assertEventually( 100, 50, () -> {
+                    assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
+                    assertThat( addons.get() ).isEqualTo( 0 );
+                    assertThat( updates.get() ).isEqualTo( 1 );
+                    assertThat( deletions.get() ).isEqualTo( 0 );
+                } );
+                deletions.set( 0 );
+                updates.set( 0 );
+                addons.set( 0 );
+                master.delete( "111", Storage.MODIFIED_BY_SYSTEM );
+                master.store( new Bean( "222", "xyz" ), Storage.MODIFIED_BY_SYSTEM );
+                master.store( new Bean( "333", "ccc" ), Storage.MODIFIED_BY_SYSTEM );
+                assertEventually( 100, 50, () -> {
+                    assertThat( slave.select() ).containsExactly( new Bean( "222", "xyz" ), new Bean( "333", "ccc" ) );
+                    assertThat( addons.get() ).isEqualTo( 1 );
+                    assertThat( updates.get() ).isEqualTo( 1 );
+                    assertThat( deletions.get() ).isEqualTo( 1 );
+                    assertThat( slave.get( "111" ).isEmpty() ).isTrue();
+                } );
+            }
+        } finally {
+            DateTimeUtils.setCurrentMillisSystem();
         }
     }
 
@@ -121,42 +120,56 @@ public class ReplicatorTest extends Fixtures {
     @Test
     public void testSyncSafe() {
         MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+
+        AtomicInteger a = new AtomicInteger();
+        AtomicInteger u = new AtomicInteger();
+
+        slave.addDataListener( new Storage.DataListener<>() {
+            @Override
+            public void changed( List<IdObject<String, Bean>> added, List<IdObject<String, Bean>> updated, List<IdObject<String, Bean>> deleted ) {
+                a.addAndGet( added.size() );
+                u.addAndGet( updated.size() );
+            }
+        } );
+
         MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
-        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 5000 ) ) {
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000 ) ) {
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
 
-            assertCounter( 1L, 0L );
+            assertThat( a.intValue() ).isEqualTo( 1L );
+            assertThat( u.intValue() ).isEqualTo( 0L );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
-            assertCounter( 3L, 0L );
+            assertThat( a.intValue() ).isEqualTo( 2L );
+            assertThat( u.intValue() ).isEqualTo( 0L );
 
             master.store( new Bean( "3" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();
-            assertCounter( 5L, 0L );
+            assertThat( a.intValue() ).isEqualTo( 3L );
+            assertThat( u.intValue() ).isEqualTo( 0L );
 
             replicator.replicateNow();
-            assertCounter( 5L, 0L );
+            assertThat( a.intValue() ).isEqualTo( 3L );
+            assertThat( u.intValue() ).isEqualTo( 0L );
 
             replicator.replicateNow();
-            assertCounter( 5L, 0L );
+            assertThat( a.intValue() ).isEqualTo( 3L );
+            assertThat( u.intValue() ).isEqualTo( 0L );
 
             DateTimeUtils.setCurrentMillisFixed( 3 );
             master.store( new Bean( "4" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
-            assertCounter( 6L, 0L );
+            assertThat( a.intValue() ).isEqualTo( 4L );
+            assertThat( u.intValue() ).isEqualTo( 0L );
 
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ), new Bean( "3" ), new Bean( "4" ) );
         }
     }
 
-    private void assertCounter( long stored, long deleted ) {
-        assertThat( Replicator.stored.longValue() ).isEqualTo( stored );
-        assertThat( Replicator.deleted.longValue() ).isEqualTo( deleted );
-    }
 }
