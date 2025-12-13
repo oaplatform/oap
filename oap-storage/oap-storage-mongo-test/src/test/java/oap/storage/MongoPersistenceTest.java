@@ -83,6 +83,11 @@ public class MongoPersistenceTest extends Fixtures {
 
             assertThat( bean1.id ).isEqualTo( "TST1" );
             assertThat( bean2.id ).isEqualTo( "TST2" );
+
+            persistence.fsync();
+            persistence.fsync();
+            persistence.fsync();
+            persistence.fsync();
         }
 
         // Make sure that for a new connection the objects still present in MongoDB

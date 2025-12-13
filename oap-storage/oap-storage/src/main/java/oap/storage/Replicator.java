@@ -25,6 +25,8 @@
 package oap.storage;
 
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -80,12 +82,60 @@ public class Replicator<I, T> implements Closeable {
     public synchronized long replicate( long timestamp ) {
         log.trace( "replicate service {} timestamp {}", uniqueName, timestamp );
 
-        TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince;
-
         try {
             log.trace( "[{}] replicate {} to {} timestamp: {}", master, slave, timestamp, uniqueName );
-            updatedSince = master.updatedSince( timestamp );
+            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = master.updatedSince( timestamp );
             log.trace( "[{}] type {} updated objects {}", uniqueName, updatedSince.type, updatedSince.data.size() );
+
+            Metrics.counter( "replicator", Tags.of( "name", uniqueName, "type", updatedSince.type.name() ) ).increment();
+            Metrics.counter( "replicator_size", Tags.of( "name", uniqueName, "type", updatedSince.type.name() ) ).increment( updatedSince.data.size() );
+
+            ArrayList<IdObject<I, T>> added = new ArrayList<>();
+            ArrayList<IdObject<I, T>> updated = new ArrayList<>();
+            ArrayList<IdObject<I, T>> deleted = new ArrayList<>();
+
+            long lastUpdate = updatedSince.timestamp;
+
+            if( updatedSince.type == FULL_SYNC ) {
+                slave.memory.removePermanently();
+            }
+
+            for( TransactionLog.Transaction<I, Metadata<T>> transaction : updatedSince.data ) {
+                log.trace( "[{}] replicate {}", transaction, uniqueName );
+
+                Metadata<T> metadata = transaction.object;
+                I id = transaction.id;
+
+                switch( transaction.operation ) {
+                    case INSERT -> {
+                        added.add( __io( id, metadata ) );
+                        slave.memory.put( id, metadata );
+                    }
+                    case UPDATE -> {
+                        if( metadata.isDeleted() ) {
+                            deleted.add( __io( id, metadata ) );
+                            slave.memory.removePermanently( id );
+                        } else {
+                            if( updatedSince.type == FULL_SYNC ) {
+                                added.add( __io( id, metadata ) );
+                            } else {
+                                updated.add( __io( id, metadata ) );
+                            }
+                            slave.memory.put( id, metadata );
+                        }
+                    }
+                    case DELETE -> {
+                        deleted.add( __io( id, metadata ) );
+                        slave.memory.removePermanently( id );
+                    }
+                }
+            }
+
+            if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
+                slave.fireChanged( added, updated, deleted );
+            }
+
+            return lastUpdate;
         } catch( UncheckedIOException e ) {
             log.error( e.getCause().getMessage() );
             return timestamp;
@@ -96,53 +146,6 @@ public class Replicator<I, T> implements Closeable {
             }
             throw e;
         }
-
-        ArrayList<IdObject<I, T>> added = new ArrayList<>();
-        ArrayList<IdObject<I, T>> updated = new ArrayList<>();
-        ArrayList<IdObject<I, T>> deleted = new ArrayList<>();
-
-        long lastUpdate = updatedSince.timestamp;
-
-        if( updatedSince.type == FULL_SYNC ) {
-            slave.memory.removePermanently();
-        }
-
-        for( TransactionLog.Transaction<I, Metadata<T>> transaction : updatedSince.data ) {
-            log.trace( "[{}] replicate {}", transaction, uniqueName );
-
-            Metadata<T> metadata = transaction.object;
-            I id = transaction.id;
-
-            switch( transaction.operation ) {
-                case INSERT -> {
-                    added.add( __io( id, metadata ) );
-                    slave.memory.put( id, metadata );
-                }
-                case UPDATE -> {
-                    if( metadata.isDeleted() ) {
-                        deleted.add( __io( id, metadata ) );
-                        slave.memory.removePermanently( id );
-                    } else {
-                        if( updatedSince.type == FULL_SYNC ) {
-                            added.add( __io( id, metadata ) );
-                        } else {
-                            updated.add( __io( id, metadata ) );
-                        }
-                        slave.memory.put( id, metadata );
-                    }
-                }
-                case DELETE -> {
-                    deleted.add( __io( id, metadata ) );
-                    slave.memory.removePermanently( id );
-                }
-            }
-        }
-
-        if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
-            slave.fireChanged( added, updated, deleted );
-        }
-
-        return lastUpdate;
     }
 
     public void preStop() {
