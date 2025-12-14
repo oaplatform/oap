@@ -68,7 +68,7 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void store() {
-        MemoryStorage<String, Bean> storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        MemoryStorage<String, Bean> storage1 = new MemoryStorage<>( beanIdentifier, SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.preStart();
@@ -83,10 +83,15 @@ public class MongoPersistenceTest extends Fixtures {
 
             assertThat( bean1.id ).isEqualTo( "TST1" );
             assertThat( bean2.id ).isEqualTo( "TST2" );
+
+            persistence.fsync();
+            persistence.fsync();
+            persistence.fsync();
+            persistence.fsync();
         }
 
         // Make sure that for a new connection the objects still present in MongoDB
-        MemoryStorage<String, Bean> storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        MemoryStorage<String, Bean> storage2 = new MemoryStorage<>( beanIdentifier, SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.preStart();
@@ -101,7 +106,7 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void delete() {
-        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
             mongoClient.preStart();
@@ -119,7 +124,7 @@ public class MongoPersistenceTest extends Fixtures {
     public void update() {
         MemoryStorage<String, Bean> storage1 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
-            .build(), SERIALIZED );
+            .build(), SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.preStart();
@@ -132,7 +137,7 @@ public class MongoPersistenceTest extends Fixtures {
         }
         MemoryStorage<String, Bean> storage2 = new MemoryStorage<>( Identifier.<Bean>forId( o -> o.id, ( o, id ) -> o.id = id )
             .suggestion( o -> o.name )
-            .build(), SERIALIZED );
+            .build(), SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.preStart();
@@ -144,7 +149,7 @@ public class MongoPersistenceTest extends Fixtures {
 
     @Test
     public void storeTooBig() {
-        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED, 100 );
         Path crashDumpPath = testDirectoryFixture.testPath( "failures" );
         String table = "test";
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
@@ -163,7 +168,7 @@ public class MongoPersistenceTest extends Fixtures {
         mongoFixture.insertDocument( getClass(), table, "migration/1.json" );
         mongoFixture.insertDocument( getClass(), table, "migration/2.json" );
         mongoFixture.initializeVersion( new Version( 1 ) );
-        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+        MemoryStorage<String, Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Bean> persistence = new MongoPersistence<>( mongoClient, table, 6000, storage ) ) {
             mongoClient.preStart();
@@ -181,7 +186,7 @@ public class MongoPersistenceTest extends Fixtures {
     @Test
     public void accidentalPolymorphism() {
 
-        MemoryStorage<String, Object> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        MemoryStorage<String, Object> storage1 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Object> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage1 ) ) {
             mongoClient.preStart();
@@ -193,7 +198,7 @@ public class MongoPersistenceTest extends Fixtures {
             log.debug( "bean2 = {}", bean2 );
         }
 
-        MemoryStorage<String, Object> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        MemoryStorage<String, Object> storage2 = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED, 100 );
         try( MongoClient mongoClient = mongoFixture.createMongoClient( "oap.storage.mongo.mongomigrationtest" );
              MongoPersistence<String, Object> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage2 ) ) {
             mongoClient.preStart();

@@ -26,7 +26,6 @@ package oap.http.server.nio;
 
 import oap.http.Client;
 import oap.http.Http;
-import oap.http.server.nio.handlers.BandwidthHandler;
 import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
@@ -82,13 +81,8 @@ public class NioHttpServerTest extends Fixtures {
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.handlers.add( new KeepaliveRequestsHandler( 1000 ) );
-            BandwidthHandler bandwidthHandler = new BandwidthHandler();
-            httpServer.handlers.add( bandwidthHandler );
             httpServer.handlers.add( new CompressionNioHandler() );
             httpServer.handlers.add( new BlockingReadTimeoutHandler( Dates.s( 60 ) ) );
-
-            bandwidthHandler.start();
-
 
             httpServer.additionalHttpPorts.put( "test", testPort );
             httpServer.additionalHttpPorts.put( "test2", testPort2 );

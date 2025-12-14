@@ -144,28 +144,29 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
 
     @Override
     public void fsync() {
-        var time = DateTimeUtils.currentTimeMillis();
         synchronizedOn( lock, () -> {
             if( stopped ) return;
-            log.trace( "fsyncing, last: {}, objects in storage: {}", lastExecuted, storage.size() );
+            log.trace( "fsyncing, last: {}, objects in storage: {}", lastTimestamp, storage.size() );
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
             AtomicInteger updated = new AtomicInteger();
-            storage.memory.selectUpdatedSince( lastExecuted ).forEach( ( id, m ) -> {
+            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = storage.updatedSince( lastTimestamp );
+
+            updatedSince.data.forEach( t -> {
                 updated.incrementAndGet();
-                if( m.isDeleted() ) {
-                    deletedIds.add( id );
-                    list.add( new DeleteOneModel<>( eq( "_id", id ) ) );
+                if( t.operation == TransactionLog.Operation.DELETE || t.object.isDeleted() ) {
+                    deletedIds.add( t.id );
+                    list.add( new DeleteOneModel<>( eq( "_id", t.id ) ) );
                 } else {
-                    list.add( new ReplaceOneModel<>( eq( "_id", id ), m, REPLACE_OPTIONS_UPSERT ) );
+                    list.add( new ReplaceOneModel<>( eq( "_id", t.id ), t.object, REPLACE_OPTIONS_UPSERT ) );
                 }
                 if( list.size() >= batchSize ) {
                     persist( deletedIds, list );
                 }
             } );
-            log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastExecuted, updated.get(), storage.size() );
+            log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastTimestamp, updated.get(), storage.size() );
             persist( deletedIds, list );
-            lastExecuted = time;
+            lastTimestamp = updatedSince.timestamp;
         } );
     }
 

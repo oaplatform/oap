@@ -36,6 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -55,12 +56,18 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     protected final Lock lock;
     protected final List<DataListener<Id, Data>> dataListeners = new CopyOnWriteArrayList<>();
     protected final Memory<Data, Id> memory;
+    final TransactionLog<Id, Data> transactionLog;
     private final Predicate<Id> conflict = Identifier.toConflict( this::get );
 
     public MemoryStorage( Identifier<Id, Data> identifier, Lock lock ) {
+        this( identifier, lock, 0 );
+    }
+
+    public MemoryStorage( Identifier<Id, Data> identifier, Lock lock, int transactionLogSize ) {
         this.identifier = identifier;
         this.lock = lock;
         this.memory = new Memory<>( lock );
+        this.transactionLog = transactionLogSize > 0 ? new TransactionLogImpl<>( transactionLogSize ) : new TransactionLogZero<>();
     }
 
     @Override
@@ -113,21 +120,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     @Nullable
     @Override
-    public Data store( @Nonnull Data object, long hash ) {
+    public Data store( @Nonnull Data object ) {
         Id id = identifier.getOrInit( object, conflict );
         return lock.synchronizedOn( id, () -> {
-            Metadata<Data> metadata = memory.get( id ).orElse( null );
-            if( ( metadata == null && hash == 0L ) || ( metadata != null && metadata.hash == hash ) ) {
-                if( memory.put( id, object, Storage.MODIFIED_BY_SYSTEM ) ) {
-                    fireAdded( id, memory.data.get( id ) );
-                } else {
-                    fireUpdated( id, memory.data.get( id ) );
-                }
-
-                return object;
+            if( memory.put( id, object, Storage.MODIFIED_BY_SYSTEM ) ) {
+                fireAdded( id, memory.data.get( id ) );
             } else {
-                return null;
+                fireUpdated( id, memory.data.get( id ) );
             }
+
+            return object;
         } );
     }
 
@@ -218,7 +220,9 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     @Override
     public void permanentlyDelete() {
-        memory.removePermanently();
+        HashMap<Id, Metadata<Data>> oldData = memory.removePermanently();
+
+        oldData.forEach( this::firePermanentlyDeleted );
     }
 
     @Override
@@ -227,12 +231,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireAdded( Id id, Metadata<Data> medatada ) {
+        transactionLog.insert( id, medatada );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( List.of( IdObject.__io( id, medatada ) ), List.of(), List.of() );
         }
     }
 
     protected void fireAdded( List<IdObject<Id, Data>> objects ) {
+        objects.forEach( o -> transactionLog.insert( o.id, o.metadata ) );
+
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
                 dataListener.changed( objects, List.of(), List.of() );
@@ -241,12 +249,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireUpdated( Id id, Metadata<Data> metadata ) {
+        transactionLog.update( id, metadata );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( List.of(), List.of( IdObject.__io( id, metadata ) ), List.of() );
         }
     }
 
     protected void fireUpdated( List<IdObject<Id, Data>> objects ) {
+        objects.forEach( o -> transactionLog.update( o.id, o.metadata ) );
+
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
                 dataListener.changed( List.of(), objects, List.of() );
@@ -255,6 +267,8 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireDeleted( List<IdObject<Id, Data>> objects ) {
+        objects.forEach( o -> transactionLog.delete( o.id, o.metadata ) );
+
         if( !objects.isEmpty() ) {
             for( DataListener<Id, Data> dataListener : this.dataListeners ) {
                 dataListener.changed( List.of(), List.of(), objects );
@@ -263,12 +277,16 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     protected void fireDeleted( Id id, Metadata<Data> object ) {
+        transactionLog.delete( id, object );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.changed( List.of(), List.of(), List.of( IdObject.__io( id, object ) ) );
         }
     }
 
     protected void firePermanentlyDeleted( Id id, Metadata<Data> object ) {
+        transactionLog.delete( id, object );
+
         for( DataListener<Id, Data> dataListener : this.dataListeners ) {
             dataListener.permanentlyDeleted( IdObject.__io( id, object ) );
         }
@@ -309,16 +327,10 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public Stream<Metadata<Data>> updatedSince( long since ) {
-        log.trace( "requested updated objects since={}, total objects={}", since, memory.data.size() );
-        return memory.selectLive()
-            .mapToObj( ( id, m ) -> m )
-            .filter( m -> m.modified >= since );
-    }
+    public TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp ) {
+        log.trace( "requested updated objects timestamp {}", timestamp );
 
-    @Override
-    public List<Id> ids() {
-        return memory.selectLiveIds().toList();
+        return transactionLog.updatedSince( timestamp, memory.data.entrySet() );
     }
 
     protected static class Memory<T, I> {
@@ -330,7 +342,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public BiStream<I, Metadata<T>> selectLive() {
-            return BiStream.of( data ).filter( ( id, m ) -> !m.isDeleted() );
+            return BiStream.of( data ).filter( ( _, m ) -> !m.isDeleted() );
         }
 
         public BiStream<I, Metadata<T>> selectAll() {
@@ -338,7 +350,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public BiStream<I, Metadata<T>> selectUpdatedSince( long since ) {
-            return BiStream.of( data ).filter( ( id, m ) -> m.modified > since );
+            return BiStream.of( data ).filter( ( _, m ) -> m.modified > since );
         }
 
         public Optional<Metadata<T>> get( @Nonnull I id ) {
@@ -379,7 +391,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
         public Optional<Metadata<T>> remap( @Nonnull I id, @Nonnull Function<T, T> update, String modifiedBy ) {
             return lock.synchronizedOn( id, () ->
-                Optional.ofNullable( data.compute( id, ( anId, m ) -> m == null
+                Optional.ofNullable( data.compute( id, ( _, m ) -> m == null
                     ? null
                     : m.update( update.apply( m.object ), modifiedBy ) ) ) );
         }
@@ -388,7 +400,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             MutableObject<Metadata<T>> ret = new MutableObject<>();
 
             return lock.synchronizedOn( id, () -> {
-                data.compute( id, ( anId, m ) -> {
+                data.compute( id, ( _, m ) -> {
                         if( m == null ) {
                             return null;
                         }
@@ -427,8 +439,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             return Optional.ofNullable( data.remove( id ) );
         }
 
-        public void removePermanently() {
+        public HashMap<I, Metadata<T>> removePermanently() {
+            HashMap<I, Metadata<T>> oldData = new HashMap<>( data );
             data.clear();
+
+            return oldData;
         }
 
         public void clear() {
@@ -436,7 +451,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public Stream<I> selectLiveIds() {
-            return selectLive().mapToObj( ( id, m ) -> id );
+            return selectLive().mapToObj( ( id, _ ) -> id );
         }
     }
 }

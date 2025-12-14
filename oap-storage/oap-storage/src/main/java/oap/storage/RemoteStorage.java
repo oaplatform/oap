@@ -16,13 +16,11 @@ public interface RemoteStorage<Id, Data> extends ReplicationMaster<Id, Data> {
 
     /**
      * @param object
-     * @param hash   the hash of the existing object or 0 if created
      * @return created object or null if the hash does not match
      * @see RemoteStorage#getMetadata(Id)
-     * @see Metadata#hash
      */
     @Nullable
-    Data store( @Nonnull Data object, long hash );
+    Data store( @Nonnull Data object );
 
     default Data findAndModify( Id id, Function<Data, Data> func, int retry ) throws StorageException {
         requireNonNull( id );
@@ -35,8 +33,7 @@ public interface RemoteStorage<Id, Data> extends ReplicationMaster<Id, Data> {
             Data modified = func.apply( metadata != null ? metadata.object : null );
             requireNonNull( modified );
 
-            stored = store( modified,
-                metadata != null ? metadata.hash : 0 );
+            stored = store( modified );
         }
 
         if( stored == null ) {
