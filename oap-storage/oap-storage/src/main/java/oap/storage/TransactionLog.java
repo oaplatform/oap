@@ -4,7 +4,7 @@ import lombok.ToString;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,9 +47,9 @@ public interface TransactionLog<Id, T> {
         public final long timestamp;
         public final long hash;
         public final ReplicationStatusType type;
-        public final List<Transaction<Id, T>> data;
+        public final Collection<Transaction<Id, T>> data;
 
-        public ReplicationResult( long timestamp, long hash, ReplicationStatusType type, List<Transaction<Id, T>> data ) {
+        public ReplicationResult( long timestamp, long hash, ReplicationStatusType type, Collection<Transaction<Id, T>> data ) {
             this.timestamp = timestamp;
             this.hash = hash;
             this.type = type;

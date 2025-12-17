@@ -30,6 +30,7 @@ import oap.id.Identifier;
 import oap.util.Stream;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
@@ -49,6 +50,9 @@ public interface Storage<Id, Data> extends Iterable<Data> {
     List<Data> list();
 
     List<Metadata<Data>> listMetadata();
+
+    @Nullable
+    Data getNullable( @Nonnull Id id );
 
     Optional<Data> get( @Nonnull Id id );
 
