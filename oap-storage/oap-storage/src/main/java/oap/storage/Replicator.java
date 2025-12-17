@@ -39,8 +39,11 @@ import java.io.Closeable;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static oap.storage.Storage.DataListener.IdObject.__io;
+import static oap.storage.TransactionLog.ReplicationResult.ReplicationStatusType.CHANGES;
 import static oap.storage.TransactionLog.ReplicationResult.ReplicationStatusType.FULL_SYNC;
 import static oap.util.Pair.__;
 
@@ -51,19 +54,25 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Replicator<I, T> implements Closeable {
+    final AtomicLong replicatorCounterFullSync = new AtomicLong();
+    final AtomicLong replicatorCounterPartialSync = new AtomicLong();
+    final AtomicLong replicatorSizeFullSync = new AtomicLong();
+    final AtomicLong replicatorSizePartialSync = new AtomicLong();
+
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
+    final ReentrantLock lock = new ReentrantLock();
     private String uniqueName = Cuid.UNIQUE.next();
-    private Scheduled scheduled;
+    private final Scheduled scheduled;
     private transient long timestamp = -1L;
     private transient long hash = -1L;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
-
         Preconditions.checkArgument( slave.transactionLog instanceof TransactionLogZero );
 
         this.slave = slave;
         this.master = master;
+
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
             Pair<Long, Long> newTimestamp = replicate( timestamp );
             log.trace( "[{}] newTimestamp {}, lastModified {}", uniqueName, newTimestamp, timestamp );
@@ -71,6 +80,14 @@ public class Replicator<I, T> implements Closeable {
             timestamp = newTimestamp._1;
             hash = newTimestamp._2;
         } );
+    }
+
+    public void start() {
+        Metrics.gauge( "replicator", Tags.of( "name", uniqueName, "type", FULL_SYNC.name() ), this, _ -> replicatorCounterFullSync.doubleValue() );
+        Metrics.gauge( "replicator", Tags.of( "name", uniqueName, "type", CHANGES.name() ), this, _ -> replicatorCounterPartialSync.doubleValue() );
+
+        Metrics.gauge( "replicator_size", Tags.of( "name", uniqueName, "type", FULL_SYNC.name() ), this, _ -> replicatorSizeFullSync.doubleValue() );
+        Metrics.gauge( "replicator_size", Tags.of( "name", uniqueName, "type", CHANGES.name() ), this, _ -> replicatorSizePartialSync.doubleValue() );
     }
 
     public void replicateNow() {
@@ -83,72 +100,86 @@ public class Replicator<I, T> implements Closeable {
         replicateNow();
     }
 
-    public synchronized Pair<Long, Long> replicate( long timestamp ) {
-        log.trace( "replicate service {} timestamp {} hash {}", uniqueName, timestamp, hash );
-
+    public Pair<Long, Long> replicate( long timestamp ) {
+        lock.lock();
         try {
-            log.trace( "[{}] replicate {} to {} timestamp {} hash {}", uniqueName, master, slave, timestamp, hash );
-            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = master.updatedSince( timestamp, hash );
-            log.trace( "[{}] type {} updated objects {}", uniqueName, updatedSince.type, updatedSince.data.size() );
+            log.trace( "replicate service {} timestamp {} hash {}", uniqueName, timestamp, hash );
 
-            Metrics.counter( "replicator", Tags.of( "name", uniqueName, "type", updatedSince.type.name() ) ).increment();
-            Metrics.counter( "replicator_size", Tags.of( "name", uniqueName, "type", updatedSince.type.name() ) ).increment( updatedSince.data.size() );
+            try {
+                log.trace( "[{}] replicate {} to {} timestamp {} hash {}", uniqueName, master, slave, timestamp, hash );
+                TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = master.updatedSince( timestamp, hash );
+                log.trace( "[{}] type {} updated objects {}", uniqueName, updatedSince.type, updatedSince.data.size() );
 
-            ArrayList<IdObject<I, T>> added = new ArrayList<>();
-            ArrayList<IdObject<I, T>> updated = new ArrayList<>();
-            ArrayList<IdObject<I, T>> deleted = new ArrayList<>();
-
-            long lastUpdate = updatedSince.timestamp;
-
-            if( updatedSince.type == FULL_SYNC ) {
-                slave.memory.removePermanently();
-            }
-
-            for( TransactionLog.Transaction<I, Metadata<T>> transaction : updatedSince.data ) {
-                log.trace( "[{}] replicate {}", transaction, uniqueName );
-
-                Metadata<T> metadata = transaction.object;
-                I id = transaction.id;
-
-                switch( transaction.operation ) {
-                    case INSERT -> {
-                        added.add( __io( id, metadata ) );
-                        slave.memory.put( id, metadata );
+                switch( updatedSince.type ) {
+                    case FULL_SYNC -> {
+                        replicatorCounterFullSync.incrementAndGet();
+                        replicatorSizeFullSync.addAndGet( updatedSince.data.size() );
                     }
-                    case UPDATE -> {
-                        if( metadata.isDeleted() ) {
-                            deleted.add( __io( id, metadata ) );
-                            slave.memory.removePermanently( id );
-                        } else {
-                            if( updatedSince.type == FULL_SYNC ) {
-                                added.add( __io( id, metadata ) );
-                            } else {
-                                updated.add( __io( id, metadata ) );
-                            }
+                    case CHANGES -> {
+                        replicatorCounterPartialSync.incrementAndGet();
+                        replicatorSizePartialSync.addAndGet( updatedSince.data.size() );
+                    }
+                    default -> throw new IllegalStateException( "Unknown replicator type: " + updatedSince.type );
+                }
+
+                ArrayList<IdObject<I, T>> added = new ArrayList<>();
+                ArrayList<IdObject<I, T>> updated = new ArrayList<>();
+                ArrayList<IdObject<I, T>> deleted = new ArrayList<>();
+
+                long lastUpdate = updatedSince.timestamp;
+
+                if( updatedSince.type == FULL_SYNC ) {
+                    slave.memory.removePermanently();
+                }
+
+                for( TransactionLog.Transaction<I, Metadata<T>> transaction : updatedSince.data ) {
+                    log.trace( "[{}] replicate {}", transaction, uniqueName );
+
+                    Metadata<T> metadata = transaction.object;
+                    I id = transaction.id;
+
+                    switch( transaction.operation ) {
+                        case INSERT -> {
+                            added.add( __io( id, metadata ) );
                             slave.memory.put( id, metadata );
                         }
-                    }
-                    case DELETE -> {
-                        deleted.add( __io( id, metadata ) );
-                        slave.memory.removePermanently( id );
+                        case UPDATE -> {
+                            if( metadata.isDeleted() ) {
+                                deleted.add( __io( id, metadata ) );
+                                slave.memory.removePermanently( id );
+                            } else {
+                                if( updatedSince.type == FULL_SYNC ) {
+                                    added.add( __io( id, metadata ) );
+                                } else {
+                                    updated.add( __io( id, metadata ) );
+                                }
+                                slave.memory.put( id, metadata );
+                            }
+                        }
+                        case DELETE -> {
+                            deleted.add( __io( id, metadata ) );
+                            slave.memory.removePermanently( id );
+                        }
                     }
                 }
-            }
 
-            if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
-                slave.fireChanged( added, updated, deleted );
-            }
+                if( !added.isEmpty() || !updated.isEmpty() || !deleted.isEmpty() ) {
+                    slave.fireChanged( added, updated, deleted );
+                }
 
-            return __( lastUpdate, updatedSince.hash );
-        } catch( UncheckedIOException e ) {
-            log.error( e.getCause().getMessage() );
-            return __( timestamp, hash );
-        } catch( Exception e ) {
-            if( e.getCause() instanceof SocketException ) {
+                return __( lastUpdate, updatedSince.hash );
+            } catch( UncheckedIOException e ) {
                 log.error( e.getCause().getMessage() );
                 return __( timestamp, hash );
+            } catch( Exception e ) {
+                if( e.getCause() instanceof SocketException ) {
+                    log.error( e.getCause().getMessage() );
+                    return __( timestamp, hash );
+                }
+                throw e;
             }
-            throw e;
+        } finally {
+            lock.unlock();
         }
     }
 

@@ -2,6 +2,7 @@ package oap.storage;
 
 import oap.util.Lists;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.joda.time.DateTimeUtils;
 import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
     public final CircularFifoQueue<Transaction<Id, Metadata<T>>> transactions;
     public final AtomicLong timestamp = new AtomicLong();
-    public final long hash = System.currentTimeMillis();
+    public long hash = DateTimeUtils.currentTimeMillis();
 
     public TransactionLogImpl( int transactionLogSize ) {
         this.transactions = new CircularFifoQueue<>( transactionLogSize );
@@ -66,5 +67,11 @@ public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
             this.hash,
             ReplicationResult.ReplicationStatusType.FULL_SYNC,
             Lists.map( fullData, d -> new Transaction<>( t, Operation.UPDATE, d.getKey(), d.getValue() ) ) );
+    }
+
+    public void reset() {
+        hash = DateTimeUtils.currentTimeMillis();
+        timestamp.set( 0 );
+        transactions.clear();
     }
 }

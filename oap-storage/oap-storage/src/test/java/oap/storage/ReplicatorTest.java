@@ -28,6 +28,7 @@ import oap.id.Identifier;
 import oap.json.TypeIdFactory;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
+import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
@@ -170,6 +171,45 @@ public class ReplicatorTest extends Fixtures {
 
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ), new Bean( "3" ), new Bean( "4" ) );
         }
+    }
+
+    @Test
+    public void testFullResyncIfMasterRestarted() {
+        Dates.setTimeFixed( 1 );
+
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000 ) ) {
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertEventually( 100, 100, () -> {
+                assertThat( replicator.replicatorSizeFullSync ).hasValue( 1L );
+                assertThat( replicator.replicatorSizePartialSync ).hasValue( 0L );
+            } );
+
+            Dates.incFixed( 10 );
+            replicator.replicateNow();
+            replicator.replicateNow();
+            assertEventually( 100, 100, () -> {
+                assertThat( replicator.replicatorCounterFullSync ).hasValue( 1L );
+                assertThat( replicator.replicatorCounterPartialSync ).hasValue( 2L );
+            } );
+
+
+            // restart
+            Dates.incFixed( 10 );
+            ( ( TransactionLogImpl<String, Bean> ) master.transactionLog ).reset();
+
+            master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertEventually( 100, 100, () -> {
+                assertThat( replicator.replicatorCounterFullSync ).hasValue( 2L );
+                assertThat( replicator.replicatorCounterPartialSync ).hasValue( 2L );
+            } );
+        }
+
     }
 
 }
