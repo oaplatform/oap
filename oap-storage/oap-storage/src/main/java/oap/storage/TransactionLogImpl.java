@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
     public final CircularFifoQueue<Transaction<Id, Metadata<T>>> transactions;
     public final AtomicLong timestamp = new AtomicLong();
+    public final long hash = System.currentTimeMillis();
 
     public TransactionLogImpl( int transactionLogSize ) {
         this.transactions = new CircularFifoQueue<>( transactionLogSize );
@@ -34,15 +35,15 @@ public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
     }
 
     @Override
-    public synchronized ReplicationResult<Id, Metadata<T>> updatedSince( long timestamp, Set<Map.Entry<Id, Metadata<T>>> fullData ) {
+    public synchronized ReplicationResult<Id, Metadata<T>> updatedSince( long timestamp, long hash, Set<Map.Entry<Id, Metadata<T>>> fullData ) {
         int size = transactions.size();
-        if( size == 0 && timestamp < 0 ) { // first sync && no modification
+        if( this.hash != hash || size == 0 && timestamp < 0 ) { // first sync && no modification
             return fullSync( fullData, this.timestamp.longValue() );
         }
 
         Transaction<Id, Metadata<T>> older = transactions.peek();
         if( older == null ) {
-            return new ReplicationResult<>( this.timestamp.longValue(), ReplicationResult.ReplicationStatusType.CHANGES, List.of() );
+            return new ReplicationResult<>( this.timestamp.longValue(), this.hash, ReplicationResult.ReplicationStatusType.CHANGES, List.of() );
         }
         if( older.timestamp > timestamp ) {
             return fullSync( fullData, this.timestamp.longValue() );
@@ -56,10 +57,14 @@ public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
             }
         }
 
-        return new ReplicationResult<>( this.timestamp.longValue(), ReplicationResult.ReplicationStatusType.CHANGES, list );
+        return new ReplicationResult<>( this.timestamp.longValue(), this.hash, ReplicationResult.ReplicationStatusType.CHANGES, list );
     }
 
     private @NonNull ReplicationResult<Id, Metadata<T>> fullSync( Set<Map.Entry<Id, Metadata<T>>> fullData, long t ) {
-        return new ReplicationResult<>( this.timestamp.longValue(), ReplicationResult.ReplicationStatusType.FULL_SYNC, Lists.map( fullData, d -> new Transaction<>( t, Operation.UPDATE, d.getKey(), d.getValue() ) ) );
+        return new ReplicationResult<>(
+            this.timestamp.longValue(),
+            this.hash,
+            ReplicationResult.ReplicationStatusType.FULL_SYNC,
+            Lists.map( fullData, d -> new Transaction<>( t, Operation.UPDATE, d.getKey(), d.getValue() ) ) );
     }
 }

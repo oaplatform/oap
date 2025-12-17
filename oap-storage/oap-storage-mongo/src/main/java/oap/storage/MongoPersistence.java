@@ -150,7 +150,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
             var list = new ArrayList<WriteModel<Metadata<T>>>( batchSize );
             var deletedIds = new ArrayList<I>( batchSize );
             AtomicInteger updated = new AtomicInteger();
-            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = storage.updatedSince( lastTimestamp );
+            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = storage.updatedSince( lastTimestamp, hash );
 
             updatedSince.data.forEach( t -> {
                 updated.incrementAndGet();
@@ -167,6 +167,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
             log.trace( "fsyncing, last: {}, updated objects in storage: {}, total in storage: {}", lastTimestamp, updated.get(), storage.size() );
             persist( deletedIds, list );
             lastTimestamp = updatedSince.timestamp;
+            hash = updatedSince.hash;
         } );
     }
 

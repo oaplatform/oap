@@ -33,6 +33,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Cuid;
+import oap.util.Pair;
 
 import java.io.Closeable;
 import java.io.UncheckedIOException;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 
 import static oap.storage.Storage.DataListener.IdObject.__io;
 import static oap.storage.TransactionLog.ReplicationResult.ReplicationStatusType.FULL_SYNC;
+import static oap.util.Pair.__;
 
 /**
  * Replicator works on the MemoryStorage internals. It's intentional.
@@ -54,6 +56,7 @@ public class Replicator<I, T> implements Closeable {
     private String uniqueName = Cuid.UNIQUE.next();
     private Scheduled scheduled;
     private transient long timestamp = -1L;
+    private transient long hash = -1L;
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
 
@@ -62,10 +65,11 @@ public class Replicator<I, T> implements Closeable {
         this.slave = slave;
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, i -> {
-            long newTimestamp = replicate( timestamp );
+            Pair<Long, Long> newTimestamp = replicate( timestamp );
             log.trace( "[{}] newTimestamp {}, lastModified {}", uniqueName, newTimestamp, timestamp );
 
-            timestamp = newTimestamp;
+            timestamp = newTimestamp._1;
+            hash = newTimestamp._2;
         } );
     }
 
@@ -79,12 +83,12 @@ public class Replicator<I, T> implements Closeable {
         replicateNow();
     }
 
-    public synchronized long replicate( long timestamp ) {
-        log.trace( "replicate service {} timestamp {}", uniqueName, timestamp );
+    public synchronized Pair<Long, Long> replicate( long timestamp ) {
+        log.trace( "replicate service {} timestamp {} hash {}", uniqueName, timestamp, hash );
 
         try {
-            log.trace( "[{}] replicate {} to {} timestamp: {}", master, slave, timestamp, uniqueName );
-            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = master.updatedSince( timestamp );
+            log.trace( "[{}] replicate {} to {} timestamp {} hash {}", uniqueName, master, slave, timestamp, hash );
+            TransactionLog.ReplicationResult<I, Metadata<T>> updatedSince = master.updatedSince( timestamp, hash );
             log.trace( "[{}] type {} updated objects {}", uniqueName, updatedSince.type, updatedSince.data.size() );
 
             Metrics.counter( "replicator", Tags.of( "name", uniqueName, "type", updatedSince.type.name() ) ).increment();
@@ -135,14 +139,14 @@ public class Replicator<I, T> implements Closeable {
                 slave.fireChanged( added, updated, deleted );
             }
 
-            return lastUpdate;
+            return __( lastUpdate, updatedSince.hash );
         } catch( UncheckedIOException e ) {
             log.error( e.getCause().getMessage() );
-            return timestamp;
+            return __( timestamp, hash );
         } catch( Exception e ) {
             if( e.getCause() instanceof SocketException ) {
                 log.error( e.getCause().getMessage() );
-                return timestamp;
+                return __( timestamp, hash );
             }
             throw e;
         }

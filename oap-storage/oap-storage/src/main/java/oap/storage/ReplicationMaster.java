@@ -25,5 +25,5 @@
 package oap.storage;
 
 public interface ReplicationMaster<Id, Data> {
-    TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp );
+    TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp, long hash );
 }
