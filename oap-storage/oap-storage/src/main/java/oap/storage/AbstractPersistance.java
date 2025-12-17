@@ -65,6 +65,7 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
     protected ScheduledExecutorService scheduler;
     protected int batchSize = 100;
     protected volatile long lastTimestamp = -1;
+    protected volatile long hash = -1;
     protected volatile boolean stopped = false;
 
     public AbstractPersistance( MemoryStorage<I, T> storage, String tableName, long delay, Path crashDumpPath ) {

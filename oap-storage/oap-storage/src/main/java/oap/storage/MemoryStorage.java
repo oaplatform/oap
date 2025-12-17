@@ -327,10 +327,10 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
     }
 
     @Override
-    public TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp ) {
+    public TransactionLog.ReplicationResult<Id, Metadata<Data>> updatedSince( long timestamp, long hash ) {
         log.trace( "requested updated objects timestamp {}", timestamp );
 
-        return transactionLog.updatedSince( timestamp, memory.data.entrySet() );
+        return transactionLog.updatedSince( timestamp, hash, memory.data.entrySet() );
     }
 
     protected static class Memory<T, I> {

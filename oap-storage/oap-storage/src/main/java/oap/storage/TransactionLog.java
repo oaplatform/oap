@@ -15,7 +15,7 @@ public interface TransactionLog<Id, T> {
 
     void delete( Id id, Metadata<T> data );
 
-    ReplicationResult<Id, Metadata<T>> updatedSince( long timestamp, Set<Map.Entry<Id, Metadata<T>>> fullData );
+    ReplicationResult<Id, Metadata<T>> updatedSince( long timestamp, long hash, Set<Map.Entry<Id, Metadata<T>>> fullData );
 
     enum Operation {
         INSERT,
@@ -45,11 +45,13 @@ public interface TransactionLog<Id, T> {
         private static final long serialVersionUID = 467235422368462526L;
 
         public final long timestamp;
+        public final long hash;
         public final ReplicationStatusType type;
         public final List<Transaction<Id, T>> data;
 
-        public ReplicationResult( long timestamp, ReplicationStatusType type, List<Transaction<Id, T>> data ) {
+        public ReplicationResult( long timestamp, long hash, ReplicationStatusType type, List<Transaction<Id, T>> data ) {
             this.timestamp = timestamp;
+            this.hash = hash;
             this.type = type;
             this.data = data;
         }
