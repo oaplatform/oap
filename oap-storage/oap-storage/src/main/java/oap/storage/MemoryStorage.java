@@ -181,6 +181,21 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         return memory.get( id );
     }
 
+    @Nullable
+    public Metadata<Data> getMetadataNullable( @Nonnull Id id ) {
+        return memory.getNullable( id );
+    }
+
+    @Nullable
+    @Override
+    public Data getNullable( @Nonnull Id id ) {
+        Metadata<Data> metadata = getMetadataNullable( id );
+        if( metadata != null ) {
+            return metadata.object;
+        }
+        return null;
+    }
+
     @Override
     public Optional<Data> get( @Nonnull Id id ) {
         return getMetadata( id ).map( m -> m.object );
@@ -354,9 +369,18 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public Optional<Metadata<T>> get( @Nonnull I id ) {
-            requireNonNull( id );
             return Optional.ofNullable( data.get( id ) )
                 .filter( m -> !m.isDeleted() );
+        }
+
+        @Nullable
+        public Metadata<T> getNullable( @Nonnull I id ) {
+            Metadata<T> metadata = data.get( id );
+            if( metadata != null && !metadata.isDeleted() ) {
+                return metadata;
+            }
+
+            return null;
         }
 
         public boolean put( @Nonnull I id, @Nonnull Metadata<T> m ) {

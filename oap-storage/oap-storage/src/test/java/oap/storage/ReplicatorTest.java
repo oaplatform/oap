@@ -113,6 +113,7 @@ public class ReplicatorTest extends Fixtures {
         try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 5000 ) ) {
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
+
             replicator.replicateNow();
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ) );
         }
@@ -140,34 +141,35 @@ public class ReplicatorTest extends Fixtures {
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
 
-            assertThat( a.intValue() ).isEqualTo( 1L );
-            assertThat( u.intValue() ).isEqualTo( 0L );
+            assertThat( a ).hasValue( 1 );
+            assertThat( u ).hasValue( 0 );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
-            assertThat( a.intValue() ).isEqualTo( 2L );
-            assertThat( u.intValue() ).isEqualTo( 0L );
+            assertThat( a ).hasValue( 2 );
+            assertThat( u ).hasValue( 0 );
 
             master.store( new Bean( "3" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();
-            assertThat( a.intValue() ).isEqualTo( 3L );
-            assertThat( u.intValue() ).isEqualTo( 0L );
+            assertThat( a ).hasValue( 3 );
+            assertThat( u ).hasValue( 0 );
 
             replicator.replicateNow();
-            assertThat( a.intValue() ).isEqualTo( 3L );
-            assertThat( u.intValue() ).isEqualTo( 0L );
+            assertThat( a ).hasValue( 3 );
+            assertThat( u ).hasValue( 0 );
 
             replicator.replicateNow();
-            assertThat( a.intValue() ).isEqualTo( 3L );
-            assertThat( u.intValue() ).isEqualTo( 0L );
+            assertThat( a ).hasValue( 3 );
+            assertThat( u ).hasValue( 0 );
 
             DateTimeUtils.setCurrentMillisFixed( 3 );
             master.store( new Bean( "4" ), Storage.MODIFIED_BY_SYSTEM );
             replicator.replicateNow();
-            assertThat( a.intValue() ).isEqualTo( 4L );
-            assertThat( u.intValue() ).isEqualTo( 0L );
+
+            assertThat( a ).hasValue( 4 );
+            assertThat( u ).hasValue( 0 );
 
             assertThat( slave.list() ).containsOnly( new Bean( "1" ), new Bean( "2" ), new Bean( "3" ), new Bean( "4" ) );
         }
@@ -183,18 +185,14 @@ public class ReplicatorTest extends Fixtures {
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();
-            assertEventually( 100, 100, () -> {
-                assertThat( replicator.replicatorSizeFullSync ).hasValue( 1L );
-                assertThat( replicator.replicatorSizePartialSync ).hasValue( 0L );
-            } );
+            assertThat( replicator.replicatorSizeFullSync ).hasValue( 1L );
+            assertThat( replicator.replicatorSizePartialSync ).hasValue( 0L );
 
             Dates.incFixed( 10 );
             replicator.replicateNow();
             replicator.replicateNow();
-            assertEventually( 100, 100, () -> {
-                assertThat( replicator.replicatorCounterFullSync ).hasValue( 1L );
-                assertThat( replicator.replicatorCounterPartialSync ).hasValue( 2L );
-            } );
+            assertThat( replicator.replicatorCounterFullSync ).hasValue( 1L );
+            assertThat( replicator.replicatorCounterPartialSync ).hasValue( 2L );
 
 
             // restart
@@ -204,12 +202,33 @@ public class ReplicatorTest extends Fixtures {
             master.store( new Bean( "2" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();
-            assertEventually( 100, 100, () -> {
-                assertThat( replicator.replicatorCounterFullSync ).hasValue( 2L );
-                assertThat( replicator.replicatorCounterPartialSync ).hasValue( 2L );
-            } );
+            assertThat( replicator.replicatorCounterFullSync ).hasValue( 2L );
+            assertThat( replicator.replicatorCounterPartialSync ).hasValue( 2L );
         }
+    }
 
+    @Test
+    public void testAddDeleteUpdateDeleteAdd() {
+        MemoryStorage<String, Bean> slave = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED );
+        MemoryStorage<String, Bean> master = new MemoryStorage<>( Identifier.<Bean>forId( b -> b.id ).build(), SERIALIZED, 100 );
+        try( Replicator<String, Bean> replicator = new Replicator<>( slave, master, 100000 ) ) {
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( slave.getNullable( "1" ) ).isNotNull();
+
+            master.permanentlyDelete( "1" );
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+            master.update( "1", b -> {
+                b.s = "2";
+                return b;
+            }, Storage.MODIFIED_BY_SYSTEM );
+            master.permanentlyDelete( "1" );
+            master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
+
+            replicator.replicateNow();
+            assertThat( slave.getNullable( "1" ) ).isEqualTo( new Bean( "1" ) );
+        }
     }
 
 }
