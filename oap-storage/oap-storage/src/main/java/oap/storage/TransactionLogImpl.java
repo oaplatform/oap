@@ -38,7 +38,7 @@ public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
     @Override
     public synchronized ReplicationResult<Id, Metadata<T>> updatedSince( long timestamp, long hash, Set<Map.Entry<Id, Metadata<T>>> fullData ) {
         int size = transactions.size();
-        if( this.hash != hash || size == 0 && timestamp < 0 ) { // first sync && no modification
+        if( this.hash != hash || timestamp < 0 ) { // first sync && no modification
             return fullSync( fullData, this.timestamp.longValue() );
         }
 
