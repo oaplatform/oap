@@ -57,9 +57,9 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>25.1.3</oap.project.version>
+        <oap.project.version>25.1.4</oap.project.version>
 
-        <oap.deps.config.version>25.0.0</oap.deps.config.version>
+        <oap.deps.config.version>25.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
 
         <oap.deps.localstack.version>1.21.3</oap.deps.localstack.version>
