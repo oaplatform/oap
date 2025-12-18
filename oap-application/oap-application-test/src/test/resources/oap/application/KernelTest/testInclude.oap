@@ -1,6 +1,6 @@
 name = testInclude
 
-include required("testInclude-2.conf")
+include required("testInclude-2")
 
 services {
   service3 {
