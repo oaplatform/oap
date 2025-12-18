@@ -5,6 +5,7 @@ import oap.util.Lists;
 import org.joda.time.DateTimeUtils;
 import org.jspecify.annotations.NonNull;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -83,7 +84,7 @@ public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
                 }
             }
 
-            return new ReplicationResult<>( this.timestamp.longValue(), this.hash, ReplicationResult.ReplicationStatusType.CHANGES, list.values() );
+            return new ReplicationResult<>( this.timestamp.longValue(), this.hash, ReplicationResult.ReplicationStatusType.CHANGES, new ArrayList<>( list.values() ) );
         } finally {
             lock.unlock();
         }
