@@ -104,7 +104,7 @@ public abstract class AbstractPersistance<I, T> implements Closeable, AutoClosea
     }
 
     protected Optional<T> deleteById( String id ) {
-        return storage.delete( storage.identifier.fromString( id ), Storage.MODIFIED_BY_SYSTEM );
+        return storage.delete( storage.identifier.fromString( id ) );
     }
 
     protected abstract void load();

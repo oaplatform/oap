@@ -114,7 +114,7 @@ public class MongoPersistenceTest extends Fixtures {
             Bean bean1 = storage.store( new Bean( "test1" ), Storage.MODIFIED_BY_SYSTEM );
             storage.store( new Bean( "test2" ), Storage.MODIFIED_BY_SYSTEM );
 
-            storage.delete( bean1.id, Storage.MODIFIED_BY_SYSTEM );
+            storage.delete( bean1.id );
             // one bean is removed, one is left
             assertEventually( 100, 100, () -> assertThat( persistence.collection.countDocuments() ).isEqualTo( 1 ) );
         }

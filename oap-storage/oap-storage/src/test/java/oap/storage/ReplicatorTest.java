@@ -90,7 +90,7 @@ public class ReplicatorTest extends Fixtures {
                 deletions.set( 0 );
                 updates.set( 0 );
                 addons.set( 0 );
-                master.delete( "111", Storage.MODIFIED_BY_SYSTEM );
+                master.delete( "111" );
                 master.store( new Bean( "222", "xyz" ), Storage.MODIFIED_BY_SYSTEM );
                 master.store( new Bean( "333", "ccc" ), Storage.MODIFIED_BY_SYSTEM );
                 assertEventually( 100, 50, () -> {
@@ -217,13 +217,13 @@ public class ReplicatorTest extends Fixtures {
             replicator.replicateNow();
             assertThat( slave.getNullable( "1" ) ).isNotNull();
 
-            master.permanentlyDelete( "1" );
+            master.delete( "1" );
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
             master.update( "1", b -> {
                 b.s = "2";
                 return b;
             }, Storage.MODIFIED_BY_SYSTEM );
-            master.permanentlyDelete( "1" );
+            master.delete( "1" );
             master.store( new Bean( "1" ), Storage.MODIFIED_BY_SYSTEM );
 
             replicator.replicateNow();

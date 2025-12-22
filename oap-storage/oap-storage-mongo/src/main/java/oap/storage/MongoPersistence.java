@@ -154,7 +154,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
 
             updatedSince.data.forEach( t -> {
                 updated.incrementAndGet();
-                if( t.operation == TransactionLog.Operation.DELETE || t.object.isDeleted() ) {
+                if( t.operation == TransactionLog.Operation.DELETE ) {
                     deletedIds.add( t.id );
                     list.add( new DeleteOneModel<>( eq( "_id", t.id ) ) );
                 } else {
@@ -175,7 +175,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
         if( list.isEmpty() ) return;
         try {
             collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
-            deletedIds.forEach( storage.memory::removePermanently );
+            deletedIds.forEach( storage.memory::delete );
             list.clear();
             deletedIds.clear();
         } catch( Exception e ) {

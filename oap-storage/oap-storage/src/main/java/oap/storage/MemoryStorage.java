@@ -28,7 +28,6 @@ import oap.id.Identifier;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.BiStream;
 import oap.util.Lists;
-import oap.util.Pair;
 import oap.util.Stream;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -72,24 +71,12 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     @Override
     public Stream<Data> select() {
-        return select( true );
-    }
-
-    public Stream<Data> select( boolean liveOnly ) {
-        return selectMetadata( liveOnly ).map( metadata -> metadata.object );
-    }
-
-    public Stream<Metadata<Data>> selectMetadata( boolean liveOnly ) {
-        return ( liveOnly ? memory.selectLive() : memory.selectAll() ).map( p -> p._2 );
+        return selectMetadata().map( metadata -> metadata.object );
     }
 
     @Override
     public Stream<Metadata<Data>> selectMetadata() {
-        return selectMetadata( true );
-    }
-
-    Stream<Data> selectAll() {
-        return memory.selectAll().map( p -> p._2.object );
+        return memory.selectAll().map( p -> p._2 );
     }
 
     @Override
@@ -209,35 +196,20 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
 
     @Override
     public void deleteAll() {
-        fireDeleted( Lists.map( memory.markDeletedAll(), p -> IdObject.__io( p._1, p._2 ) ) );
+        HashMap<Id, Metadata<Data>> map = memory.deleteAll();
+        fireDeleted( Lists.map( map.entrySet(), p -> IdObject.__io( p.getKey(), p.getValue() ) ) );
     }
 
     @Override
-    public Optional<Data> delete( @Nonnull Id id, String modifiedBy ) {
-        return deleteMetadata( id, modifiedBy ).map( m -> m.object );
+    public Optional<Data> delete( @Nonnull Id id ) {
+        return deleteMetadata( id ).map( m -> m.object );
     }
 
     @Override
-    public Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id, String modifiedBy ) {
-        requireNonNull( id );
-        Optional<Metadata<Data>> old = memory.markDeleted( id, modifiedBy );
+    public Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id ) {
+        Optional<Metadata<Data>> old = memory.delete( id );
         old.ifPresent( o -> fireDeleted( id, o ) );
         return old;
-    }
-
-    @Override
-    public Optional<Data> permanentlyDelete( @Nonnull Id id ) {
-        requireNonNull( id );
-        Optional<Metadata<Data>> old = memory.removePermanently( id );
-        old.ifPresent( o -> firePermanentlyDeleted( id, o ) );
-        return old.map( m -> m.object );
-    }
-
-    @Override
-    public void permanentlyDelete() {
-        HashMap<Id, Metadata<Data>> oldData = memory.removePermanently();
-
-        oldData.forEach( this::firePermanentlyDeleted );
     }
 
     @Override
@@ -356,10 +328,6 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             this.lock = lock;
         }
 
-        public BiStream<I, Metadata<T>> selectLive() {
-            return BiStream.of( data ).filter( ( _, m ) -> !m.isDeleted() );
-        }
-
         public BiStream<I, Metadata<T>> selectAll() {
             return BiStream.of( data );
         }
@@ -369,18 +337,12 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public Optional<Metadata<T>> get( @Nonnull I id ) {
-            return Optional.ofNullable( data.get( id ) )
-                .filter( m -> !m.isDeleted() );
+            return Optional.ofNullable( data.get( id ) );
         }
 
         @Nullable
         public Metadata<T> getNullable( @Nonnull I id ) {
-            Metadata<T> metadata = data.get( id );
-            if( metadata != null && !metadata.isDeleted() ) {
-                return metadata;
-            }
-
-            return null;
+            return data.get( id );
         }
 
         public boolean put( @Nonnull I id, @Nonnull Metadata<T> m ) {
@@ -443,27 +405,11 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
             } );
         }
 
-        public List<Pair<I, Metadata<T>>> markDeletedAll() {
-            List<Pair<I, Metadata<T>>> ms = selectLive().toList();
-            ms.forEach( p -> p._2.delete( Storage.MODIFIED_BY_SYSTEM ) );
-            return ms;
-        }
-
-        public Optional<Metadata<T>> markDeleted( @Nonnull I id, String modifiedBy ) {
-            return lock.synchronizedOn( id, () -> {
-                Metadata<T> metadata = data.get( id );
-                if( metadata != null ) {
-                    metadata.delete( modifiedBy );
-                    return Optional.of( metadata );
-                } else return Optional.empty();
-            } );
-        }
-
-        public Optional<Metadata<T>> removePermanently( @Nonnull I id ) {
+        public Optional<Metadata<T>> delete( @Nonnull I id ) {
             return Optional.ofNullable( data.remove( id ) );
         }
 
-        public HashMap<I, Metadata<T>> removePermanently() {
+        public HashMap<I, Metadata<T>> deleteAll() {
             HashMap<I, Metadata<T>> oldData = new HashMap<>( data );
             data.clear();
 
@@ -475,7 +421,7 @@ public class MemoryStorage<Id, Data> implements Storage<Id, Data>, ReplicationMa
         }
 
         public Stream<I> selectLiveIds() {
-            return selectLive().mapToObj( ( id, _ ) -> id );
+            return selectAll().mapToObj( ( id, _ ) -> id );
         }
     }
 }
