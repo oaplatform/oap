@@ -58,12 +58,11 @@ public class Replicator<I, T> implements Closeable {
     final AtomicLong replicatorCounterPartialSync = new AtomicLong();
     final AtomicLong replicatorSizeFullSync = new AtomicLong();
     final AtomicLong replicatorSizePartialSync = new AtomicLong();
-
+    final ReentrantLock lock = new ReentrantLock();
     private final MemoryStorage<I, T> slave;
     private final ReplicationMaster<I, T> master;
-    final ReentrantLock lock = new ReentrantLock();
-    private String uniqueName = Cuid.UNIQUE.next();
     private final Scheduled scheduled;
+    private String uniqueName = Cuid.UNIQUE.next();
     private transient long timestamp = -1L;
     private transient long hash = -1L;
 
@@ -129,7 +128,7 @@ public class Replicator<I, T> implements Closeable {
                 long lastUpdate = updatedSince.timestamp;
 
                 if( updatedSince.type == FULL_SYNC ) {
-                    slave.memory.removePermanently();
+                    slave.memory.clear();
                 }
 
                 for( TransactionLog.Transaction<I, Metadata<T>> transaction : updatedSince.data ) {
@@ -144,21 +143,16 @@ public class Replicator<I, T> implements Closeable {
                             slave.memory.put( id, metadata );
                         }
                         case UPDATE -> {
-                            if( metadata.isDeleted() ) {
-                                deleted.add( __io( id, metadata ) );
-                                slave.memory.removePermanently( id );
+                            if( updatedSince.type == FULL_SYNC ) {
+                                added.add( __io( id, metadata ) );
                             } else {
-                                if( updatedSince.type == FULL_SYNC ) {
-                                    added.add( __io( id, metadata ) );
-                                } else {
-                                    updated.add( __io( id, metadata ) );
-                                }
-                                slave.memory.put( id, metadata );
+                                updated.add( __io( id, metadata ) );
                             }
+                            slave.memory.put( id, metadata );
                         }
                         case DELETE -> {
                             deleted.add( __io( id, metadata ) );
-                            slave.memory.removePermanently( id );
+                            slave.memory.delete( id );
                         }
                     }
                 }

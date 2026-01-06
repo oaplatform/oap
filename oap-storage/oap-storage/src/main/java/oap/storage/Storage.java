@@ -72,13 +72,9 @@ public interface Storage<Id, Data> extends Iterable<Data> {
 
     boolean tryUpdate( @Nonnull Id id, @Nonnull Function<Data, Data> tryUpdate, String modifiedBy );
 
-    Optional<Data> delete( @Nonnull Id id, String modifiedBy );
+    Optional<Data> delete( @Nonnull Id id );
 
-    Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id, String modifiedBy );
-
-    Optional<Data> permanentlyDelete( @Nonnull Id id );
-
-    void permanentlyDelete();
+    Optional<Metadata<Data>> deleteMetadata( @Nonnull Id id );
 
     void deleteAll();
 

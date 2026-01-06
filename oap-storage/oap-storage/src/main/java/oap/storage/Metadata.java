@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
 
@@ -47,8 +46,6 @@ public class Metadata<T> implements Serializable {
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
-    @Getter
-    private boolean deleted = false;
 
     @JsonCreator
     protected Metadata( T object, String createdBy ) {
@@ -69,7 +66,6 @@ public class Metadata<T> implements Serializable {
 
     public Metadata<T> update( T t, String modifiedBy ) {
         this.object = t;
-        this.deleted = false;
         if( this.createdBy == null ) {
             this.createdBy = modifiedBy;
         }
@@ -82,12 +78,6 @@ public class Metadata<T> implements Serializable {
         this.modified = DateTimeUtils.currentTimeMillis();
     }
 
-    public void delete( String modifiedBy ) {
-        this.deleted = true;
-        this.modifiedBy = modifiedBy;
-        refresh();
-    }
-
     public boolean looksUnmodified( Metadata<T> metadata ) {
         return modified == metadata.modified;
     }
@@ -98,7 +88,6 @@ public class Metadata<T> implements Serializable {
             + "created=" + created
             + ", modified=" + modified
             + ", object=" + object
-            + ", deleted=" + deleted
             + ')';
     }
 }
