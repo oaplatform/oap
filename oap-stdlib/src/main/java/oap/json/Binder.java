@@ -436,7 +436,7 @@ public class Binder {
         try( var in = IoStreams.in( path ) ) {
             return unmarshal( clazz, in );
         } catch( IOException e ) {
-            throw new JsonException( "Cannot deserialize to class: " + clazz.getCanonicalName(), e );
+            throw new JsonException( "Cannot deserialize to class: " + clazz.getCanonicalName() + " from path " + path, e );
         }
     }
 
