@@ -64,6 +64,10 @@ public class LogMetadata {
         return Path.of( file.toString() + EXTENSION );
     }
 
+    public static Path pathFor( String file ) {
+        return Path.of( file + EXTENSION );
+    }
+
     public static boolean isMetadata( Path filename ) {
         return filename.toString().endsWith( EXTENSION );
     }
