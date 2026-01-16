@@ -1,8 +1,8 @@
 package oap.storage;
 
 import oap.util.Lists;
-import org.jspecify.annotations.NonNull;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,7 +27,7 @@ public class TransactionLogZero<Id, T> implements TransactionLog<Id, T> {
         throw new IllegalStateException();
     }
 
-    private @NonNull ReplicationResult<Id, Metadata<T>> fullSync( Set<Map.Entry<Id, Metadata<T>>> fullData ) {
+    private @Nonnull ReplicationResult<Id, Metadata<T>> fullSync( Set<Map.Entry<Id, Metadata<T>>> fullData ) {
         return new ReplicationResult<>( -1, 0L, ReplicationResult.ReplicationStatusType.FULL_SYNC, Lists.map( fullData, d -> new Transaction<>( 0L, Operation.UPDATE, d.getKey(), d.getValue() ) ) );
     }
 }

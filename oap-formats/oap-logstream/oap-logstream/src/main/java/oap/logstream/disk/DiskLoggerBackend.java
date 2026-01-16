@@ -160,7 +160,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
     @Override
     @SneakyThrows
-    public void log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public String log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
                      String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
@@ -172,7 +172,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
-            writer.write( protocolVersion, buffer, offset, length );
+            return writer.write( protocolVersion, buffer, offset, length );
         } catch( Exception e ) {
             var headersWithTypes = new ArrayList<String>();
             for( int i = 0; i < headers.length; i++ ) {

@@ -61,20 +61,20 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
     }
 
     @Override
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+    public synchronized String write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
         if( closed ) {
             throw new LoggerException( "writer is already closed!" );
         }
 
-        switch( protocolVersion ) {
+        return switch( protocolVersion ) {
             case TSV_V1 -> writeTsvV1( protocolVersion, buffer, offset, length );
             case BINARY_V2 -> writeBinaryV2( protocolVersion, buffer, offset, length );
             case ROW_BINARY_V3 -> writeBinaryV3( protocolVersion, buffer, offset, length );
             default -> throw new InvalidProtocolVersionException( "tsv", protocolVersion.version );
-        }
+        };
     }
 
-    private void writeTsvV1( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
+    private String writeTsvV1( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         try {
             refresh();
             Path filename = filename();
@@ -93,13 +93,14 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
                     log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
-                    write( protocolVersion, buffer, offset, length );
-                    return;
+                    return write( protocolVersion, buffer, offset, length );
                 }
             log.trace( "writing {} bytes to {}", length, this );
 
             out.write( buffer, offset, length );
 
+            return filename.toString();
+
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
             try {
@@ -113,7 +114,7 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
 
     }
 
-    private void writeBinaryV2( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
+    private String writeBinaryV2( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         try {
             refresh();
             Path filename = filename();
@@ -132,13 +133,13 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
                     log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
-                    write( protocolVersion, buffer, offset, length );
-                    return;
+                    return write( protocolVersion, buffer, offset, length );
                 }
             log.trace( "writing {} bytes to {}", length, this );
 
             convertToTsvV2( buffer, offset, length, line -> out.write( line ) );
 
+            return filename.toString();
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
             try {
@@ -151,7 +152,7 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
         }
     }
 
-    private void writeBinaryV3( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
+    private String writeBinaryV3( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         try {
             refresh();
             Path filename = filename();
@@ -170,13 +171,13 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
                     log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
-                    write( protocolVersion, buffer, offset, length );
-                    return;
+                    return write( protocolVersion, buffer, offset, length );
                 }
             log.trace( "writing {} bytes to {}", length, this );
 
             convertToTsvV3( buffer, offset, length, line -> out.write( line ), logId.headers, logId.types );
 
+            return filename.toString();
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
             try {

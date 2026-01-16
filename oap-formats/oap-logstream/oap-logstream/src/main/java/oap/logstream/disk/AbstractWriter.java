@@ -106,7 +106,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         write( protocolVersion, buffer, 0, buffer.length );
     }
 
-    public abstract void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException;
+    public abstract String write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException;
 
     public synchronized void refresh() {
         refresh( false );
