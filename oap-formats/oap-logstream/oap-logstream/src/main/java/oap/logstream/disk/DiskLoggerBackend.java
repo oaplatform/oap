@@ -75,17 +75,17 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
     public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
     public final WriterConfiguration writerConfiguration;
-    private final Path logDirectory;
-    private final Timestamp timestamp;
-    private final int bufferSize;
-    private final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
-    private final ScheduledExecutorService pool;
+    public final Path logDirectory;
+    public final Timestamp timestamp;
+    public final int bufferSize;
+    public final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
+    public final ScheduledExecutorService pool;
     public String filePattern = "/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
-    private volatile boolean closed;
+    public volatile boolean closed;
 
     public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {
         this( logDirectory, new WriterConfiguration(), timestamp, bufferSize );
