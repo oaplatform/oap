@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Files;
@@ -14,6 +15,7 @@ import oap.util.Maps;
 import org.joda.time.DateTime;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +68,13 @@ public class LogMetadata {
 
     public static Path pathFor( String file ) {
         return Path.of( file + EXTENSION );
+    }
+
+    public static Path pathForDataFromMetadata( Path metadataPath ) {
+        Preconditions.checkArgument( isMetadata( metadataPath ) );
+
+        String metadataPathString = metadataPath.toString();
+        return Paths.get( metadataPathString.substring( 0, metadataPathString.indexOf( EXTENSION ) ) );
     }
 
     public static boolean isMetadata( Path filename ) {
