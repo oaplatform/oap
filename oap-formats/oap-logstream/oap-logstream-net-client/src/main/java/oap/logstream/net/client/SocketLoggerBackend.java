@@ -106,9 +106,11 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
     }
 
     @Override
-    public void log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                     String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
-        buffers.put( new LogId( filePreffix, logType, hostName, properties, headers, types ), version, buffer, offset, length );
+    public String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                       String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
+        buffers.put( logId, version, buffer, offset, length );
+        return logId.toString();
     }
 
     @Override

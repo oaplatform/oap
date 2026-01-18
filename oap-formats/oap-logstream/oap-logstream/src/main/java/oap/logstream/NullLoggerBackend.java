@@ -9,8 +9,10 @@ import java.util.Map;
 
 public class NullLoggerBackend extends AbstractLoggerBackend {
     @Override
-    public void log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                     String[] headers, byte[][] types, byte[] row, int offset, int length ) {
+    public String log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                       String[] headers, byte[][] types, byte[] row, int offset, int length ) {
+        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
+        return logId.toString();
     }
 
     @Override

@@ -42,9 +42,9 @@ public class Logger {
         this( backend, CURRENT_PROTOCOL_VERSION );
     }
 
-    public void log( String filePreffix, Map<String, String> properties, String logType,
+    public String log( String filePreffix, Map<String, String> properties, String logType,
                      String[] headers, byte[][] types, byte[] row ) {
-        backend.log( protocolVersion, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, row );
+        return backend.log( protocolVersion, Inet.HOSTNAME, filePreffix, properties, logType, headers, types, row );
     }
 
     public boolean isLoggingAvailable() {

@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
@@ -89,6 +90,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
 //        types.put( Types.ENUM.id, _ -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
     }
 
+    private final ReentrantLock lock = new ReentrantLock();
     private final MessageType messageType;
     private final WriterConfiguration.ParquetConfiguration configuration;
     private final LinkedHashSet<String> excludeFields = new LinkedHashSet<>();
@@ -168,7 +170,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
     }
 
     @Override
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+    public String write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
         if( protocolVersion.version < ProtocolVersion.BINARY_V2.version ) {
             throw new InvalidProtocolVersionException( "parquet", protocolVersion.version );
         }
@@ -176,6 +178,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
         if( closed ) {
             throw new LoggerException( "writer is already closed!" );
         }
+        lock.lock();
         try {
             refresh();
             Path filename = filename();
@@ -200,8 +203,7 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
                     log.info( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
-                    write( protocolVersion, buffer, offset, length );
-                    return;
+                    return write( protocolVersion, buffer, offset, length );
                 }
             log.trace( "writing {} bytes to {}", length, this );
             if( protocolVersion == ProtocolVersion.BINARY_V2 ) {
@@ -211,6 +213,8 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
             } else {
                 throw new IllegalArgumentException( "Unknown protocol version: " + protocolVersion );
             }
+
+            return filename.toString();
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
             try {
@@ -220,6 +224,8 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
                 out = null;
             }
             throw new LoggerException( e );
+        } finally {
+            lock.unlock();
         }
     }
 

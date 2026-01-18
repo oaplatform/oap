@@ -3,8 +3,8 @@ package oap.storage;
 import oap.util.CircularFifoQueue;
 import oap.util.Lists;
 import org.joda.time.DateTimeUtils;
-import org.jspecify.annotations.NonNull;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -90,7 +90,7 @@ public class TransactionLogImpl<Id, T> implements TransactionLog<Id, T> {
         }
     }
 
-    private @NonNull ReplicationResult<Id, Metadata<T>> fullSync( Set<Map.Entry<Id, Metadata<T>>> fullData, long t ) {
+    private @Nonnull ReplicationResult<Id, Metadata<T>> fullSync( Set<Map.Entry<Id, Metadata<T>>> fullData, long t ) {
         return new ReplicationResult<>(
             this.timestamp.longValue(),
             this.hash,

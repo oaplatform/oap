@@ -30,13 +30,16 @@ import java.io.Closeable;
 import java.util.Map;
 
 public abstract class AbstractLoggerBackend implements Closeable {
-    public void log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                     String[] headers, byte[][] types, byte[] buffer ) {
-        log( version, hostName, filePreffix, properties, logType, headers, types, buffer, 0, buffer.length );
+    public String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                       String[] headers, byte[][] types, byte[] buffer ) {
+        return log( version, hostName, filePreffix, properties, logType, headers, types, buffer, 0, buffer.length );
     }
 
-    public abstract void log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                              String[] headers, byte[][] types, byte[] buffer, int offset, int length );
+    /**
+     * @return log id ( file path, etc )
+     */
+    public abstract String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+                                String[] headers, byte[][] types, byte[] buffer, int offset, int length );
 
     public abstract void close();
 

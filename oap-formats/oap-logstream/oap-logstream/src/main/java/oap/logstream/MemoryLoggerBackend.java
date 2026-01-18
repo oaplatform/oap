@@ -47,11 +47,14 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     private final LinkedHashMap<LogId, ByteArrayOutputStream> outputs = new LinkedHashMap<>();
 
     @Override
-    public synchronized void log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
+    public synchronized String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
                                   String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+        LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
         outputs
-            .computeIfAbsent( new LogId( filePreffix, logType, hostName, properties, headers, types ), fn -> new ByteArrayOutputStream() )
+            .computeIfAbsent( logId, fn -> new ByteArrayOutputStream() )
             .write( buffer, offset, length );
+
+        return logId.toString();
     }
 
     @Deprecated( forRemoval = true )

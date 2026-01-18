@@ -73,4 +73,11 @@ public class LogMetadataTest extends Fixtures {
         LogMetadata newLm = LogMetadata.readFor( file );
         assertThat( newLm.getDateTime( "time" ) ).isEqualTo( dt );
     }
+
+    @Test
+    public void testPathForDataFromMetadata() {
+        Path metadataFilePath = testDirectoryFixture.testPath( "file.gz.metadata.yaml" );
+
+        assertThat( LogMetadata.pathForDataFromMetadata( metadataFilePath ) ).isEqualTo( testDirectoryFixture.testPath( "file.gz" ) );
+    }
 }
