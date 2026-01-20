@@ -37,7 +37,7 @@ public class MapPointer extends ObjectPointer<Map<Object, Object>> {
     @Override
     public Pointer resolve( AbstractPathNode n ) {
         if( n.type == PathType.FIELD ) {
-            var ret = v.get( n.name );
+            Object ret = v.get( n.name );
             return ret != null ? Pointer.get( ret ) : NullPointer.INSTANCE;
         }
         return super.resolve( n );

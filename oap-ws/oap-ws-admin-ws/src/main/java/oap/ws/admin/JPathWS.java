@@ -29,9 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.Http;
 import oap.jpath.JPath;
+import oap.jpath.NullPointer;
 import oap.ws.Response;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,7 +55,34 @@ public class JPathWS {
         log.debug( "query = {}", query );
         try {
             AtomicReference<Object> result = new AtomicReference<>();
-            JPath.evaluate( query, ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> result.set( pointer.get() ) );
+
+            String[] fields = StringUtils.split( query, '.' );
+            if( fields.length > 0 ) {
+                JPath.evaluate( "${" + fields[0] + "}", ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> {
+                    if( !( pointer instanceof NullPointer ) ) {
+                        result.set( fields[0] );
+                    }
+                } );
+            }
+
+            if( result.get() == null ) {
+                return new Response( Http.StatusCode.BAD_REQUEST ).withBody( "unknown module " + fields[0] );
+            }
+            result.set( null );
+
+            if( fields.length > 1 ) {
+                JPath.evaluate( "${" + fields[0] + "." + fields[1] + "}", ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> {
+                    if( !( pointer instanceof NullPointer ) ) {
+                        result.set( fields[1] );
+                    }
+                } );
+            }
+            if( result.get() == null ) {
+                return new Response( Http.StatusCode.BAD_REQUEST ).withBody( "unknown module service " + fields[0] + "." + fields[1] );
+            }
+            result.set( null );
+
+            JPath.evaluate( "${" + query + "}", ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> result.set( pointer.get() ) );
             return Response.jsonOk().withBody( result.get(), false );
         } catch( Exception e ) {
             log.error( e.getMessage(), e );
