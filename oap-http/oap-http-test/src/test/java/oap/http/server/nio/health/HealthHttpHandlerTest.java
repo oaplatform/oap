@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
-import static oap.http.test.HttpAsserts.assertGet2;
+import static oap.http.test.HttpAsserts.assertGet;
 
 public class HealthHttpHandlerTest extends Fixtures {
     @Test
@@ -49,8 +49,8 @@ public class HealthHttpHandlerTest extends Fixtures {
 
             httpServer.start();
 
-            assertGet2( HttpAsserts.httpUrl( httpPort, "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
-            assertGet2( HttpAsserts.httpUrl( httpPort, "/healtz?secret=secret" ) )
+            assertGet( HttpAsserts.httpUrl( httpPort, "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
+            assertGet( HttpAsserts.httpUrl( httpPort, "/healtz?secret=secret" ) )
                 .respondedJson( "{\"test\":{\"k1\":1, \"k2\":2}}" );
         }
     }

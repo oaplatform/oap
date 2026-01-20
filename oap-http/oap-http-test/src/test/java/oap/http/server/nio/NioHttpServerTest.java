@@ -40,7 +40,7 @@ import java.io.IOException;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
-import static oap.http.test.HttpAsserts.assertGet2;
+import static oap.http.test.HttpAsserts.assertGet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class NioHttpServerTest extends Fixtures {
@@ -120,7 +120,7 @@ public class NioHttpServerTest extends Fixtures {
             assertThat( client.get( "https://localhost:" + httpsPort + "/test" )
                 .contentString() ).isEqualTo( "ok" );
 
-            assertGet2( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
+            assertGet( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
 
         }
     }

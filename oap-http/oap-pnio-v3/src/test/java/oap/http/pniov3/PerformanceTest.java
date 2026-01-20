@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static oap.http.test.HttpAsserts.assertPost2;
+import static oap.http.test.HttpAsserts.assertPost;
 
 @Test( enabled = false )
 public class PerformanceTest {
@@ -60,7 +60,7 @@ public class PerformanceTest {
 
             Benchmark.benchmark( "test", 100000, i -> {
 
-                assertPost2( "http://localhost:" + port + "/test", "{}" )
+                assertPost( "http://localhost:" + port + "/test", "{}" )
                     .is( r -> {
                         count.computeIfAbsent( r.code, k -> new LongAdder() ).increment();
                     } );

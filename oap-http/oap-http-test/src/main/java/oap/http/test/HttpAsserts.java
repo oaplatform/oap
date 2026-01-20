@@ -37,14 +37,15 @@ import oap.util.BiStream;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import okhttp3.CookieJar;
 import okhttp3.Headers;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import okhttp3.java.net.cookiejar.JavaNetCookieJar;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
 import org.jspecify.annotations.NonNull;
@@ -55,11 +56,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.CookieManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -77,7 +78,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
     public static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
-        .cookieJar( new JavaNetCookieJar( new CookieManager() ) )
+        .cookieJar( new CookieJar() {
+            private final ConcurrentHashMap<String, List<okhttp3.Cookie>> cookieStore = new ConcurrentHashMap<>();
+
+            @Override
+            public void saveFromResponse( @NonNull HttpUrl url, @NonNull List<okhttp3.Cookie> cookies ) {
+                cookieStore.put( url.host(), cookies );
+            }
+
+            @Override
+            public @NonNull List<okhttp3.Cookie> loadForRequest( @NonNull HttpUrl url ) {
+                List<okhttp3.Cookie> cookies = cookieStore.get( url.host() );
+                return cookies != null ? cookies : new ArrayList<>();
+            }
+        } )
         .build();
 
     private static final Client client = Client.custom()
@@ -100,11 +114,11 @@ public class HttpAsserts {
     }
 
     @SafeVarargs
-    public static HttpAssertion assertGet2( String uri, Pair<String, Object>... params ) throws UncheckedIOException {
-        return assertGet2( uri, Maps.of( params ), Map.of() );
+    public static HttpAssertion assertGet( String uri, Pair<String, Object>... params ) throws UncheckedIOException {
+        return assertGet( uri, Maps.of( params ), Map.of() );
     }
 
-    public static HttpAssertion assertGet2( String uri, Map<String, Object> params, Map<String, Object> requestHeaders ) throws UncheckedIOException {
+    public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> requestHeaders ) throws UncheckedIOException {
         try {
             Request.Builder builder = new Request.Builder();
 
@@ -121,7 +135,7 @@ public class HttpAsserts {
         }
     }
 
-    public static HttpAssertion assertPost2( String uri, InputStream content, @Nullable String contentType, Map<String, Object> requestHeaders ) {
+    public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType, Map<String, Object> requestHeaders ) {
         try {
             Request.Builder builder = new Request.Builder();
 
@@ -140,11 +154,11 @@ public class HttpAsserts {
         }
     }
 
-    public static HttpAssertion assertPost2( String uri, InputStream content, @Nullable String contentType ) {
-        return assertPost2( uri, content, contentType, Maps.of() );
+    public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType ) {
+        return assertPost( uri, content, contentType, Maps.of() );
     }
 
-    public static HttpAssertion assertPost2( String uri, String content, @Nullable String contentType, Map<String, Object> requestHeaders ) {
+    public static HttpAssertion assertPost( String uri, String content, @Nullable String contentType, Map<String, Object> requestHeaders ) {
         try {
             Request.Builder builder = new Request.Builder();
 
@@ -163,16 +177,16 @@ public class HttpAsserts {
         }
     }
 
-    public static HttpAssertion assertPost2( String uri, String content ) {
-        return assertPost2( uri, content, null, Maps.of() );
+    public static HttpAssertion assertPost( String uri, String content ) {
+        return assertPost( uri, content, null, Maps.of() );
     }
 
-    public static HttpAssertion assertPost2( String uri, String content, Map<String, Object> headers ) {
-        return assertPost2( uri, content, null, headers );
+    public static HttpAssertion assertPost( String uri, String content, Map<String, Object> headers ) {
+        return assertPost( uri, content, null, headers );
     }
 
-    public static HttpAssertion assertPost2( String uri, String content, String contentType ) {
-        return assertPost2( uri, content, contentType, Maps.of() );
+    public static HttpAssertion assertPost( String uri, String content, String contentType ) {
+        return assertPost( uri, content, contentType, Maps.of() );
     }
 
     private static @NonNull HttpAssertion getResponseAsHttpAssertion( Request request ) throws IOException {
@@ -187,76 +201,6 @@ public class HttpAsserts {
             return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( bytes ) ) );
         }
     }
-
-    /**
-     * @see HttpAsserts#assertGet
-     */
-    @Deprecated
-    @SafeVarargs
-    public static HttpAssertion assertGet( String uri, Pair<String, Object>... params ) {
-        return new HttpAssertion( client.get( uri, params ) );
-    }
-
-    /**
-     * @see HttpAsserts#assertGet
-     */
-    @Deprecated
-    public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) {
-        return assertHttpResponse( client.get( uri, params, headers ) );
-    }
-
-    /**
-     * @see HttpAsserts#assertGet
-     */
-    @Deprecated
-    public static HttpAssertion assertPost( String uri, String content, Map<String, Object> headers ) {
-        return assertPost( uri, content, APPLICATION_JSON, headers );
-    }
-
-    /**
-     * @see HttpAsserts#assertPost
-     */
-    public static HttpAssertion assertPost( String uri, String content ) {
-        return assertPost( uri, content, Map.of() );
-    }
-
-    /**
-     * @see HttpAsserts#assertPost
-     */
-    public static HttpAssertion assertPost( String uri, String content, String contentType, Map<String, Object> headers ) {
-        return assertHttpResponse( client.post( uri, content, contentType, headers ) );
-    }
-
-    /**
-     * @see HttpAsserts#assertGet
-     */
-    @Deprecated
-    public static HttpAssertion assertPost( String uri, String content, String contentType ) {
-        return assertPost( uri, content, contentType, Map.of() );
-    }
-
-    /**
-     * @see HttpAsserts#assertPost
-     */
-    public static HttpAssertion assertPost( String uri, InputStream content, String contentType ) {
-        return assertHttpResponse( client.post( uri, content, contentType ) );
-    }
-
-    /**
-     * @see HttpAsserts#assertPost
-     */
-    @Deprecated
-    public static HttpAssertion assertPost( String uri, InputStream content, String contentType, Map<String, Object> headers ) {
-        return assertHttpResponse( client.post( uri, content, contentType, headers ) );
-    }
-
-//    public static HttpAssertion assertUploadFile( String uri, RequestBody body ) {
-//        return new HttpAssertion( client.uploadFile( uri, body, Map.of() ) );
-//    }
-
-//    public static HttpAssertion assertUploadFile( String uri, RequestBody body, Map<String, Object> headers ) {
-//        return new HttpAssertion( client.uploadFile( uri, body, headers ) );
-//    }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType ) {
         return assertHttpResponse( client.put( uri, content, contentType ) );
@@ -307,12 +251,25 @@ public class HttpAsserts {
         return assertHttpResponse( client.patch( uri, is, contentType, headers ) );
     }
 
-    public static HttpAssertion assertDelete( String uri ) {
-        return assertDelete( uri, Map.of() );
+    public static HttpAssertion assertDelete( String uri, Map<String, Object> headers ) {
+        try {
+            Request.Builder builder = new Request.Builder();
+
+            headers.forEach( ( k, v ) -> builder.header( k, v == null ? "" : v.toString() ) );
+
+            Request request = builder
+                .url( uri )
+                .delete()
+                .build();
+
+            return getResponseAsHttpAssertion( request );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
-    public static HttpAssertion assertDelete( String uri, Map<String, Object> headers ) {
-        return assertHttpResponse( client.delete( uri, headers ) );
+    public static HttpAssertion assertDelete( String uri ) {
+        return assertDelete( uri, Map.of() );
     }
 
     @EqualsAndHashCode

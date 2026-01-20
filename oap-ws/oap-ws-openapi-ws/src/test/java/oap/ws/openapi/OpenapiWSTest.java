@@ -33,7 +33,7 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static oap.http.test.HttpAsserts.assertGet2;
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 import static oap.testng.Asserts.contentOfTestResource;
 
@@ -48,14 +48,14 @@ public class OpenapiWSTest extends Fixtures {
 
     @Test
     public void openapiWithDeprecated() {
-        assertGet2( kernel.httpUrl( "/system/openapi?skipDeprecated=false" ) )
+        assertGet( kernel.httpUrl( "/system/openapi?skipDeprecated=false" ) )
             .respondedJson( Http.StatusCode.OK, "OK",
                 contentOfTestResource( getClass(), "openapi.json", Map.of() ) );
     }
 
     @Test
     public void openapiWithoutDeprecated() {
-        assertGet2( kernel.httpUrl( "/system/openapi" ) )
+        assertGet( kernel.httpUrl( "/system/openapi" ) )
             .respondedJson( Http.StatusCode.OK, "OK",
                 contentOfTestResource( getClass(), "openapiWithoutDeprecated.json", Map.of() ) );
     }

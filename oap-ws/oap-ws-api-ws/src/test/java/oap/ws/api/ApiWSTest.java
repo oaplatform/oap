@@ -34,7 +34,7 @@ import java.io.IOException;
 
 import static oap.http.Http.ContentType.TEXT_PLAIN;
 import static oap.http.Http.StatusCode.OK;
-import static oap.http.test.HttpAsserts.assertGet2;
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
@@ -50,14 +50,14 @@ public class ApiWSTest extends Fixtures {
 
     @Test
     public void api() throws IOException {
-        assertGet2( kernel.httpUrl( "/system/api" ) )
+        assertGet( kernel.httpUrl( "/system/api" ) )
             .responded( OK, "OK", TEXT_PLAIN,
                 contentOfTestResource( getClass(), "api.txt", ofString() ) );
     }
 
     @Test
     public void apiWithoutDeprecated() {
-        assertGet2( kernel.httpUrl( "/system/api?deprecated=false" ) )
+        assertGet( kernel.httpUrl( "/system/api?deprecated=false" ) )
             .responded( OK, "OK", TEXT_PLAIN,
                 contentOfTestResource( getClass(), "apiWithoutDeprecated.txt", ofString() ) );
     }

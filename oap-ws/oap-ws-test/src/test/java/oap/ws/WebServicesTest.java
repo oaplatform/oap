@@ -29,6 +29,7 @@ import oap.http.Client;
 import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
 import oap.http.server.nio.HttpServerExchange;
+import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.apache.commons.io.IOUtils;
@@ -49,8 +50,7 @@ import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.Http.StatusCode.NO_CONTENT;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
-import static oap.http.test.HttpAsserts.assertGet2;
-import static oap.http.test.HttpAsserts.assertPost2;
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 import static oap.util.Pair.__;
 import static oap.ws.WsParam.From.BODY;
@@ -70,127 +70,127 @@ public class WebServicesTest extends Fixtures {
 
     @Test
     public void path() {
-        assertGet2( kernel.httpUrl( "/x/v/math" ) )
+        assertGet( kernel.httpUrl( "/x/v/math" ) )
             .responded( OK, "OK", APPLICATION_JSON, "2" );
     }
 
     @Test
     public void sort() {
-        assertGet2( kernel.httpUrl( "/x/v/math/test/sort/default" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/test/sort/default" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"__default__\"" );
-        assertGet2( kernel.httpUrl( "/x/v/math/test/sort/45" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/test/sort/45" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"45\"" );
     }
 
     @Test
     public void equal() {
-        assertGet2( kernel.httpUrl( "/x/v/math/test/sort=3/test" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/test/sort=3/test" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"3\"" );
     }
 
     @Test
     public void header() {
-        assertGet2( kernel.httpUrl( "/x/v/math/header" ), Map.of(), Map.of( "X-Custom-Header", "header" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/header" ), Map.of(), Map.of( "X-Custom-Header", "header" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"headerheader\"" );
     }
 
     @Test
     public void cookie() {
-        assertGet2( kernel.httpUrl( "/x/v/math/cookie" ), Map.of(), Map.of( "Cookie", "cookie=theCookie;Really-Cool-Cookie=ohoh" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/cookie" ), Map.of(), Map.of( "Cookie", "cookie=theCookie;Really-Cool-Cookie=ohoh" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"theCookieohoh\"" );
     }
 
     @Test
     public void renamed() {
-        assertGet2( kernel.httpUrl( "/x/v/math/renamed?renamed=aaa" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/renamed?renamed=aaa" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"aaa\"" );
     }
 
 
     @Test
     public void invocations() {
-        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
-        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
-        assertGet2( kernel.httpUrl( "/x/v/math/sumab?a=1&b=2" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/sumab?a=1&b=2" ) )
             .responded( OK, "OK", APPLICATION_JSON, "3" );
-        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
-        assertGet2( kernel.httpUrl( "/x/v/math/sumabopt?a=1" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/sumabopt?a=1" ) )
             .responded( OK, "OK", APPLICATION_JSON, "1" );
-        assertGet2( kernel.httpUrl( "/x/v/math/bean?i=1&s=sss" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/bean?i=1&s=sss" ) )
             .respondedJson( OK, "OK", "{\"i\":1,\"s\":\"sss\"}" );
-        assertGet2( kernel.httpUrl( "/x/v/math/code?code=204" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/code?code=204" ) )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet2( kernel.httpUrl( "/x/h/" ) ).hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet2( kernel.httpUrl( "" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
-        assertGet2( kernel.httpUrl( "/" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
-        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( kernel.httpUrl( "/x/h/" ) ).hasCode( Http.StatusCode.NO_CONTENT );
+        assertGet( kernel.httpUrl( "" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
+        assertGet( kernel.httpUrl( "/" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
+        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
 
     }
 
     @Test
     public void invocationBytes() {
-        assertPost2( kernel.httpUrl( "/x/v/math/bytes" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        HttpAsserts.assertPost( kernel.httpUrl( "/x/v/math/bytes" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .responded( OK, "OK", APPLICATION_JSON, "\"1234\"" );
     }
 
     @Test
     public void invocationString() {
-        assertPost2( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        HttpAsserts.assertPost( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .responded( OK, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertPost2( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        HttpAsserts.assertPost( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .satisfies( response -> assertThat( response.headers )
-                .contains( __( "Content-Type", "application/json" ) ) );
+                .contains( __( "content-type", "application/json" ) ) );
     }
 
     @Test
     public void invocationInputStream() {
-        assertPost2( kernel.httpUrl( "/x/v/math/inputStream" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        HttpAsserts.assertPost( kernel.httpUrl( "/x/v/math/inputStream" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .responded( OK, "OK", APPLICATION_JSON, "\"1234\"" );
     }
 
     @Test
     public void enumValue() {
-        assertGet2( kernel.httpUrl( "/x/v/math/en?a=CLASS" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/en?a=CLASS" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "\"CLASS\"" );
     }
 
     @Test
     public void optional() {
-        assertGet2( kernel.httpUrl( "/x/v/math/sumabopt?a=1&b=2" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/sumabopt?a=1&b=2" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "3" );
     }
 
     @Test
     public void parameterList() {
-        assertGet2( kernel.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "6" );
     }
 
     @Test
     public void string() {
-        assertGet2( kernel.httpUrl( "/x/v/math/id?a=aaa" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/id?a=aaa" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "\"aaa\"" );
     }
 
     @Test
     public void request() {
-        assertGet2( kernel.httpUrl( "/x/v/math/req" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/req" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "\"/x/v/math/req-\"" );
     }
 
     @Test
     public void json() {
-        assertPost2( kernel.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
+        HttpAsserts.assertPost( kernel.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
             .respondedJson( "{\"i\":1,\"s\":\"sss\"}" );
     }
 
     @Test
     public void list() {
-        assertPost2( kernel.httpUrl( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
+        HttpAsserts.assertPost( kernel.httpUrl( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
             .respondedJson( "[\"1str\",\"2str\"]" );
     }
 
@@ -217,7 +217,7 @@ public class WebServicesTest extends Fixtures {
      */
     @Test
     public void testWsServiceDisabled() {
-        assertGet2( kernel.httpUrl( "/test-disabled" ) ).hasCode( NO_CONTENT );
+        assertGet( kernel.httpUrl( "/test-disabled" ) ).hasCode( NO_CONTENT );
     }
 
     @SuppressWarnings( "unused" )

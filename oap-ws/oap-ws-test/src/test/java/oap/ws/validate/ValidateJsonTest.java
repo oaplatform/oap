@@ -33,7 +33,7 @@ import oap.ws.WsParam;
 import org.testng.annotations.Test;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.test.HttpAsserts.assertPost2;
+import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
@@ -48,29 +48,29 @@ public class ValidateJsonTest extends Fixtures {
 
     @Test
     public void validation1() {
-        assertPost2( kernel.httpUrl( "/vj/run/validation/1" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/1" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{\"a\":1}" );
-        assertPost2( kernel.httpUrl( "/vj/run/validation/1" ), "{}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/1" ), "{}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"/a: required property is missing\"]}" );
     }
 
     @Test
     public void validation2() {
-        assertPost2( kernel.httpUrl( "/vj/run/validation/2" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/2" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{\"a\":1}" );
-        assertPost2( kernel.httpUrl( "/vj/run/validation/2" ), "{}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/2" ), "{}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{}" );
-        assertPost2( kernel.httpUrl( "/vj/run/validation/2" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/2" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"additional properties are not permitted [b]\"]}" );
     }
 
     @Test
     public void validation3() {
-        assertPost2( kernel.httpUrl( "/vj/run/validation/3?type=type1" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/3?type=type1" ), "{\"a\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{\"a\":1}" );
-        assertPost2( kernel.httpUrl( "/vj/run/validation/3?type=type2" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/3?type=type2" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "{\"b\":1}" );
-        assertPost2( kernel.httpUrl( "/vj/run/validation/3?type=type1" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/vj/run/validation/3?type=type1" ), "{\"b\":1}", Http.ContentType.APPLICATION_JSON )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"/a: required property is missing\"]}" );
     }
 
