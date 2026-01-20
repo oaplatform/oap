@@ -31,6 +31,7 @@ import oap.http.server.nio.HttpServerExchange;
 import oap.ws.Response;
 import oap.ws.SessionManager;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -65,13 +66,16 @@ public class SSO {
     }
 
     public static Response authenticatedResponse( Authentication authentication, String cookieDomain, Boolean cookieSecure ) {
+        long accessTokenMaxAge = new Duration( new DateTime( UTC ), new DateTime( authentication.accessToken.expires, UTC ) ).getStandardSeconds();
+        long refreshTokenMaxAge = new Duration( new DateTime( UTC ), new DateTime( authentication.refreshToken.expires, UTC ) ).getStandardSeconds();
+
         return Response
             .jsonOk()
             .withHeader( AUTHENTICATION_KEY, authentication.accessToken.jwt )
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, authentication.accessToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withExpires( new DateTime( authentication.accessToken.expires ) )
+                .withMaxAge( ( int ) accessTokenMaxAge )
                 .withHttpOnly( true )
                 .withSecure( cookieSecure )
                 .build()
@@ -79,7 +83,7 @@ public class SSO {
             .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, authentication.refreshToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withExpires( new DateTime( authentication.refreshToken.expires ) )
+                .withMaxAge( ( int ) refreshTokenMaxAge )
                 .withHttpOnly( true )
                 .withSecure( cookieSecure )
                 .build()
