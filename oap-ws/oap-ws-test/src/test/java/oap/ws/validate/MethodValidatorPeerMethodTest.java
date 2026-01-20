@@ -36,7 +36,7 @@ import java.util.List;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
@@ -78,7 +78,7 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
 
     @Test
     public void validationMethods() {
-        assertGet( kernel.httpUrl( "/mvpm/run/validation/methods?a=a&b=5&c=c" ) )
+        assertGet2( kernel.httpUrl( "/mvpm/run/validation/methods?a=a&b=5&c=c" ) )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"a\",\"a5\",\"5a\"]}" );
     }
 

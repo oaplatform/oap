@@ -26,6 +26,7 @@ package oap.ws.sso;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.id.Identifier;
 import oap.util.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -47,6 +48,7 @@ public class AbstractUserTest {
     @ToString
     @EqualsAndHashCode
     public static class TestUser implements User {
+        public final String id;
         public final String email;
         public final String password;
         public final Map<String, String> roles = new HashMap<>();
@@ -61,10 +63,16 @@ public class AbstractUserTest {
         }
 
         public TestUser( String email, String password, Pair<String, String> role, boolean tfaEnabled ) {
+            this.id = Identifier.generate( email, 20, s -> false, 0 );
             this.email = email;
             this.password = password;
             this.roles.put( role._1, role._2 );
             this.tfaEnabled = tfaEnabled;
+        }
+
+        @Override
+        public String getId() {
+            return id;
         }
 
         @Override

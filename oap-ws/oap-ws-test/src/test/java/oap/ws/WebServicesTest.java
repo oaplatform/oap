@@ -49,7 +49,7 @@ import static oap.http.Http.ContentType.APPLICATION_JSON;
 import static oap.http.Http.StatusCode.NO_CONTENT;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.util.Pair.__;
@@ -70,63 +70,63 @@ public class WebServicesTest extends Fixtures {
 
     @Test
     public void path() {
-        assertGet( kernel.httpUrl( "/x/v/math" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math" ) )
             .responded( OK, "OK", APPLICATION_JSON, "2" );
     }
 
     @Test
     public void sort() {
-        assertGet( kernel.httpUrl( "/x/v/math/test/sort/default" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/test/sort/default" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"__default__\"" );
-        assertGet( kernel.httpUrl( "/x/v/math/test/sort/45" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/test/sort/45" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"45\"" );
     }
 
     @Test
     public void equal() {
-        assertGet( kernel.httpUrl( "/x/v/math/test/sort=3/test" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/test/sort=3/test" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"3\"" );
     }
 
     @Test
     public void header() {
-        assertGet( kernel.httpUrl( "/x/v/math/header" ), Map.of(), Map.of( "X-Custom-Header", "header" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/header" ), Map.of(), Map.of( "X-Custom-Header", "header" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"headerheader\"" );
     }
 
     @Test
     public void cookie() {
-        assertGet( kernel.httpUrl( "/x/v/math/cookie" ), Map.of(), Map.of( "Cookie", "cookie=theCookie;Really-Cool-Cookie=ohoh" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/cookie" ), Map.of(), Map.of( "Cookie", "cookie=theCookie;Really-Cool-Cookie=ohoh" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"theCookieohoh\"" );
     }
 
     @Test
     public void renamed() {
-        assertGet( kernel.httpUrl( "/x/v/math/renamed?renamed=aaa" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/renamed?renamed=aaa" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"aaa\"" );
     }
 
 
     @Test
     public void invocations() {
-        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
-        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
-        assertGet( kernel.httpUrl( "/x/v/math/sumab?a=1&b=2" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/sumab?a=1&b=2" ) )
             .responded( OK, "OK", APPLICATION_JSON, "3" );
-        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
-        assertGet( kernel.httpUrl( "/x/v/math/sumabopt?a=1" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/sumabopt?a=1" ) )
             .responded( OK, "OK", APPLICATION_JSON, "1" );
-        assertGet( kernel.httpUrl( "/x/v/math/bean?i=1&s=sss" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/bean?i=1&s=sss" ) )
             .respondedJson( OK, "OK", "{\"i\":1,\"s\":\"sss\"}" );
-        assertGet( kernel.httpUrl( "/x/v/math/code?code=204" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/code?code=204" ) )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet( kernel.httpUrl( "/x/h/" ) ).hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet( kernel.httpUrl( "" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
-        assertGet( kernel.httpUrl( "/" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
-        assertGet( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
+        assertGet2( kernel.httpUrl( "/x/h/" ) ).hasCode( Http.StatusCode.NO_CONTENT );
+        assertGet2( kernel.httpUrl( "" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
+        assertGet2( kernel.httpUrl( "/" ) ).hasCode( Http.StatusCode.NO_CONTENT ); //for default domain mapping
+        assertGet2( kernel.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "failed", "{\"message\":\"failed\"}" );
 
     }
@@ -154,31 +154,31 @@ public class WebServicesTest extends Fixtures {
 
     @Test
     public void enumValue() {
-        assertGet( kernel.httpUrl( "/x/v/math/en?a=CLASS" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/en?a=CLASS" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "\"CLASS\"" );
     }
 
     @Test
     public void optional() {
-        assertGet( kernel.httpUrl( "/x/v/math/sumabopt?a=1&b=2" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/sumabopt?a=1&b=2" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "3" );
     }
 
     @Test
     public void parameterList() {
-        assertGet( kernel.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "6" );
     }
 
     @Test
     public void string() {
-        assertGet( kernel.httpUrl( "/x/v/math/id?a=aaa" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/id?a=aaa" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "\"aaa\"" );
     }
 
     @Test
     public void request() {
-        assertGet( kernel.httpUrl( "/x/v/math/req" ) )
+        assertGet2( kernel.httpUrl( "/x/v/math/req" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "\"/x/v/math/req-\"" );
     }
 
@@ -201,7 +201,7 @@ public class WebServicesTest extends Fixtures {
         gzip.write( "{\"i\":1,\"s\":\"sss\"}".getBytes( StandardCharsets.UTF_8 ) );
         gzip.close();
 
-        var response = Client
+        Client.Response response = Client
             .custom()
             .build()
             .post( kernel.httpUrl( "/x/v/math/json" ),
@@ -217,7 +217,7 @@ public class WebServicesTest extends Fixtures {
      */
     @Test
     public void testWsServiceDisabled() {
-        assertGet( kernel.httpUrl( "/test-disabled" ) ).hasCode( NO_CONTENT );
+        assertGet2( kernel.httpUrl( "/test-disabled" ) ).hasCode( NO_CONTENT );
     }
 
     @SuppressWarnings( "unused" )

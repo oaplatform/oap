@@ -56,7 +56,7 @@ public interface UserProvider {
     Optional<? extends User> getUser( String email );
 
     Result<UserWithCookies, String> getAuthenticatedByAccessToken( Optional<String> accessToken, Optional<String> refreshToken,
-                                                                   Optional<String> sessionUser,
+                                                                   Optional<String> sessionUserId,
                                                                    SecurityRoles roles, String realm, String... wssPermissions );
 
     Result<? extends User, AuthenticationFailure> getAuthenticated( String email, String password, Optional<String> tfaCode );

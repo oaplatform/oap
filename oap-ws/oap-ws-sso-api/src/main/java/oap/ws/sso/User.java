@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface User extends Serializable {
+    String getId();
+
     String getEmail();
 
     Optional<String> getRole( String realm );

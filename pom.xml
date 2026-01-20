@@ -23,6 +23,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp-bom</artifactId>
+                <version>${oap.deps.okhttp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -57,7 +65,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>25.2.1</oap.project.version>
+        <oap.project.version>25.3.1</oap.project.version>
 
         <oap.deps.config.version>25.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
@@ -66,7 +74,7 @@
         <oap.deps.mockito.version>5.18.0</oap.deps.mockito.version>
         <oap.deps.byte-buddy.version>1.17.6</oap.deps.byte-buddy.version>
 
-        <oap.deps.okhttp.version>5.1.0</oap.deps.okhttp.version>
+        <oap.deps.okhttp.version>5.3.2</oap.deps.okhttp.version>
 
         <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
         <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>

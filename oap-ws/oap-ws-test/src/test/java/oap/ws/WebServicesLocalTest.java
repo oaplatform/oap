@@ -30,7 +30,7 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.io.Resources.urlOrThrow;
 
 public class WebServicesLocalTest extends Fixtures {
@@ -43,7 +43,7 @@ public class WebServicesLocalTest extends Fixtures {
 
     @Test
     public void shouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( kernel.httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "ok" );
+        assertGet2( kernel.httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "ok" );
     }
 
     @SuppressWarnings( "unused" )
