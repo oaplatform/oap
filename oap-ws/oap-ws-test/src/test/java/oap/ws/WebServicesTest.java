@@ -96,7 +96,7 @@ public class WebServicesTest extends Fixtures {
 
     @Test
     public void cookie() {
-        assertGet( kernel.httpUrl( "/x/v/math/cookie" ), Map.of(), Map.of( "Cookie", "cookie=theCookie;Really-Cool-Cookie=ohoh" ) )
+        assertGet( kernel.httpUrl( "/x/v/math/cookie" ), Map.of(), Map.of( "cookie", "cookie=theCookie;Really-Cool-Cookie=ohoh" ) )
             .responded( OK, "OK", APPLICATION_JSON, "\"theCookieohoh\"" );
     }
 
