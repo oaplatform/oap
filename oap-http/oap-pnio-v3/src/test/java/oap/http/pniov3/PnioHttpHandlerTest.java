@@ -61,7 +61,7 @@ import java.util.zip.GZIPOutputStream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.Http.StatusCode.TOO_MANY_REQUESTS;
-import static oap.http.test.HttpAsserts.assertPost;
+import static oap.http.test.HttpAsserts.assertPost2;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
@@ -92,7 +92,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
         runWithWorkflow( task, port -> {
 
-            assertPost( "http://localhost:" + port + "/test", "{}" )
+            assertPost2( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( OK )
                 .hasContentType( ContentType.TEXT_PLAIN );
         } );
@@ -103,7 +103,7 @@ public class PnioHttpHandlerTest extends Fixtures {
         ComputeTask<TestState> task = TestHandler.compute( "cpu-2", builder -> builder.runtimeException( new RuntimeException( "test exception" ) ) );
 
         runWithWorkflow( task, port -> {
-            assertPost( "http://localhost:" + port + "/test", "{}" )
+            assertPost2( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( Http.StatusCode.BAD_GATEWAY )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "test exception" );
@@ -115,7 +115,7 @@ public class PnioHttpHandlerTest extends Fixtures {
         ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
         runWithWorkflow( task, port -> {
-            assertPost( "http://localhost:" + port + "/test", "{}" )
+            assertPost2( "http://localhost:" + port + "/test", "{}" )
                 .hasCode( Http.StatusCode.OK );
 
             try( CloseableHttpClient client = HttpClientBuilder.create()
@@ -146,7 +146,7 @@ public class PnioHttpHandlerTest extends Fixtures {
         ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
         runWithWorkflow( 2, 1024, 5, 1000, Dates.s( 100 ), task, port -> {
-            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+            assertPost2( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "REQUEST_BUFFER_OVERFLOW" );
@@ -158,7 +158,7 @@ public class PnioHttpHandlerTest extends Fixtures {
         ComputeTask<TestState> task = TestHandler.compute( "cpu-2" );
 
         runWithWorkflow( 1024, 2, 5, 1000, Dates.s( 100 ), task, port -> {
-            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+            assertPost2( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "BO" );
@@ -252,11 +252,11 @@ public class PnioHttpHandlerTest extends Fixtures {
         };
 
         runWithWorkflow( 1024, 1024, 1, 1000, 1000, task, port -> {
-            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+            assertPost2( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "TIMEOUT" );
-            assertPost( "http://localhost:" + port + "/test", "[{}]" )
+            assertPost2( "http://localhost:" + port + "/test", "[{}]" )
                 .hasCode( Http.StatusCode.BAD_REQUEST )
                 .hasContentType( ContentType.TEXT_PLAIN )
                 .hasBody( "TIMEOUT" );
