@@ -65,6 +65,7 @@ import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.Http.ContentType.APPLICATION_JSON;
+import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
 import static oap.http.test.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.http.test.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;
@@ -183,7 +184,7 @@ public class HttpAsserts {
             responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
             byte[] bytes = body.bytes();
             MediaType mediaType = body.contentType();
-            return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : null, new ByteArrayInputStream( bytes ) ) );
+            return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( bytes ) ) );
         }
     }
 
