@@ -50,7 +50,7 @@ import static oap.http.Http.StatusCode.NO_CONTENT;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.test.HttpAsserts.assertGet2;
-import static oap.http.test.HttpAsserts.assertPost;
+import static oap.http.test.HttpAsserts.assertPost2;
 import static oap.io.Resources.urlOrThrow;
 import static oap.util.Pair.__;
 import static oap.ws.WsParam.From.BODY;
@@ -133,22 +133,22 @@ public class WebServicesTest extends Fixtures {
 
     @Test
     public void invocationBytes() {
-        assertPost( kernel.httpUrl( "/x/v/math/bytes" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        assertPost2( kernel.httpUrl( "/x/v/math/bytes" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .responded( OK, "OK", APPLICATION_JSON, "\"1234\"" );
     }
 
     @Test
     public void invocationString() {
-        assertPost( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        assertPost2( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .responded( OK, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertPost( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        assertPost2( kernel.httpUrl( "/x/v/math/string" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .satisfies( response -> assertThat( response.headers )
                 .contains( __( "Content-Type", "application/json" ) ) );
     }
 
     @Test
     public void invocationInputStream() {
-        assertPost( kernel.httpUrl( "/x/v/math/inputStream" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
+        assertPost2( kernel.httpUrl( "/x/v/math/inputStream" ), "1234", Http.ContentType.APPLICATION_OCTET_STREAM )
             .responded( OK, "OK", APPLICATION_JSON, "\"1234\"" );
     }
 
@@ -184,13 +184,13 @@ public class WebServicesTest extends Fixtures {
 
     @Test
     public void json() {
-        assertPost( kernel.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
+        assertPost2( kernel.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
             .respondedJson( "{\"i\":1,\"s\":\"sss\"}" );
     }
 
     @Test
     public void list() {
-        assertPost( kernel.httpUrl( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
+        assertPost2( kernel.httpUrl( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
             .respondedJson( "[\"1str\",\"2str\"]" );
     }
 

@@ -28,6 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.http.Cookie;
+import oap.http.InputStreamRequestBody;
 import oap.http.Uri;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
@@ -37,13 +38,17 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import okhttp3.Headers;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.java.net.cookiejar.JavaNetCookieJar;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.testng.internal.collections.Ints;
 
 import java.io.ByteArrayInputStream;
@@ -109,17 +114,76 @@ public class HttpAsserts {
                 .get()
                 .build();
 
-            try( Response response = OK_HTTP_CLIENT.newCall( request ).execute();
-                 ResponseBody body = response.body() ) {
-
-                Headers responseHeaders = response.headers();
-                ArrayList<Pair<String, String>> headers = new ArrayList<>();
-                responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
-                byte[] bytes = body.bytes();
-                return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, body.contentType().toString(), new ByteArrayInputStream( bytes ) ) );
-            }
+            return getResponseAsHttpAssertion( request );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    public static HttpAssertion assertPost2( String uri, InputStream content, @Nullable String contentType, Map<String, Object> requestHeaders ) {
+        try {
+            Request.Builder builder = new Request.Builder();
+
+            requestHeaders.forEach( ( k, v ) -> builder.header( k, v == null ? "" : v.toString() ) );
+
+            RequestBody requestBody = new InputStreamRequestBody( contentType != null ? MediaType.get( contentType ) : null, content );
+
+            Request request = builder
+                .url( uri )
+                .post( requestBody )
+                .build();
+
+            return getResponseAsHttpAssertion( request );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static HttpAssertion assertPost2( String uri, InputStream content, @Nullable String contentType ) {
+        return assertPost2( uri, content, contentType, Maps.of() );
+    }
+
+    public static HttpAssertion assertPost2( String uri, String content, @Nullable String contentType, Map<String, Object> requestHeaders ) {
+        try {
+            Request.Builder builder = new Request.Builder();
+
+            requestHeaders.forEach( ( k, v ) -> builder.header( k, v == null ? "" : v.toString() ) );
+
+            RequestBody requestBody = RequestBody.create( content, contentType != null ? MediaType.parse( contentType ) : null );
+
+            Request request = builder
+                .url( uri )
+                .post( requestBody )
+                .build();
+
+            return getResponseAsHttpAssertion( request );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static HttpAssertion assertPost2( String uri, String content ) {
+        return assertPost2( uri, content, null, Maps.of() );
+    }
+
+    public static HttpAssertion assertPost2( String uri, String content, Map<String, Object> headers ) {
+        return assertPost2( uri, content, null, headers );
+    }
+
+    public static HttpAssertion assertPost2( String uri, String content, String contentType ) {
+        return assertPost2( uri, content, contentType, Maps.of() );
+    }
+
+    private static @NonNull HttpAssertion getResponseAsHttpAssertion( Request request ) throws IOException {
+        try( Response response = OK_HTTP_CLIENT.newCall( request ).execute();
+             ResponseBody body = response.body() ) {
+
+            Headers responseHeaders = response.headers();
+            ArrayList<Pair<String, String>> headers = new ArrayList<>();
+            responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
+            byte[] bytes = body.bytes();
+            MediaType mediaType = body.contentType();
+            return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : null, new ByteArrayInputStream( bytes ) ) );
         }
     }
 
@@ -140,26 +204,47 @@ public class HttpAsserts {
         return assertHttpResponse( client.get( uri, params, headers ) );
     }
 
+    /**
+     * @see HttpAsserts#assertGet
+     */
+    @Deprecated
     public static HttpAssertion assertPost( String uri, String content, Map<String, Object> headers ) {
         return assertPost( uri, content, APPLICATION_JSON, headers );
     }
 
+    /**
+     * @see HttpAsserts#assertPost
+     */
     public static HttpAssertion assertPost( String uri, String content ) {
         return assertPost( uri, content, Map.of() );
     }
 
+    /**
+     * @see HttpAsserts#assertPost
+     */
     public static HttpAssertion assertPost( String uri, String content, String contentType, Map<String, Object> headers ) {
         return assertHttpResponse( client.post( uri, content, contentType, headers ) );
     }
 
+    /**
+     * @see HttpAsserts#assertGet
+     */
+    @Deprecated
     public static HttpAssertion assertPost( String uri, String content, String contentType ) {
         return assertPost( uri, content, contentType, Map.of() );
     }
 
+    /**
+     * @see HttpAsserts#assertPost
+     */
     public static HttpAssertion assertPost( String uri, InputStream content, String contentType ) {
         return assertHttpResponse( client.post( uri, content, contentType ) );
     }
 
+    /**
+     * @see HttpAsserts#assertPost
+     */
+    @Deprecated
     public static HttpAssertion assertPost( String uri, InputStream content, String contentType, Map<String, Object> headers ) {
         return assertHttpResponse( client.post( uri, content, contentType, headers ) );
     }
