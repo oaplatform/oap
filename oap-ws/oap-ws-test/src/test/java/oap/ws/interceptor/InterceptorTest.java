@@ -34,7 +34,7 @@ import org.testng.annotations.Test;
 import java.util.Optional;
 
 import static oap.http.Http.StatusCode.FORBIDDEN;
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.io.Resources.urlOrThrow;
 
 public class InterceptorTest extends Fixtures {
@@ -47,7 +47,7 @@ public class InterceptorTest extends Fixtures {
 
     @Test
     public void shouldNotAllowRequestWhenErrorInterceptor() {
-        assertGet( kernel.httpUrl( "/interceptor/text?value=error" ) )
+        assertGet2( kernel.httpUrl( "/interceptor/text?value=error" ) )
             .hasCode( FORBIDDEN )
             .hasReason( "caused by interceptor" );
     }

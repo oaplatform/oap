@@ -33,7 +33,7 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
@@ -65,11 +65,11 @@ public class FileWSTest extends Fixtures {
     @Test
     public void download() {
         Files.write( testDirectoryFixture.testPath( "default/test.txt" ), "test", ContentWriter.ofString() );
-        assertGet( kernel.httpUrl( "/file?path=test.txt" ) )
+        assertGet2( kernel.httpUrl( "/file?path=test.txt" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "test" );
 
         Files.write( testDirectoryFixture.testPath( "b1/test.txt" ), "b1test", ContentWriter.ofString() );
-        assertGet( kernel.httpUrl( "/file?path=test.txt&bucket=b1" ) )
+        assertGet2( kernel.httpUrl( "/file?path=test.txt&bucket=b1" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "b1test" );
     }
 }

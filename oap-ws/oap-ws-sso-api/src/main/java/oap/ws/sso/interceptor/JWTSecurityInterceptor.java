@@ -84,7 +84,7 @@ public class JWTSecurityInterceptor implements Interceptor {
         String realmString = realm.get();
         String[] wssPermissions = wss.get().permissions();
 
-        validUser = userProvider.getAuthenticatedByAccessToken( Optional.ofNullable( accessToken ), refreshToken, sessionUserKey.map( User::getEmail ), roles, realmString, wssPermissions );
+        validUser = userProvider.getAuthenticatedByAccessToken( Optional.ofNullable( accessToken ), refreshToken, sessionUserKey.map( User::getId ), roles, realmString, wssPermissions );
 
         if( !validUser.isSuccess() ) {
             return Optional.of( new Response( UNAUTHORIZED, validUser.failureValue ) );

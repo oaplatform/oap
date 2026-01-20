@@ -28,16 +28,30 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.http.Cookie;
+import oap.http.Uri;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
+import oap.testng.Asserts;
 import oap.util.BiStream;
+import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import okhttp3.Headers;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okhttp3.java.net.cookiejar.JavaNetCookieJar;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
 import org.testng.internal.collections.Ints;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.CookieManager;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +70,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
+    public static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+        .cookieJar( new JavaNetCookieJar( new CookieManager() ) )
+        .build();
+
     private static final Client client = Client.custom()
         .setMaxConnTotal( 100_000 )
         .setMaxConnPerRoute( 100_000 )
@@ -75,12 +93,49 @@ public class HttpAsserts {
         client.reset();
     }
 
+    @SafeVarargs
+    public static HttpAssertion assertGet2( String uri, Pair<String, Object>... params ) throws UncheckedIOException {
+        return assertGet2( uri, Maps.of( params ), Map.of() );
+    }
 
+    public static HttpAssertion assertGet2( String uri, Map<String, Object> params, Map<String, Object> requestHeaders ) throws UncheckedIOException {
+        try {
+            Request.Builder builder = new Request.Builder();
+
+            requestHeaders.forEach( ( k, v ) -> builder.header( k, v == null ? "" : v.toString() ) );
+
+            Request request = builder
+                .url( Uri.uri( uri, params ).toURL() )
+                .get()
+                .build();
+
+            try( Response response = OK_HTTP_CLIENT.newCall( request ).execute();
+                 ResponseBody body = response.body() ) {
+
+                Headers responseHeaders = response.headers();
+                ArrayList<Pair<String, String>> headers = new ArrayList<>();
+                responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
+                byte[] bytes = body.bytes();
+                return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, body.contentType().toString(), new ByteArrayInputStream( bytes ) ) );
+            }
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    /**
+     * @see HttpAsserts#assertGet
+     */
+    @Deprecated
     @SafeVarargs
     public static HttpAssertion assertGet( String uri, Pair<String, Object>... params ) {
         return new HttpAssertion( client.get( uri, params ) );
     }
 
+    /**
+     * @see HttpAsserts#assertGet
+     */
+    @Deprecated
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return assertHttpResponse( client.get( uri, params, headers ) );
     }
@@ -348,6 +403,10 @@ public class HttpAsserts {
             } catch( JsonException e ) {
                 throw Assertions.<AssertionError>fail( e.getMessage(), e );
             }
+        }
+
+        public Asserts.StringAssertion body() {
+            return assertString( response.contentString() );
         }
     }
 

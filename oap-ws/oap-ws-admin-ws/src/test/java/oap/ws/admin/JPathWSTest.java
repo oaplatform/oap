@@ -30,7 +30,7 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.io.Resources.urlOrThrow;
 
 @Ignore
@@ -46,7 +46,7 @@ public class JPathWSTest extends Fixtures {
     public void testJavaBeanPropertyAccess() {
         kernel.service( "oap-ws-admin-ws-test", TestService.class ).setV2( "testv" );
 
-        assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.getV2()" ) )
+        assertGet2( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.getV2()" ) )
             .isOk()
             .hasBody( "\"testv\"" );
     }
@@ -54,7 +54,7 @@ public class JPathWSTest extends Fixtures {
     @Test
     public void testPublicFieldAccess() {
         kernel.service( "oap-ws-admin-ws-test", TestService.class ).setV2( "testv" );
-        assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.value" ) )
+        assertGet2( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.value" ) )
             .isOk()
             .hasBody( "\"testv\"" );
     }

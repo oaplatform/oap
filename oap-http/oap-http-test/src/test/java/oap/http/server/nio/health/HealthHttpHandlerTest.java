@@ -24,9 +24,6 @@
 
 package oap.http.server.nio.health;
 
-//import oap.application.module.Module;
-//import oap.application.testng.KernelFixture;
-
 import oap.http.server.nio.NioHttpServer;
 import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
@@ -37,19 +34,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 
 public class HealthHttpHandlerTest extends Fixtures {
-    public HealthHttpHandlerTest() {
-//        fixture( new KernelFixture(
-//            urlOfTestResource( getClass(), "application.test.conf" ),
-//            Lists.concat(
-//                List.of( urlOfTestResource( getClass(), "oap-module.oap" ) ),
-//                Module.CONFIGURATION.urlsFromClassPath()
-//            )
-//        ) );
-    }
-
     @Test
     public void health() throws IOException {
         int httpPort = Ports.getFreePort( getClass() );
@@ -62,8 +49,8 @@ public class HealthHttpHandlerTest extends Fixtures {
 
             httpServer.start();
 
-            assertGet( HttpAsserts.httpUrl( httpPort, "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
-            assertGet( HttpAsserts.httpUrl( httpPort, "/healtz?secret=secret" ) )
+            assertGet2( HttpAsserts.httpUrl( httpPort, "/healtz" ) ).hasCode( HTTP_NO_CONTENT );
+            assertGet2( HttpAsserts.httpUrl( httpPort, "/healtz?secret=secret" ) )
                 .respondedJson( "{\"test\":{\"k1\":1, \"k2\":2}}" );
         }
     }

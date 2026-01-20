@@ -125,10 +125,9 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
         return code == DEFAULT_CODE;
     }
 
-    @Deprecated
     public ValidationErrors throwIfInvalid() throws WsClientException {
         if( failed() )
-            throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.get( 0 ), code, errors );
+            throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.getFirst(), code, errors );
         return this;
     }
 

@@ -31,7 +31,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertGet2;
 import static oap.io.Resources.urlOrThrow;
 
 @Slf4j
@@ -45,35 +45,35 @@ public class ValidationTest extends Fixtures {
 
     @Test
     public void brokenValidator() {
-        assertGet( kernel.httpUrl( "/validation/service/methodWithBrokenValidator?requiredParameter=10" ) )
+        assertGet2( kernel.httpUrl( "/validation/service/methodWithBrokenValidator?requiredParameter=10" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, "CausedByException", "{\"message\":\"CausedByException\"}" );
     }
 
     @Test
     public void wrongValidatorName() {
         String errorMessage = "No such method wrongValidatorName with the following parameters: [int requiredParameter]";
-        assertGet( kernel.httpUrl( "/validation/service/methodWithWrongValidatorName?requiredParameter=10" ) )
+        assertGet2( kernel.httpUrl( "/validation/service/methodWithWrongValidatorName?requiredParameter=10" ) )
             .respondedJson( Http.StatusCode.INTERNAL_SERVER_ERROR, errorMessage, "{\"message\":\"" + errorMessage + "\"}" );
     }
 
     @Test
     public void validatorWithWrongParameters() {
         String errorMessage = "missedParam required by validator wrongArgsValidator is not supplied by web method";
-        assertGet( kernel.httpUrl( "/validation/service/methodWithWrongValidatorArgs?requiredParameter=10" ) )
+        assertGet2( kernel.httpUrl( "/validation/service/methodWithWrongValidatorArgs?requiredParameter=10" ) )
             .responded( Http.StatusCode.INTERNAL_SERVER_ERROR, errorMessage, Http.ContentType.APPLICATION_JSON, "{\"message\":\"" + errorMessage + "\"}" );
     }
 
     @Test
     public void validatorMethodWithArgs() {
-        assertGet( kernel.httpUrl( "/validation/service/methodWithValidatorArgs?oddParam=1" ) )
+        assertGet2( kernel.httpUrl( "/validation/service/methodWithValidatorArgs?oddParam=1" ) )
             .responded( Http.StatusCode.BAD_REQUEST, "validation failed", Http.ContentType.APPLICATION_JSON, "{\"errors\":[\"" + "non odd param" + "\"]}" );
-        assertGet( kernel.httpUrl( "/validation/service/methodWithValidatorArgs?oddParam=2" ) )
+        assertGet2( kernel.httpUrl( "/validation/service/methodWithValidatorArgs?oddParam=2" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "true" );
     }
 
     @Test
     public void exception() {
-        assertGet( kernel.httpUrl( "/validation/service/exceptionRuntimeException" ) )
+        assertGet2( kernel.httpUrl( "/validation/service/exceptionRuntimeException" ) )
             .hasCode( Http.StatusCode.INTERNAL_SERVER_ERROR );
     }
 }
