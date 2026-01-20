@@ -29,7 +29,7 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
-import static oap.http.test.HttpAsserts.assertGet2;
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 
 public class SchemaWSTest extends Fixtures {
@@ -42,7 +42,7 @@ public class SchemaWSTest extends Fixtures {
 
     @Test
     public void testSchema() {
-        assertGet2( kernel.httpUrl( "/system/admin/schema?path=/schema/test-schema.conf" ) )
+        assertGet( kernel.httpUrl( "/system/admin/schema?path=/schema/test-schema.conf" ) )
             .isOk()
             .respondedJson( """
                 {

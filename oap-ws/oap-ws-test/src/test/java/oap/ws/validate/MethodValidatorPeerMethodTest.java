@@ -36,8 +36,8 @@ import java.util.List;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.test.HttpAsserts.assertGet2;
-import static oap.http.test.HttpAsserts.assertPost2;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.validate.ValidationErrors.empty;
@@ -54,31 +54,31 @@ public class MethodValidatorPeerMethodTest extends Fixtures {
 
     @Test
     public void validationDefault() {
-        assertPost2( kernel.httpUrl( "/mvpm/run/validation/default" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpm/run/validation/default" ), "test", Http.ContentType.TEXT_PLAIN )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "\"test\"" );
     }
 
     @Test
     public void validationOk() {
-        assertPost2( kernel.httpUrl( "/mvpm/run/validation/ok" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpm/run/validation/ok" ), "test", Http.ContentType.TEXT_PLAIN )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "test" );
     }
 
     @Test
     public void validationFail() {
-        assertPost2( kernel.httpUrl( "/mvpm/run/validation/fail" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpm/run/validation/fail" ), "test", Http.ContentType.TEXT_PLAIN )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"error1\",\"error2\"]}" );
     }
 
     @Test
     public void validationFailCode() {
-        assertPost2( kernel.httpUrl( "/mvpm/run/validation/fail-code" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpm/run/validation/fail-code" ), "test", Http.ContentType.TEXT_PLAIN )
             .respondedJson( Http.StatusCode.FORBIDDEN, "validation failed", "{\"errors\":[\"denied\"]}" );
     }
 
     @Test
     public void validationMethods() {
-        assertGet2( kernel.httpUrl( "/mvpm/run/validation/methods?a=a&b=5&c=c" ) )
+        assertGet( kernel.httpUrl( "/mvpm/run/validation/methods?a=a&b=5&c=c" ) )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\":[\"a\",\"a5\",\"5a\"]}" );
     }
 

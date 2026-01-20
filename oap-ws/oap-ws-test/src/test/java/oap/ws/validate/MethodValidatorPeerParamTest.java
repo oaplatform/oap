@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.POST;
-import static oap.http.test.HttpAsserts.assertPost2;
+import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
@@ -52,43 +52,43 @@ public class MethodValidatorPeerParamTest extends Fixtures {
 
     @Test
     public void validationDefault() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/default?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/default?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "\"1test\"" );
     }
 
     @Test
     public void validationOk() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/ok?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/ok?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "\"1test\"" );
     }
 
     @Test
     public void validationOkList() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/ok?i=1&listString=_11&listString=_12" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/ok?i=1&listString=_11&listString=_12" ), "test", Http.ContentType.TEXT_PLAIN )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "\"1_11/_12test\"" );
     }
 
     @Test
     public void validationOkOptional() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/ok?i=1&optString=2" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/ok?i=1&optString=2" ), "test", Http.ContentType.TEXT_PLAIN )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.APPLICATION_JSON, "\"12test\"" );
     }
 
     @Test
     public void validationFail() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/fail?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/fail?i=1" ), "test", Http.ContentType.TEXT_PLAIN )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "validation failed", "{\"errors\": [\"error:1\", \"error:test\"]}" );
     }
 
     @Test
     public void validationRequiredFailed() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/ok" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/ok" ), "test", Http.ContentType.TEXT_PLAIN )
             .respondedJson( Http.StatusCode.BAD_REQUEST, "'int i' is required", "{\"errors\": [\"'int i' is required\"]}" );
     }
 
     @Test
     public void validationTypeFailed() {
-        assertPost2( kernel.httpUrl( "/mvpp/run/validation/ok?i=unsupportedStringToIntCast" ), "test", Http.ContentType.TEXT_PLAIN )
+        assertPost( kernel.httpUrl( "/mvpp/run/validation/ok?i=unsupportedStringToIntCast" ), "test", Http.ContentType.TEXT_PLAIN )
             .hasCode( Http.StatusCode.BAD_REQUEST );
     }
 

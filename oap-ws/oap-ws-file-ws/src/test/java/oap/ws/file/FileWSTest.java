@@ -33,8 +33,8 @@ import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
-import static oap.http.test.HttpAsserts.assertGet2;
-import static oap.http.test.HttpAsserts.assertPost2;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertPost;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
@@ -53,11 +53,11 @@ public class FileWSTest extends Fixtures {
 
     @Test
     public void upload() {
-        assertPost2( kernel.httpUrl( "/file" ), contentOfTestResource( getClass(), "data-complex.json", ofString() ), Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/file" ), contentOfTestResource( getClass(), "data-complex.json", ofString() ), Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "file.txt" );
         assertThat( testDirectoryFixture.testPath( "default/file.txt" ) ).hasContent( "test" );
 
-        assertPost2( kernel.httpUrl( "/file?bucket=b1" ), contentOfTestResource( getClass(), "data-single.json", ofString() ), Http.ContentType.APPLICATION_JSON )
+        assertPost( kernel.httpUrl( "/file?bucket=b1" ), contentOfTestResource( getClass(), "data-single.json", ofString() ), Http.ContentType.APPLICATION_JSON )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "file.txt" );
         assertThat( testDirectoryFixture.testPath( "b1/file.txt" ) ).hasContent( "test" );
     }
@@ -65,11 +65,11 @@ public class FileWSTest extends Fixtures {
     @Test
     public void download() {
         Files.write( testDirectoryFixture.testPath( "default/test.txt" ), "test", ContentWriter.ofString() );
-        assertGet2( kernel.httpUrl( "/file?path=test.txt" ) )
+        assertGet( kernel.httpUrl( "/file?path=test.txt" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "test" );
 
         Files.write( testDirectoryFixture.testPath( "b1/test.txt" ), "b1test", ContentWriter.ofString() );
-        assertGet2( kernel.httpUrl( "/file?path=test.txt&bucket=b1" ) )
+        assertGet( kernel.httpUrl( "/file?path=test.txt&bucket=b1" ) )
             .responded( Http.StatusCode.OK, "OK", Http.ContentType.TEXT_PLAIN, "b1test" );
     }
 }

@@ -26,6 +26,7 @@ package oap.ws;
 
 import oap.application.testng.KernelFixture;
 import oap.http.Http;
+import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
@@ -33,7 +34,7 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
-import static oap.http.test.HttpAsserts.assertGet2;
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.SESSION;
 
@@ -47,27 +48,27 @@ public class WebServicesSessionTest extends Fixtures {
 
     @Test
     public void sessionViaResponse() {
-        assertGet2( kernel.httpUrl( "/session/put" ), Map.of( "value", "vvv" ), Map.of() )
+        assertGet( kernel.httpUrl( "/session/put" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet2( kernel.httpUrl( "/session/get" ) )
+        HttpAsserts.assertGet( kernel.httpUrl( "/session/get" ) )
             .isOk()
             .hasBody( "vvv" );
     }
 
     @Test
     public void sessionDirectly() {
-        assertGet2( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
+        assertGet( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet2( kernel.httpUrl( "/session/get" ) )
+        HttpAsserts.assertGet( kernel.httpUrl( "/session/get" ) )
             .isOk()
             .hasBody( "vvv" );
     }
 
     @Test
     public void respondHtmlContentType() {
-        assertGet2( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
+        assertGet( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        assertGet2( kernel.httpUrl( "/session/html" ) )
+        HttpAsserts.assertGet( kernel.httpUrl( "/session/html" ) )
             .isOk()
             .hasBody( "vvv" )
             .hasContentType( Http.ContentType.TEXT_HTML );
