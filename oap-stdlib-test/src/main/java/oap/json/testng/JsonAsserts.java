@@ -43,6 +43,7 @@ import java.util.function.Function;
 import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofString;
 import static oap.json.Binder.json;
+import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -143,7 +144,7 @@ public class JsonAsserts {
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
                 .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
 
-            assertThat( actualJson ).isEqualTo( expectedJson );
+            assertString( actualJson ).isEqualTo( expectedJson );
 
             return this;
         }
@@ -167,7 +168,7 @@ public class JsonAsserts {
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
                 .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
 
-            assertThat( actualJson ).isEqualTo( expectedJson );
+            assertString( actualJson ).isEqualTo( expectedJson );
 
             return this;
         }
