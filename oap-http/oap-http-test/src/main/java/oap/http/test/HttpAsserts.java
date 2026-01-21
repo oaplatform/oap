@@ -38,6 +38,7 @@ import oap.util.BiStream;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import okhttp3.Dispatcher;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -64,6 +65,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -92,6 +94,7 @@ public class HttpAsserts {
         cookieJar = new JavaNetCookieJar( cookieManager );
         OK_HTTP_CLIENT = new OkHttpClient.Builder()
             .cookieJar( cookieJar )
+            .dispatcher( new Dispatcher( Executors.newVirtualThreadPerTaskExecutor() ) )
             .followRedirects( false )
             .followSslRedirects( false )
             .build();
