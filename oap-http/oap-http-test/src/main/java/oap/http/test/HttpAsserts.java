@@ -503,6 +503,13 @@ public class HttpAsserts {
             return containsCookie( Cookie.parseSetCookieHeader( cookie ) );
         }
 
+        public CookieHttpAssertion cookie( String name ) {
+            Optional<Cookie> cookie = Stream.of( cookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
+
+            assertThat( cookie ).isPresent();
+            return CookieHttpAssertion.assertCookie( cookie.get() );
+        }
+
         private List<Cookie> cookies() {
             return BiStream.of( response.headers )
                 .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) )
