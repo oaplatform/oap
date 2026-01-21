@@ -25,6 +25,7 @@ package oap.http.test;
 
 import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
@@ -60,10 +61,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpCookie;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -89,6 +92,8 @@ public class HttpAsserts {
     private static final JavaNetCookieJar cookieJar;
     private static final CookieManager cookieManager;
 
+    private static Field whenCreatedField;
+
     static {
         cookieManager = new CookieManager();
         cookieManager.setCookiePolicy( CookiePolicy.ACCEPT_ALL );
@@ -100,6 +105,13 @@ public class HttpAsserts {
             .followRedirects( false )
             .followSslRedirects( false )
             .build();
+
+        try {
+            whenCreatedField = HttpCookie.class.getDeclaredField( "whenCreated" );
+            whenCreatedField.setAccessible( true );
+        } catch( NoSuchFieldException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
     public static String httpPrefix( int port ) {
@@ -392,6 +404,11 @@ public class HttpAsserts {
         return assertDelete( uri, Map.of() );
     }
 
+    @SneakyThrows
+    private static long whenCreatedFieldGet( HttpCookie cookie ) {
+        return ( long ) whenCreatedField.get( cookie );
+    }
+
     @EqualsAndHashCode
     @ToString
     public static final class HttpAssertion {
@@ -585,8 +602,19 @@ public class HttpAsserts {
     public static final class CookiesHttpAssertion {
         private final List<Cookie> cookies;
 
+        @SneakyThrows
         public CookiesHttpAssertion( List<HttpCookie> cookies ) {
-            this.cookies = Lists.map( cookies, c -> Cookie.parseSetCookieHeader( c.toString() ) );
+            this.cookies = Lists.map( cookies, c -> Cookie.builder( c.getName(), c.getValue() )
+                .withPath( c.getPath() )
+                .withDomain( c.getDomain() )
+                .withMaxAge( c.getMaxAge() < 0 ? null : ( int ) c.getMaxAge() )
+                .withExpires( c.getMaxAge() <= 0 ? null : new Date( ( whenCreatedFieldGet( c ) + c.getMaxAge() ) * 1000L ) )
+                .withDiscard( c.getDiscard() )
+                .withSecure( c.getSecure() )
+                .withHttpOnly( c.isHttpOnly() )
+                .withVersion( c.getVersion() )
+                .withComment( c.getComment() )
+                .build() );
         }
 
         public CookieHttpAssertion cookie( String name ) {
