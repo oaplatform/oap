@@ -109,13 +109,8 @@ public class HttpAsserts {
     }
 
     public static void reset() {
-        try {
-            OK_HTTP_CLIENT.cache().delete();
-            OK_HTTP_CLIENT.connectionPool().evictAll();
-            cookieManager.getCookieStore().removeAll();
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        OK_HTTP_CLIENT.connectionPool().evictAll();
+        cookieManager.getCookieStore().removeAll();
     }
 
     @SafeVarargs
