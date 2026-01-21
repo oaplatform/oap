@@ -35,6 +35,7 @@ import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Asserts;
 import oap.util.BiStream;
+import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
@@ -224,7 +225,9 @@ public class HttpAsserts {
             responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
             byte[] bytes = body.bytes();
             MediaType mediaType = body.contentType();
-            return new HttpAssertion( new Client.Response( response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( bytes ) ) );
+            return new HttpAssertion( new Client.Response(
+                response.request().url().toString(),
+                response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( bytes ) ) );
         }
     }
 
@@ -503,15 +506,12 @@ public class HttpAsserts {
             return containsCookie( Cookie.parseSetCookieHeader( cookie ) );
         }
 
-        public CookieHttpAssertion cookie( String name ) {
-            Optional<Cookie> cookie = Stream.of( getCookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
-
-            assertThat( cookie ).isPresent();
-            return CookieHttpAssertion.assertCookie( cookie.get() );
-        }
-
         public HttpAssertion cookies( Consumer<CookiesHttpAssertion> cons ) {
-            cons.accept( new CookiesHttpAssertion( getCookies() ) );
+            HttpUrl httpUrl = HttpUrl.parse( response.url );
+            assertThat( httpUrl ).isNotNull();
+            List<okhttp3.Cookie> cookies = cookieJar.loadForRequest( httpUrl );
+
+            cons.accept( new CookiesHttpAssertion( cookies ) );
             return this;
         }
 
@@ -584,8 +584,8 @@ public class HttpAsserts {
     public static final class CookiesHttpAssertion {
         private final List<Cookie> cookies;
 
-        public CookiesHttpAssertion( List<Cookie> cookies ) {
-            this.cookies = cookies;
+        public CookiesHttpAssertion( List<okhttp3.Cookie> cookies ) {
+            this.cookies = Lists.map( cookies, c -> Cookie.parseSetCookieHeader( c.toString() ) );
         }
 
         public CookieHttpAssertion cookie( String name ) {

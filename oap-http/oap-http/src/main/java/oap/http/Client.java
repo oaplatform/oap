@@ -441,17 +441,18 @@ public final class Client implements Closeable, AutoCloseable {
                                                  ThrowingRunnable asyncRunnable ) {
         headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
-        var completableFuture = new CompletableFuture<Response>();
+        CompletableFuture<Response> completableFuture = new CompletableFuture<Response>();
 
         client.execute( request, new FutureCallback<>() {
             @Override
             public void completed( HttpResponse response ) {
                 try {
-                    var responseHeaders = headers( response );
+                    List<Pair<String, String>> responseHeaders = headers( response );
                     Response result;
                     if( response.getEntity() != null ) {
                         var entity = response.getEntity();
                         result = new Response(
+                            request.getURI().toString(),
                             response.getStatusLine().getStatusCode(),
                             response.getStatusLine().getReasonPhrase(),
                             responseHeaders,
@@ -461,6 +462,7 @@ public final class Client implements Closeable, AutoCloseable {
                             entity.getContent()
                         );
                     } else result = new Response(
+                        request.getURI().toString(),
                         response.getStatusLine().getStatusCode(),
                         response.getStatusLine().getReasonPhrase(),
                         responseHeaders
@@ -560,6 +562,7 @@ public final class Client implements Closeable, AutoCloseable {
 
     @ToString( exclude = { "inputStream", "content" }, doNotUseGetters = true )
     public static class Response implements Closeable, AutoCloseable {
+        public final String url;
         public final int code;
         public final String reasonPhrase;
         public final String contentType;
@@ -567,7 +570,8 @@ public final class Client implements Closeable, AutoCloseable {
         private InputStream inputStream;
         private volatile byte[] content = null;
 
-        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull String contentType, InputStream inputStream ) {
+        public Response( String url, int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull String contentType, InputStream inputStream ) {
+            this.url = url;
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
@@ -575,8 +579,8 @@ public final class Client implements Closeable, AutoCloseable {
             this.inputStream = inputStream;
         }
 
-        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers ) {
-            this( code, reasonPhrase, headers, BiStream.of( headers )
+        public Response( String url, int code, String reasonPhrase, List<Pair<String, String>> headers ) {
+            this( url, code, reasonPhrase, headers, BiStream.of( headers )
                 .filter( ( name, value ) -> "Content-type".equalsIgnoreCase( name ) )
                 .mapToObj( ( name, value ) -> value )
                 .findAny()
