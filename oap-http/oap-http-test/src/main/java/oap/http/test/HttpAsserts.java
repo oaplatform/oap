@@ -51,6 +51,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.java.net.cookiejar.JavaNetCookieJar;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.AbstractIntegerAssert;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
 import org.jspecify.annotations.NonNull;
@@ -663,6 +664,10 @@ public class HttpAsserts {
         public CookieHttpAssertion hasPath( String path ) {
             assertString( cookie.getPath() ).isEqualTo( path );
             return this;
+        }
+
+        public AbstractIntegerAssert<?> maxAge() {
+            return assertThat( cookie.getMaxAge() );
         }
 
         public CookieHttpAssertion hasNotMaxAge() {
