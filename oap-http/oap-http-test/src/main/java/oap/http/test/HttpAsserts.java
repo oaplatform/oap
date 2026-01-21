@@ -64,7 +64,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -81,25 +80,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
-    public static final ConcurrentHashMap<String, List<okhttp3.Cookie>> cookieStore = new ConcurrentHashMap<>();
-
     public static final OkHttpClient OK_HTTP_CLIENT;
-    private static final Client client = Client.custom()
-        .setMaxConnTotal( 100_000 )
-        .setMaxConnPerRoute( 100_000 )
-        .withCookieStore( new MockCookieStore() )
-        .onError( ( c, e ) -> log.error( e.getMessage() ) )
-        .build();
 
-    private static JavaNetCookieJar cookieJar;
+    private static final JavaNetCookieJar cookieJar;
+    private static final CookieManager cookieManager;
 
     static {
-        CookieManager cookieManager = new CookieManager();
+        cookieManager = new CookieManager();
         cookieManager.setCookiePolicy( CookiePolicy.ACCEPT_ALL );
 
         cookieJar = new JavaNetCookieJar( cookieManager );
         OK_HTTP_CLIENT = new OkHttpClient.Builder()
             .cookieJar( cookieJar )
+            .followRedirects( false )
+            .followSslRedirects( false )
             .build();
     }
 
@@ -112,7 +106,13 @@ public class HttpAsserts {
     }
 
     public static void reset() {
-        client.reset();
+        try {
+            OK_HTTP_CLIENT.cache().delete();
+            OK_HTTP_CLIENT.connectionPool().evictAll();
+            cookieManager.getCookieStore().removeAll();
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @SafeVarargs
