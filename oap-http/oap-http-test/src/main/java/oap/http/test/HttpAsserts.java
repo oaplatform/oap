@@ -62,6 +62,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
+import java.net.HttpCookie;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -509,7 +510,7 @@ public class HttpAsserts {
         public HttpAssertion cookies( Consumer<CookiesHttpAssertion> cons ) {
             HttpUrl httpUrl = HttpUrl.parse( response.url );
             assertThat( httpUrl ).isNotNull();
-            List<okhttp3.Cookie> cookies = cookieJar.loadForRequest( httpUrl );
+            List<HttpCookie> cookies = cookieManager.getCookieStore().get( httpUrl.uri() );
 
             cons.accept( new CookiesHttpAssertion( cookies ) );
             return this;
@@ -584,7 +585,7 @@ public class HttpAsserts {
     public static final class CookiesHttpAssertion {
         private final List<Cookie> cookies;
 
-        public CookiesHttpAssertion( List<okhttp3.Cookie> cookies ) {
+        public CookiesHttpAssertion( List<HttpCookie> cookies ) {
             this.cookies = Lists.map( cookies, c -> Cookie.parseSetCookieHeader( c.toString() ) );
         }
 
