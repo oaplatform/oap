@@ -485,7 +485,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion containsCookie( String name, Consumer<Cookie> assertion ) {
-            Optional<Cookie> cookie = Stream.of( cookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
+            Optional<Cookie> cookie = Stream.of( getCookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
             Assertions.assertThat( cookie )
                 .isNotEmpty()
                 .withFailMessage( "no such cookie: " + name )
@@ -495,7 +495,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion containsCookie( Cookie cookie ) {
-            Assertions.assertThat( cookies() ).contains( cookie );
+            Assertions.assertThat( getCookies() ).contains( cookie );
             return this;
         }
 
@@ -504,13 +504,18 @@ public class HttpAsserts {
         }
 
         public CookieHttpAssertion cookie( String name ) {
-            Optional<Cookie> cookie = Stream.of( cookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
+            Optional<Cookie> cookie = Stream.of( getCookies() ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
 
             assertThat( cookie ).isPresent();
             return CookieHttpAssertion.assertCookie( cookie.get() );
         }
 
-        private List<Cookie> cookies() {
+        public HttpAssertion cookies( Consumer<CookiesHttpAssertion> cons ) {
+            cons.accept( new CookiesHttpAssertion( getCookies() ) );
+            return this;
+        }
+
+        private List<Cookie> getCookies() {
             return BiStream.of( response.headers )
                 .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) )
                 .mapToObj( ( name, value ) -> Cookie.parseSetCookieHeader( value ) )
@@ -573,6 +578,21 @@ public class HttpAsserts {
 
         public Asserts.StringAssertion body() {
             return assertString( response.contentString() );
+        }
+    }
+
+    public static final class CookiesHttpAssertion {
+        private final List<Cookie> cookies;
+
+        public CookiesHttpAssertion( List<Cookie> cookies ) {
+            this.cookies = cookies;
+        }
+
+        public CookieHttpAssertion cookie( String name ) {
+            Optional<Cookie> cookie = Stream.of( cookies ).filter( c -> c.getName().equalsIgnoreCase( name ) ).findAny();
+
+            assertThat( cookie ).isPresent();
+            return CookieHttpAssertion.assertCookie( cookie.get() );
         }
     }
 
