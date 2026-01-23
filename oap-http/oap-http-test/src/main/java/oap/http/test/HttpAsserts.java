@@ -237,7 +237,7 @@ public class HttpAsserts {
             Headers responseHeaders = response.headers();
             ArrayList<Pair<String, String>> headers = new ArrayList<>();
             responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
-            byte[] bytes = body.bytes();
+            byte[] bytes = body.source().readByteArray();
             MediaType mediaType = body.contentType();
             return new HttpAssertion( new Client.Response(
                 response.request().url().toString(),
