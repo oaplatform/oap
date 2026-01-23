@@ -54,10 +54,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import org.testng.internal.collections.Ints;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -230,7 +230,7 @@ public class HttpAsserts {
         return assertPost( uri, content, contentType, Maps.of() );
     }
 
-    private static @NonNull HttpAssertion getResponseAsHttpAssertion( Request request ) throws IOException {
+    private static @Nonnull HttpAssertion getResponseAsHttpAssertion( Request request ) throws IOException {
         try( Response response = OK_HTTP_CLIENT.newCall( request ).execute();
              ResponseBody body = response.body() ) {
 
