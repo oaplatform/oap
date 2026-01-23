@@ -29,9 +29,11 @@ import de.bwaldvogel.mongo.ServerVersion;
 import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
 import lombok.extern.slf4j.Slf4j;
 import oap.testng.AbstractFixture;
+import oap.util.Lists;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Map;
 
 import static oap.testng.Asserts.contentOfTestResource;
@@ -81,8 +83,8 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
     }
 
     @NotNull
-    public MongoClient createMongoClient( String migrationPackage ) {
-        return new MongoClient( getConnectionString(), migrationPackage );
+    public MongoClient createMongoClient( String migrationPackage, String... migrationPackages ) {
+        return new MongoClient( getConnectionString(), Lists.concat( List.of( migrationPackage ), List.of( migrationPackages ) ) );
     }
 
     @NotNull
