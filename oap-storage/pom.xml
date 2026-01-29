@@ -13,7 +13,6 @@
 
     <properties>
         <oap.deps.mongo-driver-sync.version>5.4.0</oap.deps.mongo-driver-sync.version>
-        <oap.deps.netty.version>4.2.9.Final</oap.deps.netty.version>
         <oap.deps.mongock.version>5.5.1</oap.deps.mongock.version>
 
         <oap.deps.dynamodb.version>2.23.17</oap.deps.dynamodb.version>
