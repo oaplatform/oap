@@ -33,6 +33,7 @@ import oap.util.Lists;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -73,7 +74,7 @@ public class MongoFixture extends AbstractFixture<MongoFixture> {
 
         this.server = createMongoServer();
         log.info( "mongo port = {}", port );
-        this.server.bind( HOST, port );
+        this.server.bind( new InetSocketAddress( port ) );
         this.mongoClient = createMongoClient();
     }
 
