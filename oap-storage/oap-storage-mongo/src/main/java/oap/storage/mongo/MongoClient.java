@@ -71,8 +71,7 @@ public class MongoClient implements Closeable {
             .applyConnectionString( this.connectionString );
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( this.connectionString.getDatabase() );
-        log.debug( "creating connectionString {} migrationPackage {}",
-            this.connectionString, migrationPackage );
+        log.debug( "creating connectionString {} migrationPackage {}", this.connectionString, migrationPackage );
     }
 
     private MongoClientSettings.Builder defaultBuilder() {
