@@ -286,6 +286,7 @@ class ModuleHelper {
 
                 modules.remove( module );
 
+                log.debug( "[loadOnlyMainModuleAndDependsOn] module {} -> dependsOn {}", moduleItem.getName(), moduleItem.module.dependsOn );
                 loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, loaded );
             }
         }
