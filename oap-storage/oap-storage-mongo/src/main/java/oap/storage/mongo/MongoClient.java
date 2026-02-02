@@ -42,6 +42,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -52,7 +53,7 @@ import java.util.function.Function;
 public class MongoClient implements Closeable {
     final com.mongodb.client.MongoClient mongoClient;
     private final MongoDatabase database;
-    private final String migrationPackage;
+    private final List<String> migrationPackage;
     public boolean throwIfMigrationFailed = true;
     private ConnectionString connectionString;
 
@@ -60,7 +61,7 @@ public class MongoClient implements Closeable {
         this( connectionString, null );
     }
 
-    public MongoClient( String connectionString, @Nonnull String migrationPackage ) {
+    public MongoClient( String connectionString, @Nonnull List<String> migrationPackage ) {
         this.connectionString = new ConnectionString( connectionString );
         this.migrationPackage = migrationPackage;
 
@@ -70,8 +71,7 @@ public class MongoClient implements Closeable {
             .applyConnectionString( this.connectionString );
         this.mongoClient = MongoClients.create( settingsBuilder.build() );
         this.database = mongoClient.getDatabase( this.connectionString.getDatabase() );
-        log.debug( "creating connectionString {} migrationPackage {}",
-            this.connectionString, migrationPackage );
+        log.debug( "creating connectionString {} migrationPackage {}", this.connectionString, migrationPackage );
     }
 
     private MongoClientSettings.Builder defaultBuilder() {
@@ -114,7 +114,7 @@ public class MongoClient implements Closeable {
             if( migrationPackage != null ) {
                 MongockStandalone
                     .builder()
-                    .addMigrationScanPackage( migrationPackage )
+                    .addMigrationScanPackages( migrationPackage )
                     .setDriver( driver )
                     .buildRunner()
                     .execute();

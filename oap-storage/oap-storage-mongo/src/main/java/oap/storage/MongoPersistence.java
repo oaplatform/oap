@@ -136,7 +136,7 @@ public class MongoPersistence<I, T> extends AbstractPersistance<I, T> implements
     @Override
     protected void load() {
         log.debug( "loading data from {}", collection.getNamespace() );
-        Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.get( metadata.object ), metadata );
+        Consumer<Metadata<T>> cons = metadata -> storage.memory.put( storage.identifier.getOrInit( metadata.object, _ -> false ), metadata );
         log.info( "Loading documents from [{}] MongoDB table", collection.getNamespace() );
         collection.find().forEach( cons );
         log.info( storage.size() + " object(s) loaded." );

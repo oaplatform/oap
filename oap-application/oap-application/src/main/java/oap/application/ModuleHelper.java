@@ -286,7 +286,10 @@ class ModuleHelper {
 
                 modules.remove( module );
 
-                loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, loaded );
+                if( !moduleItem.module.dependsOn.isEmpty() ) {
+                    log.debug( "[loadOnlyMainModuleAndDependsOn] module {} -> dependsOn {}", moduleItem.getName(), moduleItem.module.dependsOn );
+                    loadOnlyMainModuleAndDependsOn( modules, moduleItem.module.dependsOn, loaded );
+                }
             }
         }
     }

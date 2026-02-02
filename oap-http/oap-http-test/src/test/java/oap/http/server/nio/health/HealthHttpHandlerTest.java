@@ -24,9 +24,6 @@
 
 package oap.http.server.nio.health;
 
-//import oap.application.module.Module;
-//import oap.application.testng.KernelFixture;
-
 import oap.http.server.nio.NioHttpServer;
 import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
@@ -40,16 +37,6 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.test.HttpAsserts.assertGet;
 
 public class HealthHttpHandlerTest extends Fixtures {
-    public HealthHttpHandlerTest() {
-//        fixture( new KernelFixture(
-//            urlOfTestResource( getClass(), "application.test.conf" ),
-//            Lists.concat(
-//                List.of( urlOfTestResource( getClass(), "oap-module.oap" ) ),
-//                Module.CONFIGURATION.urlsFromClassPath()
-//            )
-//        ) );
-    }
-
     @Test
     public void health() throws IOException {
         int httpPort = Ports.getFreePort( getClass() );

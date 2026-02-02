@@ -27,13 +27,12 @@ package oap.ws.admin;
 import oap.application.testng.KernelFixture;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+import static oap.http.Http.StatusCode.BAD_REQUEST;
 import static oap.http.test.HttpAsserts.assertGet;
 import static oap.io.Resources.urlOrThrow;
 
-@Ignore
 public class JPathWSTest extends Fixtures {
     private final KernelFixture kernel;
 
@@ -57,5 +56,15 @@ public class JPathWSTest extends Fixtures {
         assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.test-service.instance.value" ) )
             .isOk()
             .hasBody( "\"testv\"" );
+    }
+
+    @Test
+    public void testUnknownModule() {
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=unknown-module.test-service.instance.value" ) )
+            .hasCode( BAD_REQUEST )
+            .hasBody( "unknown module unknown-module" );
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.unknown-service.instance.value" ) )
+            .hasCode( BAD_REQUEST )
+            .hasBody( "unknown module service oap-ws-admin-ws-test.unknown-service" );
     }
 }

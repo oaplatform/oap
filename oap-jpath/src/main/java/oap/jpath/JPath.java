@@ -43,7 +43,7 @@ public class JPath {
     }
 
     public void evaluate( String expression, JPathOutput output ) {
-        var jPathParser = new JPathParser( new BufferedTokenStream( new JPathLexer( new ANTLRInputStream( expression ) ) ) );
+        JPathParser jPathParser = new JPathParser( new BufferedTokenStream( new JPathLexer( new ANTLRInputStream( expression ) ) ) );
 
         jPathParser.expr().expression.evaluate( variables, output );
     }

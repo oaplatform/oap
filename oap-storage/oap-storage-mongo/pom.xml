@@ -57,16 +57,6 @@
             <artifactId>commons-exec</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-common</artifactId>
-            <version>${oap.deps.netty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-            <version>${oap.deps.netty.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.mongock</groupId>
             <artifactId>mongock-standalone</artifactId>
             <version>${oap.deps.mongock.version}</version>
@@ -75,6 +65,13 @@
             <groupId>io.mongock</groupId>
             <artifactId>mongodb-sync-v4-driver</artifactId>
             <version>${oap.deps.mongock.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-stdlib-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

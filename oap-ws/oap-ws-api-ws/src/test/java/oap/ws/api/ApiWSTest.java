@@ -30,6 +30,8 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+
 import static oap.http.Http.ContentType.TEXT_PLAIN;
 import static oap.http.Http.StatusCode.OK;
 import static oap.http.test.HttpAsserts.assertGet;
@@ -47,7 +49,7 @@ public class ApiWSTest extends Fixtures {
     }
 
     @Test
-    public void api() {
+    public void api() throws IOException {
         assertGet( kernel.httpUrl( "/system/api" ) )
             .responded( OK, "OK", TEXT_PLAIN,
                 contentOfTestResource( getClass(), "api.txt", ofString() ) );

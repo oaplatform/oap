@@ -28,13 +28,14 @@ import oap.io.FixedLengthArrayOutputStream;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @NotThreadSafe
 public class PnioResponseBuffer {
     public int length;
-    byte[] buffer;
+    public byte[] buffer;
 
     public PnioResponseBuffer( int capacity ) {
         this.buffer = new byte[capacity];
@@ -42,7 +43,11 @@ public class PnioResponseBuffer {
     }
 
     public String string() {
-        return new String( buffer, 0, length );
+        return new String( buffer, 0, length, UTF_8 );
+    }
+
+    public ByteBuffer byteBuffer() {
+        return ByteBuffer.wrap( buffer, 0, length );
     }
 
     public boolean isEmpty() {

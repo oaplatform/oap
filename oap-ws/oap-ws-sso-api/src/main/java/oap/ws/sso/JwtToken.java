@@ -18,6 +18,11 @@ public class JwtToken {
         this.roles = roles;
     }
 
+    public String getUserId() {
+        final Claim id = decodedJWT.getClaims().get( "id" );
+        return id != null ? id.asString() : null;
+    }
+
     public String getUserEmail() {
         final Claim user = decodedJWT.getClaims().get( "user" );
         return user != null ? user.asString() : null;

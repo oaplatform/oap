@@ -43,9 +43,9 @@ import java.util.function.Function;
 import static oap.io.content.ContentReader.ofJson;
 import static oap.io.content.ContentReader.ofString;
 import static oap.json.Binder.json;
+import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.util.Pair.__;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonAsserts {
     @Deprecated
@@ -143,7 +143,7 @@ public class JsonAsserts {
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
                 .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
 
-            assertThat( actualJson ).isEqualTo( expectedJson );
+            assertString( actualJson ).isEqualTo( expectedJson );
 
             return this;
         }
@@ -167,7 +167,7 @@ public class JsonAsserts {
                 .map( JsonAssertion::deepSort, JsonAssertion::deepSort )
                 .map( e -> json.marshal( e.isLeft() ? e.leftValue : e.rightValue, true ) );
 
-            assertThat( actualJson ).isEqualTo( expectedJson );
+            assertString( actualJson ).isEqualTo( expectedJson );
 
             return this;
         }
@@ -189,13 +189,13 @@ public class JsonAsserts {
         }
 
         private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
-            assertThat( json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
+            assertString( json.canonicalizeWithDefaultPrettyPrinter( clazz, actual ) )
                 .isEqualTo( json.canonicalizeWithDefaultPrettyPrinter( clazz, expected ) );
             return this;
         }
 
         private JsonAssertion isEqualCanonically( TypeRef<?> typeRef, String actual, String expected ) {
-            assertThat( json.canonicalizeWithDefaultPrettyPrinter( typeRef, actual ) )
+            assertString( json.canonicalizeWithDefaultPrettyPrinter( typeRef, actual ) )
                 .isEqualTo( json.canonicalizeWithDefaultPrettyPrinter( typeRef, expected ) );
             return this;
         }
