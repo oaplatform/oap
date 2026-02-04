@@ -116,6 +116,7 @@ public class MongoClient implements Closeable {
                     .builder()
                     .addMigrationScanPackages( migrationPackage )
                     .setDriver( driver )
+                    .addDependency( com.mongodb.client.MongoClient.class, mongoClient )
                     .buildRunner()
                     .execute();
 
