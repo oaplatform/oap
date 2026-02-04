@@ -24,6 +24,7 @@
 
 package oap.storage.mongo.mongoclienttest;
 
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import io.mongock.api.annotations.ChangeUnit;
@@ -37,7 +38,7 @@ import java.util.Map;
 @ChangeUnit( id = "MongoClientMigration", order = "1", systemVersion = "1" )
 public class MongoClientMigration {
     @Execution
-    public void execution( MongoDatabase mongoDatabase ) {
+    public void execution( MongoClient mongoClient, MongoDatabase mongoDatabase ) {
         mongoDatabase
             .getCollection( "test" )
             .insertOne( new Document( Map.of( "_id", "test", "c", 17 ) ) );
