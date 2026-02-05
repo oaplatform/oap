@@ -3,6 +3,8 @@ package oap.http.pniov3;
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
 import io.undertow.util.StatusCodes;
 import oap.http.Cookie;
 import oap.http.Http;
@@ -11,9 +13,11 @@ import oap.http.server.nio.HttpServerExchange;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.BufferOverflowException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -356,6 +360,17 @@ public class PnioExchange<RequestState> {
 
     public String header( String headerName, String defaultValue ) {
         return oapExchange.header( headerName, defaultValue );
+    }
+
+    public Map<String, Deque<String>> getRequestHeaders() {
+        HeaderMap requestHeaders = oapExchange.getRequestHeaders();
+        LinkedHashMap<String, Deque<String>> ret = new LinkedHashMap<>();
+
+        for( HeaderValues hv : requestHeaders ) {
+            ret.put( hv.getHeaderName().toString(), new ArrayDeque<>( hv.stream().toList() ) );
+        }
+
+        return ret;
     }
 
     public void updateTimeoutNano( long timeoutNano ) {
