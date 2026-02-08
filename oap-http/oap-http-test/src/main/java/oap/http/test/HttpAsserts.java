@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -170,7 +171,9 @@ public class HttpAsserts {
 
     @SneakyThrows
     private static @Nonnull HttpAssertion getResponseAsHttpAssertion( org.eclipse.jetty.client.Request request ) {
-        ContentResponse contentResponse = request.send();
+        ContentResponse contentResponse = request
+            .timeout( 10, TimeUnit.SECONDS )
+            .send();
 
         String mediaType = contentResponse.getMediaType();
 
