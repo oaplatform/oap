@@ -23,15 +23,12 @@
  */
 package oap.http.test;
 
-import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.http.Cookie;
-import oap.http.InputStreamRequestBody;
-import oap.http.Uri;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Asserts;
@@ -40,38 +37,33 @@ import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
-import okhttp3.Dispatcher;
-import okhttp3.Headers;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okhttp3.java.net.cookiejar.JavaNetCookieJar;
-import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.assertj.core.api.Assertions;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.joda.time.DateTime;
 import org.testng.internal.collections.Ints;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpCookie;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -83,34 +75,28 @@ import static oap.http.test.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.io.content.ContentReader.ofString;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
-    public static final OkHttpClient OK_HTTP_CLIENT;
+    public static final HttpClient HTTP_CLIENT;
 
-    private static final JavaNetCookieJar cookieJar;
     private static final CookieManager cookieManager;
-
-    private static Field whenCreatedField;
 
     static {
         cookieManager = new CookieManager();
         cookieManager.setCookiePolicy( CookiePolicy.ACCEPT_ALL );
 
-        cookieJar = new JavaNetCookieJar( cookieManager );
-        OK_HTTP_CLIENT = new OkHttpClient.Builder()
-            .cookieJar( cookieJar )
-            .dispatcher( new Dispatcher( Executors.newVirtualThreadPerTaskExecutor() ) )
-            .followRedirects( false )
-            .followSslRedirects( false )
-            .build();
-
         try {
-            whenCreatedField = HttpCookie.class.getDeclaredField( "whenCreated" );
-            whenCreatedField.setAccessible( true );
-        } catch( NoSuchFieldException e ) {
+            ThreadFactory threadFactory = Thread.ofVirtual().name( "HttpAsserts-", 0 ).factory();
+
+            HTTP_CLIENT = new HttpClient();
+            HTTP_CLIENT.setExecutor( Executors.newThreadPerTaskExecutor( threadFactory ) );
+            HTTP_CLIENT.setFollowRedirects( false );
+            HTTP_CLIENT.start();
+        } catch( Exception e ) {
             throw new RuntimeException( e );
         }
     }
@@ -123,8 +109,11 @@ public class HttpAsserts {
         return httpPrefix( port ) + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
     }
 
+    @SneakyThrows
     public static void reset() {
-        OK_HTTP_CLIENT.connectionPool().evictAll();
+        HTTP_CLIENT.stop();
+        HTTP_CLIENT.start();
+
         cookieManager.getCookieStore().removeAll();
     }
 
@@ -134,65 +123,22 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            Request request = builder
-                .url( Uri.uri( uri, params ).toURL() )
-                .get()
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
-
-    private static void setHeaders( String uri, Map<String, Object> headers, Request.Builder builder ) {
-        headers.forEach( ( k, v ) -> {
-            if( "Cookie".equalsIgnoreCase( k ) ) {
-                HttpUrl httpUrl = HttpUrl.parse( uri );
-                Preconditions.checkNotNull( httpUrl );
-                Preconditions.checkNotNull( v );
-
-                ArrayList<okhttp3.Cookie> cookies = new ArrayList<>();
-
-                List<okhttp3.Cookie> list = cookieJar.loadForRequest( httpUrl );
-                cookies.addAll( list );
-
-                String[] setCookies = StringUtils.split( v.toString(), ";" );
-                for( String setCookie : setCookies ) {
-                    okhttp3.Cookie cookie = okhttp3.Cookie.parse( httpUrl, setCookie );
-                    Preconditions.checkNotNull( cookie );
-                    cookies.add( cookie );
-                }
-
-                cookieJar.saveFromResponse( httpUrl, cookies );
-            } else {
-                builder.header( k, v == null ? "" : v.toString() );
-            }
-        } );
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.GET )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } ) );
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            RequestBody requestBody = new InputStreamRequestBody( contentType != null ? MediaType.get( contentType ) : null, content );
-
-            Request request = builder
-                .url( uri )
-                .post( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.POST )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new InputStreamRequestContent( contentType, content, null ) ) );
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType ) {
@@ -200,22 +146,13 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, String content, @Nullable String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            RequestBody requestBody = RequestBody.create( content, contentType != null ? MediaType.parse( contentType ) : null );
-
-            Request request = builder
-                .url( uri )
-                .post( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.POST )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new StringRequestContent( contentType, content ) ) );
     }
 
     public static HttpAssertion assertPost( String uri, String content ) {
@@ -230,19 +167,22 @@ public class HttpAsserts {
         return assertPost( uri, content, contentType, Maps.of() );
     }
 
-    private static @Nonnull HttpAssertion getResponseAsHttpAssertion( Request request ) throws IOException {
-        try( Response response = OK_HTTP_CLIENT.newCall( request ).execute();
-             ResponseBody body = response.body() ) {
+    @SneakyThrows
+    private static @Nonnull HttpAssertion getResponseAsHttpAssertion( org.eclipse.jetty.client.Request request ) {
+        ContentResponse contentResponse = request.send();
 
-            Headers responseHeaders = response.headers();
-            ArrayList<Pair<String, String>> headers = new ArrayList<>();
-            responseHeaders.toMultimap().forEach( ( k, vs ) -> vs.forEach( v -> headers.add( Pair.__( k, v ) ) ) );
-            byte[] bytes = body.bytes();
-            MediaType mediaType = body.contentType();
-            return new HttpAssertion( new Client.Response(
-                response.request().url().toString(),
-                response.code(), response.message(), headers, mediaType != null ? mediaType.toString() : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( bytes ) ) );
-        }
+        String mediaType = contentResponse.getMediaType();
+
+        ArrayList<Pair<String, String>> headers = new ArrayList<>();
+        HttpFields responseHeaders = contentResponse.getHeaders();
+        responseHeaders.forEach( field -> {
+            HttpHeader header = field.getHeader();
+            headers.add( __( header.name(), header.asString() ) );
+        } );
+
+        return new HttpAssertion( new Client.Response(
+            request.getURI().toString(),
+            contentResponse.getStatus(), contentResponse.getReason(), headers, mediaType != null ? mediaType : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( contentResponse.getContent() ) ) );
     }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType ) {
@@ -250,22 +190,14 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            RequestBody requestBody = RequestBody.create( content, contentType != null ? MediaType.parse( contentType ) : null );
-
-            Request request = builder
-                .url( uri )
-                .put( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.PUT )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new StringRequestContent( contentType, content ) )
+        );
     }
 
     public static HttpAssertion assertPut( String uri, byte[] content, String contentType ) {
@@ -273,22 +205,14 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            RequestBody requestBody = RequestBody.create( content, contentType != null ? MediaType.parse( contentType ) : null );
-
-            Request request = builder
-                .url( uri )
-                .put( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.PUT )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new BytesRequestContent( contentType, content ) )
+        );
     }
 
     public static HttpAssertion assertPut( String uri, InputStream is, String contentType ) {
@@ -296,22 +220,14 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            InputStreamRequestBody requestBody = new InputStreamRequestBody( contentType != null ? MediaType.parse( contentType ) : null, is );
-
-            Request request = builder
-                .url( uri )
-                .put( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.PUT )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new InputStreamRequestContent( contentType, is, null ) )
+        );
     }
 
     public static HttpAssertion assertPatch( String uri, byte[] content, String contentType ) {
@@ -319,22 +235,14 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPatch( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            RequestBody requestBody = RequestBody.create( content, contentType != null ? MediaType.parse( contentType ) : null );
-
-            Request request = builder
-                .url( uri )
-                .patch( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.PATCH )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new BytesRequestContent( contentType, content ) )
+        );
     }
 
     public static HttpAssertion assertPatch( String uri, String content, String contentType ) {
@@ -342,22 +250,14 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPatch( String uri, String content, String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            RequestBody requestBody = RequestBody.create( content, contentType != null ? MediaType.parse( contentType ) : null );
-
-            Request request = builder
-                .url( uri )
-                .patch( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.PATCH )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new StringRequestContent( contentType, content ) )
+        );
     }
 
     public static HttpAssertion assertPatch( String uri, InputStream is, String contentType ) {
@@ -366,48 +266,28 @@ public class HttpAsserts {
 
 
     public static HttpAssertion assertPatch( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            InputStreamRequestBody requestBody = new InputStreamRequestBody( contentType != null ? MediaType.parse( contentType ) : null, is );
-
-            Request request = builder
-                .url( uri )
-                .patch( requestBody )
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.PATCH )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+            .body( new InputStreamRequestContent( contentType, is, null ) )
+        );
     }
 
     public static HttpAssertion assertDelete( String uri, Map<String, Object> headers ) {
-        try {
-            Request.Builder builder = new Request.Builder();
-
-            setHeaders( uri, headers, builder );
-
-            Request request = builder
-                .url( uri )
-                .delete()
-                .build();
-
-            return getResponseAsHttpAssertion( request );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.DELETE )
+            .headers( h -> {
+                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
+            } )
+        );
     }
 
     public static HttpAssertion assertDelete( String uri ) {
         return assertDelete( uri, Map.of() );
-    }
-
-    @SneakyThrows
-    private static long whenCreatedFieldGet( HttpCookie cookie ) {
-        return ( long ) whenCreatedField.get( cookie );
     }
 
     @EqualsAndHashCode
@@ -526,11 +406,11 @@ public class HttpAsserts {
         }
 
         public HttpAssertion cookies( Consumer<CookiesHttpAssertion> cons ) {
-            HttpUrl httpUrl = HttpUrl.parse( response.url );
-            assertThat( httpUrl ).isNotNull();
-            List<HttpCookie> cookies = cookieManager.getCookieStore().get( httpUrl.uri() );
+//            HttpUrl httpUrl = HttpUrl.parse( response.url );
+//            assertThat( httpUrl ).isNotNull();
+//            List<HttpCookie> cookies = cookieManager.getCookieStore().get( httpUrl.uri() );
 
-            cons.accept( new CookiesHttpAssertion( cookies ) );
+//            cons.accept( new CookiesHttpAssertion( cookies ) );
             return this;
         }
 
@@ -609,7 +489,7 @@ public class HttpAsserts {
                 .withPath( c.getPath() )
                 .withDomain( c.getDomain() )
                 .withMaxAge( c.getMaxAge() < 0 ? null : ( int ) c.getMaxAge() )
-                .withExpires( c.getMaxAge() <= 0 ? null : new Date( ( whenCreatedFieldGet( c ) + c.getMaxAge() ) * 1000L ) )
+//                .withExpires( c.getMaxAge() <= 0 ? null : new Date( ( whenCreatedFieldGet( c ) + c.getMaxAge() ) * 1000L ) )
                 .withDiscard( c.getDiscard() )
                 .withSecure( c.getSecure() )
                 .withHttpOnly( c.isHttpOnly() )

@@ -24,7 +24,6 @@
 package oap.application.remote;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.SimpleTimeLimiter;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -35,20 +34,18 @@ import oap.application.module.Reference;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import org.jetbrains.annotations.NotNull;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpMethod;
 
+import javax.annotation.Nonnull;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
@@ -57,31 +54,38 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
-import java.time.Duration;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
-    public static final ExecutorService NEW_SINGLE_THREAD_EXECUTOR = Executors.newSingleThreadExecutor();
-    private static final OkHttpClient globalClient;
-    private static final SimpleTimeLimiter SIMPLE_TIME_LIMITER = SimpleTimeLimiter.create( NEW_SINGLE_THREAD_EXECUTOR );
+    private static final HttpClient globalClient;
+
+    private static ExecutorService executor;
 
     static {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        Dispatcher dispatcher = new Dispatcher();
-        dispatcher.setMaxRequests( 1024 );
-        dispatcher.setMaxRequestsPerHost( 1024 );
-        builder.dispatcher( dispatcher );
-        globalClient = builder.build();
+        try {
+            ThreadFactory threadFactory = Thread.ofVirtual().name( "RemoteInvocationHandler-", 0 ).factory();
+
+            globalClient = new HttpClient();
+            executor = Executors.newThreadPerTaskExecutor( threadFactory );
+            globalClient.setExecutor( executor );
+            globalClient.start();
+        } catch( Exception e ) {
+            throw new RuntimeException( e );
+        }
     }
 
     private final Counter timeoutMetrics;
@@ -120,7 +124,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             new RemoteInvocationHandler( source, uri, service, timeout ) );
     }
 
-    @NotNull
+    @Nonnull
     private static CompletionStage<Result<Object, Throwable>> retException( Throwable e, boolean async ) {
         if( async ) {
             return CompletableFuture.failedStage( e );
@@ -167,39 +171,40 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         boolean async = CompletableFuture.class.isAssignableFrom( method.getReturnType() );
 
         try {
-            OkHttpClient client = globalClient.newBuilder().callTimeout( Duration.ofMillis( timeout ) ).build();
-            Request request = new Request.Builder()
-                .url( uri.toURL() )
-                .post( RequestBody.create( invocationB ) )
-                .build();
-            Call call = client.newCall( request );
+            Request request = globalClient
+                .newRequest( uri )
+                .method( HttpMethod.POST )
+                .body( new BytesRequestContent( invocationB ) )
+                .timeout( timeout, TimeUnit.MILLISECONDS );
 
-            CompletableFuture<Response> responseAsync = new CompletableFuture<>();
+            CompletableFuture<Response> responseAsync;
+
+            InputStreamResponseListener inputStreamResponseListener = new InputStreamResponseListener();
+            request.send( inputStreamResponseListener );
 
             if( async ) {
-                call.enqueue( new Callback() {
-                    @Override
-                    public void onFailure( @NotNull Call call, @NotNull IOException e ) {
-                        responseAsync.completeExceptionally( e );
-                    }
 
-                    @Override
-                    public void onResponse( @NotNull Call call, @NotNull Response response ) {
-                        responseAsync.complete( response );
+                responseAsync = CompletableFuture.supplyAsync( () -> {
+                    try {
+                        return inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS );
+                    } catch( InterruptedException | TimeoutException | ExecutionException e ) {
+                        throw new RuntimeException( e );
                     }
-                } );
+                }, executor );
+
             } else {
+                responseAsync = new CompletableFuture<>();
                 try {
-                    responseAsync.complete( call.execute() );
-                } catch( IOException e ) {
+                    responseAsync.complete( inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS ) );
+                } catch( Exception e ) {
                     responseAsync.completeExceptionally( e );
                 }
             }
 
             CompletableFuture<Result<Object, Throwable>> ret = responseAsync.thenCompose( response -> {
                 try {
-                    if( response.code() == HTTP_OK ) {
-                        InputStream inputStream = response.body().byteStream();
+                    if( response.getStatus() == HTTP_OK ) {
+                        InputStream inputStream = inputStreamResponseListener.getInputStream();
                         BufferedInputStream bis = new BufferedInputStream( inputStream );
                         DataInputStream dis = new DataInputStream( bis );
                         boolean success = dis.readBoolean();
@@ -244,9 +249,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                         }
                     } else {
                         RemoteInvocationException ex = new RemoteInvocationException( "invocation failed " + this + "#" + service + "@" + method.getName()
-                            + " code " + response.code()
-                            + " body '" + response.body().string() + "'"
-                            + " message '" + response.message() + "'" );
+                            + " code " + response.getStatus()
+                            + " body '" + new String( inputStreamResponseListener.getInputStream().readAllBytes(), StandardCharsets.UTF_8 ) + "'"
+                            + " message '" + response.getReason() + "'" );
 
                         return retException( ex, async );
                     }

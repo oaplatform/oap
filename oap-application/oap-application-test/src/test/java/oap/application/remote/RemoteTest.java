@@ -31,6 +31,7 @@ import oap.application.module.Module;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RemoteTest extends Fixtures {
     @Test
     public void invoke() {
+        Assertions.setMaxStackTraceElementsDisplayed( 1024 );
         int port = Ports.getFreePort( getClass() );
 
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
