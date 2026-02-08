@@ -103,18 +103,20 @@ public class NioHttpServerTest extends Fixtures {
      * keytool -genkey -alias ssl -keyalg RSA -keysize 2048 -dname "CN=localhost,OU=IT" -keystore master.jks -storepass 1234567 -keypass 1234567
      */
     @Test
-    public void testHttps() throws IOException {
+    public void testHttps() throws Exception {
         int httpPort = Ports.getFreePort( getClass() );
         int httpsPort = Ports.getFreePort( getClass() );
 
-        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) ) ) {
-            ClientConnector connector = new ClientConnector();
+        ClientConnector connector = new ClientConnector();
 
-            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-            sslContextFactory.setKeyStorePath( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get() );
-            sslContextFactory.setKeyStorePassword( "1234567" );
-            connector.setSslContextFactory( sslContextFactory );
-            HttpClient httpClient = new HttpClient( new HttpClientTransportDynamic( connector ) );
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setKeyStorePath( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get() );
+        sslContextFactory.setKeyStorePassword( "1234567" );
+        connector.setSslContextFactory( sslContextFactory );
+
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
+             HttpClient httpClient = new HttpClient( new HttpClientTransportDynamic( connector ) ) ) {
+            httpClient.start();
 
             new TestHttpHandler( httpServer, "/test", "default-https" );
             new HealthHttpHandler( httpServer, "/healtz", "default-http" ).start();

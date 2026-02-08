@@ -178,7 +178,7 @@ public class HttpAsserts {
         HttpFields responseHeaders = contentResponse.getHeaders();
         responseHeaders.forEach( field -> {
             HttpHeader header = field.getHeader();
-            headers.add( __( header.name(), header.asString() ) );
+            headers.add( __( field.getName(), field.getValue() ) );
         } );
 
         return new HttpAssertion( new Response(

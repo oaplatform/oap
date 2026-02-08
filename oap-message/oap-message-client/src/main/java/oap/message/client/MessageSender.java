@@ -203,8 +203,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     @SneakyThrows
     @Override
     public void close() {
-        httpClient.stop();
-
         lock.lock();
         try {
             closed = true;
@@ -224,6 +222,8 @@ public class MessageSender implements Closeable, AutoCloseable {
                 break;
             }
         }
+
+        Closeables.close( httpClient );
 
         saveMessagesToDirectory( directory );
     }
