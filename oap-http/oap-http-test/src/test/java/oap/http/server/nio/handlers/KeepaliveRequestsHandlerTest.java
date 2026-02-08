@@ -7,7 +7,6 @@ import oap.testng.Ports;
 import org.eclipse.jetty.client.HttpClient;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
@@ -24,9 +23,12 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     }
 
     @Test
-    public void testCloseConnectionBlocking() throws IOException {
+    public void testCloseConnectionBlocking() throws Exception {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
-        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) ) ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
+             HttpClient client = new HttpClient() ) {
+            client.setMaxConnectionsPerDestination( 10 );
+            client.start();
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
             httpServer.handlers.add( keepaliveRequestsHandler );
@@ -39,8 +41,6 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
             } );
 
-            HttpClient client = new HttpClient();
-            client.setMaxConnectionsPerDestination( 10 );
 
             for( int i = 0; i < 101; i++ ) {
                 assertGet( client, "http://localhost:" + testHttpPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
@@ -54,9 +54,13 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     }
 
     @Test
-    public void testCloseConnectionAsync() throws IOException {
+    public void testCloseConnectionAsync() throws Exception {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
-        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) ) ) {
+        try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
+             HttpClient client = new HttpClient() ) {
+
+            client.setMaxConnectionsPerDestination( 10 );
+            client.start();
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
             httpServer.handlers.add( keepaliveRequestsHandler );
@@ -68,9 +72,6 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 ids.add( id );
                 exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
             }, true );
-
-            HttpClient client = new HttpClient();
-            client.setMaxConnectionsPerDestination( 10 );
 
             for( int i = 0; i < 101; i++ ) {
                 assertGet( client, "http://localhost:" + testHttpPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
