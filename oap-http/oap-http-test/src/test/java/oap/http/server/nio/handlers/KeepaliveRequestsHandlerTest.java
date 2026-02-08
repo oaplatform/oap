@@ -1,6 +1,5 @@
 package oap.http.server.nio.handlers;
 
-import oap.http.Client;
 import oap.http.Http;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;

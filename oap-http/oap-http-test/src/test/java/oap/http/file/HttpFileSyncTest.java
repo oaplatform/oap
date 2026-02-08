@@ -24,7 +24,6 @@
 
 package oap.http.file;
 
-import oap.io.AbstractFileSync;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.testng.SystemTimerFixture;

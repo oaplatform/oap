@@ -2,7 +2,7 @@ package oap.http.pniov3;
 
 import oap.concurrent.Executors;
 import oap.concurrent.ThreadPoolExecutor;
-import oap.http.Client;
+import oap.http.Response;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.util.Dates;
@@ -43,7 +43,7 @@ public class PnioServerTest extends Fixtures {
             for( int i = 0; i < 20; i++ ) {
                 threadPoolExecutor.submit( () -> {
                     try {
-                        Client.Response response = client.get( "http://localhost:" + port + "/pnio?trace=true" );
+                        Response response = client.get( "http://localhost:" + port + "/pnio?trace=true" );
                         okCount.incrementAndGet();
                     } catch( Exception e ) {
                         errorCount.incrementAndGet();

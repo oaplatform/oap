@@ -49,7 +49,7 @@ public class ClientTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
     private int port;
     private ClientAndServer mockServer;
-    private Client.Response response;
+    private Response response;
 
     public ClientTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );

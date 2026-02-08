@@ -26,9 +26,11 @@ package oap.http.test;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import lombok.experimental.ExtensionMethod;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.Client;
 import oap.http.Cookie;
+import oap.http.Response;
+import oap.http.client.JettyRequestExtensions;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Asserts;
@@ -55,8 +57,6 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.net.HttpCookie;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,17 +78,13 @@ import static oap.testng.Asserts.contentOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtensionMethod( JettyRequestExtensions.class )
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
     public static final HttpClient HTTP_CLIENT;
 
-    private static final CookieManager cookieManager;
-
     static {
-        cookieManager = new CookieManager();
-        cookieManager.setCookiePolicy( CookiePolicy.ACCEPT_ALL );
-
         try {
             ThreadFactory threadFactory = Thread.ofVirtual().name( "HttpAsserts-", 0 ).factory();
 
@@ -113,8 +109,6 @@ public class HttpAsserts {
     public static void reset() {
         HTTP_CLIENT.stop();
         HTTP_CLIENT.start();
-
-        cookieManager.getCookieStore().removeAll();
     }
 
     @SafeVarargs
@@ -126,18 +120,15 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.GET )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } ) );
+            .addParams( params )
+            .addHeaders( headers ) );
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.POST )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new InputStreamRequestContent( contentType, content, null ) ) );
     }
 
@@ -149,9 +140,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.POST )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new StringRequestContent( contentType, content ) ) );
     }
 
@@ -180,7 +169,7 @@ public class HttpAsserts {
             headers.add( __( header.name(), header.asString() ) );
         } );
 
-        return new HttpAssertion( new Client.Response(
+        return new HttpAssertion( new Response(
             request.getURI().toString(),
             contentResponse.getStatus(), contentResponse.getReason(), headers, mediaType != null ? mediaType : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( contentResponse.getContent() ) ) );
     }
@@ -193,9 +182,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PUT )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new StringRequestContent( contentType, content ) )
         );
     }
@@ -208,9 +195,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PUT )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new BytesRequestContent( contentType, content ) )
         );
     }
@@ -223,9 +208,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PUT )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new InputStreamRequestContent( contentType, is, null ) )
         );
     }
@@ -238,9 +221,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PATCH )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new BytesRequestContent( contentType, content ) )
         );
     }
@@ -253,9 +234,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PATCH )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new StringRequestContent( contentType, content ) )
         );
     }
@@ -269,9 +248,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PATCH )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
             .body( new InputStreamRequestContent( contentType, is, null ) )
         );
     }
@@ -280,9 +257,7 @@ public class HttpAsserts {
         return getResponseAsHttpAssertion( HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.DELETE )
-            .headers( h -> {
-                headers.forEach( ( k, v ) -> h.add( k, v == null ? "" : v.toString() ) );
-            } )
+            .addHeaders( headers )
         );
     }
 
@@ -293,13 +268,13 @@ public class HttpAsserts {
     @EqualsAndHashCode
     @ToString
     public static final class HttpAssertion {
-        private final Client.Response response;
+        private final Response response;
 
-        private HttpAssertion( Client.Response response ) {
+        private HttpAssertion( Response response ) {
             this.response = response;
         }
 
-        public static HttpAssertion assertHttpResponse( Client.Response response ) {
+        public static HttpAssertion assertHttpResponse( Response response ) {
             return new HttpAssertion( response );
         }
 
@@ -421,7 +396,7 @@ public class HttpAsserts {
                 .toList();
         }
 
-        public HttpAssertion is( Consumer<Client.Response> condition ) {
+        public HttpAssertion is( Consumer<Response> condition ) {
             condition.accept( response );
             return this;
         }
@@ -460,7 +435,7 @@ public class HttpAsserts {
             return respondedJson( contentOfTestResource( contextClass, resource, ofString() ), substitutions );
         }
 
-        public HttpAssertion satisfies( Consumer<Client.Response> assertion ) {
+        public HttpAssertion satisfies( Consumer<Response> assertion ) {
             assertion.accept( response );
             return this;
         }
@@ -582,13 +557,13 @@ public class HttpAsserts {
     }
 
     public static final class JsonHttpAssertion {
-        private final Client.Response response;
+        private final Response response;
 
-        private JsonHttpAssertion( Client.Response response ) {
+        private JsonHttpAssertion( Response response ) {
             this.response = response;
         }
 
-        public static JsonHttpAssertion assertJsonResponse( Client.Response response ) {
+        public static JsonHttpAssertion assertJsonResponse( Response response ) {
             return new JsonHttpAssertion( response );
         }
 

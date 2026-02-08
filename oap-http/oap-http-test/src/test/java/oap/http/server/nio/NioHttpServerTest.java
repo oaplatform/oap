@@ -24,8 +24,8 @@
 
 package oap.http.server.nio;
 
-import oap.http.Client;
 import oap.http.Http;
+import oap.http.Response;
 import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
@@ -51,7 +51,7 @@ public class NioHttpServerTest extends Fixtures {
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.start();
 
-            Client.Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
+            Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
 
             assertThat( response.getHeaders() )
                 .hasSize( 3 )
@@ -64,7 +64,7 @@ public class NioHttpServerTest extends Fixtures {
             httpServer.alwaysSetKeepAlive = false;
             httpServer.start();
 
-            Client.Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
+            Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
 
             assertThat( response.getHeaders() )
                 .hasSize( 1 )

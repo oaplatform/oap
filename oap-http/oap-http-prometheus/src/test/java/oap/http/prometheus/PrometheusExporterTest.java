@@ -27,7 +27,6 @@ package oap.http.prometheus;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.Search;
-import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;

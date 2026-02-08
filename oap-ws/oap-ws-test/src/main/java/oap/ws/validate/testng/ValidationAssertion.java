@@ -24,7 +24,7 @@
 
 package oap.ws.validate.testng;
 
-import oap.http.Client;
+import oap.http.Response;
 import oap.json.Binder;
 import oap.ws.validate.ValidationErrors;
 
@@ -34,11 +34,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class ValidationAssertion {
     private final ValidationErrors errors;
 
-    private ValidationAssertion( Client.Response response ) {
+    private ValidationAssertion( Response response ) {
         errors = Binder.json.unmarshal( ValidationErrors.class, response.contentString() );
     }
 
-    public static ValidationAssertion assertValidation( Client.Response response ) {
+    public static ValidationAssertion assertValidation( Response response ) {
         assertJsonResponse( response );
         return new ValidationAssertion( response );
     }
