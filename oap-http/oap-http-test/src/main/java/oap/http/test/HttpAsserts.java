@@ -117,7 +117,11 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return assertGet( HTTP_CLIENT, uri, params, headers );
+    }
+
+    public static HttpAssertion assertGet( HttpClient client, String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
+        return getResponseAsHttpAssertion( client
             .newRequest( uri )
             .method( HttpMethod.GET )
             .addParams( params )
@@ -134,6 +138,14 @@ public class HttpAsserts {
 
     public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType ) {
         return assertPost( uri, content, contentType, Maps.of() );
+    }
+
+    public static HttpAssertion assertPost( String uri, byte[] content, @Nullable String contentType, Map<String, Object> headers ) {
+        return getResponseAsHttpAssertion( HTTP_CLIENT
+            .newRequest( uri )
+            .method( HttpMethod.POST )
+            .addHeaders( headers )
+            .body( new BytesRequestContent( contentType, content ) ) );
     }
 
     public static HttpAssertion assertPost( String uri, String content, @Nullable String contentType, Map<String, Object> headers ) {
@@ -356,8 +368,25 @@ public class HttpAsserts {
             return this;
         }
 
+        public HttpAssertion hasHeadersSize( int size ) {
+            assertThat( response.headers ).hasSize( size );
+
+            return this;
+        }
+
         public HttpAssertion containsHeader( String name, String value ) {
+            containsHeader( name );
             assertString( response.header( name ).orElse( null ) ).isEqualTo( value );
+            return this;
+        }
+
+        public HttpAssertion containsHeader( String name ) {
+            assertThat( response.getHeaders() ).containsKey( name );
+            return this;
+        }
+
+        public HttpAssertion doesNotContainHeader( String name ) {
+            assertThat( response.getHeaders() ).doesNotContainKey( name );
             return this;
         }
 

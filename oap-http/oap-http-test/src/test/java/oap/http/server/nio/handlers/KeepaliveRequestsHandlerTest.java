@@ -4,11 +4,14 @@ import oap.http.Http;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
+import org.eclipse.jetty.client.HttpClient;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
+import static oap.http.test.HttpAsserts.assertGet;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,10 +39,11 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
             } );
 
-            Client client = Client.custom().setMaxConnTotal( 10 ).setMaxConnPerRoute( 10 ).build();
+            HttpClient client = new HttpClient();
+            client.setMaxConnectionsPerDestination( 10 );
 
             for( int i = 0; i < 101; i++ ) {
-                assertThat( client.get( "http://localhost:" + testHttpPort + "/test" ).contentString() ).isEqualTo( "ok" );
+                assertGet( client, "http://localhost:" + testHttpPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
             }
 
             assertThat( ids ).hasSize( 51 );
@@ -65,10 +69,11 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
                 exchange.responseOk( "ok", Http.ContentType.TEXT_PLAIN );
             }, true );
 
-            Client client = Client.custom().setMaxConnTotal( 10 ).setMaxConnPerRoute( 10 ).build();
+            HttpClient client = new HttpClient();
+            client.setMaxConnectionsPerDestination( 10 );
 
             for( int i = 0; i < 101; i++ ) {
-                assertThat( client.get( "http://localhost:" + testHttpPort + "/test" ).contentString() ).isEqualTo( "ok" );
+                assertGet( client, "http://localhost:" + testHttpPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
             }
 
             assertThat( ids ).hasSize( 51 );
