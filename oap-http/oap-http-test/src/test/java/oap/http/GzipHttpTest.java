@@ -30,13 +30,14 @@ import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 import static oap.compression.Compression.ContentWriter.ofGzip;
 import static oap.http.Http.ContentType.TEXT_PLAIN;
@@ -72,7 +73,9 @@ public class GzipHttpTest extends Fixtures {
             .isEqualTo( "test" );
 
         try( HttpClient httpClient = new HttpClient() ) {
-            httpClient.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
+            QueuedThreadPool qtp = new QueuedThreadPool();
+            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+            httpClient.setExecutor( qtp );
             httpClient.start();
 
             // auto-decompression

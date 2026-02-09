@@ -40,6 +40,8 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 
 import javax.annotation.Nonnull;
 import java.io.BufferedInputStream;
@@ -62,9 +64,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -74,15 +73,12 @@ import static java.net.HttpURLConnection.HTTP_OK;
 public final class RemoteInvocationHandler implements InvocationHandler {
     private static final HttpClient globalClient;
 
-    private static ExecutorService executor;
-
     static {
         try {
-            ThreadFactory threadFactory = Thread.ofVirtual().name( "RemoteInvocationHandler-", 0 ).factory();
-
             globalClient = new HttpClient();
-            executor = Executors.newThreadPerTaskExecutor( threadFactory );
-            globalClient.setExecutor( executor );
+            QueuedThreadPool qtp = new QueuedThreadPool();
+            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+            globalClient.setExecutor( qtp );
             globalClient.start();
         } catch( Exception e ) {
             throw new RuntimeException( e );
@@ -193,7 +189,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     } catch( InterruptedException | TimeoutException | ExecutionException e ) {
                         throw new RuntimeException( e );
                     }
-                }, executor );
+                }, ( ( QueuedThreadPool ) globalClient.getExecutor() ).getVirtualThreadsExecutor() );
 
             } else {
                 responseAsync = new CompletableFuture<>();

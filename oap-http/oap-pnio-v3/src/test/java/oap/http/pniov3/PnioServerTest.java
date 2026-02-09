@@ -5,6 +5,8 @@ import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.util.Dates;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -28,8 +30,11 @@ public class PnioServerTest extends Fixtures {
 
         try( ExecutorService threadPoolExecutor = Executors.newVirtualThreadPerTaskExecutor() ) {
             try( HttpClient httpClient = new HttpClient() ) {
-                httpClient.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
+                QueuedThreadPool qtp = new QueuedThreadPool();
+                qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+                httpClient.setExecutor( qtp );
                 httpClient.setMaxConnectionsPerDestination( 2000 );
+                httpClient.setConnectTimeout( Dates.s( 10 ) );
                 httpClient.start();
 
                 AtomicInteger errorCount = new AtomicInteger();
@@ -58,6 +63,18 @@ public class PnioServerTest extends Fixtures {
                     }
 
                     System.out.println( "ok " + okCount.get() + " error " + errorCount.get() + " duration " + Dates.durationToString( System.currentTimeMillis() - start ) );
+                }
+
+                for( int i = 0; i < 20; i++ ) {
+//                    threadPoolExecutor.execute( () -> {
+                    try {
+                        assertGet( httpClient, "http://localhost:" + port + "/pnio?trace=true", Map.of(), Map.of() )
+                            .hasCode( Http.StatusCode.NO_CONTENT );
+                        okCount.incrementAndGet();
+                    } catch( Exception e ) {
+                        errorCount.incrementAndGet();
+                    }
+//                    } );
                 }
             }
             threadPoolExecutor.shutdown();

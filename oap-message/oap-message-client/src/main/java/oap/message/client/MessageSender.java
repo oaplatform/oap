@@ -56,6 +56,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
@@ -73,9 +75,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -108,7 +107,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
     private HttpClient httpClient;
-    private ExecutorService executor;
     private long ioExceptionStartRetryTimeout = -1;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
@@ -157,14 +155,13 @@ public class MessageSender implements Closeable, AutoCloseable {
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
 
-        ThreadFactory threadFactory = Thread.ofVirtual().name( "messages-", 0 ).factory();
-        executor = Executors.newThreadPerTaskExecutor( threadFactory );
-
         httpClient = new HttpClient();
         httpClient.setConnectTimeout( connectionTimeout );
         httpClient.setMaxConnectionsPerDestination( poolSize );
 
-        httpClient.setExecutor( executor );
+        QueuedThreadPool qtp = new QueuedThreadPool();
+        qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+        httpClient.setExecutor( qtp );
         httpClient.start();
 
         if( diskSyncPeriod > 0 )
@@ -312,7 +309,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
                 throw Throwables.propagate( e );
             }
-        }, executor );
+        }, ( ( QueuedThreadPool ) httpClient.getExecutor() ).getVirtualThreadsExecutor() );
     }
 
     private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {

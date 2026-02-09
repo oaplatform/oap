@@ -35,6 +35,7 @@ import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Asserts;
 import oap.util.BiStream;
+import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
@@ -49,6 +50,8 @@ import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.joda.time.DateTime;
 import org.testng.internal.collections.Ints;
 
@@ -62,8 +65,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -88,10 +89,11 @@ public class HttpAsserts {
 
     static {
         try {
-            ThreadFactory threadFactory = Thread.ofVirtual().name( "HttpAsserts-", 0 ).factory();
-
             HTTP_CLIENT = new HttpClient();
-            HTTP_CLIENT.setExecutor( Executors.newThreadPerTaskExecutor( threadFactory ) );
+            HTTP_CLIENT.setConnectTimeout( Dates.s( 10 ) );
+            QueuedThreadPool qtp = new QueuedThreadPool();
+            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+            HTTP_CLIENT.setExecutor( qtp );
             HTTP_CLIENT.setFollowRedirects( false );
             HTTP_CLIENT.start();
         } catch( Exception e ) {

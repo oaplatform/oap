@@ -5,11 +5,12 @@ import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.testng.annotations.Test;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 import static oap.http.test.HttpAsserts.assertGet;
 import static oap.testng.Asserts.assertEventually;
@@ -28,7 +29,9 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
              HttpClient client = new HttpClient() ) {
-            client.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
+            QueuedThreadPool qtp = new QueuedThreadPool();
+            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+            client.setExecutor( qtp );
             client.setMaxConnectionsPerDestination( 10 );
             client.start();
 
@@ -60,7 +63,9 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
              HttpClient client = new HttpClient() ) {
-            client.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
+            QueuedThreadPool qtp = new QueuedThreadPool();
+            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
+            client.setExecutor( qtp );
             client.setMaxConnectionsPerDestination( 10 );
             client.start();
 
