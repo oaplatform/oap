@@ -1,5 +1,6 @@
 package oap.http.pniov3;
 
+import oap.http.Http;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.util.Dates;
@@ -9,6 +10,7 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.http.test.HttpAsserts.assertGet;
@@ -26,6 +28,7 @@ public class PnioServerTest extends Fixtures {
 
         try( ExecutorService threadPoolExecutor = Executors.newVirtualThreadPerTaskExecutor() ) {
             try( HttpClient httpClient = new HttpClient() ) {
+                httpClient.setExecutor( threadPoolExecutor );
                 httpClient.setMaxConnectionsPerDestination( 20000 );
                 httpClient.start();
 
@@ -45,7 +48,8 @@ public class PnioServerTest extends Fixtures {
                     for( int i = 0; i < 20; i++ ) {
                         threadPoolExecutor.execute( () -> {
                             try {
-                                assertGet( httpClient, "http://localhost:" + port + "/pnio?trace=true", Map.of(), Map.of() );
+                                assertGet( httpClient, "http://localhost:" + port + "/pnio?trace=true", Map.of(), Map.of() )
+                                    .hasCode( Http.StatusCode.NO_CONTENT );
                                 okCount.incrementAndGet();
                             } catch( Exception e ) {
                                 errorCount.incrementAndGet();
@@ -56,6 +60,8 @@ public class PnioServerTest extends Fixtures {
                     System.out.println( "ok " + okCount.get() + " error " + errorCount.get() + " duration " + Dates.durationToString( System.currentTimeMillis() - start ) );
                 }
             }
+            threadPoolExecutor.shutdown();
+            threadPoolExecutor.awaitTermination( 20, TimeUnit.SECONDS );
         }
     }
 }
