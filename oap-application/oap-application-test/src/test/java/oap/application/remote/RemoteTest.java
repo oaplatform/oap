@@ -34,6 +34,7 @@ import oap.util.Dates;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
+import java.net.ConnectException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
@@ -80,7 +81,10 @@ public class RemoteTest extends Fixtures {
             assertThat( kernel.<RemoteClient>service( "*.remote-client-unreachable" ) )
                 .isPresent()
                 .get()
-                .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( IllegalArgumentException.class ) );
+                .satisfies( remote -> assertThatThrownBy( remote::accessible )
+                    .isInstanceOf( RuntimeException.class )
+                    .hasCauseInstanceOf( ConnectException.class )
+                );
         }
     }
 

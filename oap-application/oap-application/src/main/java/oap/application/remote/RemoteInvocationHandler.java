@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -120,8 +121,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     private static Object proxy( String source, URI uri, String service, Class<?> clazz, long timeout ) {
-        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( source, uri, service, timeout ) );
+        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz }, new RemoteInvocationHandler( source, uri, service, timeout ) );
     }
 
     @Nonnull
@@ -153,7 +153,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         if( result.isSuccess() ) {
             return result.successValue;
         } else {
-            throw result.failureValue;
+            if( result.failureValue instanceof RuntimeException ) {
+                throw result.failureValue;
+            } else {
+                throw new RuntimeException( result.failureValue );
+            }
         }
     }
 
@@ -183,7 +187,6 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             request.send( inputStreamResponseListener );
 
             if( async ) {
-
                 responseAsync = CompletableFuture.supplyAsync( () -> {
                     try {
                         return inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS );
@@ -196,6 +199,8 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 responseAsync = new CompletableFuture<>();
                 try {
                     responseAsync.complete( inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS ) );
+                } catch( ExecutionException e ) {
+                    responseAsync.completeExceptionally( e.getCause() );
                 } catch( Exception e ) {
                     responseAsync.completeExceptionally( e );
                 }
@@ -220,7 +225,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     }
 
                                     errorMetrics.increment();
-                                    return async ? CompletableFuture.<Result<Object, Throwable>>failedStage( throwable ) : CompletableFuture.completedStage( Result.failure( throwable ) );
+                                    return async ? CompletableFuture.failedStage( throwable ) : CompletableFuture.completedStage( Result.failure( throwable ) );
                                 } finally {
                                     dis.close();
                                 }
@@ -269,7 +274,11 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             if( async ) {
                 return Result.success( ret.thenApply( r -> r.successValue ) );
             } else {
-                return ret.get();
+                try {
+                    return ret.join();
+                } catch( CompletionException e ) {
+                    throw ( Exception ) e.getCause();
+                }
             }
         } catch( Exception e ) {
             if( async ) {

@@ -25,13 +25,16 @@
 package oap.http;
 
 import oap.http.server.nio.NioHttpServer;
+import oap.io.IoStreams;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
+import org.eclipse.jetty.client.HttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
 import java.util.Map;
 
 import static oap.compression.Compression.ContentWriter.ofGzip;
@@ -55,7 +58,7 @@ public class GzipHttpTest extends Fixtures {
     }
 
     @Test
-    public void gzipOutput() {
+    public void gzipOutput() throws Exception {
         server.bind( "test", exchange ->
             exchange.responseOk( "test", true, TEXT_PLAIN )
         );
@@ -67,12 +70,19 @@ public class GzipHttpTest extends Fixtures {
             .body()
             .isEqualTo( "test" );
 
-        assertGet( "http://localhost:" + server.defaultPort.httpPort + "/test", Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) )
-            .isOk()
-            .hasContentType( TEXT_PLAIN )
-            .containsHeader( "Accept-Encoding", "gzip,deflate" )
-            .body()
-            .isEqualTo( "test" );
+        try( HttpClient httpClient = new HttpClient() ) {
+            httpClient.start();
+
+            // auto-decompression
+            httpClient.getContentDecoderFactories().clear();
+
+            assertGet( httpClient, "http://localhost:" + server.defaultPort.httpPort + "/test", Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) )
+                .isOk()
+                .hasContentType( TEXT_PLAIN )
+                .containsHeader( "Content-Encoding", "gzip" )
+                .body( bytes -> IoStreams.asString( new ByteArrayInputStream( bytes ), IoStreams.Encoding.GZIP ) )
+                .isEqualTo( "test" );
+        }
     }
 
     @Test

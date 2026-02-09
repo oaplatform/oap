@@ -66,6 +66,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -484,6 +485,10 @@ public class HttpAsserts {
 
         public Asserts.StringAssertion body() {
             return assertString( response.contentString() );
+        }
+
+        public Asserts.StringAssertion body( Function<byte[], String> conv ) {
+            return assertString( conv.apply( response.content() ) );
         }
     }
 
