@@ -28,8 +28,8 @@ public class PnioServerTest extends Fixtures {
 
         try( ExecutorService threadPoolExecutor = Executors.newVirtualThreadPerTaskExecutor() ) {
             try( HttpClient httpClient = new HttpClient() ) {
-                httpClient.setExecutor( threadPoolExecutor );
-                httpClient.setMaxConnectionsPerDestination( 20000 );
+                httpClient.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
+                httpClient.setMaxConnectionsPerDestination( 2000 );
                 httpClient.start();
 
                 AtomicInteger errorCount = new AtomicInteger();
