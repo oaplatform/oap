@@ -30,12 +30,12 @@ import lombok.experimental.ExtensionMethod;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Cookie;
 import oap.http.Response;
+import oap.http.client.Client;
 import oap.http.client.JettyRequestExtensions;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Asserts;
 import oap.util.BiStream;
-import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
@@ -50,8 +50,6 @@ import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.joda.time.DateTime;
 import org.testng.internal.collections.Ints;
 
@@ -85,22 +83,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
-    public static final HttpClient HTTP_CLIENT;
-
-    static {
-        try {
-            HTTP_CLIENT = new HttpClient();
-            HTTP_CLIENT.setConnectTimeout( Dates.s( 10 ) );
-            QueuedThreadPool qtp = new QueuedThreadPool();
-            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
-            HTTP_CLIENT.setExecutor( qtp );
-            HTTP_CLIENT.setFollowRedirects( false );
-            HTTP_CLIENT.start();
-        } catch( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
     public static String httpPrefix( int port ) {
         return "http://localhost:" + port;
     }
@@ -109,19 +91,13 @@ public class HttpAsserts {
         return httpPrefix( port ) + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
     }
 
-    @SneakyThrows
-    public static void reset() {
-        HTTP_CLIENT.stop();
-        HTTP_CLIENT.start();
-    }
-
     @SafeVarargs
     public static HttpAssertion assertGet( String uri, Pair<String, Object>... params ) throws UncheckedIOException {
         return assertGet( uri, Maps.of( params ), Map.of() );
     }
 
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
-        return assertGet( HTTP_CLIENT, uri, params, headers );
+        return assertGet( Client.DEFAULT_HTTP_CLIENT, uri, params, headers );
     }
 
     public static HttpAssertion assertGet( HttpClient client, String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
@@ -133,7 +109,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.POST )
             .addHeaders( headers )
@@ -145,7 +121,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, byte[] content, @Nullable String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.POST )
             .addHeaders( headers )
@@ -153,7 +129,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, String content, @Nullable String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.POST )
             .addHeaders( headers )
@@ -197,7 +173,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PUT )
             .addHeaders( headers )
@@ -210,7 +186,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PUT )
             .addHeaders( headers )
@@ -223,7 +199,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PUT )
             .addHeaders( headers )
@@ -236,7 +212,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPatch( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PATCH )
             .addHeaders( headers )
@@ -249,7 +225,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPatch( String uri, String content, String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PATCH )
             .addHeaders( headers )
@@ -263,7 +239,7 @@ public class HttpAsserts {
 
 
     public static HttpAssertion assertPatch( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.PATCH )
             .addHeaders( headers )
@@ -272,7 +248,7 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertDelete( String uri, Map<String, Object> headers ) {
-        return getResponseAsHttpAssertion( HTTP_CLIENT
+        return getResponseAsHttpAssertion( Client.DEFAULT_HTTP_CLIENT
             .newRequest( uri )
             .method( HttpMethod.DELETE )
             .addHeaders( headers )

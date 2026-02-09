@@ -1,12 +1,11 @@
 package oap.http.server.nio.handlers;
 
 import oap.http.Http;
+import oap.http.client.Client;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.testng.annotations.Test;
 
 import java.util.LinkedHashSet;
@@ -28,12 +27,8 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     public void testCloseConnectionBlocking() throws Exception {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
-             HttpClient client = new HttpClient() ) {
-            QueuedThreadPool qtp = new QueuedThreadPool();
-            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
-            client.setExecutor( qtp );
+             HttpClient client = Client.customHttpClient() ) {
             client.setMaxConnectionsPerDestination( 10 );
-            client.start();
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
             httpServer.handlers.add( keepaliveRequestsHandler );
@@ -62,12 +57,8 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     public void testCloseConnectionAsync() throws Exception {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
-             HttpClient client = new HttpClient() ) {
-            QueuedThreadPool qtp = new QueuedThreadPool();
-            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
-            client.setExecutor( qtp );
+             HttpClient client = Client.customHttpClient() ) {
             client.setMaxConnectionsPerDestination( 10 );
-            client.start();
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
             httpServer.handlers.add( keepaliveRequestsHandler );

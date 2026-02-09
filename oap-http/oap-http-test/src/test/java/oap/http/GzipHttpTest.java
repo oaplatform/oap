@@ -24,14 +24,13 @@
 
 package oap.http;
 
+import oap.http.client.Client;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.IoStreams;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -72,12 +71,7 @@ public class GzipHttpTest extends Fixtures {
             .body()
             .isEqualTo( "test" );
 
-        try( HttpClient httpClient = new HttpClient() ) {
-            QueuedThreadPool qtp = new QueuedThreadPool();
-            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
-            httpClient.setExecutor( qtp );
-            httpClient.start();
-
+        try( HttpClient httpClient = Client.customHttpClient() ) {
             // auto-decompression
             httpClient.getContentDecoderFactories().clear();
 

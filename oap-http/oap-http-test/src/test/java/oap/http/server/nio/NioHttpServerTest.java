@@ -25,6 +25,7 @@
 package oap.http.server.nio;
 
 import oap.http.Http;
+import oap.http.client.Client;
 import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
@@ -115,7 +116,7 @@ public class NioHttpServerTest extends Fixtures {
         connector.setSslContextFactory( sslContextFactory );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
-             HttpClient httpClient = new HttpClient( new HttpClientTransportDynamic( connector ) ) ) {
+             HttpClient httpClient = Client.customHttpClient( new HttpClientTransportDynamic( connector ) ) ) {
             httpClient.start();
 
             new TestHttpHandler( httpServer, "/test", "default-https" );

@@ -94,9 +94,6 @@ public class MessageServerTest extends Fixtures {
             try( MessageSender client1 = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 );
                  MessageSender client2 = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
 
-                client1.poolSize = 1;
-                client2.poolSize = 1;
-
                 client1.start();
                 client2.start();
                 messageHttpHandler.preStart();
@@ -111,8 +108,6 @@ public class MessageServerTest extends Fixtures {
             }
 
             try( MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
-                client.poolSize = 1;
-
                 client.start();
 
                 client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "rejectedException 2", ofString() ).syncDisk()
@@ -201,7 +196,6 @@ public class MessageServerTest extends Fixtures {
         try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
              MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
-            client.poolSize = 1;
 
             server.bind( "/messages", messageHttpHandler );
             client.start();
@@ -509,7 +503,6 @@ public class MessageServerTest extends Fixtures {
             Path msgDirectory = testDirectoryFixture.testPath( "tmp" );
             try( MessageSender client = new MessageSender( "localhost", port, "/messages", msgDirectory, -1 ) ) {
                 client.retryTimeout = 100;
-                client.poolSize = 2;
                 client.start();
 
                 listener1.throwUnknownError = 2;

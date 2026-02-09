@@ -34,6 +34,7 @@ import oap.LogConsolidated;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.Http;
+import oap.http.client.Client;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.content.ContentReader;
@@ -52,12 +53,9 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
@@ -96,7 +94,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     private final ReentrantLock lock = new ReentrantLock();
     public String uniqueName = Cuid.UNIQUE.next();
     public long storageLockExpiration = Dates.h( 1 );
-    public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
     public long globalIoRetryTimeout = Dates.s( 1 );
     public long retryTimeout = Dates.s( 1 );
@@ -106,7 +103,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     private volatile boolean closed = false;
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
-    private HttpClient httpClient;
     private long ioExceptionStartRetryTimeout = -1;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
@@ -148,21 +144,12 @@ public class MessageSender implements Closeable, AutoCloseable {
     public void start() {
         log.info( "[{}] message server messageUrl {} storage {} storageLockExpiration {}",
             uniqueName, messageUrl, directory, Dates.durationToString( storageLockExpiration ) );
-        log.info( "[{}] connection timeout {} rw timeout {} pool size {} keepAliveDuration {}",
-            uniqueName, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize,
+        log.info( "[{}] connection timeout {} rw timeout {} keepAliveDuration {}",
+            uniqueName, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ),
             Dates.durationToString( keepAliveDuration ) );
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
-
-        httpClient = new HttpClient();
-        httpClient.setConnectTimeout( connectionTimeout );
-        httpClient.setMaxConnectionsPerDestination( poolSize );
-
-        QueuedThreadPool qtp = new QueuedThreadPool();
-        qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
-        httpClient.setExecutor( qtp );
-        httpClient.start();
 
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
@@ -219,8 +206,6 @@ public class MessageSender implements Closeable, AutoCloseable {
                 break;
             }
         }
-
-        Closeables.close( httpClient );
 
         saveMessagesToDirectory( directory );
     }
@@ -284,7 +269,7 @@ public class MessageSender implements Closeable, AutoCloseable {
                 out.write( message.data );
 
                 InputStreamResponseListener inputStreamResponseListener = new InputStreamResponseListener();
-                httpClient
+                Client.DEFAULT_HTTP_CLIENT
                     .newRequest( messageUrl )
                     .method( HttpMethod.POST )
                     .timeout( timeout, TimeUnit.MILLISECONDS )
@@ -309,7 +294,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
                 throw Throwables.propagate( e );
             }
-        }, ( ( QueuedThreadPool ) httpClient.getExecutor() ).getVirtualThreadsExecutor() );
+        }, Client.DEFAULT_VIRTUAL_THREAD_EXECUTOR );
     }
 
     private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {

@@ -31,17 +31,15 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceKernelCommand;
 import oap.application.module.Reference;
+import oap.http.client.Client;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.VirtualThreadPool;
 
 import javax.annotation.Nonnull;
 import java.io.BufferedInputStream;
@@ -71,20 +69,6 @@ import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
-    private static final HttpClient globalClient;
-
-    static {
-        try {
-            globalClient = new HttpClient();
-            QueuedThreadPool qtp = new QueuedThreadPool();
-            qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
-            globalClient.setExecutor( qtp );
-            globalClient.start();
-        } catch( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
     private final Counter timeoutMetrics;
     private final Counter errorMetrics;
     private final Counter successMetrics;
@@ -171,7 +155,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         boolean async = CompletableFuture.class.isAssignableFrom( method.getReturnType() );
 
         try {
-            Request request = globalClient
+            Request request = Client.DEFAULT_HTTP_CLIENT
                 .newRequest( uri )
                 .method( HttpMethod.POST )
                 .body( new BytesRequestContent( invocationB ) )
@@ -189,7 +173,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     } catch( InterruptedException | TimeoutException | ExecutionException e ) {
                         throw new RuntimeException( e );
                     }
-                }, ( ( QueuedThreadPool ) globalClient.getExecutor() ).getVirtualThreadsExecutor() );
+                }, Client.DEFAULT_VIRTUAL_THREAD_EXECUTOR );
 
             } else {
                 responseAsync = new CompletableFuture<>();
