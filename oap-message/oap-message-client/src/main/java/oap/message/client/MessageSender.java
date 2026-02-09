@@ -157,14 +157,14 @@ public class MessageSender implements Closeable, AutoCloseable {
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
 
-        executor = Executors.newVirtualThreadPerTaskExecutor();
+        ThreadFactory threadFactory = Thread.ofVirtual().name( "messages-", 0 ).factory();
+        executor = Executors.newThreadPerTaskExecutor( threadFactory );
 
         httpClient = new HttpClient();
         httpClient.setConnectTimeout( connectionTimeout );
         httpClient.setMaxConnectionsPerDestination( poolSize );
 
-        ThreadFactory threadFactory = Thread.ofVirtual().name( "messages-", 0 ).factory();
-        httpClient.setExecutor( Executors.newThreadPerTaskExecutor( threadFactory ) );
+        httpClient.setExecutor( executor );
         httpClient.start();
 
         if( diskSyncPeriod > 0 )

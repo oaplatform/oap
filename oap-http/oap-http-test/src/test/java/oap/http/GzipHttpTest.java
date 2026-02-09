@@ -36,6 +36,7 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import static oap.compression.Compression.ContentWriter.ofGzip;
 import static oap.http.Http.ContentType.TEXT_PLAIN;
@@ -71,6 +72,7 @@ public class GzipHttpTest extends Fixtures {
             .isEqualTo( "test" );
 
         try( HttpClient httpClient = new HttpClient() ) {
+            httpClient.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
             httpClient.start();
 
             // auto-decompression

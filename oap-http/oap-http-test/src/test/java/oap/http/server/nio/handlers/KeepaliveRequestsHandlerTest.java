@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import static oap.http.test.HttpAsserts.assertGet;
 import static oap.testng.Asserts.assertEventually;
@@ -27,6 +28,7 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
              HttpClient client = new HttpClient() ) {
+            client.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
             client.setMaxConnectionsPerDestination( 10 );
             client.start();
 
@@ -58,7 +60,7 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
              HttpClient client = new HttpClient() ) {
-
+            client.setExecutor( Executors.newVirtualThreadPerTaskExecutor() );
             client.setMaxConnectionsPerDestination( 10 );
             client.start();
 
