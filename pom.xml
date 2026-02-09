@@ -99,7 +99,7 @@
         <oap.deps.plugins.antlr4.version>4.13.0</oap.deps.plugins.antlr4.version>
         <oap.deps.asm.version>9.8</oap.deps.asm.version>
 
-        <oap.deps.undertow.version>2.3.19.Final</oap.deps.undertow.version>
+        <oap.deps.undertow.version>2.3.23.Final</oap.deps.undertow.version>
         <oap.deps.affinity.version>3.23.3</oap.deps.affinity.version>
 
         <oap.deps.docker-java.version>3.3.4</oap.deps.docker-java.version>
