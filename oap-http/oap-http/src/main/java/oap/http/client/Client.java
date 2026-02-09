@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import oap.util.Dates;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
 
@@ -29,6 +30,7 @@ public class Client {
         qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
         client.setExecutor( qtp );
         client.setFollowRedirects( false );
+        client.getProtocolHandlers().remove( WWWAuthenticationProtocolHandler.NAME );
         client.start();
 
         return client;
