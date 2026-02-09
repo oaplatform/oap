@@ -33,4 +33,12 @@ public class Client {
 
         return client;
     }
+
+    public static void resetCookies() {
+        resetCookies( DEFAULT_HTTP_CLIENT );
+    }
+
+    public static void resetCookies( HttpClient httpClient ) {
+        httpClient.getHttpCookieStore().clear();
+    }
 }
