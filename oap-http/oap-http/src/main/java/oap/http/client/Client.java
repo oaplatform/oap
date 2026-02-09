@@ -30,8 +30,9 @@ public class Client {
         qtp.setVirtualThreadsExecutor( new VirtualThreadPool() );
         client.setExecutor( qtp );
         client.setFollowRedirects( false );
-        client.getProtocolHandlers().remove( WWWAuthenticationProtocolHandler.NAME );
         client.start();
+
+        client.getProtocolHandlers().remove( WWWAuthenticationProtocolHandler.NAME );
 
         return client;
     }
