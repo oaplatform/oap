@@ -34,7 +34,7 @@ import oap.LogConsolidated;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.http.Http;
-import oap.http.client.Client;
+import oap.http.client.OapHttpClient;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.content.ContentReader;
@@ -69,12 +69,9 @@ import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
@@ -248,53 +245,51 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
-    public CompletableFuture<Messages.MessageInfo> send( Messages.MessageInfo messageInfo, long now ) {
+    public Messages.MessageInfo send( Messages.MessageInfo messageInfo, long now ) {
         Message message = messageInfo.message;
 
         log.debug( "[{}] sending data [type = {}] to server...", uniqueName, MessageProtocol.messageTypeToString( message.messageType ) );
 
-        return CompletableFuture.supplyAsync( () -> {
-            Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "trysend" ).increment();
+        Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "trysend" ).increment();
 
-            try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
-                 DataOutputStream out = new DataOutputStream( buf ) ) {
-                out.writeByte( message.messageType );
-                out.writeShort( message.version );
-                out.writeLong( message.clientId );
+        try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
+             DataOutputStream out = new DataOutputStream( buf ) ) {
+            out.writeByte( message.messageType );
+            out.writeShort( message.version );
+            out.writeLong( message.clientId );
 
-                out.write( message.md5.bytes );
+            out.write( message.md5.bytes );
 
-                out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
-                out.writeInt( message.data.length );
-                out.write( message.data );
+            out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
+            out.writeInt( message.data.length );
+            out.write( message.data );
 
-                InputStreamResponseListener inputStreamResponseListener = new InputStreamResponseListener();
-                Client.DEFAULT_HTTP_CLIENT
-                    .newRequest( messageUrl )
-                    .method( HttpMethod.POST )
-                    .timeout( timeout, TimeUnit.MILLISECONDS )
-                    .body( new BytesRequestContent( Http.ContentType.APPLICATION_OCTET_STREAM, buf.array ) )
-                    .send( inputStreamResponseListener );
+            InputStreamResponseListener inputStreamResponseListener = new InputStreamResponseListener();
+            OapHttpClient.DEFAULT_HTTP_CLIENT
+                .newRequest( messageUrl )
+                .method( HttpMethod.POST )
+                .timeout( timeout, TimeUnit.MILLISECONDS )
+                .body( new BytesRequestContent( Http.ContentType.APPLICATION_OCTET_STREAM, buf.array ) )
+                .send( inputStreamResponseListener );
 
-                Response response = inputStreamResponseListener.get( timeout, TimeUnit.MILLISECONDS );
+            Response response = inputStreamResponseListener.get( timeout, TimeUnit.MILLISECONDS );
 
-                if( response.getStatus() >= 300 || response.getStatus() < 200 ) {
-                    throw new IOException( "Not OK (" + response.getStatus() + ") response code returned for url: " + messageUrl );
-                }
-                return onOkRespone( messageInfo, inputStreamResponseListener, now );
-
-            } catch( UnknownHostException e ) {
-                processException( messageInfo, now, message, e, true );
-
-                ioExceptionStartRetryTimeout = now;
-
-                throw Throwables.propagate( e );
-            } catch( Throwable e ) {
-                processException( messageInfo, now, message, e, false );
-
-                throw Throwables.propagate( e );
+            if( response.getStatus() >= 300 || response.getStatus() < 200 ) {
+                throw new IOException( "Not OK (" + response.getStatus() + ") response code returned for url: " + messageUrl );
             }
-        }, Client.DEFAULT_VIRTUAL_THREAD_EXECUTOR );
+            return onOkRespone( messageInfo, inputStreamResponseListener, now );
+
+        } catch( UnknownHostException e ) {
+            processException( messageInfo, now, message, e, true );
+
+            ioExceptionStartRetryTimeout = now;
+
+            throw Throwables.propagate( e );
+        } catch( Throwable e ) {
+            processException( messageInfo, now, message, e, false );
+
+            throw Throwables.propagate( e );
+        }
     }
 
     private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {
@@ -371,10 +366,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
-        syncMemory( -1 );
-    }
-
-    public void syncMemory( long timeoutMs ) {
         if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
             log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
                 uniqueName, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
@@ -394,20 +385,10 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             if( messageInfo != null ) {
                 log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
-                CompletableFuture<Messages.MessageInfo> future = send( messageInfo, now );
-                future.handle( ( mi, _ ) -> {
-                    messages.removeInProgress( mi );
-                    log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
-                    return null;
-                } );
+                Messages.MessageInfo mi = send( messageInfo, now );
 
-                if( timeoutMs >= 0 ) {
-                    try {
-                        future.get( timeoutMs, TimeUnit.MILLISECONDS );
-                    } catch( InterruptedException | TimeoutException | ExecutionException e ) {
-                        log.error( e.getMessage(), e );
-                    }
-                }
+                messages.removeInProgress( mi );
+                log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
             }
 
             if( isGlobalIoRetryTimeout( now ) ) {

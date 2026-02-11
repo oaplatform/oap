@@ -1,7 +1,7 @@
 package oap.http.pniov3;
 
 import oap.http.Http;
-import oap.http.client.Client;
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.util.Dates;
@@ -28,8 +28,8 @@ public class PnioServerTest extends Fixtures {
         int port = fixture.definePort( "test" );
 
         try( ExecutorService threadPoolExecutor = Executors.newVirtualThreadPerTaskExecutor() ) {
-            try( HttpClient httpClient = Client.customHttpClient() ) {
-                httpClient.setMaxConnectionsPerDestination( 2000 );
+            try( HttpClient httpClient = OapHttpClient.customHttpClient().maxConnectionsPerDestination( 2000 ).build() ) {
+                httpClient.start();
 
                 AtomicInteger errorCount = new AtomicInteger();
                 AtomicInteger okCount = new AtomicInteger();

@@ -112,6 +112,7 @@
         <oap.deps.apache.velocity.version>2.3</oap.deps.apache.velocity.version>
         <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
 
+        <oap.deps.dnsjava.version>3.6.4</oap.deps.dnsjava.version>
         <oap.deps.jetty-client.version>12.1.6</oap.deps.jetty-client.version>
 
         <!-- jsr305 -->

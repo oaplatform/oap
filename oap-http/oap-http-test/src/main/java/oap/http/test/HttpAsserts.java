@@ -30,7 +30,7 @@ import lombok.experimental.ExtensionMethod;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Cookie;
 import oap.http.Response;
-import oap.http.client.Client;
+import oap.http.client.OapHttpClient;
 import oap.http.client.JettyRequestExtensions;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
@@ -44,7 +44,6 @@ import org.assertj.core.api.AbstractIntegerAssert;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -97,10 +96,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
-        return assertGet( Client.DEFAULT_HTTP_CLIENT, uri, params, headers );
+        return assertGet( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, params, headers );
     }
 
-    public static HttpAssertion assertGet( HttpClient client, String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
+    public static HttpAssertion assertGet( org.eclipse.jetty.client.HttpClient client, String uri, Map<String, Object> params, Map<String, Object> headers ) throws UncheckedIOException {
         return getResponseAsHttpAssertion( client
             .newRequest( uri )
             .method( HttpMethod.GET )
@@ -109,10 +108,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, @Nullable String contentType, Map<String, Object> headers ) {
-        return assertPost( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPost( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPost( HttpClient httpClient, String uri, InputStream content, @Nullable String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPost( org.eclipse.jetty.client.HttpClient httpClient, String uri, InputStream content, @Nullable String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.POST )
@@ -125,10 +124,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, byte[] content, @Nullable String contentType, Map<String, Object> headers ) {
-        return assertPost( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPost( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPost( HttpClient httpClient, String uri, byte[] content, @Nullable String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPost( org.eclipse.jetty.client.HttpClient httpClient, String uri, byte[] content, @Nullable String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.POST )
@@ -137,10 +136,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPost( String uri, String content, @Nullable String contentType, Map<String, Object> headers ) {
-        return assertPost( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPost( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPost( HttpClient httpClient, String uri, String content, @Nullable String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPost( org.eclipse.jetty.client.HttpClient httpClient, String uri, String content, @Nullable String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.POST )
@@ -185,10 +184,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType, Map<String, Object> headers ) {
-        return assertPut( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPut( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPut( HttpClient httpClient, String uri, String content, String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPut( org.eclipse.jetty.client.HttpClient httpClient, String uri, String content, String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.PUT )
@@ -202,10 +201,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
-        return assertPut( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPut( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPut( HttpClient httpClient, String uri, byte[] content, String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPut( org.eclipse.jetty.client.HttpClient httpClient, String uri, byte[] content, String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.PUT )
@@ -219,10 +218,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPut( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
-        return assertPut( Client.DEFAULT_HTTP_CLIENT, uri, is, contentType, headers );
+        return assertPut( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, is, contentType, headers );
     }
 
-    public static HttpAssertion assertPut( HttpClient httpClient, String uri, InputStream is, String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPut( org.eclipse.jetty.client.HttpClient httpClient, String uri, InputStream is, String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.PUT )
@@ -236,10 +235,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPatch( String uri, byte[] content, String contentType, Map<String, Object> headers ) {
-        return assertPatch( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPatch( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPatch( HttpClient httpClient, String uri, byte[] content, String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPatch( org.eclipse.jetty.client.HttpClient httpClient, String uri, byte[] content, String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.PATCH )
@@ -253,10 +252,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertPatch( String uri, String content, String contentType, Map<String, Object> headers ) {
-        return assertPatch( Client.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
+        return assertPatch( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, content, contentType, headers );
     }
 
-    public static HttpAssertion assertPatch( HttpClient httpClient, String uri, String content, String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPatch( org.eclipse.jetty.client.HttpClient httpClient, String uri, String content, String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.PATCH )
@@ -271,10 +270,10 @@ public class HttpAsserts {
 
 
     public static HttpAssertion assertPatch( String uri, InputStream is, String contentType, Map<String, Object> headers ) {
-        return assertPatch( Client.DEFAULT_HTTP_CLIENT, uri, is, contentType, headers );
+        return assertPatch( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, is, contentType, headers );
     }
 
-    public static HttpAssertion assertPatch( HttpClient httpClient, String uri, InputStream is, String contentType, Map<String, Object> headers ) {
+    public static HttpAssertion assertPatch( org.eclipse.jetty.client.HttpClient httpClient, String uri, InputStream is, String contentType, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.PATCH )
@@ -284,10 +283,10 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertDelete( String uri, Map<String, Object> headers ) {
-        return assertDelete( Client.DEFAULT_HTTP_CLIENT, uri, headers );
+        return assertDelete( OapHttpClient.DEFAULT_HTTP_CLIENT, uri, headers );
     }
 
-    public static HttpAssertion assertDelete( HttpClient httpClient, String uri, Map<String, Object> headers ) {
+    public static HttpAssertion assertDelete( org.eclipse.jetty.client.HttpClient httpClient, String uri, Map<String, Object> headers ) {
         return getResponseAsHttpAssertion( httpClient
             .newRequest( uri )
             .method( HttpMethod.DELETE )

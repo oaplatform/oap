@@ -25,7 +25,7 @@
 package oap.http.server.nio;
 
 import oap.http.Http;
-import oap.http.client.Client;
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
@@ -34,7 +34,6 @@ import oap.io.Resources;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -116,7 +115,7 @@ public class NioHttpServerTest extends Fixtures {
         connector.setSslContextFactory( sslContextFactory );
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
-             HttpClient httpClient = Client.customHttpClient( new HttpClientTransportDynamic( connector ) ) ) {
+             org.eclipse.jetty.client.HttpClient httpClient = OapHttpClient.customHttpClient().transport( new HttpClientTransportDynamic( connector ) ).build() ) {
             httpClient.start();
 
             new TestHttpHandler( httpServer, "/test", "default-https" );

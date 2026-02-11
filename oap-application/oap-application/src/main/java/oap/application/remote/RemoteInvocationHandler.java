@@ -31,12 +31,13 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceKernelCommand;
 import oap.application.module.Reference;
-import oap.http.client.Client;
+import oap.http.client.InputStreamResponseListener;
+import oap.http.client.OapHttpClient;
+import oap.io.Closeables;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpMethod;
@@ -155,33 +156,25 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         boolean async = CompletableFuture.class.isAssignableFrom( method.getReturnType() );
 
         try {
-            Request request = Client.DEFAULT_HTTP_CLIENT
+            Request request = OapHttpClient.DEFAULT_HTTP_CLIENT
                 .newRequest( uri )
                 .method( HttpMethod.POST )
                 .body( new BytesRequestContent( invocationB ) )
                 .timeout( timeout, TimeUnit.MILLISECONDS );
 
-            CompletableFuture<Response> responseAsync;
 
             InputStreamResponseListener inputStreamResponseListener = new InputStreamResponseListener();
             request.send( inputStreamResponseListener );
 
-            if( async ) {
-                responseAsync = CompletableFuture.supplyAsync( () -> {
-                    try {
-                        return inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS );
-                    } catch( InterruptedException | TimeoutException | ExecutionException e ) {
-                        throw new RuntimeException( e );
-                    }
-                }, Client.DEFAULT_VIRTUAL_THREAD_EXECUTOR );
-
-            } else {
-                responseAsync = new CompletableFuture<>();
+            CompletableFuture<Response> responseAsync = inputStreamResponseListener.getResponseAsync();
+            if( !async ) {
                 try {
-                    responseAsync.complete( inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS ) );
+                    inputStreamResponseListener.get( timeout + 10, TimeUnit.MILLISECONDS );
                 } catch( ExecutionException e ) {
+                    Closeables.close(  inputStreamResponseListener );
                     responseAsync.completeExceptionally( e.getCause() );
                 } catch( Exception e ) {
+                    Closeables.close(  inputStreamResponseListener );
                     responseAsync.completeExceptionally( e );
                 }
             }

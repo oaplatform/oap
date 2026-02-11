@@ -99,6 +99,11 @@
             <artifactId>jetty-compression-zstandard</artifactId>
             <version>${oap.deps.jetty-client.version}</version>
         </dependency>
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+            <version>${oap.deps.dnsjava.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

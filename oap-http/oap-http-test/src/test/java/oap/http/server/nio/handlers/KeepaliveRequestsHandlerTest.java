@@ -1,7 +1,7 @@
 package oap.http.server.nio.handlers;
 
 import oap.http.Http;
-import oap.http.client.Client;
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
@@ -27,8 +27,8 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     public void testCloseConnectionBlocking() throws Exception {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
-             HttpClient client = Client.customHttpClient() ) {
-            client.setMaxConnectionsPerDestination( 10 );
+             HttpClient client = OapHttpClient.customHttpClient().maxConnectionsPerDestination( 10 ).build() ) {
+            client.start();
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
             httpServer.handlers.add( keepaliveRequestsHandler );
@@ -57,8 +57,8 @@ public class KeepaliveRequestsHandlerTest extends Fixtures {
     public void testCloseConnectionAsync() throws Exception {
         LinkedHashSet<Long> ids = new LinkedHashSet<>();
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( testHttpPort ) );
-             HttpClient client = Client.customHttpClient() ) {
-            client.setMaxConnectionsPerDestination( 10 );
+             HttpClient client = OapHttpClient.customHttpClient().maxConnectionsPerDestination( 10 ).build() ) {
+            client.start();
 
             KeepaliveRequestsHandler keepaliveRequestsHandler = new KeepaliveRequestsHandler( 2 );
             httpServer.handlers.add( keepaliveRequestsHandler );

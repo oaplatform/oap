@@ -24,7 +24,7 @@
 
 package oap.http;
 
-import oap.http.client.Client;
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.IoStreams;
 import oap.io.content.ContentWriter;
@@ -71,7 +71,7 @@ public class GzipHttpTest extends Fixtures {
             .body()
             .isEqualTo( "test" );
 
-        try( HttpClient httpClient = Client.customHttpClient() ) {
+        try( HttpClient httpClient = OapHttpClient.customHttpClient().build() ) {
             // auto-decompression
             httpClient.getContentDecoderFactories().clear();
 
