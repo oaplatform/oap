@@ -109,19 +109,19 @@ public class SSO {
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 0 )
+                .withMaxAge( 99999 )
                 .build()
             )
             .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 0 )
+                .withMaxAge( 99999 )
                 .build()
             )
             .withCookie( Cookie.builder( SessionManager.COOKIE_ID, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 0 )
+                .withMaxAge( 99999 )
                 .build()
             );
     }
@@ -131,7 +131,7 @@ public class SSO {
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 0 )
+                .withMaxAge( 99999 )
                 .build()
             );
     }
