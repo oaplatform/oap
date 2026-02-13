@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.joda.time.DateTimeZone.UTC;
+
 @Slf4j
 public class WebService implements HttpHandler {
     public final boolean compressionSupport;
@@ -166,7 +168,7 @@ public class WebService implements HttpHandler {
                     if( context.session != null && !containsSessionCookie( context.exchange.responseCookies() ) ) {
                         oap.http.Cookie cookie = oap.http.Cookie.builder( SessionManager.COOKIE_ID, context.session.id )
                             .withPath( sessionManager.cookiePath )
-                            .withExpires( DateTime.now().plus( sessionManager.cookieExpiration ) )
+                            .withExpires( new DateTime( System.currentTimeMillis(), UTC ).plus( sessionManager.cookieExpiration ) )
                             .withDomain( sessionManager.cookieDomain )
                             .withSecure( sessionManager.cookieSecure )
                             .withHttpOnly( true )
