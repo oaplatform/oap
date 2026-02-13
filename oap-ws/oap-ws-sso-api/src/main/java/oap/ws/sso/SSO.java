@@ -31,7 +31,6 @@ import oap.http.server.nio.HttpServerExchange;
 import oap.ws.Response;
 import oap.ws.SessionManager;
 import org.joda.time.DateTime;
-import org.joda.time.Duration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -66,16 +65,13 @@ public class SSO {
     }
 
     public static Response authenticatedResponse( Authentication authentication, String cookieDomain, Boolean cookieSecure ) {
-        long accessTokenMaxAge = new Duration( new DateTime( UTC ), new DateTime( authentication.accessToken.expires, UTC ) ).getStandardSeconds();
-        long refreshTokenMaxAge = new Duration( new DateTime( UTC ), new DateTime( authentication.refreshToken.expires, UTC ) ).getStandardSeconds();
-
         return Response
             .jsonOk()
             .withHeader( AUTHENTICATION_KEY, authentication.accessToken.jwt )
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, authentication.accessToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( ( int ) accessTokenMaxAge )
+                .withExpires( new DateTime( authentication.accessToken.expires, UTC ) )
                 .withHttpOnly( true )
                 .withSecure( cookieSecure )
                 .build()
@@ -83,7 +79,7 @@ public class SSO {
             .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, authentication.refreshToken.jwt )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( ( int ) refreshTokenMaxAge )
+                .withExpires( new DateTime( authentication.refreshToken.expires, UTC ) )
                 .withHttpOnly( true )
                 .withSecure( cookieSecure )
                 .build()
@@ -109,19 +105,19 @@ public class SSO {
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 99999 )
+                .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
                 .build()
             )
             .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 99999 )
+                .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
                 .build()
             )
             .withCookie( Cookie.builder( SessionManager.COOKIE_ID, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 99999 )
+                .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
                 .build()
             );
     }
@@ -131,7 +127,7 @@ public class SSO {
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withMaxAge( 99999 )
+                .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
                 .build()
             );
     }
