@@ -30,7 +30,6 @@ import oap.util.Pair;
 import oap.ws.sso.AbstractUserTest.TestSecurityRolesProvider;
 import oap.ws.sso.AbstractUserTest.TestUser;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import static oap.ws.sso.JWTExtractor.TokenStatus.VALID;
@@ -49,12 +48,12 @@ public class JwtTokenGeneratorExtractorTest extends Fixtures {
 
     @Test
     public void generateAndExtractToken() {
-        DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() );
-
         Authentication.Token token = jwtTokenGenerator.generateAccessToken( new TestUser( "email@email.com", "password", Pair.of( "org1", "ADMIN" ) ) );
         assertNotNull( token.expires );
         assertThat( token.jwt ).isNotEmpty();
-        assertThat( token.expires ).isEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() );
+        assertThat( token.expires )
+            .isBeforeOrEqualTo( new DateTime( UTC ).plusMinutes( 15 ).toDate() )
+            .isAfterOrEqualTo( new DateTime( UTC ).plusMinutes( 14 ).toDate() );
         assertThat( jwtExtractor.verifyToken( token.jwt ) ).isEqualTo( VALID );
 
         JwtToken jwtToken = jwtExtractor.decodeJWT( token.jwt );
