@@ -34,17 +34,17 @@ import java.util.Optional;
 @Slf4j
 public class Interceptors {
     public static Optional<Response> before( List<? extends Interceptor> interceptors, InvocationContext context ) {
-        for( var interceptor : interceptors ) {
+        for( Interceptor interceptor : interceptors ) {
             log.trace( "running before call {}", interceptor.getClass().getSimpleName() );
-            var response = interceptor.before( context );
+            Optional<Response> response = interceptor.before( context );
             if( response.isPresent() ) return response;
         }
         return Optional.empty();
     }
 
     public static void after( List<? extends Interceptor> interceptors, Response response, InvocationContext context ) {
-        for( var i = interceptors.size() - 1; i >= 0; i-- ) {
-            var interceptor = interceptors.get( i );
+        for( int i = interceptors.size() - 1; i >= 0; i-- ) {
+            Interceptor interceptor = interceptors.get( i );
             log.trace( "running after call {}", interceptor.getClass().getSimpleName() );
             interceptor.after( response, context );
         }

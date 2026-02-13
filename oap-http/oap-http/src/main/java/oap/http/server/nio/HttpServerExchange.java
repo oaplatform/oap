@@ -328,10 +328,8 @@ public class HttpServerExchange {
             .setSecure( cookie.isSecure() )
             .setHttpOnly( cookie.isHttpOnly() )
             .setVersion( cookie.getVersion() )
-            .setComment( cookie.getComment() );
-        if( cookie.getMaxAge() != null ) {
-            newCookie.setMaxAge( cookie.getMaxAge() );
-        }
+            .setComment( cookie.getComment() )
+            .setMaxAge( cookie.getMaxAge() );
         return newCookie;
     }
 

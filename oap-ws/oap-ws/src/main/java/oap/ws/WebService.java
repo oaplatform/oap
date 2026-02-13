@@ -44,7 +44,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -177,11 +176,10 @@ public class WebService implements HttpHandler {
                         context.exchange.setResponseCookie( cookie );
                     }
 
-                    CompletableFuture<Response> responseFuture = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
-                    responseFuture.thenAccept( response -> {
-                        Interceptors.after( interceptors, response, context );
-                        response.send( context.exchange );
-                    } );
+                    Response response = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
+
+                    Interceptors.after( interceptors, response, context );
+                    response.send( context.exchange );
                 } );
     }
 
@@ -192,27 +190,25 @@ public class WebService implements HttpHandler {
         return false;
     }
 
-    private CompletableFuture<Response> produceResultResponse( Reflection.Method method, Optional<WsMethod> wsMethod, Object result ) {
+    private Response produceResultResponse( Reflection.Method method, Optional<WsMethod> wsMethod, Object result ) {
         boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
         String produces = wsMethod.map( WsMethod::produces )
             .orElse( Http.ContentType.APPLICATION_JSON );
 
         if( method.isVoid() ) {
-            return CompletableFuture.completedFuture( Response.noContent() );
-        } else if( result instanceof Response response ) return CompletableFuture.completedFuture( response );
-        else if( result instanceof Optional<?> optResult ) return CompletableFuture.completedFuture( optResult.isEmpty()
+            return Response.noContent();
+        } else if( result instanceof Response response ) return response;
+        else if( result instanceof Optional<?> optResult ) return optResult.isEmpty()
             ? Response.notFound()
-            : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces ) );
+            : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces );
         else if( result instanceof Result<?, ?> resultResult ) if( resultResult.isSuccess() )
-            return CompletableFuture.completedFuture( Response.ok().withBody( resultResult.successValue, isRaw ).withContentType( produces ) );
-        else return CompletableFuture.completedFuture( new Response( Http.StatusCode.INTERNAL_SERVER_ERROR, "" )
+            return Response.ok().withBody( resultResult.successValue, isRaw ).withContentType( produces );
+        else return new Response( Http.StatusCode.INTERNAL_SERVER_ERROR, "" )
                 .withBody( resultResult.failureValue, false )
-                .withContentType( Http.ContentType.APPLICATION_JSON ) );
+                .withContentType( Http.ContentType.APPLICATION_JSON );
         else if( result instanceof java.util.stream.Stream<?> stream ) {
-            return CompletableFuture.completedFuture( Response.ok().withBody( stream, isRaw ).withContentType( produces ) );
-        } else if( result instanceof CompletableFuture<?> future ) {
-            return future.thenCompose( fResult -> produceResultResponse( method, wsMethod, fResult ) );
-        } else return CompletableFuture.completedFuture( Response.ok().withBody( result, isRaw ).withContentType( produces ) );
+            return Response.ok().withBody( stream, isRaw ).withContentType( produces );
+        } else return Response.ok().withBody( result, isRaw ).withContentType( produces );
     }
 
     @Override
