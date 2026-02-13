@@ -29,6 +29,7 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.BiFunction;
@@ -58,6 +59,22 @@ public class Compression {
         return gzip( os, DEFAULT_BUFFER_SIZE );
     }
 
+    public static void gzip( OutputStream out, byte[] bytes, int offset, int length ) throws IOException {
+        try( OutputStream gos = gzip( out ) ) {
+            gos.write( bytes, offset, length );
+        }
+    }
+
+    public static byte[] gzip( byte[] bytes, int offset, int length ) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        gzip( byteArrayOutputStream, bytes, offset, length );
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    public static byte[] gzip( byte[] bytes ) throws IOException {
+        return gzip( bytes, 0, bytes.length );
+    }
+
     public static OutputStream gzip( OutputStream os, int bufferSize ) {
         return gzipOutputStreamSupplier.apply( os, bufferSize );
     }
@@ -72,7 +89,7 @@ public class Compression {
                 @Override
                 @SneakyThrows
                 public void write( OutputStream os, String object ) {
-                    try( var gos = gzip( os ) ) {
+                    try( OutputStream gos = gzip( os ) ) {
                         gos.write( object.getBytes( UTF_8 ) );
                     }
                 }
@@ -86,8 +103,8 @@ public class Compression {
                 @Override
                 @SneakyThrows
                 public byte[] read( InputStream is ) {
-                    var baos = new ByteArrayOutputStream();
-                    try( var gos = ungzip( is ) ) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try( InputStream gos = ungzip( is ) ) {
                         IOUtils.copy( gos, baos );
                     }
                     return baos.toByteArray();
