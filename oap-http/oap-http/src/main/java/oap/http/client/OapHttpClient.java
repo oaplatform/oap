@@ -10,6 +10,7 @@ import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
@@ -45,6 +46,7 @@ public class OapHttpClient {
         public int maxConnectionsPerDestination = 64;
         public boolean dnsjava = false;
         private String metrics;
+        private HttpCookieStore cookieStore;
 
         public OapHttpClientBuilder transport( AbstractConnectorHttpClientTransport httpClientTransport ) {
             this.httpClientTransport = httpClientTransport;
@@ -82,6 +84,12 @@ public class OapHttpClient {
             return this;
         }
 
+        public OapHttpClientBuilder cookieStore( HttpCookieStore cookieStore ) {
+            this.cookieStore = cookieStore;
+
+            return this;
+        }
+
         @SneakyThrows
         public HttpClient build() {
             HttpClient httpClient = httpClientTransport != null ? new HttpClient( httpClientTransport ) : new HttpClient();
@@ -91,6 +99,10 @@ public class OapHttpClient {
             httpClient.setExecutor( qtp );
             httpClient.setFollowRedirects( followRedirects );
             httpClient.setMaxConnectionsPerDestination( maxConnectionsPerDestination );
+
+            if( cookieStore != null ) {
+                httpClient.setHttpCookieStore( cookieStore );
+            }
 
             if( dnsjava ) {
                 httpClient.setSocketAddressResolver( ( host, port, context, promise ) -> {

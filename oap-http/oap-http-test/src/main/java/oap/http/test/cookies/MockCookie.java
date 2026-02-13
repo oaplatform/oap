@@ -1,16 +1,17 @@
 package oap.http.test.cookies;
 
-import org.apache.http.cookie.Cookie;
+import org.eclipse.jetty.http.HttpCookie;
 import org.joda.time.DateTime;
 
-import java.util.Date;
+import java.time.Instant;
+import java.util.Map;
 
 import static org.joda.time.DateTimeZone.UTC;
 
-public class MockCookie<T extends Cookie> implements Cookie {
-    protected final T cookie;
+public class MockCookie implements HttpCookie {
+    protected final HttpCookie cookie;
 
-    MockCookie( T cookie ) {
+    MockCookie( HttpCookie cookie ) {
         this.cookie = cookie;
     }
 
@@ -30,21 +31,6 @@ public class MockCookie<T extends Cookie> implements Cookie {
     }
 
     @Override
-    public String getCommentURL() {
-        return cookie.getCommentURL();
-    }
-
-    @Override
-    public Date getExpiryDate() {
-        return cookie.getExpiryDate();
-    }
-
-    @Override
-    public boolean isPersistent() {
-        return cookie.isPersistent();
-    }
-
-    @Override
     public String getDomain() {
         return cookie.getDomain();
     }
@@ -55,13 +41,23 @@ public class MockCookie<T extends Cookie> implements Cookie {
     }
 
     @Override
-    public int[] getPorts() {
-        return cookie.getPorts();
+    public boolean isSecure() {
+        return cookie.isSecure();
     }
 
     @Override
-    public boolean isSecure() {
-        return cookie.isSecure();
+    public SameSite getSameSite() {
+        return cookie.getSameSite();
+    }
+
+    @Override
+    public boolean isHttpOnly() {
+        return cookie.isHttpOnly();
+    }
+
+    @Override
+    public boolean isPartitioned() {
+        return cookie.isPartitioned();
     }
 
     @Override
@@ -70,9 +66,24 @@ public class MockCookie<T extends Cookie> implements Cookie {
     }
 
     @Override
-    public boolean isExpired( Date ignored ) {
-        Date date = DateTime.now( UTC ).toDate();
+    public Map<String, String> getAttributes() {
+        return cookie.getAttributes();
+    }
 
-        return cookie.isExpired( date );
+    @Override
+    public Instant getExpires() {
+        return cookie.getExpires();
+    }
+
+    @Override
+    public long getMaxAge() {
+        return cookie.getMaxAge();
+    }
+
+    @Override
+    public boolean isExpired() {
+        DateTime date = new DateTime( UTC );
+
+        return date.isAfter( cookie.getExpires().toEpochMilli() );
     }
 }
