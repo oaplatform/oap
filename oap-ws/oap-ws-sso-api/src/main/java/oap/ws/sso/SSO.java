@@ -102,19 +102,19 @@ public class SSO {
     public static Response logoutResponse( String cookieDomain ) {
         return Response
             .noContent()
-            .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
+            .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<loggedout>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
                 .build()
             )
-            .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, "<logged out>" )
+            .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, "<loggedout>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
                 .build()
             )
-            .withCookie( Cookie.builder( SessionManager.COOKIE_ID, "<logged out>" )
+            .withCookie( Cookie.builder( SessionManager.COOKIE_ID, "<loggedout>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
@@ -124,7 +124,7 @@ public class SSO {
 
     public static Response notAuthenticatedResponse( int code, String reasonPhrase, String cookieDomain ) {
         return new Response( code, reasonPhrase )
-            .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
+            .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<loggedout>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( new DateTime( 1970, 1, 1, 1, 1, UTC ) )
