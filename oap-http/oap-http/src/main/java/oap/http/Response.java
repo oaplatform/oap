@@ -16,12 +16,14 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.InputStream;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.http.Http.ContentType.APPLICATION_OCTET_STREAM;
@@ -155,7 +157,12 @@ public class Response implements Closeable, AutoCloseable {
         inputStream = null;
     }
 
-    public Map<String, String> getHeaders() {
-        return headers.stream().collect( Collectors.toMap( p -> p._1, p -> p._2 ) );
+    public Map<String, Deque<String>> getHeaders() {
+        LinkedHashMap<String, Deque<String>> ret = new LinkedHashMap<>();
+
+        for( Pair<String, String> header : headers ) {
+            ret.computeIfAbsent( header._1, _ -> new ArrayDeque<>() ).add( header._2 );
+        }
+        return ret;
     }
 }
