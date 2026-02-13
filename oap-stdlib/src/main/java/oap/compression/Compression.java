@@ -24,43 +24,21 @@
 package oap.compression;
 
 import lombok.SneakyThrows;
-import oap.util.function.Try;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Compression {
-    public static final int DEFAULT_BUFFER_SIZE = 512;
-    private static final Function<InputStream, InputStream> gzipInputStreamSupplyer;
-    private static final BiFunction<OutputStream, Integer, OutputStream> gzipOutputStreamSupplier;
-
-    static {
-        if( "apache".equals( System.getProperty( "oap.io.gzip", "apache" ) ) ) {
-            CompressorStreamFactory factory = new CompressorStreamFactory( true );
-            gzipInputStreamSupplyer = Try.map( is -> factory.createCompressorInputStream( CompressorStreamFactory.GZIP, is ) );
-            gzipOutputStreamSupplier = Try.biMap( ( os, bufferSize ) -> factory.createCompressorOutputStream( CompressorStreamFactory.GZIP, os ) );
-        } else {
-            gzipInputStreamSupplyer = Try.map( GZIPInputStream::new );
-            gzipOutputStreamSupplier = Try.biMap( GZIPOutputStream::new );
-        }
-    }
-
-    public static OutputStream gzip( OutputStream os ) {
-        return gzip( os, DEFAULT_BUFFER_SIZE );
-    }
-
     public static void gzip( OutputStream out, byte[] bytes, int offset, int length ) throws IOException {
-        try( OutputStream gos = gzip( out ) ) {
+        try( OutputStream gos = new GZIPOutputStream( out ) ) {
             gos.write( bytes, offset, length );
         }
     }
@@ -75,12 +53,17 @@ public class Compression {
         return gzip( bytes, 0, bytes.length );
     }
 
-    public static OutputStream gzip( OutputStream os, int bufferSize ) {
-        return gzipOutputStreamSupplier.apply( os, bufferSize );
+    public static byte[] ungzip( byte[] bytes ) throws IOException {
+        return ungzip( bytes, 0, bytes.length );
     }
 
-    public static InputStream ungzip( InputStream is ) {
-        return gzipInputStreamSupplyer.apply( is );
+    public static byte[] ungzip( byte[] bytes, int offset, int length ) throws IOException {
+        return new GZIPInputStream( new ByteArrayInputStream( bytes, offset, length ) ).readAllBytes();
+    }
+
+    public static void ungzip( byte[] bytes, int offset, int length, OutputStream out ) throws IOException {
+        GZIPInputStream gzipInputStream = new GZIPInputStream( new ByteArrayInputStream( bytes, offset, length ) );
+        IOUtils.copy( gzipInputStream, out );
     }
 
     public static class ContentWriter {
@@ -89,7 +72,7 @@ public class Compression {
                 @Override
                 @SneakyThrows
                 public void write( OutputStream os, String object ) {
-                    try( OutputStream gos = gzip( os ) ) {
+                    try( GZIPOutputStream gos = new GZIPOutputStream( os ) ) {
                         gos.write( object.getBytes( UTF_8 ) );
                     }
                 }
@@ -104,7 +87,7 @@ public class Compression {
                 @SneakyThrows
                 public byte[] read( InputStream is ) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    try( InputStream gos = ungzip( is ) ) {
+                    try( GZIPInputStream gos = new GZIPInputStream( is ) ) {
                         IOUtils.copy( gos, baos );
                     }
                     return baos.toByteArray();
