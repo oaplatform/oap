@@ -32,7 +32,6 @@ import oap.http.Cookie;
 import oap.http.Response;
 import oap.http.client.JettyRequestExtensions;
 import oap.http.client.OapHttpClient;
-import oap.http.test.cookies.MockHttpCookieStorage;
 import oap.json.JsonException;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Asserts;
@@ -84,7 +83,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SuppressWarnings( "unused" )
 public class HttpAsserts {
-    public static final HttpClient TEST_HTTP_CLIENT = OapHttpClient.customHttpClient().cookieStore( new MockHttpCookieStorage() ).build();
+    public static final HttpClient TEST_HTTP_CLIENT = OapHttpClient.customHttpClient().build();
 
     public static String httpPrefix( int port ) {
         return "http://localhost:" + port;

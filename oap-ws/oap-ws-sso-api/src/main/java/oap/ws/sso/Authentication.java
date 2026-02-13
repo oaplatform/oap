@@ -33,6 +33,8 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
+import static org.joda.time.DateTimeZone.UTC;
+
 @ToString
 @EqualsAndHashCode
 public class Authentication implements Serializable {
@@ -47,7 +49,7 @@ public class Authentication implements Serializable {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.user = user;
-        this.created = new DateTime();
+        this.created = new DateTime( System.currentTimeMillis(), UTC );
     }
 
     @ToString

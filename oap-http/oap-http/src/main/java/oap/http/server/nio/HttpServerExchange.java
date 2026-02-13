@@ -273,7 +273,7 @@ public class HttpServerExchange {
     }
 
     public byte[] readBody() throws IOException {
-        var ret = new ByteArrayOutputStream();
+        ByteArrayOutputStream ret = new ByteArrayOutputStream();
         IOUtils.copy( getInputStream(), ret );
 
         return ret.toByteArray();
@@ -283,7 +283,7 @@ public class HttpServerExchange {
         setStatusCode( HTTP_OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
 
-        var out = exchange.getOutputStream();
+        OutputStream out = exchange.getOutputStream();
 
         content
             .map( v -> contentToString( raw, v, contentType ) )
