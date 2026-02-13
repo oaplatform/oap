@@ -103,19 +103,24 @@ public class SSO {
         return expirationInToken != null ? new DateTime( expirationInToken ) : new DateTime( cookieExpiration );
     }
 
-    public static Response logoutResponse( String cookieDomain ) {
+    public static Response logoutResponse( String cookieDomain, boolean cookieSecure ) {
         return Response
             .noContent()
+            .withHeader( AUTHENTICATION_KEY, "<logged out>" )
             .withCookie( Cookie.builder( AUTHENTICATION_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withMaxAge( 99999 )
+                .withHttpOnly( true )
+                .withSecure( cookieSecure )
                 .build()
             )
             .withCookie( Cookie.builder( REFRESH_TOKEN_KEY, "<logged out>" )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withMaxAge( 99999 )
+                .withHttpOnly( true )
+                .withSecure( cookieSecure )
                 .build()
             )
             .withCookie( Cookie.builder( SessionManager.COOKIE_ID, "<logged out>" )
