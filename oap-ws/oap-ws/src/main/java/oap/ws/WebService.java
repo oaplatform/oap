@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import io.undertow.server.handlers.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
@@ -164,7 +163,9 @@ public class WebService implements HttpHandler {
                         return;
                     }
 
-                    if( context.session != null && !containsSessionCookie( context.exchange.responseCookies() ) ) {
+                    Response response = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
+
+                    if( context.session != null && !containsSessionCookie( response.cookies ) ) {
                         oap.http.Cookie cookie = oap.http.Cookie.builder( SessionManager.COOKIE_ID, context.session.id )
                             .withPath( sessionManager.cookiePath )
                             .withExpires( new DateTime( System.currentTimeMillis(), UTC ).plus( sessionManager.cookieExpiration ) )
@@ -173,18 +174,16 @@ public class WebService implements HttpHandler {
                             .withHttpOnly( true )
                             .build();
 
-                        context.exchange.setResponseCookie( cookie );
+                        response.cookies.add( cookie );
                     }
-
-                    Response response = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
 
                     Interceptors.after( interceptors, response, context );
                     response.send( context.exchange );
                 } );
     }
 
-    private boolean containsSessionCookie( Iterable<Cookie> cookies ) {
-        for( Cookie p : cookies ) {
+    private boolean containsSessionCookie( Iterable<oap.http.Cookie> cookies ) {
+        for( oap.http.Cookie p : cookies ) {
             if( SessionManager.COOKIE_ID.equals( p.getName() ) ) return true;
         }
         return false;
