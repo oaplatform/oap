@@ -328,13 +328,13 @@ public class Binder {
     }
 
     public void marshal( Object value, StringBuilder sb ) {
-        try( var writer = new StringBuilderWriter( sb ) ) {
+        try( StringBuilderWriter writer = new StringBuilderWriter( sb ) ) {
             marshal( value, writer, false );
         }
     }
 
     public void marshal( Object value, StringBuilder sb, boolean prettyPrinter ) {
-        try( var writer = new StringBuilderWriter( sb ) ) {
+        try( StringBuilderWriter writer = new StringBuilderWriter( sb ) ) {
             marshal( value, writer, prettyPrinter );
         }
     }
@@ -345,9 +345,13 @@ public class Binder {
 
     public void marshal( Object value, Writer writer, boolean prettyPrinter ) {
         try {
-            if( prettyPrinter ) mapper.writerWithDefaultPrettyPrinter().writeValue( writer, value );
-            else
+            if( prettyPrinter ) {
+                DefaultPrettyPrinter defaultPrettyPrinter = new DefaultPrettyPrinter();
+                defaultPrettyPrinter.indentArraysWith( DefaultIndenter.SYSTEM_LINEFEED_INSTANCE );
+                mapper.writer( defaultPrettyPrinter ).writeValue( writer, value );
+            } else {
                 mapper.writeValue( writer, value );
+            }
         } catch( IOException e ) {
             throw new JsonException( e );
         }
