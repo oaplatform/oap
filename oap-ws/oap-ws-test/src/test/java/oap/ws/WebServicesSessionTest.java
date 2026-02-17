@@ -26,7 +26,6 @@ package oap.ws;
 
 import oap.application.testng.KernelFixture;
 import oap.http.Http;
-import oap.http.test.HttpAsserts;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
@@ -50,7 +49,7 @@ public class WebServicesSessionTest extends Fixtures {
     public void sessionViaResponse() {
         assertGet( kernel.httpUrl( "/session/put" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        HttpAsserts.assertGet( kernel.httpUrl( "/session/get" ) )
+        assertGet( kernel.httpUrl( "/session/get" ) )
             .isOk()
             .hasBody( "vvv" );
     }
@@ -59,7 +58,7 @@ public class WebServicesSessionTest extends Fixtures {
     public void sessionDirectly() {
         assertGet( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        HttpAsserts.assertGet( kernel.httpUrl( "/session/get" ) )
+        assertGet( kernel.httpUrl( "/session/get" ) )
             .isOk()
             .hasBody( "vvv" );
     }
@@ -68,7 +67,7 @@ public class WebServicesSessionTest extends Fixtures {
     public void respondHtmlContentType() {
         assertGet( kernel.httpUrl( "/session/putDirectly" ), Map.of( "value", "vvv" ), Map.of() )
             .hasCode( Http.StatusCode.NO_CONTENT );
-        HttpAsserts.assertGet( kernel.httpUrl( "/session/html" ) )
+        assertGet( kernel.httpUrl( "/session/html" ) )
             .isOk()
             .hasBody( "vvv" )
             .hasContentType( Http.ContentType.TEXT_HTML );

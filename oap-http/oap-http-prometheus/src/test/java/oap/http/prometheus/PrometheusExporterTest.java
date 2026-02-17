@@ -24,20 +24,20 @@
 
 package oap.http.prometheus;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.search.Search;
-import oap.http.Client;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static oap.http.test.HttpAsserts.assertGet;
 
 public class PrometheusExporterTest extends Fixtures {
     private static void clear() {
@@ -47,28 +47,29 @@ public class PrometheusExporterTest extends Fixtures {
     }
 
     @Test
-    public void server() throws IOException {
-        var port = Ports.getFreePort( getClass() );
+    public void server() throws Exception {
+        int port = Ports.getFreePort( getClass() );
         try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             var exporter = new PrometheusExporter( server );
 
-            var metric1 = Metrics.counter( "test1" );
-            var metric2 = Metrics.timer( "test2" );
+            Counter metric1 = Metrics.counter( "test1" );
+            Timer metric2 = Metrics.timer( "test2" );
 
             server.start();
 
             metric1.increment( 2 );
             metric2.record( 2, TimeUnit.SECONDS );
 
-            var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertThat( response ).contains( """
-                # HELP test1_total \s
-                # TYPE test1_total counter
-                test1_total 2.0
-                """ );
-            assertThat( response ).contains( "test2_seconds_count 1" );
-            assertThat( response ).contains( "test2_seconds_max 2.0" );
-            assertThat( response ).contains( "system_metrics 5" );
+            assertGet( "http://localhost:" + port + "/metrics" )
+                .body()
+                .contains( """
+                    # HELP test1_total \s
+                    # TYPE test1_total counter
+                    test1_total 2.0
+                    """ )
+                .contains( "test2_seconds_count 1" )
+                .contains( "test2_seconds_max 2.0" )
+                .contains( "system_metrics 5" );
         }
     }
 

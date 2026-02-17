@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import io.undertow.server.handlers.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Http;
 import oap.http.server.nio.HttpHandler;
@@ -44,7 +43,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+
+import static org.joda.time.DateTimeZone.UTC;
 
 @Slf4j
 public class WebService implements HttpHandler {
@@ -163,54 +163,51 @@ public class WebService implements HttpHandler {
                         return;
                     }
 
-                    if( context.session != null && !containsSessionCookie( context.exchange.responseCookies() ) ) {
+                    Response response = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
+
+                    if( context.session != null && !containsSessionCookie( response.cookies ) ) {
                         oap.http.Cookie cookie = oap.http.Cookie.builder( SessionManager.COOKIE_ID, context.session.id )
                             .withPath( sessionManager.cookiePath )
-                            .withExpires( DateTime.now().plus( sessionManager.cookieExpiration ) )
+                            .withExpires( new DateTime( System.currentTimeMillis(), UTC ).plus( sessionManager.cookieExpiration ) )
                             .withDomain( sessionManager.cookieDomain )
                             .withSecure( sessionManager.cookieSecure )
                             .withHttpOnly( true )
                             .build();
 
-                        context.exchange.setResponseCookie( cookie );
+                        response.cookies.add( cookie );
                     }
 
-                    CompletableFuture<Response> responseFuture = produceResultResponse( context.method, wsMethod, context.method.invoke( instance, paramValues ) );
-                    responseFuture.thenAccept( response -> {
-                        Interceptors.after( interceptors, response, context );
-                        response.send( context.exchange );
-                    } );
+                    Interceptors.after( interceptors, response, context );
+                    response.send( context.exchange );
                 } );
     }
 
-    private boolean containsSessionCookie( Iterable<Cookie> cookies ) {
-        for( Cookie p : cookies ) {
+    private boolean containsSessionCookie( Iterable<oap.http.Cookie> cookies ) {
+        for( oap.http.Cookie p : cookies ) {
             if( SessionManager.COOKIE_ID.equals( p.getName() ) ) return true;
         }
         return false;
     }
 
-    private CompletableFuture<Response> produceResultResponse( Reflection.Method method, Optional<WsMethod> wsMethod, Object result ) {
+    private Response produceResultResponse( Reflection.Method method, Optional<WsMethod> wsMethod, Object result ) {
         boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
         String produces = wsMethod.map( WsMethod::produces )
             .orElse( Http.ContentType.APPLICATION_JSON );
 
         if( method.isVoid() ) {
-            return CompletableFuture.completedFuture( Response.noContent() );
-        } else if( result instanceof Response response ) return CompletableFuture.completedFuture( response );
-        else if( result instanceof Optional<?> optResult ) return CompletableFuture.completedFuture( optResult.isEmpty()
+            return Response.noContent();
+        } else if( result instanceof Response response ) return response;
+        else if( result instanceof Optional<?> optResult ) return optResult.isEmpty()
             ? Response.notFound()
-            : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces ) );
+            : Response.ok().withBody( optResult.get(), isRaw ).withContentType( produces );
         else if( result instanceof Result<?, ?> resultResult ) if( resultResult.isSuccess() )
-            return CompletableFuture.completedFuture( Response.ok().withBody( resultResult.successValue, isRaw ).withContentType( produces ) );
-        else return CompletableFuture.completedFuture( new Response( Http.StatusCode.INTERNAL_SERVER_ERROR, "" )
+            return Response.ok().withBody( resultResult.successValue, isRaw ).withContentType( produces );
+        else return new Response( Http.StatusCode.INTERNAL_SERVER_ERROR, "" )
                 .withBody( resultResult.failureValue, false )
-                .withContentType( Http.ContentType.APPLICATION_JSON ) );
+                .withContentType( Http.ContentType.APPLICATION_JSON );
         else if( result instanceof java.util.stream.Stream<?> stream ) {
-            return CompletableFuture.completedFuture( Response.ok().withBody( stream, isRaw ).withContentType( produces ) );
-        } else if( result instanceof CompletableFuture<?> future ) {
-            return future.thenCompose( fResult -> produceResultResponse( method, wsMethod, fResult ) );
-        } else return CompletableFuture.completedFuture( Response.ok().withBody( result, isRaw ).withContentType( produces ) );
+            return Response.ok().withBody( stream, isRaw ).withContentType( produces );
+        } else return Response.ok().withBody( result, isRaw ).withContentType( produces );
     }
 
     @Override

@@ -30,15 +30,14 @@ import oap.application.Kernel;
 import oap.application.module.Module;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
-import oap.util.Dates;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
+import java.net.ConnectException;
 import java.net.URL;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RemoteTest extends Fixtures {
     @Test
     public void invoke() {
+        Assertions.setMaxStackTraceElementsDisplayed( 1024 );
         int port = Ports.getFreePort( getClass() );
 
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
@@ -78,33 +78,10 @@ public class RemoteTest extends Fixtures {
             assertThat( kernel.<RemoteClient>service( "*.remote-client-unreachable" ) )
                 .isPresent()
                 .get()
-                .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( IllegalArgumentException.class ) );
-        }
-    }
-
-    @Test
-    public void testAsync() {
-        int port = Ports.getFreePort( getClass() );
-
-        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( getClass(), "module.oap" ) );
-        try( Kernel kernel = new Kernel( modules ) ) {
-            kernel.start( ApplicationConfiguration.load( urlOfTestResource( RemoteTest.class, "application-remote.conf" ),
-                List.of(),
-                Map.of( "HTTP_PORT", port ) ) );
-
-            Optional<RemoteClient> service = kernel.service( "*.remote-client" );
-            assertThat( service ).isPresent();
-            assertThat( service )
-                .get()
-                .satisfies( remote -> {
-                    CompletableFuture<Boolean> actual = remote.accessibleAsync();
-                    long timeStart = System.currentTimeMillis();
-                    assertThat( actual ).succeedsWithin( Duration.ofSeconds( 10 ) ).isEqualTo( true );
-                    long timeEnd = System.currentTimeMillis();
-
-                    assertThat( timeEnd - timeStart ).isGreaterThanOrEqualTo( Dates.s( 2 ) );
-                } );
+                .satisfies( remote -> assertThatThrownBy( remote::accessible )
+                    .isInstanceOf( RuntimeException.class )
+                    .hasCauseInstanceOf( ConnectException.class )
+                );
         }
     }
 

@@ -24,8 +24,8 @@
 
 package oap.http.server.nio;
 
-import oap.http.Client;
 import oap.http.Http;
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.handlers.BlockingReadTimeoutHandler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.http.server.nio.handlers.KeepaliveRequestsHandler;
@@ -34,9 +34,13 @@ import oap.io.Resources;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
 import oap.util.Dates;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static oap.http.Http.Headers.CONNECTION;
 import static oap.http.Http.Headers.DATE;
@@ -51,12 +55,10 @@ public class NioHttpServerTest extends Fixtures {
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.start();
 
-            Client.Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
-
-            assertThat( response.getHeaders() )
-                .hasSize( 3 )
-                .containsKey( DATE )
-                .containsKey( CONNECTION );
+            assertGet( "http://localhost:" + port + "/" )
+                .hasHeadersSize( 3 )
+                .containsHeader( DATE )
+                .containsHeader( CONNECTION );
         }
 
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
@@ -64,12 +66,10 @@ public class NioHttpServerTest extends Fixtures {
             httpServer.alwaysSetKeepAlive = false;
             httpServer.start();
 
-            Client.Response response = Client.DEFAULT.get( "http://localhost:" + port + "/" );
-
-            assertThat( response.getHeaders() )
-                .hasSize( 1 )
-                .doesNotContainKey( DATE )
-                .doesNotContainKey( CONNECTION );
+            assertGet( "http://localhost:" + port + "/" )
+                .hasHeadersSize( 1 )
+                .doesNotContainHeader( DATE )
+                .doesNotContainHeader( CONNECTION );
         }
     }
 
@@ -93,9 +93,9 @@ public class NioHttpServerTest extends Fixtures {
             httpServer.start();
             httpServer.bind( "/test3", exchange -> exchange.responseOk( "test3", Http.ContentType.TEXT_PLAIN ), "test2" );
 
-            assertThat( Client.DEFAULT.get( "http://localhost:" + testPort + "/test" ).contentString() ).isEqualTo( "test" );
-            assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test2" ).contentString() ).isEqualTo( "test2" );
-            assertThat( Client.DEFAULT.get( "http://localhost:" + testPort2 + "/test3" ).contentString() ).isEqualTo( "test3" );
+            assertGet( "http://localhost:" + testPort + "/test" ).body().isEqualTo( "test" );
+            assertGet( "http://localhost:" + testPort2 + "/test2" ).body().isEqualTo( "test2" );
+            assertGet( "http://localhost:" + testPort2 + "/test3" ).body().isEqualTo( "test3" );
         }
     }
 
@@ -103,25 +103,28 @@ public class NioHttpServerTest extends Fixtures {
      * keytool -genkey -alias ssl -keyalg RSA -keysize 2048 -dname "CN=localhost,OU=IT" -keystore master.jks -storepass 1234567 -keypass 1234567
      */
     @Test
-    public void testHttps() throws IOException {
+    public void testHttps() throws Exception {
         int httpPort = Ports.getFreePort( getClass() );
         int httpsPort = Ports.getFreePort( getClass() );
 
+        ClientConnector connector = new ClientConnector();
+
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setKeyStorePath( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get() );
+        sslContextFactory.setKeyStorePassword( "1234567" );
+        connector.setSslContextFactory( sslContextFactory );
+
         try( NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( httpPort, httpsPort, Resources.urlOrThrow( getClass(), "/oap/http/test_https.jks" ), "1234567" ) );
-             Client client = Client
-                 .custom( Resources.filePath( getClass(), "/oap/http/test_https.jks" ).get(), "1234567", 10000, 10000 )
-                 .build() ) {
+             org.eclipse.jetty.client.HttpClient httpClient = OapHttpClient.customHttpClient().transport( new HttpClientTransportDynamic( connector ) ).build() ) {
+            httpClient.start();
 
             new TestHttpHandler( httpServer, "/test", "default-https" );
             new HealthHttpHandler( httpServer, "/healtz", "default-http" ).start();
 
             httpServer.start();
 
-            assertThat( client.get( "https://localhost:" + httpsPort + "/test" )
-                .contentString() ).isEqualTo( "ok" );
-
+            assertGet( httpClient, "https://localhost:" + httpsPort + "/test", Map.of(), Map.of() ).body().isEqualTo( "ok" );
             assertGet( "http://localhost:" + httpPort + "/healtz" ).hasCode( Http.StatusCode.NO_CONTENT );
-
         }
     }
 

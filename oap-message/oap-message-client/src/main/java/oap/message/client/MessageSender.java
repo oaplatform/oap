@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.LogConsolidated;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.http.Http;
+import oap.http.client.OapHttpClient;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.content.ContentReader;
@@ -46,16 +48,14 @@ import oap.util.Dates;
 import oap.util.FastByteArrayOutputStream;
 import oap.util.Pair;
 import oap.util.Throwables;
-import okhttp3.Dispatcher;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpMethod;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.event.Level;
 
@@ -69,20 +69,14 @@ import java.net.UnknownHostException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @ToString
 public class MessageSender implements Closeable, AutoCloseable {
-    public static final MediaType MEDIA_TYPE = MediaType.parse( "application/octet-stream" );
     private static final Pair<MessageStatus, Short> STATUS_OK = Pair.__( MessageStatus.OK, MessageProtocol.STATUS_OK );
     private final Object syncDiskLock = new Object();
     private final String host;
@@ -94,9 +88,9 @@ public class MessageSender implements Closeable, AutoCloseable {
     private final ConcurrentMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
     private final String messageUrl;
     private final long memorySyncPeriod;
+    private final ReentrantLock lock = new ReentrantLock();
     public String uniqueName = Cuid.UNIQUE.next();
     public long storageLockExpiration = Dates.h( 1 );
-    public int poolSize = 4;
     public long diskSyncPeriod = Dates.m( 1 );
     public long globalIoRetryTimeout = Dates.s( 1 );
     public long retryTimeout = Dates.s( 1 );
@@ -106,8 +100,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     private volatile boolean closed = false;
     private Scheduled diskSyncScheduler;
     private boolean networkAvailable = true;
-    private OkHttpClient httpClient;
-    private ExecutorService executor;
     private long ioExceptionStartRetryTimeout = -1;
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
@@ -145,30 +137,16 @@ public class MessageSender implements Closeable, AutoCloseable {
         return clientId;
     }
 
+    @SneakyThrows
     public void start() {
         log.info( "[{}] message server messageUrl {} storage {} storageLockExpiration {}",
             uniqueName, messageUrl, directory, Dates.durationToString( storageLockExpiration ) );
-        log.info( "[{}] connection timeout {} rw timeout {} pool size {} keepAliveDuration {}",
-            uniqueName, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ), poolSize,
+        log.info( "[{}] connection timeout {} rw timeout {} keepAliveDuration {}",
+            uniqueName, Dates.durationToString( connectionTimeout ), Dates.durationToString( timeout ),
             Dates.durationToString( keepAliveDuration ) );
         log.info( "[{}] retry timeout {} disk sync period '{}' memory sync period '{}'",
             uniqueName, Dates.durationToString( retryTimeout ), Dates.durationToString( diskSyncPeriod ), Dates.durationToString( memorySyncPeriod ) );
         log.info( "custom status = {}", MessageProtocol.printMapping() );
-
-        executor = Executors.newVirtualThreadPerTaskExecutor();
-
-        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
-            .connectTimeout( Duration.ofMillis( connectionTimeout ) )
-            .callTimeout( Duration.ofMillis( timeout ) );
-
-        if( poolSize > 0 ) {
-            Dispatcher dispatcher = new Dispatcher();
-            dispatcher.setMaxRequests( poolSize );
-            dispatcher.setMaxRequestsPerHost( poolSize );
-            clientBuilder.dispatcher( dispatcher );
-        }
-
-        httpClient = clientBuilder.build();
 
         if( diskSyncPeriod > 0 )
             diskSyncScheduler = Scheduler.scheduleWithFixedDelay( diskSyncPeriod, TimeUnit.MILLISECONDS, this::syncDisk );
@@ -203,12 +181,16 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
 
+    @SneakyThrows
     @Override
     public void close() {
-        synchronized( syncDiskLock ) {
+        lock.lock();
+        try {
             closed = true;
 
             Closeables.close( diskSyncScheduler );
+        } finally {
+            lock.unlock();
         }
 
         int count = 0;
@@ -263,50 +245,51 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
-    public CompletableFuture<Messages.MessageInfo> send( Messages.MessageInfo messageInfo, long now ) {
+    public Messages.MessageInfo send( Messages.MessageInfo messageInfo, long now ) {
         Message message = messageInfo.message;
 
         log.debug( "[{}] sending data [type = {}] to server...", uniqueName, MessageProtocol.messageTypeToString( message.messageType ) );
 
-        return CompletableFuture.supplyAsync( () -> {
-            Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "trysend" ).increment();
+        Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "trysend" ).increment();
 
-            try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
-                 DataOutputStream out = new DataOutputStream( buf ) ) {
-                out.writeByte( message.messageType );
-                out.writeShort( message.version );
-                out.writeLong( message.clientId );
+        try( FastByteArrayOutputStream buf = new FastByteArrayOutputStream();
+             DataOutputStream out = new DataOutputStream( buf ) ) {
+            out.writeByte( message.messageType );
+            out.writeShort( message.version );
+            out.writeLong( message.clientId );
 
-                out.write( message.md5.bytes );
+            out.write( message.md5.bytes );
 
-                out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
-                out.writeInt( message.data.length );
-                out.write( message.data );
+            out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
+            out.writeInt( message.data.length );
+            out.write( message.data );
 
-                Request request = new Request.Builder()
-                    .url( messageUrl )
-                    .post( RequestBody.create( buf.array, MEDIA_TYPE, 0, buf.length ) )
-                    .build();
+            InputStreamResponseListener inputStreamResponseListener = new InputStreamResponseListener();
+            OapHttpClient.DEFAULT_HTTP_CLIENT
+                .newRequest( messageUrl )
+                .method( HttpMethod.POST )
+                .timeout( timeout, TimeUnit.MILLISECONDS )
+                .body( new BytesRequestContent( Http.ContentType.APPLICATION_OCTET_STREAM, buf.array ) )
+                .send( inputStreamResponseListener );
 
-                Response response = httpClient.newCall( request ).execute();
+            Response response = inputStreamResponseListener.get( timeout, TimeUnit.MILLISECONDS );
 
-                if( response.code() >= 300 || response.code() < 200 ) {
-                    throw new IOException( "Not OK (" + response.code() + ") response code returned for url: " + messageUrl );
-                }
-                return onOkRespone( messageInfo, response, now );
-
-            } catch( UnknownHostException e ) {
-                processException( messageInfo, now, message, e, true );
-
-                ioExceptionStartRetryTimeout = now;
-
-                throw Throwables.propagate( e );
-            } catch( Throwable e ) {
-                processException( messageInfo, now, message, e, false );
-
-                throw Throwables.propagate( e );
+            if( response.getStatus() >= 300 || response.getStatus() < 200 ) {
+                throw new IOException( "Not OK (" + response.getStatus() + ") response code returned for url: " + messageUrl );
             }
-        }, executor );
+            return onOkRespone( messageInfo, inputStreamResponseListener, now );
+
+        } catch( UnknownHostException e ) {
+            processException( messageInfo, now, message, e, true );
+
+            ioExceptionStartRetryTimeout = now;
+
+            throw Throwables.propagate( e );
+        } catch( Throwable e ) {
+            processException( messageInfo, now, message, e, false );
+
+            throw Throwables.propagate( e );
+        }
     }
 
     private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {
@@ -317,10 +300,10 @@ public class MessageSender implements Closeable, AutoCloseable {
         messages.retry( messageInfo, now + retryTimeout );
     }
 
-    private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, Response response, long now ) {
+    private Messages.MessageInfo onOkRespone( Messages.MessageInfo messageInfo, InputStreamResponseListener inputStreamResponseListener, long now ) {
         Message message = messageInfo.message;
 
-        InputStream body = response.body().byteStream();
+        InputStream body = inputStreamResponseListener.getInputStream();
 
         try( DataInputStream in = new DataInputStream( body ) ) {
             byte version = in.readByte();
@@ -383,10 +366,6 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public void syncMemory() {
-        syncMemory( -1 );
-    }
-
-    public void syncMemory( long timeoutMs ) {
         if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
             log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
                 uniqueName, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
@@ -406,20 +385,10 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             if( messageInfo != null ) {
                 log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
-                CompletableFuture<Messages.MessageInfo> future = send( messageInfo, now );
-                future.handle( ( mi, e ) -> {
-                    messages.removeInProgress( mi );
-                    log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
-                    return null;
-                } );
+                Messages.MessageInfo mi = send( messageInfo, now );
 
-                if( timeoutMs >= 0 ) {
-                    try {
-                        future.get( timeoutMs, TimeUnit.MILLISECONDS );
-                    } catch( InterruptedException | TimeoutException | ExecutionException e ) {
-                        log.error( e.getMessage(), e );
-                    }
-                }
+                messages.removeInProgress( mi );
+                log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
             }
 
             if( isGlobalIoRetryTimeout( now ) ) {
@@ -500,7 +469,8 @@ public class MessageSender implements Closeable, AutoCloseable {
 
                                 Path lockFile;
 
-                                synchronized( syncDiskLock ) {
+                                lock.lock();
+                                try {
                                     if( closed ) return this;
 
                                     if( ( lockFile = lock( uniqueName, messagePath, storageLockExpiration ) ) != null ) {
@@ -521,6 +491,8 @@ public class MessageSender implements Closeable, AutoCloseable {
                                             Files.delete( lockFile );
                                         }
                                     }
+                                } finally {
+                                    lock.unlock();
                                 }
                             }
                         }

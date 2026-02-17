@@ -273,7 +273,7 @@ public class HttpServerExchange {
     }
 
     public byte[] readBody() throws IOException {
-        var ret = new ByteArrayOutputStream();
+        ByteArrayOutputStream ret = new ByteArrayOutputStream();
         IOUtils.copy( getInputStream(), ret );
 
         return ret.toByteArray();
@@ -283,7 +283,7 @@ public class HttpServerExchange {
         setStatusCode( HTTP_OK );
         setResponseHeader( Headers.CONTENT_TYPE, contentType );
 
-        var out = exchange.getOutputStream();
+        OutputStream out = exchange.getOutputStream();
 
         content
             .map( v -> contentToString( raw, v, contentType ) )
@@ -319,16 +319,20 @@ public class HttpServerExchange {
     }
 
     private Cookie convert( oap.http.Cookie cookie ) {
-        return new CookieImpl( cookie.getName(), cookie.getValue() )
+        CookieImpl newCookie = new CookieImpl( cookie.getName(), cookie.getValue() );
+        newCookie
             .setPath( cookie.getPath() )
             .setDomain( cookie.getDomain() )
-            .setMaxAge( cookie.getMaxAge() )
             .setExpires( cookie.getExpires() )
             .setDiscard( cookie.isDiscard() )
             .setSecure( cookie.isSecure() )
             .setHttpOnly( cookie.isHttpOnly() )
             .setVersion( cookie.getVersion() )
             .setComment( cookie.getComment() );
+        if( cookie.getMaxAge() != null ) {
+            newCookie.setMaxAge( cookie.getMaxAge() );
+        }
+        return newCookie;
     }
 
     public Iterable<Cookie> responseCookies() {

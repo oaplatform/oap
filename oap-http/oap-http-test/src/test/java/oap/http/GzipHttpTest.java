@@ -24,25 +24,26 @@
 
 package oap.http;
 
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.IoStreams;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
+import org.eclipse.jetty.client.HttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
 import java.util.Map;
 
-import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.compression.Compression.ContentWriter.ofGzip;
 import static oap.http.Http.ContentType.TEXT_PLAIN;
 import static oap.http.Http.Headers.ACCEPT_ENCODING;
 import static oap.http.Http.Headers.CONTENT_ENCODING;
-import static oap.io.IoStreams.Encoding.GZIP;
-import static oap.io.IoStreams.Encoding.PLAIN;
-import static org.assertj.core.api.Assertions.assertThat;
+import static oap.http.test.HttpAsserts.assertGet;
+import static oap.http.test.HttpAsserts.assertPost;
 
 public class GzipHttpTest extends Fixtures {
     private NioHttpServer server;
@@ -58,24 +59,29 @@ public class GzipHttpTest extends Fixtures {
     }
 
     @Test
-    public void gzipOutput() {
+    public void gzipOutput() throws Exception {
         server.bind( "test", exchange ->
             exchange.responseOk( "test", true, TEXT_PLAIN )
         );
         server.start();
 
-        var responseHtml = Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test" );
+        assertGet( "http://localhost:" + server.defaultPort.httpPort + "/test" )
+            .isOk()
+            .hasContentType( TEXT_PLAIN )
+            .body()
+            .isEqualTo( "test" );
 
-        assertThat( responseHtml.code ).isEqualTo( HTTP_OK );
-        assertThat( responseHtml.contentType ).isEqualTo( TEXT_PLAIN );
-        assertThat( responseHtml.contentString() ).isEqualTo( "test" );
+        try( HttpClient httpClient = OapHttpClient.customHttpClient().build() ) {
+            // auto-decompression
+            httpClient.getContentDecoderFactories().clear();
 
-        var responseGzip = Client.DEFAULT.get( "http://localhost:" + server.defaultPort.httpPort + "/test",
-            Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) );
-
-        assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( responseGzip.contentType ).isEqualTo( TEXT_PLAIN );
-        assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
+            assertGet( httpClient, "http://localhost:" + server.defaultPort.httpPort + "/test", Map.of(), Map.of( ACCEPT_ENCODING, "gzip,deflate" ) )
+                .isOk()
+                .hasContentType( TEXT_PLAIN )
+                .containsHeader( "Content-Encoding", "gzip" )
+                .body( bytes -> IoStreams.asString( new ByteArrayInputStream( bytes ), IoStreams.Encoding.GZIP ) )
+                .isEqualTo( "test" );
+        }
     }
 
     @Test
@@ -85,11 +91,10 @@ public class GzipHttpTest extends Fixtures {
         );
         server.start();
 
-        var response = Client.DEFAULT.post( "http://localhost:" + server.defaultPort.httpPort + "/test",
-            ContentWriter.write( "test2", ofGzip() ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) );
-
-        assertThat( response.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType ).isEqualTo( TEXT_PLAIN );
-        assertThat( IoStreams.asString( response.getInputStream(), PLAIN ) ).isEqualTo( "test2" );
+        assertPost( "http://localhost:" + server.defaultPort.httpPort + "/test",
+            ContentWriter.write( "test2", ofGzip() ), TEXT_PLAIN, Map.of( CONTENT_ENCODING, "gzip" ) )
+            .hasContentType( TEXT_PLAIN )
+            .body()
+            .isEqualTo( "test2" );
     }
 }

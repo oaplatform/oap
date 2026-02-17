@@ -1,16 +1,20 @@
 package oap.http.pniov3;
 
-import oap.concurrent.Executors;
-import oap.concurrent.ThreadPoolExecutor;
-import oap.http.Client;
+import oap.http.Http;
+import oap.http.client.OapHttpClient;
 import oap.http.server.nio.NioHttpServer;
 import oap.testng.Fixtures;
 import oap.util.Dates;
+import org.eclipse.jetty.client.HttpClient;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static oap.http.test.HttpAsserts.assertGet;
 
 public class PnioServerTest extends Fixtures {
     private final PortFixture fixture;
@@ -20,41 +24,55 @@ public class PnioServerTest extends Fixtures {
     }
 
     @Test
-    public void testRequestUndertow() throws InterruptedException, IOException {
+    public void testRequestUndertow() throws Exception {
         int port = fixture.definePort( "test" );
 
-        ThreadPoolExecutor threadPoolExecutor = Executors.newFixedBlockingThreadPool( 1024 );
+        try( ExecutorService threadPoolExecutor = Executors.newVirtualThreadPerTaskExecutor() ) {
+            try( HttpClient httpClient = OapHttpClient.customHttpClient().maxConnectionsPerDestination( 2000 ).build() ) {
+                httpClient.start();
 
-        Client client = Client.custom().setMaxConnPerRoute( 20000 ).setMaxConnTotal( 20000 ).build();
+                AtomicInteger errorCount = new AtomicInteger();
+                AtomicInteger okCount = new AtomicInteger();
 
-        AtomicInteger errorCount = new AtomicInteger();
-        AtomicInteger okCount = new AtomicInteger();
+                try( NioHttpServer pnioServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+                    pnioServer.ioThreads = Runtime.getRuntime().availableProcessors();
+                    pnioServer.bind( "/pnio", exchange -> {
+                        exchange.setStatusCode( 204 );
+                        exchange.endExchange();
+                    } );
+                    pnioServer.start();
 
-        try( NioHttpServer pnioServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            pnioServer.ioThreads = Runtime.getRuntime().availableProcessors();
-            pnioServer.bind( "/pnio", exchange -> {
-                exchange.setStatusCode( 204 );
-                exchange.endExchange();
-            } );
-            pnioServer.start();
+                    long start = System.currentTimeMillis();
 
-            long start = System.currentTimeMillis();
+                    for( int i = 0; i < 20; i++ ) {
+                        threadPoolExecutor.execute( () -> {
+                            try {
+                                assertGet( httpClient, "http://localhost:" + port + "/pnio?trace=true", Map.of(), Map.of() )
+                                    .hasCode( Http.StatusCode.NO_CONTENT );
+                                okCount.incrementAndGet();
+                            } catch( Exception e ) {
+                                errorCount.incrementAndGet();
+                            }
+                        } );
+                    }
 
-            for( int i = 0; i < 20; i++ ) {
-                threadPoolExecutor.submit( () -> {
+                    System.out.println( "ok " + okCount.get() + " error " + errorCount.get() + " duration " + Dates.durationToString( System.currentTimeMillis() - start ) );
+                }
+
+                for( int i = 0; i < 20; i++ ) {
+//                    threadPoolExecutor.execute( () -> {
                     try {
-                        Client.Response response = client.get( "http://localhost:" + port + "/pnio?trace=true" );
+                        assertGet( httpClient, "http://localhost:" + port + "/pnio?trace=true", Map.of(), Map.of() )
+                            .hasCode( Http.StatusCode.NO_CONTENT );
                         okCount.incrementAndGet();
                     } catch( Exception e ) {
                         errorCount.incrementAndGet();
                     }
-                } );
+//                    } );
+                }
             }
-
-            System.out.println( "ok " + okCount.get() + " error " + errorCount.get() + " duration " + Dates.durationToString( System.currentTimeMillis() - start ) );
-
             threadPoolExecutor.shutdown();
-            threadPoolExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+            threadPoolExecutor.awaitTermination( 20, TimeUnit.SECONDS );
         }
     }
 }

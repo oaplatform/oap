@@ -27,7 +27,6 @@ package oap.ws.sso;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
-import org.joda.time.DateTimeUtils;
 
 import java.util.Date;
 
@@ -51,7 +50,7 @@ public class JwtTokenGenerator {
 
     public Authentication.Token generateAccessToken( User user ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( accessSecret );
-        Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
+        Date expiresAt = new org.joda.time.DateTime( System.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
         return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "id", user.getId() )
             .withClaim( "user", user.getEmail() )
@@ -64,7 +63,7 @@ public class JwtTokenGenerator {
 
     public Authentication.Token generateAccessTokenWithActiveOrgId( User user, String activeOrganization ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( accessSecret );
-        Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
+        Date expiresAt = new org.joda.time.DateTime( System.currentTimeMillis() + accessSecretExpiration, UTC ).toDate();
         return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "id", user.getId() )
             .withClaim( "user", user.getEmail() )
@@ -78,7 +77,7 @@ public class JwtTokenGenerator {
 
     public Authentication.Token generateRefreshToken( User user ) throws JWTCreationException {
         Algorithm algorithm = Algorithm.HMAC256( refreshSecret );
-        Date expiresAt = new org.joda.time.DateTime( DateTimeUtils.currentTimeMillis() + refreshSecretExpiration, UTC ).toDate();
+        Date expiresAt = new org.joda.time.DateTime( System.currentTimeMillis() + refreshSecretExpiration, UTC ).toDate();
         return new Authentication.Token( expiresAt, JWT.create()
             .withClaim( "id", user.getId() )
             .withClaim( "user", user.getEmail() )

@@ -40,6 +40,12 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-http-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
