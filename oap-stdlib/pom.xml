@@ -326,5 +326,12 @@
             <artifactId>netty-handler</artifactId>
             <version>${oap.deps.netty.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>systems.manifold</groupId>
+            <artifactId>manifold-strings</artifactId>
+            <version>2026.1.4</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

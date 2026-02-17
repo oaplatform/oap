@@ -50,7 +50,7 @@ public class MongoClientTest extends Fixtures {
     @Test
     public void instantiationWithoutCredentialsInConnectionString() {
         try {
-            new MongoClient( String.format( "mongodb://%s:%s/%s", MongoFixture.HOST, mongoFixture.port, mongoFixture.database ) );
+            new MongoClient( "mongodb://${MongoFixture.HOST}:$mongoFixture.port{}/${mongoFixture.database}" );
         } catch( Exception e ) {
             Assert.fail( e.getMessage() );
         }

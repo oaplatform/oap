@@ -66,8 +66,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
             this.method = Reflect.reflect( instance.getClass() )
                 .method( method ) // TODO: replace it with method( method, targetMethod.parameters ),
                 //  once the issue with @WsValidate is fixed
-                .orElseThrow( () -> new WsException( String.format( "No such method %s with the following parameters: %s",
-                    method, targetMethod.parameters ) ) );
+                .orElseThrow( () -> new WsException( "No such method $method with the following parameters: ${targetMethod.parameters}" ) );
             this.instance = instance;
         }
 
