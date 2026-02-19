@@ -29,7 +29,6 @@ import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.Serializable;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.GZIPOutputStream;
 
 public class Buffer implements Serializable {
@@ -37,7 +36,6 @@ public class Buffer implements Serializable {
     public static final int DATE_LENGTH_POSITION = 8;
     public final LogId id;
     public final ProtocolVersion protocolVersion;
-    public final ReentrantLock lock = new ReentrantLock();
     private final byte[] data;
     private int position = DIGESTION_POSITION;
     private volatile boolean closed = false;
