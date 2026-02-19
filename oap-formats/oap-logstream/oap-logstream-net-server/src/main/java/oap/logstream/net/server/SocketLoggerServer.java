@@ -23,26 +23,23 @@
  */
 package oap.logstream.net.server;
 
+import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
+import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import lombok.extern.slf4j.Slf4j;
-import oap.io.content.ContentReader;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
-import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.message.server.MessageListener;
-import oap.template.BinaryUtils;
-import oap.tsv.Tsv;
+import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import static oap.logstream.LogStreamProtocol.MESSAGE_TYPE;
 
@@ -119,26 +116,15 @@ public class SocketLoggerServer implements MessageListener, Closeable {
             properties.put( in.readUTF(), in.readUTF() );
         }
 
-        byte[] buffer = new byte[length];
-        in.readFully( buffer, 0, length );
+        byte[] compressedBuffer = new byte[length];
+        in.readFully( compressedBuffer, 0, length );
 
-        if( log.isTraceEnabled() ) {
-            List<List<Object>> lines = new ArrayList<>();
-            switch( version ) {
-                case TSV_V1 -> ContentReader.read( buffer, Tsv.tsv.ofSeparatedValues() ).toList()
-                    .forEach( line -> lines.add( Collections.singletonList( line ) ) );
-                case BINARY_V2 -> lines.addAll( BinaryUtils.read( buffer ) );
-                case ROW_BINARY_V3 -> lines.addAll( RowBinaryUtils.read( buffer, headers, types ) );
-            }
-
-            lines.forEach( line ->
-                log.trace( "[{}] logging (properties {} filePreffix {} logType {} headers {} types {}, length {}, line {})",
-                    hostName, properties, filePreffix, logType, headers, types, length, line
-                )
-            );
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream( length );
+        try( GZIPInputStream gzip = new GZIPInputStream( new FastByteArrayInputStream( compressedBuffer ) ) ) {
+            IOUtils.copy( gzip, buffer );
         }
 
-        backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, buffer, 0, length );
+        backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, buffer.array, 0, buffer.length );
     }
 
     @Override

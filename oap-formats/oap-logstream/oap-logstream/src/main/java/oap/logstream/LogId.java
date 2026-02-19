@@ -34,7 +34,6 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -72,19 +71,9 @@ public class LogId implements Serializable {
     public int getHash() {
         Hasher hasher = Hashing.murmur3_32_fixed().newHasher();
 
-        for( var header : headers ) hasher.putString( header, UTF_8 );
-        for( var type : types ) hasher.putBytes( type );
+        for( String header : headers ) hasher.putString( header, UTF_8 );
+        for( byte[] type : types ) hasher.putBytes( type );
 
         return hasher.hash().asInt();
-    }
-
-    public final String lock() {
-        return ( String.join( "-", properties.values() )
-            + String.join( "-", List.of(
-            filePrefixPattern,
-            logType,
-            Arrays.deepToString( headers ),
-            Arrays.deepToString( types )
-        ) ) ).intern();
     }
 }
