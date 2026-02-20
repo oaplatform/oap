@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public abstract class AbstractWriter<T extends Closeable> implements Closeable {
@@ -54,6 +55,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected final int bufferSize;
     protected final Stopwatch stopwatch = new Stopwatch();
     protected final int maxVersions;
+    protected final ReentrantLock lock = new ReentrantLock();
     protected T out;
     protected Path outFilename;
     protected String lastPattern;
@@ -79,7 +81,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
 
     @SneakyThrows
     static String currentPattern( LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time ) {
-        var suffix = filePattern;
+        String suffix = filePattern;
         if( filePattern.startsWith( "/" ) && filePattern.endsWith( "/" ) ) suffix = suffix.substring( 1 );
         else if( !filePattern.startsWith( "/" ) && !logId.filePrefixPattern.endsWith( "/" ) ) suffix = "/" + suffix;
 
@@ -102,36 +104,41 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
     }
 
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {
+    public void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {
         write( protocolVersion, buffer, 0, buffer.length );
     }
 
     public abstract String write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException;
 
-    public synchronized void refresh() {
+    public void refresh() {
         refresh( false );
     }
 
-    public synchronized void refresh( boolean forceSync ) {
-        log.debug( "refresh {}...", lastPattern );
+    public void refresh( boolean forceSync ) {
+        lock.lock();
+        try {
+            log.debug( "refresh {}...", lastPattern );
 
-        String currentPattern = currentPattern();
+            String currentPattern = currentPattern();
 
-        if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
-            log.debug( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+            if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
+                log.debug( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
 
-            String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
-            if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
-                fileVersion = 1;
+                String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
+                if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
+                    fileVersion = 1;
+                }
+                currentPattern = currentPattern();
+
+                log.debug( "force {} change pattern from '{}' to '{}'", forceSync, this.lastPattern, currentPattern );
+                closeOutput();
+
+                lastPattern = currentPattern;
+            } else {
+                log.debug( "refresh {}... SKIP", lastPattern );
             }
-            currentPattern = currentPattern();
-
-            log.debug( "force {} change pattern from '{}' to '{}'", forceSync, this.lastPattern, currentPattern );
-            closeOutput();
-
-            lastPattern = currentPattern;
-        } else {
-            log.debug( "refresh {}... SKIP", lastPattern );
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -143,7 +150,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         if( out != null ) try {
             stopwatch.count( out::close );
 
-            var fileSize = Files.size( outFilename );
+            long fileSize = Files.size( outFilename );
             log.trace( "closing output {} ({} bytes)", this, fileSize );
             Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
             Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
@@ -156,10 +163,15 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     }
 
     @Override
-    public synchronized void close() {
-        log.debug( "closing {}", this );
-        closed = true;
-        closeOutput();
+    public void close() {
+        lock.lock();
+        try {
+            log.debug( "closing {}", this );
+            closed = true;
+            closeOutput();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override

@@ -122,6 +122,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
                             writerConfiguration.parquet, bufferSize, timestamp, maxVersions );
                         case TSV_GZ, TSV_ZSTD -> new TsvWriter( logDirectory, fp.path, id,
                             writerConfiguration.tsv, bufferSize, timestamp, maxVersions );
+                        case ROW_BINARY_GZ -> new RowBinaryWriter( logDirectory, fp.path, id,
+                            bufferSize, timestamp, maxVersions );
                     };
                 }
             } );
@@ -161,7 +163,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     @Override
     @SneakyThrows
     public String log( ProtocolVersion protocolVersion, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                     String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+                       String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         if( closed ) {
             throw new LoggerException( "already closed!" );
         }

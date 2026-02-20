@@ -59,7 +59,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
@@ -90,7 +89,6 @@ public class ParquetLogWriter extends AbstractWriter<org.apache.parquet.hadoop.P
 //        types.put( Types.ENUM.id, _ -> org.apache.parquet.schema.Types.required( BINARY ).as( LogicalTypeAnnotation.stringType() ) );
     }
 
-    private final ReentrantLock lock = new ReentrantLock();
     private final MessageType messageType;
     private final WriterConfiguration.ParquetConfiguration configuration;
     private final LinkedHashSet<String> excludeFields = new LinkedHashSet<>();

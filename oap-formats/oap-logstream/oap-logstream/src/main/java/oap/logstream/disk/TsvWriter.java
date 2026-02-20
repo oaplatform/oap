@@ -27,7 +27,6 @@ package oap.logstream.disk;
 import com.google.common.io.CountingOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
-import oap.logstream.InvalidProtocolVersionException;
 import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
@@ -56,22 +55,22 @@ public class TsvWriter extends AbstractWriter<CountingOutputStream> {
         this.configuration = configuration;
     }
 
-    public synchronized void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {
-        write( protocolVersion, buffer, 0, buffer.length );
-    }
-
     @Override
-    public synchronized String write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
-        if( closed ) {
-            throw new LoggerException( "writer is already closed!" );
-        }
+    public String write( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+        lock.lock();
+        try {
+            if( closed ) {
+                throw new LoggerException( "writer is already closed!" );
+            }
 
-        return switch( protocolVersion ) {
-            case TSV_V1 -> writeTsvV1( protocolVersion, buffer, offset, length );
-            case BINARY_V2 -> writeBinaryV2( protocolVersion, buffer, offset, length );
-            case ROW_BINARY_V3 -> writeBinaryV3( protocolVersion, buffer, offset, length );
-            default -> throw new InvalidProtocolVersionException( "tsv", protocolVersion.version );
-        };
+            return switch( protocolVersion ) {
+                case TSV_V1 -> writeTsvV1( protocolVersion, buffer, offset, length );
+                case BINARY_V2 -> writeBinaryV2( protocolVersion, buffer, offset, length );
+                case ROW_BINARY_V3 -> writeBinaryV3( protocolVersion, buffer, offset, length );
+            };
+        } finally {
+            lock.unlock();
+        }
     }
 
     private String writeTsvV1( ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
