@@ -1,6 +1,7 @@
 package oap.logstream.formats.rowbinary;
 
 import oap.dictionary.Dictionary;
+import oap.util.Strings;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
@@ -133,7 +134,7 @@ public class RowBinaryOutputStream extends OutputStream {
         if( s.isEmpty() ) {
             out.write( 0 );
         } else {
-            byte[] bytes = s.getBytes( UTF_8 );
+            byte[] bytes = ( Strings.UNKNOWN.equals( s ) ? "" : s ).getBytes( UTF_8 );
             writeVarInt( bytes.length );
             out.write( bytes );
         }

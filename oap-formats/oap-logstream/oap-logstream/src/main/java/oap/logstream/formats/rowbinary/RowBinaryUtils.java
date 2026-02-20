@@ -1,18 +1,30 @@
 package oap.logstream.formats.rowbinary;
 
+import oap.util.Pair;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static oap.util.Pair.__;
+
 public class RowBinaryUtils {
     public static List<List<Object>> read( byte[] bytes, String[] headers, byte[][] types ) throws IOException {
         return read( bytes, 0, bytes.length, headers, types );
     }
 
+    public static Pair<List<List<Object>>, List<String>> read( byte[] bytes, String[] headers, byte[][] types, boolean readHeaders ) throws IOException {
+        return read( bytes, 0, bytes.length, headers, types, readHeaders );
+    }
+
     public static List<List<Object>> read( byte[] bytes, int offset, int length, String[] headers, byte[][] types ) throws IOException {
-        RowBinaryInputStream binaryInputStream = new RowBinaryInputStream( new ByteArrayInputStream( bytes, offset, length ), headers, types );
+        return read( bytes, offset, length, headers, types, false )._1;
+    }
+
+    public static Pair<List<List<Object>>, List<String>> read( byte[] bytes, int offset, int length, String[] headers, byte[][] types, boolean readHeaders ) throws IOException {
+        RowBinaryInputStream binaryInputStream = new RowBinaryInputStream( new ByteArrayInputStream( bytes, offset, length ), readHeaders, headers, types );
 
         ArrayList<List<Object>> res = new ArrayList<>();
 
@@ -23,7 +35,7 @@ public class RowBinaryUtils {
             row = binaryInputStream.readRow();
         }
 
-        return res;
+        return __( res, List.of( binaryInputStream.headers ) );
     }
 
     public static byte[] lines( List<List<Object>> rows ) throws IOException {

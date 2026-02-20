@@ -31,6 +31,7 @@ import javax.annotation.Nonnull;
 public enum LogFormat {
     TSV_GZ( "tsv" + Encoding.GZIP.extension ),
     TSV_ZSTD( "tsv" + Encoding.ZSTD.extension ),
+    ROW_BINARY_GZ( "rb" + Encoding.GZIP.extension ),
     PARQUET( "parquet" );
 
     public final String extension;
@@ -41,7 +42,7 @@ public enum LogFormat {
 
     @Nonnull
     public static LogFormat parse( String filePattern ) {
-        for( var logFormat : values() ) {
+        for( LogFormat logFormat : values() ) {
             if( filePattern.endsWith( logFormat.extension ) ) {
                 return logFormat;
             }
