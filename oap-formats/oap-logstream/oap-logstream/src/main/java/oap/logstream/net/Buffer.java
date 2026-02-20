@@ -23,16 +23,21 @@
  */
 package oap.logstream.net;
 
+import lombok.SneakyThrows;
 import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
+import oap.util.FastByteArrayOutputStream;
 
 import java.io.Serializable;
+import java.util.zip.GZIPOutputStream;
 
 public class Buffer implements Serializable {
+    public static final int DIGESTION_POSITION = 0;
+    public static final int DATE_LENGTH_POSITION = 8;
     public final LogId id;
     public final ProtocolVersion protocolVersion;
     private final byte[] data;
-    private int position = 0;
+    private int position = DIGESTION_POSITION;
     private volatile boolean closed = false;
     private int dataStart;
 
@@ -44,9 +49,9 @@ public class Buffer implements Serializable {
     }
 
     private void initMetadata( LogId id ) {
-        if( position != 0 ) throw new IllegalStateException( "metadata could be set for empty buffer only!" );
-        var result = putLong( 0 ); //reserved for digestion control
-        result &= putInt( 0 ); //reserved for data length
+        if( position != DIGESTION_POSITION ) throw new IllegalStateException( "metadata could be set for empty buffer only!" );
+        boolean result = putLong( DIGESTION_POSITION ); //reserved for digestion control
+        result &= putInt( DIGESTION_POSITION ); //reserved for data length
         result &= putUTF( id.filePrefixPattern );
         result &= putUTF( id.logType );
         result &= putUTF( id.clientHostname );
@@ -54,7 +59,7 @@ public class Buffer implements Serializable {
         for( var header : id.headers )
             result &= putUTF( header );
 
-        for( var type : id.types ) {
+        for( byte[] type : id.types ) {
             result &= putByte( ( byte ) type.length );
             for( var t : type ) {
                 result &= putByte( t );
@@ -71,7 +76,7 @@ public class Buffer implements Serializable {
     }
 
     public final boolean put( byte[] buf ) {
-        return put( buf, 0, buf.length );
+        return put( buf, DIGESTION_POSITION, buf.length );
     }
 
     public final boolean put( byte[] buf, int offset, int length ) {
@@ -94,7 +99,7 @@ public class Buffer implements Serializable {
         return new byte[] {
             ( byte ) ( ( i >>> 24 ) & 0xFF ),
             ( byte ) ( ( i >>> 16 ) & 0xFF ),
-            ( byte ) ( ( i >>> 8 ) & 0xFF ),
+            ( byte ) ( ( i >>> DATE_LENGTH_POSITION ) & 0xFF ),
             ( byte ) ( i & 0xFF )
         };
     }
@@ -111,7 +116,7 @@ public class Buffer implements Serializable {
             ( byte ) ( v >>> 32 ),
             ( byte ) ( v >>> 24 ),
             ( byte ) ( v >>> 16 ),
-            ( byte ) ( v >>> 8 ),
+            ( byte ) ( v >>> DATE_LENGTH_POSITION ),
             ( byte ) v
         };
     }
@@ -119,11 +124,11 @@ public class Buffer implements Serializable {
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public final boolean putUTF( String str ) {
         int strlen = str.length();
-        int utflen = 0;
-        int c, count = 0;
+        int utflen = DIGESTION_POSITION;
+        int c, count = DIGESTION_POSITION;
 
         /* use charAt instead of copying String to char array */
-        for( int i = 0; i < strlen; i++ ) {
+        for( int i = DIGESTION_POSITION; i < strlen; i++ ) {
             c = str.charAt( i );
             if( ( c >= 0x0001 ) && ( c <= 0x007F ) ) utflen++;
             else if( c > 0x07FF ) utflen += 3;
@@ -134,11 +139,11 @@ public class Buffer implements Serializable {
 
         byte[] buffer = new byte[utflen + 2];
 
-        buffer[count++] = ( byte ) ( ( utflen >>> 8 ) & 0xFF );
+        buffer[count++] = ( byte ) ( ( utflen >>> DATE_LENGTH_POSITION ) & 0xFF );
         buffer[count++] = ( byte ) ( utflen & 0xFF );
 
         int i;
-        for( i = 0; i < strlen; i++ ) {
+        for( i = DIGESTION_POSITION; i < strlen; i++ ) {
             c = str.charAt( i );
             if( !( ( c >= 0x0001 ) && ( c <= 0x007F ) ) ) break;
             buffer[count++] = ( byte ) c;
@@ -157,7 +162,7 @@ public class Buffer implements Serializable {
                 buffer[count++] = ( byte ) ( 0x80 | ( c & 0x3F ) );
             }
         }
-        return put( buffer, 0, utflen + 2 );
+        return put( buffer, DIGESTION_POSITION, utflen + 2 );
     }
 
     public final boolean available( int length ) {
@@ -170,12 +175,12 @@ public class Buffer implements Serializable {
 
     public final void reset( LogId id ) {
         this.closed = false;
-        this.position = 0;
+        this.position = DIGESTION_POSITION;
         initMetadata( id );
     }
 
     public final boolean isEmpty() {
-        return dataLength() == 0;
+        return dataLength() == DIGESTION_POSITION;
     }
 
     public final int length() {
@@ -185,9 +190,10 @@ public class Buffer implements Serializable {
     public final void close( long digestionId ) {
         this.closed = true;
         byte[] digestion = encodeLong( digestionId );
+
         byte[] length = encodeInt( dataLength() );
-        System.arraycopy( digestion, 0, this.data, 0, digestion.length );
-        System.arraycopy( length, 0, this.data, 8, length.length );
+        System.arraycopy( digestion, DIGESTION_POSITION, this.data, DIGESTION_POSITION, digestion.length );
+        System.arraycopy( length, DIGESTION_POSITION, this.data, DATE_LENGTH_POSITION, length.length );
     }
 
     public final int dataLength() {
@@ -201,5 +207,24 @@ public class Buffer implements Serializable {
     @Override
     public final String toString() {
         return id + "," + position;
+    }
+
+    @SneakyThrows
+    public FastByteArrayOutputStream compress() {
+        FastByteArrayOutputStream fastByteArrayOutputStream = new FastByteArrayOutputStream( length() );
+
+        fastByteArrayOutputStream.write( data, DIGESTION_POSITION, dataStart );
+
+        try( GZIPOutputStream gzipOutputStream = new GZIPOutputStream( fastByteArrayOutputStream ) ) {
+            gzipOutputStream.write( data, dataStart, dataLength() );
+        }
+
+        int newDataLength = fastByteArrayOutputStream.length - dataStart;
+
+        byte[] bytes = encodeInt( newDataLength );
+
+        System.arraycopy( bytes, DIGESTION_POSITION, fastByteArrayOutputStream.array, DATE_LENGTH_POSITION, bytes.length );
+
+        return fastByteArrayOutputStream;
     }
 }

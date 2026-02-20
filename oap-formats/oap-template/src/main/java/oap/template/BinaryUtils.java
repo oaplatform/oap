@@ -39,7 +39,7 @@ public class BinaryUtils {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         BinaryOutputStream bos = new BinaryOutputStream( baos );
 
-        for( var col : cols ) bos.writeObject( col );
+        for( Object col : cols ) bos.writeObject( col );
 
         baos.write( Types.EOL.id );
 
@@ -47,8 +47,8 @@ public class BinaryUtils {
     }
 
     public static byte[] lines( List<List<Object>> rows ) throws IOException {
-        var baos = new ByteArrayOutputStream();
-        for( var row : rows ) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for( List<Object> row : rows ) {
             baos.write( line( row ) );
         }
 
@@ -62,8 +62,8 @@ public class BinaryUtils {
     public static List<List<Object>> read( byte[] bytes, int offset, int length ) throws IOException {
         BinaryInputStream binaryInputStream = new BinaryInputStream( new ByteArrayInputStream( bytes, offset, length ) );
         Object obj = binaryInputStream.readObject();
-        var line = new ArrayList<Object>();
-        var res = new ArrayList<List<Object>>();
+        ArrayList<Object> line = new ArrayList<>();
+        ArrayList<List<Object>> res = new ArrayList<>();
         while( obj != null ) {
             if( obj != BinaryInputStream.EOL ) line.add( obj );
             else {

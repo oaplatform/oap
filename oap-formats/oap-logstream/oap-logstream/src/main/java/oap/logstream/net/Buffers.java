@@ -40,10 +40,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 @EqualsAndHashCode( exclude = "closed" )
@@ -51,8 +51,9 @@ import java.util.function.Consumer;
 @Slf4j
 public class Buffers implements Closeable {
 
+    public final ReentrantLock lock = new ReentrantLock();
     //    private final int bufferSize;
-    private final ConcurrentHashMap<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LogId, Buffer> currentBuffers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<LogId, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
     private final BufferConfigurationMap configurations;
     public BufferCache cache;
@@ -68,24 +69,30 @@ public class Buffers implements Closeable {
         put( key, protocolVersion, buffer, 0, buffer.length );
     }
 
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
     public final void put( LogId id, ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffer is already closed" );
 
-        var conf = configurationForSelector.computeIfAbsent( id, this::findConfiguration );
+        BufferConfiguration conf = configurationForSelector.computeIfAbsent( id, this::findConfiguration );
+        int bufferSize = conf.bufferSize;
 
-        var bufferSize = conf.bufferSize;
-        var intern = id.lock();
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized( intern ) {
-            var b = currentBuffers.computeIfAbsent( intern, k -> cache.get( id, protocolVersion, bufferSize ) );
+        currentBuffers.compute( id, ( _, b ) -> {
+            if( b == null ) {
+                b = cache.get( id, protocolVersion, bufferSize );
+            }
+
             if( bufferSize - b.headerLength() < length )
                 throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize + "; headers = " + b.headerLength() );
+
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
-                currentBuffers.put( intern, b = cache.get( id, protocolVersion, bufferSize ) );
+                b = cache.get( id, protocolVersion, bufferSize );
             }
+
             b.put( buffer, offset, length );
-        }
+
+            return b;
+        } );
     }
 
     private BufferConfiguration findConfiguration( LogId id ) {
@@ -96,11 +103,10 @@ public class Buffers implements Closeable {
     }
 
     public void flush() {
-        for( var internSelector : currentBuffers.keySet() ) {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized( internSelector ) {
-                var buffer = currentBuffers.remove( internSelector );
-                if( buffer != null && !buffer.isEmpty() ) readyBuffers.ready( buffer );
+        for( LogId internSelector : currentBuffers.keySet() ) {
+            Buffer buffer = currentBuffers.remove( internSelector );
+            if( buffer != null && !buffer.isEmpty() ) {
+                readyBuffers.ready( buffer );
             }
         }
 
@@ -111,22 +117,32 @@ public class Buffers implements Closeable {
     }
 
     @Override
-    public final synchronized void close() {
-        if( closed ) throw new IllegalStateException( "already closed" );
-        flush();
-        closed = true;
+    public final void close() {
+        lock.lock();
+        try {
+            if( closed ) throw new IllegalStateException( "already closed" );
+            flush();
+            closed = true;
+        } finally {
+            lock.unlock();
+        }
     }
 
-    public final synchronized void forEachReadyData( Consumer<Buffer> consumer ) {
-        flush();
-        report();
-        log.trace( "buffers to go {}", readyBuffers.size() );
-        var iterator = readyBuffers.iterator();
-        while( iterator.hasNext() ) {
-            var buffer = iterator.next();
-            consumer.accept( buffer );
-            iterator.remove();
-            cache.release( buffer );
+    public final void forEachReadyData( Consumer<Buffer> consumer ) {
+        lock.lock();
+        try {
+            flush();
+            report();
+            log.trace( "buffers to go {}", readyBuffers.size() );
+            Iterator<Buffer> iterator = readyBuffers.iterator();
+            while( iterator.hasNext() ) {
+                Buffer buffer = iterator.next();
+                consumer.accept( buffer );
+                iterator.remove();
+                cache.release( buffer );
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -136,11 +152,11 @@ public class Buffers implements Closeable {
     }
 
     private void report( Collection<Buffer> in, String ready ) {
-        var buffers = new ArrayList<>( in );
+        ArrayList<Buffer> buffers = new ArrayList<>( in );
 
-        var map = new HashMap<String, MutableLong>();
-        for( var buffer : buffers ) {
-            var logType = buffer.id.logType;
+        HashMap<String, MutableLong> map = new HashMap<String, MutableLong>();
+        for( Buffer buffer : buffers ) {
+            String logType = buffer.id.logType;
             map.computeIfAbsent( logType, lt -> new MutableLong() ).increment();
         }
 
@@ -152,37 +168,57 @@ public class Buffers implements Closeable {
     }
 
     public static class BufferCache {
-        private final Map<Integer, Queue<Buffer>> cache = new HashMap<>();
+        private final ReentrantLock lock = new ReentrantLock();
 
-        private synchronized Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize ) {
-            var list = cache.computeIfAbsent( bufferSize, bs -> new LinkedList<>() );
+        private final HashMap<Integer, Queue<Buffer>> cache = new HashMap<>();
 
-            if( list.isEmpty() ) return new Buffer( bufferSize, id, protocolVersion );
-            else {
-                var buffer = list.poll();
-                buffer.reset( id );
-                return buffer;
+        private Buffer get( LogId id, ProtocolVersion protocolVersion, int bufferSize ) {
+            lock.lock();
+            try {
+                Queue<Buffer> list = cache.computeIfAbsent( bufferSize, bs -> new LinkedList<>() );
+
+                if( list.isEmpty() ) {
+                    return new Buffer( bufferSize, id, protocolVersion );
+                } else {
+                    Buffer buffer = list.poll();
+                    buffer.reset( id );
+                    return buffer;
+                }
+            } finally {
+                lock.unlock();
             }
         }
 
-        private synchronized void release( Buffer buffer ) {
-            var list = cache.get( buffer.length() );
-            if( list != null ) list.offer( buffer );
+        private void release( Buffer buffer ) {
+            lock.lock();
+            try {
+                Queue<Buffer> list = cache.get( buffer.length() );
+                if( list != null ) list.offer( buffer );
+            } finally {
+                lock.unlock();
+            }
         }
 
         public final int size( int bufferSize ) {
-            var list = cache.get( bufferSize );
+            Queue<Buffer> list = cache.get( bufferSize );
             return list != null ? list.size() : 0;
         }
     }
 
     static class ReadyQueue implements Serializable {
         static Cuid digestionIds = Cuid.UNIQUE;
+
+        private final ReentrantLock lock = new ReentrantLock();
         private final ConcurrentLinkedQueue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
-        public final synchronized void ready( Buffer buffer ) {
-            buffer.close( digestionIds.nextLong() );
-            buffers.offer( buffer );
+        public final void ready( Buffer buffer ) {
+            lock.lock();
+            try {
+                buffer.close( digestionIds.nextLong() );
+                buffers.offer( buffer );
+            } finally {
+                lock.unlock();
+            }
         }
 
         public final Iterator<Buffer> iterator() {

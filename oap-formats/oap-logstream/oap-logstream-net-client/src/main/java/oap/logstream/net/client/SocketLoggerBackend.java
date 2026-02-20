@@ -38,6 +38,7 @@ import oap.logstream.net.BufferConfigurationMap;
 import oap.logstream.net.Buffers;
 import oap.message.client.MessageAvailabilityReport;
 import oap.message.client.MessageSender;
+import oap.util.FastByteArrayOutputStream;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -96,7 +97,8 @@ public class SocketLoggerBackend extends AbstractLoggerBackend {
         if( shutdown || !closed ) {
             buffers.forEachReadyData( b -> {
                 log.trace( "Sending {}", b );
-                sender.send( MESSAGE_TYPE, ( short ) b.protocolVersion.version, b.data(), 0, b.length() );
+                FastByteArrayOutputStream data = b.compress();
+                sender.send( MESSAGE_TYPE, ( short ) b.protocolVersion.version, data.array, 0, data.length );
             } );
             log.trace( "Data sent to server" );
             return true;
