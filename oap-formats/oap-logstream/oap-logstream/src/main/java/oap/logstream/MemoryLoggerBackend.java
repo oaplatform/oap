@@ -133,11 +133,8 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
 
         for( LogId id : outputs.keySet() ) {
             if( filter.test( id ) ) {
-
-                String[] queryHeader = headers.length == 0 ? id.headers : headers;
-
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
-                RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, queryHeader, id.types );
+                RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, id.headers, id.types );
 
                 List<Object> objects;
                 while( ( objects = rowBinaryInputStream.readRow() ) != null ) {
