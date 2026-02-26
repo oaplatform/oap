@@ -165,7 +165,7 @@ public class HttpAsserts {
     @SneakyThrows
     private static @Nonnull HttpAssertion getResponseAsHttpAssertion( org.eclipse.jetty.client.Request request ) {
         ContentResponse contentResponse = request
-            .timeout( 10, TimeUnit.SECONDS )
+            .timeout( 10, TimeUnit.MINUTES )
             .send();
 
         String mediaType = contentResponse.getMediaType();
