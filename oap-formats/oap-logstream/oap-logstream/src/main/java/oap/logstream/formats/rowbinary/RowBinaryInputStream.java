@@ -31,7 +31,7 @@ public class RowBinaryInputStream extends InputStream {
         this( in, false, headers, types );
     }
 
-    protected RowBinaryInputStream( InputStream in, boolean readHeaders, String[] headers, byte[][] types ) throws IOException {
+    public RowBinaryInputStream( InputStream in, boolean readHeaders, String[] headers, byte[][] types ) throws IOException {
         this.in = in;
 
         if( readHeaders ) {
