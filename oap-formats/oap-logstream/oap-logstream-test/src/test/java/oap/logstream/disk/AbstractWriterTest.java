@@ -37,38 +37,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AbstractWriterTest {
     @Test
     public void testFileName() {
-        var h1Headers = new String[] { "h1" };
-        var strTypes = new byte[][] { new byte[] { Types.STRING.id } };
+        String[] h1Headers = new String[] { "h1" };
+        byte[][] strTypes = new byte[][] { new byte[] { Types.STRING.id } };
 
-        var lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
 
         Dates.setTimeFixed( 2023, 1, 23, 21, 6, 0 );
 
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_FORMAT_TSV_GZ}-${INTERVAL}  -${LOG_VERSION}-#{if}(${ORGANIZATION})${ORGANIZATION}#{else}UNKNOWN#{end}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
-            .isEqualTo( "ln/tsv.gz-01-85594397-1-UNKNOWN.tsv.gz" );
+            .isEqualTo( "ln/tsv.gz-01-85594397-1-UNKNOWN.tsv.gz.rb.gz" );
 
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
-            .isEqualTo( "ln/01-85594397-1-.tsv.gz" );
+            .isEqualTo( "ln/01-85594397-1-.tsv.gz.rb.gz" );
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
-            .isEqualTo( "ln/01-85594397-1-.tsv.gz" );
+            .isEqualTo( "ln/01-85594397-1-.tsv.gz.rb.gz" );
 
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_TIME_INTERVAL}.log.gz", lid1, Timestamp.BPH_6, 1, Dates.nowUtc() ) )
-            .isEqualTo( "ln/10.log.gz" );
+            .isEqualTo( "ln/10.log.gz.rb.gz" );
     }
 
     @Test
     public void testFileNameConditional() {
-        var h1Headers = new String[] { "h1" };
-        var strTypes = new byte[][] { new byte[] { Types.STRING.id } };
+        String[] h1Headers = new String[] { "h1" };
+        byte[][] strTypes = new byte[][] { new byte[] { Types.STRING.id } };
 
         Dates.setTimeFixed( 2023, 1, 23, 21, 6, 0 );
 
-        var lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
+        LogId lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
         assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "#{if}(${ORGANIZATION}&&${ACCOUNT})${ORGANIZATION}/${ACCOUNT}/#{end}${INTERVAL}-${LOG_VERSION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
-            .isEqualTo( "ln/01-85594397-1.tsv.gz" );
+            .isEqualTo( "ln/01-85594397-1.tsv.gz.rb.gz" );
 
         lid1 = new LogId( "ln", "lt", "chn", Map.of( "ORGANIZATION", "org1", "ACCOUNT", "acc1" ), h1Headers, strTypes );
         assertThat( AbstractWriter.currentPattern( LogFormat.PARQUET, "#{if}(${ORGANIZATION}&&${ACCOUNT})${ORGANIZATION}/${ACCOUNT}/#{end}${INTERVAL}-${LOG_VERSION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc() ) )
-            .isEqualTo( "ln/org1/acc1/01-85594397-1.parquet" );
+            .isEqualTo( "ln/org1/acc1/01-85594397-1.parquet.rb.gz" );
     }
 }

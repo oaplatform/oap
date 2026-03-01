@@ -31,7 +31,7 @@ import java.util.Date;
 
 public enum Types {
     EOL( 0, null ),
-    RAW( 1, null ),
+//    RAW( 1, null ),
     DATETIME( 2, DateTime.class ),
     DATE( 3, Date.class ),
     BOOLEAN( 4, Boolean.class ),
