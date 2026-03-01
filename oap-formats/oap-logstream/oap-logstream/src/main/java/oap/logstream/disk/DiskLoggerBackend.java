@@ -116,15 +116,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 
-                    LogFormat logFormat = LogFormat.parse( fp.path );
-                    return switch( logFormat ) {
-                        case PARQUET -> new ParquetLogWriter( logDirectory, fp.path, id,
-                            writerConfiguration.parquet, bufferSize, timestamp, maxVersions );
-                        case TSV_GZ, TSV_ZSTD -> new TsvWriter( logDirectory, fp.path, id,
-                            writerConfiguration.tsv, bufferSize, timestamp, maxVersions );
-                        case ROW_BINARY_GZ -> new RowBinaryWriter( logDirectory, fp.path, id,
-                            bufferSize, timestamp, maxVersions );
-                    };
+                    return new RowBinaryWriter( logDirectory, fp.path, id, bufferSize, timestamp, maxVersions );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", logDirectory.toString() ) ),

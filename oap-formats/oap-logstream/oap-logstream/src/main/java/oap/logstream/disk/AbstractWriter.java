@@ -88,6 +88,8 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         String pattern = logId.filePrefixPattern + suffix;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
 
+        pattern = pattern + ".rb.gz";
+
         LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
 
         logIdTemplate
