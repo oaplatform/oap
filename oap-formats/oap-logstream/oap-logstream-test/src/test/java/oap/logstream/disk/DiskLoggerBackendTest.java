@@ -86,13 +86,13 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             backend.refresh( true );
 
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz.rb.gz" ), types, GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz.rb.gz" ), GZIP )
                 .content()
                 .isEqualTo( List.of(
                     List.of( "12345678", "rrrr5678" ),
                     List.of( "1", "2" )
                 ) );
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_different_file_pattern_59193f7e-1_16.parquet.rb.gz" ), types, GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_different_file_pattern_59193f7e-1_16.parquet.rb.gz" ), GZIP )
                 .content()
                 .isEqualTo( List.of(
                     List.of( "12345678", "rrrr5678" ),
@@ -115,7 +115,7 @@ public class DiskLoggerBackendTest extends Fixtures {
             //log a line to lfn1
             logger.log( "lfn1", Map.of(), "log", headers, types, lines );
 
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), types, GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .content()
                 .isEqualTo( List.of(
                     List.of( "12345678", "rrrr5678" ),

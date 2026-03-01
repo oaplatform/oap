@@ -1,6 +1,7 @@
 package oap.logstream.formats.rowbinary;
 
 import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import oap.template.Types;
 import org.joda.time.DateTime;
 
@@ -17,36 +18,120 @@ import static org.joda.time.DateTimeZone.UTC;
 /**
  * https://clickhouse.com/docs/interfaces/formats/RowBinary
  */
+@SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
 public class RowBinaryInputStream extends InputStream {
-    private final InputStream in;
     public final String[] headers;
-    private final byte[][] types;
+    public final InputStream in;
+    public final byte[][] types;
     protected byte[] readBuffer = new byte[8];
 
-    public RowBinaryInputStream( InputStream in, boolean readHeaders ) throws IOException {
-        this( in, readHeaders, null, null );
+    public RowBinaryInputStream( InputStream in ) throws IOException {
+        this( in, null, null );
+    }
+
+    public RowBinaryInputStream( InputStream in, byte[][] types ) throws IOException {
+        this( in, null, types );
     }
 
     public RowBinaryInputStream( InputStream in, String[] headers, byte[][] types ) throws IOException {
-        this( in, false, headers, types );
-    }
-
-    public RowBinaryInputStream( InputStream in, boolean readHeaders, String[] headers, byte[][] types ) throws IOException {
         this.in = in;
 
-        if( readHeaders ) {
-            int count = readVarInt();
-            this.headers = new String[count];
-            for( int i = 0; i < count; i++ ) {
-                this.headers[i] = readString();
-            }
-        } else if( types != null ) {
-            this.headers = headers;
+        this.headers = headers == null ? readHeaders() : null;
+        this.types = types == null ? readTypes() : null;
+    }
+
+    private static void convertType( String rbType, ByteArrayList type ) {
+        if( rbType.startsWith( "Array(" ) ) {
+            type.add( Types.LIST.id );
+            convertType( rbType.substring( "Array(".length(), rbType.length() - 1 ), type );
         } else {
-            throw new IllegalArgumentException( "unknown headers" );
+            type.add( switch( rbType ) {
+                case "Bool" -> Types.BOOLEAN.id;
+                case "UInt8" -> Types.BYTE.id;
+                case "Int16" -> Types.SHORT.id;
+                case "Int32" -> Types.INTEGER.id;
+                case "Int64" -> Types.LONG.id;
+                case "Float32" -> Types.FLOAT.id;
+                case "Float64" -> Types.DOUBLE.id;
+                case "String" -> Types.STRING.id;
+                case "Date" -> Types.DATE.id;
+                case "DateTime" -> Types.DATETIME.id;
+                case null, default -> throw new IllegalArgumentException( "unknown type " + type );
+            } );
+        }
+    }
+
+    protected static void readFully( InputStream in, byte[] b, int off, int len ) throws IOException {
+        int n = 0;
+        while( n < len ) {
+            int count = in.read( b, off + n, len - n );
+            if( count < 0 )
+                throw new EOFException();
+            n += count;
+        }
+    }
+
+    private byte[][] readTypes() throws IOException {
+        int count = headers.length;
+        byte[][] types = new byte[count][];
+
+        ByteArrayList type = new ByteArrayList();
+
+        for( int i = 0; i < count; i++ ) {
+            String rbType = readString();
+
+            convertType( rbType, type );
+
+            types[i] = type.toByteArray();
+
+            type.clear();
         }
 
-        this.types = types;
+        return types;
+    }
+
+    protected int readVarInt() throws IOException {
+        int value = 0;
+
+        for( int i = 0; i < 10; i++ ) {
+            byte b = readByteOrEof();
+            value |= ( b & 0x7F ) << ( 7 * i );
+
+            if( ( b & 0x80 ) == 0 ) {
+                break;
+            }
+        }
+
+        return value;
+    }
+
+    private byte readByteOrEof() throws IOException {
+        int b = in.read();
+        if( b < 0 ) {
+            throw new EOFException( "End of stream reached before reading all data" );
+        }
+        return ( byte ) b;
+    }
+
+    public String readString() throws IOException {
+        int length = readVarInt();
+        if( length == 0 ) {
+            return "";
+        } else {
+            byte[] buf = new byte[length];
+            readFully( buf, 0, length );
+            return new String( buf, UTF_8 );
+        }
+    }
+
+    private String[] readHeaders() throws IOException {
+        int count = readVarInt();
+        String[] headers = new String[count];
+        for( int i = 0; i < count; i++ ) {
+            headers[i] = readString();
+        }
+
+        return headers;
     }
 
     public byte readByte() throws IOException {
@@ -108,17 +193,6 @@ public class RowBinaryInputStream extends InputStream {
         return new Date( readShort() * 24L * 60L * 60L * 1000L );
     }
 
-    public String readString() throws IOException {
-        int length = readVarInt();
-        if( length == 0 ) {
-            return "";
-        } else {
-            byte[] buf = new byte[length];
-            readFully( buf, 0, length );
-            return new String( buf, UTF_8 );
-        }
-    }
-
     public <T> List<T> readList( Class<T> clazz ) throws IOException {
         int size = readVarInt();
 
@@ -170,36 +244,7 @@ public class RowBinaryInputStream extends InputStream {
     }
 
     protected void readFully( byte[] b, int off, int len ) throws IOException {
-        int n = 0;
-        while( n < len ) {
-            int count = in.read( b, off + n, len - n );
-            if( count < 0 )
-                throw new EOFException();
-            n += count;
-        }
-    }
-
-    protected int readVarInt() throws IOException {
-        int value = 0;
-
-        for( int i = 0; i < 10; i++ ) {
-            byte b = readByteOrEof();
-            value |= ( b & 0x7F ) << ( 7 * i );
-
-            if( ( b & 0x80 ) == 0 ) {
-                break;
-            }
-        }
-
-        return value;
-    }
-
-    private byte readByteOrEof() throws IOException {
-        int b = in.read();
-        if( b < 0 ) {
-            throw new EOFException( "End of stream reached before reading all data" );
-        }
-        return ( byte ) b;
+        readFully( in, b, off, len );
     }
 
     public List<Object> readRow() throws IOException {
