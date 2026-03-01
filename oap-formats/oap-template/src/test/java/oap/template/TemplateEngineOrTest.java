@@ -31,11 +31,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static oap.template.TemplateAccumulators.BINARY;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,23 +66,6 @@ public class TemplateEngineOrTest extends Fixtures {
 
         assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
-    }
-
-    @Test
-    public void testOrDefaultBinary() throws IOException {
-        TestTemplateClass c = new TestTemplateClass();
-
-        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intObjectField | default childNullable.intObjectField ?? 3 }}", BINARY, null ).render( c ).get() ) )
-            .isEqualTo( List.of( List.of( 3 ) ) );
-    }
-
-    @Test
-    public void testOrEmptyStringWithBinaryAccumulator() throws IOException {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field2 = "f2";
-
-        assertThat( BinaryUtils.read( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", BINARY, null ).render( c ).get() ) )
-            .isEqualTo( List.of( List.of( "f2" ) ) );
     }
 
     @Test

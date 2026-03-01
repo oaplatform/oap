@@ -25,6 +25,7 @@
 package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.compression.Compression;
 import oap.http.server.nio.NioHttpServer;
 import oap.logstream.disk.DiskLoggerBackend;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
@@ -49,6 +50,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_FREE_SPACE_REQUIRED;
+import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
@@ -68,16 +70,14 @@ public class LoggerTest extends Fixtures {
     public void disk() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1 );
 
-        byte[] line1 = RowBinaryUtils.line( List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" ) );
-        String loggedLine1 = "2015-10-10 01:00:00\t12345678\t12345678\n";
+        List<Object> lineData1 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
+        byte[] line1 = Compression.gzip( RowBinaryUtils.line( lineData1 ) );
         String[] headers1 = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types1 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        String loggedHeaders1 = String.join( "\t", headers1 ) + "\n";
-        byte[] line2 = RowBinaryUtils.line( List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" ) );
-        String loggedLine2 = "2015-10-10 01:00:00\t12345678\n";
+        List<Object> lineData2 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
+        byte[] line2 = Compression.gzip( RowBinaryUtils.line( lineData2 ) );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
-        String loggedHeaders2 = String.join( "\t", headers2 ) + "\n";
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             Logger logger = new Logger( backend );
             logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
@@ -88,14 +88,18 @@ public class LoggerTest extends Fixtures {
             logger.log( "lfn1", Map.of(), "log", headers2, types2, line2 );
         }
 
-        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( loggedHeaders1 + loggedLine1 + loggedLine1, GZIP );
-        assertFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( loggedHeaders1 + loggedLine1, GZIP );
-        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( loggedHeaders2 + loggedLine2, GZIP );
-        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( loggedHeaders2 + loggedLine2, GZIP );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            .content()
+            .isEqualTo( List.of( lineData1, lineData1 ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            .content()
+            .isEqualTo( List.of( lineData1 ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            .content()
+            .isEqualTo( List.of( lineData2 ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            .content()
+            .isEqualTo( List.of( lineData2 ) );
     }
 
     @Test
@@ -105,10 +109,12 @@ public class LoggerTest extends Fixtures {
         int port = Ports.getFreePort( getClass() );
         Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
 
-        byte[] line1 = RowBinaryUtils.line( List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" ) );
+        List<Object> lineData1 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
+        byte[] line1 = Compression.gzip( RowBinaryUtils.line( lineData1 ) );
         String[] headers1 = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types1 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        byte[] line2 = RowBinaryUtils.line( List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" ) );
+        List<Object> lineData2 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
+        byte[] line2 = Compression.gzip( RowBinaryUtils.line( lineData2 ) );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
 
@@ -132,7 +138,7 @@ public class LoggerTest extends Fixtures {
             client.syncMemory();
             assertEventually( 50, 100, () -> assertFalse( logger.isLoggingAvailable() ) );
 
-            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ) )
                 .doesNotExist();
 
             serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
@@ -156,21 +162,14 @@ public class LoggerTest extends Fixtures {
         }
 
         assertEventually( 10, 1000, () ->
-            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-                .hasContent( """
-                    TIMESTAMP\tREQUEST_ID\tREQUEST_ID2
-                    2015-10-10 01:00:00	12345678\t12345678
-                    2015-10-10 01:00:00	12345678\t12345678
-                    """.stripIndent(), GZIP ) );
-        assertFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( """
-                TIMESTAMP\tREQUEST_ID\tREQUEST_ID2
-                2015-10-10 01:00:00\t12345678\t12345678
-                """, GZIP );
-        assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( """
-                TIMESTAMP\tREQUEST_ID2
-                2015-10-10 01:00:00\t12345678
-                """, GZIP );
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+                .content()
+                .isEqualTo( List.of( lineData1, lineData1 ) ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            .content()
+            .isEqualTo( List.of( lineData1 ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            .content()
+            .isEqualTo( List.of( lineData2 ) );
     }
 }

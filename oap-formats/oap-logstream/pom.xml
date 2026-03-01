@@ -13,10 +13,6 @@
     <packaging>pom</packaging>
     <artifactId>oap-logstream-parent</artifactId>
 
-    <properties>
-        <oap.deps.parquet.version>1.15.2</oap.deps.parquet.version>
-    </properties>
-
     <modules>
         <module>oap-logstream</module>
         <module>oap-logstream-data</module>

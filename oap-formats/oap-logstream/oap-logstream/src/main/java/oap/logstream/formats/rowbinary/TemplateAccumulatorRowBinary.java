@@ -3,7 +3,6 @@ package oap.logstream.formats.rowbinary;
 import lombok.SneakyThrows;
 import oap.dictionary.Dictionary;
 import oap.template.TemplateAccumulator;
-import oap.template.TemplateAccumulatorBinary;
 import oap.template.TemplateAccumulatorString;
 import oap.template.TemplateException;
 import oap.util.FastByteArrayOutputStream;
@@ -155,7 +154,6 @@ public class TemplateAccumulatorRowBinary implements TemplateAccumulator<byte[],
             case DateTime dt -> accept( dt );
             case Date d -> accept( d );
             case Collection<?> c -> accept( c );
-            case TemplateAccumulatorBinary tab -> accept( tab );
             case TemplateAccumulatorString tab -> accept( tab );
             case null, default -> throw new IllegalArgumentException( "Unknown type " + obj.getClass() );
         }
