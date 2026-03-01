@@ -24,7 +24,7 @@
 
 package oap.logstream.disk;
 
-import oap.io.IoStreams;
+import oap.compression.Compression;
 import oap.logstream.Logger;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
@@ -38,13 +38,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
-import static oap.logstream.formats.parquet.ParquetAssertion.assertParquet;
-import static oap.logstream.formats.parquet.ParquetAssertion.row;
+import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
 import static oap.net.Inet.HOSTNAME;
-import static oap.testng.Asserts.assertFile;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -73,7 +71,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         Dates.setTimeFixed( 2015, 10, 10, 1, 16 );
         String[] headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        byte[] lines = RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
+        byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
 
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
             backend.filePattern = "${LOG_TYPE}_${LOG_VERSION}_${INTERVAL}.tsv.gz";
@@ -88,25 +86,27 @@ public class DiskLoggerBackendTest extends Fixtures {
 
             backend.refresh( true );
 
-            assertFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz" ) )
-                .hasContent( """
-                    REQUEST_ID\tREQUEST_ID2
-                    12345678\trrrr5678
-                    1\t2
-                    """, IoStreams.Encoding.GZIP );
-            assertParquet( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_different_file_pattern_59193f7e-1_16.parquet" ) )
-                .containOnlyHeaders( "REQUEST_ID", "REQUEST_ID2" )
-                .contains( row( "12345678", "rrrr5678" ),
-                    row( "1", "2" ) );
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_default_file_pattern_59193f7e-1_03.tsv.gz.rb.gz" ), types, GZIP )
+                .content()
+                .isEqualTo( List.of(
+                    List.of( "12345678", "rrrr5678" ),
+                    List.of( "1", "2" )
+                ) );
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/log_type_with_different_file_pattern_59193f7e-1_16.parquet.rb.gz" ), types, GZIP )
+                .content()
+                .isEqualTo( List.of(
+                    List.of( "12345678", "rrrr5678" ),
+                    List.of( "1", "2" )
+                ) );
         }
     }
 
     @Test
-    public void testRefreshForceSync() throws IOException {
+    public void testWriteSync() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1 );
         String[] headers = new String[] { "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
-        byte[] lines = RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) );
+        byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
         //init new logger
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
             backend.start();
@@ -114,18 +114,13 @@ public class DiskLoggerBackendTest extends Fixtures {
             Logger logger = new Logger( backend );
             //log a line to lfn1
             logger.log( "lfn1", Map.of(), "log", headers, types, lines );
-            //check file size
-            assertThat( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-                .hasSize( 10 );
-            //call refresh() with forceSync flag = true -> trigger flush()
-            backend.refresh( true );
-            //check file size once more after flush() -> now the size is larger
-            assertFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-                .hasContent( """
-                    REQUEST_ID\tREQUEST_ID2
-                    12345678\trrrr5678
-                    1\t2
-                    """, IoStreams.Encoding.GZIP );
+
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v59193f7e-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), types, GZIP )
+                .content()
+                .isEqualTo( List.of(
+                    List.of( "12345678", "rrrr5678" ),
+                    List.of( "1", "2" )
+                ) );
         }
     }
 }
