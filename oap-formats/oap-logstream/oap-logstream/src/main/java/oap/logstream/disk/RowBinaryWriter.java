@@ -40,7 +40,7 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
 
                     FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
                     GZIPOutputStream gzip = new GZIPOutputStream( outputStream );
-                    RowBinaryOutputStream rbOut = new RowBinaryOutputStream( gzip, List.of( logId.headers ) );
+                    RowBinaryOutputStream rbOut = new RowBinaryOutputStream( gzip, List.of( logId.headers ), logId.types );
                     rbOut.close();
 
                     ByteBuffer byteBuffer = ByteBuffer.wrap( outputStream.array, 0, outputStream.length );

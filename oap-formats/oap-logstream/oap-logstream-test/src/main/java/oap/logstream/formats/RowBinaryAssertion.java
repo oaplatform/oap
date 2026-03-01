@@ -10,7 +10,6 @@ import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,14 +23,10 @@ public class RowBinaryAssertion extends AbstractAssert<RowBinaryAssertion, RowBi
         super( rowBinaryData, RowBinaryAssertion.class );
     }
 
-    public static RowBinaryAssertion assertRowBinaryFile( Path file, byte[][] types, IoStreams.Encoding encoding ) {
-        return assertRowBinaryFile( file, null, types, encoding );
-    }
-
-    public static RowBinaryAssertion assertRowBinaryFile( Path file, @Nullable String[] headers, byte[][] types, IoStreams.Encoding encoding ) {
+    public static RowBinaryAssertion assertRowBinaryFile( Path file, IoStreams.Encoding encoding ) {
         Assertions.assertThatPath( file ).exists();
 
-        return new RowBinaryAssertion( new RowBinaryData( headers, types, Files.read( file, encoding, ofBytes() ) ) );
+        return new RowBinaryAssertion( new RowBinaryData( null, null, Files.read( file, encoding, ofBytes() ) ) );
     }
 
     @SneakyThrows
@@ -39,7 +34,7 @@ public class RowBinaryAssertion extends AbstractAssert<RowBinaryAssertion, RowBi
         List<List<Object>> ret = new ArrayList<>();
 
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( this.actual.data );
-        RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, this.actual.headers == null, this.actual.headers, this.actual.types );
+        RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, this.actual.headers, this.actual.types );
 
         List<Object> objects;
         while( ( objects = rowBinaryInputStream.readRow() ) != null ) {

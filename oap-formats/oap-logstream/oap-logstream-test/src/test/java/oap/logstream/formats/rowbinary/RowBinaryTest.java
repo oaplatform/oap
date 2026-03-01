@@ -5,6 +5,7 @@ import com.clickhouse.client.api.insert.InsertSettings;
 import com.clickhouse.data.ClickHouseFormat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import lombok.extern.slf4j.Slf4j;
+import oap.template.Types;
 import oap.testng.Fixtures;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
@@ -32,7 +33,7 @@ import static org.joda.time.DateTimeZone.UTC;
 public class RowBinaryTest extends Fixtures {
     public static final int HTTP_PORT = 8123;
 
-    public static final String CLICKHOUSE_VERSION = "25.9.3.48-alpine";
+    public static final String CLICKHOUSE_VERSION = "25.8.7.3-alpine";
     public static final String CLICKHOUSE_REPOASITORY = "clickhouse/clickhouse-server";
     private GenericContainer<?> container;
 
@@ -91,7 +92,9 @@ public class RowBinaryTest extends Fixtures {
                 .succeedsWithin( Duration.ofSeconds( 10 ) );
 
             assertThat( client.insert( "TEST", out -> {
-                RowBinaryOutputStream rowBinaryOutputStream = new RowBinaryOutputStream( out, List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ) );
+                RowBinaryOutputStream rowBinaryOutputStream = new RowBinaryOutputStream( out, List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ), new byte[][] {
+                    { Types.BOOLEAN.id }, { Types.BYTE.id }, { Types.INTEGER.id }, { Types.LONG.id }, { Types.FLOAT.id }, { Types.DOUBLE.id }, { Types.DATETIME.id }, { Types.DATE.id }, { Types.LIST.id, Types.STRING.id }
+                } );
                 rowBinaryOutputStream.writeBoolean( true );
                 rowBinaryOutputStream.writeByte( ( byte ) 134 );
                 rowBinaryOutputStream.writeInt( 12345 );
@@ -111,14 +114,17 @@ public class RowBinaryTest extends Fixtures {
                 rowBinaryOutputStream.writeDateTime( new DateTime( 2025, 7, 10, 19, 21, 39, 124, UTC ) );
                 rowBinaryOutputStream.writeDate( new Date( new DateTime( 2025, 7, 10, 19, 21, 39, 123, UTC ).getMillis() ) );
                 rowBinaryOutputStream.writeList( List.of() );
-            }, ClickHouseFormat.RowBinaryWithNames, new InsertSettings() ) )
+            }, ClickHouseFormat.RowBinaryWithNamesAndTypes, new InsertSettings() ) )
                 .succeedsWithin( Duration.ofSeconds( 10 ) );
 
-            assertThat( client.query( "SELECT * FROM TEST FORMAT " + ClickHouseFormat.RowBinaryWithNames ) )
+            assertThat( client.query( "SELECT * FROM TEST FORMAT " + ClickHouseFormat.RowBinaryWithNamesAndTypes ) )
                 .succeedsWithin( Duration.ofSeconds( 10 ) )
                 .satisfies( resp -> {
-                    RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( resp.getInputStream(), true );
-                    assertThat( List.of( rowBinaryInputStream.headers ) ).isEqualTo( List.of( "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" ) );
+                    RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( resp.getInputStream() );
+                    assertThat( rowBinaryInputStream.headers ).isEqualTo( new String[] { "b", "bt", "i", "l", "f", "d", "dt", "date", "ls" } );
+                    assertThat( rowBinaryInputStream.types ).isEqualTo( new byte[][] {
+                        { Types.BOOLEAN.id }, { Types.BYTE.id }, { Types.INTEGER.id }, { Types.LONG.id }, { Types.FLOAT.id }, { Types.DOUBLE.id }, { Types.DATETIME.id }, { Types.DATE.id }, { Types.LIST.id, Types.STRING.id }
+                    } );
 
                     assertThat( rowBinaryInputStream.readBoolean() ).isTrue();
                     assertThat( rowBinaryInputStream.readByte() ).isEqualTo( ( byte ) 134 );
