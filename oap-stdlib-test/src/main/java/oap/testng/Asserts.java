@@ -36,6 +36,7 @@ import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.function.Try;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.AbstractByteArrayAssert;
 import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.assertj.core.api.AbstractFileAssert;
 import org.testng.Assert;
@@ -246,6 +247,11 @@ public final class Asserts {
         public FileAssertion hasSize( long size ) {
             assertThat( actual.length() ).isEqualTo( size );
             return this;
+        }
+
+        public AbstractByteArrayAssert<?> binaryContent( IoStreams.Encoding encoding ) {
+            exists();
+            return assertThat( Files.read( this.actual.toPath(), encoding, ofBytes() ) );
         }
 
         @Override
