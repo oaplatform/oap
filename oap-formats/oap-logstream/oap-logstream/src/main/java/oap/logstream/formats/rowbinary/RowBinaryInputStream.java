@@ -36,8 +36,8 @@ public class RowBinaryInputStream extends InputStream {
     public RowBinaryInputStream( InputStream in, String[] headers, byte[][] types ) throws IOException {
         this.in = in;
 
-        this.headers = headers == null ? readHeaders() : null;
-        this.types = types == null ? readTypes() : null;
+        this.headers = headers == null ? readHeaders() : headers;
+        this.types = types == null ? readTypes() : types;
     }
 
     private static void convertType( String rbType, ByteArrayList type ) {
