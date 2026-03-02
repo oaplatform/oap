@@ -60,8 +60,8 @@ public class RowBinaryInputStream extends InputStream {
                 case "Float32" -> Types.FLOAT.id;
                 case "Float64" -> Types.DOUBLE.id;
                 case "String" -> Types.STRING.id;
-                case "Date" -> Types.DATE.id;
-                case "DateTime" -> Types.DATETIME.id;
+                case "Date", "Date32" -> Types.DATE.id;
+                case "DateTime", "DateTime32" -> Types.DATETIME.id;
                 case null, default -> throw new IllegalArgumentException( "unknown type " + type );
             } );
         }
