@@ -28,7 +28,6 @@ import oap.compression.Compression;
 import oap.io.IoStreams.Encoding;
 import oap.json.Binder;
 import oap.logstream.disk.DiskLoggerBackend;
-import oap.logstream.formats.RowBinaryAssertion;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
 import oap.template.Types;
 import oap.testng.Fixtures;
@@ -43,6 +42,7 @@ import java.util.Map;
 import static oap.io.content.ContentReader.ofJson;
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
+import static oap.logstream.formats.RowBinaryAssertion.assertRowBinaryFile;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,9 +71,8 @@ public class LoggerJsonTest extends Fixtures {
             logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, Compression.gzip( RowBinaryUtils.line( List.of( jsonContent ) ) ) );
         }
 
-        RowBinaryAssertion.assertRowBinaryFile( testDirectoryFixture.testPath( "logs/open_rtb_json/2015-10/10/request_response_v3b5d9e1b-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), Encoding.GZIP )
-            .content()
-            .contains( List.of( content ) );
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/open_rtb_json/2015-10/10/request_response_v3b5d9e1b-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), Encoding.GZIP )
+            .containsExactlyInAnyOrderEntriesOf( List.of( content ) );
     }
 
     public static class SimpleJson {

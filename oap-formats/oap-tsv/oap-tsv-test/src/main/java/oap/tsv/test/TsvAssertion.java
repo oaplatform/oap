@@ -128,7 +128,7 @@ public class TsvAssertion extends AbstractAssert<TsvAssertion, Tsv> {
 
     public TsvAssertion containsExactlyInAnyOrderEntriesOf( Header header, Row... rows ) {
         hasHeaders( header );
-        for( var row : rows ) {
+        for( Row row : rows ) {
             assertThat( row.cols )
                 .withFailMessage( "entries length doesnt match headers" )
                 .hasSize( header.size() );
@@ -198,7 +198,7 @@ public class TsvAssertion extends AbstractAssert<TsvAssertion, Tsv> {
         for( var row : rows ) {
             assertThat( row.cols )
                 .withFailMessage( "entries length doesnt match headers" )
-                .hasSize( actual.headers.size() );
+                .hasSameSizeAs( actual.headers );
         }
         assertThat( actual.data ).doesNotContainAnyElementsOf( Lists.map( rows, r -> r.cols ) );
         return this;
