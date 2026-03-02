@@ -5,6 +5,7 @@ import oap.util.Pair;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,10 @@ public class RowBinaryUtils {
         return read( bytes, null, null );
     }
 
+    public static List<List<Object>> read( InputStream inputStream ) throws IOException {
+        return read( inputStream, null, null )._1;
+    }
+
     public static List<List<Object>> read( byte[] bytes, String[] headers, byte[][] types ) throws IOException {
         return read( bytes, 0, bytes.length, headers, types )._1;
     }
@@ -23,8 +28,8 @@ public class RowBinaryUtils {
         return read( bytes, offset, length, null, null );
     }
 
-    public static Pair<List<List<Object>>, List<String>> read( byte[] bytes, int offset, int length, String[] headers, byte[][] types ) throws IOException {
-        RowBinaryInputStream binaryInputStream = new RowBinaryInputStream( new ByteArrayInputStream( bytes, offset, length ), headers, types );
+    public static Pair<List<List<Object>>, List<String>> read( InputStream inputStream, String[] headers, byte[][] types ) throws IOException {
+        RowBinaryInputStream binaryInputStream = new RowBinaryInputStream( inputStream, headers, types );
 
         ArrayList<List<Object>> res = new ArrayList<>();
 
@@ -36,6 +41,10 @@ public class RowBinaryUtils {
         }
 
         return __( res, List.of( binaryInputStream.headers ) );
+    }
+
+    public static Pair<List<List<Object>>, List<String>> read( byte[] bytes, int offset, int length, String[] headers, byte[][] types ) throws IOException {
+        return read( new ByteArrayInputStream( bytes, offset, length ), headers, types );
     }
 
     public static byte[] lines( List<List<Object>> rows ) throws IOException {
