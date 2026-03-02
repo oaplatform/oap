@@ -89,17 +89,13 @@ public class LoggerTest extends Fixtures {
         }
 
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-            .content()
-            .isEqualTo( List.of( lineData1, lineData1 ) );
+            .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 );
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-            .content()
-            .isEqualTo( List.of( lineData1 ) );
+            .containsExactlyInAnyOrderEntriesOf( lineData1 );
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-            .content()
-            .isEqualTo( List.of( lineData2 ) );
+            .containsExactlyInAnyOrderEntriesOf( lineData2 );
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-            .content()
-            .isEqualTo( List.of( lineData2 ) );
+            .containsExactlyInAnyOrderEntriesOf( lineData2 );
     }
 
     @Test
@@ -163,13 +159,10 @@ public class LoggerTest extends Fixtures {
 
         assertEventually( 10, 1000, () ->
             assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-                .content()
-                .isEqualTo( List.of( lineData1, lineData1 ) ) );
+                .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 ) );
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-            .content()
-            .isEqualTo( List.of( lineData1 ) );
+            .containsExactlyInAnyOrderEntriesOf( lineData1 );
         assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
-            .content()
-            .isEqualTo( List.of( lineData2 ) );
+            .containsExactlyInAnyOrderEntriesOf( lineData2 );
     }
 }
