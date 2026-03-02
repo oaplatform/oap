@@ -2,6 +2,7 @@ package oap.logstream.formats.rowbinary;
 
 import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import lombok.extern.slf4j.Slf4j;
 import oap.template.Types;
 import org.joda.time.DateTime;
 
@@ -19,7 +20,10 @@ import static org.joda.time.DateTimeZone.UTC;
  * https://clickhouse.com/docs/interfaces/formats/RowBinary
  */
 @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+@Slf4j
 public class RowBinaryInputStream extends InputStream {
+    public static final String TYPE_NULLABLE = "Nullable(";
+    public static final String TYPE_ARRAY = "Array(";
     public final String[] headers;
     public final InputStream in;
     public final byte[][] types;
@@ -41,9 +45,11 @@ public class RowBinaryInputStream extends InputStream {
     }
 
     private static void convertType( String rbType, ByteArrayList type ) {
-        if( rbType.startsWith( "Array(" ) ) {
+        if( rbType.startsWith( TYPE_NULLABLE ) ) {
+            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type );
+        } else if( rbType.startsWith( TYPE_ARRAY ) ) {
             type.add( Types.LIST.id );
-            convertType( rbType.substring( "Array(".length(), rbType.length() - 1 ), type );
+            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type );
         } else {
             type.add( switch( rbType ) {
                 case "Bool" -> Types.BOOLEAN.id;
@@ -79,6 +85,7 @@ public class RowBinaryInputStream extends InputStream {
 
         for( int i = 0; i < count; i++ ) {
             String rbType = readString();
+            log.trace( "in type {}", rbType );
 
             convertType( rbType, type );
 
