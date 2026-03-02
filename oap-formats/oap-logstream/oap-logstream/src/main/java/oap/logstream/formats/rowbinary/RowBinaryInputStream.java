@@ -50,6 +50,8 @@ public class RowBinaryInputStream extends InputStream {
         } else if( rbType.startsWith( TYPE_ARRAY ) ) {
             type.add( Types.LIST.id );
             convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type );
+        } else if( rbType.startsWith( "FixedString(" ) ) {
+            type.add( Types.STRING.id );
         } else {
             type.add( switch( rbType ) {
                 case "Bool" -> Types.BOOLEAN.id;
