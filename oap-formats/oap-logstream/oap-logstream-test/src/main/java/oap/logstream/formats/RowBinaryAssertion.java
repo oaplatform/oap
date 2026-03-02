@@ -29,6 +29,10 @@ public class RowBinaryAssertion extends AbstractAssert<RowBinaryAssertion, RowBi
         return new RowBinaryAssertion( new RowBinaryData( null, null, Files.read( file, encoding, ofBytes() ) ) );
     }
 
+    public static RowBinaryAssertion assertRowBinary( byte[] bytes ) {
+        return new RowBinaryAssertion( new RowBinaryData( null, null, bytes ) );
+    }
+
     @SneakyThrows
     public ListAssert<List<Object>> content( String... header ) {
         List<List<Object>> ret = new ArrayList<>();
