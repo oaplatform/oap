@@ -102,7 +102,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     public volatile boolean closed = false;
     public Scheduled diskSyncScheduler;
     public AtomicLong networkAvailable = new AtomicLong( 0 );
-    public int networkAvailableMaxErrors = 10;
+    public int networkAvailableMaxErrors = 2;
     public long ioExceptionStartRetryTimeout = -1;
     public long timeBetweenLogs = Dates.m( 1 );
 

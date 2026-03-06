@@ -28,13 +28,17 @@ import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
+import oap.LogConsolidated;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.storage.Storage.DataListener.IdObject;
 import oap.util.Cuid;
+import oap.util.Dates;
 import oap.util.Pair;
+import org.slf4j.event.Level;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
@@ -54,17 +58,18 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Replicator<I, T> implements Closeable {
-    final AtomicLong replicatorCounterFullSync = new AtomicLong();
-    final AtomicLong replicatorCounterPartialSync = new AtomicLong();
-    final AtomicLong replicatorSizeFullSync = new AtomicLong();
-    final AtomicLong replicatorSizePartialSync = new AtomicLong();
+    public final AtomicLong replicatorCounterFullSync = new AtomicLong();
+    public final AtomicLong replicatorCounterPartialSync = new AtomicLong();
+    public final AtomicLong replicatorSizeFullSync = new AtomicLong();
+    public final AtomicLong replicatorSizePartialSync = new AtomicLong();
+    public final MemoryStorage<I, T> slave;
+    public final ReplicationMaster<I, T> master;
+    public final Scheduled scheduled;
     final ReentrantLock lock = new ReentrantLock();
-    private final MemoryStorage<I, T> slave;
-    private final ReplicationMaster<I, T> master;
-    private final Scheduled scheduled;
-    private String uniqueName = Cuid.UNIQUE.next();
-    private transient long timestamp = -1L;
-    private transient long hash = -1L;
+    public String uniqueName = Cuid.UNIQUE.next();
+    public transient long timestamp = -1L;
+    public transient long hash = -1L;
+    public long timeBetweenLogs = Dates.m( 1 );
 
     public Replicator( MemoryStorage<I, T> slave, ReplicationMaster<I, T> master, long interval ) {
         Preconditions.checkArgument( slave.transactionLog instanceof TransactionLogZero );
@@ -76,8 +81,10 @@ public class Replicator<I, T> implements Closeable {
             Pair<Long, Long> newTimestamp = replicate( timestamp );
             log.trace( "[{}] newTimestamp {}, lastModified {}", uniqueName, newTimestamp, timestamp );
 
-            timestamp = newTimestamp._1;
-            hash = newTimestamp._2;
+            if( newTimestamp != null ) {
+                timestamp = newTimestamp._1;
+                hash = newTimestamp._2;
+            }
         } );
     }
 
@@ -99,6 +106,7 @@ public class Replicator<I, T> implements Closeable {
         replicateNow();
     }
 
+    @Nullable
     public Pair<Long, Long> replicate( long timestamp ) {
         lock.lock();
         try {
@@ -163,14 +171,14 @@ public class Replicator<I, T> implements Closeable {
 
                 return __( lastUpdate, updatedSince.hash );
             } catch( UncheckedIOException e ) {
-                log.error( e.getCause().getMessage() );
+                LogConsolidated.log( log, Level.ERROR, timeBetweenLogs, e.getMessage(), e );
                 return __( timestamp, hash );
             } catch( Exception e ) {
                 if( e.getCause() instanceof SocketException ) {
-                    log.error( e.getCause().getMessage() );
+                    LogConsolidated.log( log, Level.ERROR, timeBetweenLogs, e.getMessage(), e );
                     return __( timestamp, hash );
                 }
-                throw e;
+                return null;
             }
         } finally {
             lock.unlock();
