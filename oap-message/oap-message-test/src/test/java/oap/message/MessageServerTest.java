@@ -24,11 +24,11 @@
 
 package oap.message;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.application.testng.KernelFixture;
 import oap.http.server.nio.NioHttpServer;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
-import oap.message.client.MessageAvailabilityReport.State;
 import oap.message.client.MessageSender;
 import oap.message.server.MessageHttpHandler;
 import oap.testng.Fixtures;
@@ -49,12 +49,14 @@ import java.util.List;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentWriter.ofJson;
 import static oap.io.content.ContentWriter.ofString;
+import static oap.message.client.MessageAvailabilityReport.State.FAILED;
+import static oap.message.client.MessageAvailabilityReport.State.OPERATIONAL;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
 
-@Test
+@Slf4j
 public class MessageServerTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
@@ -71,8 +73,8 @@ public class MessageServerTest extends Fixtures {
         MessageListenerMock listener2 = new MessageListenerMock( "l2-", MessageListenerMock.MESSAGE_TYPE );
 
         try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
-             var messageHttpHandler = new MessageHttpHandler( server, "/messages", testDirectoryFixture.testPath( "controlStatePath.st" ), List.of( listener1, listener2 ), -1 );
-             var client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", testDirectoryFixture.testPath( "controlStatePath.st" ), List.of( listener1, listener2 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
 
             client.start();
             assertThatCode( messageHttpHandler::preStart )
@@ -565,15 +567,71 @@ public class MessageServerTest extends Fixtures {
             client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "availabilityReport", ofString() )
                 .syncMemory();
 
-            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.FAILED );
-            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( FAILED );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
 
             listener1.setStatus( MessageProtocol.STATUS_OK );
 
             client.syncMemory();
 
-            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( State.OPERATIONAL );
-            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( State.OPERATIONAL );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE2 ).state ).isEqualTo( OPERATIONAL );
+        }
+    }
+
+    @Test
+    public void availabilityReportNetwork() throws IOException {
+        int port = Ports.getFreePort( getClass() );
+        Path controlStatePath = testDirectoryFixture.testPath( "controlStatePath.st" );
+
+        MessageListenerMock listener1 = new MessageListenerMock( MessageListenerMock.MESSAGE_TYPE );
+
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
+             MessageHttpHandler messageHttpHandler = new MessageHttpHandler( server, "/messages", controlStatePath, List.of( listener1 ), -1 );
+             MessageSender client = new MessageSender( "localhost", port, "/messages", testDirectoryFixture.testPath( "tmp" ), -1 ) ) {
+            client.retryTimeout = 100;
+            client.timeout = Dates.s( 10 );
+            client.connectionTimeout = Dates.s( 10 );
+            client.networkAvailableMaxErrors = 5;
+
+            server.bind( "/messages", messageHttpHandler );
+            listener1.setStatus( MessageProtocol.STATUS_OK );
+
+            messageHttpHandler.preStart();
+            server.start();
+            client.start();
+
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "availabilityReport", ofString() )
+                .syncMemory();
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
+
+            server.preStop();
+            messageHttpHandler.close();
+
+            log.trace( "server -> stop" );
+
+            Dates.incFixed( 100 + 1 );
+            client.send( MessageListenerMock.MESSAGE_TYPE, ( short ) 1, "availabilityReport2", ofString() )
+                .syncMemory();
+
+            for( int i = 0; i < 5; i++ ) {
+                assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).describedAs( "retry " + i ).isEqualTo( OPERATIONAL );
+
+                Dates.incFixed( 100 + 1 );
+                client.syncMemory();
+
+                log.debug( "errors {}", client.networkAvailable.get() );
+            }
+
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( FAILED );
+
+            messageHttpHandler.preStart();
+            server.start();
+
+            Dates.incFixed( 100 + 1 );
+            client.syncMemory();
+            assertThat( client.availabilityReport( MessageListenerMock.MESSAGE_TYPE ).state ).isEqualTo( OPERATIONAL );
         }
     }
 

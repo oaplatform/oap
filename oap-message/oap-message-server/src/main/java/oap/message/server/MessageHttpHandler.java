@@ -94,16 +94,15 @@ import static oap.message.MessageProtocol.messageTypeToString;
 @Slf4j
 public class MessageHttpHandler implements HttpHandler, Closeable {
     public final HashMap<Byte, MessageListener> map = new HashMap<>();
-    public int clientHashCacheSize = 1024;
     private final List<MessageListener> listeners;
     private final long hashTtl;
     private final Path controlStatePath;
     private final NioHttpServer server;
     private final String context;
+    public int clientHashCacheSize = 1024;
+    public String port = null;
     private MessageHashStorage hashes;
     private Scheduled scheduled;
-
-    public String port = null;
 
     public MessageHttpHandler( NioHttpServer server, String context, Path controlStatePath, List<MessageListener> listeners, long hashTtl ) {
         this.server = server;
@@ -138,10 +137,10 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             log.warn( "Cannot load hashes", e );
         }
 
-        for( var listener : listeners ) {
+        for( MessageListener listener : listeners ) {
             log.info( "Listener type {} info {}", listener.getId(), listener.getInfo() );
 
-            var d = this.map.put( listener.getId(), listener );
+            MessageListener d = this.map.put( listener.getId(), listener );
             if( d != null ) {
                 throw new IllegalArgumentException( "duplicate [" + listener.getInfo() + ", " + d.getInfo() + "]" );
             }
@@ -152,21 +151,21 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     public void handleRequest( HttpServerExchange exchange ) throws Exception {
         log.trace( "new message {}", exchange );
 
-        try( var in = new DataInputStream( exchange.getInputStream() ) ) {
+        try( DataInputStream in = new DataInputStream( exchange.getInputStream() ) ) {
             InetSocketAddress peerAddress = ( InetSocketAddress ) exchange.exchange.getConnection().getPeerAddress();
-            var hostName = peerAddress.getHostName();
-            var port = peerAddress.getPort();
+            String hostName = peerAddress.getHostName();
+            int port = peerAddress.getPort();
             String clientHostPort = hostName + ":" + port;
 
-            var messageType = in.readByte();
+            byte messageType = in.readByte();
             log.trace( "new message from {}", clientHostPort );
 
-            var messageVersion = in.readShort();
-            var clientId = in.readLong();
-            final var md5 = Hex.encodeHexString( in.readNBytes( MD5_LENGTH ) ).intern();
+            short messageVersion = in.readShort();
+            long clientId = in.readLong();
+            final String md5 = Hex.encodeHexString( in.readNBytes( MD5_LENGTH ) ).intern();
 
             in.skipBytes( 8 ); // reserved
-            var size = in.readInt();
+            int size = in.readInt();
 
             log.trace( "[{}] type {} version {} clientId {} md5 {} size '{}'",
                 clientHostPort, messageTypeToString( messageType ), messageVersion, clientId, md5, FileUtils.byteCountToDisplaySize( size ) );
@@ -174,13 +173,13 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized( md5 ) {
                 if( !hashes.contains( messageType, md5 ) ) {
-                    var listener = map.get( messageType );
+                    MessageListener listener = map.get( messageType );
                     if( listener == null ) {
                         log.error( "[{}] Unknown message type {}", clientHostPort, messageType );
                         in.skipNBytes( size );
                         writeResponse( exchange, STATUS_UNKNOWN_MESSAGE_TYPE, clientId, md5 );
                     } else {
-                        var data = in.readNBytes( size );
+                        byte[] data = in.readNBytes( size );
                         short status;
                         try {
                             log.trace( "handler {}...", listener.getId() );
@@ -222,7 +221,7 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
         exchange.setResponseHeader( CONTENT_TYPE, APPLICATION_OCTET_STREAM );
         exchange.setStatusCode( HTTP_OK );
 
-        try( var out = new DataOutputStream( exchange.getOutputStream() ) ) {
+        try( DataOutputStream out = new DataOutputStream( exchange.getOutputStream() ) ) {
             out.writeByte( PROTOCOL_VERSION_1 );
             out.writeLong( clientId );
             out.write( Hex.decodeHex( md5 ) );
@@ -235,6 +234,9 @@ public class MessageHttpHandler implements HttpHandler, Closeable {
     @Override
     public void close() {
         try {
+            for( MessageListener listener : listeners ) {
+                this.map.remove( listener.getId() );
+            }
             if( scheduled != null ) scheduled.close();
             hashes.store( controlStatePath );
         } catch( IOException e ) {
