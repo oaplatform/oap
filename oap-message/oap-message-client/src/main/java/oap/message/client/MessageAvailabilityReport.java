@@ -43,7 +43,6 @@ public class MessageAvailabilityReport {
 
     public enum State {
         OPERATIONAL,
-        PARTIALLY_OPERATIONAL,
         FAILED
     }
 }

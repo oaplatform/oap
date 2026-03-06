@@ -72,22 +72,24 @@ import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @ToString
 public class MessageSender implements Closeable, AutoCloseable {
     private static final Pair<MessageStatus, Short> STATUS_OK = Pair.__( MessageStatus.OK, MessageProtocol.STATUS_OK );
-    private final Object syncDiskLock = new Object();
-    private final String host;
-    private final int port;
-    private final Path directory;
-    private final MessageNoRetryStrategy messageNoRetryStrategy;
-    private final long clientId = Cuid.UNIQUE.nextLong();
-    private final Messages messages = new Messages();
-    private final ConcurrentMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
-    private final String messageUrl;
-    private final long memorySyncPeriod;
+    public final Object syncDiskLock = new Object();
+    public final String host;
+    public final int port;
+    public final Path directory;
+    public final MessageNoRetryStrategy messageNoRetryStrategy;
+    public final long clientId = Cuid.UNIQUE.nextLong();
+    public final Messages messages = new Messages();
+    public final ConcurrentMap<Byte, Pair<MessageStatus, Short>> lastStatus = new ConcurrentHashMap<>();
+    public final String messageUrl;
+    public final long memorySyncPeriod;
     private final ReentrantLock lock = new ReentrantLock();
     public String uniqueName = Cuid.UNIQUE.next();
     public long storageLockExpiration = Dates.h( 1 );
@@ -97,10 +99,12 @@ public class MessageSender implements Closeable, AutoCloseable {
     public long keepAliveDuration = Dates.d( 30 );
     public long timeout = Dates.s( 5 );
     public long connectionTimeout = Dates.s( 30 );
-    private volatile boolean closed = false;
-    private Scheduled diskSyncScheduler;
-    private boolean networkAvailable = true;
-    private long ioExceptionStartRetryTimeout = -1;
+    public volatile boolean closed = false;
+    public Scheduled diskSyncScheduler;
+    public AtomicLong networkAvailable = new AtomicLong( 0 );
+    public int networkAvailableMaxErrors = 2;
+    public long ioExceptionStartRetryTimeout = -1;
+    public long timeBetweenLogs = Dates.m( 1 );
 
     public MessageSender( String host, int port, String httpPrefix, Path persistenceDirectory, long memorySyncPeriod ) {
         this( host, port, httpPrefix, persistenceDirectory, memorySyncPeriod, MessageNoRetryStrategy.DROP );
@@ -238,7 +242,7 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     public MessageAvailabilityReport availabilityReport( byte messageType ) {
-        boolean operational = networkAvailable
+        boolean operational = networkAvailable.get() <= networkAvailableMaxErrors
             && !closed
             && lastStatus.getOrDefault( messageType, STATUS_OK )._1 != MessageStatus.ERROR;
         return new MessageAvailabilityReport( operational ? State.OPERATIONAL : State.FAILED );
@@ -280,12 +284,14 @@ public class MessageSender implements Closeable, AutoCloseable {
             return onOkRespone( messageInfo, inputStreamResponseListener, now );
 
         } catch( UnknownHostException e ) {
-            processException( messageInfo, now, message, e, true );
-
             ioExceptionStartRetryTimeout = now;
+            networkAvailable.incrementAndGet();
+
+            processException( messageInfo, now, message, e, true );
 
             throw Throwables.propagate( e );
         } catch( Throwable e ) {
+            networkAvailable.incrementAndGet();
             processException( messageInfo, now, message, e, false );
 
             throw Throwables.propagate( e );
@@ -293,10 +299,12 @@ public class MessageSender implements Closeable, AutoCloseable {
     }
 
     private void processException( Messages.MessageInfo messageInfo, long now, Message message, Throwable e, boolean globalRetryTimeout ) {
+        String status = e instanceof TimeoutException ? "send_timeout" : "send_io_error";
+
         Metrics.counter( "oap.messages",
             "type", MessageProtocol.messageTypeToString( message.messageType ),
-            "status", "send_io_error" + ( globalRetryTimeout ? "_gr" : "" ) ).increment();
-        LogConsolidated.log( log, Level.ERROR, Dates.s( 10 ), e.getMessage(), e );
+            "status", status + ( globalRetryTimeout ? "_gr" : "" ) ).increment();
+        LogConsolidated.log( log, Level.ERROR, timeBetweenLogs, e.getMessage(), e );
         messages.retry( messageInfo, now + retryTimeout );
     }
 
@@ -318,7 +326,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
             log.trace( "[{}] sending done, server status: {}", uniqueName, MessageProtocol.messageStatusToString( status ) );
 
-            MessageSender.this.networkAvailable = true;
+            MessageSender.this.networkAvailable.set( 0 );
 
             switch( status ) {
                 case MessageProtocol.STATUS_ALREADY_WRITTEN -> {
@@ -365,44 +373,57 @@ public class MessageSender implements Closeable, AutoCloseable {
         return messageInfo;
     }
 
-    public void syncMemory() {
-        if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
-            log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
-                uniqueName, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
+    public boolean syncMemory() {
+        log.trace(  "[{}] syncMemory...", uniqueName );
+        try {
+            if( getReadyMessages() + getRetryMessages() + getInProgressMessages() > 0 )
+                log.trace( "[{}] sync ready {} retry {} inprogress {} ...",
+                    uniqueName, getReadyMessages(), getRetryMessages(), getInProgressMessages() );
 
-        long now = DateTimeUtils.currentTimeMillis();
-
-        if( isGlobalIoRetryTimeout( now ) ) return;
-
-        long period = currentPeriod( now );
-
-        Messages.MessageInfo messageInfo = null;
-
-        messages.retry();
-
-        do {
-            now = DateTimeUtils.currentTimeMillis();
-
-            if( messageInfo != null ) {
-                log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
-                Messages.MessageInfo mi = send( messageInfo, now );
-
-                messages.removeInProgress( mi );
-                log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
-            }
+            long now = DateTimeUtils.currentTimeMillis();
 
             if( isGlobalIoRetryTimeout( now ) ) {
-                break;
+                log.trace( "skip, isGlobalIoRetryTimeout" );
+                return true;
             }
 
-            long currentPeriod = currentPeriod( now );
-            if( currentPeriod != period ) {
-                messages.retry();
-                period = currentPeriod;
-            }
+            long period = currentPeriod( now );
 
-            messageInfo = messages.poll( true );
-        } while( messageInfo != null );
+            Messages.MessageInfo messageInfo = null;
+
+            messages.retry();
+
+            do {
+                now = DateTimeUtils.currentTimeMillis();
+
+                if( messageInfo != null ) {
+                    log.trace( "[{}] message {}...", uniqueName, messageInfo.message.md5 );
+                    Messages.MessageInfo mi = send( messageInfo, now );
+
+                    messages.removeInProgress( mi );
+                    log.trace( "[{}] message {}... done", uniqueName, mi.message.md5 );
+                }
+
+                if( isGlobalIoRetryTimeout( now ) ) {
+                    log.trace( "skip, isGlobalIoRetryTimeout" );
+                    break;
+                }
+
+                long currentPeriod = currentPeriod( now );
+                if( currentPeriod != period ) {
+                    messages.retry();
+                    period = currentPeriod;
+                }
+
+                messageInfo = messages.poll( true );
+            } while( messageInfo != null );
+
+            return true;
+        } catch( Exception e ) {
+            return false;
+        } finally {
+            log.trace(  "[{}] syncMemory... DONE", uniqueName );
+        }
     }
 
     private boolean isGlobalIoRetryTimeout( long now ) {
@@ -486,7 +507,7 @@ public class MessageSender implements Closeable, AutoCloseable {
 
                                             Files.delete( messagePath );
                                         } catch( Exception e ) {
-                                            LogConsolidated.log( log, Level.ERROR, Dates.s( 5 ), "[" + uniqueName + "] " + messagePath + ": " + e.getMessage(), e );
+                                            LogConsolidated.log( log, Level.ERROR, timeBetweenLogs, "[" + uniqueName + "] " + messagePath + ": " + e.getMessage(), e );
                                         } finally {
                                             Files.delete( lockFile );
                                         }

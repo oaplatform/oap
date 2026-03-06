@@ -38,6 +38,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.io.Closeables;
+import oap.util.Dates;
 import oap.util.Lists;
 import org.xnio.OptionMap;
 import org.xnio.Options;
@@ -61,6 +62,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -332,6 +334,13 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         try {
             if( undertow != null ) {
                 undertow.stop();
+            }
+            if( xnioWorker != null ) {
+                xnioWorker.shutdown();
+                if( !xnioWorker.awaitTermination( Dates.s( 10 ), TimeUnit.MILLISECONDS ) ) {
+                    xnioWorker.shutdownNow();
+                }
+                xnioWorker = null;
             }
         } catch( Exception ex ) {
             log.error( "Cannot stop server", ex );
