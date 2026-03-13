@@ -45,19 +45,26 @@ public class PnioController implements AutoCloseable {
         }
     }
 
+    public final int maxThreads;
     final ForkJoinPool forkJoinPool;
-    private final int maxThreads;
     public volatile boolean done;
 
+    public PnioController( int parallelism, double maxThreadsMultiplicator ) {
+        this( getForkJoinPoolParallelism( parallelism ), ( int ) ( getForkJoinPoolParallelism( parallelism ) * maxThreadsMultiplicator ) );
+    }
+
     public PnioController( int parallelism, int maxThreads ) {
-        forkJoinPool = new ForkJoinPool( parallelism, new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+        int forkJoinPoolParallelism = getForkJoinPoolParallelism( parallelism );
+
+        // ForkJoinPool#MAX_CAP = 0x7fff
+        forkJoinPool = new ForkJoinPool( forkJoinPoolParallelism, new ForkJoinPool.ForkJoinWorkerThreadFactory() {
             @SneakyThrows
             @Override
             public ForkJoinWorkerThread newThread( ForkJoinPool pool ) {
                 return ( ForkJoinWorkerThread ) carrierThread.invokeWithArguments( pool );
             }
         }, ( t, e ) -> log.error( e.getMessage(), e ),
-            true, parallelism, parallelism, parallelism, null, 60_000L, TimeUnit.MILLISECONDS );
+            true, 0, 0x7fff, forkJoinPoolParallelism, null, 60_000L, TimeUnit.MILLISECONDS );
         this.maxThreads = maxThreads;
 
         Metrics.gauge( "pnio_controller", Tags.of( "type", "QueuedTask" ), this, _ -> forkJoinPool.getQueuedTaskCount() );
@@ -66,6 +73,16 @@ public class PnioController implements AutoCloseable {
         Metrics.gauge( "pnio_controller", Tags.of( "type", "QueuedSubmission" ), this, _ -> forkJoinPool.getQueuedSubmissionCount() );
         Metrics.gauge( "pnio_controller", Tags.of( "type", "Steal" ), this, _ -> forkJoinPool.getStealCount() );
         Metrics.gauge( "pnio_controller", Tags.of( "type", "RequestQueue" ), this, _ -> threadCounter.get() );
+    }
+
+    private static int getForkJoinPoolParallelism( int parallelism ) {
+        int forkJoinPoolParallelism;
+        if( parallelism > 0 ) {
+            forkJoinPoolParallelism = parallelism;
+        } else {
+            forkJoinPoolParallelism = Runtime.getRuntime().availableProcessors() - parallelism;
+        }
+        return forkJoinPoolParallelism;
     }
 
     @Override
