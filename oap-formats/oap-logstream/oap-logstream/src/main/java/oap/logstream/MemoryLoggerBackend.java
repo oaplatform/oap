@@ -24,6 +24,8 @@
 
 package oap.logstream;
 
+import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
@@ -48,7 +50,7 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
 
     @Override
     public synchronized String log( ProtocolVersion version, String hostName, String filePreffix, Map<String, String> properties, String logType,
-                                  String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
+                                    String[] headers, byte[][] types, byte[] buffer, int offset, int length ) {
         LogId logId = new LogId( filePreffix, logType, hostName, properties, headers, types );
         outputs
             .computeIfAbsent( logId, fn -> new ByteArrayOutputStream() )
@@ -132,6 +134,21 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
         List<List<Object>> ret = new ArrayList<>();
 
         for( LogId id : outputs.keySet() ) {
+            IntArrayList rows = new IntArrayList();
+            if( headers.length == 0 ) {
+                for( int i = 0; i < id.headers.length; i++ ) {
+                    rows.add( i );
+                }
+            } else {
+                for( String header : headers ) {
+                    int index = ArrayUtils.indexOf( id.headers, header );
+
+                    Preconditions.checkArgument( index >= 0, "header " + header + " not found" );
+
+                    rows.add( index );
+                }
+            }
+
             if( filter.test( id ) ) {
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
                 RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, id.headers, id.types );
@@ -139,12 +156,9 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
                 List<Object> objects;
                 while( ( objects = rowBinaryInputStream.readRow() ) != null ) {
                     ArrayList<Object> filtered = new ArrayList<>();
-                    for( int i = 0; i < id.headers.length; i++ ) {
-                        if( headers.length == 0 || ArrayUtils.contains( headers, id.headers[i] ) ) {
-                            filtered.add( objects.get( i ) );
-                        }
+                    for( int i : rows ) {
+                        filtered.add( objects.get( i ) );
                     }
-
 
                     ret.add( filtered );
                 }
