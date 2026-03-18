@@ -134,22 +134,22 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
         List<List<Object>> ret = new ArrayList<>();
 
         for( LogId id : outputs.keySet() ) {
-            IntArrayList rows = new IntArrayList();
-            if( headers.length == 0 ) {
-                for( int i = 0; i < id.headers.length; i++ ) {
-                    rows.add( i );
-                }
-            } else {
-                for( String header : headers ) {
-                    int index = ArrayUtils.indexOf( id.headers, header );
-
-                    Preconditions.checkArgument( index >= 0, "header " + header + " not found" );
-
-                    rows.add( index );
-                }
-            }
-
             if( filter.test( id ) ) {
+                IntArrayList rows = new IntArrayList();
+                if( headers.length == 0 ) {
+                    for( int i = 0; i < id.headers.length; i++ ) {
+                        rows.add( i );
+                    }
+                } else {
+                    for( String header : headers ) {
+                        int index = ArrayUtils.indexOf( id.headers, header );
+
+                        Preconditions.checkArgument( index >= 0, "header " + header + " not found" );
+
+                        rows.add( index );
+                    }
+                }
+
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
                 RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, id.headers, id.types );
 
