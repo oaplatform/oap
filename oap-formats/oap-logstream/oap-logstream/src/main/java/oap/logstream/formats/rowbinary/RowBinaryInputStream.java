@@ -10,8 +10,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.joda.time.DateTimeZone.UTC;
@@ -24,9 +26,11 @@ import static org.joda.time.DateTimeZone.UTC;
 public class RowBinaryInputStream extends InputStream {
     public static final String TYPE_NULLABLE = "Nullable(";
     public static final String TYPE_ARRAY = "Array(";
+    public static final String FIXED_STRING_PREFIX = "FixedString(";
     public final String[] headers;
     public final InputStream in;
     public final byte[][] types;
+    public final int[] fixedLength;
     protected byte[] readBuffer = new byte[8];
 
     public RowBinaryInputStream( InputStream in ) throws IOException {
@@ -41,17 +45,25 @@ public class RowBinaryInputStream extends InputStream {
         this.in = in;
 
         this.headers = headers == null ? readHeaders() : headers;
+
+        this.fixedLength = new int[this.headers.length];
+        Arrays.fill( this.fixedLength, 0 );
+
         this.types = types == null ? readTypes() : types;
     }
 
-    private static void convertType( String rbType, ByteArrayList type ) {
+    private static void convertType( String rbType, ByteArrayList type, AtomicInteger fixedLength ) {
         if( rbType.startsWith( TYPE_NULLABLE ) ) {
-            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type );
+            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type, fixedLength );
         } else if( rbType.startsWith( TYPE_ARRAY ) ) {
             type.add( Types.LIST.id );
-            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type );
-        } else if( rbType.startsWith( "FixedString(" ) ) {
+            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type, fixedLength );
+        } else if( rbType.startsWith( FIXED_STRING_PREFIX ) ) {
             type.add( Types.STRING.id );
+
+            int endLength = rbType.indexOf( ')', FIXED_STRING_PREFIX.length() );
+
+            fixedLength.set( Integer.parseInt( rbType.substring( FIXED_STRING_PREFIX.length(), endLength ) ) );
         } else {
             type.add( switch( rbType ) {
                 case "Bool" -> Types.BOOLEAN.id;
@@ -89,9 +101,12 @@ public class RowBinaryInputStream extends InputStream {
             String rbType = readString();
             log.trace( "in type {}", rbType );
 
-            convertType( rbType, type );
+            AtomicInteger iFixedLength = new AtomicInteger();
+            convertType( rbType, type, iFixedLength );
 
             types[i] = type.toByteArray();
+
+            this.fixedLength[i] = iFixedLength.get();
 
             type.clear();
         }
@@ -131,6 +146,19 @@ public class RowBinaryInputStream extends InputStream {
             readFully( buf, 0, length );
             return new String( buf, UTF_8 );
         }
+    }
+
+    public String readString( int fixedLength ) throws IOException {
+        byte[] buf = new byte[fixedLength];
+        readFully( buf, 0, fixedLength );
+
+
+        int end = fixedLength - 1;
+        while( end >= 0 && buf[end] == 0 ) {
+            end--;
+        }
+
+        return new String( buf, 0, end, UTF_8 );
     }
 
     private String[] readHeaders() throws IOException {
@@ -208,7 +236,7 @@ public class RowBinaryInputStream extends InputStream {
         ArrayList<T> list = new ArrayList<>( size );
 
         for( int i = 0; i < size; i++ ) {
-            T v = readObject( clazz );
+            T v = readObject( clazz, i );
             list.add( v );
         }
 
@@ -216,9 +244,10 @@ public class RowBinaryInputStream extends InputStream {
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T> T readObject( Class<T> clazz ) throws IOException {
+    private <T> T readObject( Class<T> clazz, int col ) throws IOException {
         if( clazz == String.class ) {
-            return ( T ) readString();
+            int length = fixedLength[col];
+            return ( T ) ( length == 0 ? readString() : readString( length ) );
         } else if( clazz == byte.class ) {
             return ( T ) ( Byte ) readByte();
         } else if( clazz == Byte.class ) {
@@ -276,7 +305,10 @@ public class RowBinaryInputStream extends InputStream {
                     case LONG -> readLong();
                     case FLOAT -> readFloat();
                     case DOUBLE -> readDouble();
-                    case STRING -> readString();
+                    case STRING -> {
+                        int length = fixedLength[i];
+                        yield length == 0 ? readString() : readString( length );
+                    }
                     case BOOLEAN -> readBoolean();
                     case LIST -> {
                         Types listItemType = Types.valueOf( bytes[1] );
