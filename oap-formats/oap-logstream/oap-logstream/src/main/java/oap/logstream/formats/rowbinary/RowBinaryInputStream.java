@@ -33,6 +33,7 @@ public class RowBinaryInputStream extends InputStream {
     public final byte[][] types;
     public final int[] fixedLength;
     public final boolean[] nullable;
+    public final boolean[] datetime32;
     protected byte[] readBuffer = new byte[8];
 
     public RowBinaryInputStream( InputStream in ) throws IOException {
@@ -52,17 +53,19 @@ public class RowBinaryInputStream extends InputStream {
         Arrays.fill( this.fixedLength, 0 );
         this.nullable = new boolean[this.headers.length];
         Arrays.fill( this.nullable, false );
+        this.datetime32 = new boolean[this.headers.length];
+        Arrays.fill( this.datetime32, false );
 
         this.types = types == null ? readTypes() : types;
     }
 
-    private static void convertType( String rbType, ByteArrayList type, AtomicInteger fixedLength, AtomicBoolean nullable ) {
+    private static void convertType( String rbType, ByteArrayList type, AtomicInteger fixedLength, AtomicBoolean nullable, AtomicBoolean datetime32 ) {
         if( rbType.startsWith( TYPE_NULLABLE ) ) {
             nullable.set( true );
-            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type, fixedLength, nullable );
+            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type, fixedLength, nullable, datetime32 );
         } else if( rbType.startsWith( TYPE_ARRAY ) ) {
             type.add( Types.LIST.id );
-            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type, fixedLength, nullable );
+            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type, fixedLength, nullable, datetime32 );
         } else if( rbType.startsWith( FIXED_STRING_PREFIX ) ) {
             type.add( Types.STRING.id );
 
@@ -80,7 +83,11 @@ public class RowBinaryInputStream extends InputStream {
                 case "Float64" -> Types.DOUBLE.id;
                 case "String" -> Types.STRING.id;
                 case "Date" -> Types.DATE.id;
-                case "Date32", "DateTime", "DateTime32" -> Types.DATETIME.id;
+                case "Date2" -> {
+                    datetime32.set( true );
+                    yield Types.DATE.id;
+                }
+                case "DateTime", "DateTime32" -> Types.DATETIME.id;
                 case null, default -> throw new IllegalArgumentException( "unknown type " + type );
             } );
         }
@@ -108,12 +115,14 @@ public class RowBinaryInputStream extends InputStream {
 
             AtomicInteger iFixedLength = new AtomicInteger( 0 );
             AtomicBoolean iNullable = new AtomicBoolean( false );
-            convertType( rbType, type, iFixedLength, iNullable );
+            AtomicBoolean iDatetime32 = new AtomicBoolean( false );
+            convertType( rbType, type, iFixedLength, iNullable, iDatetime32 );
 
             types[i] = type.toByteArray();
 
             this.fixedLength[i] = iFixedLength.get();
             this.nullable[i] = iNullable.get();
+            this.datetime32[i] = iDatetime32.get();
 
             type.clear();
         }
@@ -237,6 +246,10 @@ public class RowBinaryInputStream extends InputStream {
         return new Date( readShort() * 24L * 60L * 60L * 1000L );
     }
 
+    public Date readDate32() throws IOException {
+        return new Date( readInt() * 24L * 60L * 60L * 1000L );
+    }
+
     public <T> List<T> readList( Class<T> clazz ) throws IOException {
         int size = readVarInt();
 
@@ -292,7 +305,8 @@ public class RowBinaryInputStream extends InputStream {
         } else if( clazz == DateTime.class ) {
             return ( T ) readDateTime();
         } else if( clazz == Date.class ) {
-            return ( T ) readDate();
+            boolean d32 = datetime32[col];
+            return ( T ) ( d32 ? readDate32() : readDate() );
         } else {
             throw new IllegalArgumentException( "unknown class " + clazz );
         }
@@ -326,7 +340,10 @@ public class RowBinaryInputStream extends InputStream {
 
                 row.add( switch( types ) {
                     case DATETIME -> readDateTime();
-                    case DATE -> readDate();
+                    case DATE -> {
+                        boolean d32 = datetime32[i];
+                        yield d32 ? readDate32() : readDate();
+                    }
                     case BYTE -> readByte();
                     case SHORT -> readShort();
                     case INTEGER -> readInt();
