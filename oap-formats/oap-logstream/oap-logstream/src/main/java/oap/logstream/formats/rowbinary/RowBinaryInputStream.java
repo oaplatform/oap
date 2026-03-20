@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -31,6 +32,7 @@ public class RowBinaryInputStream extends InputStream {
     public final InputStream in;
     public final byte[][] types;
     public final int[] fixedLength;
+    public final boolean[] nullable;
     protected byte[] readBuffer = new byte[8];
 
     public RowBinaryInputStream( InputStream in ) throws IOException {
@@ -48,16 +50,19 @@ public class RowBinaryInputStream extends InputStream {
 
         this.fixedLength = new int[this.headers.length];
         Arrays.fill( this.fixedLength, 0 );
+        this.nullable = new boolean[this.headers.length];
+        Arrays.fill( this.nullable, false );
 
         this.types = types == null ? readTypes() : types;
     }
 
-    private static void convertType( String rbType, ByteArrayList type, AtomicInteger fixedLength ) {
+    private static void convertType( String rbType, ByteArrayList type, AtomicInteger fixedLength, AtomicBoolean nullable ) {
         if( rbType.startsWith( TYPE_NULLABLE ) ) {
-            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type, fixedLength );
+            nullable.set( true );
+            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type, fixedLength, nullable );
         } else if( rbType.startsWith( TYPE_ARRAY ) ) {
             type.add( Types.LIST.id );
-            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type, fixedLength );
+            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type, fixedLength, nullable );
         } else if( rbType.startsWith( FIXED_STRING_PREFIX ) ) {
             type.add( Types.STRING.id );
 
@@ -101,12 +106,14 @@ public class RowBinaryInputStream extends InputStream {
             String rbType = readString();
             log.trace( "in type {}", rbType );
 
-            AtomicInteger iFixedLength = new AtomicInteger();
-            convertType( rbType, type, iFixedLength );
+            AtomicInteger iFixedLength = new AtomicInteger( 0 );
+            AtomicBoolean iNullable = new AtomicBoolean( false );
+            convertType( rbType, type, iFixedLength, iNullable );
 
             types[i] = type.toByteArray();
 
             this.fixedLength[i] = iFixedLength.get();
+            this.nullable[i] = iNullable.get();
 
             type.clear();
         }
@@ -236,6 +243,16 @@ public class RowBinaryInputStream extends InputStream {
         ArrayList<T> list = new ArrayList<>( size );
 
         for( int i = 0; i < size; i++ ) {
+            boolean isNullable = nullable[i];
+
+            if( isNullable ) {
+                byte isNull = readByte();
+                if( isNull == 1 ) {
+                    list.add( null );
+                    continue;
+                }
+            }
+
             T v = readObject( clazz, i );
             list.add( v );
         }
@@ -295,6 +312,16 @@ public class RowBinaryInputStream extends InputStream {
             for( int i = 0; i < headers.length; i++ ) {
                 byte[] bytes = types[i];
                 Types types = Types.valueOf( bytes[0] );
+
+                boolean isNullable = nullable[i];
+
+                if( isNullable ) {
+                    byte isNull = readByte();
+                    if( isNull == 1 ) {
+                        row.add( null );
+                        continue;
+                    }
+                }
 
                 row.add( switch( types ) {
                     case DATETIME -> readDateTime();
