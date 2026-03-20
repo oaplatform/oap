@@ -303,11 +303,12 @@ public class RowBinaryInputStream extends InputStream {
     }
 
     public List<Object> readRow() throws IOException {
-        try {
-            Preconditions.checkNotNull( types );
-            Preconditions.checkNotNull( headers );
+        Preconditions.checkNotNull( types );
+        Preconditions.checkNotNull( headers );
 
-            ArrayList<Object> row = new ArrayList<>( headers.length );
+        ArrayList<Object> row = new ArrayList<>( headers.length );
+
+        try {
 
             for( int i = 0; i < headers.length; i++ ) {
                 byte[] bytes = types[i];
@@ -347,6 +348,10 @@ public class RowBinaryInputStream extends InputStream {
 
             return row;
         } catch( EOFException e ) {
+            if( !row.isEmpty() ) {
+                throw e;
+            }
+
             return null;
         }
     }
