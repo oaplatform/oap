@@ -165,7 +165,7 @@ public class RowBinaryInputStream extends InputStream {
             end--;
         }
 
-        return new String( buf, 0, end, UTF_8 );
+        return new String( buf, 0, end + 1, UTF_8 );
     }
 
     private String[] readHeaders() throws IOException {
