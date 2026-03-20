@@ -83,7 +83,7 @@ public class RowBinaryInputStream extends InputStream {
                 case "Float64" -> Types.DOUBLE.id;
                 case "String" -> Types.STRING.id;
                 case "Date" -> Types.DATE.id;
-                case "Date2" -> {
+                case "Date32" -> {
                     datetime32.set( true );
                     yield Types.DATE.id;
                 }
