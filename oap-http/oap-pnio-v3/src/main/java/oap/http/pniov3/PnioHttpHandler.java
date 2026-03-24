@@ -22,9 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public final String uniqueName;
 
-    public final int requestSize;
-    public final int responseSize;
-    public final int ioQueueSize;
+    public int requestSize;
+    public int responseSize;
     public final boolean important;
     public final PnioListener<RequestState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
@@ -40,7 +39,6 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
         this.uniqueName = uniqueName;
         this.requestSize = settings.requestSize;
         this.responseSize = settings.responseSize;
-        this.ioQueueSize = settings.ioQueueSize;
         this.important = settings.important;
 
         this.task = task;
@@ -113,7 +111,6 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public static class PnioHttpSettings {
         int requestSize;
         int responseSize;
-        int ioQueueSize;
         boolean important;
     }
 }
