@@ -9,10 +9,8 @@
 
 package oap.http.pniov3;
 
-import com.google.common.base.Preconditions;
 import io.undertow.io.Receiver;
 import io.undertow.util.SameThreadExecutor;
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.server.nio.HttpServerExchange;
 
@@ -21,33 +19,26 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     public final String uniqueName;
-
-    public int requestSize;
-    public int responseSize;
-    public final boolean important;
     public final PnioListener<RequestState> pnioListener;
     public final ConcurrentHashMap<Long, PnioExchange<RequestState>> exchanges = new ConcurrentHashMap<>();
     private final PnioController pnioController;
     private final PnioMetrics metrics;
+    public int requestSize = 64 * 1024;
+    public int responseSize = 32 * 1024;
+    public boolean important = false;
     public ComputeTask<RequestState> task;
 
     public PnioHttpHandler( String uniqueName,
-                            PnioHttpSettings settings,
                             ComputeTask<RequestState> task,
                             PnioListener<RequestState> pnioListener,
                             PnioController pnioController ) {
         this.uniqueName = uniqueName;
-        this.requestSize = settings.requestSize;
-        this.responseSize = settings.responseSize;
-        this.important = settings.important;
 
         this.task = task;
         this.pnioListener = pnioListener;
         this.pnioController = pnioController;
 
         this.metrics = new PnioMetrics( uniqueName );
-
-        Preconditions.checkArgument( settings.responseSize > 0, "responseSize must be greater than 0" );
     }
 
     public void handleRequest( HttpServerExchange oapExchange, long timeout, RequestState requestState ) {
@@ -105,12 +96,5 @@ public class PnioHttpHandler<RequestState> implements PnioHttpHandlerReference {
     @Override
     public PnioHttpHandler<?> getPnioHttpHandler() {
         return this;
-    }
-
-    @Builder
-    public static class PnioHttpSettings {
-        int requestSize;
-        int responseSize;
-        boolean important;
     }
 }
