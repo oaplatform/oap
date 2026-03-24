@@ -279,7 +279,7 @@ public class PnioHttpHandlerTest extends Fixtures {
 
             try( PnioController pnioController = new PnioController( ioThreads, maxThreads ) ) {
                 PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( "test", task, new TestPnioListener(), pnioController );
-                httpHandler.responseSize = requestSize;
+                httpHandler.requestSize = requestSize;
                 httpHandler.responseSize = responseSize;
                 httpServer.bind( "/test",
                     exchange -> httpHandler.handleRequest( exchange, timeout, new TestState() ), false );
