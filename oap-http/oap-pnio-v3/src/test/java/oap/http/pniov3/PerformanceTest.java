@@ -32,17 +32,13 @@ public class PerformanceTest {
         int port = 12345;
 
 
-        PnioHttpHandler.PnioHttpSettings settings = PnioHttpHandler.PnioHttpSettings.builder()
-            .requestSize( 64000 )
-            .responseSize( 64000 )
-            .build();
         try( PnioController pnioController = new PnioController( 10, 10000 );
              NioHttpServer httpServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
             httpServer.ioThreads = 2;
             httpServer.statistics = true;
             httpServer.start();
 
-            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( "perf", settings, new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
+            PnioHttpHandler<TestState> httpHandler = new PnioHttpHandler<>( "perf", new TestHandler(), new PnioHttpHandlerTest.TestPnioListener(), pnioController );
 
             Scheduler.scheduleWithFixedDelay( 10, TimeUnit.SECONDS, () -> {
                 System.out.println();
