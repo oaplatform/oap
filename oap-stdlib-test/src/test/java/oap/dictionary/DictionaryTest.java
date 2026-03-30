@@ -109,9 +109,24 @@ public class DictionaryTest {
     }
 
     @Test
-    public void extendFilter() {
-        var values = Dictionaries
+    public void testExtendFilter() {
+        List<? extends Dictionary> values = Dictionaries
             .getDictionary( "test-dictionary-extends-filter" )
+            .getValue( "id2" )
+            .getValues();
+
+        assertThat( values ).hasSize( 2 );
+        assertThat( values.get( 0 ).getId() ).isEqualTo( "id111" );
+        assertThat( values.get( 1 ).getId() ).isEqualTo( "id22" );
+
+        assertThat( values.get( 0 ).getExternalId() ).isEqualTo( 111 );
+        assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 113 );
+    }
+
+    @Test
+    public void testExtendFilterMap() {
+        List<? extends Dictionary> values = Dictionaries
+            .getDictionary( "test-dictionary-extends-filter-map" )
             .getValue( "id2" )
             .getValues();
 

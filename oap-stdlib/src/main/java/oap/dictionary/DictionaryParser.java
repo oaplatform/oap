@@ -35,6 +35,7 @@ import oap.util.Lists;
 import oap.util.function.Try;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -297,10 +298,29 @@ public class DictionaryParser {
         ArrayList<Dictionary> dv = new ArrayList<>();
 
         values.forEach( ( key, value ) -> {
-            if( value instanceof Map map ) {
-                map.put( "id", key );
+            if( "<extends>".equals( key ) ) {
+                if( value instanceof Map map ) {
+                    Extends anExtends = getExtends( map );
+                    dv.add( new DictionaryExtends( anExtends ) );
+                } else if( value instanceof List list ) {
+                    for( Object v : list ) {
+                        if( v instanceof Map map ) {
+                            Extends anExtends = getExtends( map );
+                            dv.add( new DictionaryExtends( anExtends ) );
+                        } else {
+                            throw new DictionaryError( "<extends> = [{path = ...[, filter = ...]}]" );
+                        }
+                    }
+                } else {
+                    throw new DictionaryError( "<extends> = list | map" );
+                }
+            } else {
+
+                if( value instanceof Map map ) {
+                    map.put( "id", key );
+                }
+                dv.add( parseAsDictionaryValue( value, path + "['" + key + "']", false, idStrategy ) );
             }
-            dv.add( parseAsDictionaryValue( value, path + "['" + key + "']", false, idStrategy ) );
         } );
 
         return dv;
@@ -310,11 +330,15 @@ public class DictionaryParser {
         Map<?, ?> m = getValueOpt( Map.class, map, "extends", _ -> Optional.empty() ).orElse( null );
         if( m == null ) return Optional.empty();
 
+        return Optional.of( getExtends( m ) );
+    }
+
+    private static @NonNull Extends getExtends( Map<?, ?> m ) {
         String path = getString( m, "path" );
         Optional<String> filter = getStringOpt( m, "filter" );
         Boolean ignoreDuplicate = getBooleanOpt( m, "ignoreDuplicate" ).orElse( false );
 
-        return Optional.of( new Extends( path, filter, ignoreDuplicate ) );
+        return new Extends( path, filter, ignoreDuplicate );
     }
 
     private static String getString( Map<?, ?> map, String field ) {
