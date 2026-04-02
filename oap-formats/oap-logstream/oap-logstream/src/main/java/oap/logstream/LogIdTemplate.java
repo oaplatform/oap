@@ -25,6 +25,7 @@
 package oap.logstream;
 
 import oap.io.Closeables;
+import oap.kubernetes.ReplicaUtils;
 import oap.net.Inet;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -106,7 +107,7 @@ public class LogIdTemplate {
     }
 
     public String getHashWithVersion( int version ) {
-        return "%x-%d".formatted( logId.getHash(), version );
+        return "%x%d-%d".formatted( logId.getHash(), ReplicaUtils.getReplicaId(), version );
     }
 
     private String print2Chars( int v ) {
