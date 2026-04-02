@@ -69,6 +69,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static oap.logstream.AvailabilityReport.State.FAILED;
 import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
+/**
+ * replica ENV:
+ * <li>POD_NAME</li>
+ */
 @Slf4j
 public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneable, AutoCloseable {
     public static final int DEFAULT_BUFFER = 1024 * 100;
