@@ -107,7 +107,7 @@ public class LogIdTemplate {
     }
 
     public String getHashWithVersion( int version ) {
-        return "%x%d-%d".formatted( logId.getHash(), ReplicaUtils.getReplicaId(), version );
+        return "%x%d-%d".formatted( logId.getHash(), ReplicaUtils.getReplicaId( Inet.hostname() ), version );
     }
 
     private String print2Chars( int v ) {
