@@ -36,7 +36,6 @@ import oap.util.Result;
 import oap.util.Stream;
 import oap.util.function.Try;
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -62,7 +61,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.RANDOM;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
