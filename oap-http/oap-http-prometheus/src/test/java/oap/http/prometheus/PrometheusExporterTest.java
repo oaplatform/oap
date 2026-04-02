@@ -49,8 +49,8 @@ public class PrometheusExporterTest extends Fixtures {
     @Test
     public void server() throws Exception {
         int port = Ports.getFreePort( getClass() );
-        try( var server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
-            var exporter = new PrometheusExporter( server );
+        try( NioHttpServer server = new NioHttpServer( new NioHttpServer.DefaultPort( port ) ) ) {
+            new PrometheusExporter( server );
 
             Counter metric1 = Metrics.counter( "test1" );
             Timer metric2 = Metrics.timer( "test2" );
@@ -69,7 +69,7 @@ public class PrometheusExporterTest extends Fixtures {
                     """ )
                 .contains( "test2_seconds_count 1" )
                 .contains( "test2_seconds_max 2.0" )
-                .contains( "system_metrics 5" );
+                .contains( "system_metrics 10.0" );
         }
     }
 

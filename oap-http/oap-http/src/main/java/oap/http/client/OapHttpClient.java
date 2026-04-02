@@ -8,7 +8,10 @@ import oap.util.Dates;
 import oap.util.Lists;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.RandomConnectionPool;
+import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.io.ClientConnector;
@@ -24,8 +27,13 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
+import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.RANDOM;
+
 public class OapHttpClient {
-    public static final HttpClient DEFAULT_HTTP_CLIENT = customHttpClient().build();
+    public static final HttpClient DEFAULT_HTTP_CLIENT = customHttpClient()
+        .withConnectionPoolFactoryType( RANDOM )
+        .metrics( "default" )
+        .build();
 
     public static OapHttpClientBuilder customHttpClient() {
         return new OapHttpClientBuilder();
@@ -47,6 +55,8 @@ public class OapHttpClient {
         public boolean dnsjava = false;
         private String metrics;
         private HttpCookieStore cookieStore;
+        private ConnectionPool.Factory connectionPoolFactory;
+        private ConnectionPoolFactoryType connectionPoolFactoryType;
 
         public OapHttpClientBuilder transport( AbstractConnectorHttpClientTransport httpClientTransport ) {
             this.httpClientTransport = httpClientTransport;
@@ -90,6 +100,18 @@ public class OapHttpClient {
             return this;
         }
 
+        public OapHttpClientBuilder withConnectionPoolFactory( ConnectionPool.Factory connectionPoolFactory ) {
+            this.connectionPoolFactory = connectionPoolFactory;
+
+            return this;
+        }
+
+        public OapHttpClientBuilder withConnectionPoolFactoryType( ConnectionPoolFactoryType connectionPoolFactoryType ) {
+            this.connectionPoolFactoryType = connectionPoolFactoryType;
+
+            return this;
+        }
+
         @SneakyThrows
         public HttpClient build() {
             HttpClient httpClient = httpClientTransport != null ? new HttpClient( httpClientTransport ) : new HttpClient();
@@ -124,15 +146,15 @@ public class OapHttpClient {
             if( metrics != null ) {
                 ( ( AbstractConnectorHttpClientTransport ) httpClient.getHttpClientTransport() ).getClientConnector().addEventListener( new ClientConnectorConnectListener( metrics ) );
 
-                Gauge.builder( "dsp_tunneling_connections", httpClient, cs -> cs.getDestinations().stream().mapToInt( d -> ( ( AbstractConnectionPool ) d.getConnectionPool() ).getMaxConnectionCount() ).sum() )
+                Gauge.builder( "http_client_connections", httpClient, cs -> cs.getDestinations().stream().mapToInt( d -> ( ( AbstractConnectionPool ) d.getConnectionPool() ).getMaxConnectionCount() ).sum() )
                     .baseUnit( BaseUnits.CONNECTIONS )
                     .tags( "event", "max", "client", metrics )
                     .register( Metrics.globalRegistry );
-                Gauge.builder( "dsp_tunneling_connections", httpClient, cs -> cs.getDestinations().stream().mapToInt( d -> ( ( AbstractConnectionPool ) d.getConnectionPool() ).getConnectionCount() ).sum() )
+                Gauge.builder( "http_client_connections", httpClient, cs -> cs.getDestinations().stream().mapToInt( d -> ( ( AbstractConnectionPool ) d.getConnectionPool() ).getConnectionCount() ).sum() )
                     .baseUnit( BaseUnits.CONNECTIONS )
                     .tags( "event", "total", "client", metrics )
                     .register( Metrics.globalRegistry );
-                Gauge.builder( "dsp_tunneling_connections", httpClient, cs -> cs.getDestinations().stream().mapToInt( d -> ( ( AbstractConnectionPool ) d.getConnectionPool() ).getActiveConnectionCount() ).sum() )
+                Gauge.builder( "http_client_connections", httpClient, cs -> cs.getDestinations().stream().mapToInt( d -> ( ( AbstractConnectionPool ) d.getConnectionPool() ).getActiveConnectionCount() ).sum() )
                     .baseUnit( BaseUnits.CONNECTIONS )
                     .tags( "event", "active", "client", metrics )
                     .register( Metrics.globalRegistry );
@@ -142,7 +164,23 @@ public class OapHttpClient {
 
             httpClient.getProtocolHandlers().remove( WWWAuthenticationProtocolHandler.NAME );
 
+            if( connectionPoolFactory != null ) {
+                httpClient.getHttpClientTransport().setConnectionPoolFactory( connectionPoolFactory );
+            }
+
+            if( connectionPoolFactoryType != null ) {
+                httpClient.getHttpClientTransport().setConnectionPoolFactory( destination -> switch( this.connectionPoolFactoryType ) {
+                    case RANDOM -> new RandomConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 );
+                    case ROUND_ROBIN -> new RoundRobinConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 );
+                } );
+            }
+
             return httpClient;
+        }
+
+        public enum ConnectionPoolFactoryType {
+            RANDOM,
+            ROUND_ROBIN
         }
 
         public static class ClientConnectorConnectListener implements ClientConnector.ConnectListener {
@@ -150,11 +188,11 @@ public class OapHttpClient {
             public final LongAdder connectFailedCounter = new LongAdder();
 
             public ClientConnectorConnectListener( String name ) {
-                Gauge.builder( "dsp_tunneling_connections", this, cs -> cs.connectSuccessCounter.doubleValue() )
+                Gauge.builder( "http_client_connections", this, cs -> cs.connectSuccessCounter.doubleValue() )
                     .baseUnit( BaseUnits.CONNECTIONS )
                     .tags( "event", "success", "client", name )
                     .register( Metrics.globalRegistry );
-                Gauge.builder( "dsp_tunneling_connections", this, cs -> cs.connectFailedCounter.doubleValue() )
+                Gauge.builder( "http_client_connections", this, cs -> cs.connectFailedCounter.doubleValue() )
                     .baseUnit( BaseUnits.CONNECTIONS )
                     .tags( "event", "failed", "client", name )
                     .register( Metrics.globalRegistry );
