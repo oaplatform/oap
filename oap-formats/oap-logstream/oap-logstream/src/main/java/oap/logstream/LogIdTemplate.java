@@ -66,7 +66,7 @@ public class LogIdTemplate {
         return this;
     }
 
-    public String render( String template, DateTime time, Timestamp timestamp, int version ) {
+    public String render( String template, DateTime time, Timestamp timestamp, int version, String hostname ) {
         VelocityContext context = new VelocityContext();
         EventCartridge eventCartridge = new EventCartridge();
         context.attachEventCartridge( eventCartridge );
@@ -77,7 +77,7 @@ public class LogIdTemplate {
             }
         } );
 
-        init( context, time, timestamp, version );
+        init( context, time, timestamp, version, hostname );
 
         variables.forEach( context::put );
 
@@ -88,9 +88,9 @@ public class LogIdTemplate {
         return writer.toString();
     }
 
-    public void init( VelocityContext context, DateTime time, Timestamp timestamp, int version ) {
+    public void init( VelocityContext context, DateTime time, Timestamp timestamp, int version, String hostname ) {
         context.put( "LOG_TYPE", logId.logType );
-        context.put( "LOG_VERSION", getHashWithVersion( version ) );
+        context.put( "LOG_VERSION", getHashWithVersion( version, hostname ) );
         context.put( "SERVER_HOST", Inet.HOSTNAME );
         context.put( "CLIENT_HOST", logId.clientHostname );
         context.put( "YEAR", String.valueOf( time.getYear() ) );
@@ -106,8 +106,8 @@ public class LogIdTemplate {
         logId.properties.forEach( context::put );
     }
 
-    public String getHashWithVersion( int version ) {
-        return "%x%d-%d".formatted( logId.getHash(), ReplicaUtils.getReplicaId( Inet.hostname() ), version );
+    public String getHashWithVersion( int version, String hostname ) {
+        return "%x%d-%d".formatted( logId.getHash(), ReplicaUtils.getReplicaId( hostname ), version );
     }
 
     private String print2Chars( int v ) {

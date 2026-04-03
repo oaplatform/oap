@@ -61,7 +61,7 @@ public class LoggerJsonTest extends Fixtures {
         String content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
         String[] headers = new String[] { "test" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
             Logger logger = new Logger( backend );
 
             SimpleJson o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );

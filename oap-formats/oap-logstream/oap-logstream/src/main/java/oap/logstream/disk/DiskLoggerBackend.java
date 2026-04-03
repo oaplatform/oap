@@ -90,19 +90,21 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     public volatile boolean closed;
+    public final String hostname;
 
-    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {
-        this( logDirectory, new WriterConfiguration(), timestamp, bufferSize );
+    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
+        this( logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
     }
 
     @SuppressWarnings( "unchecked" )
-    public DiskLoggerBackend( Path logDirectory, WriterConfiguration writerConfiguration, Timestamp timestamp, int bufferSize ) {
-        log.info( "logDirectory '{}' timestamp {} bufferSize {} writerConfiguration {} refreshInitDelay {} refreshPeriod {}",
+    public DiskLoggerBackend( Path logDirectory, WriterConfiguration writerConfiguration, Timestamp timestamp, int bufferSize, String hostname ) {
+        this.hostname = hostname;
+        log.info( "logDirectory '{}' timestamp {} bufferSize {} writerConfiguration {} refreshInitDelay {} refreshPeriod {} hostname {}",
             logDirectory, timestamp, FileUtils.byteCountToDisplaySize( bufferSize ), writerConfiguration,
-            Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ) );
+            Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ), hostname );
 
 
-        this.logDirectory = logDirectory;
+        this.logDirectory = logDirectory.resolve( hostname );
         this.writerConfiguration = writerConfiguration;
         this.timestamp = timestamp;
         this.bufferSize = bufferSize;
@@ -120,10 +122,10 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 
-                    return new RowBinaryWriter( logDirectory, fp.path, id, bufferSize, timestamp, maxVersions );
+                    return new RowBinaryWriter( DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname );
                 }
             } );
-        Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", logDirectory.toString() ) ),
+        Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
             writers, Cache::size );
 
         pool = Executors.newScheduledThreadPool( 1, "disk-logger-backend" );
@@ -146,8 +148,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         LogId logId = new LogId( "", type, "", Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
-        String currentPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time );
-        String previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ) );
+        String currentPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time, hostname );
+        String previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ), hostname );
 
         if( currentPattern.equals( previousPattern ) ) {
             log.error( "cp {}", currentPattern );

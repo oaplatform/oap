@@ -78,7 +78,7 @@ public class LoggerTest extends Fixtures {
         byte[] line2 = Compression.gzip( RowBinaryUtils.line( lineData2 ) );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
             Logger logger = new Logger( backend );
             logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
             logger.log( "lfn2", Map.of(), "log", headers1, types1, line1 );
@@ -88,13 +88,13 @@ public class LoggerTest extends Fixtures {
             logger.log( "lfn1", Map.of(), "log", headers2, types2, line2 );
         }
 
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
     }
 
@@ -114,7 +114,7 @@ public class LoggerTest extends Fixtures {
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
 
-        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER );
+        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
              SocketLoggerServer server = new SocketLoggerServer( serverBackend );
              NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );
@@ -158,11 +158,11 @@ public class LoggerTest extends Fixtures {
         }
 
         assertEventually( 10, 1000, () ->
-            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+            assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
                 .containsExactlyInAnyOrderEntriesOf( lineData1, lineData1 ) );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn2/2015-10/10/log_v356dae4c0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData1 );
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/lfn1/2015-10/10/log2_v8a769cda0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), GZIP )
             .containsExactlyInAnyOrderEntriesOf( lineData2 );
     }
 }

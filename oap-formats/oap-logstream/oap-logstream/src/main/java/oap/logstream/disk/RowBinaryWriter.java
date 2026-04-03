@@ -8,6 +8,7 @@ import oap.logstream.LogStreamProtocol;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryOutputStream;
+import oap.net.Inet;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.IOException;
@@ -20,8 +21,8 @@ import java.util.zip.GZIPOutputStream;
 
 @Slf4j
 public class RowBinaryWriter extends AbstractWriter<FileChannel> {
-    protected RowBinaryWriter( Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, int maxVersions ) {
-        super( LogFormat.ROW_BINARY_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions );
+    public RowBinaryWriter( Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, int maxVersions, String hostname ) {
+        super( LogFormat.ROW_BINARY_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname );
     }
 
     @Override
@@ -36,7 +37,7 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
                     Files.ensureDirectory( filename.getParent() );
                     out = FileChannel.open( filename, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND );
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
-                    new LogMetadata( logId ).withProperty( "VERSION", logIdTemplate.getHashWithVersion( fileVersion ) ).writeFor( filename );
+                    new LogMetadata( logId ).withProperty( "VERSION", logIdTemplate.getHashWithVersion( fileVersion, Inet.hostname() ) ).writeFor( filename );
 
                     FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
                     GZIPOutputStream gzip = new GZIPOutputStream( outputStream );
