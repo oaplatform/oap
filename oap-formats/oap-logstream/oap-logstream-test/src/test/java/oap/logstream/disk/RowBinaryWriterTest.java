@@ -83,7 +83,7 @@ public class RowBinaryWriterTest extends Fixtures {
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }
 
-        Path path = logs.resolve( "1-file-02-4cd64dae-1.rb.gz.rb.gz" );
+        Path path = logs.resolve( "1-file-02-4cd64dae0-1.rb.gz.rb.gz" );
 
         byte[] rb = Compression.ungzip( Files.readAllBytes( path ) );
 

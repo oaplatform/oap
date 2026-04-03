@@ -71,7 +71,7 @@ public class LoggerJsonTest extends Fixtures {
             logger.log( "open_rtb_json", Map.of(), "request_response", headers, types, Compression.gzip( RowBinaryUtils.line( List.of( jsonContent ) ) ) );
         }
 
-        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/open_rtb_json/2015-10/10/request_response_v3b5d9e1b-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), Encoding.GZIP )
+        assertRowBinaryFile( testDirectoryFixture.testPath( "logs/localhost/open_rtb_json/2015-10/10/request_response_v3b5d9e1b0-1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz.rb.gz" ), Encoding.GZIP )
             .containsExactlyInAnyOrderEntriesOf( List.of( content ) );
     }
 

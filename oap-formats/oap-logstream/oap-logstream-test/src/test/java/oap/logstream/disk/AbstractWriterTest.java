@@ -26,7 +26,6 @@ package oap.logstream.disk;
 
 import oap.logstream.LogId;
 import oap.logstream.Timestamp;
-import oap.net.Inet;
 import oap.template.Types;
 import oap.util.Dates;
 import org.testng.annotations.Test;
@@ -45,15 +44,15 @@ public class AbstractWriterTest {
 
         Dates.setTimeFixed( 2023, 1, 23, 21, 6, 0 );
 
-        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_FORMAT_TSV_GZ}-${INTERVAL}  -${LOG_VERSION}-#{if}(${ORGANIZATION})${ORGANIZATION}#{else}UNKNOWN#{end}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), Inet.hostname() ) )
-            .isEqualTo( "ln/tsv.gz-01-85594397-1-UNKNOWN.tsv.gz.rb.gz" );
+        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_FORMAT_TSV_GZ}-${INTERVAL}  -${LOG_VERSION}-#{if}(${ORGANIZATION})${ORGANIZATION}#{else}UNKNOWN#{end}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
+            .isEqualTo( "ln/tsv.gz-01-855943970-1-UNKNOWN.tsv.gz.rb.gz" );
 
-        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), Inet.hostname() ) )
-            .isEqualTo( "ln/01-85594397-1-.tsv.gz.rb.gz" );
-        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), Inet.hostname() ) )
-            .isEqualTo( "ln/01-85594397-1-.tsv.gz.rb.gz" );
+        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
+            .isEqualTo( "ln/01-855943970-1-.tsv.gz.rb.gz" );
+        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${INTERVAL}-${LOG_VERSION}-${ORGANIZATION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
+            .isEqualTo( "ln/01-855943970-1-.tsv.gz.rb.gz" );
 
-        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_TIME_INTERVAL}.log.gz", lid1, Timestamp.BPH_6, 1, Dates.nowUtc(), Inet.hostname() ) )
+        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "${LOG_TIME_INTERVAL}.log.gz", lid1, Timestamp.BPH_6, 1, Dates.nowUtc(), "localhost" ) )
             .isEqualTo( "ln/10.log.gz.rb.gz" );
     }
 
@@ -65,11 +64,11 @@ public class AbstractWriterTest {
         Dates.setTimeFixed( 2023, 1, 23, 21, 6, 0 );
 
         LogId lid1 = new LogId( "ln", "lt", "chn", Map.of(), h1Headers, strTypes );
-        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "#{if}(${ORGANIZATION}&&${ACCOUNT})${ORGANIZATION}/${ACCOUNT}/#{end}${INTERVAL}-${LOG_VERSION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), Inet.hostname() ) )
-            .isEqualTo( "ln/01-85594397-1.tsv.gz.rb.gz" );
+        assertThat( AbstractWriter.currentPattern( LogFormat.TSV_GZ, "#{if}(${ORGANIZATION}&&${ACCOUNT})${ORGANIZATION}/${ACCOUNT}/#{end}${INTERVAL}-${LOG_VERSION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
+            .isEqualTo( "ln/01-855943970-1.tsv.gz.rb.gz" );
 
         lid1 = new LogId( "ln", "lt", "chn", Map.of( "ORGANIZATION", "org1", "ACCOUNT", "acc1" ), h1Headers, strTypes );
-        assertThat( AbstractWriter.currentPattern( LogFormat.PARQUET, "#{if}(${ORGANIZATION}&&${ACCOUNT})${ORGANIZATION}/${ACCOUNT}/#{end}${INTERVAL}-${LOG_VERSION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), Inet.hostname() ) )
-            .isEqualTo( "ln/org1/acc1/01-85594397-1.parquet.rb.gz" );
+        assertThat( AbstractWriter.currentPattern( LogFormat.PARQUET, "#{if}(${ORGANIZATION}&&${ACCOUNT})${ORGANIZATION}/${ACCOUNT}/#{end}${INTERVAL}-${LOG_VERSION}.${LOG_FORMAT}", lid1, Timestamp.BPH_12, 1, Dates.nowUtc(), "localhost" ) )
+            .isEqualTo( "ln/org1/acc1/01-855943970-1.parquet.rb.gz" );
     }
 }
