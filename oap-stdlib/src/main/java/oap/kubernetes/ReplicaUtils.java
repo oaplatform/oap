@@ -1,7 +1,5 @@
 package oap.kubernetes;
 
-import oap.system.Env;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
