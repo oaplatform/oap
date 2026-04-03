@@ -34,7 +34,6 @@ import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
-import oap.net.Inet;
 import oap.util.Dates;
 import org.codehaus.plexus.util.StringUtils;
 import org.joda.time.DateTime;
