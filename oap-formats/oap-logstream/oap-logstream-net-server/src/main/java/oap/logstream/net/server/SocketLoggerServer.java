@@ -23,15 +23,12 @@
  */
 package oap.logstream.net.server;
 
-import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
-import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import oap.logstream.AbstractLoggerBackend;
 import oap.logstream.LogStreamProtocol;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.message.server.MessageListener;
-import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -39,7 +36,6 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.zip.GZIPInputStream;
 
 import static oap.logstream.LogStreamProtocol.MESSAGE_TYPE;
 
@@ -119,12 +115,7 @@ public class SocketLoggerServer implements MessageListener, Closeable {
         byte[] compressedBuffer = new byte[length];
         in.readFully( compressedBuffer, 0, length );
 
-        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream( length );
-        try( GZIPInputStream gzip = new GZIPInputStream( new FastByteArrayInputStream( compressedBuffer ) ) ) {
-            IOUtils.copy( gzip, buffer );
-        }
-
-        backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, buffer.array, 0, buffer.length );
+        backend.log( version, clientHostname, filePreffix, properties, logType, headers, types, compressedBuffer, 0, length );
     }
 
     @Override

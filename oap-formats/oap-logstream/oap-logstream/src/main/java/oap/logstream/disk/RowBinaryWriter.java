@@ -48,6 +48,9 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
                     do {
                         out.write( byteBuffer );
                     } while( byteBuffer.hasRemaining() );
+                    out.force( true );
+
+                    LogMetadata.commitTransaction( filename, outputStream.length );
 
                     log.trace( "[{}] write headers {}", filename, logId.headers );
                 } else {
@@ -58,11 +61,16 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
                 }
             log.trace( "writing {} bytes to {}", length, this );
 
+            long position = LogMetadata.beginTransaction( filename );
+
             ByteBuffer byteBuffer = ByteBuffer.wrap( buffer, offset, length );
             do {
+                out.position( position );
                 out.write( byteBuffer );
             } while( byteBuffer.hasRemaining() );
             out.force( true );
+
+            LogMetadata.commitTransaction( filename, length );
 
             return filename.toString();
 

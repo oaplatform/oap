@@ -14,8 +14,12 @@ import oap.logstream.LogId;
 import oap.util.Maps;
 import org.joda.time.DateTime;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,7 +31,8 @@ import static org.joda.time.DateTimeZone.UTC;
 @ToString
 @EqualsAndHashCode( exclude = "clientHostname" )
 public class LogMetadata {
-    public static final String EXTENSION = ".metadata.yaml";
+    public static final String EXTENSION_LOG_METADATA = ".metadata.yaml";
+    public static final String EXTENSION_LOG_TRANSACTION = ".metadata.transaction";
 
     public final String type;
     public final String clientHostname;
@@ -62,23 +67,49 @@ public class LogMetadata {
         return Binder.yaml.unmarshal( LogMetadata.class, pathFor( file ) );
     }
 
+    public static Path pathFor( Path file, String extension ) {
+        return Path.of( file.toString() + extension );
+    }
+
     public static Path pathFor( Path file ) {
-        return Path.of( file.toString() + EXTENSION );
+        return pathFor( file, EXTENSION_LOG_METADATA );
+    }
+
+    public static Path pathFor( String file, String extension ) {
+        return Path.of( file + extension );
     }
 
     public static Path pathFor( String file ) {
-        return Path.of( file + EXTENSION );
+        return pathFor( file, EXTENSION_LOG_METADATA );
     }
 
     public static Path pathForDataFromMetadata( Path metadataPath ) {
         Preconditions.checkArgument( isMetadata( metadataPath ) );
 
         String metadataPathString = metadataPath.toString();
-        return Paths.get( metadataPathString.substring( 0, metadataPathString.indexOf( EXTENSION ) ) );
+        return Paths.get( metadataPathString.substring( 0, metadataPathString.indexOf( EXTENSION_LOG_METADATA ) ) );
+    }
+
+    public static Path pathForTransactionFromMetadata( Path metadataPath ) {
+        return Paths.get( pathForDataFromMetadata( metadataPath ) + EXTENSION_LOG_TRANSACTION );
+    }
+
+    public static Path pathForDataFromTransaction( Path transactionPath ) {
+
+        String transactionPathString = transactionPath.toString();
+        return Paths.get( transactionPathString.substring( 0, transactionPathString.indexOf( EXTENSION_LOG_TRANSACTION ) ) );
+    }
+
+    public static Path pathForMetadataFromTransaction( Path transactionPath ) {
+        return Paths.get( pathForDataFromTransaction( transactionPath ) + EXTENSION_LOG_METADATA );
     }
 
     public static boolean isMetadata( Path filename ) {
-        return filename.toString().endsWith( EXTENSION );
+        return filename.toString().endsWith( EXTENSION_LOG_METADATA );
+    }
+
+    public static boolean isTransaction( Path filename ) {
+        return filename.toString().endsWith( EXTENSION_LOG_TRANSACTION );
     }
 
     public static void rename( Path filename, Path newFile ) {
@@ -93,6 +124,45 @@ public class LogMetadata {
         metadata.writeFor( path );
     }
 
+    public static long beginTransaction( Path file ) throws IOException {
+        Path path = pathFor( file, EXTENSION_LOG_TRANSACTION );
+
+        long dataSize;
+        if( java.nio.file.Files.exists( path ) ) {
+            dataSize = Long.parseLong( java.nio.file.Files.readString( path, StandardCharsets.UTF_8 ) );
+        } else {
+            dataSize = 0;
+        }
+
+        return dataSize;
+    }
+
+    public static void commitTransaction( Path file, int length ) throws IOException {
+        Path path = pathFor( file, EXTENSION_LOG_TRANSACTION );
+        Path tmpPath = pathFor( file, EXTENSION_LOG_TRANSACTION + ".tmp" );
+
+        long dataSize;
+        if( java.nio.file.Files.exists( path ) ) {
+            dataSize = Long.parseLong( java.nio.file.Files.readString( path, StandardCharsets.UTF_8 ) );
+        } else {
+            dataSize = 0;
+        }
+
+
+        dataSize += length;
+
+        java.nio.file.Files.writeString( tmpPath, String.valueOf( dataSize ), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
+        java.nio.file.Files.move( tmpPath, path, StandardCopyOption.REPLACE_EXISTING );
+    }
+
+    public static void deleteTransaction( Path file ) throws IOException {
+        java.nio.file.Files.delete( pathFor( file, EXTENSION_LOG_TRANSACTION ) );
+    }
+
+    public static void deleteLogMetadata( Path file ) throws IOException {
+        java.nio.file.Files.delete( pathFor( file, EXTENSION_LOG_METADATA ) );
+    }
+
     @JsonAnyGetter
     public Map<String, String> getProperties() {
         return properties;
@@ -104,7 +174,11 @@ public class LogMetadata {
     }
 
     public void writeFor( Path file ) {
-        Binder.yaml.marshal( pathFor( file ), this );
+        Path path = pathFor( file );
+        Path tmpFile = Path.of( path + ".tmp" );
+        Binder.yaml.marshal( tmpFile, this );
+
+        Files.rename( tmpFile, path );
     }
 
     public DateTime getDateTime( String name ) {
