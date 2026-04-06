@@ -94,8 +94,22 @@ public class LogMetadata {
         return Paths.get( pathForDataFromMetadata( metadataPath ) + EXTENSION_LOG_TRANSACTION );
     }
 
+    public static Path pathForDataFromTransaction( Path transactionPath ) {
+
+        String transactionPathString = transactionPath.toString();
+        return Paths.get( transactionPathString.substring( 0, transactionPathString.indexOf( EXTENSION_LOG_TRANSACTION ) ) );
+    }
+
+    public static Path pathForMetadataFromTransaction( Path transactionPath ) {
+        return Paths.get( pathForDataFromTransaction( transactionPath ) + EXTENSION_LOG_METADATA );
+    }
+
     public static boolean isMetadata( Path filename ) {
         return filename.toString().endsWith( EXTENSION_LOG_METADATA );
+    }
+
+    public static boolean isTransaction( Path filename ) {
+        return filename.toString().endsWith( EXTENSION_LOG_TRANSACTION );
     }
 
     public static void rename( Path filename, Path newFile ) {
