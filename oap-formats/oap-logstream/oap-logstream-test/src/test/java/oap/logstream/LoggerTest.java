@@ -25,6 +25,7 @@
 package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.compression.Compression;
 import oap.http.server.nio.NioHttpServer;
 import oap.logstream.disk.DiskLoggerBackend;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
@@ -70,11 +71,11 @@ public class LoggerTest extends Fixtures {
         Dates.setTimeFixed( 2015, 10, 10, 1 );
 
         List<Object> lineData1 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678", "12345678" );
-        byte[] line1 = RowBinaryUtils.line( lineData1 );
+        byte[] line1 = Compression.gzip( RowBinaryUtils.line( lineData1 ) );
         String[] headers1 = new String[] { "TIMESTAMP", "REQUEST_ID", "REQUEST_ID2" };
         byte[][] types1 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         List<Object> lineData2 = List.of( new DateTime( 2015, 10, 10, 1, 0, UTC ), "12345678" );
-        byte[] line2 = RowBinaryUtils.line( lineData2 );
+        byte[] line2 = Compression.gzip( RowBinaryUtils.line( lineData2 ) );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
         try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
