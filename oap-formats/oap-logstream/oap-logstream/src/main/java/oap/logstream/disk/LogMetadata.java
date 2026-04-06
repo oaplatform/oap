@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -120,6 +121,7 @@ public class LogMetadata {
 
     public static void commitTransaction( Path file, int length ) throws IOException {
         Path path = pathFor( file, EXTENSION_LOG_TRANSACTION );
+        Path tmpPath = pathFor( file, EXTENSION_LOG_TRANSACTION + ".tmp" );
 
         int dataSize;
         if( java.nio.file.Files.exists( path ) ) {
@@ -131,7 +133,8 @@ public class LogMetadata {
 
         dataSize += length;
 
-        java.nio.file.Files.writeString( path, String.valueOf( dataSize ), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
+        java.nio.file.Files.writeString( tmpPath, String.valueOf( dataSize ), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
+        java.nio.file.Files.move( tmpPath, path, StandardCopyOption.REPLACE_EXISTING );
     }
 
     public static void deleteTransaction( Path file ) throws IOException {
