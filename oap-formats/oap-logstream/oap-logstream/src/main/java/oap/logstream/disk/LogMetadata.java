@@ -90,6 +90,10 @@ public class LogMetadata {
         return Paths.get( metadataPathString.substring( 0, metadataPathString.indexOf( EXTENSION_LOG_METADATA ) ) );
     }
 
+    public static Path pathForTransactionFromMetadata( Path metadataPath ) {
+        return Paths.get( pathForDataFromMetadata( metadataPath ) + EXTENSION_LOG_TRANSACTION );
+    }
+
     public static boolean isMetadata( Path filename ) {
         return filename.toString().endsWith( EXTENSION_LOG_METADATA );
     }
@@ -109,9 +113,9 @@ public class LogMetadata {
     public static long beginTransaction( Path file ) throws IOException {
         Path path = pathFor( file, EXTENSION_LOG_TRANSACTION );
 
-        int dataSize;
+        long dataSize;
         if( java.nio.file.Files.exists( path ) ) {
-            dataSize = Integer.parseInt( java.nio.file.Files.readString( path, StandardCharsets.UTF_8 ) );
+            dataSize = Long.parseLong( java.nio.file.Files.readString( path, StandardCharsets.UTF_8 ) );
         } else {
             dataSize = 0;
         }
@@ -123,9 +127,9 @@ public class LogMetadata {
         Path path = pathFor( file, EXTENSION_LOG_TRANSACTION );
         Path tmpPath = pathFor( file, EXTENSION_LOG_TRANSACTION + ".tmp" );
 
-        int dataSize;
+        long dataSize;
         if( java.nio.file.Files.exists( path ) ) {
-            dataSize = Integer.parseInt( java.nio.file.Files.readString( path, StandardCharsets.UTF_8 ) );
+            dataSize = Long.parseLong( java.nio.file.Files.readString( path, StandardCharsets.UTF_8 ) );
         } else {
             dataSize = 0;
         }
