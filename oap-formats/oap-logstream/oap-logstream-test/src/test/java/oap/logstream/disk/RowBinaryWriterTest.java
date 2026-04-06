@@ -78,16 +78,16 @@ public class RowBinaryWriterTest extends Fixtures {
         LogId logId = new LogId( "", "log", "log",
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
-        try( RowBinaryWriter writer = new RowBinaryWriter( logs, FILE_PATTERN, logId, 1024, BPH_12, 20 ) ) {
+        try( RowBinaryWriter writer = new RowBinaryWriter( logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }
 
-        Path path = logs.resolve( "1-file-02-4cd64dae-1.rb.gz" );
+        Path path = logs.resolve( "1-file-02-4cd64dae0-1.rb.gz.rb.gz" );
 
         byte[] rb = Compression.ungzip( Files.readAllBytes( path ) );
 
-        Pair<List<List<Object>>, List<String>> read = RowBinaryUtils.read( rb, headers, types, true );
+        Pair<List<List<Object>>, List<String>> read = RowBinaryUtils.read( rb, 0, rb.length, null, null );
         assertThat( read._2 ).isEqualTo( List.of( headers ) );
         assertThat( read._1 )
             .isEqualTo( List.of(

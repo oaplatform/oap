@@ -26,12 +26,11 @@ package oap.logstream.disk;
 
 import lombok.ToString;
 import oap.util.Dates;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-
-import java.util.LinkedHashMap;
 
 @ToString
 public class WriterConfiguration {
+    public final TsvConfiguration tsv = new TsvConfiguration();
+
     @ToString
     public static class TsvConfiguration {
         public final String dateTime32Format;
@@ -44,21 +43,4 @@ public class WriterConfiguration {
             this.dateTime32Format = dateTime32Format;
         }
     }
-
-    @ToString
-    public static class ParquetConfiguration {
-        public final CompressionCodecName compressionCodecName;
-        public final LinkedHashMap<String, String> excludeFieldsIfPropertiesExists = new LinkedHashMap<>();
-
-        public ParquetConfiguration() {
-            this( CompressionCodecName.ZSTD );
-        }
-
-        public ParquetConfiguration( CompressionCodecName compressionCodecName ) {
-            this.compressionCodecName = compressionCodecName;
-        }
-    }
-
-    public final TsvConfiguration tsv = new TsvConfiguration();
-    public final ParquetConfiguration parquet = new ParquetConfiguration();
 }

@@ -1,6 +1,8 @@
 package oap.logstream.formats.rowbinary;
 
 import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import lombok.extern.slf4j.Slf4j;
 import oap.template.Types;
 import org.joda.time.DateTime;
 
@@ -8,8 +10,11 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.joda.time.DateTimeZone.UTC;
@@ -17,36 +22,169 @@ import static org.joda.time.DateTimeZone.UTC;
 /**
  * https://clickhouse.com/docs/interfaces/formats/RowBinary
  */
+@SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+@Slf4j
 public class RowBinaryInputStream extends InputStream {
-    private final InputStream in;
+    public static final String TYPE_NULLABLE = "Nullable(";
+    public static final String TYPE_ARRAY = "Array(";
+    public static final String FIXED_STRING_PREFIX = "FixedString(";
     public final String[] headers;
-    private final byte[][] types;
+    public final InputStream in;
+    public final byte[][] types;
+    public final int[] fixedLength;
+    public final boolean[] nullable;
+    public final boolean[] datetime32;
     protected byte[] readBuffer = new byte[8];
 
-    public RowBinaryInputStream( InputStream in, boolean readHeaders ) throws IOException {
-        this( in, readHeaders, null, null );
+    public RowBinaryInputStream( InputStream in ) throws IOException {
+        this( in, null, null );
+    }
+
+    public RowBinaryInputStream( InputStream in, byte[][] types ) throws IOException {
+        this( in, null, types );
     }
 
     public RowBinaryInputStream( InputStream in, String[] headers, byte[][] types ) throws IOException {
-        this( in, false, headers, types );
-    }
-
-    protected RowBinaryInputStream( InputStream in, boolean readHeaders, String[] headers, byte[][] types ) throws IOException {
         this.in = in;
 
-        if( readHeaders ) {
-            int count = readVarInt();
-            this.headers = new String[count];
-            for( int i = 0; i < count; i++ ) {
-                this.headers[i] = readString();
-            }
-        } else if( types != null ) {
-            this.headers = headers;
+        this.headers = headers == null ? readHeaders() : headers;
+
+        this.fixedLength = new int[this.headers.length];
+        Arrays.fill( this.fixedLength, 0 );
+        this.nullable = new boolean[this.headers.length];
+        Arrays.fill( this.nullable, false );
+        this.datetime32 = new boolean[this.headers.length];
+        Arrays.fill( this.datetime32, false );
+
+        this.types = types == null ? readTypes() : types;
+    }
+
+    private static void convertType( String rbType, ByteArrayList type, AtomicInteger fixedLength, AtomicBoolean nullable, AtomicBoolean datetime32 ) {
+        if( rbType.startsWith( TYPE_NULLABLE ) ) {
+            nullable.set( true );
+            convertType( rbType.substring( TYPE_NULLABLE.length(), rbType.length() - 1 ), type, fixedLength, nullable, datetime32 );
+        } else if( rbType.startsWith( TYPE_ARRAY ) ) {
+            type.add( Types.LIST.id );
+            convertType( rbType.substring( TYPE_ARRAY.length(), rbType.length() - 1 ), type, fixedLength, nullable, datetime32 );
+        } else if( rbType.startsWith( FIXED_STRING_PREFIX ) ) {
+            type.add( Types.STRING.id );
+
+            int endLength = rbType.indexOf( ')', FIXED_STRING_PREFIX.length() );
+
+            fixedLength.set( Integer.parseInt( rbType.substring( FIXED_STRING_PREFIX.length(), endLength ) ) );
         } else {
-            throw new IllegalArgumentException( "unknown headers" );
+            type.add( switch( rbType ) {
+                case "Bool" -> Types.BOOLEAN.id;
+                case "UInt8" -> Types.BYTE.id;
+                case "Int16" -> Types.SHORT.id;
+                case "Int32" -> Types.INTEGER.id;
+                case "Int64" -> Types.LONG.id;
+                case "Float32" -> Types.FLOAT.id;
+                case "Float64" -> Types.DOUBLE.id;
+                case "String" -> Types.STRING.id;
+                case "Date" -> Types.DATE.id;
+                case "Date32" -> {
+                    datetime32.set( true );
+                    yield Types.DATE.id;
+                }
+                case "DateTime", "DateTime32" -> Types.DATETIME.id;
+                case null, default -> throw new IllegalArgumentException( "unknown type " + type );
+            } );
+        }
+    }
+
+    protected static void readFully( InputStream in, byte[] b, int off, int len ) throws IOException {
+        int n = 0;
+        while( n < len ) {
+            int count = in.read( b, off + n, len - n );
+            if( count < 0 )
+                throw new EOFException();
+            n += count;
+        }
+    }
+
+    private byte[][] readTypes() throws IOException {
+        int count = headers.length;
+        byte[][] types = new byte[count][];
+
+        ByteArrayList type = new ByteArrayList();
+
+        for( int i = 0; i < count; i++ ) {
+            String rbType = readString();
+            log.trace( "in type {}", rbType );
+
+            AtomicInteger iFixedLength = new AtomicInteger( 0 );
+            AtomicBoolean iNullable = new AtomicBoolean( false );
+            AtomicBoolean iDatetime32 = new AtomicBoolean( false );
+            convertType( rbType, type, iFixedLength, iNullable, iDatetime32 );
+
+            types[i] = type.toByteArray();
+
+            this.fixedLength[i] = iFixedLength.get();
+            this.nullable[i] = iNullable.get();
+            this.datetime32[i] = iDatetime32.get();
+
+            type.clear();
         }
 
-        this.types = types;
+        return types;
+    }
+
+    protected int readVarInt() throws IOException {
+        int value = 0;
+
+        for( int i = 0; i < 10; i++ ) {
+            byte b = readByteOrEof();
+            value |= ( b & 0x7F ) << ( 7 * i );
+
+            if( ( b & 0x80 ) == 0 ) {
+                break;
+            }
+        }
+
+        return value;
+    }
+
+    private byte readByteOrEof() throws IOException {
+        int b = in.read();
+        if( b < 0 ) {
+            throw new EOFException( "End of stream reached before reading all data" );
+        }
+        return ( byte ) b;
+    }
+
+    public String readString() throws IOException {
+        int length = readVarInt();
+        if( length == 0 ) {
+            return "";
+        } else {
+            byte[] buf = new byte[length];
+            readFully( buf, 0, length );
+            return new String( buf, UTF_8 );
+        }
+    }
+
+    public String readString( int fixedLength ) throws IOException {
+        byte[] buf = new byte[fixedLength];
+        readFully( buf, 0, fixedLength );
+
+
+        int end = fixedLength - 1;
+        while( end >= 0 && buf[end] == 0 ) {
+            end--;
+        }
+
+        return new String( buf, 0, end + 1, UTF_8 );
+    }
+
+    private String[] readHeaders() throws IOException {
+        int count = readVarInt();
+        String[] headers = new String[count];
+        for( int i = 0; i < count; i++ ) {
+            headers[i] = readString();
+        }
+
+        return headers;
     }
 
     public byte readByte() throws IOException {
@@ -108,15 +246,8 @@ public class RowBinaryInputStream extends InputStream {
         return new Date( readShort() * 24L * 60L * 60L * 1000L );
     }
 
-    public String readString() throws IOException {
-        int length = readVarInt();
-        if( length == 0 ) {
-            return "";
-        } else {
-            byte[] buf = new byte[length];
-            readFully( buf, 0, length );
-            return new String( buf, UTF_8 );
-        }
+    public Date readDate32() throws IOException {
+        return new Date( readInt() * 24L * 60L * 60L * 1000L );
     }
 
     public <T> List<T> readList( Class<T> clazz ) throws IOException {
@@ -125,7 +256,17 @@ public class RowBinaryInputStream extends InputStream {
         ArrayList<T> list = new ArrayList<>( size );
 
         for( int i = 0; i < size; i++ ) {
-            T v = readObject( clazz );
+            boolean isNullable = nullable[i];
+
+            if( isNullable ) {
+                byte isNull = readByte();
+                if( isNull == 1 ) {
+                    list.add( null );
+                    continue;
+                }
+            }
+
+            T v = readObject( clazz, i );
             list.add( v );
         }
 
@@ -133,9 +274,10 @@ public class RowBinaryInputStream extends InputStream {
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T> T readObject( Class<T> clazz ) throws IOException {
+    private <T> T readObject( Class<T> clazz, int col ) throws IOException {
         if( clazz == String.class ) {
-            return ( T ) readString();
+            int length = fixedLength[col];
+            return ( T ) ( length == 0 ? readString() : readString( length ) );
         } else if( clazz == byte.class ) {
             return ( T ) ( Byte ) readByte();
         } else if( clazz == Byte.class ) {
@@ -163,66 +305,55 @@ public class RowBinaryInputStream extends InputStream {
         } else if( clazz == DateTime.class ) {
             return ( T ) readDateTime();
         } else if( clazz == Date.class ) {
-            return ( T ) readDate();
+            boolean d32 = datetime32[col];
+            return ( T ) ( d32 ? readDate32() : readDate() );
         } else {
             throw new IllegalArgumentException( "unknown class " + clazz );
         }
     }
 
     protected void readFully( byte[] b, int off, int len ) throws IOException {
-        int n = 0;
-        while( n < len ) {
-            int count = in.read( b, off + n, len - n );
-            if( count < 0 )
-                throw new EOFException();
-            n += count;
-        }
-    }
-
-    protected int readVarInt() throws IOException {
-        int value = 0;
-
-        for( int i = 0; i < 10; i++ ) {
-            byte b = readByteOrEof();
-            value |= ( b & 0x7F ) << ( 7 * i );
-
-            if( ( b & 0x80 ) == 0 ) {
-                break;
-            }
-        }
-
-        return value;
-    }
-
-    private byte readByteOrEof() throws IOException {
-        int b = in.read();
-        if( b < 0 ) {
-            throw new EOFException( "End of stream reached before reading all data" );
-        }
-        return ( byte ) b;
+        readFully( in, b, off, len );
     }
 
     public List<Object> readRow() throws IOException {
-        try {
-            Preconditions.checkNotNull( types );
-            Preconditions.checkNotNull( headers );
+        Preconditions.checkNotNull( types );
+        Preconditions.checkNotNull( headers );
 
-            ArrayList<Object> row = new ArrayList<>( headers.length );
+        ArrayList<Object> row = new ArrayList<>( headers.length );
+
+        try {
 
             for( int i = 0; i < headers.length; i++ ) {
                 byte[] bytes = types[i];
                 Types types = Types.valueOf( bytes[0] );
 
+                boolean isNullable = nullable[i];
+
+                if( isNullable ) {
+                    byte isNull = readByte();
+                    if( isNull == 1 ) {
+                        row.add( null );
+                        continue;
+                    }
+                }
+
                 row.add( switch( types ) {
                     case DATETIME -> readDateTime();
-                    case DATE -> readDate();
+                    case DATE -> {
+                        boolean d32 = datetime32[i];
+                        yield d32 ? readDate32() : readDate();
+                    }
                     case BYTE -> readByte();
                     case SHORT -> readShort();
                     case INTEGER -> readInt();
                     case LONG -> readLong();
                     case FLOAT -> readFloat();
                     case DOUBLE -> readDouble();
-                    case STRING -> readString();
+                    case STRING -> {
+                        int length = fixedLength[i];
+                        yield length == 0 ? readString() : readString( length );
+                    }
                     case BOOLEAN -> readBoolean();
                     case LIST -> {
                         Types listItemType = Types.valueOf( bytes[1] );
@@ -234,6 +365,10 @@ public class RowBinaryInputStream extends InputStream {
 
             return row;
         } catch( EOFException e ) {
+            if( !row.isEmpty() ) {
+                throw e;
+            }
+
             return null;
         }
     }

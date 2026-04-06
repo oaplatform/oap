@@ -1,9 +1,12 @@
 package oap.logstream.formats.rowbinary;
 
+import com.google.common.base.Preconditions;
 import oap.dictionary.Dictionary;
+import oap.template.Types;
 import oap.util.Strings;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -25,13 +28,58 @@ public class RowBinaryOutputStream extends OutputStream {
         this.out = out;
     }
 
-    public RowBinaryOutputStream( OutputStream out, List<String> headers ) throws IOException {
+    public RowBinaryOutputStream( OutputStream out, @Nullable List<String> headers, @Nullable byte[][] types ) throws IOException {
         this( out );
 
+        Preconditions.checkArgument( headers != null || types == null );
+
+        if( headers != null ) {
+            writeHeaders( headers );
+            if( types != null ) {
+                writeTypes( types );
+            }
+        }
+    }
+
+    private void writeHeaders( List<String> headers ) throws IOException {
         writeVarInt( headers.size() );
         for( String header : headers ) {
             writeString( header );
         }
+    }
+
+    private void writeTypes( byte[][] types ) throws IOException {
+        for( byte[] type : types ) {
+            writeString( getTypeAsString( type, 0 ) );
+        }
+    }
+
+    public static String getTypeAsString( byte[] type, int offset ) throws IOException {
+        StringBuilder ret = new StringBuilder();
+
+        Types dataType = Types.valueOf( type[offset] );
+        ret.append( switch( dataType ) {
+            case BOOLEAN -> "Bool";
+            case BYTE -> "UInt8";
+            case SHORT -> "Int16";
+            case INTEGER -> "Int32";
+            case LONG -> "Int64";
+            case FLOAT -> "Float32";
+            case DOUBLE -> "Float64";
+            case STRING -> "String";
+            case DATE -> "Date";
+            case DATETIME -> "DateTime";
+            case LIST -> "Array";
+            case null, default -> throw new IllegalArgumentException( "unknown type " + dataType );
+        } );
+
+        for( int i = offset + 1; i < type.length; i++ ) {
+            Preconditions.checkArgument( dataType == Types.LIST );
+
+            ret.append( "(" ).append( getTypeAsString( type, offset + 1 ) ).append( ")" );
+        }
+
+        return ret.toString();
     }
 
     @SuppressWarnings( "checkstyle:ParameterAssignment" )

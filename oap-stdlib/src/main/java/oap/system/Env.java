@@ -28,6 +28,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -60,18 +61,18 @@ public class Env {
             Field theEnvironmentField = processEnvironmentClass.getDeclaredField( "theEnvironment" );
             theEnvironmentField.setAccessible( true );
             @SuppressWarnings( "unchecked" )
-            var env = ( Map<Object, Object> ) theEnvironmentField.get( null );
+            Map<Object, Object> env = ( Map<Object, Object> ) theEnvironmentField.get( null );
 
             if( SystemUtils.IS_OS_WINDOWS )
                 if( value == null ) env.remove( name );
                 else env.put( name, value );
             else {
-                var variableClass = Class.forName( "java.lang.ProcessEnvironment$Variable" );
-                var convertToVariable = variableClass.getMethod( "valueOf", String.class );
+                Class<?> variableClass = Class.forName( "java.lang.ProcessEnvironment$Variable" );
+                Method convertToVariable = variableClass.getMethod( "valueOf", String.class );
                 convertToVariable.setAccessible( true );
 
-                var valueClass = Class.forName( "java.lang.ProcessEnvironment$Value" );
-                var convertToValue = valueClass.getMethod( "valueOf", String.class );
+                Class<?> valueClass = Class.forName( "java.lang.ProcessEnvironment$Value" );
+                Method convertToValue = valueClass.getMethod( "valueOf", String.class );
                 convertToValue.setAccessible( true );
 
                 if( value == null ) env.remove( convertToVariable.invoke( null, name ) );

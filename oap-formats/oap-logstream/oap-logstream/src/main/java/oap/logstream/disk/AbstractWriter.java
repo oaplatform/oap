@@ -55,6 +55,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected final int bufferSize;
     protected final Stopwatch stopwatch = new Stopwatch();
     protected final int maxVersions;
+    protected final String hostname;
     protected final ReentrantLock lock = new ReentrantLock();
     protected T out;
     protected Path outFilename;
@@ -63,11 +64,12 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected boolean closed = false;
 
     protected AbstractWriter( LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
-                              int maxVersions ) {
+                              int maxVersions, String hostname ) {
         this.logFormat = logFormat;
         this.logDirectory = logDirectory;
         this.filePattern = filePattern;
         this.maxVersions = maxVersions;
+        this.hostname = hostname;
 
         log.trace( "filePattern {}", filePattern );
         Preconditions.checkArgument( filePattern.contains( "${LOG_VERSION}" ) );
@@ -80,7 +82,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     }
 
     @SneakyThrows
-    static String currentPattern( LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time ) {
+    static String currentPattern( LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time, String hostname ) {
         String suffix = filePattern;
         if( filePattern.startsWith( "/" ) && filePattern.endsWith( "/" ) ) suffix = suffix.substring( 1 );
         else if( !filePattern.startsWith( "/" ) && !logId.filePrefixPattern.endsWith( "/" ) ) suffix = "/" + suffix;
@@ -88,20 +90,22 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         String pattern = logId.filePrefixPattern + suffix;
         if( pattern.startsWith( "/" ) ) pattern = pattern.substring( 1 );
 
+        pattern = pattern + ".rb.gz";
+
         LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
 
         logIdTemplate
             .addVariable( "LOG_FORMAT", logFormat.extension )
             .addVariable( "LOG_FORMAT_" + logFormat.name(), logFormat.extension );
-        return logIdTemplate.render( StringUtils.replace( pattern, " ", "" ), time, timestamp, version );
+        return logIdTemplate.render( StringUtils.replace( pattern, " ", "" ), time, timestamp, version, hostname );
     }
 
     protected String currentPattern( int version ) {
-        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc() );
+        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc(), hostname );
     }
 
     protected String currentPattern() {
-        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc() );
+        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc(), hostname );
     }
 
     public void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {
