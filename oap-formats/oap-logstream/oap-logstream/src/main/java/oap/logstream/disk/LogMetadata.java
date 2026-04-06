@@ -131,7 +131,7 @@ public class LogMetadata {
 
         dataSize += length;
 
-        java.nio.file.Files.writeString( path, String.valueOf( dataSize ), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING );
+        java.nio.file.Files.writeString( path, String.valueOf( dataSize ), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
     }
 
     @JsonAnyGetter
