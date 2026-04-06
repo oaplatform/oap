@@ -134,6 +134,14 @@ public class LogMetadata {
         java.nio.file.Files.writeString( path, String.valueOf( dataSize ), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE );
     }
 
+    public static void deleteTransaction( Path file ) throws IOException {
+        java.nio.file.Files.delete( pathFor( file, EXTENSION_LOG_TRANSACTION ) );
+    }
+
+    public static void deleteLogMetadata( Path file ) throws IOException {
+        java.nio.file.Files.delete( pathFor( file, EXTENSION_LOG_METADATA ) );
+    }
+
     @JsonAnyGetter
     public Map<String, String> getProperties() {
         return properties;
