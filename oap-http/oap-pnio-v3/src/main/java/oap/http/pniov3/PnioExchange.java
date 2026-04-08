@@ -61,7 +61,7 @@ public class PnioExchange<RequestState> {
     public final ComputeTask<RequestState> task;
     public final String handlerName;
     public final RequestState requestState;
-    protected final HttpServerExchange oapExchange;
+    public final HttpServerExchange oapExchange;
     private final PnioMetrics metrics;
     public long timeoutNano;
     public volatile Throwable throwable;
