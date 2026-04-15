@@ -81,6 +81,11 @@ fragment False			: 'false'   	                ;
 
 DEFAULT         : Pipe Hws* Default                     ;
 
+IF              : 'if'                                  ;
+THEN            : 'then'                                ;
+ELSE            : 'else'                                ;
+END             : 'end'                                 ;
+
 BLOCK_COMMENT	: BlockComment;
 
 HORZ_WS	        : Hws+		-> skip	;

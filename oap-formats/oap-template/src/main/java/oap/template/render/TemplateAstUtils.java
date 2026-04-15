@@ -41,6 +41,7 @@ import oap.template.tree.Expression;
 import oap.template.tree.ExpressionElement;
 import oap.template.tree.Exprs;
 import oap.template.tree.Func;
+import oap.template.tree.IfCondition;
 import oap.template.tree.TextElement;
 import oap.util.Arrays;
 import oap.util.Lists;
@@ -185,12 +186,93 @@ public class TemplateAstUtils {
             } else
                 ast.addChild( new AstRenderPrintField( templateType, null ) );
             list.add( ast );
-        } else {
-            list.add( orAst.get( 0 ) );
+        } else if( !orAst.isEmpty() ) {
+            list.add( orAst.getFirst() );
         }
 
-        return list.head();
+        AstRender mainAst = list.head();
 
+        IfCondition ifCondition = expression.ifCondition;
+        if( ifCondition != null ) {
+            TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( templateType, ifCondition.thenCode, errorStrategy );
+
+            AstRender conditionAst = toConditionAst( ifCondition.condition, templateType, errorStrategy );
+            AstRender thenCode = toAst( ifCondition.thenCode, null, templateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy );
+            AstRender elseCode = ifCondition.elseCode != null ? toAst( ifCondition.elseCode, null, templateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy ) : null;
+
+            return new AstRenderBooleanIf( templateType, conditionAst, thenCode, elseCode );
+        }
+
+        return mainAst;
+
+    }
+
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
+    private static AstRender toConditionAst( Exprs conditionExprs, TemplateType templateType, ErrorStrategy errorStrategy ) {
+        try {
+            TemplateType currentTemplateType = templateType;
+            Chain result = new Chain();
+
+            for( int i = 0; i < conditionExprs.exprs.size(); i++ ) {
+                Expr expr = conditionExprs.exprs.get( i );
+
+                if( currentTemplateType.isInstanceOf( Optional.class ) ) {
+                    TemplateType valueType = currentTemplateType.getActualTypeArguments0();
+                    AstRenderOptional ast = new AstRenderOptional( valueType );
+                    i--;
+                    result.add( ast );
+                    currentTemplateType = valueType;
+                } else if( currentTemplateType.nullable ) {
+                    TemplateType newType = new TemplateType( currentTemplateType.type, false );
+                    AstRenderNullable ast = new AstRenderNullable( newType );
+                    i--;
+                    result.add( ast );
+                    currentTemplateType = newType;
+                } else if( !expr.method ) {
+                    Class<?> parentClass = currentTemplateType.getTypeClass();
+                    java.lang.reflect.Field field = findField( parentClass, expr.name );
+                    boolean nullable = field.isAnnotationPresent( Nullable.class )
+                        || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
+                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
+                    result.add( ast );
+                    currentTemplateType = fieldType;
+                } else {
+                    Class<?> parentClass = currentTemplateType.getTypeClass();
+                    Method method = Arrays
+                        .find( c -> c.getName().equals( expr.name ), parentClass.getMethods() )
+                        .orElse( null );
+                    if( method == null )
+                        method = parentClass.getMethod( expr.name );
+                    boolean nullable = method.isAnnotationPresent( Nullable.class )
+                        || !method.getReturnType().isPrimitive() && !method.isAnnotationPresent( Nonnull.class );
+                    TemplateType fieldType = new TemplateType( method.getGenericReturnType(), nullable );
+                    AstRenderMethod ast = new AstRenderMethod( expr.name, fieldType, expr.arguments );
+                    result.add( ast );
+                    currentTemplateType = fieldType;
+                }
+            }
+
+            AstRenderCaptureBoolean captureNode = new AstRenderCaptureBoolean( currentTemplateType );
+
+            if( currentTemplateType.isOptional() ) {
+                TemplateType actualType = currentTemplateType.getActualTypeArguments0();
+                AstRenderOptional ast = new AstRenderOptional( actualType );
+                ast.addChild( new AstRenderCaptureBoolean( actualType ) );
+                result.add( ast );
+            } else if( currentTemplateType.nullable ) {
+                AstRenderNullable ast = new AstRenderNullable( currentTemplateType );
+                ast.addChild( captureNode );
+                result.add( ast );
+            } else {
+                result.add( captureNode );
+            }
+
+            return result.head();
+        } catch( NoSuchFieldException | NoSuchMethodException e ) {
+            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
+            return new AstRenderPathNotFound( e.getMessage() );
+        }
     }
 
     private static TemplateType findLastsTemplateType( AstRender astRender ) {
