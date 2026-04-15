@@ -32,14 +32,32 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? exprs orExprs defaultValue? function? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | exprsCode) defaultValue? function? (IF ifCondition)? {
         $ret = new Expression(
-                                $BLOCK_COMMENT.text,
-                                $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
-                                Lists.concat( List.of( $exprs.ret ), $orExprs.ret ),
-                                $defaultValue.ctx != null ? $defaultValue.ret : null,
-                                $function.ctx != null ? $function.ret : null );
+          $BLOCK_COMMENT.text,
+          $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
+          $ifCode.ctx != null ? $ifCode.ret : null,
+          $exprsCode.ctx != null ? $exprsCode.ret : null,
+          $defaultValue.ctx != null ? $defaultValue.ret : null,
+          $function.ctx != null ? $function.ret : null );
       }
+    ;
+
+ifCode returns [IfCondition ret]
+    : IF ifCondition THEN thenCode=exprs (ELSE elseCode=exprs)? END {
+        $ret = new IfCondition( $ifCondition.ret, $thenCode.ret, $elseCode.ctx != null ? $elseCode.ret : null );
+      }
+    ;
+
+exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
+    : exprs orExprs {
+        $ret.add( $exprs.ret );
+        $ret.addAll( $orExprs.ret );
+      }
+    ;
+
+ifCondition returns [Exprs ret]
+    : exprs { $ret = $exprs.ret; }
     ;
     
 
@@ -86,7 +104,7 @@ exprs returns [Exprs ret = new Exprs()]
     : expr  { $ret.exprs.add( $expr.ret ); }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
     | expr  { $ret.exprs.add( $expr.ret ); }
-      DOT? concatenation { $ret.concatenation =$concatenation.ret; }
+      DOT? concatenation { $ret.concatenation = $concatenation.ret; }
     | expr { $ret.exprs.add( $expr.ret ); }
       (DOT expr {
         $ret.exprs.add( $expr.ret );

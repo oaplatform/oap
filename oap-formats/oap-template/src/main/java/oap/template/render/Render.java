@@ -42,6 +42,7 @@ public class Render {
     public final int tab;
     public final String content;
     public final String tryVariable;
+    public final String booleanIfVar;
     public final String prefix;
     private final AtomicInteger ids;
     private final StringBuilder sb;
@@ -50,7 +51,7 @@ public class Render {
     private Render( String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
                     String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable ) {
         this( new StringBuilder(), templateName, content, parentType, templateAccumulator, field, templateAccumulatorName, tab, ids, tryVariable,
-            "", new ArrayDeque<>() {
+            null, "", new ArrayDeque<>() {
                 {
                     this.addFirst( new HashSet<>() );
                 }
@@ -59,7 +60,7 @@ public class Render {
 
     public Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
                    String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable,
-                   String prefix,
+                   String booleanIfVar, String prefix,
                    ArrayDeque<HashSet<String>> variables ) {
         this.sb = sb;
         this.templateName = templateName;
@@ -71,6 +72,7 @@ public class Render {
         this.tab = tab;
         this.ids = ids;
         this.tryVariable = tryVariable;
+        this.booleanIfVar = booleanIfVar;
         this.prefix = prefix;
 
         this.variables = variables;
@@ -82,32 +84,32 @@ public class Render {
 
     public Render withField( String field ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, variableNameWithPrefix( field ), variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, variableNameWithPrefix( field ), variables );
     }
 
     public Render withContent( String content ) {
         return new Render( this.sb, this.templateName, content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, prefix, variables );
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
+            templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, prefix, variables );
     }
 
     public Render tabInc() {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab + 1, ids, tryVariable, prefix, variables );
+            this.templateAccumulatorName, this.tab + 1, ids, tryVariable, booleanIfVar, prefix, variables );
     }
 
     public Render tabDec() {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab - 1, ids, tryVariable, prefix, variables );
+            this.templateAccumulatorName, this.tab - 1, ids, tryVariable, booleanIfVar, prefix, variables );
     }
 
     public Render withParentType( TemplateType parentType ) {
         return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, prefix, variables );
     }
 
     public Render n() {
@@ -178,7 +180,12 @@ public class Render {
 
     public Render withTryVariable( String tryVariable ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, prefix, variables );
+    }
+
+    public Render withBooleanIfVar( String booleanIfVar ) {
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, prefix, variables );
     }
 
     public Render newBlock() {
@@ -189,7 +196,7 @@ public class Render {
         newStack.addFirst( new HashSet<>() );
 
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, prefix, newStack );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, prefix, newStack );
     }
 
     private String variableNameWithPrefix( String name ) {
