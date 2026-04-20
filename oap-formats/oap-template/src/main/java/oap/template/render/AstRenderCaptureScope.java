@@ -22,45 +22,22 @@
  * SOFTWARE.
  */
 
-package oap.template.tree;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@ToString
-public class Exprs {
-    public final ArrayList<Expr> exprs = new ArrayList<>();
-    public Math math = null;
-    public Concatenation concatenation = null;
-    public boolean rootScoped = false;
-
-    public Exprs() {
+/**
+ * Leaf node for the scope path in AstRenderWith / AstRenderBlockWith.
+ * Assigns render.field (the resolved scope variable) into render.scopeVar.
+ */
+@ToString( callSuper = true )
+class AstRenderCaptureScope extends AstRender {
+    AstRenderCaptureScope( TemplateType type ) {
+        super( type );
     }
 
-    public Exprs( List<Expr> exprs ) {
-        this.exprs.addAll( exprs );
-    }
-
-    public String print() {
-        StringBuilder sb = new StringBuilder();
-
-        if( !exprs.isEmpty() ) {
-            sb.append( "LIST\n" );
-
-            var it = exprs.iterator();
-            while( it.hasNext() ) {
-                var item = it.next();
-
-                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
-
-            }
-        }
-
-        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
-        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
-
-        return sb.toString();
+    @Override
+    public void render( Render render ) {
+        render.ntab().append( "%s = %s;", render.scopeVar, render.field );
     }
 }

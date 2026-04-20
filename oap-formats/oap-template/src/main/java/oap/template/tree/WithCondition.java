@@ -24,43 +24,14 @@
 
 package oap.template.tree;
 
-import lombok.ToString;
-
 import java.util.ArrayList;
-import java.util.List;
 
-@ToString
-public class Exprs {
-    public final ArrayList<Expr> exprs = new ArrayList<>();
-    public Math math = null;
-    public Concatenation concatenation = null;
-    public boolean rootScoped = false;
+public class WithCondition {
+    public final Exprs scopePath;
+    public final ArrayList<Exprs> body;
 
-    public Exprs() {
-    }
-
-    public Exprs( List<Expr> exprs ) {
-        this.exprs.addAll( exprs );
-    }
-
-    public String print() {
-        StringBuilder sb = new StringBuilder();
-
-        if( !exprs.isEmpty() ) {
-            sb.append( "LIST\n" );
-
-            var it = exprs.iterator();
-            while( it.hasNext() ) {
-                var item = it.next();
-
-                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
-
-            }
-        }
-
-        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
-        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
-
-        return sb.toString();
+    public WithCondition( Exprs scopePath, ArrayList<Exprs> body ) {
+        this.scopePath = scopePath;
+        this.body = body;
     }
 }

@@ -4,6 +4,7 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
+import oap.template.tree.WithCondition;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -49,6 +50,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitIfCode(TemplateGrammarExpression.IfCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterWithCode(TemplateGrammarExpression.WithCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitWithCode(TemplateGrammarExpression.WithCodeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

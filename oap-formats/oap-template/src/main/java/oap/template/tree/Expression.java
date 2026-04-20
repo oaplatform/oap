@@ -37,14 +37,22 @@ public class Expression {
     public final String castType;
     @Nullable
     public final IfCondition ifCondition;
+    @Nullable
+    public final WithCondition withCondition;
     public final ArrayList<Exprs> or = new ArrayList<>();
     public final String defaultValue;
     public final Func function;
 
     public Expression( String comment, String castType, @Nullable IfCondition ifCondition, @Nullable List<Exprs> or, String defaultValue, Func function ) {
+        this( comment, castType, ifCondition, null, or, defaultValue, function );
+    }
+
+    public Expression( String comment, String castType, @Nullable IfCondition ifCondition, @Nullable WithCondition withCondition,
+                       @Nullable List<Exprs> or, String defaultValue, Func function ) {
         this.comment = comment;
         this.castType = castType;
         this.ifCondition = ifCondition;
+        this.withCondition = withCondition;
         if( or != null ) {
             this.or.addAll( or );
         }
@@ -63,6 +71,12 @@ public class Expression {
             if( ifCondition.elseCode != null ) {
                 sb.append( "ELSE\n" ).append( "└── " ).append( ifCondition.elseCode.print() ).append( '\n' );
             }
+        }
+        if( withCondition != null ) {
+            sb.append( "WITH\n" ).append( "└── " ).append( withCondition.scopePath.print() ).append( '\n' );
+            sb.append( "BODY\n" );
+            for( Exprs bodyExprs : withCondition.body )
+                sb.append( "└── " ).append( bodyExprs.print() ).append( '\n' );
         }
         if( !or.isEmpty() ) {
             sb.append( or.size() > 1 ? "OR\n" : "ROOT\n" );

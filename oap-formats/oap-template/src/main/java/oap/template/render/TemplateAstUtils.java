@@ -35,6 +35,7 @@ import oap.template.TemplateGrammarExpression;
 import oap.template.TemplateLexerExpression;
 import oap.template.ThrowingErrorListener;
 import oap.template.tree.BlockIfElement;
+import oap.template.tree.BlockWithElement;
 import oap.template.tree.Element;
 import oap.template.tree.Elements;
 import oap.template.tree.Expr;
@@ -44,6 +45,7 @@ import oap.template.tree.Exprs;
 import oap.template.tree.Func;
 import oap.template.tree.IfCondition;
 import oap.template.tree.TextElement;
+import oap.template.tree.WithCondition;
 import oap.util.Arrays;
 import oap.util.Lists;
 import org.antlr.v4.runtime.BufferedTokenStream;
@@ -150,6 +152,11 @@ public class TemplateAstUtils {
 
     static AstRender toAst( Expression expression, TemplateType templateType, String castType, String defaultValue,
                             Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
+        return toAst( expression, templateType, templateType, castType, defaultValue, builtInFunction, errorStrategy );
+    }
+
+    static AstRender toAst( Expression expression, TemplateType templateType, TemplateType rootTemplateType, String castType, String defaultValue,
+                            Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
         ArrayList<AstRender> orAst = new ArrayList<AstRender>();
 
         TemplateType lastTemplateType = null;
@@ -157,12 +164,13 @@ public class TemplateAstUtils {
         for( int i = 0; i < expression.or.size(); i++ ) {
             Exprs item = expression.or.get( i );
 
-            TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( templateType, item, errorStrategy );
+            TemplateType effectiveType = item.rootScoped ? rootTemplateType : templateType;
+            TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( effectiveType, item, errorStrategy );
 
             ErrorStrategy itemErrorStrategy = i < expression.or.size() - 1 ? IGNORE : errorStrategy;
             AstRender itemAst = TemplateAstUtils.toAst( item,
                 expression.or.size() == 1 ? expression.function : null,
-                templateType, expressionResultType, castType, defaultValue, builtInFunction, itemErrorStrategy );
+                effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, itemErrorStrategy );
             orAst.add( itemAst );
 
             TemplateType itemTemplateType = findLastsTemplateType( itemAst );
@@ -200,10 +208,30 @@ public class TemplateAstUtils {
             TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( templateType, ifCondition.thenCode, errorStrategy );
 
             AstRender conditionAst = toConditionAst( ifCondition.condition, templateType, errorStrategy );
-            AstRender thenCode = toAst( ifCondition.thenCode, null, templateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy );
-            AstRender elseCode = ifCondition.elseCode != null ? toAst( ifCondition.elseCode, null, templateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy ) : null;
+            AstRender thenCode = toAst( ifCondition.thenCode, null, templateType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy );
+            AstRender elseCode = ifCondition.elseCode != null ? toAst( ifCondition.elseCode, null, templateType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy ) : null;
 
             return new AstRenderBooleanIf( templateType, conditionAst, thenCode, elseCode );
+        }
+
+        WithCondition withCondition = expression.withCondition;
+        if( withCondition != null ) {
+            ArrayList<Exprs> expandedOr = new ArrayList<>();
+            for( Exprs bodyExprs : withCondition.body ) {
+                if( bodyExprs.rootScoped ) {
+                    expandedOr.add( bodyExprs );
+                } else {
+                    Exprs merged = new Exprs();
+                    merged.exprs.addAll( withCondition.scopePath.exprs );
+                    merged.exprs.addAll( bodyExprs.exprs );
+                    merged.math = bodyExprs.math;
+                    merged.concatenation = bodyExprs.concatenation;
+                    expandedOr.add( merged );
+                }
+            }
+            Expression expandedExpression = new Expression( expression.comment, expression.castType, null, null,
+                expandedOr, expression.defaultValue, expression.function );
+            return toAst( expandedExpression, templateType, rootTemplateType, castType, defaultValue, builtInFunction, errorStrategy );
         }
 
         return mainAst;
@@ -278,6 +306,79 @@ public class TemplateAstUtils {
         }
     }
 
+    private record ScopeAstResult( AstRender scopeAst, TemplateType scopeType ) {}
+
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
+    private static ScopeAstResult toScopeAst( Exprs scopeExprs, TemplateType templateType, ErrorStrategy errorStrategy ) {
+        try {
+            TemplateType currentTemplateType = templateType;
+            Chain result = new Chain();
+
+            for( int i = 0; i < scopeExprs.exprs.size(); i++ ) {
+                Expr expr = scopeExprs.exprs.get( i );
+
+                if( currentTemplateType.isInstanceOf( Optional.class ) ) {
+                    TemplateType valueType = currentTemplateType.getActualTypeArguments0();
+                    AstRenderOptional ast = new AstRenderOptional( valueType );
+                    i--;
+                    result.add( ast );
+                    currentTemplateType = valueType;
+                } else if( currentTemplateType.nullable ) {
+                    TemplateType newType = new TemplateType( currentTemplateType.type, false );
+                    AstRenderNullable ast = new AstRenderNullable( newType );
+                    i--;
+                    result.add( ast );
+                    currentTemplateType = newType;
+                } else if( !expr.method ) {
+                    Class<?> parentClass = currentTemplateType.getTypeClass();
+                    java.lang.reflect.Field field = findField( parentClass, expr.name );
+                    boolean nullable = field.isAnnotationPresent( Nullable.class )
+                        || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
+                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
+                    result.add( ast );
+                    currentTemplateType = fieldType;
+                } else {
+                    Class<?> parentClass = currentTemplateType.getTypeClass();
+                    Method method = Arrays
+                        .find( c -> c.getName().equals( expr.name ), parentClass.getMethods() )
+                        .orElse( null );
+                    if( method == null )
+                        method = parentClass.getMethod( expr.name );
+                    boolean nullable = method.isAnnotationPresent( Nullable.class )
+                        || !method.getReturnType().isPrimitive() && !method.isAnnotationPresent( Nonnull.class );
+                    TemplateType fieldType = new TemplateType( method.getGenericReturnType(), nullable );
+                    AstRenderMethod ast = new AstRenderMethod( expr.name, fieldType, expr.arguments );
+                    result.add( ast );
+                    currentTemplateType = fieldType;
+                }
+            }
+
+            TemplateType resolvedScopeType = currentTemplateType;
+            if( resolvedScopeType.isOptional() ) resolvedScopeType = resolvedScopeType.getActualTypeArguments0();
+
+            AstRenderCaptureScope captureNode = new AstRenderCaptureScope( resolvedScopeType );
+
+            if( currentTemplateType.isOptional() ) {
+                TemplateType actualType = currentTemplateType.getActualTypeArguments0();
+                AstRenderOptional ast = new AstRenderOptional( actualType );
+                ast.addChild( new AstRenderCaptureScope( actualType ) );
+                result.add( ast );
+            } else if( currentTemplateType.nullable ) {
+                AstRenderNullable ast = new AstRenderNullable( currentTemplateType );
+                ast.addChild( captureNode );
+                result.add( ast );
+            } else {
+                result.add( captureNode );
+            }
+
+            return new ScopeAstResult( result.head(), resolvedScopeType );
+        } catch( NoSuchFieldException | NoSuchMethodException e ) {
+            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
+            return new ScopeAstResult( new AstRenderPathNotFound( e.getMessage() ), new TemplateType( Object.class, true ) );
+        }
+    }
+
     private static TemplateType findLastsTemplateType( AstRender astRender ) {
         if( astRender.children.isEmpty() ) return astRender.type;
 
@@ -288,8 +389,18 @@ public class TemplateAstUtils {
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder", "checkstyle:ParameterAssignment" } )
     private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
                                     String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+        return toAst( exprs, function, templateType, templateType, resultType, castType, defaultValue, builtInFunction, errorStrategy );
+    }
+
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder", "checkstyle:ParameterAssignment" } )
+    private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType rootTemplateType, TemplateType resultType,
+                                    String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         TemplateType currentTemplateType = templateType;
         Chain result = new Chain();
+
+        if( exprs.rootScoped ) {
+            result.add( new AstRenderSwitchToRoot( rootTemplateType ) );
+        }
 
         try {
             FieldType castFieldType = castType != null ? FieldType.parse( castType ) : null;
@@ -466,6 +577,12 @@ public class TemplateAstUtils {
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public static AstRenderRoot toAst( Elements elements, TemplateType templateType, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+        return toAst( elements, templateType, templateType, builtInFunction, errorStrategy );
+    }
+
+    @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
+    private static AstRenderRoot toAst( Elements elements, TemplateType templateType, TemplateType rootTemplateType,
+                                        Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
         applyWhitespaceTrim( elements.elements );
         AstRenderRoot astRoot = new AstRenderRoot( templateType );
         for( Element element : elements.elements ) {
@@ -484,7 +601,7 @@ public class TemplateAstUtils {
                     log.trace( e.expression + "\n" + tree.print() );
 
                     astRender = new AstRenderComment( templateType, "// " + e.expression );
-                    astRender.addChild( toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
+                    astRender.addChild( toAst( tree, templateType, rootTemplateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
                 } catch( Exception exp ) {
                     throw new TemplateException( e.expression + ": " + exp.getMessage(), exp );
                 }
@@ -498,14 +615,29 @@ public class TemplateAstUtils {
                     }
                     Exprs conditionExprs = grammar.exprs().ret;
                     AstRender conditionAst = toConditionAst( conditionExprs, templateType, errorStrategy );
-                    AstRenderRoot thenRoot = toAst( b.thenElements, templateType, builtInFunction, errorStrategy );
+                    AstRenderRoot thenRoot = toAst( b.thenElements, templateType, rootTemplateType, builtInFunction, errorStrategy );
                     AstRenderRoot elseRoot = b.elseElements != null
-                        ? toAst( b.elseElements, templateType, builtInFunction, errorStrategy )
+                        ? toAst( b.elseElements, templateType, rootTemplateType, builtInFunction, errorStrategy )
                         : null;
                     astRender = new AstRenderBlockIf( templateType, conditionAst, thenRoot.children,
                         elseRoot != null ? elseRoot.children : null );
                 } catch( Exception exp ) {
                     throw new TemplateException( b.conditionPath + ": " + exp.getMessage(), exp );
+                }
+            } else if( element instanceof BlockWithElement w ) {
+                try {
+                    TemplateLexerExpression lexer = new TemplateLexerExpression( CharStreams.fromString( w.scopePath ) );
+                    TemplateGrammarExpression grammar = new TemplateGrammarExpression( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+                    if( errorStrategy == ErrorStrategy.ERROR ) {
+                        lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+                        grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
+                    }
+                    Exprs scopeExprs = grammar.exprs().ret;
+                    ScopeAstResult scopeResult = toScopeAst( scopeExprs, templateType, errorStrategy );
+                    AstRenderRoot bodyRoot = toAst( w.body, scopeResult.scopeType, rootTemplateType, builtInFunction, errorStrategy );
+                    astRender = new AstRenderBlockWith( templateType, scopeResult.scopeAst, scopeResult.scopeType, bodyRoot.children );
+                } catch( Exception exp ) {
+                    throw new TemplateException( w.scopePath + ": " + exp.getMessage(), exp );
                 }
             } else {
                 throw new TemplateException( "Unknown element " + element.getClass() );

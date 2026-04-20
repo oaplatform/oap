@@ -22,45 +22,32 @@
  * SOFTWARE.
  */
 
-package oap.template.tree;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.List;
+/**
+ * Inline with: {{ with (field1) field2 | default field3 end }}
+ * Resolves the scope path once, then evaluates body expressions against the scope type.
+ */
+@ToString( callSuper = true )
+public class AstRenderWith extends AstRender {
+    private final AstRender scopeAst;
+    private final TemplateType scopeType;
+    private final AstRender bodyAst;
 
-@ToString
-public class Exprs {
-    public final ArrayList<Expr> exprs = new ArrayList<>();
-    public Math math = null;
-    public Concatenation concatenation = null;
-    public boolean rootScoped = false;
-
-    public Exprs() {
+    public AstRenderWith( TemplateType type, AstRender scopeAst, TemplateType scopeType, AstRender bodyAst ) {
+        super( type );
+        this.scopeAst = scopeAst;
+        this.scopeType = scopeType;
+        this.bodyAst = bodyAst;
     }
 
-    public Exprs( List<Expr> exprs ) {
-        this.exprs.addAll( exprs );
-    }
-
-    public String print() {
-        StringBuilder sb = new StringBuilder();
-
-        if( !exprs.isEmpty() ) {
-            sb.append( "LIST\n" );
-
-            var it = exprs.iterator();
-            while( it.hasNext() ) {
-                var item = it.next();
-
-                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
-
-            }
-        }
-
-        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
-        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
-
-        return sb.toString();
+    @Override
+    public void render( Render render ) {
+        String sv = render.newVariable();
+        render.ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
+        scopeAst.render( render.withScopeVar( sv ) );
+        bodyAst.render( render.withField( sv ).withParentType( scopeType ) );
     }
 }

@@ -8,6 +8,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
 - [Architecture](#architecture)
 - [Template Syntax](#template-syntax)
   - [Delimiters](#delimiters)
+  - [Whitespace trimming](#whitespace-trimming)
   - [Field access](#field-access)
   - [Null safety](#null-safety)
   - [Default values (`??`)](#default-values-)
@@ -16,6 +17,8 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Math](#math)
   - [If / then / else (inline)](#if--then--else-inline)
   - [If / else / end (block)](#if--else--end-block)
+  - [With scope (inline)](#with-scope-inline)
+  - [With scope (block)](#with-scope-block)
   - [Pipe-to-function](#pipe-to-function)
   - [Cast types](#cast-types)
   - [Block comments](#block-comments)
@@ -83,6 +86,10 @@ Field resolution honours `@JsonProperty` and `@JsonAlias` annotations as alterna
 | `${ expr }` | Expression block |
 | `{{ expr }}` | Alternate expression block (identical semantics) |
 | `$${ expr }` | Escape — renders the literal text `${expr}` without evaluation |
+| `{{- expr }}` | Expression block; trim trailing whitespace from preceding text |
+| `{{ expr -}}` | Expression block; trim leading whitespace from following text |
+| `{{- expr -}}` | Expression block; trim whitespace on both sides |
+| `{{%- if … }}` | Block-if; trim trailing whitespace from preceding text |
 
 Everything outside a delimiter is emitted verbatim.
 
@@ -91,6 +98,38 @@ Everything outside a delimiter is emitted verbatim.
 "price: ${ price }"         → "price: 9.99"
 "literal: $${field}"        → "literal: ${field}"
 ```
+
+### Whitespace trimming
+
+By default all text outside delimiters is emitted verbatim, including spaces and newlines. The trim markers let you collapse surrounding whitespace without changing the template source layout.
+
+- `{{-` — strips all **trailing** whitespace (spaces, tabs, newlines) from the text immediately before the expression.
+- `-}}` — strips all **leading** whitespace from the text immediately after the expression.
+- Both markers can be combined on the same expression.
+- `{{%-` — same left-trim behaviour, but on a block-`if` condition line.
+- If trimming reduces an adjacent text segment to an empty string, it is dropped entirely.
+
+```
+aa {{- field1 -}} 
+bb
+```
+
+With `field1 = "test"` this renders as `aatestbb`: the space before `{{-` is stripped from `"aa "`, and the space + newline after `-}}` is stripped from `" \nbb"`.
+
+```
+{{- field1 }}   → trims "aa " to "aa",  result: "aatest"
+{{ field1 -}}   → trims " bb" to "bb",  result: "test bb" → "testbb"
+{{- field1 -}}  → trims both sides
+```
+
+Block-if left-trim strips the newline that would otherwise precede the `{{% if … }}` line:
+
+```
+line1
+{{%- if flag }}content{{% end }}
+```
+
+Renders as `line1content` when `flag` is `true` (the `\n` after `line1` is stripped).
 
 ### Field access
 
@@ -251,6 +290,73 @@ Nested example:
   {{% end }}
 {{% end }}
 ```
+
+### With scope (inline)
+
+`{{ with (scopePath) bodyExpr end }}` — evaluates `bodyExpr` relative to the object resolved by `scopePath`. At compile time the scope path is prepended to each body expression, so this is purely syntactic sugar for chained field access.
+
+```
+{{ with (child) field end }}
+```
+is equivalent to `{{ child.field }}`.
+
+If `scopePath` resolves to null, the body expression renders its default value, or empty string if no default is set.
+
+**With a default:**
+
+```
+{{ with (child) field ?? 'n/a' end }}
+```
+
+Renders `n/a` when `child` is null or `child.field` is null.
+
+**Fallback chain in body:**
+
+```
+{{ with (child) field | default field2 end }}
+```
+
+Both alternatives are evaluated against `child` (expanded to `child.field | default child.field2`); the first non-null result is used.
+
+**Root scope (`$`):** prefix any body expression with `$.` to resolve it from the root object instead of the `with` scope:
+
+```
+{{ with (child) field | default $.rootField end }}
+```
+
+When `child.field` is null, `$.rootField` is resolved from the root object.
+
+### With scope (block)
+
+`{{% with scopePath }} … {{% end %}}` — all `{{ expr }}` blocks inside the body are resolved relative to the object at `scopePath`.
+
+```
+{{% with child }}
+{{ field }}-{{ field2 }}
+{{% end }}
+```
+
+**Null scope behaviour:** when `scopePath` resolves to null, literal text in the body is still emitted. Field expressions render their default value, or empty string if no default is set:
+
+```
+{{% with child }}A{{ field ?? 'none' }}B{{% end }}
+```
+
+Renders `AnoneB` when `child` is null. Renders `A` + field value + `B` when `child` is non-null.
+
+**Root scope (`$`):** prefix any inner expression with `$.` to resolve it from the root object:
+
+```
+{{% with child }}{{ $.rootField }} / {{ field }}{{% end }}
+```
+
+**Rules:**
+
+- `scopePath` is a field path (e.g. `child`, `a.b`). All `{{ expr }}` expressions inside the body are resolved against the type at that path.
+- `$.fieldName` inside the body always resolves from the original root object regardless of nesting depth.
+- Use `??` for literal defaults inside body expressions (`{{ field ?? 'default' }}`). Or-chain fallbacks between two fields (`{{ field | default field2 }}`) are not supported inside block-with bodies.
+- Blocks may be nested inside other block constructs (`{{% if … }}`, other `{{% with … }}`).
+- The `{{% end }}` tag closes the nearest open block.
 
 ### Pipe-to-function
 

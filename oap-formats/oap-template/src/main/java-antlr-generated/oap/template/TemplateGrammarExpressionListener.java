@@ -4,6 +4,7 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
+import oap.template.tree.WithCondition;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -40,6 +41,16 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitIfCode(TemplateGrammarExpression.IfCodeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#withCode}.
+	 * @param ctx the parse tree
+	 */
+	void enterWithCode(TemplateGrammarExpression.WithCodeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#withCode}.
+	 * @param ctx the parse tree
+	 */
+	void exitWithCode(TemplateGrammarExpression.WithCodeContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#exprsCode}.
 	 * @param ctx the parse tree
