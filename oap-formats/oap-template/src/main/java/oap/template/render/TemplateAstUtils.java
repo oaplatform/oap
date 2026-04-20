@@ -59,7 +59,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static oap.template.ErrorStrategy.IGNORE;
-import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.stripEnd;
+import static org.apache.commons.lang3.StringUtils.stripStart;
 
 @Slf4j
 public class TemplateAstUtils {
