@@ -31,13 +31,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ExpressionElement implements Element {
     public final String expression;
+    public final boolean trimLeft;
+    public final boolean trimRight;
 
     public ExpressionElement( String expression ) {
+        this( expression, false, false );
+    }
+
+    public ExpressionElement( String expression, boolean trimLeft, boolean trimRight ) {
         this.expression = expression;
+        this.trimLeft = trimLeft;
+        this.trimRight = trimRight;
     }
 
     @Override
     public String print() {
-        return "EXPR '" + expression + "'";
+        return "EXPR '" + expression + "'" + ( trimLeft ? " TRIML" : "" ) + ( trimRight ? " TRIMR" : "" );
     }
 }

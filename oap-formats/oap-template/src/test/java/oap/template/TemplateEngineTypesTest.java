@@ -25,13 +25,8 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.testng.Fixtures;
-import oap.util.Dates;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Method;
 import java.util.Optional;
 
 import static oap.template.ErrorStrategy.ERROR;
@@ -39,24 +34,11 @@ import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TemplateEngineTypesTest extends Fixtures {
-    private TemplateEngine engine;
-    private String testMethodName;
-
-    @BeforeClass
-    public void beforeClass() {
-        engine = new TemplateEngine( Dates.d( 10 ) );
-    }
-
-    @BeforeMethod
-    public void nameBefore( Method method ) {
-        testMethodName = method.getName();
-    }
-
+public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
     @Test
     public void testTypes() {
-        var templateAccumulator = new TemplateEngineTest.TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
+        TestPrimitiveTemplateAccumulatorString templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        TestTemplateClass templateClass = new TestTemplateClass();
         templateClass.booleanField = true;
         templateClass.booleanObjectField = true;
         templateClass.intField = 1;
@@ -77,8 +59,8 @@ public class TemplateEngineTypesTest extends Fixtures {
 
     @Test
     public void testObjectReference() {
-        var templateAccumulator = new TemplateEngineTest.TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
+        TestPrimitiveTemplateAccumulatorString templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        TestTemplateClass templateClass = new TestTemplateClass();
         templateClass.child = new TestTemplateClass();
         templateClass.child.intField = 100;
 
@@ -91,8 +73,8 @@ public class TemplateEngineTypesTest extends Fixtures {
 
     @Test
     public void testObjectReferenceWithConcatenation() {
-        var templateAccumulator = new TemplateEngineTest.TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
+        TestPrimitiveTemplateAccumulatorString templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        TestTemplateClass templateClass = new TestTemplateClass();
         templateClass.child = new TestTemplateClass();
         templateClass.child.child = new TestTemplateClass();
         templateClass.child.child.field = "v1";
@@ -107,8 +89,8 @@ public class TemplateEngineTypesTest extends Fixtures {
 
     @Test
     public void testNullableObjectReference() {
-        var templateAccumulator = new TemplateEngineTest.TestPrimitiveTemplateAccumulatorString();
-        var templateClass = new TestTemplateClass();
+        TestPrimitiveTemplateAccumulatorString templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
+        TestTemplateClass templateClass = new TestTemplateClass();
         templateClass.childNullable = new TestTemplateClass();
         templateClass.childNullable.intField = 100;
 
@@ -121,7 +103,7 @@ public class TemplateEngineTypesTest extends Fixtures {
 
     @Test
     public void testDefaultBoolean() {
-        var c = new TestTemplateClass();
+        TestTemplateClass c = new TestTemplateClass();
         c.childNullable = null;
         c.childOpt = Optional.empty();
 

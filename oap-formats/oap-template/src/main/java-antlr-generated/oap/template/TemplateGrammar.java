@@ -28,9 +28,10 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		STARTBLOCKIF=1, STARTBLOCKELSE=2, STARTBLOCKEND=3, STARTESCEXPR=4, STARTEXPR=5, 
-		STARTEXPR2=6, TEXT=7, LBRACE=8, RBRACE=9, EXPRESSION=10, LBRACE2=11, RBRACE2=12, 
-		EXPRESSION2=13, BLOCK_IF_CONTENT=14, BLOCK_IF_RBRACE=15;
+		STARTBLOCKIF_LTRIM=1, STARTBLOCKIF=2, STARTBLOCKELSE=3, STARTBLOCKEND=4, 
+		STARTESCEXPR=5, STARTEXPR=6, STARTEXPR2_LTRIM=7, STARTEXPR2=8, TEXT=9, 
+		LBRACE=10, RBRACE=11, EXPRESSION=12, LBRACE2=13, RBRACE2_RTRIM=14, RBRACE2=15, 
+		EXPRESSION2=16, BLOCK_IF_CONTENT=17, BLOCK_IF_RBRACE=18;
 	public static final int
 		RULE_elements = 0, RULE_element = 1, RULE_blockIfElement = 2, RULE_blockBody = 3, 
 		RULE_text = 4, RULE_comment = 5, RULE_expression = 6, RULE_expressionContent = 7;
@@ -44,16 +45,17 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, "'}}'"
+			null, null, null, null, null, null, null, "'{{-'", null, null, null, 
+			null, null, null, "'-}}'", null, null, null, "'}}'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "STARTBLOCKIF", "STARTBLOCKELSE", "STARTBLOCKEND", "STARTESCEXPR", 
-			"STARTEXPR", "STARTEXPR2", "TEXT", "LBRACE", "RBRACE", "EXPRESSION", 
-			"LBRACE2", "RBRACE2", "EXPRESSION2", "BLOCK_IF_CONTENT", "BLOCK_IF_RBRACE"
+			null, "STARTBLOCKIF_LTRIM", "STARTBLOCKIF", "STARTBLOCKELSE", "STARTBLOCKEND", 
+			"STARTESCEXPR", "STARTEXPR", "STARTEXPR2_LTRIM", "STARTEXPR2", "TEXT", 
+			"LBRACE", "RBRACE", "EXPRESSION", "LBRACE2", "RBRACE2_RTRIM", "RBRACE2", 
+			"EXPRESSION2", "BLOCK_IF_CONTENT", "BLOCK_IF_RBRACE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -154,7 +156,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			setState(21);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 242L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 998L) != 0)) {
 				{
 				{
 				setState(16);
@@ -241,14 +243,16 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				}
 				break;
 			case STARTEXPR:
+			case STARTEXPR2_LTRIM:
 			case STARTEXPR2:
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(32);
 				((ElementContext)_localctx).expression = expression(aliases);
-				 ((ElementContext)_localctx).ret =  new ExpressionElement( ((ElementContext)_localctx).expression.ret ); 
+				 ((ElementContext)_localctx).ret =  new ExpressionElement( ((ElementContext)_localctx).expression.ret, ((ElementContext)_localctx).expression.trimLeft, ((ElementContext)_localctx).expression.trimRight ); 
 				}
 				break;
+			case STARTBLOCKIF_LTRIM:
 			case STARTBLOCKIF:
 				enterOuterAlt(_localctx, 4);
 				{
@@ -279,10 +283,11 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		public Token BLOCK_IF_CONTENT;
 		public BlockBodyContext thenBranch;
 		public BlockBodyContext elseBranch;
-		public TerminalNode STARTBLOCKIF() { return getToken(TemplateGrammar.STARTBLOCKIF, 0); }
 		public TerminalNode BLOCK_IF_CONTENT() { return getToken(TemplateGrammar.BLOCK_IF_CONTENT, 0); }
 		public TerminalNode BLOCK_IF_RBRACE() { return getToken(TemplateGrammar.BLOCK_IF_RBRACE, 0); }
 		public TerminalNode STARTBLOCKEND() { return getToken(TemplateGrammar.STARTBLOCKEND, 0); }
+		public TerminalNode STARTBLOCKIF() { return getToken(TemplateGrammar.STARTBLOCKIF, 0); }
+		public TerminalNode STARTBLOCKIF_LTRIM() { return getToken(TemplateGrammar.STARTBLOCKIF_LTRIM, 0); }
 		public List<BlockBodyContext> blockBody() {
 			return getRuleContexts(BlockBodyContext.class);
 		}
@@ -314,7 +319,15 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(40);
-			match(STARTBLOCKIF);
+			_la = _input.LA(1);
+			if ( !(_la==STARTBLOCKIF_LTRIM || _la==STARTBLOCKIF) ) {
+			_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
 			setState(41);
 			((BlockIfElementContext)_localctx).BLOCK_IF_CONTENT = match(BLOCK_IF_CONTENT);
 			setState(42);
@@ -339,7 +352,8 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 				      ((BlockIfElementContext)_localctx).ret =  new BlockIfElement(
 				          StringUtils.trim( (((BlockIfElementContext)_localctx).BLOCK_IF_CONTENT!=null?((BlockIfElementContext)_localctx).BLOCK_IF_CONTENT.getText():null) ),
 				          ((BlockIfElementContext)_localctx).thenBranch.ret,
-				          ((BlockIfElementContext)_localctx).elseBranch != null ? ((BlockIfElementContext)_localctx).elseBranch.ret : null
+				          ((BlockIfElementContext)_localctx).elseBranch != null ? ((BlockIfElementContext)_localctx).elseBranch.ret : null,
+				          _localctx.start.getType() == STARTBLOCKIF_LTRIM
 				      );
 				  
 			}
@@ -392,7 +406,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			setState(56);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 242L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 998L) != 0)) {
 				{
 				{
 				setState(51);
@@ -527,14 +541,18 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	public static class ExpressionContext extends ParserRuleContext {
 		public Map<String,String> aliases;
 		public String ret;
+		public boolean trimLeft;
+		public boolean trimRight;
 		public ExpressionContentContext expressionContent;
 		public ExpressionContentContext expressionContent() {
 			return getRuleContext(ExpressionContentContext.class,0);
 		}
 		public TerminalNode STARTEXPR() { return getToken(TemplateGrammar.STARTEXPR, 0); }
 		public TerminalNode STARTEXPR2() { return getToken(TemplateGrammar.STARTEXPR2, 0); }
+		public TerminalNode STARTEXPR2_LTRIM() { return getToken(TemplateGrammar.STARTEXPR2_LTRIM, 0); }
 		public TerminalNode RBRACE() { return getToken(TemplateGrammar.RBRACE, 0); }
 		public TerminalNode RBRACE2() { return getToken(TemplateGrammar.RBRACE2, 0); }
+		public TerminalNode RBRACE2_RTRIM() { return getToken(TemplateGrammar.RBRACE2_RTRIM, 0); }
 		public ExpressionContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public ExpressionContext(ParserRuleContext parent, int invokingState, Map<String,String> aliases) {
 			super(parent, invokingState);
@@ -560,7 +578,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			{
 			setState(68);
 			_la = _input.LA(1);
-			if ( !(_la==STARTEXPR || _la==STARTEXPR2) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 448L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -572,7 +590,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			((ExpressionContext)_localctx).expressionContent = expressionContent();
 			setState(70);
 			_la = _input.LA(1);
-			if ( !(_la==RBRACE || _la==RBRACE2) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 51200L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -582,6 +600,8 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 			}
 
 			        ((ExpressionContext)_localctx).ret =  StringUtils.trim( (((ExpressionContext)_localctx).expressionContent!=null?_input.getText(((ExpressionContext)_localctx).expressionContent.start,((ExpressionContext)_localctx).expressionContent.stop):null) );
+			        ((ExpressionContext)_localctx).trimLeft =  _localctx.start.getType() == STARTEXPR2_LTRIM;
+			        ((ExpressionContext)_localctx).trimRight =  _input.LT(-1).getType() == RBRACE2_RTRIM;
 			        String alias = aliases.get( _localctx.ret );
 			        if( alias != null ) ((ExpressionContext)_localctx).ret =  alias;
 			    
@@ -656,7 +676,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 					{
 					setState(73);
 					_la = _input.LA(1);
-					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 16128L) != 0)) ) {
+					if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 113664L) != 0)) ) {
 					_errHandler.recoverInline(this);
 					}
 					else {
@@ -688,7 +708,7 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000fO\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0012O\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0005\u0000\u0014\b\u0000\n\u0000\f\u0000"+
@@ -701,40 +721,41 @@ public class TemplateGrammar extends TemplateGrammarAdaptor {
 		"\u0004\u0004=\b\u0004\u000b\u0004\f\u0004>\u0001\u0005\u0001\u0005\u0001"+
 		"\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001"+
 		"\u0006\u0001\u0007\u0004\u0007K\b\u0007\u000b\u0007\f\u0007L\u0001\u0007"+
-		"\u0000\u0000\b\u0000\u0002\u0004\u0006\b\n\f\u000e\u0000\u0003\u0001\u0000"+
-		"\u0005\u0006\u0002\u0000\t\t\f\f\u0001\u0000\b\rN\u0000\u0015\u0001\u0000"+
-		"\u0000\u0000\u0002&\u0001\u0000\u0000\u0000\u0004(\u0001\u0000\u0000\u0000"+
-		"\u00068\u0001\u0000\u0000\u0000\b<\u0001\u0000\u0000\u0000\n@\u0001\u0000"+
-		"\u0000\u0000\fD\u0001\u0000\u0000\u0000\u000eJ\u0001\u0000\u0000\u0000"+
-		"\u0010\u0011\u0003\u0002\u0001\u0000\u0011\u0012\u0006\u0000\uffff\uffff"+
-		"\u0000\u0012\u0014\u0001\u0000\u0000\u0000\u0013\u0010\u0001\u0000\u0000"+
-		"\u0000\u0014\u0017\u0001\u0000\u0000\u0000\u0015\u0013\u0001\u0000\u0000"+
-		"\u0000\u0015\u0016\u0001\u0000\u0000\u0000\u0016\u0018\u0001\u0000\u0000"+
-		"\u0000\u0017\u0015\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0000\u0000"+
-		"\u0001\u0019\u0001\u0001\u0000\u0000\u0000\u001a\u001b\u0003\b\u0004\u0000"+
-		"\u001b\u001c\u0006\u0001\uffff\uffff\u0000\u001c\'\u0001\u0000\u0000\u0000"+
-		"\u001d\u001e\u0003\n\u0005\u0000\u001e\u001f\u0006\u0001\uffff\uffff\u0000"+
-		"\u001f\'\u0001\u0000\u0000\u0000 !\u0003\f\u0006\u0000!\"\u0006\u0001"+
-		"\uffff\uffff\u0000\"\'\u0001\u0000\u0000\u0000#$\u0003\u0004\u0002\u0000"+
-		"$%\u0006\u0001\uffff\uffff\u0000%\'\u0001\u0000\u0000\u0000&\u001a\u0001"+
-		"\u0000\u0000\u0000&\u001d\u0001\u0000\u0000\u0000& \u0001\u0000\u0000"+
-		"\u0000&#\u0001\u0000\u0000\u0000\'\u0003\u0001\u0000\u0000\u0000()\u0005"+
-		"\u0001\u0000\u0000)*\u0005\u000e\u0000\u0000*+\u0005\u000f\u0000\u0000"+
-		"+.\u0003\u0006\u0003\u0000,-\u0005\u0002\u0000\u0000-/\u0003\u0006\u0003"+
-		"\u0000.,\u0001\u0000\u0000\u0000./\u0001\u0000\u0000\u0000/0\u0001\u0000"+
-		"\u0000\u000001\u0005\u0003\u0000\u000012\u0006\u0002\uffff\uffff\u0000"+
-		"2\u0005\u0001\u0000\u0000\u000034\u0003\u0002\u0001\u000045\u0006\u0003"+
-		"\uffff\uffff\u000057\u0001\u0000\u0000\u000063\u0001\u0000\u0000\u0000"+
-		"7:\u0001\u0000\u0000\u000086\u0001\u0000\u0000\u000089\u0001\u0000\u0000"+
-		"\u00009\u0007\u0001\u0000\u0000\u0000:8\u0001\u0000\u0000\u0000;=\u0005"+
-		"\u0007\u0000\u0000<;\u0001\u0000\u0000\u0000=>\u0001\u0000\u0000\u0000"+
-		"><\u0001\u0000\u0000\u0000>?\u0001\u0000\u0000\u0000?\t\u0001\u0000\u0000"+
-		"\u0000@A\u0005\u0004\u0000\u0000AB\u0003\u000e\u0007\u0000BC\u0005\t\u0000"+
-		"\u0000C\u000b\u0001\u0000\u0000\u0000DE\u0007\u0000\u0000\u0000EF\u0003"+
-		"\u000e\u0007\u0000FG\u0007\u0001\u0000\u0000GH\u0006\u0006\uffff\uffff"+
-		"\u0000H\r\u0001\u0000\u0000\u0000IK\u0007\u0002\u0000\u0000JI\u0001\u0000"+
-		"\u0000\u0000KL\u0001\u0000\u0000\u0000LJ\u0001\u0000\u0000\u0000LM\u0001"+
-		"\u0000\u0000\u0000M\u000f\u0001\u0000\u0000\u0000\u0006\u0015&.8>L";
+		"\u0000\u0000\b\u0000\u0002\u0004\u0006\b\n\f\u000e\u0000\u0004\u0001\u0000"+
+		"\u0001\u0002\u0001\u0000\u0006\b\u0002\u0000\u000b\u000b\u000e\u000f\u0002"+
+		"\u0000\n\r\u000f\u0010N\u0000\u0015\u0001\u0000\u0000\u0000\u0002&\u0001"+
+		"\u0000\u0000\u0000\u0004(\u0001\u0000\u0000\u0000\u00068\u0001\u0000\u0000"+
+		"\u0000\b<\u0001\u0000\u0000\u0000\n@\u0001\u0000\u0000\u0000\fD\u0001"+
+		"\u0000\u0000\u0000\u000eJ\u0001\u0000\u0000\u0000\u0010\u0011\u0003\u0002"+
+		"\u0001\u0000\u0011\u0012\u0006\u0000\uffff\uffff\u0000\u0012\u0014\u0001"+
+		"\u0000\u0000\u0000\u0013\u0010\u0001\u0000\u0000\u0000\u0014\u0017\u0001"+
+		"\u0000\u0000\u0000\u0015\u0013\u0001\u0000\u0000\u0000\u0015\u0016\u0001"+
+		"\u0000\u0000\u0000\u0016\u0018\u0001\u0000\u0000\u0000\u0017\u0015\u0001"+
+		"\u0000\u0000\u0000\u0018\u0019\u0005\u0000\u0000\u0001\u0019\u0001\u0001"+
+		"\u0000\u0000\u0000\u001a\u001b\u0003\b\u0004\u0000\u001b\u001c\u0006\u0001"+
+		"\uffff\uffff\u0000\u001c\'\u0001\u0000\u0000\u0000\u001d\u001e\u0003\n"+
+		"\u0005\u0000\u001e\u001f\u0006\u0001\uffff\uffff\u0000\u001f\'\u0001\u0000"+
+		"\u0000\u0000 !\u0003\f\u0006\u0000!\"\u0006\u0001\uffff\uffff\u0000\""+
+		"\'\u0001\u0000\u0000\u0000#$\u0003\u0004\u0002\u0000$%\u0006\u0001\uffff"+
+		"\uffff\u0000%\'\u0001\u0000\u0000\u0000&\u001a\u0001\u0000\u0000\u0000"+
+		"&\u001d\u0001\u0000\u0000\u0000& \u0001\u0000\u0000\u0000&#\u0001\u0000"+
+		"\u0000\u0000\'\u0003\u0001\u0000\u0000\u0000()\u0007\u0000\u0000\u0000"+
+		")*\u0005\u0011\u0000\u0000*+\u0005\u0012\u0000\u0000+.\u0003\u0006\u0003"+
+		"\u0000,-\u0005\u0003\u0000\u0000-/\u0003\u0006\u0003\u0000.,\u0001\u0000"+
+		"\u0000\u0000./\u0001\u0000\u0000\u0000/0\u0001\u0000\u0000\u000001\u0005"+
+		"\u0004\u0000\u000012\u0006\u0002\uffff\uffff\u00002\u0005\u0001\u0000"+
+		"\u0000\u000034\u0003\u0002\u0001\u000045\u0006\u0003\uffff\uffff\u0000"+
+		"57\u0001\u0000\u0000\u000063\u0001\u0000\u0000\u00007:\u0001\u0000\u0000"+
+		"\u000086\u0001\u0000\u0000\u000089\u0001\u0000\u0000\u00009\u0007\u0001"+
+		"\u0000\u0000\u0000:8\u0001\u0000\u0000\u0000;=\u0005\t\u0000\u0000<;\u0001"+
+		"\u0000\u0000\u0000=>\u0001\u0000\u0000\u0000><\u0001\u0000\u0000\u0000"+
+		">?\u0001\u0000\u0000\u0000?\t\u0001\u0000\u0000\u0000@A\u0005\u0005\u0000"+
+		"\u0000AB\u0003\u000e\u0007\u0000BC\u0005\u000b\u0000\u0000C\u000b\u0001"+
+		"\u0000\u0000\u0000DE\u0007\u0001\u0000\u0000EF\u0003\u000e\u0007\u0000"+
+		"FG\u0007\u0002\u0000\u0000GH\u0006\u0006\uffff\uffff\u0000H\r\u0001\u0000"+
+		"\u0000\u0000IK\u0007\u0003\u0000\u0000JI\u0001\u0000\u0000\u0000KL\u0001"+
+		"\u0000\u0000\u0000LJ\u0001\u0000\u0000\u0000LM\u0001\u0000\u0000\u0000"+
+		"M\u000f\u0001\u0000\u0000\u0000\u0006\u0015&.8>L";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

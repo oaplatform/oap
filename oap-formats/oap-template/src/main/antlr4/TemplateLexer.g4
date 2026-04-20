@@ -10,13 +10,15 @@ fragment EndExpr2       : '}}'  ;
 
 
 
-STARTBLOCKIF   : '{{%' [ \t]* 'if' [ \t]+    -> pushMode(BlockIfContent) ;
-STARTBLOCKELSE : '{{%' [ \t]* 'else' [ \t]* '}}' ;
-STARTBLOCKEND  : '{{%' [ \t]* 'end' [ \t]* '}}' ;
+STARTBLOCKIF_LTRIM : '{{%-' [ \t]* 'if' [ \t]+   -> pushMode(BlockIfContent) ;
+STARTBLOCKIF       : '{{%' [ \t]* 'if' [ \t]+    -> pushMode(BlockIfContent) ;
+STARTBLOCKELSE     : '{{%' [ \t]* 'else' [ \t]* '}}' ;
+STARTBLOCKEND      : '{{%' [ \t]* 'end' [ \t]* '}}' ;
 
-STARTESCEXPR: StartEscExpr -> pushMode(Expression)              ;
-STARTEXPR   : StartExpr -> pushMode(Expression)                 ;
-STARTEXPR2   : StartExpr2 -> pushMode(Expression2)              ;
+STARTESCEXPR    : StartEscExpr -> pushMode(Expression)          ;
+STARTEXPR       : StartExpr -> pushMode(Expression)             ;
+STARTEXPR2_LTRIM : '{{-' -> pushMode(Expression2)              ;
+STARTEXPR2      : StartExpr2 -> pushMode(Expression2)           ;
 
 TEXT		: .                                                 ;
 
@@ -29,10 +31,11 @@ EXPRESSION  : .                                                 ;
 
 mode Expression2;
 
-LBRACE2     : LBrace -> pushMode(Expression)                    ;
-RBRACE2		: EndExpr2-> popMode                                ;
+LBRACE2       : LBrace -> pushMode(Expression)                  ;
+RBRACE2_RTRIM : '-}}' -> popMode                                ;
+RBRACE2       : EndExpr2 -> popMode                             ;
 
-EXPRESSION2  : .                                                ;
+EXPRESSION2   : .                                               ;
 
 mode BlockIfContent;
 BLOCK_IF_CONTENT : ~[}]+ ;

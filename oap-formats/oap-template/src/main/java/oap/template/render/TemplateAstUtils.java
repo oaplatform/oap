@@ -59,6 +59,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static oap.template.ErrorStrategy.IGNORE;
+import static org.apache.commons.lang3.StringUtils.stripEnd;
+import static org.apache.commons.lang3.StringUtils.stripStart;
 
 @Slf4j
 public class TemplateAstUtils {
@@ -437,8 +439,34 @@ public class TemplateAstUtils {
         return list.head();
     }
 
+    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
+    private static void applyWhitespaceTrim( List<Element> elements ) {
+        for( int i = 0; i < elements.size(); i++ ) {
+            Element el = elements.get( i );
+            boolean ltrim = el instanceof ExpressionElement e && e.trimLeft
+                || el instanceof BlockIfElement b && b.trimLeft;
+            boolean rtrim = el instanceof ExpressionElement e3 && e3.trimRight;
+
+            if( ltrim && i > 0 && elements.get( i - 1 ) instanceof TextElement prev ) {
+                String trimmed = stripEnd( prev.text, " \t\r\n" );
+                if( trimmed.isEmpty() ) {
+                    elements.remove( i - 1 );
+                    i--;
+                } else {
+                    elements.set( i - 1, new TextElement( trimmed ) );
+                }
+            }
+            if( rtrim && i + 1 < elements.size() && elements.get( i + 1 ) instanceof TextElement next ) {
+                String trimmed = stripStart( next.text, " \t\r\n" );
+                if( trimmed.isEmpty() ) elements.remove( i + 1 );
+                else elements.set( i + 1, new TextElement( trimmed ) );
+            }
+        }
+    }
+
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public static AstRenderRoot toAst( Elements elements, TemplateType templateType, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+        applyWhitespaceTrim( elements.elements );
         AstRenderRoot astRoot = new AstRenderRoot( templateType );
         for( Element element : elements.elements ) {
             AstRender astRender;
