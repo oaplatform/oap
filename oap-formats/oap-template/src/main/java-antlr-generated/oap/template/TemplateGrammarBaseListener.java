@@ -3,6 +3,7 @@
 package oap.template;
 
 import oap.template.tree.*;
+import oap.template.tree.BlockIfElement;
 
 import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
@@ -46,6 +47,30 @@ public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitElement(TemplateGrammar.ElementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBlockIfElement(TemplateGrammar.BlockIfElementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBlockIfElement(TemplateGrammar.BlockIfElementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBlockBody(TemplateGrammar.BlockBodyContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBlockBody(TemplateGrammar.BlockBodyContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

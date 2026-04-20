@@ -1,38 +1,514 @@
-# OAP template
+# oap-template
 
-An OAP template library is based on ANother Tool for Language Recognition (*ANTLR*).
+A compile-time template engine for the OAP framework. Each unique template string is parsed once, compiled into a real Java class at first use, and cached — subsequent renders invoke the compiled class directly with no re-parsing overhead.
 
-*ABOUT ANTLR* is a powerful parser generator for reading, processing, executing, 
-or translating structured text or binary files. It's widely used to build languages,
-tools, and frameworks. From a grammar, ANTLR generates a parser that can build 
-parseable trees and also generates a listener interface (or visitor) that makes it easy to
-respond to the recognition of phrases of interest.
+## Table of Contents
 
-For more information please visit this link https://github.com/antlr/antlr4/blob/master/doc/index.md
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Template Syntax](#template-syntax)
+  - [Delimiters](#delimiters)
+  - [Field access](#field-access)
+  - [Null safety](#null-safety)
+  - [Default values (`??`)](#default-values-)
+  - [Fallback chains (`| default`)](#fallback-chains--default)
+  - [Concatenation](#concatenation)
+  - [Math](#math)
+  - [If / then / else (inline)](#if--then--else-inline)
+  - [If / else / end (block)](#if--else--end-block)
+  - [Pipe-to-function](#pipe-to-function)
+  - [Cast types](#cast-types)
+  - [Block comments](#block-comments)
+- [Built-in Functions](#built-in-functions)
+- [Custom Functions](#custom-functions)
+- [Output Accumulators](#output-accumulators)
+- [Using the Engine in Java](#using-the-engine-in-java)
+- [OAP Module Integration](#oap-module-integration)
+- [Aliases](#aliases)
+- [Error Handling](#error-handling)
+- [Disk Cache](#disk-cache)
 
-### Motivation
+---
 
-To generate java objects on the fly from dynamic user configurations via help of template engine
+## Overview
 
-### Use cases
+`oap-template` turns user-supplied template strings into efficient Java code. It is designed for high-throughput scenarios such as:
 
-- Speed-up response generation by creating java objects from user configuration
-- Use template generator with log configuration(`config.v1.conf`) to serialize/deserialize data from/to different sources
-- To use pre-compiled functions which can be used by user in dynamic configurations. 
-- Such as `urlencode(0)`, `urlencode()`, `toUpperCase()`, etc.
+- Serializing data rows to TSV / log formats driven by configuration
+- Generating HTTP response bodies (bid responses, URL macros) from per-advertiser rules
+- Extracting single fields from objects without reflection at render time
 
-### Macro examples
+The engine is output-agnostic: a pluggable `TemplateAccumulator` decides how each Java type is serialised.
 
-- Render string text
-- Escape variables/expressions
-- Get fields/properties/className/alias/chains
-- Support Optional/OrOptional/OrCollection/Nullable functions
-- Support default variables
-- Concatenation
-- Concatenation with dotes
-- Sum
-- Comments
-- Support primitive as objects 
+---
 
-Please take a look at [TemplateEngineTest](src/test/java/oap/template/TemplateEngineTest.java). 
-You will find a more detailed overview of how it can be used in code
+## Architecture
+
+```
+Template string + TypeRef + Accumulator
+        │
+        ▼
+  TemplateLexer / TemplateGrammar   ← tokenises text vs ${ } / {{ }} blocks
+        │
+        ▼
+  TemplateGrammarExpression         ← parses expression blocks into an AST
+        │
+        ▼
+  TemplateAstUtils.toAst()          ← walks the type hierarchy via reflection,
+                                       resolves fields/methods, builds AstRender nodes
+        │
+        ▼
+  Render (code generation)          ← emits a Java source file
+        │
+        ▼
+  MemoryClassLoaderJava             ← compiles and loads the generated class
+        │
+        ▼
+  Guava Cache  ←→  optional disk cache
+        │
+        ▼
+  template.render(obj)              ← calls compiled TriConsumer directly
+```
+
+Field resolution honours `@JsonProperty` and `@JsonAlias` annotations as alternate names. `@Nullable` / `@Nonnull` control null-check code generation.
+
+---
+
+## Template Syntax
+
+### Delimiters
+
+| Syntax | Meaning |
+|---|---|
+| `${ expr }` | Expression block |
+| `{{ expr }}` | Alternate expression block (identical semantics) |
+| `$${ expr }` | Escape — renders the literal text `${expr}` without evaluation |
+
+Everything outside a delimiter is emitted verbatim.
+
+```
+"Hello, {{ name }}!"         → "Hello, world!"
+"price: ${ price }"         → "price: 9.99"
+"literal: $${field}"        → "literal: ${field}"
+```
+
+### Field access
+
+```
+{{ field }}                  simple field
+{{ child.field }}            chained field access
+{{ mapField.key }}           map key lookup (when field type is Map<String, V>)
+{{ fieldM() }}               no-argument method call
+{{ fieldMInt(1) }}           method call with int argument
+{{ fieldMDouble(1.2) }}      method call with double argument
+{{ fieldMString('str') }}    method call with String argument
+```
+
+`@JsonProperty` and `@JsonAlias` names are transparently resolved alongside the Java field name.
+
+### Null safety
+
+- `Optional<T>` fields are automatically unwrapped; renders empty string when empty.
+- `@Nullable` fields/methods get a null check inserted; renders empty string when null.
+- `@Nonnull` fields get no null check generated.
+- A null value anywhere in a chained path short-circuits the whole expression and renders the default value, or empty string if none is specified.
+
+```
+{{ child.fieldNullable ?? 'N/A' }}   → "N/A" when child is null or fieldNullable is null
+{{ fieldOpt }}                       → "" when Optional is empty
+```
+
+### Default values (`??`)
+
+`{{ expr ?? default }}` — if `expr` resolves to null (or empty Optional), the default is used.
+
+Supported literal types:
+
+| Literal | Example |
+|---|---|
+| String | `?? 'text'` or `?? "text"` |
+| Integer / Long | `?? -1`, `?? 42` |
+| Float / Double | `?? 0.0` |
+| Boolean | `?? true`, `?? false` |
+| Empty list | `?? []` |
+
+```
+{{ name ?? 'anonymous' }}
+{{ score ?? -1 }}
+{{ ratio ?? 0.0 }}
+{{ active ?? false }}
+{{ tags ?? [] }}
+```
+
+### Fallback chains (`| default`)
+
+`{{ expr1 | default expr2 | default expr3 }}` — evaluates each expression in order and uses the first non-null, non-empty result. All expressions must resolve to the same type.
+
+```
+{{ primaryUrl | default fallbackUrl }}
+{{ list | default list2 }}
+```
+
+### Concatenation
+
+Concatenation combines multiple fields and string literals into a single output without a separator.
+
+Root concatenation (the whole expression is a concat):
+
+```
+${ {field1, "/", field2} }
+```
+
+Suffix concatenation after a path:
+
+```
+{{ child{field1, "x", field2} }}
+{{ child.{field1, "x", field2} }}
+```
+
+Items inside `{}` can be: field names, double-quoted strings, single-quoted strings, decimal integers, floats.
+
+```
+{{ {scheme, "://", host, "/", path} }}   → "https://example.com/api"
+```
+
+### Math
+
+```
+{{ numericField + 12.45 }}
+{{ intField * 2 }}
+{{ price - discount }}
+{{ total / count }}
+{{ value % 100 }}
+```
+
+Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric literal. The result type is widened as needed.
+
+```
+{{ score + 100 }}     → score value + 100
+{{ price * 1.1 }}     → price * 1.1
+```
+
+### If / then / else (inline)
+
+```
+{{ if booleanField then field end }}
+{{ if booleanField then field else field2 end }}
+```
+
+The condition must be a `boolean` field or a nullable `Boolean` object. A null `Boolean` is treated as false.
+
+Can be combined with a default value:
+
+```
+{{ if isPremium then premiumField end ?? 'standard' }}
+```
+
+### If / else / end (block)
+
+Block-level conditionals span multiple lines and can contain arbitrary template content (plain text and expression blocks) in each branch.
+
+```
+{{% if booleanField }}
+  rendered when true: {{ field1 }}
+{{% end }}
+```
+
+With an else branch:
+
+```
+{{% if booleanField }}
+  rendered when true: {{ field1 }}
+{{% else }}
+  rendered when false: {{ field2 }}
+{{% end }}
+```
+
+**Rules:**
+
+- The condition is a field path (e.g. `booleanField`, `child.active`). It must resolve to a `boolean` primitive or a nullable `Boolean` object. A null `Boolean` is treated as `false`.
+- Each branch is a full template body — any mix of literal text and `{{ expr }}` / `${ expr }` expression blocks.
+- The `{{% else }}` branch is optional.
+- Blocks can be nested inside each other's branches.
+- Whitespace and newlines inside branches are emitted verbatim.
+
+```
+{{% if user.isPremium }}
+Price: {{ premiumPrice }}
+{{% else }}
+Price: {{ standardPrice }}
+{{% end }}
+```
+
+Nested example:
+
+```
+{{% if active }}
+  {{% if user.isPremium }}
+    Welcome back, premium user {{ user.name }}!
+  {{% else }}
+    Welcome back, {{ user.name }}.
+  {{% end }}
+{{% end }}
+```
+
+### Pipe-to-function
+
+`{{ field ; funcName() }}` — the field value is passed as the first argument to the named function. Additional arguments follow inside the parentheses.
+
+```
+{{ url ; urlencode() }}
+{{ url ; urlencode(2) }}
+{{ name ; toUpperCase() }}
+{{ dt ; format('yyyy-MM-dd') }}
+{{ obj ; toJson() }}
+```
+
+### Cast types
+
+`${ <java.lang.Double>field ?? 0.0 }` — forces the expression result to be interpreted as the given type. Useful when the field is typed as `Object` (e.g., in `Map<String, Object>`) but the actual runtime type is known.
+
+```
+${ <java.lang.Double>v.d ?? 0.0 }
+${ <java.lang.String>v.s ?? '' }
+```
+
+A `ClassCastException` at render time is wrapped in `TemplateException`.
+
+### Block comments
+
+`{{ /* comment */ field }}` — a `/* ... */` block at the start of an expression is stripped; the field after it is still evaluated. Useful for annotating complex templates.
+
+```
+{{ /* impression URL macro */ url ; urlencode(2) }}
+```
+
+---
+
+## Built-in Functions
+
+Registered automatically from `META-INF/oap-template-macros.list` on the classpath.
+
+| Function | Signature | Description |
+|---|---|---|
+| `urlencode()` | `(String src)` | URL-encodes the value once (space → `+`) |
+| `urlencode(N)` | `(String src, long depth)` | URL-encodes N times; depth 0 is a no-op |
+| `urlencodePercent()` | `(String src)` | URL-encodes, replacing `+` with `%20` |
+| `urlencodePercent(N)` | `(String src, long depth)` | URL-encodes N times using `%20` |
+| `toUpperCase()` | `(String src)` | Converts to upper case; null-safe |
+| `toLowerCase()` | `(String src)` | Converts to lower case; null-safe |
+| `format(pattern)` | `(DateTime dt, String pattern)` | Formats a Joda `DateTime`; predefined patterns: `SIMPLE`, `MILLIS`, `SIMPLE_CLEAN`, `DATE` |
+| `toJson()` | `(Object obj)` | Serialises the value to JSON |
+| `default(fallback)` | `(Object in, Object fallback)` | Returns fallback if in is null or empty |
+
+---
+
+## Custom Functions
+
+1. Create a class with `public static` methods. The first parameter is always the piped value; additional parameters are supplied in the template call.
+
+```java
+public class MyMacros {
+    public static String prefix( String src, String p ) {
+        return src == null ? null : p + src;
+    }
+
+    @JsonAlias( "pfx" )   // registers an alias "pfx" for the same method
+    public static String prefixAlias( String src, String p ) {
+        return prefix( src, p );
+    }
+}
+```
+
+2. Register the class by adding its fully-qualified name to a resource file:
+
+`src/main/resources/META-INF/oap-template-macros.list`:
+```
+com.example.MyMacros
+```
+
+Multiple entries are allowed, one per line. The engine scans all files with this path on the classpath at startup.
+
+Usage in templates:
+```
+{{ name ; prefix('Mr. ') }}
+{{ name ; pfx('Dr. ') }}
+```
+
+---
+
+## Output Accumulators
+
+The engine is output-agnostic via `TemplateAccumulator<TOut, TOutMutable, Self>`.
+
+### Built-in accumulators
+
+**`TemplateAccumulatorString`** (available as `TemplateAccumulators.STRING`)
+
+Appends everything into a `StringBuilder`. Default delimiter between multiple expressions is `\t`. Default `DateTime` format is `SIMPLE_CLEAN` (configurable via constructor). Lists are rendered as `[item1,item2]` with single-quoted strings and escaped backslashes/apostrophes. Null collections render as `[]`.
+
+```java
+// custom DateTime format
+TemplateAccumulatorString acc = new TemplateAccumulatorString( "yyyy-MM-dd HH:mm:ss" );
+```
+
+**`TemplateAccumulatorObject`** (available as `TemplateAccumulators.OBJECT`)
+
+Holds the last value as a raw `Object`. Useful for single-expression templates where you want the Java object rather than its string representation.
+
+```java
+Long score = (Long) engine.getTemplate( "score", new TypeRef<MyBean>() {}, "{{ score }}", OBJECT, null )
+    .render( bean ).get();
+```
+
+### Custom accumulators
+
+Implement `TemplateAccumulator<TOut, TOutMutable, Self>` and override the `accept(...)` overloads for the types you want to customise:
+
+```java
+public class TsvAccumulator implements TemplateAccumulator<String, StringBuilder, TsvAccumulator> {
+    private final StringBuilder sb;
+
+    public TsvAccumulator() { this( new StringBuilder() ); }
+    public TsvAccumulator( StringBuilder sb ) { this.sb = sb; }
+
+    @Override public void acceptText( String text ) { sb.append( text ); }
+    @Override public void accept( String text ) { if ( text != null ) sb.append( text ); }
+    @Override public void accept( int i ) { sb.append( i ); }
+    @Override public void accept( long l ) { sb.append( l ); }
+    // ... implement all remaining accept() overloads ...
+
+    @Override public String get() { return sb.toString(); }
+    @Override public TsvAccumulator newInstance() { return new TsvAccumulator(); }
+    @Override public TsvAccumulator newInstance( StringBuilder m ) { return new TsvAccumulator( m ); }
+    @Override public String getTypeName() { return "String"; }
+    @Override public String delimiter() { return "\t"; }
+    // ...
+}
+```
+
+---
+
+## Using the Engine in Java
+
+```java
+// One engine instance per application (or inject via OAP module)
+TemplateEngine engine = new TemplateEngine( Dates.d( 10 ) );  // 10-day in-memory TTL
+
+// With disk cache (survives JVM restarts)
+TemplateEngine engine = new TemplateEngine( Path.of( "/tmp/template" ), Dates.d( 30 ) );
+```
+
+**Compile and cache a template:**
+
+```java
+Template<MyBean, String, StringBuilder, TemplateAccumulatorString> template =
+    engine.getTemplate(
+        "myTemplate",                      // logical name (used in disk-cache file naming)
+        new TypeRef<MyBean>() {},          // input type
+        "id={{ id }}, name={{ name }}",    // template string
+        TemplateAccumulators.STRING,       // output accumulator
+        ErrorStrategy.ERROR               // throw on unknown fields
+    );
+```
+
+**Render:**
+
+```java
+String result = template.render( bean ).get();               // no trailing newline
+String result = template.render( bean, true ).get();         // append \n
+template.render( bean, false, existingStringBuilder );       // reuse a buffer
+```
+
+**`getTemplate` overloads** (all variants follow `name, type, template, acc, [aliases,] [errorStrategy,] [postProcess]`):
+
+```java
+// With aliases
+engine.getTemplate( name, type, tmpl, acc, Map.of( "old.field", "new.field" ), ERROR );
+
+// With postProcess hook (inspect/modify the AST after parsing)
+engine.getTemplate( name, type, tmpl, acc, ast -> log.debug( ast.print() ) );
+```
+
+---
+
+## OAP Module Integration
+
+The module registers a pre-wired service `oap-template-engine`:
+
+```hocon
+name = oap-template
+services {
+  oap-template-engine {
+    implementation = oap.template.TemplateEngine
+    parameters {
+      ttl = 30d
+//    diskCache = /tmp/template
+    }
+    supervision {
+      schedule = true
+      cron = "10 20 */2 * * ? *"   # clean caches every 2 hours
+    }
+  }
+}
+```
+
+Parameters:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `ttl` | `30d` | Cache entry TTL in OAP duration format (`30d`, `12h`, etc.). Entries expire after this period of inactivity. |
+| `diskCache` | _(disabled)_ | Path to a directory for persisting compiled `.java`/`.class` files across JVM restarts. Remove the comment to enable. |
+
+Wire it into a dependent module:
+
+```hocon
+services {
+  my-service {
+    implementation = com.example.MyService
+    parameters {
+      templateEngine = <modules.oap-template.oap-template-engine>
+    }
+  }
+}
+```
+
+---
+
+## Aliases
+
+The `aliases` parameter in `getTemplate` is a `Map<String, String>` that remaps template expression strings before parsing. This allows a configuration layer to redirect fields without changing the template syntax.
+
+```java
+// "{{ child.field }}" is evaluated as "{{ child2.field2 }}"
+engine.getTemplate( name, type, "{{ child.field }}", acc,
+    Map.of( "child.field", "child2.field2" ), ERROR );
+```
+
+---
+
+## Error Handling
+
+| Strategy | Behaviour |
+|---|---|
+| `ErrorStrategy.ERROR` (default) | Unknown field path or function → throws `TemplateException` at `getTemplate()` time (compile phase, not render time) |
+| `ErrorStrategy.IGNORE` | Unknown paths emit an empty string silently; useful when the data model may change |
+
+Syntax errors (malformed expression) always throw `TemplateException` regardless of error strategy.
+
+`TemplateException` is an unchecked exception. It wraps underlying causes (`NoSuchFieldException`, `NoSuchMethodException`, `ClassCastException` from cast failures).
+
+---
+
+## Disk Cache
+
+When `diskCache` is configured, compiled classes are written as `<name>_<murmur3hash>.class` and `.java` files in the specified directory.
+
+- On startup, if a matching `.class` file exists and can be loaded, it is reused without recompilation.
+- If the class file is incompatible with the current accumulator (detected by comparing class names in the bytecode), the engine recompiles automatically.
+- The supervised `run()` method (invoked every two hours by default) deletes any file older than `ttl`.
+
+```java
+// Enable disk cache programmatically
+TemplateEngine engine = new TemplateEngine( Path.of( "/var/cache/templates" ), Dates.d( 30 ) );
+```
