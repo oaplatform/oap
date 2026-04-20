@@ -11,6 +11,7 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.BlockIfElement;
+import oap.template.tree.BlockWithElement;
 
 import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
@@ -38,6 +39,7 @@ element[Map<String,String> aliases] returns [Element ret]
 	| comment { $ret = new TextElement( $comment.text.substring(1) ); }
 	| expression[aliases] { $ret = new ExpressionElement( $expression.ret, $expression.trimLeft, $expression.trimRight ); }
 	| blockIfElement[aliases] { $ret = $blockIfElement.ret; }
+	| blockWithElement[aliases] { $ret = $blockWithElement.ret; }
 	;
 
 blockIfElement[Map<String,String> aliases] returns [BlockIfElement ret]
@@ -51,6 +53,18 @@ blockIfElement[Map<String,String> aliases] returns [BlockIfElement ret]
 	          $thenBranch.ret,
 	          $elseBranch.ctx != null ? $elseBranch.ret : null,
 	          $start.getType() == STARTBLOCKIF_LTRIM
+	      );
+	  }
+	;
+
+blockWithElement[Map<String,String> aliases] returns [BlockWithElement ret]
+	: STARTBLOCKWITH BLOCK_IF_CONTENT BLOCK_IF_RBRACE
+	  body=blockBody[aliases]
+	  STARTBLOCKEND
+	  {
+	      $ret = new BlockWithElement(
+	          StringUtils.trim( $BLOCK_IF_CONTENT.text ),
+	          $body.ret
 	      );
 	  }
 	;

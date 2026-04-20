@@ -26,41 +26,20 @@ package oap.template.tree;
 
 import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @ToString
-public class Exprs {
-    public final ArrayList<Expr> exprs = new ArrayList<>();
-    public Math math = null;
-    public Concatenation concatenation = null;
-    public boolean rootScoped = false;
+public class BlockWithElement implements Element {
+    public final String scopePath;
+    public final Elements body;
 
-    public Exprs() {
+    public BlockWithElement( String scopePath, Elements body ) {
+        this.scopePath = scopePath;
+        this.body = body;
     }
 
-    public Exprs( List<Expr> exprs ) {
-        this.exprs.addAll( exprs );
-    }
-
+    @Override
     public String print() {
-        StringBuilder sb = new StringBuilder();
-
-        if( !exprs.isEmpty() ) {
-            sb.append( "LIST\n" );
-
-            var it = exprs.iterator();
-            while( it.hasNext() ) {
-                var item = it.next();
-
-                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
-
-            }
-        }
-
-        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
-        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
-
+        StringBuilder sb = new StringBuilder( "BLOCK_WITH " ).append( scopePath ).append( '\n' );
+        sb.append( "  BODY\n" ).append( body.print() );
         return sb.toString();
     }
 }

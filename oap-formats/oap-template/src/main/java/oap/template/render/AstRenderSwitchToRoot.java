@@ -22,45 +22,24 @@
  * SOFTWARE.
  */
 
-package oap.template.tree;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@ToString
-public class Exprs {
-    public final ArrayList<Expr> exprs = new ArrayList<>();
-    public Math math = null;
-    public Concatenation concatenation = null;
-    public boolean rootScoped = false;
-
-    public Exprs() {
+/**
+ * Redirects render.field to render.rootField so that child nodes resolve
+ * from the original root object rather than the current with-scope variable.
+ * Used when a template expression starts with $.
+ */
+@ToString( callSuper = true )
+class AstRenderSwitchToRoot extends AstRender {
+    AstRenderSwitchToRoot( TemplateType rootType ) {
+        super( rootType );
     }
 
-    public Exprs( List<Expr> exprs ) {
-        this.exprs.addAll( exprs );
-    }
-
-    public String print() {
-        StringBuilder sb = new StringBuilder();
-
-        if( !exprs.isEmpty() ) {
-            sb.append( "LIST\n" );
-
-            var it = exprs.iterator();
-            while( it.hasNext() ) {
-                var item = it.next();
-
-                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
-
-            }
-        }
-
-        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
-        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
-
-        return sb.toString();
+    @Override
+    public void render( Render render ) {
+        Render rootRender = render.withField( render.rootField ).withParentType( type );
+        children.forEach( c -> c.render( rootRender ) );
     }
 }

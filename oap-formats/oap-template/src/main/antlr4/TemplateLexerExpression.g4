@@ -85,6 +85,8 @@ IF              : 'if'                                  ;
 THEN            : 'then'                                ;
 ELSE            : 'else'                                ;
 END             : 'end'                                 ;
+WITH            : 'with'                                ;
+ROOT            : '$'                                   ;
 
 BLOCK_COMMENT	: BlockComment;
 

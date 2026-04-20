@@ -11,6 +11,7 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
+import oap.template.tree.WithCondition;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -32,11 +33,12 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | exprsCode) defaultValue? function? (IF ifCondition)? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
         $ret = new Expression(
           $BLOCK_COMMENT.text,
           $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
           $ifCode.ctx != null ? $ifCode.ret : null,
+          $withCode.ctx != null ? $withCode.ret : null,
           $exprsCode.ctx != null ? $exprsCode.ret : null,
           $defaultValue.ctx != null ? $defaultValue.ret : null,
           $function.ctx != null ? $function.ret : null );
@@ -46,6 +48,12 @@ expression returns [Expression ret]
 ifCode returns [IfCondition ret]
     : IF ifCondition THEN thenCode=exprs (ELSE elseCode=exprs)? END {
         $ret = new IfCondition( $ifCondition.ret, $thenCode.ret, $elseCode.ctx != null ? $elseCode.ret : null );
+      }
+    ;
+
+withCode returns [WithCondition ret]
+    : WITH LPAREN scopePath=exprs RPAREN bodyExprs=exprsCode END {
+        $ret = new WithCondition( $scopePath.ret, $bodyExprs.ret );
       }
     ;
 
@@ -101,7 +109,10 @@ orExprs returns [ArrayList<Exprs> ret = new ArrayList<Exprs>() ]
     ;
 
 exprs returns [Exprs ret = new Exprs()]
-    : expr  { $ret.exprs.add( $expr.ret ); }
+    : ROOT DOT expr { $ret.rootScoped = true; $ret.exprs.add( $expr.ret ); }
+      (DOT expr { $ret.exprs.add( $expr.ret ); })*
+      math? { if( $math.ctx != null ) $ret.math = $math.ret; }
+    | expr  { $ret.exprs.add( $expr.ret ); }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
     | expr  { $ret.exprs.add( $expr.ret ); }
       DOT? concatenation { $ret.concatenation = $concatenation.ret; }

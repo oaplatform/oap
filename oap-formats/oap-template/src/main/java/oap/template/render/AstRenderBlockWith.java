@@ -22,45 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.template.tree;
+package oap.template.render;
 
 import lombok.ToString;
 
-import java.util.ArrayList;
 import java.util.List;
 
-@ToString
-public class Exprs {
-    public final ArrayList<Expr> exprs = new ArrayList<>();
-    public Math math = null;
-    public Concatenation concatenation = null;
-    public boolean rootScoped = false;
+/**
+ * Block with: {{% with field1 }} body {{% end %}}
+ * Resolves the scope path once; body is rendered with the scope variable as the current field.
+ */
+@ToString( callSuper = true )
+public class AstRenderBlockWith extends AstRender {
+    private final AstRender scopeAst;
+    private final TemplateType scopeType;
+    private final List<AstRender> bodyChildren;
 
-    public Exprs() {
+    public AstRenderBlockWith( TemplateType type, AstRender scopeAst, TemplateType scopeType, List<AstRender> bodyChildren ) {
+        super( type );
+        this.scopeAst = scopeAst;
+        this.scopeType = scopeType;
+        this.bodyChildren = bodyChildren;
     }
 
-    public Exprs( List<Expr> exprs ) {
-        this.exprs.addAll( exprs );
-    }
-
-    public String print() {
-        StringBuilder sb = new StringBuilder();
-
-        if( !exprs.isEmpty() ) {
-            sb.append( "LIST\n" );
-
-            var it = exprs.iterator();
-            while( it.hasNext() ) {
-                var item = it.next();
-
-                sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
-
-            }
+    @Override
+    public void render( Render render ) {
+        String sv = render.newVariable();
+        render.ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
+        scopeAst.render( render.withScopeVar( sv ) );
+        Render bodyRender = render.newBlock().withField( sv ).withParentType( scopeType );
+        for( AstRender child : bodyChildren ) {
+            child.render( bodyRender );
         }
-
-        if( concatenation != null ) sb.append( "CONCATENATION " ).append( concatenation.print() ).append( '\n' );
-        if( math != null ) sb.append( "MATH " ).append( math.operation ).append( " " ).append( math.value ).append( '\n' );
-
-        return sb.toString();
     }
 }
