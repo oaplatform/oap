@@ -14,7 +14,8 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Fallback chains (`| default`)](#fallback-chains--default)
   - [Concatenation](#concatenation)
   - [Math](#math)
-  - [If / then / else](#if--then--else)
+  - [If / then / else (inline)](#if--then--else-inline)
+  - [If / else / end (block)](#if--else--end-block)
   - [Pipe-to-function](#pipe-to-function)
   - [Cast types](#cast-types)
   - [Block comments](#block-comments)
@@ -188,7 +189,7 @@ Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric lit
 {{ price * 1.1 }}     → price * 1.1
 ```
 
-### If / then / else
+### If / then / else (inline)
 
 ```
 {{ if booleanField then field end }}
@@ -201,6 +202,54 @@ Can be combined with a default value:
 
 ```
 {{ if isPremium then premiumField end ?? 'standard' }}
+```
+
+### If / else / end (block)
+
+Block-level conditionals span multiple lines and can contain arbitrary template content (plain text and expression blocks) in each branch.
+
+```
+{{% if booleanField }}
+  rendered when true: {{ field1 }}
+{{% end }}
+```
+
+With an else branch:
+
+```
+{{% if booleanField }}
+  rendered when true: {{ field1 }}
+{{% else }}
+  rendered when false: {{ field2 }}
+{{% end }}
+```
+
+**Rules:**
+
+- The condition is a field path (e.g. `booleanField`, `child.active`). It must resolve to a `boolean` primitive or a nullable `Boolean` object. A null `Boolean` is treated as `false`.
+- Each branch is a full template body — any mix of literal text and `{{ expr }}` / `${ expr }` expression blocks.
+- The `{{% else }}` branch is optional.
+- Blocks can be nested inside each other's branches.
+- Whitespace and newlines inside branches are emitted verbatim.
+
+```
+{{% if user.isPremium }}
+Price: {{ premiumPrice }}
+{{% else }}
+Price: {{ standardPrice }}
+{{% end }}
+```
+
+Nested example:
+
+```
+{{% if active }}
+  {{% if user.isPremium }}
+    Welcome back, premium user {{ user.name }}!
+  {{% else }}
+    Welcome back, {{ user.name }}.
+  {{% end }}
+{{% end }}
 ```
 
 ### Pipe-to-function
