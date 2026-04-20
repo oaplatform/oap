@@ -34,6 +34,7 @@ import oap.template.TemplateException;
 import oap.template.TemplateGrammarExpression;
 import oap.template.TemplateLexerExpression;
 import oap.template.ThrowingErrorListener;
+import oap.template.tree.BlockIfElement;
 import oap.template.tree.Element;
 import oap.template.tree.Elements;
 import oap.template.tree.Expr;
@@ -458,6 +459,25 @@ public class TemplateAstUtils {
                     astRender.addChild( toAst( tree, templateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
                 } catch( Exception exp ) {
                     throw new TemplateException( e.expression + ": " + exp.getMessage(), exp );
+                }
+            } else if( element instanceof BlockIfElement b ) {
+                try {
+                    TemplateLexerExpression lexer = new TemplateLexerExpression( CharStreams.fromString( b.conditionPath ) );
+                    TemplateGrammarExpression grammar = new TemplateGrammarExpression( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+                    if( errorStrategy == ErrorStrategy.ERROR ) {
+                        lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+                        grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
+                    }
+                    Exprs conditionExprs = grammar.exprs().ret;
+                    AstRender conditionAst = toConditionAst( conditionExprs, templateType, errorStrategy );
+                    AstRenderRoot thenRoot = toAst( b.thenElements, templateType, builtInFunction, errorStrategy );
+                    AstRenderRoot elseRoot = b.elseElements != null
+                        ? toAst( b.elseElements, templateType, builtInFunction, errorStrategy )
+                        : null;
+                    astRender = new AstRenderBlockIf( templateType, conditionAst, thenRoot.children,
+                        elseRoot != null ? elseRoot.children : null );
+                } catch( Exception exp ) {
+                    throw new TemplateException( b.conditionPath + ": " + exp.getMessage(), exp );
                 }
             } else {
                 throw new TemplateException( "Unknown element " + element.getClass() );

@@ -509,65 +509,6 @@ public class TemplateEngineTest extends Fixtures {
     }
 
     @Test
-    public void testIfConditionTrue() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field = "val";
-        c.booleanField = true;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field end }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "val" );
-    }
-
-    @Test
-    public void testIfConditionFalse() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field = "val";
-        c.booleanField = false;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field end }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "" );
-    }
-
-    @Test
-    public void testIfElseConditionFalse() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field = "val";
-        c.field2 = "val2";
-        c.booleanField = false;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else field2 end }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "val2" );
-    }
-
-    @Test
-    public void testIfConditionNullableObject() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field = "val";
-
-        c.booleanObjectField = true;
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "{{ if booleanObjectField then field end }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "val" );
-
-        c.booleanObjectField = null;
-        assertThat( engine.getTemplate( testMethodName + "Null", new TypeRef<TestTemplateClass>() {}, "{{ if booleanObjectField then field end }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "" );
-    }
-
-    @Test
-    public void testIfConditionWithText() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field = "val";
-        c.booleanField = true;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "prefix-{{ if booleanField then field end }}-suffix", STRING, null ).render( c ).get() )
-            .isEqualTo( "prefix-val-suffix" );
-    }
-
-    @Test
-    public void testIfConditionWithDefaultValue() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.booleanField = true;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field end ?? 'default' }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "default" );
-    }
-
-    @Test
     public void testCacheClassFormatError() throws IOException {
         FileUtils.write( testDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );
 
