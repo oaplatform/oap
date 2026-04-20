@@ -36,12 +36,12 @@ elements[Map<String,String> aliases] returns [Elements ret = new Elements()]
 element[Map<String,String> aliases] returns [Element ret]
 	: t=text { $ret = new TextElement( $t.text ); }
 	| comment { $ret = new TextElement( $comment.text.substring(1) ); }
-	| expression[aliases] { $ret = new ExpressionElement( $expression.ret ); }
+	| expression[aliases] { $ret = new ExpressionElement( $expression.ret, $expression.trimLeft, $expression.trimRight ); }
 	| blockIfElement[aliases] { $ret = $blockIfElement.ret; }
 	;
 
 blockIfElement[Map<String,String> aliases] returns [BlockIfElement ret]
-	: STARTBLOCKIF BLOCK_IF_CONTENT BLOCK_IF_RBRACE
+	: (STARTBLOCKIF | STARTBLOCKIF_LTRIM) BLOCK_IF_CONTENT BLOCK_IF_RBRACE
 	  thenBranch=blockBody[aliases]
 	  ( STARTBLOCKELSE elseBranch=blockBody[aliases] )?
 	  STARTBLOCKEND
@@ -49,7 +49,8 @@ blockIfElement[Map<String,String> aliases] returns [BlockIfElement ret]
 	      $ret = new BlockIfElement(
 	          StringUtils.trim( $BLOCK_IF_CONTENT.text ),
 	          $thenBranch.ret,
-	          $elseBranch.ctx != null ? $elseBranch.ret : null
+	          $elseBranch.ctx != null ? $elseBranch.ret : null,
+	          $start.getType() == STARTBLOCKIF_LTRIM
 	      );
 	  }
 	;
@@ -68,9 +69,11 @@ comment
     : STARTESCEXPR expressionContent RBRACE;
 
 
-expression[Map<String,String> aliases] returns [String ret]
-    : (STARTEXPR|STARTEXPR2) expressionContent (RBRACE|RBRACE2) {
+expression[Map<String,String> aliases] returns [String ret, boolean trimLeft, boolean trimRight]
+    : (STARTEXPR|STARTEXPR2|STARTEXPR2_LTRIM) expressionContent (RBRACE|RBRACE2|RBRACE2_RTRIM) {
         $ret = StringUtils.trim( $expressionContent.text );
+        $trimLeft  = $start.getType() == STARTEXPR2_LTRIM;
+        $trimRight = _input.LT(-1).getType() == RBRACE2_RTRIM;
         String alias = aliases.get( $ret );
         if( alias != null ) $ret = alias;
     };

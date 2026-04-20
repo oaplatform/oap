@@ -25,38 +25,14 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
-import oap.util.Dates;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.lang.reflect.Method;
 
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TemplateEngineConditionTest extends Fixtures {
-    private final TestDirectoryFixture testDirectoryFixture;
-    private TemplateEngine engine;
-    private String testMethodName;
-
-    public TemplateEngineConditionTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture() );
-    }
-
-    @BeforeMethod
-    public void beforeCMethod() {
-        engine = new TemplateEngine( Dates.d( 10 ) );
-    }
-
-    @BeforeMethod
-    public void nameBefore( Method method ) {
-        testMethodName = method.getName();
-    }
-
+public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
     @Test
     public void testIfConditionTrue() {
         TestTemplateClass c = new TestTemplateClass();
@@ -229,20 +205,4 @@ public class TemplateEngineConditionTest extends Fixtures {
             .isInstanceOf( TemplateException.class );
     }
 
-    public static class TestPrimitiveTemplateAccumulatorString extends TemplateAccumulatorString {
-        @Override
-        public void accept( boolean b ) {
-            super.accept( b + "_b" );
-        }
-
-        @Override
-        public void accept( int i ) {
-            super.accept( i + "_i" );
-        }
-
-        @Override
-        public TemplateAccumulatorString newInstance() {
-            return new TestPrimitiveTemplateAccumulatorString();
-        }
-    }
 }

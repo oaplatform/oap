@@ -25,32 +25,14 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.testng.Fixtures;
-import oap.util.Dates;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Method;
 import java.util.Optional;
 
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TemplateEngineConcatenationTest extends Fixtures {
-    private TemplateEngine engine;
-    private String testMethodName;
-
-    @BeforeClass
-    public void beforeClass() {
-        engine = new TemplateEngine( Dates.d( 10 ) );
-    }
-
-    @BeforeMethod
-    public void nameBefore( Method method ) {
-        testMethodName = method.getName();
-    }
-
+public class TemplateEngineConcatenationTest extends AbstractTemplateEngineTest {
     @Test
     public void testConcatenation() {
         var c = new TestTemplateClass();

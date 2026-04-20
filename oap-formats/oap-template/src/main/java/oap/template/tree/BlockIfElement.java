@@ -34,16 +34,23 @@ public class BlockIfElement implements Element {
     public final Elements thenElements;
     @Nullable
     public final Elements elseElements;
+    public final boolean trimLeft;
 
     public BlockIfElement( String conditionPath, Elements thenElements, @Nullable Elements elseElements ) {
+        this( conditionPath, thenElements, elseElements, false );
+    }
+
+    public BlockIfElement( String conditionPath, Elements thenElements, @Nullable Elements elseElements, boolean trimLeft ) {
         this.conditionPath = conditionPath;
         this.thenElements = thenElements;
         this.elseElements = elseElements;
+        this.trimLeft = trimLeft;
     }
 
     @Override
     public String print() {
-        StringBuilder sb = new StringBuilder( "BLOCK_IF " ).append( conditionPath ).append( '\n' );
+        StringBuilder sb = new StringBuilder( "BLOCK_IF" ).append( trimLeft ? "_LTRIM" : "" )
+            .append( ' ' ).append( conditionPath ).append( '\n' );
         sb.append( "  THEN\n" ).append( thenElements.print() );
         if( elseElements != null ) {
             sb.append( "  ELSE\n" ).append( elseElements.print() );

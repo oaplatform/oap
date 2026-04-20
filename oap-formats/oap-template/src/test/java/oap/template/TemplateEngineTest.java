@@ -25,17 +25,13 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,25 +45,7 @@ import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TemplateEngineTest extends Fixtures {
-    private final TestDirectoryFixture testDirectoryFixture;
-    private TemplateEngine engine;
-    private String testMethodName;
-
-    public TemplateEngineTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture() );
-    }
-
-    @BeforeMethod
-    public void beforeCMethod() {
-        engine = new TemplateEngine( Dates.d( 10 ) );
-    }
-
-    @BeforeMethod
-    public void nameBefore( Method method ) {
-        testMethodName = method.getName();
-    }
-
+public class TemplateEngineTest extends AbstractTemplateEngineTest {
     @Test
     public void testRenderStringText() {
         assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ).get() )
@@ -524,34 +502,5 @@ public class TemplateEngineTest extends Fixtures {
 
         assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "12\t12" );
-    }
-
-    public static class TestTemplateAccumulatorString extends TemplateAccumulatorString {
-        @Override
-        public void accept( String text ) {
-            super.accept( text + "2" );
-        }
-
-        @Override
-        public TemplateAccumulatorString newInstance() {
-            return new TestTemplateAccumulatorString();
-        }
-    }
-
-    public static class TestPrimitiveTemplateAccumulatorString extends TemplateAccumulatorString {
-        @Override
-        public void accept( boolean b ) {
-            super.accept( b + "_b" );
-        }
-
-        @Override
-        public void accept( int i ) {
-            super.accept( i + "_i" );
-        }
-
-        @Override
-        public TemplateAccumulatorString newInstance() {
-            return new TestPrimitiveTemplateAccumulatorString();
-        }
     }
 }
