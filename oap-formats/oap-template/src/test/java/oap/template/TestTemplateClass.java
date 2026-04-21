@@ -31,6 +31,8 @@ import org.joda.time.DateTime;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -73,6 +75,12 @@ public class TestTemplateClass {
     @Nullable
     public List<Integer> list2;
     public List<String> listString;
+
+    public ArrayList<TestTemplateClass> listItems = new ArrayList<>();
+    public HashMap<String, TestTemplateClass> mapItems = new HashMap<>();
+    public int rangeStart;
+    public int rangeEnd;
+    public int rangeStep;
 
     public DateTime dateTime;
     public Optional<DateTime> dateTimeOptional = Optional.empty();

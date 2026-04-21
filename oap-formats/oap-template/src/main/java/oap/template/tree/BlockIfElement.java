@@ -48,13 +48,15 @@ public class BlockIfElement implements Element {
     }
 
     @Override
-    public String print() {
-        StringBuilder sb = new StringBuilder( "BLOCK_IF" ).append( trimLeft ? "_LTRIM" : "" )
-            .append( ' ' ).append( conditionPath ).append( '\n' );
-        sb.append( "  THEN\n" ).append( thenElements.print() );
+    public void print( ToStringRender render ) {
+        render.append( "IF" ).append( trimLeft ? " [LTRIM]" : "" ).append( ' ' ).append( conditionPath ).nspace();
+        render.append( elseElements != null ? "├── " : "└── " );
+        thenElements.print( render.spaceInc( 4 ) );
+
         if( elseElements != null ) {
-            sb.append( "  ELSE\n" ).append( elseElements.print() );
+            render.nspace();
+            render.append( "└── ELSE " );
+            elseElements.print( render.spaceInc( 9 ) );
         }
-        return sb.toString();
     }
 }

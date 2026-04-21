@@ -35,6 +35,7 @@ import oap.template.TemplateGrammarExpression;
 import oap.template.TemplateLexerExpression;
 import oap.template.ThrowingErrorListener;
 import oap.template.tree.BlockIfElement;
+import oap.template.tree.BlockRangeElement;
 import oap.template.tree.BlockWithElement;
 import oap.template.tree.Element;
 import oap.template.tree.Elements;
@@ -56,9 +57,12 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static oap.template.ErrorStrategy.IGNORE;
 import static org.apache.commons.lang3.StringUtils.stripEnd;
@@ -68,7 +72,20 @@ import static org.apache.commons.lang3.StringUtils.stripStart;
 public class TemplateAstUtils {
     @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     public static TemplateType findExpressionResultType( TemplateType rootTemplateType, Exprs exprs, ErrorStrategy errorStrategy ) {
+        return findExpressionResultType( rootTemplateType, exprs, errorStrategy, Map.of() );
+    }
+
+    @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
+    static TemplateType findExpressionResultType( TemplateType rootTemplateType, Exprs exprs, ErrorStrategy errorStrategy,
+                                                  Map<String, TemplateType> rangeVarTypes ) {
         if( exprs.concatenation != null ) return new TemplateType( String.class, false );
+
+        if( exprs.varName != null ) {
+            TemplateType varType = rangeVarTypes.get( exprs.varName );
+            if( varType == null ) return new TemplateType( Object.class, true );
+            if( exprs.exprs.isEmpty() ) return varType;
+            return findExpressionResultType( varType, new Exprs( exprs.exprs ), errorStrategy, Map.of() );
+        }
 
         try {
             TemplateType currentType = rootTemplateType;
@@ -152,11 +169,17 @@ public class TemplateAstUtils {
 
     static AstRender toAst( Expression expression, TemplateType templateType, String castType, String defaultValue,
                             Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
-        return toAst( expression, templateType, templateType, castType, defaultValue, builtInFunction, errorStrategy );
+        return toAst( expression, templateType, templateType, castType, defaultValue, builtInFunction, errorStrategy, Map.of() );
     }
 
     static AstRender toAst( Expression expression, TemplateType templateType, TemplateType rootTemplateType, String castType, String defaultValue,
                             Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws ClassNotFoundException {
+        return toAst( expression, templateType, rootTemplateType, castType, defaultValue, builtInFunction, errorStrategy, Map.of() );
+    }
+
+    private static AstRender toAst( Expression expression, TemplateType templateType, TemplateType rootTemplateType, String castType, String defaultValue,
+                                    Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy,
+                                    Map<String, TemplateType> rangeVarTypes ) throws ClassNotFoundException {
         ArrayList<AstRender> orAst = new ArrayList<AstRender>();
 
         TemplateType lastTemplateType = null;
@@ -164,13 +187,16 @@ public class TemplateAstUtils {
         for( int i = 0; i < expression.or.size(); i++ ) {
             Exprs item = expression.or.get( i );
 
-            TemplateType effectiveType = item.rootScoped ? rootTemplateType : templateType;
-            TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( effectiveType, item, errorStrategy );
+            TemplateType effectiveType = item.rootScoped ? rootTemplateType
+                : ( item.varName != null && rangeVarTypes.containsKey( item.varName ) )
+                    ? rangeVarTypes.get( item.varName )
+                    : templateType;
+            TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( effectiveType, item, errorStrategy, rangeVarTypes );
 
             ErrorStrategy itemErrorStrategy = i < expression.or.size() - 1 ? IGNORE : errorStrategy;
             AstRender itemAst = TemplateAstUtils.toAst( item,
                 expression.or.size() == 1 ? expression.function : null,
-                effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, itemErrorStrategy );
+                effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, itemErrorStrategy, rangeVarTypes );
             orAst.add( itemAst );
 
             TemplateType itemTemplateType = findLastsTemplateType( itemAst );
@@ -231,7 +257,7 @@ public class TemplateAstUtils {
             }
             Expression expandedExpression = new Expression( expression.comment, expression.castType, null, null,
                 expandedOr, expression.defaultValue, expression.function );
-            return toAst( expandedExpression, templateType, rootTemplateType, castType, defaultValue, builtInFunction, errorStrategy );
+            return toAst( expandedExpression, templateType, rootTemplateType, castType, defaultValue, builtInFunction, errorStrategy, rangeVarTypes );
         }
 
         return mainAst;
@@ -389,16 +415,27 @@ public class TemplateAstUtils {
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder", "checkstyle:ParameterAssignment" } )
     private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType resultType,
                                     String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
-        return toAst( exprs, function, templateType, templateType, resultType, castType, defaultValue, builtInFunction, errorStrategy );
+        return toAst( exprs, function, templateType, templateType, resultType, castType, defaultValue, builtInFunction, errorStrategy, Map.of() );
     }
 
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder", "checkstyle:ParameterAssignment" } )
     private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType rootTemplateType, TemplateType resultType,
                                     String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+        return toAst( exprs, function, templateType, rootTemplateType, resultType, castType, defaultValue, builtInFunction, errorStrategy, Map.of() );
+    }
+
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:UnnecessaryParentheses", "checkstyle:OverloadMethodsDeclarationOrder", "checkstyle:ParameterAssignment" } )
+    private static AstRender toAst( Exprs exprs, Func function, TemplateType templateType, TemplateType rootTemplateType, TemplateType resultType,
+                                    String castType, String defaultValue, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy,
+                                    Map<String, TemplateType> rangeVarTypes ) {
         TemplateType currentTemplateType = templateType;
         Chain result = new Chain();
 
-        if( exprs.rootScoped ) {
+        if( exprs.varName != null ) {
+            TemplateType varType = rangeVarTypes.getOrDefault( exprs.varName, new TemplateType( Object.class, false ) );
+            result.add( new AstRenderVarRef( exprs.varName, varType ) );
+            currentTemplateType = varType;
+        } else if( exprs.rootScoped ) {
             result.add( new AstRenderSwitchToRoot( rootTemplateType ) );
         }
 
@@ -577,12 +614,13 @@ public class TemplateAstUtils {
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     public static AstRenderRoot toAst( Elements elements, TemplateType templateType, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
-        return toAst( elements, templateType, templateType, builtInFunction, errorStrategy );
+        return toAst( elements, templateType, templateType, builtInFunction, errorStrategy, Map.of() );
     }
 
     @SuppressWarnings( "checkstyle:OverloadMethodsDeclarationOrder" )
     private static AstRenderRoot toAst( Elements elements, TemplateType templateType, TemplateType rootTemplateType,
-                                        Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {
+                                        Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy,
+                                        Map<String, TemplateType> rangeVarTypes ) {
         applyWhitespaceTrim( elements.elements );
         AstRenderRoot astRoot = new AstRenderRoot( templateType );
         for( Element element : elements.elements ) {
@@ -601,7 +639,7 @@ public class TemplateAstUtils {
                     log.trace( e.expression + "\n" + tree.print() );
 
                     astRender = new AstRenderComment( templateType, "// " + e.expression );
-                    astRender.addChild( toAst( tree, templateType, rootTemplateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy ) );
+                    astRender.addChild( toAst( tree, templateType, rootTemplateType, tree.castType, tree.defaultValue, builtInFunction, errorStrategy, rangeVarTypes ) );
                 } catch( Exception exp ) {
                     throw new TemplateException( e.expression + ": " + exp.getMessage(), exp );
                 }
@@ -615,9 +653,9 @@ public class TemplateAstUtils {
                     }
                     Exprs conditionExprs = grammar.exprs().ret;
                     AstRender conditionAst = toConditionAst( conditionExprs, templateType, errorStrategy );
-                    AstRenderRoot thenRoot = toAst( b.thenElements, templateType, rootTemplateType, builtInFunction, errorStrategy );
+                    AstRenderRoot thenRoot = toAst( b.thenElements, templateType, rootTemplateType, builtInFunction, errorStrategy, rangeVarTypes );
                     AstRenderRoot elseRoot = b.elseElements != null
-                        ? toAst( b.elseElements, templateType, rootTemplateType, builtInFunction, errorStrategy )
+                        ? toAst( b.elseElements, templateType, rootTemplateType, builtInFunction, errorStrategy, rangeVarTypes )
                         : null;
                     astRender = new AstRenderBlockIf( templateType, conditionAst, thenRoot.children,
                         elseRoot != null ? elseRoot.children : null );
@@ -634,10 +672,16 @@ public class TemplateAstUtils {
                     }
                     Exprs scopeExprs = grammar.exprs().ret;
                     ScopeAstResult scopeResult = toScopeAst( scopeExprs, templateType, errorStrategy );
-                    AstRenderRoot bodyRoot = toAst( w.body, scopeResult.scopeType, rootTemplateType, builtInFunction, errorStrategy );
+                    AstRenderRoot bodyRoot = toAst( w.body, scopeResult.scopeType, rootTemplateType, builtInFunction, errorStrategy, rangeVarTypes );
                     astRender = new AstRenderBlockWith( templateType, scopeResult.scopeAst, scopeResult.scopeType, bodyRoot.children );
                 } catch( Exception exp ) {
                     throw new TemplateException( w.scopePath + ": " + exp.getMessage(), exp );
+                }
+            } else if( element instanceof BlockRangeElement r ) {
+                try {
+                    astRender = buildRangeAst( r, templateType, rootTemplateType, builtInFunction, errorStrategy );
+                } catch( Exception exp ) {
+                    throw new TemplateException( r.rangeSpec + ": " + exp.getMessage(), exp );
                 }
             } else {
                 throw new TemplateException( "Unknown element " + element.getClass() );
@@ -645,6 +689,148 @@ public class TemplateAstUtils {
             astRoot.addChild( astRender );
         }
         return astRoot;
+    }
+
+    private static final Pattern STEP_PATTERN = Pattern.compile( "(?:^|\\s)step\\s" );
+
+    private static AstRender buildRangeAst( BlockRangeElement r, TemplateType templateType, TemplateType rootTemplateType,
+                                            Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws NoSuchFieldException {
+        String spec = r.rangeSpec;
+        int assignIdx = spec.indexOf( ":=" );
+
+        if( assignIdx < 0 ) {
+            // Implicit scope: "{{% range .list }}"
+            String collPath = spec.startsWith( "." ) ? spec.substring( 1 ).trim() : spec.trim();
+            return buildCollectionRange( collPath, List.of(), AstRenderBlockRange.Mode.IMPLICIT_SCOPE,
+                templateType, rootTemplateType, r, builtInFunction, errorStrategy );
+        }
+
+        String varPart = spec.substring( 0, assignIdx ).trim();
+        String sourcePart = spec.substring( assignIdx + 2 ).trim();
+
+        List<String> varNames = new ArrayList<>();
+        for( String v : varPart.split( "," ) ) {
+            String vn = v.trim();
+            if( vn.startsWith( "$" ) ) vn = vn.substring( 1 );
+            varNames.add( vn );
+        }
+
+        if( sourcePart.contains( ".." ) ) {
+            return buildIntervalRange( varNames, sourcePart, templateType, rootTemplateType, r, builtInFunction, errorStrategy );
+        }
+
+        String collPath = sourcePart.startsWith( "." ) ? sourcePart.substring( 1 ).trim() : sourcePart.trim();
+
+        AstRenderBlockRange.Mode mode;
+        if( varNames.size() == 2 ) {
+            // Check if it's a map (key,value) or list (index,item) — determined later from collection type
+            mode = AstRenderBlockRange.Mode.NAMED_INDEX_ITEM;
+        } else {
+            mode = AstRenderBlockRange.Mode.NAMED_ITEM;
+        }
+
+        return buildCollectionRange( collPath, varNames, mode, templateType, rootTemplateType, r, builtInFunction, errorStrategy );
+    }
+
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    private static AstRender buildCollectionRange( String collPath, List<String> varNames, AstRenderBlockRange.Mode mode,
+                                                   TemplateType templateType, TemplateType rootTemplateType,
+                                                   BlockRangeElement r, Map<String, List<Method>> builtInFunction,
+                                                   ErrorStrategy errorStrategy ) throws NoSuchFieldException {
+        TemplateLexerExpression lexer = new TemplateLexerExpression( CharStreams.fromString( collPath ) );
+        TemplateGrammarExpression grammar = new TemplateGrammarExpression( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+        if( errorStrategy == ErrorStrategy.ERROR ) {
+            lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+            grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
+        }
+        Exprs collExprs = grammar.exprs().ret;
+        ScopeAstResult scopeResult = toScopeAst( collExprs, templateType, errorStrategy );
+        TemplateType collectionType = scopeResult.scopeType;
+
+        boolean isMap = collectionType.isInstanceOf( Map.class );
+
+        TemplateType itemType;
+        TemplateType keyType = null;
+        TemplateType valueType = null;
+        String itemVarName = null;
+        String indexOrKeyVarName = null;
+
+        Map<String, TemplateType> bodyRangeVarTypes = new HashMap<>();
+
+        if( isMap ) {
+            mode = AstRenderBlockRange.Mode.MAP_KEY_VALUE;
+            keyType = collectionType.getActualTypeArguments0();
+            valueType = collectionType.getActualTypeArguments1( false );
+            itemType = valueType;
+            if( varNames.size() >= 2 ) {
+                indexOrKeyVarName = varNames.get( 0 );
+                itemVarName = varNames.get( 1 );
+                bodyRangeVarTypes.put( indexOrKeyVarName, keyType );
+                bodyRangeVarTypes.put( itemVarName, valueType );
+            }
+        } else {
+            itemType = collectionType.getActualTypeArguments0();
+            if( mode == AstRenderBlockRange.Mode.NAMED_ITEM && !varNames.isEmpty() ) {
+                itemVarName = varNames.get( 0 );
+                bodyRangeVarTypes.put( itemVarName, itemType );
+            } else if( mode == AstRenderBlockRange.Mode.NAMED_INDEX_ITEM && varNames.size() >= 2 ) {
+                indexOrKeyVarName = varNames.get( 0 );
+                itemVarName = varNames.get( 1 );
+                bodyRangeVarTypes.put( indexOrKeyVarName, new TemplateType( int.class, false ) );
+                bodyRangeVarTypes.put( itemVarName, itemType );
+            }
+        }
+
+        TemplateType bodyTemplateType = mode == AstRenderBlockRange.Mode.IMPLICIT_SCOPE ? itemType : templateType;
+        AstRenderRoot bodyRoot = toAst( r.body, bodyTemplateType, rootTemplateType, builtInFunction, errorStrategy, bodyRangeVarTypes );
+        AstRenderRoot elseRoot = r.elseElements != null
+            ? toAst( r.elseElements, templateType, rootTemplateType, builtInFunction, errorStrategy, Map.of() )
+            : null;
+
+        return new AstRenderBlockRange( templateType, scopeResult.scopeAst, collectionType,
+            itemType, mode, itemVarName, indexOrKeyVarName, keyType, valueType,
+            bodyRoot.children, elseRoot != null ? elseRoot.children : null );
+    }
+
+    private static AstRender buildIntervalRange( List<String> varNames, String sourcePart,
+                                                 TemplateType templateType, TemplateType rootTemplateType,
+                                                 BlockRangeElement r, Map<String, List<Method>> builtInFunction,
+                                                 ErrorStrategy errorStrategy ) {
+        int dotDotIdx = sourcePart.indexOf( ".." );
+        String fromStr = sourcePart.substring( 0, dotDotIdx ).trim();
+        String rest = sourcePart.substring( dotDotIdx + 2 ).trim();
+
+        String toStr;
+        String stepStr = "1";
+        Matcher m = STEP_PATTERN.matcher( rest );
+        if( m.find() ) {
+            toStr = rest.substring( 0, m.start() ).trim();
+            stepStr = rest.substring( m.end() ).trim();
+        } else {
+            toStr = rest.trim();
+        }
+
+        AstRenderBlockRangeInterval.IntRangeValue from = parseIntRangeValue( fromStr );
+        AstRenderBlockRangeInterval.IntRangeValue to = parseIntRangeValue( toStr );
+        AstRenderBlockRangeInterval.IntRangeValue step = parseIntRangeValue( stepStr );
+
+        String varName = varNames.isEmpty() ? "_k" : varNames.get( 0 );
+        Map<String, TemplateType> bodyRangeVarTypes = Map.of( varName, new TemplateType( int.class, false ) );
+        AstRenderRoot bodyRoot = toAst( r.body, templateType, rootTemplateType, builtInFunction, errorStrategy, bodyRangeVarTypes );
+        AstRenderRoot elseRoot = r.elseElements != null
+            ? toAst( r.elseElements, templateType, rootTemplateType, builtInFunction, errorStrategy, Map.of() )
+            : null;
+
+        return new AstRenderBlockRangeInterval( templateType, varName, from, to, step,
+            bodyRoot.children, elseRoot != null ? elseRoot.children : null );
+    }
+
+    private static AstRenderBlockRangeInterval.IntRangeValue parseIntRangeValue( String s ) {
+        try {
+            return new AstRenderBlockRangeInterval.IntRangeValue.Literal( Integer.parseInt( s ) );
+        } catch( NumberFormatException e ) {
+            return new AstRenderBlockRangeInterval.IntRangeValue.Field( s );
+        }
     }
 
     public static AstRender getFunction( String name, List<String> args, Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) {

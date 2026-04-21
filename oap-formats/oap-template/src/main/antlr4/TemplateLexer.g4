@@ -10,6 +10,7 @@ fragment EndExpr2       : '}}'  ;
 
 
 
+STARTBLOCKRANGE    : '{{%' [ \t]* 'range' [ \t]+ -> pushMode(BlockIfContent) ;
 STARTBLOCKWITH     : '{{%' [ \t]* 'with' [ \t]+  -> pushMode(BlockIfContent) ;
 STARTBLOCKIF_LTRIM : '{{%-' [ \t]* 'if' [ \t]+   -> pushMode(BlockIfContent) ;
 STARTBLOCKIF       : '{{%' [ \t]* 'if' [ \t]+    -> pushMode(BlockIfContent) ;

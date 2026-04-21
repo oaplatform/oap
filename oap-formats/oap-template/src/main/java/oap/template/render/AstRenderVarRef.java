@@ -22,20 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.template.tree;
+package oap.template.render;
 
 import lombok.ToString;
 
-@ToString
-public class TextElement implements Element {
-    public final String text;
+/**
+ * Redirects render.field to the Java variable bound to a named range variable ($varName).
+ * Used when an expression inside a range body starts with $varName (e.g., {{ $item.field }}).
+ */
+@ToString( callSuper = true )
+class AstRenderVarRef extends AstRender {
+    private final String varName;
 
-    public TextElement( String text ) {
-        this.text = text;
+    AstRenderVarRef( String varName, TemplateType varType ) {
+        super( varType );
+        this.varName = varName;
     }
 
     @Override
-    public void print( ToStringRender render ) {
-        render.append( "TEXT " + text );
+    public void render( Render render ) {
+        String javaVar = render.rangeVarMap.get( varName );
+        Render varRender = render.withField( javaVar ).withParentType( type );
+        children.forEach( c -> c.render( varRender ) );
     }
 }

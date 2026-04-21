@@ -12,6 +12,7 @@ package oap.template;
 import oap.template.tree.*;
 import oap.template.tree.BlockIfElement;
 import oap.template.tree.BlockWithElement;
+import oap.template.tree.BlockRangeElement;
 
 import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
@@ -40,6 +41,7 @@ element[Map<String,String> aliases] returns [Element ret]
 	| expression[aliases] { $ret = new ExpressionElement( $expression.ret, $expression.trimLeft, $expression.trimRight ); }
 	| blockIfElement[aliases] { $ret = $blockIfElement.ret; }
 	| blockWithElement[aliases] { $ret = $blockWithElement.ret; }
+	| blockRangeElement[aliases] { $ret = $blockRangeElement.ret; }
 	;
 
 blockIfElement[Map<String,String> aliases] returns [BlockIfElement ret]
@@ -65,6 +67,20 @@ blockWithElement[Map<String,String> aliases] returns [BlockWithElement ret]
 	      $ret = new BlockWithElement(
 	          StringUtils.trim( $BLOCK_IF_CONTENT.text ),
 	          $body.ret
+	      );
+	  }
+	;
+
+blockRangeElement[Map<String,String> aliases] returns [BlockRangeElement ret]
+	: STARTBLOCKRANGE BLOCK_IF_CONTENT BLOCK_IF_RBRACE
+	  thenBranch=blockBody[aliases]
+	  ( STARTBLOCKELSE elseBranch=blockBody[aliases] )?
+	  STARTBLOCKEND
+	  {
+	      $ret = new BlockRangeElement(
+	          StringUtils.trim( $BLOCK_IF_CONTENT.text ),
+	          $thenBranch.ret,
+	          $elseBranch.ctx != null ? $elseBranch.ret : null
 	      );
 	  }
 	;

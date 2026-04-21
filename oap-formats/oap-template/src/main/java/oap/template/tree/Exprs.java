@@ -26,6 +26,7 @@ package oap.template.tree;
 
 import lombok.ToString;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class Exprs {
     public Math math = null;
     public Concatenation concatenation = null;
     public boolean rootScoped = false;
+    @Nullable public String varName = null;
 
     public Exprs() {
     }
