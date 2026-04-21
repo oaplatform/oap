@@ -26,16 +26,32 @@ package oap.template.tree;
 
 import lombok.ToString;
 
-@ToString
-public class TextElement implements Element {
-    public final String text;
+import javax.annotation.Nullable;
 
-    public TextElement( String text ) {
-        this.text = text;
+@ToString
+public class BlockRangeElement implements Element {
+    public final String rangeSpec;
+    public final Elements body;
+    @Nullable
+    public final Elements elseElements;
+
+    public BlockRangeElement( String rangeSpec, Elements body, @Nullable Elements elseElements ) {
+        this.rangeSpec = rangeSpec;
+        this.body = body;
+        this.elseElements = elseElements;
     }
 
     @Override
     public void print( ToStringRender render ) {
-        render.append( "TEXT " + text );
+        render.append( "RANGE " ).append( rangeSpec ).nspace();
+
+        render.append( elseElements != null ? "├── " : "└── " );
+
+        body.print( render.spaceInc( 4 ) );
+
+        if( elseElements != null ) {
+            render.append( "└── " );
+            elseElements.print( render.spaceInc( 4 ) );
+        }
     }
 }

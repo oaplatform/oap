@@ -112,6 +112,9 @@ exprs returns [Exprs ret = new Exprs()]
     : ROOT DOT expr { $ret.rootScoped = true; $ret.exprs.add( $expr.ret ); }
       (DOT expr { $ret.exprs.add( $expr.ret ); })*
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
+    | VAR_ID { $ret.varName = $VAR_ID.text.substring( 1 ); }
+      (DOT expr { $ret.exprs.add( $expr.ret ); })*
+      math? { if( $math.ctx != null ) $ret.math = $math.ret; }
     | expr  { $ret.exprs.add( $expr.ret ); }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
     | expr  { $ret.exprs.add( $expr.ret ); }

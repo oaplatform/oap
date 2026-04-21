@@ -5,6 +5,7 @@ package oap.template;
 import oap.template.tree.*;
 import oap.template.tree.BlockIfElement;
 import oap.template.tree.BlockWithElement;
+import oap.template.tree.BlockRangeElement;
 
 import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
@@ -72,6 +73,18 @@ public class TemplateGrammarBaseListener implements TemplateGrammarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitBlockWithElement(TemplateGrammar.BlockWithElementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBlockRangeElement(TemplateGrammar.BlockRangeElementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBlockRangeElement(TemplateGrammar.BlockRangeElementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

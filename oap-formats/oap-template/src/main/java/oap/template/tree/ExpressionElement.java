@@ -45,7 +45,7 @@ public class ExpressionElement implements Element {
     }
 
     @Override
-    public String print() {
-        return "EXPR '" + expression + "'" + ( trimLeft ? " TRIML" : "" ) + ( trimRight ? " TRIMR" : "" );
+    public void print( ToStringRender render ) {
+        render.append( "EXPR '" + expression + "'" + ( trimLeft ? " TRIML" : "" ) + ( trimRight ? " TRIMR" : "" ) );
     }
 }

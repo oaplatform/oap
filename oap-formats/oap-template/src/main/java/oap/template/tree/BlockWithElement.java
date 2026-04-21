@@ -37,9 +37,9 @@ public class BlockWithElement implements Element {
     }
 
     @Override
-    public String print() {
-        StringBuilder sb = new StringBuilder( "BLOCK_WITH " ).append( scopePath ).append( '\n' );
-        sb.append( "  BODY\n" ).append( body.print() );
-        return sb.toString();
+    public void print( ToStringRender render ) {
+        render.append( "WITH " ).append( scopePath ).nspace();
+        render.append( "└── " );
+        body.print( render.spaceInc( 4 ) );
     }
 }

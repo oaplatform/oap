@@ -5,6 +5,7 @@ package oap.template;
 import oap.template.tree.*;
 import oap.template.tree.BlockIfElement;
 import oap.template.tree.BlockWithElement;
+import oap.template.tree.BlockRangeElement;
 
 import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
@@ -59,6 +60,16 @@ public interface TemplateGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitBlockWithElement(TemplateGrammar.BlockWithElementContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammar#blockRangeElement}.
+	 * @param ctx the parse tree
+	 */
+	void enterBlockRangeElement(TemplateGrammar.BlockRangeElementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammar#blockRangeElement}.
+	 * @param ctx the parse tree
+	 */
+	void exitBlockRangeElement(TemplateGrammar.BlockRangeElementContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammar#blockBody}.
 	 * @param ctx the parse tree

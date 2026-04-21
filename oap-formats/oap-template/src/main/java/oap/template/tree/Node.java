@@ -35,5 +35,5 @@ package oap.template.tree;
  * @see TextElement
  */
 public interface Node {
-    String print();
+    void print( ToStringRender render );
 }

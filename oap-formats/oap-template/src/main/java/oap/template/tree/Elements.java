@@ -27,23 +27,21 @@ package oap.template.tree;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 @ToString
 public class Elements implements Node {
     public final ArrayList<Element> elements = new ArrayList<>();
 
-    public String print() {
-        StringBuilder sb = new StringBuilder( "LIST\n" );
-        var it = elements.iterator();
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    public void print( ToStringRender render ) {
+        render.append( "ELEMENTS" );
+        Iterator<Element> it = elements.iterator();
         while( it.hasNext() ) {
-            var item = it.next();
-
-            sb
-                .append( it.hasNext() ? "├── " : "└── " )
-                .append( item.print() )
-                .append( '\n' );
+            Element item = it.next();
+            render.nspace();
+            render.append( it.hasNext() ? "├── " : "└── " );
+            item.print( render.spaceInc( 4 ) );
         }
-
-        return sb.toString();
     }
 }

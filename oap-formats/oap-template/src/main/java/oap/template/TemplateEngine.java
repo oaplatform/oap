@@ -43,6 +43,7 @@ import oap.template.render.AstRenderRoot;
 import oap.template.render.TemplateAstUtils;
 import oap.template.render.TemplateType;
 import oap.template.tree.Elements;
+import oap.template.tree.ToStringRender;
 import oap.util.Dates;
 import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
@@ -188,7 +189,9 @@ public class TemplateEngine implements Runnable {
                     grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                 }
                 Elements elements = grammar.elements( aliases ).ret;
-                log.trace( "\n" + elements.print() );
+                ToStringRender render = new ToStringRender();
+                elements.print( render );
+                log.trace( "\n{}", render );
 
                 AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
 

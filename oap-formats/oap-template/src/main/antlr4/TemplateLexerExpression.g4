@@ -86,6 +86,7 @@ THEN            : 'then'                                ;
 ELSE            : 'else'                                ;
 END             : 'end'                                 ;
 WITH            : 'with'                                ;
+VAR_ID          : '$' NameChar (NameChar|DecDigit)*     ;
 ROOT            : '$'                                   ;
 
 BLOCK_COMMENT	: BlockComment;
