@@ -95,6 +95,81 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
     }
 
     @Test
+    public void testIfConditionAnd() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.booleanField = true;
+        c.booleanObjectField = true;
+        assertThat( getTemplate( testMethodName + "BothTrue", new TypeRef<TestTemplateClass>() {}, "{{ if booleanField and booleanObjectField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "val" );
+
+        c.booleanObjectField = false;
+        assertThat( getTemplate( testMethodName + "SecondFalse", new TypeRef<TestTemplateClass>() {}, "{{ if booleanField and booleanObjectField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
+    public void testIfConditionOr() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.booleanField = false;
+        c.booleanObjectField = true;
+        assertThat( getTemplate( testMethodName + "SecondTrue", new TypeRef<TestTemplateClass>() {}, "{{ if booleanField or booleanObjectField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "val" );
+
+        c.booleanObjectField = false;
+        assertThat( getTemplate( testMethodName + "BothFalse", new TypeRef<TestTemplateClass>() {}, "{{ if booleanField or booleanObjectField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
+    public void testIfConditionNot() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.booleanField = false;
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if not booleanField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "val" );
+    }
+
+    @Test
+    public void testIfConditionBangNot() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.booleanField = true;
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if !booleanField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
+    public void testIfConditionAndString() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "hello";
+        c.field2 = "world";
+        assertThat( getTemplate( testMethodName + "BothNonEmpty", new TypeRef<TestTemplateClass>() {}, "{{ if field and field2 then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "hello" );
+
+        c.field2 = "";
+        assertThat( getTemplate( testMethodName + "SecondEmpty", new TypeRef<TestTemplateClass>() {}, "{{ if field and field2 then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+
+        c.field = null;
+        c.field2 = "world";
+        assertThat( getTemplate( testMethodName + "FirstNullOrSecond", new TypeRef<TestTemplateClass>() {}, "{{ if field or field2 then field2 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "world" );
+    }
+
+    @Test
+    public void testIfConditionComplex() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.booleanField = true;
+        c.booleanObjectField = true;
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ if (booleanField and booleanObjectField) and not booleanField then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
     public void testBlockIfTrue() {
         TestTemplateClass c = new TestTemplateClass();
         c.booleanField = true;

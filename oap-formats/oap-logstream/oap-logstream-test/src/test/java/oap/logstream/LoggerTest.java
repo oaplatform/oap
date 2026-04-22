@@ -33,7 +33,6 @@ import oap.logstream.net.client.SocketLoggerBackend;
 import oap.logstream.net.server.SocketLoggerServer;
 import oap.message.client.MessageSender;
 import oap.message.server.MessageHttpHandler;
-import oap.template.TemplateEngine;
 import oap.template.TemplateEngineFixture;
 import oap.template.Types;
 import oap.testng.Fixtures;
