@@ -25,9 +25,12 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Block range over a collection or map.
@@ -147,5 +150,63 @@ public class AstRenderBlockRange extends AstRender {
             .withRangeVar( itemVarName, valueVar );
         for( AstRender child : bodyChildren ) child.render( bodyRender );
         outerRender.ntab().append( "}" );
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void interpret( RuntimeContext ctx ) {
+        Object[] capture = { null };
+        collectionAst.interpret( ctx.withScopeCapture( capture ) );
+        Object coll = capture[0];
+
+        boolean nonEmpty = mode == Mode.MAP_KEY_VALUE
+            ? ( coll instanceof Map<?, ?> m && !m.isEmpty() )
+            : ( coll instanceof Collection<?> c && !c.isEmpty() );
+
+        if( nonEmpty ) {
+            if( mode == Mode.MAP_KEY_VALUE ) {
+                interpretMap( ctx, ( Map<?, ?> ) coll );
+            } else if( mode == Mode.IMPLICIT_SCOPE ) {
+                interpretImplicit( ctx, ( Collection<?> ) coll );
+            } else if( mode == Mode.NAMED_INDEX_ITEM ) {
+                interpretIndexItem( ctx, ( Collection<?> ) coll );
+            } else {
+                interpretNamedItem( ctx, ( Collection<?> ) coll );
+            }
+        } else if( elseChildren != null ) {
+            elseChildren.forEach( c -> c.interpret( ctx ) );
+        }
+    }
+
+    private void interpretImplicit( RuntimeContext ctx, Collection<?> coll ) {
+        for( Object item : coll ) {
+            RuntimeContext inner = ctx.withCurrentObject( item );
+            bodyChildren.forEach( c -> c.interpret( inner ) );
+        }
+    }
+
+    private void interpretNamedItem( RuntimeContext ctx, Collection<?> coll ) {
+        for( Object item : coll ) {
+            RuntimeContext inner = ctx.withRangeVar( itemVarName, item );
+            bodyChildren.forEach( c -> c.interpret( inner ) );
+        }
+    }
+
+    private void interpretIndexItem( RuntimeContext ctx, Collection<?> coll ) {
+        int idx = 0;
+        for( Object item : coll ) {
+            RuntimeContext inner = ctx.withRangeVar( indexOrKeyVarName, idx ).withRangeVar( itemVarName, item );
+            bodyChildren.forEach( c -> c.interpret( inner ) );
+            idx++;
+        }
+    }
+
+    private void interpretMap( RuntimeContext ctx, Map<?, ?> map ) {
+        for( Map.Entry<?, ?> entry : map.entrySet() ) {
+            RuntimeContext inner = ctx
+                .withRangeVar( indexOrKeyVarName, entry.getKey() )
+                .withRangeVar( itemVarName, entry.getValue() );
+            bodyChildren.forEach( c -> c.interpret( inner ) );
+        }
     }
 }

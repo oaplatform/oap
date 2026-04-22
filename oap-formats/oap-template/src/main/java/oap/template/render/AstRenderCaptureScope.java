@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 /**
  * Leaf node for the scope path in AstRenderWith / AstRenderBlockWith.
@@ -39,5 +40,10 @@ class AstRenderCaptureScope extends AstRender {
     @Override
     public void render( Render render ) {
         render.ntab().append( "%s = %s;", render.scopeVar, render.field );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        if( ctx.scopeCapture != null ) ctx.scopeCapture[0] = ctx.currentObject;
     }
 }

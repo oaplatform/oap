@@ -33,6 +33,7 @@ import oap.logstream.net.client.SocketLoggerBackend;
 import oap.logstream.net.server.SocketLoggerServer;
 import oap.message.client.MessageSender;
 import oap.message.server.MessageHttpHandler;
+import oap.template.TemplateEngineFixture;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.Ports;
@@ -61,9 +62,11 @@ import static org.testng.Assert.assertTrue;
 @Slf4j
 public class LoggerTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
+    private final TemplateEngineFixture templateEngineFixture;
 
     public LoggerTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        templateEngineFixture = fixture( new TemplateEngineFixture() );
     }
 
     @Test
@@ -78,7 +81,7 @@ public class LoggerTest extends Fixtures {
         byte[] line2 = Compression.gzip( RowBinaryUtils.line( lineData2 ) );
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
             Logger logger = new Logger( backend );
             logger.log( "lfn1", Map.of(), "log", headers1, types1, line1 );
             logger.log( "lfn2", Map.of(), "log", headers1, types1, line1 );
@@ -114,7 +117,7 @@ public class LoggerTest extends Fixtures {
         String[] headers2 = new String[] { "TIMESTAMP", "REQUEST_ID2" };
         byte[][] types2 = new byte[][] { new byte[] { Types.DATETIME.id }, new byte[] { Types.STRING.id } };
 
-        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
+        try( DiskLoggerBackend serverBackend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" );
              SocketLoggerServer server = new SocketLoggerServer( serverBackend );
              NioHttpServer mServer = new NioHttpServer( new NioHttpServer.DefaultPort( port ) );
              MessageHttpHandler messageHttpHandler = new MessageHttpHandler( mServer, "/messages", controlStatePath, List.of( server ), -1 );

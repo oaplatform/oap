@@ -12,6 +12,11 @@ package oap.template;
 import oap.template.tree.*;
 import oap.template.tree.Math;
 import oap.template.tree.WithCondition;
+import oap.template.tree.ConditionExpr;
+import oap.template.tree.FieldConditionExpr;
+import oap.template.tree.AndConditionExpr;
+import oap.template.tree.OrConditionExpr;
+import oap.template.tree.NotConditionExpr;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -64,8 +69,28 @@ exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
       }
     ;
 
-ifCondition returns [Exprs ret]
-    : exprs { $ret = $exprs.ret; }
+ifCondition returns [ConditionExpr ret]
+    : conditionOr { $ret = $conditionOr.ret; }
+    ;
+
+conditionOr returns [ConditionExpr ret]
+    : left=conditionAnd { $ret = $left.ret; }
+      ( OR right=conditionAnd { $ret = new OrConditionExpr( $ret, $right.ret ); } )*
+    ;
+
+conditionAnd returns [ConditionExpr ret]
+    : left=conditionNot { $ret = $left.ret; }
+      ( AND right=conditionNot { $ret = new AndConditionExpr( $ret, $right.ret ); } )*
+    ;
+
+conditionNot returns [ConditionExpr ret]
+    : ( NOT | BANG ) inner=conditionNot { $ret = new NotConditionExpr( $inner.ret ); }
+    | conditionAtom { $ret = $conditionAtom.ret; }
+    ;
+
+conditionAtom returns [ConditionExpr ret]
+    : LPAREN ifCondition RPAREN { $ret = $ifCondition.ret; }
+    | exprs { $ret = new FieldConditionExpr( $exprs.ret ); }
     ;
     
 

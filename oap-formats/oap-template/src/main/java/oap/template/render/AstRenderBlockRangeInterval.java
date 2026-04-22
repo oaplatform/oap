@@ -25,6 +25,8 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.ReflectionCache;
+import oap.template.runtime.RuntimeContext;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -87,5 +89,23 @@ public class AstRenderBlockRangeInterval extends AstRender {
         for( AstRender child : bodyChildren ) child.render( innerRender );
 
         render.ntab().append( "}" );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        int fromVal = resolveInt( from, ctx );
+        int toVal = resolveInt( to, ctx );
+        int stepVal = resolveInt( step, ctx );
+        for( int k = fromVal; k <= toVal; k += stepVal ) {
+            RuntimeContext inner = ctx.withRangeVar( varName, k );
+            bodyChildren.forEach( c -> c.interpret( inner ) );
+        }
+    }
+
+    private static int resolveInt( IntRangeValue v, RuntimeContext ctx ) {
+        if( v instanceof IntRangeValue.Literal lit ) return lit.value();
+        IntRangeValue.Field fv = ( IntRangeValue.Field ) v;
+        Object val = ReflectionCache.getFieldValue( ctx.currentObject, fv.fieldName() );
+        return val instanceof Number n ? n.intValue() : Integer.parseInt( String.valueOf( val ) );
     }
 }

@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 class AstRenderComment extends AstRender {
@@ -41,5 +42,10 @@ class AstRenderComment extends AstRender {
         render.ntab().append( comment );
 
         children.forEach( a -> a.render( render ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        children.forEach( c -> c.interpret( ctx ) );
     }
 }

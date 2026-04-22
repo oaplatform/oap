@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 public class AstRenderText extends AstRender {
@@ -39,6 +40,11 @@ public class AstRenderText extends AstRender {
     public void render( Render render ) {
         render.ntab()
             .append( "%s.acceptText( \"%s\" );", render.templateAccumulatorName, render.escapeJava( text != null ? text : "" ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        ctx.acc.acceptText( text != null ? text : "" );
     }
 
 }

@@ -9,6 +9,7 @@ import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryOutputStream;
 import oap.net.Inet;
+import oap.template.TemplateEngine;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.IOException;
@@ -21,8 +22,8 @@ import java.util.zip.GZIPOutputStream;
 
 @Slf4j
 public class RowBinaryWriter extends AbstractWriter<FileChannel> {
-    public RowBinaryWriter( Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, int maxVersions, String hostname ) {
-        super( LogFormat.ROW_BINARY_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname );
+    public RowBinaryWriter( TemplateEngine templateEngine, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, int maxVersions, String hostname ) {
+        super( templateEngine, LogFormat.ROW_BINARY_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname );
     }
 
     @Override

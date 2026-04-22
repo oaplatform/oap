@@ -28,6 +28,7 @@ import oap.compression.Compression;
 import oap.logstream.Logger;
 import oap.logstream.Timestamp;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
+import oap.template.TemplateEngineFixture;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -48,14 +49,16 @@ import static org.testng.Assert.assertTrue;
 
 public class DiskLoggerBackendTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
+    private final TemplateEngineFixture templateEngineFixture;
 
     public DiskLoggerBackendTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        templateEngineFixture = fixture( new TemplateEngineFixture() );
     }
 
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) {
             backend.start();
 
             assertTrue( backend.isLoggingAvailable() );
@@ -73,7 +76,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
 
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), Timestamp.BPH_12, 4000, "localhost" ) ) {
             backend.filePattern = "${LOG_TYPE}_${LOG_VERSION}_${INTERVAL}.tsv.gz";
             backend.filePatternByType.put( "LOG_TYPE_WITH_DIFFERENT_FILE_PATTERN",
                 new DiskLoggerBackend.FilePatternConfiguration( "${LOG_TYPE}_${LOG_VERSION}_${MINUTE}.parquet" ) );
@@ -106,7 +109,7 @@ public class DiskLoggerBackendTest extends Fixtures {
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } };
         byte[] lines = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "12345678", "rrrr5678" ), List.of( "1", "2" ) ) ) );
         //init new logger
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
             backend.start();
 
             Logger logger = new Logger( backend );

@@ -44,13 +44,13 @@ public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
         templateClass.intField = 1;
         templateClass.intObjectField = 2;
 
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        var str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "booleanField:${<java.lang.Boolean>booleanField},booleanObjectField:${<java.lang.Boolean>booleanObjectField},intField:${<java.lang.Integer>intField},intObjectField:${<java.lang.Integer>intObjectField}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
         assertThat( str ).isEqualTo( "booleanField:true_b,booleanObjectField:true_b,intField:1_i,intObjectField:2_i" );
 
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThatThrownBy( () -> getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "booleanField:${<java.lang.Integer>booleanField}",
             templateAccumulator, ERROR, null ).render( templateClass ) )
             .isInstanceOf( TemplateException.class )
@@ -64,7 +64,7 @@ public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
         templateClass.child = new TestTemplateClass();
         templateClass.child.intField = 100;
 
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        var str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "child.intField:${<java.lang.Integer>child.intField}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
@@ -80,7 +80,7 @@ public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
         templateClass.child.child.field = "v1";
         templateClass.child.child.field2 = "v2";
 
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        var str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "child.child.{field,\"x\",field2}:${<java.lang.String>child.child.{field,\"x\",field2}}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
@@ -94,7 +94,7 @@ public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
         templateClass.childNullable = new TestTemplateClass();
         templateClass.childNullable.intField = 100;
 
-        var str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        var str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "childNullable.intField:${<java.lang.Integer>childNullable.intField}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
@@ -107,7 +107,7 @@ public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
         c.childNullable = null;
         c.childOpt = Optional.empty();
 
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${<java.lang.Boolean>childNullable.booleanObjectField??true}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "${<java.lang.Boolean>childNullable.booleanObjectField??true}", STRING, null ).render( c ).get() )
             .isEqualTo( "true" );
     }
 }

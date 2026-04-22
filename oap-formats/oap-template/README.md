@@ -16,9 +16,13 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Concatenation](#concatenation)
   - [Math](#math)
   - [If / then / else (inline)](#if--then--else-inline)
+    - [Compound conditions (inline)](#compound-conditions-inline)
   - [If / else / end (block)](#if--else--end-block)
+    - [Compound conditions](#compound-conditions)
+    - [Truthiness semantics](#truthiness-semantics)
   - [With scope (inline)](#with-scope-inline)
   - [With scope (block)](#with-scope-block)
+  - [Range (block)](#range-block)
   - [Pipe-to-function](#pipe-to-function)
   - [Cast types](#cast-types)
   - [Block comments](#block-comments)
@@ -26,6 +30,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
 - [Custom Functions](#custom-functions)
 - [Output Accumulators](#output-accumulators)
 - [Using the Engine in Java](#using-the-engine-in-java)
+- [Runtime Interpreter Mode](#runtime-interpreter-mode)
 - [OAP Module Integration](#oap-module-integration)
 - [Aliases](#aliases)
 - [Error Handling](#error-handling)
@@ -60,17 +65,25 @@ Template string + TypeRef + Accumulator
   TemplateAstUtils.toAst()          ← walks the type hierarchy via reflection,
                                        resolves fields/methods, builds AstRender nodes
         │
-        ▼
-  Render (code generation)          ← emits a Java source file
+        ├─── getTemplate() ──────────────────────────────────────────────────────┐
+        │                                                                        │
+        ▼                                                                        │
+  Render (code generation)          ← emits a Java source file                  │
+        │                                                                        │
+        ▼                                                                        │
+  MemoryClassLoaderJava             ← compiles and loads the generated class     │
+        │                                                                        │
+        ▼                                                                        │
+  Guava Cache  ←→  optional disk cache                                           │
+        │                                                                        │
+        ▼                                                                        │
+  template.render(obj)              ← calls compiled TriConsumer directly        │
+                                                                                 │
+        └─── getRuntimeTemplate() ───────────────────────────────────────────────┘
         │
         ▼
-  MemoryClassLoaderJava             ← compiles and loads the generated class
-        │
-        ▼
-  Guava Cache  ←→  optional disk cache
-        │
-        ▼
-  template.render(obj)              ← calls compiled TriConsumer directly
+  AstRender tree interpreted via reflection (RuntimeContext)
+  No compilation, no cache — each render walks the AST directly
 ```
 
 Field resolution honours `@JsonProperty` and `@JsonAlias` annotations as alternate names. `@Nullable` / `@Nonnull` control null-check code generation.
@@ -235,13 +248,26 @@ Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric lit
 {{ if booleanField then field else field2 end }}
 ```
 
-The condition must be a `boolean` field or a nullable `Boolean` object. A null `Boolean` is treated as false.
+The condition can be any field path or a compound boolean expression (see below). Truthiness is determined by the field's type — see [Truthiness semantics](#truthiness-semantics).
 
 Can be combined with a default value:
 
 ```
 {{ if isPremium then premiumField end ?? 'standard' }}
 ```
+
+#### Compound conditions (inline)
+
+The same `and`, `or`, `not` / `!`, and parenthesised grouping supported by block-if are available in inline if. Operator precedence: `not` / `!` → `and` → `or`.
+
+```
+{{ if active and not user.isBanned then user.name end }}
+{{ if flagA or flagB then field else field2 end }}
+{{ if !booleanField then fallback end }}
+{{ if (a and b) or c then field end }}
+```
+
+Field types follow the same truthiness rules as block-if — a `String` is truthy when non-empty, a `Collection` or `Map` when non-empty, an array when `length > 0`, any other non-null value is truthy, and `null` is always false.
 
 ### If / else / end (block)
 
@@ -265,7 +291,7 @@ With an else branch:
 
 **Rules:**
 
-- The condition is a field path (e.g. `booleanField`, `child.active`). It must resolve to a `boolean` primitive or a nullable `Boolean` object. A null `Boolean` is treated as `false`.
+- The condition is a field path (e.g. `booleanField`, `child.active`) or a compound boolean expression (see below). Any field type is allowed; truthiness is determined by the field's type (see [Truthiness semantics](#truthiness-semantics)).
 - Each branch is a full template body — any mix of literal text and `{{ expr }}` / `${ expr }` expression blocks.
 - The `{{% else }}` branch is optional.
 - Blocks can be nested inside each other's branches.
@@ -289,6 +315,51 @@ Nested example:
     Welcome back, {{ user.name }}.
   {{% end }}
 {{% end }}
+```
+
+#### Compound conditions
+
+Block-if conditions support `and`, `or`, `not` / `!` operators and parenthesised grouping. Operator precedence (highest to lowest): `not` / `!` → `and` → `or`.
+
+| Operator | Syntax | Example |
+|---|---|---|
+| AND | `and` | `{{% if active and user.isPremium }}` |
+| OR  | `or`  | `{{% if flagA or flagB }}` |
+| NOT | `not` | `{{% if not booleanField }}` |
+| NOT | `!`   | `{{% if !booleanField }}` |
+| Grouping | `( … )` | `{{% if (a and b) or c }}` |
+
+```
+{{% if active and not user.isBanned }}
+  Welcome, {{ user.name }}!
+{{% end }}
+
+{{% if (flagA and flagB) or flagC }}
+  condition met
+{{% end }}
+```
+
+Operators can be applied to any field type — truthiness is evaluated per type before combining.
+
+#### Truthiness semantics
+
+Any field type may appear in a `{{% if … }}` condition. The field value is coerced to a boolean as follows:
+
+| Field type | Truthy when |
+|---|---|
+| `boolean` | value is `true` |
+| `Boolean` | non-null and `true` |
+| `String` | non-null and non-empty |
+| `Collection<?>` | non-null and non-empty |
+| `Map<?, ?>` | non-null and non-empty |
+| array | non-null and `length > 0` |
+| any other type | non-null |
+| `null` | always `false` |
+
+```
+{{% if name }}Hello, {{ name }}!{{% end %}}
+{{% if tags }}Tags: {{ tags }}{{% end %}}
+{{% if name and tags }}{{ name }} has tags{{% end %}}
 ```
 
 ### With scope (inline)
@@ -357,6 +428,103 @@ Renders `AnoneB` when `child` is null. Renders `A` + field value + `B` when `chi
 - Use `??` for literal defaults inside body expressions (`{{ field ?? 'default' }}`). Or-chain fallbacks between two fields (`{{ field | default field2 }}`) are not supported inside block-with bodies.
 - Blocks may be nested inside other block constructs (`{{% if … }}`, other `{{% with … }}`).
 - The `{{% end }}` tag closes the nearest open block.
+
+### Range (block)
+
+Block-level iteration over a `Collection`, `Map`, or a numeric interval. The body is rendered once per element; an optional `{{% else %}}` branch renders when the source is empty or null. The `{{% end %}}` tag closes the block.
+
+#### Implicit scope (list)
+
+```
+{{% range .list }}
+  {{ field }}
+{{% end }}
+```
+
+The body scope becomes the current list item — fields are accessed directly without any variable prefix, exactly as if the item were the root object.
+
+```
+{{% range .items }}{{ name }}, {{ price }}{{% end %}}
+```
+
+#### Named item (list)
+
+```
+{{% range $item := .list }}
+  {{ $item.field }}
+{{% end }}
+```
+
+The body stays in the original root scope. The current item is bound to `$item` and accessed via `$item.fieldName`.
+
+#### Named index + item (list)
+
+```
+{{% range $i,$item := .list }}
+  {{ $i }}: {{ $item.field }}
+{{% end %}}
+```
+
+`$i` is a 0-based integer index; `$item` is the current element. Both variables are available anywhere in the body.
+
+#### Named key + value (map)
+
+```
+{{% range $k,$v := .mapField }}
+  {{ $k }}={{ $v.field }}
+{{% end %}}
+```
+
+`$k` is the map key; `$v` is the map value. The value type is derived from the map's declared generic type.
+
+#### Numeric interval
+
+```
+{{% range $k := 1 .. 5 }}{{ $k }}{{% end %}}
+```
+
+Iterates from `from` to `to` **inclusive**, incrementing by 1. `$k` holds the current integer value.
+
+With an explicit step:
+
+```
+{{% range $k := 1 .. 9 step 2 }}{{ $k }} {{% end %}}
+```
+
+Renders `1 3 5 7 9 `.
+
+Bounds and step can also be field names resolved at render time:
+
+```
+{{% range $k := rangeStart .. rangeEnd step rangeStep }}{{ $k }}{{% end %}}
+```
+
+#### Else branch
+
+All range forms accept an optional `{{% else %}}` branch. It renders when the collection or map is empty or null, or when the interval produces no iterations.
+
+```
+{{% range $item := .list }}
+  {{ $item.name }}
+{{% else }}
+  (no items)
+{{% end %}}
+```
+
+#### Rules
+
+| Form | Syntax | Body variables | Notes |
+|---|---|---|---|
+| Implicit scope | `{{% range .list }}` | none — item fields accessible directly | Scope shifts to item type |
+| Named item | `{{% range $item := .list }}` | `$item` | Root scope preserved |
+| Named index + item | `{{% range $i,$item := .list }}` | `$i` (int, 0-based), `$item` | Root scope preserved |
+| Named key + value | `{{% range $k,$v := .map }}` | `$k` (key), `$v` (value) | Map type inferred from field generic |
+| Numeric interval | `{{% range $k := from .. to }}` | `$k` (int) | Default step 1; inclusive |
+| Numeric interval + step | `{{% range $k := from .. to step N }}` | `$k` (int) | `N` can be a literal or field name |
+
+- Ranges can be nested; each level has its own variable scope.
+- `$.fieldName` inside the body always resolves from the original root object, regardless of nesting.
+- The `{{% end %}}` tag closes the nearest open block.
 
 ### Pipe-to-function
 
@@ -535,6 +703,44 @@ engine.getTemplate( name, type, tmpl, acc, Map.of( "old.field", "new.field" ), E
 // With postProcess hook (inspect/modify the AST after parsing)
 engine.getTemplate( name, type, tmpl, acc, ast -> log.debug( ast.print() ) );
 ```
+
+---
+
+## Runtime Interpreter Mode
+
+By default `getTemplate` generates a Java class, compiles it in memory, and caches it — the compiled code runs at near-native speed on subsequent calls. An alternative path, `getRuntimeTemplate`, interprets the same AST directly via reflection without any code generation or compilation.
+
+**When to use:**
+
+- Environments where dynamic classloading or bytecode generation is restricted (e.g. OSGi containers, some native-image builds)
+- Short-lived or one-shot templates where paying the compile cost once is not worth it
+- Unit tests that need to verify template logic without the JIT warm-up noise
+
+**API** — mirrors `getTemplate` exactly; replace the method name:
+
+```java
+// Compile-time path (default):
+Template<MyBean, String, StringBuilder, TemplateAccumulatorString> template =
+    engine.getTemplate( "myTemplate", new TypeRef<MyBean>() {}, "id={{ id }}", STRING, null );
+
+// Runtime interpreter path:
+Template<MyBean, String, StringBuilder, TemplateAccumulatorString> template =
+    engine.getRuntimeTemplate( "myTemplate", new TypeRef<MyBean>() {}, "id={{ id }}", STRING );
+```
+
+All overloads accepting `aliases`, `ErrorStrategy`, and `postProcess` are available on both methods.
+
+**Rendering** is identical — call `template.render(obj)` the same way:
+
+```java
+String result = template.render( bean ).get();
+```
+
+**Limitations compared to `getTemplate`:**
+
+- No disk cache — the AST is always re-walked on each `render` call (though the AST itself is built once and can be cached).
+- No compile-time Micrometer metrics.
+- Throughput is lower for high-frequency rendering; prefer `getTemplate` in production hot paths.
 
 ---
 

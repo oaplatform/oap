@@ -34,17 +34,22 @@ import oap.template.TemplateException;
 import oap.template.TemplateGrammarExpression;
 import oap.template.TemplateLexerExpression;
 import oap.template.ThrowingErrorListener;
+import oap.template.tree.AndConditionExpr;
 import oap.template.tree.BlockIfElement;
 import oap.template.tree.BlockRangeElement;
 import oap.template.tree.BlockWithElement;
+import oap.template.tree.ConditionExpr;
 import oap.template.tree.Element;
 import oap.template.tree.Elements;
 import oap.template.tree.Expr;
 import oap.template.tree.Expression;
 import oap.template.tree.ExpressionElement;
 import oap.template.tree.Exprs;
+import oap.template.tree.FieldConditionExpr;
 import oap.template.tree.Func;
 import oap.template.tree.IfCondition;
+import oap.template.tree.NotConditionExpr;
+import oap.template.tree.OrConditionExpr;
 import oap.template.tree.TextElement;
 import oap.template.tree.WithCondition;
 import oap.util.Arrays;
@@ -235,7 +240,9 @@ public class TemplateAstUtils {
 
             AstRender conditionAst = toConditionAst( ifCondition.condition, templateType, errorStrategy );
             AstRender thenCode = toAst( ifCondition.thenCode, null, templateType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy );
-            AstRender elseCode = ifCondition.elseCode != null ? toAst( ifCondition.elseCode, null, templateType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy ) : null;
+            AstRender elseCode = ifCondition.elseCode != null
+                ? toAst( ifCondition.elseCode, null, templateType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy )
+                : null;
 
             return new AstRenderBooleanIf( templateType, conditionAst, thenCode, elseCode );
         }
@@ -264,6 +271,23 @@ public class TemplateAstUtils {
 
     }
 
+    private static AstRender toConditionAst( ConditionExpr cond, TemplateType templateType, ErrorStrategy errorStrategy ) {
+        if( cond instanceof FieldConditionExpr f ) {
+            return toConditionAst( f.fieldPath(), templateType, errorStrategy );
+        } else if( cond instanceof AndConditionExpr a ) {
+            return new AstRenderConditionAnd( templateType,
+                toConditionAst( a.left(), templateType, errorStrategy ),
+                toConditionAst( a.right(), templateType, errorStrategy ) );
+        } else if( cond instanceof OrConditionExpr o ) {
+            return new AstRenderConditionOr( templateType,
+                toConditionAst( o.left(), templateType, errorStrategy ),
+                toConditionAst( o.right(), templateType, errorStrategy ) );
+        } else if( cond instanceof NotConditionExpr n ) {
+            return new AstRenderConditionNot( templateType, toConditionAst( n.inner(), templateType, errorStrategy ) );
+        }
+        throw new IllegalStateException( "Unknown ConditionExpr: " + cond );
+    }
+
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
     private static AstRender toConditionAst( Exprs conditionExprs, TemplateType templateType, ErrorStrategy errorStrategy ) {
         try {
@@ -285,6 +309,11 @@ public class TemplateAstUtils {
                     i--;
                     result.add( ast );
                     currentTemplateType = newType;
+                } else if( currentTemplateType.isInstanceOf( Map.class ) ) {
+                    TemplateType valueType = currentTemplateType.getActualTypeArguments1( true );
+                    AstRenderMap ast = new AstRenderMap( expr.name, valueType );
+                    result.add( ast );
+                    currentTemplateType = valueType;
                 } else if( !expr.method ) {
                     Class<?> parentClass = currentTemplateType.getTypeClass();
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
@@ -651,8 +680,8 @@ public class TemplateAstUtils {
                         lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
                         grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
                     }
-                    Exprs conditionExprs = grammar.exprs().ret;
-                    AstRender conditionAst = toConditionAst( conditionExprs, templateType, errorStrategy );
+                    ConditionExpr conditionExpr = grammar.ifCondition().ret;
+                    AstRender conditionAst = toConditionAst( conditionExpr, templateType, errorStrategy );
                     AstRenderRoot thenRoot = toAst( b.thenElements, templateType, rootTemplateType, builtInFunction, errorStrategy, rangeVarTypes );
                     AstRenderRoot elseRoot = b.elseElements != null
                         ? toAst( b.elseElements, templateType, rootTemplateType, builtInFunction, errorStrategy, rangeVarTypes )

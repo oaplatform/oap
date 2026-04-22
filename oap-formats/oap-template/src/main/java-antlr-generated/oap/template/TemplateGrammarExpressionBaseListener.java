@@ -5,6 +5,11 @@ package oap.template;
 import oap.template.tree.*;
 import oap.template.tree.Math;
 import oap.template.tree.WithCondition;
+import oap.template.tree.ConditionExpr;
+import oap.template.tree.FieldConditionExpr;
+import oap.template.tree.AndConditionExpr;
+import oap.template.tree.OrConditionExpr;
+import oap.template.tree.NotConditionExpr;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -86,6 +91,54 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitIfCondition(TemplateGrammarExpression.IfConditionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConditionOr(TemplateGrammarExpression.ConditionOrContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConditionOr(TemplateGrammarExpression.ConditionOrContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConditionAnd(TemplateGrammarExpression.ConditionAndContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConditionAnd(TemplateGrammarExpression.ConditionAndContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConditionNot(TemplateGrammarExpression.ConditionNotContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConditionNot(TemplateGrammarExpression.ConditionNotContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConditionAtom(TemplateGrammarExpression.ConditionAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConditionAtom(TemplateGrammarExpression.ConditionAtomContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

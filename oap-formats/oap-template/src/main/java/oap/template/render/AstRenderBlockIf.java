@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -69,6 +70,17 @@ public class AstRenderBlockIf extends AstRender {
             }
 
             render.ntab().append( "}" );
+        }
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        boolean[] capture = { false };
+        conditionAst.interpret( ctx.withBooleanCapture( capture ) );
+        if( capture[0] ) {
+            thenChildren.forEach( c -> c.interpret( ctx ) );
+        } else if( elseChildren != null ) {
+            elseChildren.forEach( c -> c.interpret( ctx ) );
         }
     }
 }

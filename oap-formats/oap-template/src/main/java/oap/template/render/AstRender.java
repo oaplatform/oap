@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +41,9 @@ public abstract class AstRender {
     }
 
     public abstract void render( Render render );
+
+    /** Interpret this node against the live context, writing output to {@code ctx.acc}. */
+    public abstract void interpret( RuntimeContext ctx );
 
     public void addChild( AstRender astRender ) {
         children.add( astRender );

@@ -86,6 +86,10 @@ THEN            : 'then'                                ;
 ELSE            : 'else'                                ;
 END             : 'end'                                 ;
 WITH            : 'with'                                ;
+AND             : 'and'                                 ;
+OR              : 'or'                                  ;
+NOT             : 'not'                                 ;
+BANG            : '!'                                   ;
 VAR_ID          : '$' NameChar (NameChar|DecDigit)*     ;
 ROOT            : '$'                                   ;
 

@@ -25,6 +25,8 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.TemplateAccumulator;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,5 +113,29 @@ public class AstRenderOr extends AstRenderIfElse {
 
         Render newRender = r.withField( orVariable );
         super.render( newRender );
+    }
+
+    @Override
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    public void interpret( RuntimeContext ctx ) {
+        TemplateAccumulator orAcc = ctx.acc.newInstance();
+        boolean found = false;
+        for( AstRender orItem : or ) {
+            TemplateAccumulator tryAcc = ctx.acc.newInstance();
+            boolean[] tryEmpty = { false };
+            RuntimeContext tryCtx = ctx.withAcc( tryAcc ).withTryEmpty( tryEmpty );
+            orItem.interpret( tryCtx );
+            if( !tryEmpty[0] ) {
+                orAcc = tryAcc;
+                found = true;
+                break;
+            }
+        }
+        TemplateAccumulator winner = orAcc;
+        if( found && winner.isNotEmpty() ) {
+            children.forEach( c -> c.interpret( ctx.withCurrentObject( winner ) ) );
+        } else {
+            interpretElse( ctx );
+        }
     }
 }

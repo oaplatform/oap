@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 /**
  * Redirects render.field to the Java variable bound to a named range variable ($varName).
@@ -44,5 +45,12 @@ class AstRenderVarRef extends AstRender {
         String javaVar = render.rangeVarMap.get( varName );
         Render varRender = render.withField( javaVar ).withParentType( type );
         children.forEach( c -> c.render( varRender ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Object value = ctx.rangeVars.get( varName );
+        RuntimeContext next = ctx.withCurrentObject( value );
+        children.forEach( c -> c.interpret( next ) );
     }
 }

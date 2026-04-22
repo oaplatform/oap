@@ -25,6 +25,9 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.AcceptDispatch;
+import oap.template.runtime.ReflectionCache;
+import oap.template.runtime.RuntimeContext;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -67,5 +70,32 @@ public class AstRenderFunction extends AstRender {
 
         Render newRender = render.withField( funcVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Class<?>[] paramTypes = method.getParameterTypes();
+        Object firstArg = ctx.currentObject;
+        if( paramTypes.length > 0 && paramTypes[0].equals( String.class ) && !( firstArg instanceof String ) ) {
+            firstArg = firstArg != null
+                ? AcceptDispatch.toStringViaAcc( firstArg, new TemplateType( firstArg.getClass() ), ctx.acc )
+                : null;
+        }
+
+        Object[] args = new Object[1 + parameters.size()];
+        args[0] = firstArg;
+        for( int i = 0; i < parameters.size(); i++ ) {
+            args[i + 1] = ReflectionCache.parseArg( paramTypes[i + 1], parameters.get( i ) );
+        }
+
+        Object result;
+        try {
+            result = method.invoke( null, args );
+        } catch( Exception e ) {
+            throw new RuntimeException( e );
+        }
+
+        RuntimeContext nextCtx = ctx.withCurrentObject( result ).withAcc( ctx.acc );
+        children.forEach( c -> c.interpret( nextCtx ) );
     }
 }

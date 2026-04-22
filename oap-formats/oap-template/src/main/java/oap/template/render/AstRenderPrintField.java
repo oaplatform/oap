@@ -26,6 +26,8 @@ package oap.template.render;
 
 import com.google.common.base.Preconditions;
 import lombok.ToString;
+import oap.template.runtime.AcceptDispatch;
+import oap.template.runtime.RuntimeContext;
 
 import javax.annotation.Nullable;
 
@@ -43,6 +45,12 @@ public class AstRenderPrintField extends AstRender {
     public void render( Render render ) {
         Render r = render.ntab();
         r.append( "%s.accept( %s );", r.templateAccumulatorName, format( castType != null ? new TemplateType( castType.type ) : type, r.field ) );
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void interpret( RuntimeContext ctx ) {
+        AcceptDispatch.accept( ctx.acc, ctx.currentObject, type, castType );
     }
 
     @SuppressWarnings( { "checkstyle:ParameterAssignment" } )

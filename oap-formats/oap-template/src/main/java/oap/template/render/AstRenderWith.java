@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 /**
  * Inline with: {{ with (field1) field2 | default field3 end }}
@@ -49,5 +50,12 @@ public class AstRenderWith extends AstRender {
         render.ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
         scopeAst.render( render.withScopeVar( sv ) );
         bodyAst.render( render.withField( sv ).withParentType( scopeType ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Object[] capture = { null };
+        scopeAst.interpret( ctx.withScopeCapture( capture ) );
+        bodyAst.interpret( ctx.withCurrentObject( capture[0] ) );
     }
 }

@@ -25,6 +25,8 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.ReflectionCache;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.List;
 
@@ -52,5 +54,12 @@ public class AstRenderMethod extends AstRender {
 
         var newRender = render.withField( variableName.name ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Object result = ReflectionCache.invokeMethod( ctx.currentObject, methodName, arguments );
+        RuntimeContext next = ctx.withCurrentObject( result );
+        children.forEach( c -> c.interpret( next ) );
     }
 }

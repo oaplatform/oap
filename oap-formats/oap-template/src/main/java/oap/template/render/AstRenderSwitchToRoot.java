@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 /**
  * Redirects render.field to render.rootField so that child nodes resolve
@@ -41,5 +42,11 @@ class AstRenderSwitchToRoot extends AstRender {
     public void render( Render render ) {
         Render rootRender = render.withField( render.rootField ).withParentType( type );
         children.forEach( c -> c.render( rootRender ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        RuntimeContext rootCtx = ctx.withCurrentObject( ctx.rootObject );
+        children.forEach( c -> c.interpret( rootCtx ) );
     }
 }
