@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.ArrayList;
@@ -45,5 +46,10 @@ public class AstRenderExpression extends AstRender {
             render.ntab().append( "// " ).append( StringEscapeUtils.escapeJava( c ) );
         }
         children.forEach( a -> a.render( render.withContent( String.join( " | ", content ) ) ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        children.forEach( c -> c.interpret( ctx ) );
     }
 }

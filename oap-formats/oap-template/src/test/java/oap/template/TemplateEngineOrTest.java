@@ -38,7 +38,7 @@ public class TemplateEngineOrTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -46,7 +46,7 @@ public class TemplateEngineOrTest extends AbstractTemplateEngineTest {
     public void testOrNull() {
         TestTemplateClass c = new TestTemplateClass();
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -55,7 +55,7 @@ public class TemplateEngineOrTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.list2 = List.of( 2, 3 );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list | default list2 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list | default list2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "[2,3]" );
     }
 }

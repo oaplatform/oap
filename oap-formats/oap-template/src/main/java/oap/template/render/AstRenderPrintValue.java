@@ -26,6 +26,8 @@ package oap.template.render;
 
 import com.google.common.base.Preconditions;
 import lombok.ToString;
+import oap.template.runtime.AcceptDispatch;
+import oap.template.runtime.RuntimeContext;
 import oap.util.Dates;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
@@ -60,6 +62,18 @@ public class AstRenderPrintValue extends AstRender {
             if( castType != null ) cast = "(" + castType.type.getTypeName() + ")";
 
             r.append( "%s.accept( %s( %s ) );", r.templateAccumulatorName, cast, format( castType != null ? new TemplateType( castType.type ) : type, defaultValue ) );
+        }
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void interpret( RuntimeContext ctx ) {
+        String defaultValue = value;
+        if( defaultValue == null ) defaultValue = ctx.acc.getDefault( type.getTypeClass() );
+        if( defaultValue == null ) {
+            ctx.acc.acceptNull( type.getTypeClass() );
+        } else {
+            AcceptDispatch.acceptDefaultValue( ctx.acc, type, castType, defaultValue );
         }
     }
 

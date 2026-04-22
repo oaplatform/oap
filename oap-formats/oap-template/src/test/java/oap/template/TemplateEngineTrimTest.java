@@ -25,42 +25,17 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
-import oap.util.Dates;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.lang.reflect.Method;
 
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TemplateEngineTrimTest extends Fixtures {
-    private final TestDirectoryFixture testDirectoryFixture;
-    private TemplateEngine engine;
-    private String testMethodName;
-
-    public TemplateEngineTrimTest() {
-        testDirectoryFixture = fixture( new TestDirectoryFixture() );
-    }
-
-    @BeforeMethod
-    public void beforeCMethod() {
-        engine = new TemplateEngine( Dates.d( 10 ) );
-    }
-
-    @BeforeMethod
-    public void nameBefore( Method method ) {
-        testMethodName = method.getName();
-    }
-
-
+public class TemplateEngineTrimTest extends AbstractTemplateEngineTest {
     @Test
     public void testTrimLeft() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "test";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "aa {{- field }}", STRING, null ).render( c ).get() )
             .isEqualTo( "aatest" );
     }
@@ -69,7 +44,7 @@ public class TemplateEngineTrimTest extends Fixtures {
     public void testTrimRight() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "test";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{ field -}} bb", STRING, null ).render( c ).get() )
             .isEqualTo( "testbb" );
     }
@@ -78,7 +53,7 @@ public class TemplateEngineTrimTest extends Fixtures {
     public void testTrimBoth() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "test";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "aa {{- field -}} \nbb", STRING, null ).render( c ).get() )
             .isEqualTo( "aatestbb" );
     }
@@ -87,7 +62,7 @@ public class TemplateEngineTrimTest extends Fixtures {
     public void testTrimMultipleSpaces() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "test";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "aa   \t{{- field -}}\t\n  bb", STRING, null ).render( c ).get() )
             .isEqualTo( "aatestbb" );
     }
@@ -96,7 +71,7 @@ public class TemplateEngineTrimTest extends Fixtures {
     public void testTrimNoAdjacentText() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "test";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{- field -}}", STRING, null ).render( c ).get() )
             .isEqualTo( "test" );
     }
@@ -106,7 +81,7 @@ public class TemplateEngineTrimTest extends Fixtures {
         TestTemplateClass c = new TestTemplateClass();
         c.booleanField = true;
         c.field = "world";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "aa\n{{%- if booleanField }}{{ field }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "aaworld" );
     }

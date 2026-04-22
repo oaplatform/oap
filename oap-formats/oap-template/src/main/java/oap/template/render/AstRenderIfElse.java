@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.function.Supplier;
 
@@ -79,6 +80,11 @@ public abstract class AstRenderIfElse extends AstRender {
         } else {
             super.print( buffer, prefix, childrenPrefix );
         }
+    }
+
+    /** Render the else branch when present, during runtime interpretation. */
+    protected void interpretElse( RuntimeContext ctx ) {
+        if( elseAstRender != null ) elseAstRender.interpret( ctx );
     }
 
     protected abstract String getTrue();

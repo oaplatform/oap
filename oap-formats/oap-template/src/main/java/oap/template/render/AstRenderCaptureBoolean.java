@@ -25,11 +25,25 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.TemplateConditionHelper;
+import oap.template.runtime.RuntimeContext;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
- * Leaf node for the condition path in AstRenderBooleanIf.
- * Assigns render.field (the resolved boolean variable) into render.booleanIfVar
- * (the hoisted variable declared by AstRenderBooleanIf).
+ * Leaf node for the condition path in AstRenderBooleanIf / AstRenderBlockIf.
+ * Evaluates the current field value as a boolean condition and writes the result
+ * into render.booleanIfVar (codegen) or ctx.booleanCapture (interpreter).
+ * <p>
+ * Truthiness rules:
+ * <ul>
+ *   <li>{@code boolean} / {@code Boolean} — the value itself</li>
+ *   <li>{@code String} — not empty</li>
+ *   <li>{@code Collection} / {@code Map} — not empty</li>
+ *   <li>array — length &gt; 0</li>
+ *   <li>any other non-null object — true</li>
+ * </ul>
  */
 @ToString( callSuper = true )
 class AstRenderCaptureBoolean extends AstRender {
@@ -39,6 +53,27 @@ class AstRenderCaptureBoolean extends AstRender {
 
     @Override
     public void render( Render render ) {
-        render.ntab().append( "%s = %s;", render.booleanIfVar, render.field );
+        Class<?> tc = type.getTypeClass();
+        if( boolean.class.equals( tc ) ) {
+            render.ntab().append( "%s = %s;", render.booleanIfVar, render.field );
+        } else if( Boolean.class.equals( tc ) ) {
+            render.ntab().append( "%s = Boolean.TRUE.equals( %s );", render.booleanIfVar, render.field );
+        } else if( String.class.equals( tc ) ) {
+            render.ntab().append( "%s = !%s.isEmpty();", render.booleanIfVar, render.field );
+        } else if( Collection.class.isAssignableFrom( tc ) || Map.class.isAssignableFrom( tc ) ) {
+            render.ntab().append( "%s = !%s.isEmpty();", render.booleanIfVar, render.field );
+        } else if( tc.isArray() ) {
+            render.ntab().append( "%s = %s.length > 0;", render.booleanIfVar, render.field );
+        } else {
+            render.ntab().append( "%s = oap.template.TemplateConditionHelper.isTruthy( %s );",
+                render.booleanIfVar, render.field );
+        }
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        if( ctx.booleanCapture != null ) {
+            ctx.booleanCapture[0] = TemplateConditionHelper.isTruthy( ctx.currentObject );
+        }
     }
 }

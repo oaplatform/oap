@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class TemplateEngineTest extends AbstractTemplateEngineTest {
     @Test
     public void testRenderStringText() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "sdkjf hdkfgj d$...{}", STRING, null ).render( null ).get() )
             .isEqualTo( "sdkjf hdkfgj d$...{}" );
     }
 
@@ -57,7 +57,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.childNullable = new TestTemplateClass();
         c.childNullable.longField = 0;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{childNullable.longField}}", OBJECT, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{childNullable.longField}}", OBJECT, null ).render( c ).get() )
             .isEqualTo( 0L );
     }
 
@@ -66,7 +66,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "1";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "12\t12" );
     }
 
@@ -75,19 +75,19 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "1";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "$${field}", new TestTemplateAccumulatorString(), null )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "$${field}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "${field}" );
     }
 
     @Test
     public void testMapProperty() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ prop }}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ prop }}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
             .isEqualTo( "val" );
     }
 
     @Test
     public void testEscapeClassName() {
-        assertThat( engine.getTemplate( "111-" + testMethodName + "-? ()?пп1", new TypeRef<Map<String, String>>() {}, "{{ prop }}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
+        assertThat( getTemplate( "111-" + testMethodName + "-? ()?пп1", new TypeRef<Map<String, String>>() {}, "{{ prop }}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
             .isEqualTo( "val" );
     }
 
@@ -95,7 +95,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testField() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "val1";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
     }
 
@@ -103,9 +103,9 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testFieldWithJsonProperty() {
         TestTemplateClass c = new TestTemplateClass();
         c.jsonTest = "val1";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTest }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTest }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTestNew }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTestNew }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
     }
 
@@ -113,11 +113,11 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testFieldWithJsonAlias() {
         TestTemplateClass c = new TestTemplateClass();
         c.jsonTest = "val1";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTest }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTest }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTestAlias1 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTestAlias1 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTestAlias2 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ jsonTestAlias2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val1" );
     }
 
@@ -125,14 +125,14 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testEnumField() {
         TestTemplateClass c = new TestTemplateClass();
         c.enumField = TestTemplateEnum.VAL1;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ enumField }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ enumField }}", STRING, null ).render( c ).get() )
             .isEqualTo( "VAL1" );
     }
 
     @Test
     public void testEnumFieldDefaultValue() {
         TestTemplateClass c = new TestTemplateClass();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ <java.lang.Enum>child.enumField ?? 'UNKNOWN' }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ <java.lang.Enum>child.enumField ?? 'UNKNOWN' }}", STRING, null ).render( c ).get() )
             .isEqualTo( "UNKNOWN" );
     }
 
@@ -140,14 +140,14 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testListField() {
         TestTemplateClass c = new TestTemplateClass();
         c.list = List.of( 1, 2, 3 );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list }}", STRING, null ).render( c ).get() )
             .isEqualTo( "[1,2,3]" );
     }
 
     @Test
     public void testListFieldWithoutDefault() {
         TestTemplateClass c = new TestTemplateClass();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list }}", STRING, null ).render( c ).get() )
             .isEqualTo( "[]" );
     }
 
@@ -155,7 +155,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testListString() {
         TestTemplateClass c = new TestTemplateClass();
         c.listString = List.of( "1", "'", "\\" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ listString }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ listString }}", STRING, null ).render( c ).get() )
             .isEqualTo( "['1','\\'','\\\\']" );
     }
 
@@ -163,7 +163,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testListEnum() {
         TestTemplateClass c = new TestTemplateClass();
         c.listEnum = List.of( TestTemplateEnum.VAL2, TestTemplateEnum.VAL1 );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ listEnum }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ listEnum }}", STRING, null ).render( c ).get() )
             .isEqualTo( "['VAL2','VAL1']" );
     }
 
@@ -171,7 +171,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testListFieldDefaultValue() {
         TestTemplateClass c = new TestTemplateClass();
         c.list = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list ?? [] }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list ?? [] }}", STRING, null ).render( c ).get() )
             .isEqualTo( "[]" );
     }
 
@@ -181,7 +181,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c2 = new TestTemplateClass();
         c1.child = c2;
         c2.field = "val3";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child.field }}", STRING, null ).render( c1 ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child.field }}", STRING, null ).render( c1 ).get() )
             .isEqualTo( "val3" );
     }
 
@@ -190,7 +190,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f2" );
     }
 
@@ -199,7 +199,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.list2 = List.of( 2, 3 );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list | default list2 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list | default list2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "[2,3]" );
     }
 
@@ -208,11 +208,11 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
 
         c.fieldOpt = Optional.of( "o" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldOpt }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldOpt }}", STRING, null ).render( c ).get() )
             .isEqualTo( "o" );
 
         c.fieldOpt = Optional.empty();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldOpt }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldOpt }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -224,11 +224,11 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c.intField = 10;
 
         cp.childOpt = Optional.of( c );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childOpt.fieldOpt }}-{{ childOpt.intField }}", STRING, Map.of(), IGNORE ).render( cp ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childOpt.fieldOpt }}-{{ childOpt.intField }}", STRING, Map.of(), IGNORE ).render( cp ).get() )
             .isEqualTo( "o-10" );
 
         cp.childOpt = Optional.empty();
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childOpt.fieldOpt }}", STRING, null ).render( cp ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childOpt.fieldOpt }}", STRING, null ).render( cp ).get() )
             .isEqualTo( "" );
     }
 
@@ -237,11 +237,11 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
 
         c.fieldNullable = "o";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldNullable }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldNullable }}", STRING, null ).render( c ).get() )
             .isEqualTo( "o" );
 
         c.fieldNullable = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldNullable }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ fieldNullable }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -252,23 +252,23 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c.fieldNullable = "o";
 
         cp.childNullable = c;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childNullable.fieldNullable ?? '' }}", STRING, null ).render( cp ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childNullable.fieldNullable ?? '' }}", STRING, null ).render( cp ).get() )
             .isEqualTo( "o" );
 
         cp.childNullable = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childNullable.fieldNullable ?? '' }}", STRING, null ).render( cp ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ childNullable.fieldNullable ?? '' }}", STRING, null ).render( cp ).get() )
             .isEqualTo( "" );
     }
 
     @Test
     public void testDefaultString() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ bbb ?? 'test' }}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ bbb ?? 'test' }}", STRING, null ).render( Map.of( "prop", "val" ) ).get() )
             .isEqualTo( "test" );
     }
 
     @Test
     public void testDefaultInt() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "{{ bbb ?? -1 }}", STRING, null ).render( Map.of( "prop", 1 ) ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, Integer>>() {}, "{{ bbb ?? -1 }}", STRING, null ).render( Map.of( "prop", 1 ) ).get() )
             .isEqualTo( "-1" );
     }
 
@@ -278,21 +278,21 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c.childNullable = null;
         c.childOpt = Optional.empty();
 
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "{{ childNullable.booleanObjectField ?? true }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "{{ childNullable.booleanObjectField ?? true }}", STRING, null ).render( c ).get() )
             .isEqualTo( "true" );
-        assertThat( engine.getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "{{ childOpt.booleanObjectField ?? true }}", STRING, Map.of(), IGNORE ).render( c ).get() )
+        assertThat( getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {}, "{{ childOpt.booleanObjectField ?? true }}", STRING, Map.of(), IGNORE ).render( c ).get() )
             .isEqualTo( "true" );
     }
 
     @Test
     public void testDefaultDouble() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "{{ bbb ?? 0.0 }}", STRING, null ).render( Map.of( "prop", 1.1 ) ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, Double>>() {}, "{{ bbb ?? 0.0 }}", STRING, null ).render( Map.of( "prop", 1.1 ) ).get() )
             .isEqualTo( "0.0" );
     }
 
     @Test
     public void testMix() {
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-{{ prop }}-{{ b }}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "-{{ prop }}-{{ b }}-", STRING, null ).render( Map.of( "prop", "val", "b", "b1" ) ).get() )
             .isEqualTo( "-val-b1-" );
     }
 
@@ -307,7 +307,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c2.field = "val3";
         c3.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child.field }}", STRING,
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child.field }}", STRING,
             Map.of( "child.field", "child2.field2" ), ERROR ).render( c1 ).get() )
             .isEqualTo( "f2" );
     }
@@ -318,10 +318,10 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c1.field = "1";
         c1.field2 = "2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null ).render( c1 ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "1" );
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field2 }}", STRING, ERROR, null ).render( c1 ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field2 }}", STRING, ERROR, null ).render( c1 ).get() )
             .isEqualTo( "2" );
 
         TemplateEngine engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
@@ -356,7 +356,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
 
     @Test
     public void testErrorSyntax() {
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id={{ v; toUpperCase()", STRING, ERROR, null ) )
+        assertThatThrownBy( () -> getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id={{ v; toUpperCase()", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class );
     }
 
@@ -364,7 +364,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testExt() {
         TestTemplateClass c = new TestTemplateClass();
         c.ext2 = new TestTemplateClassExt( "ev" );
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ ext.a | default ext2.a }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ ext.a | default ext2.a }}", STRING, null ).render( c ).get() )
             .isEqualTo( "ev" );
     }
 
@@ -372,7 +372,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testDefaultExt() {
         TestTemplateClass c = new TestTemplateClass();
         c.ext3.a = "123";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ ext2.a | default ext3.a }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ ext2.a | default ext3.a }}", STRING, null ).render( c ).get() )
             .isEqualTo( "123" );
     }
 
@@ -382,7 +382,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c.field = "f1";
         c.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ {field,\"x\",field2} }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ {field,\"x\",field2} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -394,7 +394,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c1.field = "f1";
         c1.field2 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child{field,\"x\",field2} }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child{field,\"x\",field2} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -406,7 +406,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c1.field2 = "f1";
         c1.field22 = "f2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child2.{field2,\"x\",field22} }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child2.{field2,\"x\",field22} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -415,7 +415,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.intField = 123;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intField + 12.45 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intField + 12.45 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "135.45" );
     }
 
@@ -423,7 +423,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testSumDefault() {
         TestTemplateClass c = new TestTemplateClass();
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intObjectField + 12.45 ?? 5 }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intObjectField + 12.45 ?? 5 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "5" );
     }
 
@@ -432,13 +432,13 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.intField = 123;
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ /* intField */intField }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ /* intField */intField }}", STRING, null ).render( c ).get() )
             .isEqualTo( "123" );
     }
 
     @Test
     public void testErrorSyntaxMsg() {
-        assertThatThrownBy( () -> engine.getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id={{ unknownField.unknownField }}", STRING, ERROR, null ) )
+        assertThatThrownBy( () -> getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id={{ unknownField.unknownField }}", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class )
             .hasMessageContaining( "unknownField.unknownField" );
     }
@@ -452,7 +452,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         templateClass.intField = 1;
         templateClass.intObjectField = 2;
 
-        String str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        String str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "booleanField:{{ booleanField }},booleanObjectField:{{ booleanObjectField }},intField:{{ intField }},intObjectField:{{ intObjectField }}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
@@ -466,7 +466,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestPrimitiveTemplateAccumulatorString templateAccumulator = new TestPrimitiveTemplateAccumulatorString();
         TestTemplateClass templateClass = new TestTemplateClass();
 
-        String str = engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        String str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "booleanField:{{ booleanField ?? true }},booleanObjectField:{{ booleanObjectField ?? true }}"
                 + ",byteField:{{ byteField ?? 1 }},byteObjectField:{{ byteObjectField ?? 1 }}"
                 + ",shortField:{{ shortField ?? 1 }},shortObjectField:{{ shortObjectField ?? 1 }}"
@@ -493,7 +493,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "1";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null )
             .render( c ).get() ).isEqualTo( "12\t12" );
 
         FileUtils.write( testDirectoryFixture.testPath( "oap.template.testCacheClassFormatError.class" ).toFile(), "", UTF_8 );

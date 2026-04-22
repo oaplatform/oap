@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.List;
 
@@ -54,5 +55,13 @@ public class AstRenderBlockWith extends AstRender {
         for( AstRender child : bodyChildren ) {
             child.render( bodyRender );
         }
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Object[] capture = { null };
+        scopeAst.interpret( ctx.withScopeCapture( capture ) );
+        RuntimeContext bodyCtx = ctx.withCurrentObject( capture[0] );
+        bodyChildren.forEach( c -> c.interpret( bodyCtx ) );
     }
 }

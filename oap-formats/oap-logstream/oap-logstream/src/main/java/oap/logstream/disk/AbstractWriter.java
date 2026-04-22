@@ -34,8 +34,8 @@ import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
+import oap.template.TemplateEngine;
 import oap.util.Dates;
-import org.codehaus.plexus.util.StringUtils;
 import org.joda.time.DateTime;
 
 import java.io.Closeable;
@@ -48,6 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     public final LogFormat logFormat;
+    protected final TemplateEngine templateEngine;
     protected final Path logDirectory;
     protected final String filePattern;
     protected final LogId logId;
@@ -63,8 +64,9 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected int fileVersion = 1;
     protected boolean closed = false;
 
-    protected AbstractWriter( LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
+    protected AbstractWriter( TemplateEngine templateEngine, LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
                               int maxVersions, String hostname ) {
+        this.templateEngine = templateEngine;
         this.logFormat = logFormat;
         this.logDirectory = logDirectory;
         this.filePattern = filePattern;
@@ -82,7 +84,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     }
 
     @SneakyThrows
-    static String currentPattern( LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time, String hostname ) {
+    static String currentPattern( TemplateEngine templateEngine, LogFormat logFormat, String filePattern, LogId logId, Timestamp timestamp, int version, DateTime time, String hostname ) {
         String suffix = filePattern;
         if( filePattern.startsWith( "/" ) && filePattern.endsWith( "/" ) ) suffix = suffix.substring( 1 );
         else if( !filePattern.startsWith( "/" ) && !logId.filePrefixPattern.endsWith( "/" ) ) suffix = "/" + suffix;
@@ -97,15 +99,15 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         logIdTemplate
             .addVariable( "LOG_FORMAT", logFormat.extension )
             .addVariable( "LOG_FORMAT_" + logFormat.name(), logFormat.extension );
-        return logIdTemplate.render( StringUtils.replace( pattern, " ", "" ), time, timestamp, version, hostname );
+        return logIdTemplate.render( templateEngine, pattern, time, timestamp, version, hostname );
     }
 
     protected String currentPattern( int version ) {
-        return currentPattern( logFormat, filePattern, logId, timestamp, version, Dates.nowUtc(), hostname );
+        return currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, version, Dates.nowUtc(), hostname );
     }
 
     protected String currentPattern() {
-        return currentPattern( logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc(), hostname );
+        return currentPattern( templateEngine, logFormat, filePattern, logId, timestamp, fileVersion, Dates.nowUtc(), hostname );
     }
 
     public void write( ProtocolVersion protocolVersion, byte[] buffer ) throws LoggerException {

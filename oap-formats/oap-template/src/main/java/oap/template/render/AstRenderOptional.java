@@ -25,7 +25,9 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 @ToString( callSuper = true )
@@ -52,5 +54,17 @@ public class AstRenderOptional extends AstRenderIfElse {
     @Override
     protected String getInnerVariableSetter( String variableName, Render render ) {
         return "%s %s = %s.get();".formatted( type.getTypeName(), variableName, render.field );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Optional<?> opt = ( Optional<?> ) ctx.currentObject;
+        if( opt != null && opt.isPresent() ) {
+            RuntimeContext inner = ctx.withCurrentObject( opt.get() );
+            children.forEach( c -> c.interpret( inner ) );
+        } else {
+            if( ctx.tryEmpty != null ) ctx.tryEmpty[0] = true;
+            interpretElse( ctx );
+        }
     }
 }

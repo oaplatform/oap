@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 public class AstRenderMap extends AstRender {
@@ -38,13 +39,23 @@ public class AstRenderMap extends AstRender {
 
     @Override
     public void render( Render render ) {
-        String mapVariable = render.newVariable();
+        Render.NewVariable mapVariable = render.newVariable( key );
 
-        render.ntab().append( "%s %s = %s.get( \"%s\" );",
-            type.getTypeName(), mapVariable,
-            render.field, render.escapeJava( key ) );
+        if( mapVariable.isNew ) {
+            render.ntab().append( "%s %s = %s.get( \"%s\" );",
+                type.getTypeName(), mapVariable.name,
+                render.field, render.escapeJava( key ) );
+        }
 
-        Render newRender = render.withField( mapVariable ).withParentType( type );
+        Render newRender = render.withField( mapVariable.name ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void interpret( RuntimeContext ctx ) {
+        Object value = ctx.currentObject instanceof java.util.Map<?, ?> m ? m.get( key ) : null;
+        RuntimeContext next = ctx.withCurrentObject( value );
+        children.forEach( c -> c.interpret( next ) );
     }
 }

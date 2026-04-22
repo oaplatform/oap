@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 public class AstRenderPathNotFound extends AstRender {
@@ -45,5 +46,11 @@ public class AstRenderPathNotFound extends AstRender {
 
         var newRender = render.withField( newVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        RuntimeContext empty = ctx.withCurrentObject( "" );
+        children.forEach( c -> c.interpret( empty ) );
     }
 }

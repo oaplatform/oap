@@ -25,38 +25,20 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.testng.Fixtures;
-import oap.util.Dates;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.lang.reflect.Method;
 
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TemplateEngineWithTest extends Fixtures {
-    private TemplateEngine engine;
-    private String testMethodName;
-
-    @BeforeMethod
-    public void beforeMethod() {
-        engine = new TemplateEngine( Dates.d( 10 ) );
-    }
-
-    @BeforeMethod
-    public void nameBefore( Method method ) {
-        testMethodName = method.getName();
-    }
-
+public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
     @Test
     public void testInlineWithField() {
         TestTemplateClass c = new TestTemplateClass();
         c.child = new TestTemplateClass();
         c.child.field = "val";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{ with (child) field end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val" );
     }
@@ -67,7 +49,7 @@ public class TemplateEngineWithTest extends Fixtures {
         c.child = new TestTemplateClass();
         c.child.field = null;
         c.child.field2 = "fb";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{ with (child) field | default field2 end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "fb" );
     }
@@ -76,7 +58,7 @@ public class TemplateEngineWithTest extends Fixtures {
     public void testInlineWithNullScope() {
         TestTemplateClass c = new TestTemplateClass();
         c.child = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{ with (child) field end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
@@ -86,7 +68,7 @@ public class TemplateEngineWithTest extends Fixtures {
         TestTemplateClass c = new TestTemplateClass();
         c.child = new TestTemplateClass();
         c.child.field = "val";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}{{ field }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val" );
     }
@@ -96,7 +78,7 @@ public class TemplateEngineWithTest extends Fixtures {
         TestTemplateClass c = new TestTemplateClass();
         c.child = new TestTemplateClass();
         c.child.field = "val";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}A{{ field }}B{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "AvalB" );
     }
@@ -105,7 +87,7 @@ public class TemplateEngineWithTest extends Fixtures {
     public void testBlockWithNullScopeSkipsBody() {
         TestTemplateClass c = new TestTemplateClass();
         c.child = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}{{ field }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
@@ -116,7 +98,7 @@ public class TemplateEngineWithTest extends Fixtures {
         c.child = new TestTemplateClass();
         c.child.field = "f1";
         c.child.field2 = "f2";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}{{ field }}-{{ field2 }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1-f2" );
     }
@@ -127,7 +109,7 @@ public class TemplateEngineWithTest extends Fixtures {
         c.field = "root-val";
         c.child = new TestTemplateClass();
         c.child.field = "scoped-val";
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}{{ $.field }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "root-val" );
     }
@@ -138,7 +120,7 @@ public class TemplateEngineWithTest extends Fixtures {
         c.field = "root-val";
         c.child = new TestTemplateClass();
         c.child.field = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{ with (child) field | default $.field end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "root-val" );
     }
@@ -147,7 +129,7 @@ public class TemplateEngineWithTest extends Fixtures {
     public void testBlockWithNullScopeUsesDefault() {
         TestTemplateClass c = new TestTemplateClass();
         c.child = null;
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}A{{ field2 ?? 'a' }}B{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "AaB" );
     }
@@ -155,7 +137,7 @@ public class TemplateEngineWithTest extends Fixtures {
     @Test
     public void testBlockWithUnknownFieldThrows() {
         assertThatThrownBy( () ->
-            engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
                 "{{% with unknownField }}x{{% end }}", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class );
     }

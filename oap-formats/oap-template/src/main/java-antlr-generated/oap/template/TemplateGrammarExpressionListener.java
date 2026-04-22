@@ -5,6 +5,11 @@ package oap.template;
 import oap.template.tree.*;
 import oap.template.tree.Math;
 import oap.template.tree.WithCondition;
+import oap.template.tree.ConditionExpr;
+import oap.template.tree.FieldConditionExpr;
+import oap.template.tree.AndConditionExpr;
+import oap.template.tree.OrConditionExpr;
+import oap.template.tree.NotConditionExpr;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -71,6 +76,46 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitIfCondition(TemplateGrammarExpression.IfConditionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#conditionOr}.
+	 * @param ctx the parse tree
+	 */
+	void enterConditionOr(TemplateGrammarExpression.ConditionOrContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#conditionOr}.
+	 * @param ctx the parse tree
+	 */
+	void exitConditionOr(TemplateGrammarExpression.ConditionOrContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#conditionAnd}.
+	 * @param ctx the parse tree
+	 */
+	void enterConditionAnd(TemplateGrammarExpression.ConditionAndContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#conditionAnd}.
+	 * @param ctx the parse tree
+	 */
+	void exitConditionAnd(TemplateGrammarExpression.ConditionAndContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#conditionNot}.
+	 * @param ctx the parse tree
+	 */
+	void enterConditionNot(TemplateGrammarExpression.ConditionNotContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#conditionNot}.
+	 * @param ctx the parse tree
+	 */
+	void exitConditionNot(TemplateGrammarExpression.ConditionNotContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#conditionAtom}.
+	 * @param ctx the parse tree
+	 */
+	void enterConditionAtom(TemplateGrammarExpression.ConditionAtomContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#conditionAtom}.
+	 * @param ctx the parse tree
+	 */
+	void exitConditionAtom(TemplateGrammarExpression.ConditionAtomContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#defaultValue}.
 	 * @param ctx the parse tree

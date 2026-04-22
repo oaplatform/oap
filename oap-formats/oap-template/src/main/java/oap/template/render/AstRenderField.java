@@ -25,6 +25,8 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.ReflectionCache;
+import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 public class AstRenderField extends AstRender {
@@ -65,5 +67,19 @@ public class AstRenderField extends AstRender {
 
         var newRender = render.withField( variableName.name ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void interpret( RuntimeContext ctx ) {
+        Object parent = ctx.currentObject;
+        Object value;
+        if( parent instanceof java.util.Map<?, ?> m ) {
+            value = m.get( fieldName );
+        } else {
+            value = ReflectionCache.getFieldValue( parent, fieldName );
+        }
+        RuntimeContext next = ctx.withCurrentObject( value );
+        children.forEach( c -> c.interpret( next ) );
     }
 }

@@ -26,6 +26,8 @@ package oap.template.render;
 
 import lombok.ToString;
 import oap.template.TemplateAccumulator;
+import oap.template.TemplateAccumulatorString;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +54,17 @@ public class AstRenderConcatenation extends AstRender {
 
         var newRender = render.withField( templateAccumulatorName ).withParentType( new TemplateType( TemplateAccumulator.class ) );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    public void interpret( RuntimeContext ctx ) {
+        TemplateAccumulatorString subAcc = new TemplateAccumulatorString();
+        RuntimeContext subCtx = ctx.withAcc( subAcc );
+        for( AstRender item : items ) item.interpret( subCtx );
+        RuntimeContext nextCtx = ctx.withCurrentObject( subAcc )
+            .withAcc( ctx.acc );
+        children.forEach( c -> c.interpret( nextCtx ) );
     }
 
     @Override

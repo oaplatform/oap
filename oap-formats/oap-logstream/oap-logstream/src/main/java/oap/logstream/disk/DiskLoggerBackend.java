@@ -49,6 +49,7 @@ import oap.logstream.LogId;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
+import oap.template.TemplateEngine;
 import oap.util.Dates;
 import oap.util.Lists;
 import org.apache.commons.io.FileUtils;
@@ -84,6 +85,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public final int bufferSize;
     public final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
     public final ScheduledExecutorService pool;
+    protected final TemplateEngine templateEngine;
     public String filePattern = "/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
@@ -92,13 +94,15 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public volatile boolean closed;
     public final String hostname;
 
-    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
-        this( logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
+    public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
+        this( templateEngine, logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
     }
 
     @SuppressWarnings( "unchecked" )
-    public DiskLoggerBackend( Path logDirectory, WriterConfiguration writerConfiguration, Timestamp timestamp, int bufferSize, String hostname ) {
+    public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, WriterConfiguration writerConfiguration, Timestamp timestamp, int bufferSize, String hostname ) {
+        this.templateEngine = templateEngine;
         this.hostname = hostname;
+
         log.info( "logDirectory '{}' timestamp {} bufferSize {} writerConfiguration {} refreshInitDelay {} refreshPeriod {} hostname {}",
             logDirectory, timestamp, FileUtils.byteCountToDisplaySize( bufferSize ), writerConfiguration,
             Dates.durationToString( refreshInitDelay ), Dates.durationToString( refreshPeriod ), hostname );
@@ -122,7 +126,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 
-                    return new RowBinaryWriter( DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname );
+                    return new RowBinaryWriter( templateEngine, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
@@ -148,8 +152,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         LogId logId = new LogId( "", type, "", Map.of(), new String[] {}, new byte[][] {} );
 
         DateTime time = Dates.nowUtc();
-        String currentPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time, hostname );
-        String previousPattern = AbstractWriter.currentPattern( LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ), hostname );
+        String currentPattern = AbstractWriter.currentPattern( templateEngine, LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time, hostname );
+        String previousPattern = AbstractWriter.currentPattern( templateEngine, LogFormat.TSV_GZ, filePattern, logId, timestamp, 0, time.minusMinutes( 60 / timestamp.bucketsPerHour ).minusSeconds( 1 ), hostname );
 
         if( currentPattern.equals( previousPattern ) ) {
             log.error( "cp {}", currentPattern );
