@@ -1,8 +1,10 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 @ToString
 public class AstRendererDynamicMap extends AstRender {
@@ -34,6 +36,21 @@ public class AstRendererDynamicMap extends AstRender {
         for( AstRender child : children ) {
             child.render( r.withField( "obj" ) );
         }
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Object obj = ctx.currentObject;
+        for( String key : path ) {
+            if( obj instanceof Map<?, ?> m ) {
+                obj = m.get( key );
+            } else {
+                obj = null;
+                break;
+            }
+        }
+        RuntimeContext nextCtx = ctx.withCurrentObject( obj );
+        for( AstRender child : children ) child.interpret( nextCtx );
     }
 
     public void addPath( String key ) {

@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 public class AstRenderMath extends AstRender {
@@ -45,5 +46,38 @@ public class AstRenderMath extends AstRender {
 
         var newRender = render.withField( mathVariable ).withParentType( type );
         children.forEach( a -> a.render( newRender ) );
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        Object result = applyMath( operation, ( Number ) ctx.currentObject, number );
+        RuntimeContext next = ctx.withCurrentObject( result );
+        children.forEach( c -> c.interpret( next ) );
+    }
+
+    private static Object applyMath( String op, Number val, String numStr ) {
+        if( ( val instanceof Integer || val instanceof Long ) && !numStr.contains( "." ) ) {
+            long lv = val.longValue();
+            long n = Long.parseLong( numStr );
+            long r = switch( op ) {
+                case "+" -> lv + n;
+                case "-" -> lv - n;
+                case "*" -> lv * n;
+                case "/" -> lv / n;
+                case "%" -> lv % n;
+                default -> throw new IllegalArgumentException( op );
+            };
+            return val instanceof Integer ? ( int ) r : r;
+        }
+        double dv = val.doubleValue();
+        double n = Double.parseDouble( numStr );
+        return switch( op ) {
+            case "+" -> dv + n;
+            case "-" -> dv - n;
+            case "*" -> dv * n;
+            case "/" -> dv / n;
+            case "%" -> dv % n;
+            default -> throw new IllegalArgumentException( op );
+        };
     }
 }

@@ -27,6 +27,7 @@ package oap.logstream.disk;
 import oap.compression.Compression;
 import oap.logstream.LogId;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
+import oap.template.TemplateEngineFixture;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -49,9 +50,11 @@ import static org.joda.time.DateTimeZone.UTC;
 public class RowBinaryWriterTest extends Fixtures {
     private static final String FILE_PATTERN = "${p}-file-${INTERVAL}-${LOG_VERSION}.rb.gz";
     private final TestDirectoryFixture testDirectoryFixture;
+    private final TemplateEngineFixture templateEngineFixture;
 
     public RowBinaryWriterTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        templateEngineFixture = fixture( new TemplateEngineFixture() );
     }
 
     @Test
@@ -78,7 +81,7 @@ public class RowBinaryWriterTest extends Fixtures {
         LogId logId = new LogId( "", "log", "log",
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
-        try( RowBinaryWriter writer = new RowBinaryWriter( logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
+        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }

@@ -31,6 +31,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -171,12 +172,15 @@ public class Render {
         return "v" + id;
     }
 
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
     public NewVariable newVariable( String name ) {
-        var fullName = variableNameWithPrefix( name );
-        var it = variables.descendingIterator();
+        name = name.replaceAll( "[\\s,-?]", "_" );
+
+        String fullName = variableNameWithPrefix( name );
+        Iterator<HashSet<String>> it = variables.descendingIterator();
 
         while( it.hasNext() ) {
-            var map = it.next();
+            HashSet<String> map = it.next();
 
             if( map.contains( fullName ) ) return new NewVariable( fullName, false );
         }

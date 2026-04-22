@@ -25,6 +25,7 @@
 package oap.template.render;
 
 import lombok.ToString;
+import oap.template.runtime.RuntimeContext;
 
 import java.util.function.Supplier;
 
@@ -52,5 +53,15 @@ public class AstRenderNullable extends AstRenderIfElse {
     @Override
     protected String getInnerVariableSetter( String variableName, Render render ) {
         return null;
+    }
+
+    @Override
+    public void interpret( RuntimeContext ctx ) {
+        if( ctx.currentObject != null ) {
+            children.forEach( c -> c.interpret( ctx ) );
+        } else {
+            if( ctx.tryEmpty != null ) ctx.tryEmpty[0] = true;
+            interpretElse( ctx );
+        }
     }
 }

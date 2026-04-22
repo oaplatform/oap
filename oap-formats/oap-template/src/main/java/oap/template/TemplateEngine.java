@@ -216,6 +216,59 @@ public class TemplateEngine implements Runnable {
         }
     }
 
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc ) {
+        return getRuntimeTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, null );
+    }
+
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
+        return getRuntimeTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
+    }
+
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
+        return getRuntimeTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
+    }
+
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+        return getRuntimeTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
+    }
+
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
+        return getRuntimeTemplate( name, type, template, acc, aliases, errorStrategy, null );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc,
+                        Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+        Objects.requireNonNull( template );
+        Objects.requireNonNull( acc );
+
+        try {
+            TemplateLexer lexer = new TemplateLexer( CharStreams.fromString( template ) );
+            TemplateGrammar grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
+            if( errorStrategy == ErrorStrategy.ERROR ) {
+                lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
+                grammar.addErrorListener( ThrowingErrorListener.INSTANCE );
+            }
+            Elements elements = grammar.elements( aliases ).ret;
+
+            AstRenderRoot ast = TemplateAstUtils.toAst( elements, new TemplateType( type.type() ), builtInFunction, errorStrategy );
+
+            if( postProcess != null ) postProcess.accept( ast );
+
+            return new RuntimeTemplate<>( acc, ast );
+        } catch( TemplateException e ) {
+            throw e;
+        } catch( Exception e ) {
+            throw new TemplateException( e );
+        }
+    }
+
     public long getCacheSize() {
         return templates.size();
     }

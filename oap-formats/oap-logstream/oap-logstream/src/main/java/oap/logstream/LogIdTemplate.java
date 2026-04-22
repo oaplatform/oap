@@ -24,17 +24,13 @@
 
 package oap.logstream;
 
-import oap.io.Closeables;
 import oap.kubernetes.ReplicaUtils;
 import oap.net.Inet;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.app.event.EventCartridge;
-import org.apache.velocity.app.event.ReferenceInsertionEventHandler;
-import org.apache.velocity.context.Context;
+import oap.reflect.TypeRef;
+import oap.template.TemplateAccumulators;
+import oap.template.TemplateEngine;
 import org.joda.time.DateTime;
 
-import java.io.StringWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -45,8 +41,6 @@ import java.util.Map;
  * @see oap.logstream.disk.AbstractWriter
  */
 public class LogIdTemplate {
-    private final VelocityEngine engine = new VelocityEngine();
-
     private final LogId logId;
     private final LinkedHashMap<String, String> variables = new LinkedHashMap<>();
 
@@ -66,29 +60,16 @@ public class LogIdTemplate {
         return this;
     }
 
-    public String render( String template, DateTime time, Timestamp timestamp, int version, String hostname ) {
-        VelocityContext context = new VelocityContext();
-        EventCartridge eventCartridge = new EventCartridge();
-        context.attachEventCartridge( eventCartridge );
-        eventCartridge.addReferenceInsertionEventHandler( new ReferenceInsertionEventHandler() {
-            @Override
-            public Object referenceInsert( Context context, String s, Object o ) {
-                return o == null ? "" : o;
-            }
-        } );
-
+    public String render( TemplateEngine templateEngine, String template, DateTime time, Timestamp timestamp, int version, String hostname ) {
+        LinkedHashMap<String, String> context = new LinkedHashMap<>();
         init( context, time, timestamp, version, hostname );
 
-        variables.forEach( context::put );
+        context.putAll( variables );
 
-        StringWriter writer = new StringWriter();
-        engine.evaluate( context, writer, "log-id-template", template );
-        Closeables.close( writer );
-
-        return writer.toString();
+        return templateEngine.getTemplate( "LogIdTemplate", new TypeRef<Map<String, String>>() {}, template, TemplateAccumulators.STRING, _ -> {} ).render( context ).get();
     }
 
-    public void init( VelocityContext context, DateTime time, Timestamp timestamp, int version, String hostname ) {
+    public void init( Map<String, String> context, DateTime time, Timestamp timestamp, int version, String hostname ) {
         context.put( "LOG_TYPE", logId.logType );
         context.put( "LOG_VERSION", getHashWithVersion( version, hostname ) );
         context.put( "SERVER_HOST", Inet.HOSTNAME );
@@ -103,7 +84,7 @@ public class LogIdTemplate {
         context.put( "LOG_TIME_INTERVAL", String.valueOf( 60 / timestamp.bucketsPerHour ) );
         context.put( "REGION", System.getenv( "REGION" ) );
 
-        logId.properties.forEach( context::put );
+        context.putAll( logId.properties );
     }
 
     public String getHashWithVersion( int version, String hostname ) {

@@ -29,6 +29,7 @@ import oap.io.IoStreams.Encoding;
 import oap.json.Binder;
 import oap.logstream.disk.DiskLoggerBackend;
 import oap.logstream.formats.rowbinary.RowBinaryUtils;
+import oap.template.TemplateEngineFixture;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -49,9 +50,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class LoggerJsonTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
+    private final TemplateEngineFixture templateEngineFixture;
 
     public LoggerJsonTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
+        templateEngineFixture = fixture( new TemplateEngineFixture() );
     }
 
     @Test
@@ -61,7 +64,7 @@ public class LoggerJsonTest extends Fixtures {
         String content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
         String[] headers = new String[] { "test" };
         byte[][] types = new byte[][] { new byte[] { Types.STRING.id } };
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( templateEngineFixture.templateEngine, testDirectoryFixture.testPath( "logs" ), BPH_12, DEFAULT_BUFFER, "localhost" ) ) {
             Logger logger = new Logger( backend );
 
             SimpleJson o = contentOfTestResource( getClass(), "simple_json.json", ofJson( SimpleJson.class ) );
