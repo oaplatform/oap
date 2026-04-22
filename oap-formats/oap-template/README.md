@@ -22,6 +22,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
     - [Truthiness semantics](#truthiness-semantics)
   - [With scope (inline)](#with-scope-inline)
   - [With scope (block)](#with-scope-block)
+  - [Range (block)](#range-block)
   - [Pipe-to-function](#pipe-to-function)
   - [Cast types](#cast-types)
   - [Block comments](#block-comments)
@@ -427,6 +428,103 @@ Renders `AnoneB` when `child` is null. Renders `A` + field value + `B` when `chi
 - Use `??` for literal defaults inside body expressions (`{{ field ?? 'default' }}`). Or-chain fallbacks between two fields (`{{ field | default field2 }}`) are not supported inside block-with bodies.
 - Blocks may be nested inside other block constructs (`{{% if … }}`, other `{{% with … }}`).
 - The `{{% end }}` tag closes the nearest open block.
+
+### Range (block)
+
+Block-level iteration over a `Collection`, `Map`, or a numeric interval. The body is rendered once per element; an optional `{{% else %}}` branch renders when the source is empty or null. The `{{% end %}}` tag closes the block.
+
+#### Implicit scope (list)
+
+```
+{{% range .list }}
+  {{ field }}
+{{% end }}
+```
+
+The body scope becomes the current list item — fields are accessed directly without any variable prefix, exactly as if the item were the root object.
+
+```
+{{% range .items }}{{ name }}, {{ price }}{{% end %}}
+```
+
+#### Named item (list)
+
+```
+{{% range $item := .list }}
+  {{ $item.field }}
+{{% end }}
+```
+
+The body stays in the original root scope. The current item is bound to `$item` and accessed via `$item.fieldName`.
+
+#### Named index + item (list)
+
+```
+{{% range $i,$item := .list }}
+  {{ $i }}: {{ $item.field }}
+{{% end %}}
+```
+
+`$i` is a 0-based integer index; `$item` is the current element. Both variables are available anywhere in the body.
+
+#### Named key + value (map)
+
+```
+{{% range $k,$v := .mapField }}
+  {{ $k }}={{ $v.field }}
+{{% end %}}
+```
+
+`$k` is the map key; `$v` is the map value. The value type is derived from the map's declared generic type.
+
+#### Numeric interval
+
+```
+{{% range $k := 1 .. 5 }}{{ $k }}{{% end %}}
+```
+
+Iterates from `from` to `to` **inclusive**, incrementing by 1. `$k` holds the current integer value.
+
+With an explicit step:
+
+```
+{{% range $k := 1 .. 9 step 2 }}{{ $k }} {{% end %}}
+```
+
+Renders `1 3 5 7 9 `.
+
+Bounds and step can also be field names resolved at render time:
+
+```
+{{% range $k := rangeStart .. rangeEnd step rangeStep }}{{ $k }}{{% end %}}
+```
+
+#### Else branch
+
+All range forms accept an optional `{{% else %}}` branch. It renders when the collection or map is empty or null, or when the interval produces no iterations.
+
+```
+{{% range $item := .list }}
+  {{ $item.name }}
+{{% else }}
+  (no items)
+{{% end %}}
+```
+
+#### Rules
+
+| Form | Syntax | Body variables | Notes |
+|---|---|---|---|
+| Implicit scope | `{{% range .list }}` | none — item fields accessible directly | Scope shifts to item type |
+| Named item | `{{% range $item := .list }}` | `$item` | Root scope preserved |
+| Named index + item | `{{% range $i,$item := .list }}` | `$i` (int, 0-based), `$item` | Root scope preserved |
+| Named key + value | `{{% range $k,$v := .map }}` | `$k` (key), `$v` (value) | Map type inferred from field generic |
+| Numeric interval | `{{% range $k := from .. to }}` | `$k` (int) | Default step 1; inclusive |
+| Numeric interval + step | `{{% range $k := from .. to step N }}` | `$k` (int) | `N` can be a literal or field name |
+
+- Ranges can be nested; each level has its own variable scope.
+- `$.fieldName` inside the body always resolves from the original root object, regardless of nesting.
+- The `{{% end %}}` tag closes the nearest open block.
 
 ### Pipe-to-function
 
