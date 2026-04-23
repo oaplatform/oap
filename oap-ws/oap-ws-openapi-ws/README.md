@@ -1,109 +1,78 @@
-# OAP-WS Openapi module
-Generating [OpenApi](https://www.openapis.org) documentation for OAP web services
+# oap-ws-openapi-ws
 
+Serves a generated OpenAPI 3.x specification over HTTP at runtime. No Swagger annotations required — the spec is derived entirely from `@WsMethod`, `@WsParam`, `@WsSecurity`, and `@OpenapiIgnore` annotations via reflection.
 
-## General Information 
-- Generates OpenApi (version 3.0+) documentation for all classes which are used as web services in an easy way.
-- No need to use swagger annotation for api documentation. Module uses data from reflection to form proper and appropriate document.
-- Only public methods annotated with @WsMethod are subject to be documented
+Depends on: `oap-ws`, `oap-ws-api-ws`
 
-## Documentation
-- All necessary information about OpenApi specification could be found in Swagger [docs](https://swagger.io/resources/open-api/) or in original [OAS](https://spec.openapis.org/oas/latest.html).
-
-
-## OAP-WS-API Comparison
-OAP-WS-Openapi provides functionality similar to OAP-WS-API module.
-
-### Difference: 
-
-##### Schema
-- OpenApi module uses [OAS](https://spec.openapis.org/oas/latest.html) for describing web services.
-- Api module uses its own format for web services description.
-
-##### Web services
-
-- OpenApi module only describes services which marked as included.
-- Api module describes all web services within module.
-
-### Pros & Cons of using OAP-WS-Openapi module:
-
-#### Pros
-
-- Uses [OAS](https://spec.openapis.org/oas/latest.html) for describing web services.
-- OpenApi is well known and widespread format.
-- Response schema can be used for code generation tools like [Swagger Codegen](https://swagger.io/tools/swagger-codegen/) or others.
-- Web services can be manually included/excluded to/from resulting document.
-
-#### Cons
-
-- Requires OAS versions support and update.
-- Requires dependency on OAS implementation.
-- Web services which are added to module as a dependency can't be easily added to description.
-
-## Usage
-Steps to use this module within other oap module
-
-- oap-ws-openapi-ws module depends on oap-ws module.
-
-- add module as dependency to _pom.xml/build.gradle_
+## Endpoint
 
 ```
-//Example:
-
-<dependency>
-    <groupId>oap</groupId>
-    <artifactId>oap-ws-openapi-ws</artifactId>
-    <version>17.11.0.2</version>
-</dependency>
+GET /system/openapi
 ```
-- add 'oap-ws-openapi-ws' module as dependency to _oap.module.conf_
 
+Returns the OpenAPI 3.x YAML document describing all registered web services (except those marked `@OpenapiIgnore`).
+
+```bash
+curl http://localhost:8080/system/openapi
 ```
-name: some-module
-dependsOn: oap-ws-openapi-ws
+
+## OAP Module Integration
+
+```hocon
+name = my-app
+dependsOn = [oap-ws-openapi-ws]
+```
+
+Configure the API info block in `application.conf`:
+
+```hocon
 services {
-...
-```
-
-- [OpenApi Info](https://swagger.io/specification/#info-object) can be specified within application.conf
-
-```
-oap-ws-openapi-ws.openapi-info.parameters.title = "Title"
-oap-ws-openapi-ws.openapi-info.parameters.description = "Description"
-oap-ws-openapi-ws.openapi-info.parameters.version = "0.1.1"
-```
-
-- description field may be used in @WsMethod annotation to explain what method really does 
-```
-class TestWS {
-
-    @WsMethod( method = GET, path = "/", description = "Returns constantly (int32) number 2" )
-    public int test() {
-        return 2;
+  oap-ws-openapi-ws {
+    openapi-info.parameters {
+      title       = "My Service API"
+      description = "Public API for My Service"
+      version     = "1.0.0"
     }
+  }
 }
 ```
 
-- @WSParam annotation also may have description for a parameter
-```
-class TestWS {
+## Annotating endpoints
 
-    @WsMethod( method = GET, path = "/?name=" )
-    public int test( @WsParam( from = QUERY, description = "An integer argument to be used as a result" ) String name ) {
-        return Integer.parseInt( name );
-    }
-}
+**Document a method:**
+
+```java
+@WsMethod( path = "/items", method = HttpMethod.GET, description = "List all items" )
+public List<Item> list() { … }
 ```
 
-- Optional parameter automatically marked as not required ( all other parameters treated as obligatory)
-```
-class TestWS {
+**Document a parameter:**
 
-    @WsMethod( method = GET, path = "/?name=" )
-    public int test( @WsParam( from = QUERY ) Optional<String> name ) {
-        return name == null ? 2 : Integer.parseInt( name );
-    }
-}
+```java
+public List<Item> list(
+    @WsParam( from = From.QUERY, description = "Filter by category" ) Optional<String> category
+) { … }
 ```
 
+**Exclude an endpoint from the spec:**
 
+```java
+@WsMethod( path = "/probe", method = HttpMethod.GET )
+@OpenapiIgnore
+public String healthProbe() { return "ok"; }
+```
+
+**Optional parameters** are automatically marked as not required in the spec; all other parameters are treated as required.
+
+## Comparison with oap-ws-api-ws
+
+| | `oap-ws-openapi-ws` | `oap-ws-api-ws` |
+|---|---|---|
+| Format | OpenAPI 3.x (OAS) | OAP-native JSON |
+| Tooling | Swagger UI, code generators | Internal only |
+| Inclusion control | `@OpenapiIgnore` per method | All services |
+| Schema | OAS `$ref` components | Simple type names |
+
+Use `oap-ws-openapi-ws` for public APIs; use `oap-ws-api-ws` for lightweight internal introspection.
+
+For **build-time** spec generation, use `oap-ws-openapi-maven-plugin` instead.
