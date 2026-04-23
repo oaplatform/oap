@@ -86,7 +86,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
     public final ScheduledExecutorService pool;
     protected final TemplateEngine templateEngine;
-    public String filePattern = "/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
+    public String filePattern = "{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}_{{ CLIENT_HOST }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public int maxVersions = 20;
     public long refreshInitDelay = Dates.s( 10 );

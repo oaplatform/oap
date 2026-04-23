@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
 public class RowBinaryWriterTest extends Fixtures {
-    private static final String FILE_PATTERN = "${p}-file-${INTERVAL}-${LOG_VERSION}.rb.gz";
+    private static final String FILE_PATTERN = "{{ p }}-file-{{ INTERVAL }}-{{ LOG_VERSION }}.rb.gz";
     private final TestDirectoryFixture testDirectoryFixture;
     private final TemplateEngineFixture templateEngineFixture;
 

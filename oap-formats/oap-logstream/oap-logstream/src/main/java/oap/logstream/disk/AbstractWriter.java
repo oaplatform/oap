@@ -74,7 +74,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
         this.hostname = hostname;
 
         log.trace( "filePattern {}", filePattern );
-        Preconditions.checkArgument( filePattern.contains( "${LOG_VERSION}" ) );
+        Preconditions.checkArgument( filePattern.matches( ".*[${]\\{\\s*LOG_VERSION\\s*}}?.*" ), "file pattern must contains LOG_VERSION variable" );
 
         this.logId = logId;
         this.bufferSize = bufferSize;
