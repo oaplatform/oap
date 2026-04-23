@@ -79,34 +79,34 @@ backend.start();
 
 ### Key parameters
 
-| Parameter | Default | Description |
-|---|---|---|
-| `logDirectory` | (required) | Root directory; hostname is appended as a subdirectory |
-| `timestamp` | (required) | Bucket cadence (`BPH_1` … `BPH_12`) |
-| `bufferSize` | `102400` (100 KB) | Per-writer in-memory write buffer |
-| `filePattern` | `/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz` | Output path template |
-| `requiredFreeSpace` | 2 GB | Minimum free space; backend reports FAILED below this threshold |
-| `maxVersions` | 20 | Maximum concurrent file versions per log ID |
-| `refreshInitDelay` | 10 s | Delay before first writer flush |
-| `refreshPeriod` | 10 s | How often writers are flushed and evicted |
+| Parameter | Default                                                                                                                                                   | Description |
+|---|-----------------------------------------------------------------------------------------------------------------------------------------------------------|---|
+| `logDirectory` | (required)                                                                                                                                                | Root directory; hostname is appended as a subdirectory |
+| `timestamp` | (required)                                                                                                                                                | Bucket cadence (`BPH_1` … `BPH_12`) |
+| `bufferSize` | `102400` (100 KB)                                                                                                                                         | Per-writer in-memory write buffer |
+| `filePattern` | `/{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}_{{ CLIENT_HOST }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz` | Output path template |
+| `requiredFreeSpace` | 2 GB                                                                                                                                                      | Minimum free space; backend reports FAILED below this threshold |
+| `maxVersions` | 20                                                                                                                                                        | Maximum concurrent file versions per log ID |
+| `refreshInitDelay` | 10 s                                                                                                                                                      | Delay before first writer flush |
+| `refreshPeriod` | 10 s                                                                                                                                                      | How often writers are flushed and evicted |
 
 ### File pattern tokens
 
-| Token | Value |
-|---|---|
-| `${LOG_TYPE}` | Log type string from `log()` call |
-| `${LOG_VERSION}` | Protocol version |
-| `${CLIENT_HOST}` | Source hostname |
-| `${YEAR}`, `${MONTH}`, `${DAY}`, `${HOUR}` | UTC date components |
-| `${INTERVAL}` | Zero-padded bucket index within the hour (required — must be present to detect bucket rotation) |
-| `${MINUTE}` | Alias for `${INTERVAL}` |
+| Token                                                  | Value |
+|--------------------------------------------------------|---|
+| `{{ LOG_TYPE }}`                                       | Log type string from `log()` call |
+| `{{ LOG_VERSION }}`                                    | Protocol version |
+| `{{ CLIENT_HOST }}`                                    | Source hostname |
+| `{{ YEAR }}`, `{{ MONTH }}`, `{{ DAY }}`, `{{ HOUR }}` | UTC date components |
+| `{{ INTERVAL }}`                                       | Zero-padded bucket index within the hour (required — must be present to detect bucket rotation) |
+| `{{ MINUTE }}`                                         | Alias for `${INTERVAL}` |
 
 Per-type patterns override the default:
 
 ```java
 backend.filePatternByType.put( "CLICK",
     new DiskLoggerBackend.FilePatternConfiguration(
-        "/${YEAR}-${MONTH}/${DAY}/clicks-${HOUR}-${INTERVAL}.tsv.gz" ) );
+        "/{{ YEAR }}-{{ MONTH }}/{{ DAY }}/clicks-{{ HOUR }}-{{ INTERVAL }}.tsv.gz" ) );
 ```
 
 ---
