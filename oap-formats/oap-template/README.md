@@ -204,15 +204,18 @@ Supported literal types:
 
 ### Concatenation
 
-Concatenation combines multiple fields and string literals into a single string output using `+` as the separator. All items are rendered as strings and joined without any separator character between them.
+Concatenation joins multiple fields and literals into a single string. Items are enclosed in `{}` with `+` as separator. All items are rendered as strings and joined without any separator character between them.
 
-Root concatenation (the whole expression is a concat):
+> **`+` inside `{}` is always concatenation.** Outside braces, `+` is a [numeric math operator](#math). Use `{}` whenever you want string joining.
+
+Standalone concatenation (whole expression is a concat):
 
 ```
 ${ {field1 + "/" + field2} }
+{{ {field1 + "/" + field2} }}
 ```
 
-Suffix concatenation after a scope path:
+Scoped concatenation — items resolved relative to a scope path:
 
 ```
 {{ child{field1 + "x" + field2} }}
@@ -223,6 +226,7 @@ Items inside `{}` can be: field names, double-quoted strings, single-quoted stri
 
 ```
 {{ {scheme + "://" + host + "/" + path} }}   → "https://example.com/api"
+{{ child{intField + "_" + field} }}          → "42_hello"
 ```
 
 ### Math
@@ -235,7 +239,9 @@ Items inside `{}` can be: field names, double-quoted strings, single-quoted stri
 {{ value % 100 }}
 ```
 
-Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric literal. The result type is widened as needed.
+Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric literal (integer or float). The result type is widened as needed.
+
+> **`+` here is numeric addition**, not string concatenation. The field must be a numeric type. To join strings, use [concatenation](#concatenation) with `{}` braces instead.
 
 ```
 {{ score + 100 }}     → score value + 100

@@ -375,18 +375,18 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 	public static class WithCodeContext extends ParserRuleContext {
 		public WithCondition ret;
 		public ExprsContext scopePath;
-		public ExprsCodeContext bodyExprs;
 		public ConcatBodyContext concatItems;
+		public ExprsCodeContext bodyExprs;
 		public TerminalNode LBRACE() { return getToken(TemplateGrammarExpression.LBRACE, 0); }
 		public TerminalNode RBRACE() { return getToken(TemplateGrammarExpression.RBRACE, 0); }
 		public ExprsContext exprs() {
 			return getRuleContext(ExprsContext.class,0);
 		}
-		public ExprsCodeContext exprsCode() {
-			return getRuleContext(ExprsCodeContext.class,0);
-		}
 		public ConcatBodyContext concatBody() {
 			return getRuleContext(ConcatBodyContext.class,0);
+		}
+		public ExprsCodeContext exprsCode() {
+			return getRuleContext(ExprsCodeContext.class,0);
 		}
 		public WithCodeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -417,11 +417,15 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				setState(87);
 				match(LBRACE);
 				setState(88);
-				((WithCodeContext)_localctx).bodyExprs = exprsCode();
+				((WithCodeContext)_localctx).concatItems = concatBody();
 				setState(89);
 				match(RBRACE);
 
-				        ((WithCodeContext)_localctx).ret =  new WithCondition( ((WithCodeContext)_localctx).scopePath.ret, ((WithCodeContext)_localctx).bodyExprs.ret );
+				        Exprs bodyExprs = new Exprs();
+				        bodyExprs.concatenation = new Concatenation( ((WithCodeContext)_localctx).concatItems.ret );
+				        ArrayList<Exprs> body = new ArrayList<>();
+				        body.add( bodyExprs );
+				        ((WithCodeContext)_localctx).ret =  new WithCondition( ((WithCodeContext)_localctx).scopePath.ret, body );
 				      
 				}
 				break;
@@ -433,15 +437,11 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 				setState(93);
 				match(LBRACE);
 				setState(94);
-				((WithCodeContext)_localctx).concatItems = concatBody();
+				((WithCodeContext)_localctx).bodyExprs = exprsCode();
 				setState(95);
 				match(RBRACE);
 
-				        Exprs bodyExprs = new Exprs();
-				        bodyExprs.concatenation = new Concatenation( ((WithCodeContext)_localctx).concatItems.ret );
-				        ArrayList<Exprs> body = new ArrayList<>();
-				        body.add( bodyExprs );
-				        ((WithCodeContext)_localctx).ret =  new WithCondition( ((WithCodeContext)_localctx).scopePath.ret, body );
+				        ((WithCodeContext)_localctx).ret =  new WithCondition( ((WithCodeContext)_localctx).scopePath.ret, ((WithCodeContext)_localctx).bodyExprs.ret );
 				      
 				}
 				break;
@@ -2420,9 +2420,9 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		"\u0000QO\u0001\u0000\u0000\u0000QR\u0001\u0000\u0000\u0000RS\u0001\u0000"+
 		"\u0000\u0000ST\u0005\u0005\u0000\u0000TU\u0006\u0001\uffff\uffff\u0000"+
 		"U\u0003\u0001\u0000\u0000\u0000VW\u0003$\u0012\u0000WX\u0005\u0019\u0000"+
-		"\u0000XY\u0003\b\u0004\u0000YZ\u0005\u001a\u0000\u0000Z[\u0006\u0002\uffff"+
-		"\uffff\u0000[c\u0001\u0000\u0000\u0000\\]\u0003$\u0012\u0000]^\u0005\u0019"+
-		"\u0000\u0000^_\u0003\u0006\u0003\u0000_`\u0005\u001a\u0000\u0000`a\u0006"+
+		"\u0000XY\u0003\u0006\u0003\u0000YZ\u0005\u001a\u0000\u0000Z[\u0006\u0002"+
+		"\uffff\uffff\u0000[c\u0001\u0000\u0000\u0000\\]\u0003$\u0012\u0000]^\u0005"+
+		"\u0019\u0000\u0000^_\u0003\b\u0004\u0000_`\u0005\u001a\u0000\u0000`a\u0006"+
 		"\u0002\uffff\uffff\u0000ac\u0001\u0000\u0000\u0000bV\u0001\u0000\u0000"+
 		"\u0000b\\\u0001\u0000\u0000\u0000c\u0005\u0001\u0000\u0000\u0000de\u0003"+
 		",\u0016\u0000ej\u0006\u0003\uffff\uffff\u0000fg\u0005&\u0000\u0000gh\u0003"+

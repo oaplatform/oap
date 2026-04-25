@@ -81,10 +81,10 @@ public class TemplateEngineTypesTest extends AbstractTemplateEngineTest {
         templateClass.child.child.field2 = "v2";
 
         var str = getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "child.child.{field,\"x\",field2}:${<java.lang.String>child.child.{field,\"x\",field2}}",
+            "child.child.{field + \"x\" + field2}:${<java.lang.String>child.child.{field + \"x\" + field2}}",
             templateAccumulator, ERROR, null ).render( templateClass ).get();
 
-        assertThat( str ).isEqualTo( "child.child.{field,\"x\",field2}:v1xv2" );
+        assertThat( str ).isEqualTo( "child.child.{field + \"x\" + field2}:v1xv2" );
     }
 
     @Test

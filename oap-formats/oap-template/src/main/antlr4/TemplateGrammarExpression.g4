@@ -60,15 +60,15 @@ ifCode returns [IfCondition ret]
     ;
 
 withCode returns [WithCondition ret]
-    : scopePath=exprs LBRACE bodyExprs=exprsCode RBRACE {
-        $ret = new WithCondition( $scopePath.ret, $bodyExprs.ret );
-      }
-    | scopePath=exprs LBRACE concatItems=concatBody RBRACE {
+    : scopePath=exprs LBRACE concatItems=concatBody RBRACE {
         Exprs bodyExprs = new Exprs();
         bodyExprs.concatenation = new Concatenation( $concatItems.ret );
         ArrayList<Exprs> body = new ArrayList<>();
         body.add( bodyExprs );
         $ret = new WithCondition( $scopePath.ret, body );
+      }
+    | scopePath=exprs LBRACE bodyExprs=exprsCode RBRACE {
+        $ret = new WithCondition( $scopePath.ret, $bodyExprs.ret );
       }
     ;
 
