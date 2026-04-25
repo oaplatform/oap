@@ -17,6 +17,9 @@ import oap.template.tree.FieldConditionExpr;
 import oap.template.tree.AndConditionExpr;
 import oap.template.tree.OrConditionExpr;
 import oap.template.tree.NotConditionExpr;
+import oap.template.tree.CompareConditionExpr;
+import oap.template.tree.CompareValue;
+import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -90,7 +93,20 @@ conditionNot returns [ConditionExpr ret]
 
 conditionAtom returns [ConditionExpr ret]
     : LPAREN ifCondition RPAREN { $ret = $ifCondition.ret; }
+    | left=exprs op=(EQEQ | EQ_KW | NEQ | NE_KW | GT_OP | LT_OP | GE_OP | LE_OP | EQI_KW | CONTAINS_KW) right=compareRhs {
+        $ret = new CompareConditionExpr( $left.ret, $op.getText(), $right.ret );
+      }
     | exprs { $ret = new FieldConditionExpr( $exprs.ret ); }
+    ;
+
+compareRhs returns [CompareValue ret]
+    : SSTRING         { $ret = new LiteralCompareValue( sdStringToString( $SSTRING.text ) ); }
+    | DSTRING         { $ret = new LiteralCompareValue( sdStringToString( $DSTRING.text ) ); }
+    | DECDIGITS       { $ret = new LiteralCompareValue( $DECDIGITS.text ); }
+    | MINUS DECDIGITS { $ret = new LiteralCompareValue( "-" + $DECDIGITS.text ); }
+    | FLOAT           { $ret = new LiteralCompareValue( $FLOAT.text ); }
+    | MINUS FLOAT     { $ret = new LiteralCompareValue( "-" + $FLOAT.text ); }
+    | BOOLEAN         { $ret = new LiteralCompareValue( $BOOLEAN.text ); }
     ;
     
 

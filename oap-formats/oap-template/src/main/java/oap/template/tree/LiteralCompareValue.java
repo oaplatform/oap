@@ -24,4 +24,4 @@
 
 package oap.template.tree;
 
-public sealed interface ConditionExpr permits FieldConditionExpr, AndConditionExpr, OrConditionExpr, NotConditionExpr, CompareConditionExpr {}
+public record LiteralCompareValue( String value ) implements CompareValue {}

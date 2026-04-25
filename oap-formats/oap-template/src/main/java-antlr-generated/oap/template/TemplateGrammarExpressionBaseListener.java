@@ -10,6 +10,9 @@ import oap.template.tree.FieldConditionExpr;
 import oap.template.tree.AndConditionExpr;
 import oap.template.tree.OrConditionExpr;
 import oap.template.tree.NotConditionExpr;
+import oap.template.tree.CompareConditionExpr;
+import oap.template.tree.CompareValue;
+import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -139,6 +142,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitConditionAtom(TemplateGrammarExpression.ConditionAtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterCompareRhs(TemplateGrammarExpression.CompareRhsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCompareRhs(TemplateGrammarExpression.CompareRhsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

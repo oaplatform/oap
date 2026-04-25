@@ -19,6 +19,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
     - [Compound conditions (inline)](#compound-conditions-inline)
   - [If / else / end (block)](#if--else--end-block)
     - [Compound conditions](#compound-conditions)
+    - [Comparison operators](#comparison-operators)
     - [Truthiness semantics](#truthiness-semantics)
   - [With scope (inline)](#with-scope-inline)
   - [With scope (block)](#with-scope-block)
@@ -340,6 +341,42 @@ Block-if conditions support `and`, `or`, `not` / `!` operators and parenthesised
 ```
 
 Operators can be applied to any field type — truthiness is evaluated per type before combining.
+
+#### Comparison operators
+
+Conditions can compare a field against a literal value using comparison operators. Both symbolic and keyword forms are supported.
+
+| Operator | Keyword alias | Applies to | Description |
+|----------|--------------|------------|-------------|
+| `==`     | `eq`         | any        | Equal (type-aware) |
+| `!=`     | `ne`         | any        | Not equal |
+| `>`      | —            | numeric, `String` | Greater than |
+| `<`      | —            | numeric, `String` | Less than |
+| `>=`     | —            | numeric, `String` | Greater than or equal |
+| `<=`     | —            | numeric, `String` | Less than or equal |
+| `eqi`    | —            | `String` only | Case-insensitive equals; error for other types |
+| `contains` | —          | `List` or `Map` only | `List.contains(value)` / `Map.containsKey(key)`; error for other types |
+
+The right-hand side must be a **literal** value: a quoted string (`'text'` or `"text"`), an integer, a float, or a boolean.
+For `contains`, the literal is automatically coerced to the collection's element type (or map key type).
+If a field is `null`, all comparison operators return `false`.
+
+```
+{{% if status == 'active' }}Active{{% end }}
+{{% if status eq 'active' }}Active{{% end }}
+{{% if status != 'deleted' }}Visible{{% end }}
+{{% if count > 0 }}Non-empty{{% end }}
+{{% if price <= 9.99 }}Cheap{{% end }}
+{{% if name eqi 'admin' }}Admin{{% end }}
+{{% if tags contains 'promo' }}Promo{{% end }}
+{{% if scores contains 100 }}Perfect{{% end }}
+{{% if categoryMap contains 'sports' }}Sports{{% end }}
+
+{{ if status == 'active' then 'yes' else 'no' end }}
+{{ if (count > 0 and status eq 'active') then count else 0 end }}
+```
+
+Comparison operators can be combined with `and`, `or`, and `not`/`!` using the same precedence rules.
 
 #### Truthiness semantics
 

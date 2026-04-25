@@ -75,6 +75,8 @@ public class TestTemplateClass {
     @Nullable
     public List<Integer> list2;
     public List<String> listString;
+    public List<Double> listDouble;
+    public HashMap<Integer, String> mapIntItems = new HashMap<>();
 
     public ArrayList<TestTemplateClass> listItems = new ArrayList<>();
     public HashMap<String, TestTemplateClass> mapItems = new HashMap<>();

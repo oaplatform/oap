@@ -27,7 +27,9 @@ package oap.template;
 import oap.reflect.TypeRef;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import static oap.template.ErrorStrategy.ERROR;
 import static oap.template.TemplateAccumulators.STRING;
@@ -395,6 +397,213 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% if (booleanField and booleanObjectField) and not booleanObjectField }}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "no" );
+    }
+
+    // --- comparison operators ---
+
+    @Test
+    public void testBlockIfEqString() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "test";
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if field == 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.field = "other";
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{% if field == 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfEqStringKeyword() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "test";
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if field eq 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+    }
+
+    @Test
+    public void testBlockIfEqInt() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 5;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField == 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.intField = 6;
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField == 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfNeString() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "other";
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if field != 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.field = "test";
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{% if field != 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfNeKeyword() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 6;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField ne 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+    }
+
+    @Test
+    public void testBlockIfGt() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 6;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField > 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.intField = 5;
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField > 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfLt() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField < 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.intField = 5;
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField < 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfGe() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 5;
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField >= 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Less", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField >= 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfLe() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 5;
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField <= 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.intField = 6;
+        assertThat( getTemplate( testMethodName + "Greater", new TypeRef<TestTemplateClass>() {},
+            "{{% if intField <= 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfEqi() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "Test";
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{% if field eqi 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        c.field = "other";
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{% if field eqi 'test' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfContainsListString() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.listString = new ArrayList<>( List.of( "a", "b", "c" ) );
+        assertThat( getTemplate( testMethodName + "Present", new TypeRef<TestTemplateClass>() {},
+            "{{% if listString contains 'b' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        assertThat( getTemplate( testMethodName + "Absent", new TypeRef<TestTemplateClass>() {},
+            "{{% if listString contains 'z' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfContainsListInteger() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.list = new ArrayList<>( List.of( 1, 2, 3 ) );
+        assertThat( getTemplate( testMethodName + "Present", new TypeRef<TestTemplateClass>() {},
+            "{{% if list contains 2 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        assertThat( getTemplate( testMethodName + "Absent", new TypeRef<TestTemplateClass>() {},
+            "{{% if list contains 9 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfContainsListDouble() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.listDouble = new ArrayList<>( List.of( 1.1, 2.2, 3.3 ) );
+        assertThat( getTemplate( testMethodName + "Present", new TypeRef<TestTemplateClass>() {},
+            "{{% if listDouble contains 2.2 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        assertThat( getTemplate( testMethodName + "Absent", new TypeRef<TestTemplateClass>() {},
+            "{{% if listDouble contains 9.9 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfContainsMapString() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.mapItems.put( "k1", new TestTemplateClass() );
+        c.mapItems.put( "k2", new TestTemplateClass() );
+        assertThat( getTemplate( testMethodName + "Present", new TypeRef<TestTemplateClass>() {},
+            "{{% if mapItems contains 'k1' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        assertThat( getTemplate( testMethodName + "Absent", new TypeRef<TestTemplateClass>() {},
+            "{{% if mapItems contains 'missing' %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfContainsMapInteger() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.mapIntItems.put( 1, "one" );
+        c.mapIntItems.put( 2, "two" );
+        assertThat( getTemplate( testMethodName + "Present", new TypeRef<TestTemplateClass>() {},
+            "{{% if mapIntItems contains 1 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+        assertThat( getTemplate( testMethodName + "Absent", new TypeRef<TestTemplateClass>() {},
+            "{{% if mapIntItems contains 9 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+    }
+
+    @Test
+    public void testBlockIfCombinedEqOrNe() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "test";
+        c.intField = 6;
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{% if field == 'test' or intField != 5 %}}yes{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+    }
+
+    @Test
+    public void testInlineIfCompare() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 6;
+        c.field = "hello";
+        c.field2 = "world";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ if intField == 6 then field else field2 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "hello" );
     }
 
 }
