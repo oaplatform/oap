@@ -60,9 +60,21 @@ ifCode returns [IfCondition ret]
     ;
 
 withCode returns [WithCondition ret]
-    : WITH LPAREN scopePath=exprs RPAREN bodyExprs=exprsCode END {
+    : scopePath=exprs LBRACE bodyExprs=exprsCode RBRACE {
         $ret = new WithCondition( $scopePath.ret, $bodyExprs.ret );
       }
+    | scopePath=exprs LBRACE concatItems=concatBody RBRACE {
+        Exprs bodyExprs = new Exprs();
+        bodyExprs.concatenation = new Concatenation( $concatItems.ret );
+        ArrayList<Exprs> body = new ArrayList<>();
+        body.add( bodyExprs );
+        $ret = new WithCondition( $scopePath.ret, body );
+      }
+    ;
+
+concatBody returns [ArrayList<Object> ret = new ArrayList<>()]
+    : citem { $ret.add( $citem.ret ); }
+      ( PLUS citem { $ret.add( $citem.ret ); } )+
     ;
 
 exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
@@ -184,8 +196,8 @@ concatenation returns [Concatenation ret]
     ;
 
 citems returns [ArrayList<Object> ret = new ArrayList<>()]
-    : citem { $ret.add($citem.ret); }
-        ( COMMA citem { $ret.add($citem.ret); } )*
+    : citem { $ret.add( $citem.ret ); }
+        ( PLUS citem { $ret.add( $citem.ret ); } )*
     ;
 
 citem returns [Object ret]

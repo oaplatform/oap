@@ -204,25 +204,25 @@ Supported literal types:
 
 ### Concatenation
 
-Concatenation combines multiple fields and string literals into a single output without a separator.
+Concatenation combines multiple fields and string literals into a single string output using `+` as the separator. All items are rendered as strings and joined without any separator character between them.
 
 Root concatenation (the whole expression is a concat):
 
 ```
-${ {field1, "/", field2} }
+${ {field1 + "/" + field2} }
 ```
 
-Suffix concatenation after a path:
+Suffix concatenation after a scope path:
 
 ```
-{{ child{field1, "x", field2} }}
-{{ child.{field1, "x", field2} }}
+{{ child{field1 + "x" + field2} }}
+{{ child.{field1 + "x" + field2} }}
 ```
 
 Items inside `{}` can be: field names, double-quoted strings, single-quoted strings, decimal integers, floats.
 
 ```
-{{ {scheme, "://", host, "/", path} }}   → "https://example.com/api"
+{{ {scheme + "://" + host + "/" + path} }}   → "https://example.com/api"
 ```
 
 ### Math
@@ -401,19 +401,19 @@ Any field type may appear in a `{{% if … }}` condition. The field value is coe
 
 ### With scope (inline)
 
-`{{ with (scopePath) bodyExpr end }}` — evaluates `bodyExpr` relative to the object resolved by `scopePath`. At compile time the scope path is prepended to each body expression, so this is purely syntactic sugar for chained field access.
+`{{ scope{bodyExpr} }}` — evaluates `bodyExpr` relative to the object resolved by `scope`. At compile time the scope path is prepended to each body expression, so this is purely syntactic sugar for chained field access.
 
 ```
-{{ with (child) field end }}
+{{ child{field} }}
 ```
 is equivalent to `{{ child.field }}`.
 
-If `scopePath` resolves to null, the body expression renders its default value, or empty string if no default is set.
+If `scope` resolves to null, the body expression renders its default value, or empty string if no default is set.
 
 **With a default:**
 
 ```
-{{ with (child) field ?? 'n/a' end }}
+{{ child{field} ?? 'n/a' }}
 ```
 
 Renders `n/a` when `child` is null or `child.field` is null.
@@ -421,18 +421,25 @@ Renders `n/a` when `child` is null or `child.field` is null.
 **Fallback chain in body:**
 
 ```
-{{ with (child) field | default field2 end }}
+{{ child{field | default field2} }}
 ```
 
 Both alternatives are evaluated against `child` (expanded to `child.field | default child.field2`); the first non-null result is used.
 
-**Root scope (`$`):** prefix any body expression with `$.` to resolve it from the root object instead of the `with` scope:
+**Root scope (`$`):** prefix any body expression with `$.` to resolve it from the root object instead of the scope:
 
 ```
-{{ with (child) field | default $.rootField end }}
+{{ child{field | default $.rootField} }}
 ```
 
 When `child.field` is null, `$.rootField` is resolved from the root object.
+
+**Concatenation inside scope:** when `+` separates two or more items inside `{}`, the result is a string concatenation of all items rendered in the context of `scope`:
+
+```
+{{ child{field1 + "-" + field2} }}
+{{ parent{str1 + 'f' + str2 + 6} }}
+```
 
 ### With scope (block)
 

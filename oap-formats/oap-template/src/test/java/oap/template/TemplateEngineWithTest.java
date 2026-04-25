@@ -39,7 +39,7 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
         c.child = new TestTemplateClass();
         c.child.field = "val";
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "{{ with (child) field end }}", STRING, null ).render( c ).get() )
+            "{{ child{field} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val" );
     }
 
@@ -50,7 +50,7 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
         c.child.field = null;
         c.child.field2 = "fb";
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "{{ with (child) field | default field2 end }}", STRING, null ).render( c ).get() )
+            "{{ child{field | default field2} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "fb" );
     }
 
@@ -59,7 +59,7 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
         TestTemplateClass c = new TestTemplateClass();
         c.child = null;
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "{{ with (child) field end }}", STRING, null ).render( c ).get() )
+            "{{ child{field} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "" );
     }
 
@@ -121,7 +121,7 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
         c.child = new TestTemplateClass();
         c.child.field = null;
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "{{ with (child) field | default $.field end }}", STRING, null ).render( c ).get() )
+            "{{ child{field | default $.field} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "root-val" );
     }
 
@@ -140,5 +140,26 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
             getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
                 "{{% with unknownField }}x{{% end }}", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class );
+    }
+
+    @Test
+    public void testInlineBraceConcatenation() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.field = "hello";
+        c.child.field2 = "world";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child{field + '-' + field2} }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "hello-world" );
+    }
+
+    @Test
+    public void testInlineBraceConcatenationWithNumber() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.field = "val";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child{field + 6} }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "val6" );
     }
 }
