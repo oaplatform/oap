@@ -39,7 +39,7 @@ public class TemplateEngineConcatenationTest extends AbstractTemplateEngineTest 
         c.field = "f1";
         c.field2 = "f2";
 
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{field + \"x\" + field2}}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${field + \"x\" + field2}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -49,7 +49,7 @@ public class TemplateEngineConcatenationTest extends AbstractTemplateEngineTest 
         c.intField = 3;
         c.field2 = "f2";
 
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${{intField + \"x\" + field2}}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "${intField + \"x\" + field2}", STRING, null ).render( c ).get() )
             .isEqualTo( "3xf2" );
     }
 

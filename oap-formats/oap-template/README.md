@@ -204,15 +204,16 @@ Supported literal types:
 
 ### Concatenation
 
-Concatenation joins multiple fields and literals into a single string. Items are enclosed in `{}` with `+` as separator. All items are rendered as strings and joined without any separator character between them.
+`+` is the string concatenation operator. All items are rendered as strings and joined without any separator character between them. Items can be: field names, double-quoted strings, single-quoted strings, decimal integers, floats.
 
-> **`+` inside `{}` is always concatenation.** Outside braces, `+` is a [numeric math operator](#math). Use `{}` whenever you want string joining.
+> **`+` is string concatenation** when the left operand is a non-numeric field, or when more than two items are joined. When the left is a numeric field and the right is a single numeric literal, `+` is numeric addition (see [Math](#math)).
 
-Standalone concatenation (whole expression is a concat):
+Top-level concatenation (no braces needed):
 
 ```
-${ {field1 + "/" + field2} }
-{{ {field1 + "/" + field2} }}
+{{ field1 + "/" + field2 }}
+${ field1 + "/" + field2 }
+{{ stringField + 'x' + 10 + intField }}   → "strx10456"
 ```
 
 Scoped concatenation — items resolved relative to a scope path:
@@ -222,17 +223,16 @@ Scoped concatenation — items resolved relative to a scope path:
 {{ child.{field1 + "x" + field2} }}
 ```
 
-Items inside `{}` can be: field names, double-quoted strings, single-quoted strings, decimal integers, floats.
-
 ```
-{{ {scheme + "://" + host + "/" + path} }}   → "https://example.com/api"
-{{ child{intField + "_" + field} }}          → "42_hello"
+{{ scheme + "://" + host + "/" + path }}   → "https://example.com/api"
+{{ child{intField + "_" + field} }}        → "42_hello"
 ```
 
 ### Math
 
 ```
-{{ numericField + 12.45 }}
+{{ intField + 10 }}
+{{ doubleField + 3.3 }}
 {{ intField * 2 }}
 {{ price - discount }}
 {{ total / count }}
@@ -241,11 +241,12 @@ Items inside `{}` can be: field names, double-quoted strings, single-quoted stri
 
 Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric literal (integer or float). The result type is widened as needed.
 
-> **`+` here is numeric addition**, not string concatenation. The field must be a numeric type. To join strings, use [concatenation](#concatenation) with `{}` braces instead.
+> **`+` is numeric addition when the left operand is a numeric field** (int, long, float, double, etc.). When the left operand is a non-numeric field or there are more than two items, `+` is string concatenation — see [Concatenation](#concatenation).
 
 ```
-{{ score + 100 }}     → score value + 100
-{{ price * 1.1 }}     → price * 1.1
+{{ intField + 10 }}    → intField value + 10
+{{ price * 1.1 }}      → price × 1.1
+{{ score - 5 }}        → score - 5
 ```
 
 ### If / then / else (inline)

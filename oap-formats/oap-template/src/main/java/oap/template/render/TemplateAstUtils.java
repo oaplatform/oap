@@ -51,6 +51,7 @@ import oap.template.tree.Func;
 import oap.template.tree.IfCondition;
 import oap.template.tree.LiteralCompareValue;
 import oap.template.tree.NotConditionExpr;
+import oap.template.tree.NumericLiteral;
 import oap.template.tree.OrConditionExpr;
 import oap.template.tree.TextElement;
 import oap.template.tree.WithCondition;
@@ -172,6 +173,11 @@ public class TemplateAstUtils {
 
             throw e;
         }
+    }
+
+    private static boolean isNumericType( Class<?> c ) {
+        return c == int.class || c == long.class || c == float.class || c == double.class
+            || c == short.class || c == byte.class || Number.class.isAssignableFrom( c );
     }
 
     static AstRender toAst( Expression expression, TemplateType templateType, String castType, String defaultValue,
@@ -656,13 +662,31 @@ public class TemplateAstUtils {
         Chain list = new Chain();
 
         if( exprs.concatenation != null ) {
-            ArrayList<AstRender> items = new ArrayList<>();
+            var concatList = exprs.concatenation.items;
+            // Numeric math: numericField + numericLiteral — delegate to the standard math path
+            if( concatList.size() == 2
+                && concatList.get( 0 ) instanceof Expr ei
+                && !ei.method
+                && concatList.get( 1 ) instanceof NumericLiteral nl ) {
+                try {
+                    Field field = findField( parentTemplateType.getTypeClass(), ei.name );
+                    if( isNumericType( field.getType() ) ) {
+                        Exprs mathExprs = new Exprs( List.of( ei ) );
+                        mathExprs.math = new oap.template.tree.Math( "+", nl.value() );
+                        return toAst( mathExprs, function, parentTemplateType, resultType, null,
+                            defaultValue, builtInFunction, errorStrategy );
+                    }
+                } catch( NoSuchFieldException ignored ) { }
+            }
 
-            for( Object item : exprs.concatenation.items ) {
+            ArrayList<AstRender> items = new ArrayList<>();
+            for( Object item : concatList ) {
                 if( item instanceof String si ) {
                     items.add( new AstRenderText( si ) );
-                } else if( item instanceof Expr ei ) {
-                    AstRender ast = toAst( new Exprs( List.of( ei ) ), function, parentTemplateType, resultType, null,
+                } else if( item instanceof NumericLiteral nl ) {
+                    items.add( new AstRenderText( nl.value() ) );
+                } else if( item instanceof Expr e ) {
+                    AstRender ast = toAst( new Exprs( List.of( e ) ), function, parentTemplateType, resultType, null,
                         defaultValue, builtInFunction, errorStrategy );
                     items.add( ast );
                 } else {

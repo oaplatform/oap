@@ -87,6 +87,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTopLevelConcat(TemplateGrammarExpression.TopLevelConcatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTopLevelConcat(TemplateGrammarExpression.TopLevelConcatContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExprsCode(TemplateGrammarExpression.ExprsCodeContext ctx) { }
 	/**
 	 * {@inheritDoc}

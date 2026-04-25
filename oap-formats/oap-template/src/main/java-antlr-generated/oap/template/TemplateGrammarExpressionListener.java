@@ -70,6 +70,16 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 */
 	void exitConcatBody(TemplateGrammarExpression.ConcatBodyContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#topLevelConcat}.
+	 * @param ctx the parse tree
+	 */
+	void enterTopLevelConcat(TemplateGrammarExpression.TopLevelConcatContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#topLevelConcat}.
+	 * @param ctx the parse tree
+	 */
+	void exitTopLevelConcat(TemplateGrammarExpression.TopLevelConcatContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#exprsCode}.
 	 * @param ctx the parse tree
 	 */
