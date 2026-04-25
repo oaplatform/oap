@@ -38,6 +38,7 @@ import oap.template.tree.AndConditionExpr;
 import oap.template.tree.BlockIfElement;
 import oap.template.tree.BlockRangeElement;
 import oap.template.tree.BlockWithElement;
+import oap.template.tree.CompareConditionExpr;
 import oap.template.tree.ConditionExpr;
 import oap.template.tree.Element;
 import oap.template.tree.Elements;
@@ -48,6 +49,7 @@ import oap.template.tree.Exprs;
 import oap.template.tree.FieldConditionExpr;
 import oap.template.tree.Func;
 import oap.template.tree.IfCondition;
+import oap.template.tree.LiteralCompareValue;
 import oap.template.tree.NotConditionExpr;
 import oap.template.tree.OrConditionExpr;
 import oap.template.tree.TextElement;
@@ -284,6 +286,9 @@ public class TemplateAstUtils {
                 toConditionAst( o.right(), templateType, errorStrategy ) );
         } else if( cond instanceof NotConditionExpr n ) {
             return new AstRenderConditionNot( templateType, toConditionAst( n.inner(), templateType, errorStrategy ) );
+        } else if( cond instanceof CompareConditionExpr c ) {
+            String literal = ( ( LiteralCompareValue ) c.right() ).value();
+            return toCompareConditionAst( c.left(), c.op(), literal, templateType, errorStrategy );
         }
         throw new IllegalStateException( "Unknown ConditionExpr: " + cond );
     }
@@ -345,6 +350,80 @@ public class TemplateAstUtils {
                 TemplateType actualType = currentTemplateType.getActualTypeArguments0();
                 AstRenderOptional ast = new AstRenderOptional( actualType );
                 ast.addChild( new AstRenderCaptureBoolean( actualType ) );
+                result.add( ast );
+            } else if( currentTemplateType.nullable ) {
+                AstRenderNullable ast = new AstRenderNullable( currentTemplateType );
+                ast.addChild( captureNode );
+                result.add( ast );
+            } else {
+                result.add( captureNode );
+            }
+
+            return result.head();
+        } catch( NoSuchFieldException | NoSuchMethodException e ) {
+            if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
+            return new AstRenderPathNotFound( e.getMessage() );
+        }
+    }
+
+    @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
+    private static AstRender toCompareConditionAst( Exprs conditionExprs, String op, String literal,
+                                                     TemplateType templateType, ErrorStrategy errorStrategy ) {
+        try {
+            TemplateType currentTemplateType = templateType;
+            Chain result = new Chain();
+
+            for( int i = 0; i < conditionExprs.exprs.size(); i++ ) {
+                Expr expr = conditionExprs.exprs.get( i );
+
+                if( currentTemplateType.isInstanceOf( Optional.class ) ) {
+                    TemplateType valueType = currentTemplateType.getActualTypeArguments0();
+                    AstRenderOptional ast = new AstRenderOptional( valueType );
+                    i--;
+                    result.add( ast );
+                    currentTemplateType = valueType;
+                } else if( currentTemplateType.nullable ) {
+                    TemplateType newType = new TemplateType( currentTemplateType.type, false );
+                    AstRenderNullable ast = new AstRenderNullable( newType );
+                    i--;
+                    result.add( ast );
+                    currentTemplateType = newType;
+                } else if( currentTemplateType.isInstanceOf( Map.class ) ) {
+                    TemplateType valueType = currentTemplateType.getActualTypeArguments1( true );
+                    AstRenderMap ast = new AstRenderMap( expr.name, valueType );
+                    result.add( ast );
+                    currentTemplateType = valueType;
+                } else if( !expr.method ) {
+                    Class<?> parentClass = currentTemplateType.getTypeClass();
+                    java.lang.reflect.Field field = findField( parentClass, expr.name );
+                    boolean nullable = field.isAnnotationPresent( Nullable.class )
+                        || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
+                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
+                    result.add( ast );
+                    currentTemplateType = fieldType;
+                } else {
+                    Class<?> parentClass = currentTemplateType.getTypeClass();
+                    Method method = Arrays
+                        .find( c -> c.getName().equals( expr.name ), parentClass.getMethods() )
+                        .orElse( null );
+                    if( method == null )
+                        method = parentClass.getMethod( expr.name );
+                    boolean nullable = method.isAnnotationPresent( Nullable.class )
+                        || !method.getReturnType().isPrimitive() && !method.isAnnotationPresent( Nonnull.class );
+                    TemplateType fieldType = new TemplateType( method.getGenericReturnType(), nullable );
+                    AstRenderMethod ast = new AstRenderMethod( expr.name, fieldType, expr.arguments );
+                    result.add( ast );
+                    currentTemplateType = fieldType;
+                }
+            }
+
+            AstRenderCaptureCompare captureNode = new AstRenderCaptureCompare( currentTemplateType, op, literal );
+
+            if( currentTemplateType.isOptional() ) {
+                TemplateType actualType = currentTemplateType.getActualTypeArguments0();
+                AstRenderOptional ast = new AstRenderOptional( actualType );
+                ast.addChild( new AstRenderCaptureCompare( actualType, op, literal ) );
                 result.add( ast );
             } else if( currentTemplateType.nullable ) {
                 AstRenderNullable ast = new AstRenderNullable( currentTemplateType );

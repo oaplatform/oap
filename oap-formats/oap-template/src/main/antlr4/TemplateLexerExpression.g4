@@ -90,6 +90,16 @@ AND             : 'and'                                 ;
 OR              : 'or'                                  ;
 NOT             : 'not'                                 ;
 BANG            : '!'                                   ;
+EQ_KW           : 'eq'                                  ;
+NE_KW           : 'ne'                                  ;
+EQI_KW          : 'eqi'                                 ;
+CONTAINS_KW     : 'contains'                            ;
+EQEQ            : '=='                                  ;
+NEQ             : '!='                                  ;
+GE_OP           : '>='                                  ;
+LE_OP           : '<='                                  ;
+GT_OP           : '>'                                   ;
+LT_OP           : '<'                                   ;
 VAR_ID          : '$' NameChar (NameChar|DecDigit)*     ;
 ROOT            : '$'                                   ;
 
