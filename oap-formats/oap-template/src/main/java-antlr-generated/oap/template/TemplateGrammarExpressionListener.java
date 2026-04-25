@@ -10,6 +10,9 @@ import oap.template.tree.FieldConditionExpr;
 import oap.template.tree.AndConditionExpr;
 import oap.template.tree.OrConditionExpr;
 import oap.template.tree.NotConditionExpr;
+import oap.template.tree.CompareConditionExpr;
+import oap.template.tree.CompareValue;
+import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -116,6 +119,16 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitConditionAtom(TemplateGrammarExpression.ConditionAtomContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#compareRhs}.
+	 * @param ctx the parse tree
+	 */
+	void enterCompareRhs(TemplateGrammarExpression.CompareRhsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#compareRhs}.
+	 * @param ctx the parse tree
+	 */
+	void exitCompareRhs(TemplateGrammarExpression.CompareRhsContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#defaultValue}.
 	 * @param ctx the parse tree
