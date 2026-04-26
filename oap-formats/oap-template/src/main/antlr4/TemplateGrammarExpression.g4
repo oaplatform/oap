@@ -60,13 +60,38 @@ ifCode returns [IfCondition ret]
     ;
 
 withCode returns [WithCondition ret]
-    : WITH LPAREN scopePath=exprs RPAREN bodyExprs=exprsCode END {
+    : scopePath=exprs LBRACE concatItems=concatBody RBRACE {
+        Exprs bodyExprs = new Exprs();
+        bodyExprs.concatenation = new Concatenation( $concatItems.ret );
+        ArrayList<Exprs> body = new ArrayList<>();
+        body.add( bodyExprs );
+        $ret = new WithCondition( $scopePath.ret, body );
+      }
+    | scopePath=exprs LBRACE bodyExprs=exprsCode RBRACE {
         $ret = new WithCondition( $scopePath.ret, $bodyExprs.ret );
       }
     ;
 
+concatBody returns [ArrayList<Object> ret = new ArrayList<>()]
+    : citem { $ret.add( $citem.ret ); }
+      ( PLUS citem { $ret.add( $citem.ret ); } )+
+    ;
+
+topLevelConcat returns [Exprs ret = new Exprs()]
+    : first=citem {
+        $ret.concatenation = new Concatenation( new ArrayList<>() );
+        $ret.concatenation.items.add( $first.ret );
+      }
+      ( PLUS next=citem {
+        $ret.concatenation.items.add( $next.ret );
+      } )+
+    ;
+
 exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
-    : exprs orExprs {
+    : topLevelConcat {
+        $ret.add( $topLevelConcat.ret );
+      }
+    | exprs orExprs {
         $ret.add( $exprs.ret );
         $ret.addAll( $orExprs.ret );
       }
@@ -171,7 +196,6 @@ exprs returns [Exprs ret = new Exprs()]
       DOT expr { $ret.exprs.add( $expr.ret ); }
       DOT? concatenation { $ret.concatenation = $concatenation.ret; }
       math? { if( $math.ctx != null ) $ret.math = $math.ret; }
-    | concatenation { $ret.concatenation = $concatenation.ret; }
     ;
 
 expr returns [Expr ret]
@@ -184,16 +208,16 @@ concatenation returns [Concatenation ret]
     ;
 
 citems returns [ArrayList<Object> ret = new ArrayList<>()]
-    : citem { $ret.add($citem.ret); }
-        ( COMMA citem { $ret.add($citem.ret); } )*
+    : citem { $ret.add( $citem.ret ); }
+        ( PLUS citem { $ret.add( $citem.ret ); } )*
     ;
 
 citem returns [Object ret]
     : ID { $ret = new Expr( $ID.text, false, List.of() ); }
     | DSTRING  { $ret = sdStringToString( $DSTRING.text ); }
     | SSTRING { $ret = sdStringToString( $SSTRING.text ); }
-    | DECDIGITS { $ret = String.valueOf( $DECDIGITS.text ); }
-    | FLOAT { $ret = String.valueOf( $FLOAT.text ); }
+    | DECDIGITS { $ret = new NumericLiteral( $DECDIGITS.text ); }
+    | FLOAT { $ret = new NumericLiteral( $FLOAT.text ); }
     ;
 
 math returns [Math ret]
@@ -209,7 +233,6 @@ mathOperation
     : STAR
     | SLASH
     | PERCENT
-    | PLUS
     | MINUS
     ;
     

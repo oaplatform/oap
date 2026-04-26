@@ -204,42 +204,49 @@ Supported literal types:
 
 ### Concatenation
 
-Concatenation combines multiple fields and string literals into a single output without a separator.
+`+` is the string concatenation operator. All items are rendered as strings and joined without any separator character between them. Items can be: field names, double-quoted strings, single-quoted strings, decimal integers, floats.
 
-Root concatenation (the whole expression is a concat):
+> **`+` is string concatenation** when the left operand is a non-numeric field, or when more than two items are joined. When the left is a numeric field and the right is a single numeric literal, `+` is numeric addition (see [Math](#math)).
 
-```
-${ {field1, "/", field2} }
-```
-
-Suffix concatenation after a path:
+Top-level concatenation (no braces needed):
 
 ```
-{{ child{field1, "x", field2} }}
-{{ child.{field1, "x", field2} }}
+{{ field1 + "/" + field2 }}
+${ field1 + "/" + field2 }
+{{ stringField + 'x' + 10 + intField }}   → "strx10456"
 ```
 
-Items inside `{}` can be: field names, double-quoted strings, single-quoted strings, decimal integers, floats.
+Scoped concatenation — items resolved relative to a scope path:
 
 ```
-{{ {scheme, "://", host, "/", path} }}   → "https://example.com/api"
+{{ child{field1 + "x" + field2} }}
+{{ child.{field1 + "x" + field2} }}
+```
+
+```
+{{ scheme + "://" + host + "/" + path }}   → "https://example.com/api"
+{{ child{intField + "_" + field} }}        → "42_hello"
 ```
 
 ### Math
 
 ```
-{{ numericField + 12.45 }}
+{{ intField + 10 }}
+{{ doubleField + 3.3 }}
 {{ intField * 2 }}
 {{ price - discount }}
 {{ total / count }}
 {{ value % 100 }}
 ```
 
-Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric literal. The result type is widened as needed.
+Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric literal (integer or float). The result type is widened as needed.
+
+> **`+` is numeric addition when the left operand is a numeric field** (int, long, float, double, etc.). When the left operand is a non-numeric field or there are more than two items, `+` is string concatenation — see [Concatenation](#concatenation).
 
 ```
-{{ score + 100 }}     → score value + 100
-{{ price * 1.1 }}     → price * 1.1
+{{ intField + 10 }}    → intField value + 10
+{{ price * 1.1 }}      → price × 1.1
+{{ score - 5 }}        → score - 5
 ```
 
 ### If / then / else (inline)
@@ -401,19 +408,19 @@ Any field type may appear in a `{{% if … }}` condition. The field value is coe
 
 ### With scope (inline)
 
-`{{ with (scopePath) bodyExpr end }}` — evaluates `bodyExpr` relative to the object resolved by `scopePath`. At compile time the scope path is prepended to each body expression, so this is purely syntactic sugar for chained field access.
+`{{ scope{bodyExpr} }}` — evaluates `bodyExpr` relative to the object resolved by `scope`. At compile time the scope path is prepended to each body expression, so this is purely syntactic sugar for chained field access.
 
 ```
-{{ with (child) field end }}
+{{ child{field} }}
 ```
 is equivalent to `{{ child.field }}`.
 
-If `scopePath` resolves to null, the body expression renders its default value, or empty string if no default is set.
+If `scope` resolves to null, the body expression renders its default value, or empty string if no default is set.
 
 **With a default:**
 
 ```
-{{ with (child) field ?? 'n/a' end }}
+{{ child{field} ?? 'n/a' }}
 ```
 
 Renders `n/a` when `child` is null or `child.field` is null.
@@ -421,18 +428,25 @@ Renders `n/a` when `child` is null or `child.field` is null.
 **Fallback chain in body:**
 
 ```
-{{ with (child) field | default field2 end }}
+{{ child{field | default field2} }}
 ```
 
 Both alternatives are evaluated against `child` (expanded to `child.field | default child.field2`); the first non-null result is used.
 
-**Root scope (`$`):** prefix any body expression with `$.` to resolve it from the root object instead of the `with` scope:
+**Root scope (`$`):** prefix any body expression with `$.` to resolve it from the root object instead of the scope:
 
 ```
-{{ with (child) field | default $.rootField end }}
+{{ child{field | default $.rootField} }}
 ```
 
 When `child.field` is null, `$.rootField` is resolved from the root object.
+
+**Concatenation inside scope:** when `+` separates two or more items inside `{}`, the result is a string concatenation of all items rendered in the context of `scope`:
+
+```
+{{ child{field1 + "-" + field2} }}
+{{ parent{str1 + 'f' + str2 + 6} }}
+```
 
 ### With scope (block)
 

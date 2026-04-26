@@ -382,7 +382,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c.field = "f1";
         c.field2 = "f2";
 
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ {field,\"x\",field2} }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field + \"x\" + field2 }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -394,7 +394,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c1.field = "f1";
         c1.field2 = "f2";
 
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child{field,\"x\",field2} }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child{field + \"x\" + field2} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
@@ -406,25 +406,18 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c1.field2 = "f1";
         c1.field22 = "f2";
 
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child2.{field2,\"x\",field22} }}", STRING, null ).render( c ).get() )
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ child2.{field2 + \"x\" + field22} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1xf2" );
     }
 
     @Test
-    public void testSum() {
+    public void testTopLevelConcatenation() {
         TestTemplateClass c = new TestTemplateClass();
-        c.intField = 123;
+        c.field = "str";
+        c.intField = 456;
 
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intField + 12.45 }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "135.45" );
-    }
-
-    @Test
-    public void testSumDefault() {
-        TestTemplateClass c = new TestTemplateClass();
-
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ intObjectField + 12.45 ?? 5 }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "5" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field + 'x' + 10 + intField }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "strx10456" );
     }
 
     @Test

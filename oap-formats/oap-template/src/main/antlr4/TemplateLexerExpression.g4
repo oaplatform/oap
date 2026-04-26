@@ -85,7 +85,6 @@ IF              : 'if'                                  ;
 THEN            : 'then'                                ;
 ELSE            : 'else'                                ;
 END             : 'end'                                 ;
-WITH            : 'with'                                ;
 AND             : 'and'                                 ;
 OR              : 'or'                                  ;
 NOT             : 'not'                                 ;
@@ -144,7 +143,11 @@ C_HORZ_WS	: Hws+		-> skip	                        ;
 C_VERT_WS	: Vws+		-> skip	                        ;
 
 CRBRACE		: RBrace -> popMode, type(RBRACE)           ;
-CCOMMA		: Comma -> type(COMMA)                      ;
+CPLUS       : Plus                          -> type(PLUS)    ;
+CDOT        : Dot                           -> type(DOT)     ;
+CDEFAULT    : Pipe Hws* Default             -> type(DEFAULT) ;
+CVAR_ID     : '$' NameChar (NameChar|DecDigit)* -> type(VAR_ID) ;
+CROOT       : '$'                           -> type(ROOT)    ;
 
 CID			: NameChar (NameChar|DecDigit)* -> type(ID) ;
 CDSTRING    : DQuoteLiteral -> type(DSTRING)            ;
