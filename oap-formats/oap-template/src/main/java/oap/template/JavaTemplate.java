@@ -43,16 +43,20 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.joining;
 
 @Slf4j
-public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> implements Template<TIn, TOut, TOutMutable, TA> {
+public class JavaTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> extends Template<TIn, TOut, TOutMutable, TA, JavaTemplate<TIn, TOut, TOutMutable, TA>> {
     private final TriConsumer<TIn, Map<String, Supplier<String>>, TemplateAccumulator<?, ?, ?>> cons;
-    private final TA acc;
 
     @SuppressWarnings( "unchecked" )
-    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path diskCache, TA acc, AstRenderRoot ast ) {
-        this.acc = acc;
+    public JavaTemplate( String name, String template, TypeRef<TIn> type, Path diskCache, TA acc, AstRenderRoot ast, TemplateEngineListener listener ) {
+        super( acc, listener );
+
         try {
             Render render = Render.init( name, template, new TemplateType( type.type() ), acc );
             ast.render( render );
+
+            if( listener != null ) {
+                listener.javaCode( render.out() );
+            }
 
             AtomicInteger line = new AtomicInteger( 0 );
             log.trace( "\n{}", new BufferedReader( new StringReader( render.out() ) )

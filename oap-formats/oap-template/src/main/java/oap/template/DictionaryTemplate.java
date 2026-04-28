@@ -29,12 +29,12 @@ package oap.template;
  * No longer needed, see the latest logstream
  */
 public class DictionaryTemplate<F, TOut, TMutable, TA extends TemplateAccumulator<TOut, TMutable, TA>> {
-    public final Template<F, TOut, TMutable, TA> templateFunction;
+    public final Template<F, TOut, TMutable, TA, ?> templateFunction;
     public final String template;
     public final String[] headers;
     public final byte[][] types;
 
-    public DictionaryTemplate( Template<F, TOut, TMutable, TA> templateFunction, String template, String[] headers, byte[][] types ) {
+    public DictionaryTemplate( Template<F, TOut, TMutable, TA, ?> templateFunction, String template, String[] headers, byte[][] types ) {
         this.templateFunction = templateFunction;
         this.template = template;
         this.headers = headers;

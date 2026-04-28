@@ -35,12 +35,14 @@ import java.util.List;
  */
 @ToString( callSuper = true )
 public class AstRenderBlockWith extends AstRender {
+    private final String scopePath;
     private final AstRender scopeAst;
     private final TemplateType scopeType;
     private final List<AstRender> bodyChildren;
 
-    public AstRenderBlockWith( TemplateType type, AstRender scopeAst, TemplateType scopeType, List<AstRender> bodyChildren ) {
+    public AstRenderBlockWith( String scopePath, TemplateType type, AstRender scopeAst, TemplateType scopeType, List<AstRender> bodyChildren ) {
         super( type );
+        this.scopePath = scopePath;
         this.scopeAst = scopeAst;
         this.scopeType = scopeType;
         this.bodyChildren = bodyChildren;
@@ -49,12 +51,19 @@ public class AstRenderBlockWith extends AstRender {
     @Override
     public void render( Render render ) {
         String sv = render.newVariable();
-        render.ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
+        render
+            .ntab().append( "// --- with ( %s )", scopePath )
+            .ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
         scopeAst.render( render.withScopeVar( sv ) );
+
+        render.ntab().append( "// --- with ( %s ) START BODY ", scopePath );
+
         Render bodyRender = render.newBlock().withField( sv ).withParentType( scopeType );
         for( AstRender child : bodyChildren ) {
             child.render( bodyRender );
         }
+
+        render.ntab().append( "// --- with ( %s ) END body ", scopePath ).n();
     }
 
     @Override

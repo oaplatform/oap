@@ -805,7 +805,7 @@ public class TemplateAstUtils {
                     Exprs scopeExprs = grammar.exprs().ret;
                     ScopeAstResult scopeResult = toScopeAst( scopeExprs, templateType, errorStrategy );
                     AstRenderRoot bodyRoot = toAst( w.body, scopeResult.scopeType, rootTemplateType, builtInFunction, errorStrategy, rangeVarTypes );
-                    astRender = new AstRenderBlockWith( templateType, scopeResult.scopeAst, scopeResult.scopeType, bodyRoot.children );
+                    astRender = new AstRenderBlockWith( w.scopePath, templateType, scopeResult.scopeAst, scopeResult.scopeType, bodyRoot.children );
                 } catch( Exception exp ) {
                     throw new TemplateException( w.scopePath + ": " + exp.getMessage(), exp );
                 }

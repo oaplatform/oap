@@ -24,16 +24,27 @@
 
 package oap.template;
 
-public interface Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> {
-    TA render( TIn obj, boolean eol );
+import javax.annotation.Nullable;
 
-    default TA render( TIn obj ) {
+@SuppressWarnings( "checkstyle:AbstractClassName" )
+public abstract class Template<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>, Self extends Template<TIn, TOut, TOutMutable, TA, Self>> {
+    protected final TA acc;
+    protected TemplateEngineListener listener;
+
+    protected Template( TA acc, @Nullable TemplateEngineListener listener ) {
+        this.acc = acc;
+        this.listener = listener;
+    }
+
+    public abstract TA render( TIn obj, boolean eol );
+
+    public TA render( TIn obj ) {
         return render( obj, false );
     }
 
-    TA render( TIn obj, boolean eol, TOutMutable out );
+    public abstract TA render( TIn obj, boolean eol, TOutMutable out );
 
-    default TA render( TIn obj, TOutMutable out ) {
+    public TA render( TIn obj, TOutMutable out ) {
         return render( obj, false, out );
     }
 }

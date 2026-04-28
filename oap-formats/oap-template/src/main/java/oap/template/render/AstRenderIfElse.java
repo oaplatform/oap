@@ -82,7 +82,9 @@ public abstract class AstRenderIfElse extends AstRender {
         }
     }
 
-    /** Render the else branch when present, during runtime interpretation. */
+    /**
+     * Render the else branch when present, during runtime interpretation.
+     */
     protected void interpretElse( RuntimeContext ctx ) {
         if( elseAstRender != null ) elseAstRender.interpret( ctx );
     }
