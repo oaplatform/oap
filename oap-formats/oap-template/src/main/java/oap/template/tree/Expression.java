@@ -66,10 +66,15 @@ public class Expression {
         if( castType != null ) sb.append( "CAST " ).append( castType ).append( '\n' );
         if( defaultValue != null ) sb.append( "DEFAULT '" ).append( defaultValue ).append( "'\n" );
         if( ifCondition != null ) {
-            sb.append( "IF\n" ).append( "└── " ).append( ifCondition.condition ).append( '\n' );
-            sb.append( "THEN\n" ).append( "└── " ).append( ifCondition.thenCode.print() ).append( '\n' );
+            sb.append( "IF " ).append( ifCondition.condition ).append( '\n' );
             if( ifCondition.elseCode != null ) {
-                sb.append( "ELSE\n" ).append( "└── " ).append( ifCondition.elseCode.print() ).append( '\n' );
+                sb.append( "├── " );
+            } else {
+                sb.append( "└── " );
+            }
+            sb.append( "THEN\n" ).append( "      └── " ).append( ifCondition.thenCode.print() );
+            if( ifCondition.elseCode != null ) {
+                sb.append( "└── ELSE\n" ).append( "      └── " ).append( ifCondition.elseCode.print() ).append( '\n' );
             }
         }
         if( withCondition != null ) {

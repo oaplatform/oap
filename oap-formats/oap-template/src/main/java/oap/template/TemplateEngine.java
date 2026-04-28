@@ -49,6 +49,7 @@ import oap.util.function.Try;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -140,30 +141,30 @@ public class TemplateEngine implements Runnable {
         }
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
-        return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+        return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess, listener );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
-        return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+        return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess, listener );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
-        return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+        return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess, listener );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, @Nullable TemplateEngineListener listener ) {
         return getTemplate( name, type, template, acc, aliases, errorStrategy, _ -> {
-        } );
+        }, listener );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
         Objects.requireNonNull( template );
         Objects.requireNonNull( acc );
 
@@ -200,11 +201,11 @@ public class TemplateEngine implements Runnable {
 
                 log.trace( "\n" + ast.print() );
 
-                JavaTemplate<TIn, TOut, TOutMutable, TA> tf = new JavaTemplate<>( name + '_' + id, template, type, diskCache, acc, ast );
+                JavaTemplate<TIn, TOut, TOutMutable, TA> tf = new JavaTemplate<>( name + '_' + id, template, type, diskCache, acc, ast, listener );
                 return new TemplateFunction( tf, new Exception().getStackTrace() );
             } );
 
-            return ( Template<TIn, TOut, TOutMutable, TA> ) tFunc.template;
+            return ( Template<TIn, TOut, TOutMutable, TA, ?> ) tFunc.template;
         } catch( RejectedExecutionException e ) {
             throw e;
         } catch( Exception e ) {
@@ -216,35 +217,35 @@ public class TemplateEngine implements Runnable {
         }
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
     getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc ) {
         return getRuntimeTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, null );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess ) {
-        return getRuntimeTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+        return getRuntimeTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess, listener );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess ) {
-        return getRuntimeTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+        return getRuntimeTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess, listener );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
-        return getRuntimeTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+        return getRuntimeTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess, listener );
     }
 
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy ) {
-        return getRuntimeTemplate( name, type, template, acc, aliases, errorStrategy, null );
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, @Nullable TemplateEngineListener listener ) {
+        return getRuntimeTemplate( name, type, template, acc, aliases, errorStrategy, null, listener );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA>
+    public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
     getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc,
-                        Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+                        Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
         Objects.requireNonNull( template );
         Objects.requireNonNull( acc );
 
@@ -261,7 +262,7 @@ public class TemplateEngine implements Runnable {
 
             if( postProcess != null ) postProcess.accept( ast );
 
-            return new RuntimeTemplate<>( acc, ast );
+            return new RuntimeTemplate<>( acc, ast, listener );
         } catch( TemplateException e ) {
             throw e;
         } catch( Exception e ) {
@@ -297,10 +298,10 @@ public class TemplateEngine implements Runnable {
 
     public static class TemplateFunction {
         @JsonIgnore
-        public final Template<?, ?, ?, ?> template;
+        public final Template<?, ?, ?, ?, ?> template;
         public final StackTraceElement[] stackTrace;
 
-        public TemplateFunction( Template<?, ?, ?, ?> template, StackTraceElement[] stackTrace ) {
+        public TemplateFunction( Template<?, ?, ?, ?, ?> template, StackTraceElement[] stackTrace ) {
             this.template = template;
             this.stackTrace = stackTrace;
         }

@@ -28,6 +28,7 @@ import lombok.ToString;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @ToString
@@ -51,9 +52,9 @@ public class Exprs {
         if( !exprs.isEmpty() ) {
             sb.append( "LIST\n" );
 
-            var it = exprs.iterator();
+            Iterator<Expr> it = exprs.iterator();
             while( it.hasNext() ) {
-                var item = it.next();
+                Expr item = it.next();
 
                 sb.append( it.hasNext() ? "    ├── " : "    └── " ).append( item.print() ).append( '\n' );
 

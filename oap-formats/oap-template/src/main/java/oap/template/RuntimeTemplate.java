@@ -27,20 +27,20 @@ package oap.template;
 import oap.template.render.AstRenderRoot;
 import oap.template.runtime.RuntimeContext;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@link Template} implementation that interprets the AST directly at runtime
  * using Java reflection — no code generation or compilation required.
  *
  * <p>Use {@link TemplateEngine#getRuntimeTemplate} to obtain an instance.
  */
-public class RuntimeTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
-    implements Template<TIn, TOut, TOutMutable, TA> {
-
-    private final TA acc;
+public class RuntimeTemplate<TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> extends Template<TIn, TOut, TOutMutable, TA, RuntimeTemplate<TIn, TOut, TOutMutable, TA>> {
     private final AstRenderRoot ast;
 
-    public RuntimeTemplate( TA acc, AstRenderRoot ast ) {
-        this.acc = acc;
+    public RuntimeTemplate( TA acc, AstRenderRoot ast, @Nullable TemplateEngineListener listener ) {
+        super( acc, listener );
+
         this.ast = ast;
     }
 

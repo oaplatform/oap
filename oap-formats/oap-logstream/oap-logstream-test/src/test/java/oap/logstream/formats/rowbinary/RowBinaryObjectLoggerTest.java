@@ -24,9 +24,7 @@
 
 package oap.logstream.formats.rowbinary;
 
-import oap.dictionary.DictionaryLeaf;
-import oap.dictionary.DictionaryRoot;
-import oap.dictionary.DictionaryValue;
+import oap.dictionary.DictionaryParser;
 import oap.logstream.MemoryLoggerBackend;
 import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
@@ -34,7 +32,6 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -52,18 +49,48 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
     }
 
     @Test
-    public void testLog() throws IOException {
+    public void testLog() {
+        String datamodel = """
+            name = model
+            values {
+              MODEL1 {
+                values {
+                  a {
+                    path = a
+                    type = STRING
+                    default = ""
+                  }
+                  b {
+                    path = b
+                    type = INTEGER
+                    default = 1233
+                  }
+                  aaa {
+                    path = a | default aa
+                    type = STRING
+                    default = ""
+                  }
+                  list {
+                    path = data1.list | default data2.list
+                    type = STRING_ARRAY
+                    default = []
+                  }
+                  x {
+                    type = INTEGER
+                    default = 1
+                  }
+                  map_val_long_as_int {
+                    path = map.map_val_long_as_int
+                    type = INTEGER
+                    default = 111
+                  }
+                }
+              }
+            }
+            """;
+
         MemoryLoggerBackend memoryLoggerBackend = new MemoryLoggerBackend();
-        RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( new DictionaryRoot( "model", List.of(
-            new DictionaryValue( "MODEL1", true, 1, List.of(
-                new DictionaryLeaf( "a", true, 2, Map.of( "path", "a", "type", "STRING", "default", "" ) ),
-                new DictionaryLeaf( "b", true, 2, Map.of( "path", "b", "type", "INTEGER", "default", 123 ) ),
-                new DictionaryLeaf( "aaa", true, 2, Map.of( "path", "a | default aa", "type", "STRING", "default", "" ) ),
-                new DictionaryLeaf( "list", true, 2, Map.of( "path", "data1.list | default data2.list", "type", "STRING_ARRAY", "default", "[]" ) ),
-                new DictionaryLeaf( "x", true, 2, Map.of( "type", "INTEGER", "default", 1 ) ),
-                new DictionaryLeaf( "map_val_long_as_int", true, 2, Map.of( "path", "map.map_val_long_as_int", "type", "INTEGER", "default", 111 ) )
-            ) )
-        ) ), memoryLoggerBackend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
+        RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( DictionaryParser.parseFromString( datamodel ), memoryLoggerBackend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
 
         RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1" );
 

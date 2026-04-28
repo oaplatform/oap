@@ -28,6 +28,7 @@ import lombok.ToString;
 import oap.template.runtime.RuntimeContext;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @SuppressWarnings( "checkstyle:AbstractClassName" )
@@ -50,7 +51,7 @@ public abstract class AstRender {
     }
 
     public String print() {
-        var buffer = new StringBuilder();
+        StringBuilder buffer = new StringBuilder();
         print( buffer, "", "" );
         return buffer.toString();
     }
@@ -65,7 +66,7 @@ public abstract class AstRender {
     }
 
     public void printChildren( StringBuilder buffer, String childrenPrefix, List<AstRender> children ) {
-        for( var it = children.iterator(); it.hasNext(); ) {
+        for( Iterator<AstRender> it = children.iterator(); it.hasNext(); ) {
             AstRender next = it.next();
             if( it.hasNext() ) {
                 next.print( buffer, childrenPrefix + "├── ", childrenPrefix + "│   " );

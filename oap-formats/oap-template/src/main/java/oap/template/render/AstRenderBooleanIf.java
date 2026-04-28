@@ -77,4 +77,18 @@ public class AstRenderBooleanIf extends AstRender {
             elseCode.interpret( ctx );
         }
     }
+
+    @Override
+    public void print( StringBuilder buffer, String prefix, String childrenPrefix ) {
+        if( elseCode != null ) {
+            printTop( buffer, prefix );
+            buffer.append( childrenPrefix ).append( "│" );
+            buffer.append( '\n' );
+
+            thenCode.print( buffer, childrenPrefix + "├── TRUE  ", childrenPrefix + "│" + "    " );
+            elseCode.print( buffer, childrenPrefix + "└── FALSE ", childrenPrefix + "     " );
+        } else {
+            super.print( buffer, prefix, childrenPrefix );
+        }
+    }
 }

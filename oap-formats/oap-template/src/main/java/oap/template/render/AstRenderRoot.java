@@ -35,9 +35,9 @@ public class AstRenderRoot extends AstRender {
 
     @Override
     public void render( Render render ) {
-        var className = type.getTypeName().replace( '$', '.' );
+        String className = type.getTypeName().replace( '$', '.' );
 
-        var templateAccumulatorClassName = render.templateAccumulator.getClass().getTypeName().replace( '$', '.' );
+        String templateAccumulatorClassName = render.templateAccumulator.getClass().getTypeName().replace( '$', '.' );
         render.append( """
                 package oap.template;
 
@@ -54,10 +54,10 @@ public class AstRenderRoot extends AstRender {
             .append( """
                 {
 
-                 @Override
-                 public void accept(\s""".indent( 1 ) ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {\n" );
+                  @Override
+                  public void accept(""" ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {" );
 
-        Render childRender = render.tabInc().tabInc().tabInc().withField( "s" ).withRootField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
+        Render childRender = render.tabInc().tabInc().withField( "s" ).withRootField( "s" ).withTemplateAccumulatorName( "acc" ).withParentType( type );
 
         children.forEach( child -> child.render( childRender ) );
 

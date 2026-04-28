@@ -325,7 +325,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
             .isEqualTo( "2" );
 
         TemplateEngine engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
-        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null ).render( c1 ).get() )
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null, null ).render( c1 ).get() )
             .isEqualTo( "1" );
     }
 
@@ -336,14 +336,14 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
         c1.field = "1";
         c1.field2 = "2";
 
-        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null ).render( c1 ).get() )
+        assertThat( engine.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null, null ).render( c1 ).get() )
             .isEqualTo( "1" );
 
         replace( "oap.template.testDiskCacheChangeSourceCode_156c7bcafb683f4fea4f07418942daf1.class" );
         replace( "oap.template.testDiskCacheChangeSourceCode_156c7bcafb683f4fea4f07418942daf1.java" );
 
         TemplateEngine engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
-        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null ).render( c1 ).get() )
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}", STRING, ERROR, null, null ).render( c1 ).get() )
             .isEqualTo( "1" );
     }
 
@@ -493,7 +493,7 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
 
         TemplateEngine engine2 = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 20 ) );
 
-        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null )
+        assertThat( engine2.getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field }}\t{{ field }}", new TestTemplateAccumulatorString(), null, null )
             .render( c ).get() ).isEqualTo( "12\t12" );
     }
 }

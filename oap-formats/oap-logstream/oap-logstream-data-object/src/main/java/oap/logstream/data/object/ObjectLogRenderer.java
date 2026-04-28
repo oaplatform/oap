@@ -33,9 +33,9 @@ import javax.annotation.Nonnull;
 public class ObjectLogRenderer<D, TOut, TAccumulator, TA extends TemplateAccumulator<TOut, TAccumulator, TA>> implements LogRenderer<D, TOut, TAccumulator, TA> {
     private final String[] headers;
     private final byte[][] types;
-    private final Template<D, TOut, TAccumulator, TA> renderer;
+    private final Template<D, TOut, TAccumulator, TA, ?> renderer;
 
-    public ObjectLogRenderer( Template<D, TOut, TAccumulator, TA> renderer, String[] headers, byte[][] types ) {
+    public ObjectLogRenderer( Template<D, TOut, TAccumulator, TA, ?> renderer, String[] headers, byte[][] types ) {
         this.renderer = renderer;
         this.headers = headers;
         this.types = types;

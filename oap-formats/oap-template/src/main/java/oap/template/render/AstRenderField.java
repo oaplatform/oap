@@ -45,7 +45,7 @@ public class AstRenderField extends AstRender {
     @Override
     public void render( Render render ) {
         if( castType != null ) {
-            var targetType = type;
+            TemplateType targetType = type;
             if( type.isOptional() ) targetType = type.getActualTypeArguments0();
 
             if( !castType.isAssignableFrom( targetType ) ) {
@@ -53,7 +53,7 @@ public class AstRenderField extends AstRender {
             }
         }
 
-        var variableName = render.newVariable( fieldName );
+        Render.NewVariable variableName = render.newVariable( fieldName );
 
         if( variableName.isNew ) {
             render

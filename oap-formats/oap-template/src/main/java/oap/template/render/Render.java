@@ -168,11 +168,15 @@ public class Render {
     }
 
     public String newVariable() {
-        var id = ids.incrementAndGet();
-        return "v" + id;
+        return newVariableWithCustomPrefix( "v" );
     }
 
-    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    public String newVariableWithCustomPrefix( String prefix ) {
+        int id = ids.incrementAndGet();
+        return prefix + id;
+    }
+
+    @SuppressWarnings( { "checkstyle:ParameterAssignment", "checkstyle:OverloadMethodsDeclarationOrder" } )
     public NewVariable newVariable( String name ) {
         name = name.replaceAll( "[\\s,-?]", "_" );
 

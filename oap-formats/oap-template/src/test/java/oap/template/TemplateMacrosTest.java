@@ -55,11 +55,11 @@ public class TemplateMacrosTest {
     public void testListFieldDefaultValue() {
         TestTemplateClass c = new TestTemplateClass();
         c.list = null;
-        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ list; toJson() ?? [] }}", STRING, null ).render( c ).get() )
+        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ list; toJson() ?? [] }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "[]" );
 
         c.listString = List.of( "1", "2", "3" );
-        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ listString; toJson() ?? [] }}", STRING, null ).render( c ).get() )
+        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ listString; toJson() ?? [] }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "[\"1\",\"2\",\"3\"]" );
     }
 }

@@ -129,12 +129,13 @@ public class RowBinaryObjectLogger {
         }
 
         String template = String.join( "", expressions );
-        Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary> renderer = engine.getTemplate(
+        Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer = engine.getTemplate(
             "Log" + StringUtils.capitalize( id ),
             typeRef,
             template,
             new TemplateAccumulatorRowBinary(),
             ERROR,
+            null,
             null );
         return new TypedRowBinaryLogger<>( renderer, headers.toArray( new String[0] ), rowTypes.toArray( new byte[0][] ) );
 
@@ -170,9 +171,9 @@ public class RowBinaryObjectLogger {
     public class TypedRowBinaryLogger<D> {
         public final String[] headers;
         public final byte[][] types;
-        private final Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary> renderer;
+        private final Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer;
 
-        public TypedRowBinaryLogger( Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary> renderer, String[] headers, byte[][] types ) {
+        public TypedRowBinaryLogger( Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer, String[] headers, byte[][] types ) {
             this.renderer = renderer;
 
             this.headers = headers;

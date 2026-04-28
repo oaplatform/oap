@@ -35,12 +35,14 @@ import java.util.List;
  */
 @ToString( callSuper = true )
 public class AstRenderBlockWith extends AstRender {
+    private final String scopePath;
     private final AstRender scopeAst;
     private final TemplateType scopeType;
     private final List<AstRender> bodyChildren;
 
-    public AstRenderBlockWith( TemplateType type, AstRender scopeAst, TemplateType scopeType, List<AstRender> bodyChildren ) {
+    public AstRenderBlockWith( String scopePath, TemplateType type, AstRender scopeAst, TemplateType scopeType, List<AstRender> bodyChildren ) {
         super( type );
+        this.scopePath = scopePath;
         this.scopeAst = scopeAst;
         this.scopeType = scopeType;
         this.bodyChildren = bodyChildren;
@@ -48,13 +50,53 @@ public class AstRenderBlockWith extends AstRender {
 
     @Override
     public void render( Render render ) {
-        String sv = render.newVariable();
-        render.ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
+        String sv = render.newVariableWithCustomPrefix( "with_" );
+        render
+            .ntab().append( "// --- with ( %s )", scopePath )
+            .ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
         scopeAst.render( render.withScopeVar( sv ) );
+
+        render.ntab().append( "// --- with ( %s ) START BODY ", scopePath );
+
         Render bodyRender = render.newBlock().withField( sv ).withParentType( scopeType );
-        for( AstRender child : bodyChildren ) {
-            child.render( bodyRender );
+        boolean hasNullable = bodyChildren.stream().anyMatch( c -> extractNullable( c ) != null );
+
+        if( hasNullable ) {
+            render.ntab().append( "if ( %s != null ) {", sv );
+            Render ifBody = bodyRender.tabInc();
+            for( AstRender child : bodyChildren ) {
+                AstRenderNullable nullable = extractNullable( child );
+                if( nullable != null ) {
+                    if( child instanceof AstRenderComment ac ) ifBody.ntab().append( ac.comment );
+                    nullable.renderBodyOnly( ifBody );
+                } else {
+                    child.render( ifBody );
+                }
+            }
+            render.ntab().append( "} else {" );
+            Render elseBody = bodyRender.tabInc();
+            for( AstRender child : bodyChildren ) {
+                AstRenderNullable nullable = extractNullable( child );
+                if( nullable != null ) {
+                    nullable.renderElseOnly( elseBody );
+                } else {
+                    child.render( elseBody );
+                }
+            }
+            render.ntab().append( "}" );
+        } else {
+            for( AstRender child : bodyChildren ) {
+                child.render( bodyRender );
+            }
         }
+
+        render.ntab().append( "// --- with ( %s ) END body ", scopePath ).n();
+    }
+
+    private static AstRenderNullable extractNullable( AstRender child ) {
+        if( child instanceof AstRenderNullable n ) return n;
+        if( child instanceof AstRenderComment c && c.children.size() == 1 && c.children.getFirst() instanceof AstRenderNullable n ) return n;
+        return null;
     }
 
     @Override

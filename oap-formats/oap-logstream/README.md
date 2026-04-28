@@ -157,3 +157,23 @@ if( logger.isLoggingAvailable() ) {
     // backend is OPERATIONAL
 }
 ```
+
+---
+
+## `RowBinaryObjectLogger`
+
+Schema-driven logger that serializes Java objects to ClickHouse RowBinary format. The column schema is declared in an OAP dictionary model; a typed renderer is compiled once and reused per log call.
+
+```java
+RowBinaryObjectLogger logger = new RowBinaryObjectLogger(
+    model,                           // DictionaryRoot — column schema
+    backend,                         // any AbstractLoggerBackend
+    Path.of( "/tmp/template-cache" ),
+    Dates.d( 10 )                    // template cache TTL
+);
+
+TypedRowBinaryLogger<MyEvent> typed = logger.typed( new TypeRef<>() {}, "MODEL_ID" );
+typed.log( event, "file-prefix", Map.of( "region", "eu" ), "EVENT_TYPE" );
+```
+
+See [docs/RowBinaryObjectLogger.md](docs/RowBinaryObjectLogger.md) for the full API reference, supported types, schema format, and a complete example.

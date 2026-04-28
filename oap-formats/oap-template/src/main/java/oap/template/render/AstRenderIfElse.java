@@ -82,7 +82,30 @@ public abstract class AstRenderIfElse extends AstRender {
         }
     }
 
-    /** Render the else branch when present, during runtime interpretation. */
+    public void renderBodyOnly( Render render ) {
+        String iv = getInnerVariable( render::newVariable );
+        if( iv != null ) {
+            render.ntab().append( getInnerVariableSetter( iv, render ) );
+        }
+        Render newRender = render.withParentType( type );
+        if( iv != null ) {
+            newRender = newRender.withField( iv );
+        }
+        for( AstRender c : children ) {
+            c.render( newRender.newBlock() );
+        }
+    }
+
+    public void renderElseOnly( Render render ) {
+        if( elseAstRender != null ) {
+            if( render.tryVariable != null ) render.ntab().append( "%s = true;", render.tryVariable );
+            elseAstRender.render( render.newBlock() );
+        }
+    }
+
+    /**
+     * Render the else branch when present, during runtime interpretation.
+     */
     protected void interpretElse( RuntimeContext ctx ) {
         if( elseAstRender != null ) elseAstRender.interpret( ctx );
     }
