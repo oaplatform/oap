@@ -17,6 +17,11 @@ public class TemplateEngineOptimizationTest extends AbstractTemplateEngineTest {
             "{{% with child }}{{ field }}-{{ field2 }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1-f2" );
 
-        assertThat( listener.javaCode ).containsOnlyOnce( "if ( with_1 != null ) {" );
+        assertThat( listener.javaCode )
+            .containsOnlyOnce( """
+                oap.template.TestTemplateClass s_child = s.child;
+                // --- with ( child ) START BODY
+                if ( s_child != null ) {
+            """ );
     }
 }
