@@ -40,9 +40,12 @@ import oap.util.FastByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -87,48 +90,71 @@ public class RowBinaryObjectLogger {
         return ( String ) fieldObject;
     }
 
-    public <D> TypedRowBinaryLogger<D> typed( TypeRef<D> typeRef, String id ) {
+    public <D> TypedRowBinaryLogger<D> typed( TypeRef<D> typeRef, String id, boolean sortByPath ) {
+        return typed( typeRef, id, sortByPath, null );
+    }
+
+    public <D> TypedRowBinaryLogger<D> typed( TypeRef<D> typeRef, String id, boolean sortByPath, @Nullable RowBinaryObjectListener listener ) {
         Dictionary value = requireNonNull( model.getValue( id ), "configuration for " + id + " is not found" );
 
         ArrayList<String> headers = new ArrayList<>();
         ArrayList<byte[]> rowTypes = new ArrayList<>();
         ArrayList<String> expressions = new ArrayList<>();
 
-        for( Dictionary field : value.getValues( d -> d.containsProperty( "path" ) ) ) {
-            String name = field.getId();
-            String path = checkStringAndGet( field, "path" );
-            String fieldType = checkStringAndGet( field, "type" );
-            Object format = field.getProperty( "format" ).orElse( null );
+        List<Dictionary> fields = value.getValues( d -> d.containsProperty( "path" ) );
 
-            boolean collection = false;
-            String idType = fieldType;
-            if( idType.endsWith( COLLECTION_SUFFIX ) ) {
-                collection = true;
-                idType = idType.substring( 0, idType.length() - COLLECTION_SUFFIX.length() );
-            }
+        if( sortByPath ) {
+            fields.sort( ( o1, o2 ) -> {
+                String path1 = o1.<String>getProperty( "path" ).get();
+                String path2 = o2.<String>getProperty( "path" ).get();
 
-            TypeConfiguration rowType = types.get( idType );
-            Preconditions.checkNotNull( rowType, "unknown type " + idType );
+                boolean or1 = path1.contains( "|" );
+                boolean or2 = path2.contains( "|" );
 
-            Object defaultValue = field.getProperty( "default" )
-                .orElseThrow( () -> new IllegalStateException( "default not found for " + id + "/" + name ) );
+                if( or1 || or2 ) {
+                    return Boolean.compare( or1, or2 );
+                }
 
-            String templateFunction = format != null ? "; format(\"" + format + "\")" : "";
-            String comment = "model " + id + " id " + name + " path " + path + " type " + fieldType + " defaultValue '" + defaultValue + "'";
-            Object pDefaultValue =
-                defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"'
-                    : defaultValue;
+                return path1.compareTo( path2 );
+            } );
+        }
 
-            expressions.add( "{{ /* " + comment + " */" + toJavaType( rowType.javaType, collection ) + path + " ?? " + pDefaultValue + templateFunction + " }}" );
-            headers.add( name );
-            if( collection ) {
-                rowTypes.add( new byte[] { Types.LIST.id, rowType.templateType.id } );
+        List<Dictionary> rootFields = new ArrayList<>();
+        Map<String, List<Dictionary>> groups = new LinkedHashMap<>();
+
+        for( Dictionary field : fields ) {
+            String path = field.<String>getProperty( "path" ).get();
+            boolean isOr = path.contains( "|" );
+            int dotIdx = isOr ? -1 : path.indexOf( '.' );
+            if( dotIdx < 0 ) {
+                rootFields.add( field );
             } else {
-                rowTypes.add( new byte[] { rowType.templateType.id } );
+                groups.computeIfAbsent( path.substring( 0, dotIdx ), k -> new ArrayList<>() ).add( field );
+            }
+        }
+
+        for( Dictionary field : rootFields ) {
+            appendField( field, id, null, headers, rowTypes, expressions );
+        }
+
+        for( Map.Entry<String, List<Dictionary>> entry : groups.entrySet() ) {
+            String prefix = entry.getKey();
+            List<Dictionary> group = entry.getValue();
+            if( group.size() >= 2 ) {
+                expressions.add( "{{% with " + prefix + " }}" );
+                for( Dictionary field : group ) {
+                    appendField( field, id, prefix, headers, rowTypes, expressions );
+                }
+                expressions.add( "{{% end }}" );
+            } else {
+                appendField( group.getFirst(), id, null, headers, rowTypes, expressions );
             }
         }
 
         String template = String.join( "", expressions );
+
+        if( listener != null ) listener.javaCode( template );
+
         Template<D, byte[], FastByteArrayOutputStream, TemplateAccumulatorRowBinary, ?> renderer = engine.getTemplate(
             "Log" + StringUtils.capitalize( id ),
             typeRef,
@@ -138,7 +164,42 @@ public class RowBinaryObjectLogger {
             null,
             null );
         return new TypedRowBinaryLogger<>( renderer, headers.toArray( new String[0] ), rowTypes.toArray( new byte[0][] ) );
+    }
 
+    private void appendField( Dictionary field, String id, @Nullable String stripPrefix,
+                              List<String> headers, List<byte[]> rowTypes, List<String> expressions ) {
+        String name = field.getId();
+        String path = checkStringAndGet( field, "path" );
+        String fieldType = checkStringAndGet( field, "type" );
+        Object format = field.getProperty( "format" ).orElse( null );
+
+        boolean collection = false;
+        String idType = fieldType;
+        if( idType.endsWith( COLLECTION_SUFFIX ) ) {
+            collection = true;
+            idType = idType.substring( 0, idType.length() - COLLECTION_SUFFIX.length() );
+        }
+
+        TypeConfiguration rowType = types.get( idType );
+        Preconditions.checkNotNull( rowType, "unknown type " + idType );
+
+        Object defaultValue = field.getProperty( "default" )
+            .orElseThrow( () -> new IllegalStateException( "default not found for " + id + "/" + name ) );
+
+        String templateFunction = format != null ? "; format(\"" + format + "\")" : "";
+        String comment = "model " + id + " id " + name + " path " + path + " type " + fieldType + " defaultValue '" + defaultValue + "'";
+        Object pDefaultValue =
+            defaultValue instanceof String ? "\"" + ( ( String ) defaultValue ).replace( "\"", "\\\"" ) + '"'
+                : defaultValue;
+
+        String exprPath = stripPrefix != null ? path.substring( stripPrefix.length() + 1 ) : path;
+        expressions.add( "{{ /* " + comment + " */" + toJavaType( rowType.javaType, collection ) + exprPath + " ?? " + pDefaultValue + templateFunction + " }}" );
+        headers.add( name );
+        if( collection ) {
+            rowTypes.add( new byte[] { Types.LIST.id, rowType.templateType.id } );
+        } else {
+            rowTypes.add( new byte[] { rowType.templateType.id } );
+        }
     }
 
     public boolean isLoggingAvailable() {
@@ -156,6 +217,11 @@ public class RowBinaryObjectLogger {
         if( collection ) sb.append( ">" );
         sb.append( ">" );
         return sb.toString();
+    }
+
+    public interface RowBinaryObjectListener {
+        default void javaCode( String javaCode ) {
+        }
     }
 
     public static class TypeConfiguration {

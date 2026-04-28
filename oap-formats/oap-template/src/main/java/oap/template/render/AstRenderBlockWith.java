@@ -109,8 +109,12 @@ public class AstRenderBlockWith extends AstRender {
     }
 
     private static AstRenderNullable extractNullable( AstRender child ) {
-        if( child instanceof AstRenderNullable n ) return n;
-        if( child instanceof AstRenderComment c && c.children.size() == 1 && c.children.getFirst() instanceof AstRenderNullable n ) return n;
+        AstRender current = child;
+        while( current instanceof AstRenderComment ic ) {
+            if( ic.children.size() != 1 ) return null;
+            current = ic.children.getFirst();
+        }
+        if( current instanceof AstRenderNullable n ) return n;
         return null;
     }
 

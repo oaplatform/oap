@@ -32,6 +32,7 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.testng.annotations.Test;
 
+import javax.annotation.Nullable;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -92,7 +93,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         MemoryLoggerBackend memoryLoggerBackend = new MemoryLoggerBackend();
         RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( DictionaryParser.parseFromString( datamodel ), memoryLoggerBackend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
 
-        RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1" );
+        RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1", false );
 
         logger.log( new TestData( "ff", "cc", 12, List.of( "1" ), null, Map.of( "map_val_long_as_int", 333L ) ), "prefix", Map.of(), "mylog" );
         logger.log( new TestData( null, "dd", 44, null, List.of( "2" ), Map.of( "map_val_long_as_int", 1L ) ), "prefix", Map.of(), "mylog" );
@@ -105,6 +106,82 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         ) );
     }
 
+    @Test
+    public void testOptimization() {
+        String datamodel = """
+            name = model
+            values {
+              MODEL1 {
+                values {
+                  a2 {
+                    path = subData.a
+                    type = STRING
+                    default = ""
+                  }
+                  a {
+                    path = a
+                    type = STRING
+                    default = ""
+                  }
+                  aa2 {
+                    path = subData.aa
+                    type = STRING
+                    default = ""
+                  }
+                  or {
+                    path = "if a then a else aa end"
+                    type = STRING
+                    default = ""
+                  }
+                  b {
+                    path = b
+                    type = INTEGER
+                    default = 0
+                  }
+                  b2 {
+                    path = subData.b
+                    type = INTEGER
+                    default = 0
+                  }
+                }
+              }
+            }
+            """;
+
+        MemoryLoggerBackend memoryLoggerBackend = new MemoryLoggerBackend();
+        RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( DictionaryParser.parseFromString( datamodel ), memoryLoggerBackend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
+
+        MyTemplateEngineListener listener = new MyTemplateEngineListener();
+        RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1", true, listener );
+
+        TestData testData = new TestData();
+        testData.a = "a1";
+        testData.aa = "aa1";
+        testData.b = 1;
+
+        TestData testData2 = new TestData();
+        testData.subData = testData2;
+        testData2.a = "a2";
+        testData2.aa = "aa2";
+        testData2.b = 2;
+
+        logger.log( testData, "prefix", Map.of(), "mylog" );
+
+        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( _ -> true );
+
+        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", 1, "a1", "a2", "aa2", 2 ) ) );
+
+        assertThat( listener.javaCode )
+            .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
+                + "{{ /* model MODEL1 id b path b type INTEGER defaultValue '0' */<java.lang.Integer>b ?? 0 }}"
+                + "{{ /* model MODEL1 id or path if a then a else aa end type STRING defaultValue '' */<java.lang.String>if a then a else aa end ?? \"\" }}"
+                + "{{% with subData }}"
+                + "{{ /* model MODEL1 id a2 path subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
+                + "{{ /* model MODEL1 id aa2 path subData.aa type STRING defaultValue '' */<java.lang.String>aa ?? \"\" }}"
+                + "{{ /* model MODEL1 id b2 path subData.b type INTEGER defaultValue '0' */<java.lang.Integer>b ?? 0 }}"
+                + "{{% end }}" );
+    }
+
     public static class TestData {
         public final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         public String a;
@@ -112,6 +189,8 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         public int b;
         public Optional<TestData1> data1 = Optional.empty();
         public Optional<TestData1> data2 = Optional.empty();
+        @Nullable
+        public TestData subData;
 
         public TestData() {
         }
@@ -133,6 +212,15 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
             public TestData1( List<String> list ) {
                 this.list.addAll( list );
             }
+        }
+    }
+
+    private static class MyTemplateEngineListener implements RowBinaryObjectLogger.RowBinaryObjectListener {
+        private String javaCode;
+
+        @Override
+        public void javaCode( String javaCode ) {
+            this.javaCode = javaCode;
         }
     }
 }
