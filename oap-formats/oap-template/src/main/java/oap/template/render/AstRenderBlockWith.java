@@ -50,15 +50,22 @@ public class AstRenderBlockWith extends AstRender {
 
     @Override
     public void render( Render render ) {
-        String sv = render.newVariableWithCustomPrefix( "with_" );
-        render
-            .ntab().append( "// --- with ( %s )", scopePath )
-            .ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
-        scopeAst.render( render.withScopeVar( sv ) );
+        render.ntab().append( "// --- with ( %s )", scopePath );
 
-        render.ntab().append( "// --- with ( %s ) START BODY ", scopePath );
+        String sv;
+        if( isSingleLevelField( scopeAst ) ) {
+            AstRenderField sf = ( AstRenderField ) scopeAst;
+            new AstRenderField( sf.fieldName, sf.type, sf.forceCast, sf.castType ).render( render );
+            sv = render.newVariable( sf.fieldName ).name;
+        } else {
+            sv = render.newVariableWithCustomPrefix( "with_" );
+            render.ntab().append( "%s %s = null;", scopeType.getTypeName(), sv );
+            scopeAst.render( render.withScopeVar( sv ) );
+        }
 
-        Render bodyRender = render.newBlock().withField( sv ).withParentType( scopeType );
+        render.ntab().append( "// --- with ( %s ) START BODY", scopePath );
+
+        Render bodyRender = render.newBlock().withFieldDirect( sv ).withParentType( scopeType );
         boolean hasNullable = bodyChildren.stream().anyMatch( c -> extractNullable( c ) != null );
 
         if( hasNullable ) {
@@ -91,6 +98,14 @@ public class AstRenderBlockWith extends AstRender {
         }
 
         render.ntab().append( "// --- with ( %s ) END body ", scopePath ).n();
+    }
+
+    private static boolean isSingleLevelField( AstRender scopeAst ) {
+        if( !( scopeAst instanceof AstRenderField sf ) ) return false;
+        if( sf.children.size() != 1 ) return false;
+        AstRender child = sf.children.getFirst();
+        if( !( child instanceof AstRenderNullable ) ) return false;
+        return child.children.size() == 1 && child.children.getFirst() instanceof AstRenderCaptureScope;
     }
 
     private static AstRenderNullable extractNullable( AstRender child ) {

@@ -208,6 +208,11 @@ public class Render {
             this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
     }
 
+    public Render withFieldDirect( String field ) {
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, field, rangeVarMap, variables );
+    }
+
     public Render withRootField( String rootField ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
             this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
