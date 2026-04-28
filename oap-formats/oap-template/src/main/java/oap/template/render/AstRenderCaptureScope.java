@@ -28,7 +28,7 @@ import lombok.ToString;
 import oap.template.runtime.RuntimeContext;
 
 /**
- * Leaf node for the scope path in AstRenderWith / AstRenderBlockWith.
+ * Leaf node for the scope path in AstRenderBlockWith.
  * Assigns render.field (the resolved scope variable) into render.scopeVar.
  */
 @ToString( callSuper = true )

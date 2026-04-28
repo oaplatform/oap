@@ -40,20 +40,20 @@ public class AstRenderRoot extends AstRender {
         String templateAccumulatorClassName = render.templateAccumulator.getClass().getTypeName().replace( '$', '.' );
         render.append( """
                 package oap.template;
-                
+
                 import oap.util.Strings;
-                
+
                 import java.util.*;
                 import oap.util.function.TriConsumer;
                 import java.util.function.Supplier;
                 import java.util.function.BooleanSupplier;
                 import com.google.common.base.CharMatcher;
-                
+
                 public class\s""" ).append( render.nameEscaped() )
             .append( " implements TriConsumer<%s, Map<String, Supplier<String>>, %s>", className, templateAccumulatorClassName )
             .append( """
                 {
-                
+
                   @Override
                   public void accept(""" ).append( className ).append( " s, Map<String, Supplier<String>> m, " ).append( templateAccumulatorClassName ).append( " acc ) {" );
 
