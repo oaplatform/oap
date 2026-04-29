@@ -15,7 +15,6 @@ fragment DQuote			: '"'	    ;
 fragment Underscore		: '_'	    ;
 fragment Comma			: ','	    ;
 fragment Semi			: ';'	    ;
-fragment Pipe			: '|'	    ;
 fragment Dot			: '.'	    ;
 fragment LParen			: '('	    ;
 fragment RParen			: ')'	    ;
@@ -29,8 +28,6 @@ fragment Minus			: '-'	    ;
 fragment DQuestion		: '??'	    ;
 fragment LT             : '<'       ;
 fragment GT             : '>'       ;
-fragment Default        : 'default' ;
-
 fragment NameChar
 	:	[A-Z]
 	|	[a-z]
@@ -78,8 +75,6 @@ fragment Float          : DecDigits Dot DecDigits?      ;
 fragment True		 	: 'true'	                    ;
 fragment False			: 'false'   	                ;
 
-
-DEFAULT         : Pipe Hws* Default                     ;
 
 IF              : 'if'                                  ;
 THEN            : 'then'                                ;
@@ -145,7 +140,6 @@ C_VERT_WS	: Vws+		-> skip	                        ;
 CRBRACE		: RBrace -> popMode, type(RBRACE)           ;
 CPLUS       : Plus                          -> type(PLUS)    ;
 CDOT        : Dot                           -> type(DOT)     ;
-CDEFAULT    : Pipe Hws* Default             -> type(DEFAULT) ;
 CVAR_ID     : '$' NameChar (NameChar|DecDigit)* -> type(VAR_ID) ;
 CROOT       : '$'                           -> type(ROOT)    ;
 

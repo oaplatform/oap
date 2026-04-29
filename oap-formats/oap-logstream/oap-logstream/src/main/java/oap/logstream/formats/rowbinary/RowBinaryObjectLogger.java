@@ -25,6 +25,7 @@
 package oap.logstream.formats.rowbinary;
 
 import com.google.common.base.Preconditions;
+import lombok.experimental.ExtensionMethod;
 import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryRoot;
 import oap.logstream.AbstractLoggerBackend;
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 import static oap.template.ErrorStrategy.ERROR;
@@ -54,6 +56,7 @@ import static oap.template.ErrorStrategy.ERROR;
 /**
  * Class for beans described in the datamodel via oap-logstream protocol.
  */
+@ExtensionMethod( RowBinaryObjectLogger.DictionaryExtensions.class )
 public class RowBinaryObjectLogger {
     public static final String COLLECTION_SUFFIX = "_ARRAY";
     public static final HashMap<String, TypeConfiguration> types = new HashMap<>();
@@ -105,37 +108,37 @@ public class RowBinaryObjectLogger {
 
         if( sortByPath ) {
             fields.sort( ( o1, o2 ) -> {
-                String path1 = o1.<String>getProperty( "path" ).get();
-                String path2 = o2.<String>getProperty( "path" ).get();
-
-                boolean or1 = path1.contains( "|" );
-                boolean or2 = path2.contains( "|" );
-
-                if( or1 || or2 ) {
-                    return Boolean.compare( or1, or2 );
-                }
+                String path1 = o1.getPath();
+                String path2 = o2.getPath();
 
                 return path1.compareTo( path2 );
             } );
         }
 
-        List<Dictionary> rootFields = new ArrayList<>();
+        LinkedHashMap<String, Dictionary> rootFields = new LinkedHashMap<>();
         Map<String, List<Dictionary>> groups = new LinkedHashMap<>();
 
         for( Dictionary field : fields ) {
-            String path = field.<String>getProperty( "path" ).get();
-            boolean isOr = path.contains( "|" );
-            int dotIdx = isOr ? -1 : path.indexOf( '.' );
-            if( dotIdx < 0 ) {
-                rootFields.add( field );
+            String path = field.getPath();
+            int dotIdx = path.indexOf( '.' );
+            int orIndex = path.indexOf( '|' );
+            if( orIndex > 0 ) {
+                String left = path.substring( 0, orIndex );
+                String right = path.substring( orIndex + 1 );
+
+                int lastFieldIndex = left.lastIndexOf( '.' );
+
+                rootFields.put( "if " + ( lastFieldIndex > 0 ? left.substring( 0, lastFieldIndex ) : left ) + " then " + left + " else " + right + " end", field );
+            } else if( dotIdx < 0 ) {
+                rootFields.put( path, field );
             } else {
                 groups.computeIfAbsent( path.substring( 0, dotIdx ), k -> new ArrayList<>() ).add( field );
             }
         }
 
-        for( Dictionary field : rootFields ) {
-            appendField( field, id, null, headers, rowTypes, expressions );
-        }
+        rootFields.forEach( ( path, field ) -> {
+            appendField( path, field, id, null, headers, rowTypes, expressions );
+        } );
 
         for( Map.Entry<String, List<Dictionary>> entry : groups.entrySet() ) {
             String prefix = entry.getKey();
@@ -143,11 +146,12 @@ public class RowBinaryObjectLogger {
             if( group.size() >= 2 ) {
                 expressions.add( "{{% with " + prefix + " }}" );
                 for( Dictionary field : group ) {
-                    appendField( field, id, prefix, headers, rowTypes, expressions );
+                    appendField( field.getPath(), field, id, prefix, headers, rowTypes, expressions );
                 }
                 expressions.add( "{{% end }}" );
             } else {
-                appendField( group.getFirst(), id, null, headers, rowTypes, expressions );
+                Dictionary first = group.getFirst();
+                appendField( first.getPath(), first, id, null, headers, rowTypes, expressions );
             }
         }
 
@@ -166,12 +170,11 @@ public class RowBinaryObjectLogger {
         return new TypedRowBinaryLogger<>( renderer, headers.toArray( new String[0] ), rowTypes.toArray( new byte[0][] ) );
     }
 
-    private void appendField( Dictionary field, String id, @Nullable String stripPrefix,
+    private void appendField( String path, Dictionary field, String id, @Nullable String stripPrefix,
                               List<String> headers, List<byte[]> rowTypes, List<String> expressions ) {
         String name = field.getId();
-        String path = checkStringAndGet( field, "path" );
         String fieldType = checkStringAndGet( field, "type" );
-        Object format = field.getProperty( "format" ).orElse( null );
+        Object format = field.getFormat();
 
         boolean collection = false;
         String idType = fieldType;
@@ -183,7 +186,7 @@ public class RowBinaryObjectLogger {
         TypeConfiguration rowType = types.get( idType );
         Preconditions.checkNotNull( rowType, "unknown type " + idType );
 
-        Object defaultValue = field.getProperty( "default" )
+        Object defaultValue = field.getDefault()
             .orElseThrow( () -> new IllegalStateException( "default not found for " + id + "/" + name ) );
 
         String templateFunction = format != null ? "; format(\"" + format + "\")" : "";
@@ -231,6 +234,21 @@ public class RowBinaryObjectLogger {
         public TypeConfiguration( String javaType, Types templateType ) {
             this.javaType = javaType;
             this.templateType = templateType;
+        }
+    }
+
+    public static class DictionaryExtensions {
+        public static String getPath( Dictionary dictionary ) {
+            return dictionary.<String>getProperty( "path" ).get();
+        }
+
+        @Nullable
+        public static String getFormat( Dictionary dictionary ) {
+            return dictionary.<String>getProperty( "format" ).orElse( null );
+        }
+
+        public static Optional<Object> getDefault( Dictionary dictionary ) {
+            return dictionary.getProperty( "default" );
         }
     }
 

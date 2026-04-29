@@ -12,7 +12,6 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Field access](#field-access)
   - [Null safety](#null-safety)
   - [Default values (`??`)](#default-values-)
-  - [Fallback chains (`| default`)](#fallback-chains--default)
   - [Concatenation](#concatenation)
   - [Math](#math)
   - [If / then / else (inline)](#if--then--else-inline)
@@ -191,15 +190,6 @@ Supported literal types:
 {{ ratio ?? 0.0 }}
 {{ active ?? false }}
 {{ tags ?? [] }}
-```
-
-### Fallback chains (`| default`)
-
-`{{ expr1 | default expr2 | default expr3 }}` — evaluates each expression in order and uses the first non-null, non-empty result. All expressions must resolve to the same type.
-
-```
-{{ primaryUrl | default fallbackUrl }}
-{{ list | default list2 }}
 ```
 
 ### Concatenation
@@ -425,21 +415,13 @@ If `scope` resolves to null, the body expression renders its default value, or e
 
 Renders `n/a` when `child` is null or `child.field` is null.
 
-**Fallback chain in body:**
-
-```
-{{ child{field | default field2} }}
-```
-
-Both alternatives are evaluated against `child` (expanded to `child.field | default child.field2`); the first non-null result is used.
-
 **Root scope (`$`):** prefix any body expression with `$.` to resolve it from the root object instead of the scope:
 
 ```
-{{ child{field | default $.rootField} }}
+{{ child{$.rootField} }}
 ```
 
-When `child.field` is null, `$.rootField` is resolved from the root object.
+Resolves `rootField` from the root object, not from `child`.
 
 **Concatenation inside scope:** when `+` separates two or more items inside `{}`, the result is a string concatenation of all items rendered in the context of `scope`:
 
@@ -476,7 +458,7 @@ Renders `AnoneB` when `child` is null. Renders `A` + field value + `B` when `chi
 
 - `scopePath` is a field path (e.g. `child`, `a.b`). All `{{ expr }}` expressions inside the body are resolved against the type at that path.
 - `$.fieldName` inside the body always resolves from the original root object regardless of nesting depth.
-- Use `??` for literal defaults inside body expressions (`{{ field ?? 'default' }}`). Or-chain fallbacks between two fields (`{{ field | default field2 }}`) are not supported inside block-with bodies.
+- Use `??` for literal defaults inside body expressions (`{{ field ?? 'default' }}`).
 - Blocks may be nested inside other block constructs (`{{% if … }}`, other `{{% with … }}`).
 - The `{{% end }}` tag closes the nearest open block.
 
