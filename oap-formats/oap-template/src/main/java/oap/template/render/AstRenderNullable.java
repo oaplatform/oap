@@ -36,6 +36,15 @@ public class AstRenderNullable extends AstRenderIfElse {
     }
 
     @Override
+    public void render( Render render ) {
+        if( render.nullVerifiedVars.contains( render.field ) ) {
+            renderBodyOnly( render );
+            return;
+        }
+        super.render( render );
+    }
+
+    @Override
     protected String getTrue() {
         return " != null";
     }

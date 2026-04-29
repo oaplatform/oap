@@ -1,6 +1,7 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
 import static oap.template.TemplateAccumulators.STRING;
@@ -16,6 +17,8 @@ public class TemplateEngineOptimizationTest extends AbstractTemplateEngineTest {
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}{{ field }}-{{ field2 }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1-f2" );
+
+        assertThat( StringUtils.countMatches( listener.javaCode, "if " ) ).isEqualTo( 3 );
 
         assertThat( listener.javaCode )
             .containsOnlyOnce( """
@@ -42,6 +45,23 @@ public class TemplateEngineOptimizationTest extends AbstractTemplateEngineTest {
             "{{% with child }}{{ /** c field */ field }}-{{ /** c field2 */field2 }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "f1-f2" );
 
+        assertThat( StringUtils.countMatches( listener.javaCode, "if " ) ).isEqualTo( 3 );
+
         assertThat( listener.javaCode ).containsOnlyOnce( "if ( s_child != null ) {" );
+    }
+
+    @Test
+    public void testBlockIfOptimization() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.field = "1";
+        c.child.field2 = "2";
+        assertThat( getTemplate( testMethodName + "Both", new TypeRef<TestTemplateClass>() {},
+            "{{% if child.field and child.field2 }}{{ child.field }}{{% else }}no{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "1" );
+
+        assertThat( StringUtils.countMatches( listener.javaCode, "if " ) ).isEqualTo( 5 );
+
+        assertThat( listener.javaCode ).containsOnlyOnce( "if ( s_child != null )" );
     }
 }

@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ToString
@@ -50,6 +51,7 @@ public class Render {
     public final String rootField;
     public final String prefix;
     public final Map<String, String> rangeVarMap;
+    public final Set<String> nullVerifiedVars;
     private final AtomicInteger ids;
     private final StringBuilder sb;
     private final ArrayDeque<HashSet<String>> variables;
@@ -61,13 +63,13 @@ public class Render {
                 {
                     this.addFirst( new HashSet<>() );
                 }
-            } );
+            }, Set.of() );
     }
 
     public Render( StringBuilder sb, String templateName, String content, TemplateType parentType, TemplateAccumulator<?, ?, ?> templateAccumulator,
                    String field, String templateAccumulatorName, int tab, AtomicInteger ids, String tryVariable,
                    String booleanIfVar, String scopeVar, String rootField, String prefix,
-                   Map<String, String> rangeVarMap, ArrayDeque<HashSet<String>> variables ) {
+                   Map<String, String> rangeVarMap, ArrayDeque<HashSet<String>> variables, Set<String> nullVerifiedVars ) {
         this.sb = sb;
         this.templateName = templateName;
         this.content = content;
@@ -84,6 +86,7 @@ public class Render {
         this.prefix = prefix;
         this.rangeVarMap = rangeVarMap;
         this.variables = variables;
+        this.nullVerifiedVars = nullVerifiedVars;
     }
 
     public static Render init( String templateName, String content, TemplateType type, TemplateAccumulator<?, ?, ?> acc ) {
@@ -92,32 +95,32 @@ public class Render {
 
     public Render withField( String field ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, variableNameWithPrefix( field ), rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, variableNameWithPrefix( field ), rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withContent( String content ) {
         return new Render( this.sb, this.templateName, content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withTemplateAccumulatorName( String templateAccumulatorName ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render tabInc() {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab + 1, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab + 1, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render tabDec() {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab - 1, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab - 1, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withParentType( TemplateType parentType ) {
         return new Render( this.sb, this.templateName, this.content, parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render n() {
@@ -195,34 +198,39 @@ public class Render {
 
     public Render withTryVariable( String tryVariable ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withBooleanIfVar( String booleanIfVar ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withScopeVar( String scopeVar ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withFieldDirect( String field ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, field, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, field, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withRootField( String rootField ) {
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, nullVerifiedVars );
     }
 
     public Render withRangeVar( String name, String javaName ) {
         var newMap = new HashMap<>( rangeVarMap );
         newMap.put( name, javaName );
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, newMap, variables );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, newMap, variables, nullVerifiedVars );
+    }
+
+    public Render withNullVerified( Set<String> vars ) {
+        return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, variables, vars );
     }
 
     public Render newBlock() {
@@ -233,7 +241,13 @@ public class Render {
         newStack.addFirst( new HashSet<>() );
 
         return new Render( this.sb, this.templateName, this.content, this.parentType, this.templateAccumulator, this.field,
-            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, newStack );
+            this.templateAccumulatorName, this.tab, ids, tryVariable, booleanIfVar, scopeVar, rootField, prefix, rangeVarMap, newStack, nullVerifiedVars );
+    }
+
+    @SuppressWarnings( "checkstyle:ParameterAssignment" )
+    public String peekVariableName( String name ) {
+        name = name.replaceAll( "[\\s,?\\-]", "_" );
+        return variableNameWithPrefix( name );
     }
 
     private String variableNameWithPrefix( String name ) {
