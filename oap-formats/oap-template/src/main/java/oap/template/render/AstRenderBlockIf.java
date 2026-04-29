@@ -28,7 +28,9 @@ import lombok.ToString;
 import oap.template.runtime.RuntimeContext;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @ToString( callSuper = true )
 public class AstRenderBlockIf extends AstRender {
@@ -52,9 +54,11 @@ public class AstRenderBlockIf extends AstRender {
 
         conditionAst.render( render.withBooleanIfVar( condVar ) );
 
+        Set<String> thenNullSafe = collectNullRequired( conditionAst, render );
+
         render.ntab().append( "if ( %s ) {", condVar );
 
-        Render thenBodyRender = render.tabInc().newBlock();
+        Render thenBodyRender = render.tabInc().newBlock().withNullVerified( thenNullSafe );
         for( AstRender child : thenChildren ) {
             child.render( thenBodyRender );
         }
@@ -71,6 +75,19 @@ public class AstRenderBlockIf extends AstRender {
 
             render.ntab().append( "}" );
         }
+    }
+
+    private static Set<String> collectNullRequired( AstRender node, Render render ) {
+        Set<String> result = new HashSet<>();
+        if( node instanceof AstRenderField f
+                && f.children.size() == 1
+                && f.children.getFirst() instanceof AstRenderNullable ) {
+            result.add( render.peekVariableName( f.fieldName ) );
+        } else if( node instanceof AstRenderConditionAnd and ) {
+            result.addAll( collectNullRequired( and.left, render ) );
+            result.addAll( collectNullRequired( and.right, render ) );
+        }
+        return result;
     }
 
     @Override

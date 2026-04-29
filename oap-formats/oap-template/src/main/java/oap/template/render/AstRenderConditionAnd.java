@@ -29,8 +29,8 @@ import oap.template.runtime.RuntimeContext;
 
 @ToString( callSuper = true )
 public class AstRenderConditionAnd extends AstRender {
-    private final AstRender left;
-    private final AstRender right;
+    final AstRender left;
+    final AstRender right;
 
     public AstRenderConditionAnd( TemplateType type, AstRender left, AstRender right ) {
         super( type );
@@ -40,6 +40,51 @@ public class AstRenderConditionAnd extends AstRender {
 
     @Override
     public void render( Render render ) {
+        String sharedField = sharedTopLevelField();
+        if( sharedField != null )
+            renderMerged( render, sharedField );
+        else
+            renderDefault( render );
+    }
+
+    private String sharedTopLevelField() {
+        String lf = topLevelFieldName( left );
+        String rf = topLevelFieldName( right );
+        return lf != null && lf.equals( rf ) ? lf : null;
+    }
+
+    private static String topLevelFieldName( AstRender node ) {
+        if( !( node instanceof AstRenderField f ) ) return null;
+        if( f.children.size() != 1 ) return null;
+        if( !( f.children.getFirst() instanceof AstRenderNullable ) ) return null;
+        return f.fieldName;
+    }
+
+    private void renderMerged( Render render, String fieldName ) {
+        String leftVar = render.newVariable();
+        String rightVar = render.newVariable();
+        render.ntab().append( "boolean %s = false;", leftVar );
+        render.ntab().append( "boolean %s = false;", rightVar );
+
+        AstRenderField leftField = ( AstRenderField ) left;
+        AstRenderNullable leftNullable = ( AstRenderNullable ) leftField.children.getFirst();
+        AstRenderField rightField = ( AstRenderField ) right;
+        AstRenderNullable rightNullable = ( AstRenderNullable ) rightField.children.getFirst();
+
+        Render.NewVariable sv = render.newVariable( fieldName );
+        if( sv.isNew )
+            render.ntab().append( "%s %s = %s.%s;", leftField.type.getTypeName(), sv.name, render.field, fieldName );
+
+        render.ntab().append( "if ( %s != null ) {", sv.name );
+        Render inner = render.withField( sv.name ).withParentType( leftField.type ).tabInc();
+        leftNullable.renderBodyOnly( inner.withBooleanIfVar( leftVar ).newBlock() );
+        rightNullable.renderBodyOnly( inner.withBooleanIfVar( rightVar ).newBlock() );
+        render.ntab().append( "}" );
+
+        render.ntab().append( "%s = %s && %s;", render.booleanIfVar, leftVar, rightVar );
+    }
+
+    private void renderDefault( Render render ) {
         String leftVar = render.newVariable();
         String rightVar = render.newVariable();
         render.ntab().append( "boolean %s = false;", leftVar );
