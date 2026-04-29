@@ -72,7 +72,6 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static oap.template.ErrorStrategy.IGNORE;
 import static org.apache.commons.lang3.StringUtils.stripEnd;
 import static org.apache.commons.lang3.StringUtils.stripStart;
 
@@ -193,51 +192,20 @@ public class TemplateAstUtils {
     private static AstRender toAst( Expression expression, TemplateType templateType, TemplateType rootTemplateType, String castType, String defaultValue,
                                     Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy,
                                     Map<String, TemplateType> rangeVarTypes ) throws ClassNotFoundException {
-        ArrayList<AstRender> orAst = new ArrayList<AstRender>();
+        Chain list = new Chain();
 
-        TemplateType lastTemplateType = null;
+        if( expression.comment != null ) list.add( new AstRenderComment( templateType, expression.comment ) );
 
-        for( int i = 0; i < expression.or.size(); i++ ) {
-            Exprs item = expression.or.get( i );
-
+        if( !expression.or.isEmpty() ) {
+            Exprs item = expression.or.getFirst();
             TemplateType effectiveType = item.rootScoped ? rootTemplateType
                 : ( item.varName != null && rangeVarTypes.containsKey( item.varName ) )
                     ? rangeVarTypes.get( item.varName )
                     : templateType;
             TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( effectiveType, item, errorStrategy, rangeVarTypes );
-
-            ErrorStrategy itemErrorStrategy = i < expression.or.size() - 1 ? IGNORE : errorStrategy;
-            AstRender itemAst = TemplateAstUtils.toAst( item,
-                expression.or.size() == 1 ? expression.function : null,
-                effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, itemErrorStrategy, rangeVarTypes );
-            orAst.add( itemAst );
-
-            TemplateType itemTemplateType = findLastsTemplateType( itemAst );
-            if( lastTemplateType != null && !lastTemplateType.equals( itemTemplateType ) ) {
-                throw new TemplateException( "last " + lastTemplateType + " current " + itemTemplateType );
-            }
-
-            lastTemplateType = itemTemplateType;
-        }
-
-        Chain list = new Chain();
-
-        if( expression.comment != null ) list.add( new AstRenderComment( templateType, expression.comment ) );
-
-        if( orAst.size() > 1 ) {
-            FieldType castFieldType = FieldType.parse( castType != null ? castType : lastTemplateType.getTypeName() );
-
-            AstRenderOr ast = new AstRenderOr( templateType, orAst );
-            ast.elseAstRender = new AstRenderPrintValue( lastTemplateType, defaultValue, castFieldType );
-            if( expression.function != null ) {
-                AstRender astRenderFunction = getFunction( expression.function.name, expression.function.arguments, builtInFunction, errorStrategy );
-                ast.addChild( astRenderFunction );
-                astRenderFunction.addChild( new AstRenderPrintField( templateType, castFieldType ) );
-            } else
-                ast.addChild( new AstRenderPrintField( templateType, null ) );
-            list.add( ast );
-        } else if( !orAst.isEmpty() ) {
-            list.add( orAst.getFirst() );
+            AstRender itemAst = TemplateAstUtils.toAst( item, expression.function,
+                effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy, rangeVarTypes );
+            list.add( itemAst );
         }
 
         AstRender mainAst = list.head();

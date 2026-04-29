@@ -44,17 +44,6 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
     }
 
     @Test
-    public void testInlineWithFallback() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.child = new TestTemplateClass();
-        c.child.field = null;
-        c.child.field2 = "fb";
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "{{ child{field | default field2} }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "fb" );
-    }
-
-    @Test
     public void testInlineWithNullScope() {
         TestTemplateClass c = new TestTemplateClass();
         c.child = null;
@@ -111,17 +100,6 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
         c.child.field = "scoped-val";
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% with child }}{{ $.field }}{{% end }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "root-val" );
-    }
-
-    @Test
-    public void testInlineWithRootScopeFallback() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field = "root-val";
-        c.child = new TestTemplateClass();
-        c.child.field = null;
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
-            "{{ child{field | default $.field} }}", STRING, null ).render( c ).get() )
             .isEqualTo( "root-val" );
     }
 

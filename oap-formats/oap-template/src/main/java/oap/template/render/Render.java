@@ -178,7 +178,7 @@ public class Render {
 
     @SuppressWarnings( { "checkstyle:ParameterAssignment", "checkstyle:OverloadMethodsDeclarationOrder" } )
     public NewVariable newVariable( String name ) {
-        name = name.replaceAll( "[\\s,-?]", "_" );
+        name = name.replaceAll( "[\\s,?\\-]", "_" );
 
         String fullName = variableNameWithPrefix( name );
         Iterator<HashSet<String>> it = variables.descendingIterator();

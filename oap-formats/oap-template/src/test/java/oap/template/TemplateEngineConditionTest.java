@@ -56,6 +56,24 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
     }
 
     @Test
+    public void testIfListNotEmpty() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.list = List.of( 1 );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if list then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "val" );
+    }
+
+    @Test
+    public void testIfListEmpty() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = "val";
+        c.list = List.of();
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if list then field end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "" );
+    }
+
+    @Test
     public void testIfElseConditionFalse() {
         TestTemplateClass c = new TestTemplateClass();
         c.field = "val";
@@ -211,6 +229,18 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{% if booleanField }}{{ field }}{{% else }}{{ field2 }}{{% end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "else-val" );
+    }
+
+    @Test
+    public void testBlockIfElseList() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.list = List.of( 1 );
+        c.child.listString = List.of( "1" );
+        c.field2 = "else-val";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{% if child.listString }}{{ child.listString }}{{% else }}{{ child.list }}{{% end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "['1']" );
     }
 
     @Test

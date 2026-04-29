@@ -210,16 +210,6 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 */
 	void exitFunctionArg(TemplateGrammarExpression.FunctionArgContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link TemplateGrammarExpression#orExprs}.
-	 * @param ctx the parse tree
-	 */
-	void enterOrExprs(TemplateGrammarExpression.OrExprsContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link TemplateGrammarExpression#orExprs}.
-	 * @param ctx the parse tree
-	 */
-	void exitOrExprs(TemplateGrammarExpression.OrExprsContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#exprs}.
 	 * @param ctx the parse tree
 	 */

@@ -186,24 +186,6 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     }
 
     @Test
-    public void testOrEmptyString() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.field2 = "f2";
-
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ field | default field2 }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "f2" );
-    }
-
-    @Test
-    public void testOrCollections() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.list2 = List.of( 2, 3 );
-
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ list | default list2 }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "[2,3]" );
-    }
-
-    @Test
     public void testOptional() {
         TestTemplateClass c = new TestTemplateClass();
 
@@ -358,22 +340,6 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     public void testErrorSyntax() {
         assertThatThrownBy( () -> getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "id={{ v; toUpperCase()", STRING, ERROR, null ) )
             .isInstanceOf( TemplateException.class );
-    }
-
-    @Test
-    public void testExt() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.ext2 = new TestTemplateClassExt( "ev" );
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ ext.a | default ext2.a }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "ev" );
-    }
-
-    @Test
-    public void testDefaultExt() {
-        TestTemplateClass c = new TestTemplateClass();
-        c.ext3.a = "123";
-        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ ext2.a | default ext3.a }}", STRING, null ).render( c ).get() )
-            .isEqualTo( "123" );
     }
 
     @Test

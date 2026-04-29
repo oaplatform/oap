@@ -28,7 +28,6 @@ import lombok.ToString;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 @ToString
@@ -84,14 +83,8 @@ public class Expression {
                 sb.append( "└── " ).append( bodyExprs.print() ).append( '\n' );
         }
         if( !or.isEmpty() ) {
-            sb.append( or.size() > 1 ? "OR\n" : "ROOT\n" );
-
-            Iterator<Exprs> it = or.iterator();
-            while( it.hasNext() ) {
-                Exprs orItem = it.next();
-                sb.append( it.hasNext() ? "├── " : "└── " ).append( orItem.print() );
-            }
-
+            sb.append( "ROOT\n" );
+            sb.append( "└── " ).append( or.getFirst().print() );
             if( function != null ) sb.append( "FUNCTION " ).append( function.print() ).append( '\n' );
         }
         return sb.toString();

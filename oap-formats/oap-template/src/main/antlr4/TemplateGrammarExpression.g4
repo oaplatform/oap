@@ -91,9 +91,8 @@ exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
     : topLevelConcat {
         $ret.add( $topLevelConcat.ret );
       }
-    | exprs orExprs {
+    | exprs {
         $ret.add( $exprs.ret );
-        $ret.addAll( $orExprs.ret );
       }
     ;
 
@@ -167,11 +166,6 @@ functionArg returns [String ret]
     | MINUS FLOAT { $ret = "-" + $FLOAT.text; }
     | SSTRING { $ret = sStringToDString( $SSTRING.text ); }
     | DSTRING { $ret = $DSTRING.text; }
-    ;
-
-orExprs returns [ArrayList<Exprs> ret = new ArrayList<Exprs>() ]
-    : (DEFAULT exprs { $ret.add( $exprs.ret ); } ( DEFAULT exprs { $ret.add( $exprs.ret ); })*)
-    |
     ;
 
 exprs returns [Exprs ret = new Exprs()]

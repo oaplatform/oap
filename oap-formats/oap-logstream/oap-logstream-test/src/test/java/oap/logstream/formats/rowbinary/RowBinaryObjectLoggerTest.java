@@ -30,6 +30,7 @@ import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.testng.annotations.Test;
 
 import javax.annotation.Nullable;
@@ -67,12 +68,12 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                     default = 1233
                   }
                   aaa {
-                    path = a | default aa
+                    path = a|aa
                     type = STRING
                     default = ""
                   }
                   list {
-                    path = data1.list | default data2.list
+                    path = data1.list|data2.list
                     type = STRING_ARRAY
                     default = []
                   }
@@ -129,7 +130,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                     default = ""
                   }
                   or {
-                    path = "if a then a else aa end"
+                    path = "a|aa"
                     type = STRING
                     default = ""
                   }
@@ -167,9 +168,16 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         logger.log( testData, "prefix", Map.of(), "mylog" );
 
-        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( _ -> true );
+        MutableObject<String[]> headers = new MutableObject<>();
 
-        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", 1, "a1", "a2", "aa2", 2 ) ) );
+        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( lid -> {
+            headers.setValue( lid.headers );
+            return true;
+        } );
+
+        assertThat( headers.get() ).isEqualTo( new String[] {"a", "or", "b", "a2", "aa2", "b2"} );
+
+        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", "a1", 1, "a2", "aa2", 2 ) ) );
 
         assertThat( listener.javaCode )
             .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"

@@ -255,18 +255,6 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterOrExprs(TemplateGrammarExpression.OrExprsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitOrExprs(TemplateGrammarExpression.OrExprsContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterExprs(TemplateGrammarExpression.ExprsContext ctx) { }
 	/**
 	 * {@inheritDoc}
