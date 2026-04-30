@@ -44,6 +44,17 @@ public class TemplateEngineWithTest extends AbstractTemplateEngineTest {
     }
 
     @Test
+    public void testInlineWithConcatenation() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.field = "val";
+        c.child.field2 = "val2";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child{field + '-' +  1 + '-' + field2 } }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "val-1-val2" );
+    }
+
+    @Test
     public void testInlineWithNullScope() {
         TestTemplateClass c = new TestTemplateClass();
         c.child = null;

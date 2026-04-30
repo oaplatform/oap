@@ -184,6 +184,8 @@ public class RowBinaryObjectLogger {
                 : defaultValue;
 
         String exprPath = stripPrefix != null ? path.substring( stripPrefix.length() + 1 ) : path;
+        if( exprPath.startsWith( "{" ) && exprPath.endsWith( "}" ) )
+            exprPath = exprPath.substring( 1, exprPath.length() - 1 ).trim();
         expressions.add( "{{ /* " + comment + " */" + toJavaType( rowType.javaType, collection ) + exprPath + " ?? " + pDefaultValue + templateFunction + " }}" );
         headers.add( name );
         if( collection ) {

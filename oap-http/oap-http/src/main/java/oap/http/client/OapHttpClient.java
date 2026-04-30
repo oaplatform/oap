@@ -1,5 +1,6 @@
 package oap.http.client;
 
+import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.BaseUnits;
@@ -28,6 +29,7 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
+import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.CUSTOM;
 import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.RANDOM;
 
 public class OapHttpClient {
@@ -53,11 +55,13 @@ public class OapHttpClient {
         public long connectionTimeout = Dates.s( 10 );
         public boolean followRedirects = false;
         public int maxConnectionsPerDestination = 64;
-        public boolean dnsjava = false;
         private String metrics;
         private HttpCookieStore cookieStore;
-        private ConnectionPool.Factory connectionPoolFactory;
+
         private ConnectionPoolFactoryType connectionPoolFactoryType;
+        private ConnectionPool.Factory connectionPoolFactory;
+
+        private SocketAddressResolverType socketAddressResolverType;
         private SocketAddressResolver socketAddressResolver;
 
         public OapHttpClientBuilder transport( AbstractConnectorHttpClientTransport httpClientTransport ) {
@@ -84,12 +88,6 @@ public class OapHttpClient {
             return this;
         }
 
-        public OapHttpClientBuilder dnsjava( boolean enabled ) {
-            this.dnsjava = enabled;
-
-            return this;
-        }
-
         public OapHttpClientBuilder metrics( String name ) {
             this.metrics = name;
 
@@ -102,19 +100,37 @@ public class OapHttpClient {
             return this;
         }
 
-        public OapHttpClientBuilder withConnectionPoolFactory( ConnectionPool.Factory connectionPoolFactory ) {
+        public OapHttpClientBuilder withConnectionPoolFactoryType( ConnectionPoolFactoryType connectionPoolFactoryType ) {
+            Preconditions.checkArgument( connectionPoolFactoryType != CUSTOM, "use withConnectionPoolFactoryType(CUSTOM, ConnectionPool.Factory)" );
+
+            this.connectionPoolFactoryType = connectionPoolFactoryType;
+            this.connectionPoolFactory = null;
+
+            return this;
+        }
+
+        public OapHttpClientBuilder withConnectionPoolFactoryType( ConnectionPoolFactoryType connectionPoolFactoryType, ConnectionPool.Factory connectionPoolFactory ) {
+            Preconditions.checkArgument( connectionPoolFactoryType != CUSTOM, "use withConnectionPoolFactoryType(ConnectionPoolFactoryType)" );
+
+            this.connectionPoolFactoryType = connectionPoolFactoryType;
             this.connectionPoolFactory = connectionPoolFactory;
 
             return this;
         }
 
-        public OapHttpClientBuilder withConnectionPoolFactoryType( ConnectionPoolFactoryType connectionPoolFactoryType ) {
-            this.connectionPoolFactoryType = connectionPoolFactoryType;
+        public OapHttpClientBuilder withSocketAddressResolver( SocketAddressResolverType type ) {
+            Preconditions.checkArgument( type != SocketAddressResolverType.CUSTOM, "use withSocketAddressResolver( CUSTOM, SocketAddressResolver )" );
+
+            this.socketAddressResolverType = type;
+            this.socketAddressResolver = null;
 
             return this;
         }
 
-        public OapHttpClientBuilder withSocketAddressResolver( SocketAddressResolver socketAddressResolver ) {
+        public OapHttpClientBuilder withSocketAddressResolver( SocketAddressResolverType type, SocketAddressResolver socketAddressResolver ) {
+            Preconditions.checkArgument( type == SocketAddressResolverType.CUSTOM, "use withSocketAddressResolver( SocketAddressResolverType )" );
+
+            this.socketAddressResolverType = SocketAddressResolverType.CUSTOM;
             this.socketAddressResolver = socketAddressResolver;
 
             return this;
@@ -134,23 +150,27 @@ public class OapHttpClient {
                 httpClient.setHttpCookieStore( cookieStore );
             }
 
-            if( dnsjava ) {
-                httpClient.setSocketAddressResolver( ( host, port, context, promise ) -> {
-                    try {
-                        if( "localhost".equals( host ) ) {
-                            promise.succeeded( List.of( new InetSocketAddress( InetAddress.getLocalHost(), port ) ) );
-                            return;
+            switch( socketAddressResolverType ) {
+                case RANDOM -> httpClient.setSocketAddressResolver( new RandomSocketAddressResolver() );
+                case ROUND_ROBIN -> httpClient.setSocketAddressResolver( new RoundRobinSocketAddressResolver() );
+                case DNS_JAVA -> {
+                    httpClient.setSocketAddressResolver( ( host, port, context, promise ) -> {
+                        try {
+                            if( "localhost".equals( host ) ) {
+                                promise.succeeded( List.of( new InetSocketAddress( InetAddress.getLocalHost(), port ) ) );
+                                return;
+                            }
+
+                            InetAddress[] inetAddresses = Address.getAllByName( host );
+
+                            promise.succeeded( Lists.map( inetAddresses, ia -> new InetSocketAddress( ia, port ) ) );
+                        } catch( UnknownHostException e ) {
+                            promise.failed( e );
                         }
-
-                        InetAddress[] inetAddresses = Address.getAllByName( host );
-
-                        promise.succeeded( Lists.map( inetAddresses, ia -> new InetSocketAddress( ia, port ) ) );
-                    } catch( UnknownHostException e ) {
-                        promise.failed( e );
-                    }
-                } );
-            } else if( socketAddressResolver != null ) {
-                httpClient.setSocketAddressResolver( socketAddressResolver );
+                    } );
+                }
+                case CUSTOM -> httpClient.setSocketAddressResolver( socketAddressResolver );
+                default -> throw new IllegalStateException( "Unknown SocketAddressResolverType: " + socketAddressResolverType );
             }
 
             if( metrics != null ) {
@@ -174,15 +194,11 @@ public class OapHttpClient {
 
             httpClient.getProtocolHandlers().remove( WWWAuthenticationProtocolHandler.NAME );
 
-            if( connectionPoolFactory != null ) {
-                httpClient.getHttpClientTransport().setConnectionPoolFactory( connectionPoolFactory );
-            }
-
-            if( connectionPoolFactoryType != null ) {
-                httpClient.getHttpClientTransport().setConnectionPoolFactory( destination -> switch( this.connectionPoolFactoryType ) {
-                    case RANDOM -> new RandomConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 );
-                    case ROUND_ROBIN -> new RoundRobinConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 );
-                } );
+            switch( connectionPoolFactoryType ) {
+                case RANDOM -> httpClient.getHttpClientTransport().setConnectionPoolFactory( destination -> new RandomConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 ) );
+                case ROUND_ROBIN -> httpClient.getHttpClientTransport().setConnectionPoolFactory( destination -> new RoundRobinConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 ) );
+                case CUSTOM -> httpClient.getHttpClientTransport().setConnectionPoolFactory( connectionPoolFactory );
+                default -> throw new IllegalStateException( "Unknown ConnectionPoolFactoryType: " + connectionPoolFactoryType );
             }
 
             return httpClient;
@@ -190,7 +206,15 @@ public class OapHttpClient {
 
         public enum ConnectionPoolFactoryType {
             RANDOM,
-            ROUND_ROBIN
+            ROUND_ROBIN,
+            CUSTOM
+        }
+
+        public enum SocketAddressResolverType {
+            RANDOM,
+            ROUND_ROBIN,
+            DNS_JAVA,
+            CUSTOM
         }
 
         public static class ClientConnectorConnectListener implements ClientConnector.ConnectListener {

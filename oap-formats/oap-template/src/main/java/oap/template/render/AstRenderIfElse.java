@@ -92,7 +92,7 @@ public abstract class AstRenderIfElse extends AstRender {
             newRender = newRender.withField( iv );
         }
         for( AstRender c : children ) {
-            c.render( newRender.newBlock() );
+            c.render( newRender );
         }
     }
 

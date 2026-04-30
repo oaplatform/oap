@@ -61,9 +61,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @Slf4j
 public class S3MockFixture extends AbstractFixture<S3MockFixture> {
-    private static final String VERSION = "3.12.0";
-
-    private static final int S3MOCK_DEFAULT_HTTP_PORT = 9090;
+    private static final String VERSION = "4.14";
 
     @Getter
     private final int httpPort;
@@ -92,12 +90,12 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
             Ports.Binding.bindPort( httpPort ),
             new ExposedPort( 4566 ) );
 
-        localStackContainer = new LocalStackContainer( DockerImageName.parse( "localstack/localstack:4.0.3" ) )
+        localStackContainer = new LocalStackContainer( DockerImageName.parse( "localstack/localstack:" + VERSION ) )
             .withServices( LocalStackContainer.Service.S3 )
             .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) );
         localStackContainer.start();
 
-        final S3Client s3 = getS3();
+        S3Client s3 = getS3();
 
         for( String bucket : initialBuckets ) {
             CreateBucketRequest createBucketRequest = CreateBucketRequest.builder().bucket( bucket ).build();

@@ -216,7 +216,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                     default = ""
                   }
                   aa2 {
-                    path = subData.subData.aa
+                    path = "subData.subData.{ a + 'x' + aa }"
                     type = STRING
                     default = ""
                   }
@@ -256,7 +256,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         assertThat( headers.get() ).isEqualTo( new String[] {"a", "a1", "a2", "aa2"} );
 
-        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", "", "a2", "aa2" ) ) );
+        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", "", "a2", "a2xaa2" ) ) );
 
         assertThat( listener.javaCode )
             .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
@@ -264,7 +264,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                 + "{{ /* model MODEL1 id a1 path subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
                 + "{{% with subData }}"
                 + "{{ /* model MODEL1 id a2 path subData.subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
-                + "{{ /* model MODEL1 id aa2 path subData.subData.aa type STRING defaultValue '' */<java.lang.String>aa ?? \"\" }}"
+                + "{{ /* model MODEL1 id aa2 path subData.subData.{ a + 'x' + aa } type STRING defaultValue '' */<java.lang.String>a + 'x' + aa ?? \"\" }}"
                 + "{{% end }}"
                 + "{{% end }}" );
     }
