@@ -15,6 +15,7 @@ import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.xbill.DNS.Address;
@@ -57,6 +58,7 @@ public class OapHttpClient {
         private HttpCookieStore cookieStore;
         private ConnectionPool.Factory connectionPoolFactory;
         private ConnectionPoolFactoryType connectionPoolFactoryType;
+        private SocketAddressResolver socketAddressResolver;
 
         public OapHttpClientBuilder transport( AbstractConnectorHttpClientTransport httpClientTransport ) {
             this.httpClientTransport = httpClientTransport;
@@ -112,6 +114,12 @@ public class OapHttpClient {
             return this;
         }
 
+        public OapHttpClientBuilder withSocketAddressResolver( SocketAddressResolver socketAddressResolver ) {
+            this.socketAddressResolver = socketAddressResolver;
+
+            return this;
+        }
+
         @SneakyThrows
         public HttpClient build() {
             HttpClient httpClient = httpClientTransport != null ? new HttpClient( httpClientTransport ) : new HttpClient();
@@ -141,6 +149,8 @@ public class OapHttpClient {
                         promise.failed( e );
                     }
                 } );
+            } else if( socketAddressResolver != null ) {
+                httpClient.setSocketAddressResolver( socketAddressResolver );
             }
 
             if( metrics != null ) {
