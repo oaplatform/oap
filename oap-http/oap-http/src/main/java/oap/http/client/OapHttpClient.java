@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
 import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.CUSTOM;
+import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.DEFAULT;
 import static oap.http.client.OapHttpClient.OapHttpClientBuilder.ConnectionPoolFactoryType.RANDOM;
 
 public class OapHttpClient {
@@ -58,10 +59,10 @@ public class OapHttpClient {
         private String metrics;
         private HttpCookieStore cookieStore;
 
-        private ConnectionPoolFactoryType connectionPoolFactoryType;
+        private ConnectionPoolFactoryType connectionPoolFactoryType = DEFAULT;
         private ConnectionPool.Factory connectionPoolFactory;
 
-        private SocketAddressResolverType socketAddressResolverType;
+        private SocketAddressResolverType socketAddressResolverType = SocketAddressResolverType.DEFAULT;
         private SocketAddressResolver socketAddressResolver;
 
         public OapHttpClientBuilder transport( AbstractConnectorHttpClientTransport httpClientTransport ) {
@@ -151,6 +152,8 @@ public class OapHttpClient {
             }
 
             switch( socketAddressResolverType ) {
+                case DEFAULT -> {
+                }
                 case RANDOM -> httpClient.setSocketAddressResolver( new RandomSocketAddressResolver() );
                 case ROUND_ROBIN -> httpClient.setSocketAddressResolver( new RoundRobinSocketAddressResolver() );
                 case DNS_JAVA -> {
@@ -195,6 +198,9 @@ public class OapHttpClient {
             httpClient.getProtocolHandlers().remove( WWWAuthenticationProtocolHandler.NAME );
 
             switch( connectionPoolFactoryType ) {
+                case DEFAULT -> {
+
+                }
                 case RANDOM -> httpClient.getHttpClientTransport().setConnectionPoolFactory( destination -> new RandomConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 ) );
                 case ROUND_ROBIN -> httpClient.getHttpClientTransport().setConnectionPoolFactory( destination -> new RoundRobinConnectionPool( destination, httpClient.getMaxConnectionsPerDestination(), 1 ) );
                 case CUSTOM -> httpClient.getHttpClientTransport().setConnectionPoolFactory( connectionPoolFactory );
@@ -205,12 +211,14 @@ public class OapHttpClient {
         }
 
         public enum ConnectionPoolFactoryType {
+            DEFAULT,
             RANDOM,
             ROUND_ROBIN,
             CUSTOM
         }
 
         public enum SocketAddressResolverType {
+            DEFAULT,
             RANDOM,
             ROUND_ROBIN,
             DNS_JAVA,
