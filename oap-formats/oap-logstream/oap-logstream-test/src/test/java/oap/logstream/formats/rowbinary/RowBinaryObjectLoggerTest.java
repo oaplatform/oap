@@ -115,7 +115,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
               MODEL1 {
                 values {
                   a2 {
-                    path = subData.a
+                    path = subData.subData.a
                     type = STRING
                     default = ""
                   }
@@ -125,7 +125,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                     default = ""
                   }
                   aa2 {
-                    path = subData.aa
+                    path = subData.subData.aa
                     type = STRING
                     default = ""
                   }
@@ -140,7 +140,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                     default = 0
                   }
                   b2 {
-                    path = subData.b
+                    path = subData.subData.b
                     type = INTEGER
                     default = 0
                   }
@@ -162,9 +162,12 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         TestData testData2 = new TestData();
         testData.subData = testData2;
-        testData2.a = "a2";
-        testData2.aa = "aa2";
-        testData2.b = 2;
+
+        TestData testData3 = new TestData();
+        testData2.subData = testData3;
+        testData3.a = "a2";
+        testData3.aa = "aa2";
+        testData3.b = 2;
 
         logger.log( testData, "prefix", Map.of(), "mylog" );
 
@@ -183,10 +186,10 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
             .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
                 + "{{ /* model MODEL1 id or path if a then a else aa end type STRING defaultValue '' */<java.lang.String>if a then a else aa end ?? \"\" }}"
                 + "{{ /* model MODEL1 id b path b type INTEGER defaultValue '0' */<java.lang.Integer>b ?? 0 }}"
-                + "{{% with subData }}"
-                + "{{ /* model MODEL1 id a2 path subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
-                + "{{ /* model MODEL1 id aa2 path subData.aa type STRING defaultValue '' */<java.lang.String>aa ?? \"\" }}"
-                + "{{ /* model MODEL1 id b2 path subData.b type INTEGER defaultValue '0' */<java.lang.Integer>b ?? 0 }}"
+                + "{{% with subData.subData }}"
+                + "{{ /* model MODEL1 id a2 path subData.subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
+                + "{{ /* model MODEL1 id aa2 path subData.subData.aa type STRING defaultValue '' */<java.lang.String>aa ?? \"\" }}"
+                + "{{ /* model MODEL1 id b2 path subData.subData.b type INTEGER defaultValue '0' */<java.lang.Integer>b ?? 0 }}"
                 + "{{% end }}" );
     }
 

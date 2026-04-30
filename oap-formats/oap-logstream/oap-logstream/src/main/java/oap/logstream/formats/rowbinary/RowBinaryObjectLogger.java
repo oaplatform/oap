@@ -44,6 +44,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -141,12 +142,12 @@ public class RowBinaryObjectLogger {
         } );
 
         for( Map.Entry<String, List<Dictionary>> entry : groups.entrySet() ) {
-            String prefix = entry.getKey();
             List<Dictionary> group = entry.getValue();
             if( group.size() >= 2 ) {
-                expressions.add( "{{% with " + prefix + " }}" );
+                String commonPrefix = longestCommonPathPrefix( group );
+                expressions.add( "{{% with " + commonPrefix + " }}" );
                 for( Dictionary field : group ) {
-                    appendField( field.getPath(), field, id, prefix, headers, rowTypes, expressions );
+                    appendField( field.getPath(), field, id, commonPrefix, headers, rowTypes, expressions );
                 }
                 expressions.add( "{{% end }}" );
             } else {
@@ -203,6 +204,19 @@ public class RowBinaryObjectLogger {
         } else {
             rowTypes.add( new byte[] { rowType.templateType.id } );
         }
+    }
+
+    private static String longestCommonPathPrefix( List<Dictionary> fields ) {
+        String[] first = fields.get( 0 ).getPath().split( "\\." );
+        int common = first.length - 1;
+        for( int i = 1; i < fields.size() && common > 0; i++ ) {
+            String[] other = fields.get( i ).getPath().split( "\\." );
+            int max = Math.min( common, other.length - 1 );
+            int c = 0;
+            while( c < max && first[c].equals( other[c] ) ) c++;
+            common = c;
+        }
+        return String.join( ".", Arrays.copyOf( first, common ) );
     }
 
     public boolean isLoggingAvailable() {
