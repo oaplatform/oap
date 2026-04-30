@@ -117,7 +117,7 @@ public class RowBinaryObjectLogger {
         }
 
         LinkedHashMap<String, Dictionary> rootFields = new LinkedHashMap<>();
-        Map<String, List<Dictionary>> groups = new LinkedHashMap<>();
+        List<Dictionary> nestedFields = new ArrayList<>();
 
         for( Dictionary field : fields ) {
             String path = field.getPath();
@@ -133,7 +133,7 @@ public class RowBinaryObjectLogger {
             } else if( dotIdx < 0 ) {
                 rootFields.put( path, field );
             } else {
-                groups.computeIfAbsent( path.substring( 0, dotIdx ), k -> new ArrayList<>() ).add( field );
+                nestedFields.add( field );
             }
         }
 
@@ -141,20 +141,7 @@ public class RowBinaryObjectLogger {
             appendField( path, field, id, null, headers, rowTypes, expressions );
         } );
 
-        for( Map.Entry<String, List<Dictionary>> entry : groups.entrySet() ) {
-            List<Dictionary> group = entry.getValue();
-            if( group.size() >= 2 ) {
-                String commonPrefix = longestCommonPathPrefix( group );
-                expressions.add( "{{% with " + commonPrefix + " }}" );
-                for( Dictionary field : group ) {
-                    appendField( field.getPath(), field, id, commonPrefix, headers, rowTypes, expressions );
-                }
-                expressions.add( "{{% end }}" );
-            } else {
-                Dictionary first = group.getFirst();
-                appendField( first.getPath(), first, id, null, headers, rowTypes, expressions );
-            }
-        }
+        processNestedFields( nestedFields, null, id, headers, rowTypes, expressions );
 
         String template = String.join( "", expressions );
 
@@ -203,6 +190,41 @@ public class RowBinaryObjectLogger {
             rowTypes.add( new byte[] { Types.LIST.id, rowType.templateType.id } );
         } else {
             rowTypes.add( new byte[] { rowType.templateType.id } );
+        }
+    }
+
+    private void processNestedFields( List<Dictionary> fields, @Nullable String currentPrefix,
+                                      String id, List<String> headers, List<byte[]> rowTypes, List<String> expressions ) {
+        List<Dictionary> rootAtLevel = new ArrayList<>();
+        Map<String, List<Dictionary>> subgroups = new LinkedHashMap<>();
+
+        for( Dictionary field : fields ) {
+            String absPath = field.getPath();
+            String relPath = currentPrefix != null ? absPath.substring( currentPrefix.length() + 1 ) : absPath;
+            int dotIdx = relPath.indexOf( '.' );
+            if( dotIdx < 0 ) {
+                rootAtLevel.add( field );
+            } else {
+                subgroups.computeIfAbsent( relPath.substring( 0, dotIdx ), k -> new ArrayList<>() ).add( field );
+            }
+        }
+
+        for( Dictionary field : rootAtLevel ) {
+            appendField( field.getPath(), field, id, currentPrefix, headers, rowTypes, expressions );
+        }
+
+        for( List<Dictionary> group : subgroups.values() ) {
+            if( group.size() >= 2 ) {
+                String commonAbsPrefix = longestCommonPathPrefix( group );
+                String relWith = currentPrefix != null
+                    ? commonAbsPrefix.substring( currentPrefix.length() + 1 )
+                    : commonAbsPrefix;
+                expressions.add( "{{% with " + relWith + " }}" );
+                processNestedFields( group, commonAbsPrefix, id, headers, rowTypes, expressions );
+                expressions.add( "{{% end }}" );
+            } else {
+                appendField( group.get( 0 ).getPath(), group.get( 0 ), id, currentPrefix, headers, rowTypes, expressions );
+            }
         }
     }
 

@@ -193,6 +193,82 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
                 + "{{% end }}" );
     }
 
+    @Test
+    public void testOptimization2() {
+        String datamodel = """
+            name = model
+            values {
+              MODEL1 {
+                values {
+                  a1 {
+                    path = subData.a
+                    type = STRING
+                    default = ""
+                  }
+                  a2 {
+                    path = subData.subData.a
+                    type = STRING
+                    default = ""
+                  }
+                  a {
+                    path = a
+                    type = STRING
+                    default = ""
+                  }
+                  aa2 {
+                    path = subData.subData.aa
+                    type = STRING
+                    default = ""
+                  }
+                }
+              }
+            }
+            """;
+
+        MemoryLoggerBackend memoryLoggerBackend = new MemoryLoggerBackend();
+        RowBinaryObjectLogger binaryObjectLogger = new RowBinaryObjectLogger( DictionaryParser.parseFromString( datamodel ), memoryLoggerBackend, Paths.get( "/tmp/file-cache" ), Dates.d( 10 ) );
+
+        MyTemplateEngineListener listener = new MyTemplateEngineListener();
+        RowBinaryObjectLogger.TypedRowBinaryLogger<TestData> logger = binaryObjectLogger.typed( new TypeRef<>() {}, "MODEL1", true, listener );
+
+        TestData testData = new TestData();
+        testData.a = "a1";
+        testData.aa = "aa1";
+        testData.b = 1;
+
+        TestData testData2 = new TestData();
+        testData.subData = testData2;
+
+        TestData testData3 = new TestData();
+        testData2.subData = testData3;
+        testData3.a = "a2";
+        testData3.aa = "aa2";
+        testData3.b = 2;
+
+        logger.log( testData, "prefix", Map.of(), "mylog" );
+
+        MutableObject<String[]> headers = new MutableObject<>();
+
+        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( lid -> {
+            headers.setValue( lid.headers );
+            return true;
+        } );
+
+        assertThat( headers.get() ).isEqualTo( new String[] {"a", "a1", "a2", "aa2"} );
+
+        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", "", "a2", "aa2" ) ) );
+
+        assertThat( listener.javaCode )
+            .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
+                + "{{% with subData }}"
+                + "{{ /* model MODEL1 id a1 path subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
+                + "{{% with subData }}"
+                + "{{ /* model MODEL1 id a2 path subData.subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
+                + "{{ /* model MODEL1 id aa2 path subData.subData.aa type STRING defaultValue '' */<java.lang.String>aa ?? \"\" }}"
+                + "{{% end }}"
+                + "{{% end }}" );
+    }
+
     public static class TestData {
         public final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         public String a;
