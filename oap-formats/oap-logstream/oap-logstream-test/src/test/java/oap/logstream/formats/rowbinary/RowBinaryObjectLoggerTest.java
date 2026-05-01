@@ -184,7 +184,7 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         assertThat( listener.javaCode )
             .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
-                + "{{ /* model MODEL1 id or path if a then a else aa end type STRING defaultValue '' */<java.lang.String>if a then a else aa end ?? \"\" }}"
+                + "{{ /* model MODEL1 id or path a|aa type STRING defaultValue '' */<java.lang.String>a|aa ?? \"\" }}"
                 + "{{ /* model MODEL1 id b path b type INTEGER defaultValue '0' */<java.lang.Integer>b ?? 0 }}"
                 + "{{% with subData.subData }}"
                 + "{{ /* model MODEL1 id a2 path subData.subData.a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
