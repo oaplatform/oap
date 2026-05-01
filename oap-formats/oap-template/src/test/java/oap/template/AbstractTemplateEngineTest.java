@@ -1,15 +1,14 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
-import oap.template.render.AstRender;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.testng.annotations.BeforeMethod;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public abstract class AbstractTemplateEngineTest extends Fixtures {
     protected final TestDirectoryFixture testDirectoryFixture;
@@ -43,7 +42,7 @@ public abstract class AbstractTemplateEngineTest extends Fixtures {
 
     protected <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
     Template<TIn, TOut, TOutMutable, TA, ?> getTemplate( String name, TypeRef<TIn> type, String template, TA acc,
-                                                         Consumer<AstRender> postProcess ) {
+                                                         @Nullable TemplateEngine.TemplateEnginePostProcess postProcess ) {
         return useRuntime()
             ? engine.getRuntimeTemplate( name, type, template, acc, postProcess, listener )
             : engine.getTemplate( name, type, template, acc, postProcess, listener );
@@ -51,7 +50,7 @@ public abstract class AbstractTemplateEngineTest extends Fixtures {
 
     protected <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
     Template<TIn, TOut, TOutMutable, TA, ?> getTemplate( String name, TypeRef<TIn> type, String template, TA acc,
-                                                         Map<String, String> aliases, Consumer<AstRender> postProcess ) {
+                                                         Map<String, String> aliases, @Nullable TemplateEngine.TemplateEnginePostProcess postProcess ) {
         return useRuntime()
             ? engine.getRuntimeTemplate( name, type, template, acc, aliases, postProcess, listener )
             : engine.getTemplate( name, type, template, acc, aliases, postProcess, listener );
@@ -59,7 +58,7 @@ public abstract class AbstractTemplateEngineTest extends Fixtures {
 
     protected <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
     Template<TIn, TOut, TOutMutable, TA, ?> getTemplate( String name, TypeRef<TIn> type, String template, TA acc,
-                                                         ErrorStrategy errorStrategy, Consumer<AstRender> postProcess ) {
+                                                         ErrorStrategy errorStrategy, @Nullable TemplateEngine.TemplateEnginePostProcess postProcess ) {
         return useRuntime()
             ? engine.getRuntimeTemplate( name, type, template, acc, errorStrategy, postProcess, listener )
             : engine.getTemplate( name, type, template, acc, errorStrategy, postProcess, listener );
@@ -76,7 +75,7 @@ public abstract class AbstractTemplateEngineTest extends Fixtures {
     protected <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>>
     Template<TIn, TOut, TOutMutable, TA, ?> getTemplate( String name, TypeRef<TIn> type, String template, TA acc,
                                                          Map<String, String> aliases, ErrorStrategy errorStrategy,
-                                                         Consumer<AstRender> postProcess ) {
+                                                         @Nullable TemplateEngine.TemplateEnginePostProcess postProcess ) {
         return useRuntime()
             ? engine.getRuntimeTemplate( name, type, template, acc, aliases, errorStrategy, postProcess, listener )
             : engine.getTemplate( name, type, template, acc, aliases, errorStrategy, postProcess, listener );
