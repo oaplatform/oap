@@ -51,6 +51,16 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 */
 	void exitIfBranchCode(TemplateGrammarExpression.IfBranchCodeContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#pipeCode}.
+	 * @param ctx the parse tree
+	 */
+	void enterPipeCode(TemplateGrammarExpression.PipeCodeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#pipeCode}.
+	 * @param ctx the parse tree
+	 */
+	void exitPipeCode(TemplateGrammarExpression.PipeCodeContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#withCode}.
 	 * @param ctx the parse tree
 	 */

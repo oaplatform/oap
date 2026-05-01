@@ -120,6 +120,7 @@ SLASH       : Slash                                     ;
 PERCENT     : Percent                                   ;
 PLUS        : Plus                                      ;
 MINUS       : Minus                                     ;
+PIPE        : '|'                                       ;
 
 DSTRING     : DQuoteLiteral                             ;
 SSTRING     : SQuoteLiteral                             ;

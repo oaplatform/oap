@@ -651,4 +651,35 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
             .isEqualTo( "hello" );
     }
 
+    @Test
+    public void testPipeConditionLeftPresent() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.field = "nested";
+        c.field = "root";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child.field | field }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "nested" );
+    }
+
+    @Test
+    public void testPipeConditionLeftAbsent() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = null;
+        c.field = "root";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child.field | field }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "root" );
+    }
+
+    @Test
+    public void testPipeConditionSingleField() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = null;
+        c.field2 = "fallback";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ field | field2 }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "fallback" );
+    }
+
 }

@@ -124,12 +124,7 @@ public class RowBinaryObjectLogger {
             int dotIdx = path.indexOf( '.' );
             int orIndex = path.indexOf( '|' );
             if( orIndex > 0 ) {
-                String left = path.substring( 0, orIndex );
-                String right = path.substring( orIndex + 1 );
-
-                int lastFieldIndex = left.lastIndexOf( '.' );
-
-                rootFields.put( "if " + ( lastFieldIndex > 0 ? left.substring( 0, lastFieldIndex ) : left ) + " then " + left + " else " + right + " end", field );
+                rootFields.put( path, field );
             } else if( dotIdx < 0 ) {
                 rootFields.put( path, field );
             } else {

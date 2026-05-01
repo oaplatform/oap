@@ -66,6 +66,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterPipeCode(TemplateGrammarExpression.PipeCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPipeCode(TemplateGrammarExpression.PipeCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterWithCode(TemplateGrammarExpression.WithCodeContext ctx) { }
 	/**
 	 * {@inheritDoc}

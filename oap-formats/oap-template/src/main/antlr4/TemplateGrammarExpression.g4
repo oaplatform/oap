@@ -32,11 +32,11 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
         $ret = new Expression(
           $BLOCK_COMMENT.text,
           $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
-          $ifCode.ctx != null ? $ifCode.ret : null,
+          $ifCode.ctx != null ? $ifCode.ret : ($pipeCode.ctx != null ? $pipeCode.ret : null),
           $withCode.ctx != null ? $withCode.ret : null,
           $exprsCode.ctx != null ? $exprsCode.ret : null,
           $defaultValue.ctx != null ? $defaultValue.ret : null,
@@ -58,6 +58,17 @@ ifBranchCode returns [Exprs ret = new Exprs()]
     | MINUS DECDIGITS { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $DECDIGITS.text ) ) ); }
     | FLOAT           { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( $FLOAT.text ) ) ); }
     | MINUS FLOAT     { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $FLOAT.text ) ) ); }
+    ;
+
+pipeCode returns [IfCondition ret]
+    : leftExprs=exprs PIPE rightExprs=exprs {
+        Exprs conditionExprs = new Exprs();
+        List<Expr> allExprs = $leftExprs.ret.exprs;
+        conditionExprs.exprs.addAll( allExprs.size() > 1
+            ? allExprs.subList( 0, allExprs.size() - 1 )
+            : allExprs );
+        $ret = new IfCondition( new FieldConditionExpr( conditionExprs ), $leftExprs.ret, $rightExprs.ret );
+      }
     ;
 
 withCode returns [WithCondition ret]
