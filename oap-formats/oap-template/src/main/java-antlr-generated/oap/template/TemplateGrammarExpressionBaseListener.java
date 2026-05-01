@@ -4,15 +4,6 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
-import oap.template.tree.WithCondition;
-import oap.template.tree.ConditionExpr;
-import oap.template.tree.FieldConditionExpr;
-import oap.template.tree.AndConditionExpr;
-import oap.template.tree.OrConditionExpr;
-import oap.template.tree.NotConditionExpr;
-import oap.template.tree.CompareConditionExpr;
-import oap.template.tree.CompareValue;
-import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -58,6 +49,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitIfCode(TemplateGrammarExpression.IfCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterIfBranchCode(TemplateGrammarExpression.IfBranchCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIfBranchCode(TemplateGrammarExpression.IfBranchCodeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

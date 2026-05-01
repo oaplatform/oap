@@ -19,3 +19,9 @@ A light-weight application framework to build high performant and distributed ja
 | [oap-highload](oap-highload/README.md) | CPU affinity utility for pinning threads to specific CPU cores                                              |
 | [oap-mail](oap-mail/README.md) | Email sending via SMTP and SendGrid with a persistent delivery queue                                        |
 | [oap-maven-plugin](oap-maven-plugin/README.md) | Build-time code generation: startup scripts and dictionary enum source files                                |
+
+## Guides
+
+| Guide | Description |
+|---|---|
+| [Ext — Pluggable Field Extensions](docs/extension.md) | Attach pluggable typed sub-objects to bean fields via `oap.json.ext.Ext`; covers JSON deserialization and template engine integration |

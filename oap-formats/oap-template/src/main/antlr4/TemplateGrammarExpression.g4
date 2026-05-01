@@ -11,15 +11,6 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
-import oap.template.tree.WithCondition;
-import oap.template.tree.ConditionExpr;
-import oap.template.tree.FieldConditionExpr;
-import oap.template.tree.AndConditionExpr;
-import oap.template.tree.OrConditionExpr;
-import oap.template.tree.NotConditionExpr;
-import oap.template.tree.CompareConditionExpr;
-import oap.template.tree.CompareValue;
-import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -54,9 +45,19 @@ expression returns [Expression ret]
     ;
 
 ifCode returns [IfCondition ret]
-    : IF ifCondition THEN thenCode=exprs (ELSE elseCode=exprs)? END {
+    : IF ifCondition THEN thenCode=ifBranchCode (ELSE elseCode=ifBranchCode)? END {
         $ret = new IfCondition( $ifCondition.ret, $thenCode.ret, $elseCode.ctx != null ? $elseCode.ret : null );
       }
+    ;
+
+ifBranchCode returns [Exprs ret = new Exprs()]
+    : exprs           { $ret = $exprs.ret; }
+    | SSTRING         { $ret.concatenation = new Concatenation( List.of( sdStringToString( $SSTRING.text ) ) ); }
+    | DSTRING         { $ret.concatenation = new Concatenation( List.of( sdStringToString( $DSTRING.text ) ) ); }
+    | DECDIGITS       { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( $DECDIGITS.text ) ) ); }
+    | MINUS DECDIGITS { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $DECDIGITS.text ) ) ); }
+    | FLOAT           { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( $FLOAT.text ) ) ); }
+    | MINUS FLOAT     { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $FLOAT.text ) ) ); }
     ;
 
 withCode returns [WithCondition ret]
@@ -207,7 +208,13 @@ citems returns [ArrayList<Object> ret = new ArrayList<>()]
     ;
 
 citem returns [Object ret]
-    : ID { $ret = new Expr( $ID.text, false, List.of() ); }
+    : firstId=ID (DOT ids+=ID)+ {
+        Exprs p = new Exprs();
+        p.exprs.add( new Expr( $firstId.text, false, List.of() ) );
+        for( Token id : $ids ) p.exprs.add( new Expr( id.getText(), false, List.of() ) );
+        $ret = p;
+      }
+    | ID { $ret = new Expr( $ID.text, false, List.of() ); }
     | DSTRING  { $ret = sdStringToString( $DSTRING.text ); }
     | SSTRING { $ret = sdStringToString( $SSTRING.text ); }
     | DECDIGITS { $ret = new NumericLiteral( $DECDIGITS.text ); }

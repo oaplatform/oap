@@ -44,6 +44,15 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         c.booleanField = true;
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val" );
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then 'yes' end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then 2 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "2" );
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then -2.4 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "-2.4" );
     }
 
     @Test
@@ -81,6 +90,12 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         c.booleanField = false;
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else field2 end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else 'no' end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else 1 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "1" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else -2.1 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "-2.1" );
     }
 
     @Test

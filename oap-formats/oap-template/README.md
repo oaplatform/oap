@@ -241,9 +241,14 @@ Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric lit
 
 ### If / then / else (inline)
 
+The then and else branches accept a **field path** or a **literal value** (quoted string, integer, or float):
+
 ```
 {{ if booleanField then field end }}
 {{ if booleanField then field else field2 end }}
+{{ if booleanField then 'yes' else 'no' end }}
+{{ if booleanField then 1 else 0 end }}
+{{ if score then score else -1.0 end }}
 ```
 
 The condition can be any field path or a compound boolean expression (see below). Truthiness is determined by the field's type — see [Truthiness semantics](#truthiness-semantics).
@@ -252,6 +257,7 @@ Can be combined with a default value:
 
 ```
 {{ if isPremium then premiumField end ?? 'standard' }}
+{{ if active then 'yes' end ?? 'no' }}
 ```
 
 #### Compound conditions (inline)
