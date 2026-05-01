@@ -24,12 +24,18 @@
 package oap.application.supervision;
 
 import lombok.SneakyThrows;
+import oap.application.annotation.PreStart;
+import oap.application.annotation.PreStop;
+import oap.application.annotation.Start;
+import oap.application.annotation.Stop;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Optionals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,39 +59,27 @@ public class StartableService implements Supervised {
         this.logger = LoggerFactory.getLogger( supervised.getClass() );
     }
 
-    @SneakyThrows
-    @Override
-    public void start() {
-        invoke( startWith, supervised, logger, true );
-        started = true;
-    }
-
-    @SneakyThrows
-    public void preStart() {
-        invoke( preStartWith, supervised, logger, true );
-    }
-
-    @Override
-    public void preStop() {
-        if( started ) invoke( preStopWith, supervised, logger, false );
-    }
-
-    @Override
-    public void stop() {
-        if( started ) invoke( stopWith, supervised, logger, false );
-        started = false;
-    }
-
-    protected static void invoke( List<String> methods, Object supervised, Logger logger, boolean rethrow ) {
+    protected static void invoke( List<String> methods, @Nullable Class<? extends Annotation> annotation, Object supervised, Logger logger, boolean rethrow ) {
         try {
-            findMethod( methods, supervised ).ifPresent( m -> m.invoke( supervised ) );
+            findMethod( methods, annotation, supervised ).ifPresent( m -> m.invoke( supervised ) );
         } catch( Exception e ) {
             logger.error( "Looking for methods " + methods + " with no parameters in class " + supervised.getClass().getCanonicalName() + " failed", e );
             if( rethrow ) throw e;
         }
     }
 
-    private static Optional<Reflection.Method> findMethod( List<String> names, Object supervised ) {
+    private static Optional<Reflection.Method> findMethod( List<String> names, @Nullable Class<? extends Annotation> annotation, Object supervised ) {
+        if( annotation != null ) {
+            Optional<Reflection.Method> ret = Reflect.reflect( supervised.getClass() ).methods
+                .stream()
+                .filter( m -> m.findAnnotation( annotation ).isPresent() )
+                .findAny();
+
+            if( ret.isPresent() ) {
+                return ret;
+            }
+        }
+
         return names
             .stream()
             .flatMap( m -> Optionals.toStream( getControlMethod( m, supervised ) ) )
@@ -97,6 +91,29 @@ public class StartableService implements Supervised {
             .stream()
             .filter( m -> name.equals( m.name() ) && m.parameters.isEmpty() )
             .findAny();
+    }
+
+    @SneakyThrows
+    @Override
+    public void start() {
+        invoke( startWith, Start.class, supervised, logger, true );
+        started = true;
+    }
+
+    @SneakyThrows
+    public void preStart() {
+        invoke( preStartWith, PreStart.class, supervised, logger, true );
+    }
+
+    @Override
+    public void preStop() {
+        if( started ) invoke( preStopWith, PreStop.class, supervised, logger, false );
+    }
+
+    @Override
+    public void stop() {
+        if( started ) invoke( stopWith, Stop.class, supervised, logger, false );
+        started = false;
     }
 
 }
