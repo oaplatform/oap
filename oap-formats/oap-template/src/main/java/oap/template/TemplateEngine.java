@@ -63,6 +63,7 @@ import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -76,6 +77,7 @@ public class TemplateEngine implements Runnable {
     private final Map<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
+    private TemplateConfiguration configuration = TemplateConfiguration.DEFAULT;
 
     public TemplateEngine( long ttl ) {
         this( null, ttl );
@@ -103,6 +105,21 @@ public class TemplateEngine implements Runnable {
         Metrics.gauge( METRICS_NAME, Tags.of( "type", "hit" ), templates, c -> c.stats().hitCount() );
         Metrics.gauge( METRICS_NAME, Tags.of( "type", "miss" ), templates, c -> c.stats().missCount() );
         Metrics.gauge( METRICS_NAME, Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
+    }
+
+    private TemplateEngine( Path diskCache, long ttl, Cache<String, TemplateFunction> templates, long maxSize, TemplateConfiguration configuration ) {
+        this.diskCache = diskCache;
+        this.ttl = ttl;
+        this.templates = templates;
+        this.maxSize = maxSize;
+        this.configuration = configuration;
+    }
+
+    public TemplateEngine withNewConfiguration( Function<TemplateConfiguration, TemplateConfiguration> configuration ) {
+        TemplateConfiguration newConfiguration = configuration.apply( this.configuration );
+        TemplateEngine templateEngine = new TemplateEngine( diskCache, ttl, templates, maxSize, newConfiguration );
+        templateEngine.builtInFunction.putAll( builtInFunction );
+        return templateEngine;
     }
 
     private void loadFunctions() {
@@ -165,9 +182,11 @@ public class TemplateEngine implements Runnable {
 
         log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
+        TemplateConfiguration currentConfiguration = this.configuration;
         try {
             TemplateFunction tFunc = templates.get( id, () -> {
                 TemplateLexer lexer = new TemplateLexer( CharStreams.fromString( template ) );
+                lexer.configuration = currentConfiguration;
                 TemplateGrammar grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
                 if( errorStrategy == ErrorStrategy.ERROR ) {
                     lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
@@ -234,6 +253,7 @@ public class TemplateEngine implements Runnable {
 
         try {
             TemplateLexer lexer = new TemplateLexer( CharStreams.fromString( template ) );
+            lexer.configuration = this.configuration;
             TemplateGrammar grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
             if( errorStrategy == ErrorStrategy.ERROR ) {
                 lexer.addErrorListener( ThrowingErrorListener.INSTANCE );

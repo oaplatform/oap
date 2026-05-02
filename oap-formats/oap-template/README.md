@@ -8,6 +8,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
 - [Architecture](#architecture)
 - [Template Syntax](#template-syntax)
   - [Delimiters](#delimiters)
+    - [Custom expression delimiters](#custom-expression-delimiters)
   - [Whitespace trimming](#whitespace-trimming)
   - [Field access](#field-access)
   - [Null safety](#null-safety)
@@ -106,6 +107,23 @@ Field resolution honours `@JsonProperty` and `@JsonAlias` annotations as alterna
 | `{{%- if … }}` | Block-if; trim trailing whitespace from preceding text |
 
 Everything outside a delimiter is emitted verbatim.
+
+#### Custom expression delimiters
+
+By default the engine recognises `{{ … }}` and `${ … }`. Use `withNewConfiguration` to register additional prefix/suffix pairs:
+
+```java
+TemplateEngine engine = new TemplateEngine( ttl )
+    .withNewConfiguration( c -> c.withExpression( "[", "]" ) );
+```
+
+After this call `[field]`, `{{field}}`, and `${field}` are all equivalent. Detection is handled at lex time via ANTLR semantic predicates — no pre-processing occurs.
+
+`withExpression` is additive and returns a new immutable `TemplateConfiguration`. `TemplateConfiguration.DEFAULT` contains the two built-in pairs. To start from scratch:
+
+```java
+.withNewConfiguration( _ -> new TemplateConfiguration().withExpression( "[", "]" ) )
+```
 
 ```
 "Hello, {{ name }}!"         → "Hello, world!"
