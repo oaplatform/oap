@@ -36,6 +36,8 @@ import io.undertow.server.handlers.PathHandler;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.scheduler.Scheduled;
+import oap.concurrent.scheduler.Scheduler;
 import oap.http.server.nio.handlers.CompressionNioHandler;
 import oap.io.Closeables;
 import oap.util.Dates;
@@ -44,9 +46,11 @@ import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
 import org.xnio.XnioWorker;
+import org.xnio.ssl.JsseSslUtils;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +59,7 @@ import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
@@ -80,7 +85,6 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public final ArrayList<NioHandlerBuilder> handlers = new ArrayList<>();
     private final ConcurrentHashMap<Integer, PathHandler> pathHandler = new ConcurrentHashMap<>();
     private final AtomicLong requestId = new AtomicLong();
-    private final KeyManager[] keyManagers;
     public int backlog = -1;
     public long idleTimeout = -1;
     public boolean tcpNodelay = true;
@@ -94,9 +98,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
     public boolean alwaysSetDate = true;
     public boolean alwaysSetKeepAlive = true;
     public int pathHandlerCacheSize = 0; // without cache
-
+    public long autoRefreshCertificates = Dates.h( 12 );
     public Undertow undertow;
+    private KeyManager[] keyManagers;
     private XnioWorker xnioWorker;
+    private Scheduled autoRefreshCertificatesScheduled;
 
     public NioHttpServer( DefaultPort defaultPort ) {
         this.defaultPort = defaultPort;
@@ -214,6 +220,10 @@ public class NioHttpServer implements Closeable, AutoCloseable {
             addStats( undertow );
         }
 
+        if( autoRefreshCertificates > 0 ) {
+            autoRefreshCertificatesScheduled = Scheduler.scheduleWithFixedDelay( autoRefreshCertificates, TimeUnit.MILLISECONDS, this::refreshCertificates );
+        }
+
         log.info( "server on ports: {} (statistics: {}, ioThreads: {}, workerThreads: {}) has started in {} ms",
             pathHandler.keySet(), statistics,
             undertow.getWorker().getMXBean().getIoThreadCount(),
@@ -222,6 +232,7 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         );
     }
 
+    @SneakyThrows
     private void addPortListener( int port, PathHandler portPathHandler, Undertow.Builder builder ) {
         Preconditions.checkNotNull( portPathHandler );
 
@@ -237,7 +248,8 @@ public class NioHttpServer implements Closeable, AutoCloseable {
         handler = new GracefulShutdownHandler( handler );
 
         if( port == defaultPort.httpsPort ) {
-            builder.addHttpsListener( port, "0.0.0.0", keyManagers, null, handler );
+            SSLContext sslContext = JsseSslUtils.createSSLContext( keyManagers, null, new SecureRandom(), OptionMap.create( Options.SSL_PROTOCOL, "TLSv1.2" ) );
+            builder.addHttpsListener( port, "0.0.0.0", sslContext, handler );
         } else {
             builder.addHttpListener( port, "0.0.0.0", handler );
         }
@@ -351,6 +363,11 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     @Override
     public void close() throws IOException {
+        if( autoRefreshCertificatesScheduled != null ) {
+            Closeables.close( autoRefreshCertificatesScheduled );
+            autoRefreshCertificatesScheduled = null;
+        }
+
         preStop();
 
         Closeables.close( xnioWorker );
@@ -358,6 +375,29 @@ public class NioHttpServer implements Closeable, AutoCloseable {
 
     public boolean hasHandler( Class<? extends NioHandler> handlerClass ) {
         return Lists.anyMatch( handlers, h -> h.getClass().equals( handlerClass ) );
+    }
+
+    public void refreshCertificates() {
+        try {
+            if( isHttpsEnabled() ) {
+                log.debug( "refreshCertificates location {}...", defaultPort.keyStore );
+
+                keyManagers = makeKeyManagers( defaultPort.keyStore, defaultPort.password );
+
+                List<Undertow.ListenerInfo> listenerInfo = undertow.getListenerInfo();
+
+                SSLContext sslContext = JsseSslUtils.createSSLContext( keyManagers, null, new SecureRandom(), OptionMap.create( Options.SSL_PROTOCOL, "TLSv1.2" ) );
+
+                listenerInfo
+                    .stream()
+                    .filter( li -> li.getSslContext() != null )
+                    .forEach( li -> li.setSslContext( sslContext ) );
+
+                log.debug( "refreshCertificates location {}... Done", defaultPort.keyStore );
+            }
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
+        }
     }
 
     public enum PortType {
