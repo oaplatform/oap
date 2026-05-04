@@ -30,6 +30,7 @@ services {
       additionalHttpPorts {
         httpprivate = 8081
       }
+      autoRefreshCertificates = 12h // -1 - disable
 
       backlog = -1
       idleTimeout = -1
