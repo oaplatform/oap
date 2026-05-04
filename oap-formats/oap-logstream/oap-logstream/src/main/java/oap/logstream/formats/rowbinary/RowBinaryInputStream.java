@@ -188,11 +188,21 @@ public class RowBinaryInputStream extends InputStream {
     }
 
     public byte readByte() throws IOException {
-        return ( byte ) in.read();
+        int read = in.read();
+        if( read < 0 ) {
+            throw new EOFException();
+        }
+
+        return ( byte ) read;
     }
 
     public boolean readBoolean() throws IOException {
-        return readByte() == 1;
+        int read = in.read();
+        if( read < 0 ) {
+            throw new EOFException();
+        }
+
+        return read == 1;
     }
 
     @Override

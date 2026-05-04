@@ -8,6 +8,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
 - [Architecture](#architecture)
 - [Template Syntax](#template-syntax)
   - [Delimiters](#delimiters)
+    - [Custom expression delimiters](#custom-expression-delimiters)
   - [Whitespace trimming](#whitespace-trimming)
   - [Field access](#field-access)
   - [Null safety](#null-safety)
@@ -16,6 +17,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Math](#math)
   - [If / then / else (inline)](#if--then--else-inline)
     - [Compound conditions (inline)](#compound-conditions-inline)
+  - [Pipe alternation](#pipe-alternation)
   - [If / else / end (block)](#if--else--end-block)
     - [Compound conditions](#compound-conditions)
     - [Comparison operators](#comparison-operators)
@@ -105,6 +107,23 @@ Field resolution honours `@JsonProperty` and `@JsonAlias` annotations as alterna
 | `{{%- if … }}` | Block-if; trim trailing whitespace from preceding text |
 
 Everything outside a delimiter is emitted verbatim.
+
+#### Custom expression delimiters
+
+By default the engine recognises `{{ … }}` and `${ … }`. Use `withNewConfiguration` to register additional prefix/suffix pairs:
+
+```java
+TemplateEngine engine = new TemplateEngine( ttl )
+    .withNewConfiguration( c -> c.withExpression( "[", "]" ) );
+```
+
+After this call `[field]`, `{{field}}`, and `${field}` are all equivalent. Detection is handled at lex time via ANTLR semantic predicates — no pre-processing occurs.
+
+`withExpression` is additive and returns a new immutable `TemplateConfiguration`. `TemplateConfiguration.DEFAULT` contains the two built-in pairs. To start from scratch:
+
+```java
+.withNewConfiguration( _ -> new TemplateConfiguration().withExpression( "[", "]" ) )
+```
 
 ```
 "Hello, {{ name }}!"         → "Hello, world!"
@@ -241,9 +260,14 @@ Operators: `+`, `-`, `*`, `/`, `%`. The right-hand operand must be a numeric lit
 
 ### If / then / else (inline)
 
+The then and else branches accept a **field path** or a **literal value** (quoted string, integer, or float):
+
 ```
 {{ if booleanField then field end }}
 {{ if booleanField then field else field2 end }}
+{{ if booleanField then 'yes' else 'no' end }}
+{{ if booleanField then 1 else 0 end }}
+{{ if score then score else -1.0 end }}
 ```
 
 The condition can be any field path or a compound boolean expression (see below). Truthiness is determined by the field's type — see [Truthiness semantics](#truthiness-semantics).
@@ -252,6 +276,7 @@ Can be combined with a default value:
 
 ```
 {{ if isPremium then premiumField end ?? 'standard' }}
+{{ if active then 'yes' end ?? 'no' }}
 ```
 
 #### Compound conditions (inline)
@@ -266,6 +291,26 @@ The same `and`, `or`, `not` / `!`, and parenthesised grouping supported by block
 ```
 
 Field types follow the same truthiness rules as block-if — a `String` is truthy when non-empty, a `Collection` or `Map` when non-empty, an array when `length > 0`, any other non-null value is truthy, and `null` is always false.
+
+### Pipe alternation
+
+`{{ a.b.c | a.vv.c }}` is shorthand for `{{ if a.b then a.b.c else a.vv.c end }}`.
+
+The condition is derived from the left path by dropping its last field segment. Use this when you want a fallback field path when the left-side parent is null:
+
+```
+{{ user.premium.discount | user.standard.discount }}
+{{ status.code | fallback.code }}
+{{ child.field | field }}
+```
+
+For a single-segment left path (e.g., `field | field2`), the field itself is the condition — equivalent to `{{ if field then field else field2 end }}`.
+
+Can be combined with a default value:
+
+```
+{{ child.field | field ?? 'unknown' }}
+```
 
 ### If / else / end (block)
 

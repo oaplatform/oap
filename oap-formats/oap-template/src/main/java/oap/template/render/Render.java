@@ -161,7 +161,7 @@ public class Render {
     }
 
     public String nameEscaped() {
-        var nameEscaped = templateName.replaceAll( "[^a-zA-Z0-9_]", "_" );
+        String nameEscaped = templateName.replaceAll( "[^a-zA-Z0-9_]", "_" );
         if( nameEscaped.matches( "^[0-9].*" ) ) nameEscaped = "_" + nameEscaped;
         return nameEscaped;
     }

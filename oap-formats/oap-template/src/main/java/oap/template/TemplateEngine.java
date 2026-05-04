@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import io.micrometer.core.instrument.Metrics;
@@ -64,6 +63,7 @@ import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -77,6 +77,7 @@ public class TemplateEngine implements Runnable {
     private final Map<String, List<Method>> builtInFunction = new HashMap<>();
     private final Cache<String, TemplateFunction> templates;
     public long maxSize = 1_000_000;
+    private TemplateConfiguration configuration = TemplateConfiguration.DEFAULT;
 
     public TemplateEngine( long ttl ) {
         this( null, ttl );
@@ -106,18 +107,19 @@ public class TemplateEngine implements Runnable {
         Metrics.gauge( METRICS_NAME, Tags.of( "type", "eviction" ), templates, c -> c.stats().evictionCount() );
     }
 
-    public static String getHashName( String template ) {
-        long hash = getHash( template );
-        return hashToName( hash );
+    private TemplateEngine( Path diskCache, long ttl, Cache<String, TemplateFunction> templates, long maxSize, TemplateConfiguration configuration ) {
+        this.diskCache = diskCache;
+        this.ttl = ttl;
+        this.templates = templates;
+        this.maxSize = maxSize;
+        this.configuration = configuration;
     }
 
-    public static long getHash( String template ) {
-        HashFunction hashFunction = Hashing.murmur3_128();
-        return hashFunction.hashUnencodedChars( template ).asLong();
-    }
-
-    private static String hashToName( long hash ) {
-        return "template_" + ( hash >= 0 ? String.valueOf( hash ) : "_" + String.valueOf( hash ).substring( 1 ) );
+    public TemplateEngine withNewConfiguration( Function<TemplateConfiguration, TemplateConfiguration> configuration ) {
+        TemplateConfiguration newConfiguration = configuration.apply( this.configuration );
+        TemplateEngine templateEngine = new TemplateEngine( diskCache, ttl, templates, maxSize, newConfiguration );
+        templateEngine.builtInFunction.putAll( builtInFunction );
+        return templateEngine;
     }
 
     private void loadFunctions() {
@@ -142,29 +144,28 @@ public class TemplateEngine implements Runnable {
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess, listener );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess, listener );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess, listener );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
     getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, @Nullable TemplateEngineListener listener ) {
-        return getTemplate( name, type, template, acc, aliases, errorStrategy, _ -> {
-        }, listener );
+        return getTemplate( name, type, template, acc, aliases, errorStrategy, null, listener );
     }
 
     @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, ErrorStrategy errorStrategy, TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         Objects.requireNonNull( template );
         Objects.requireNonNull( acc );
 
@@ -173,7 +174,7 @@ public class TemplateEngine implements Runnable {
             .putString( template, UTF_8 )
             .putString( acc.getClass().toString(), UTF_8 );
 
-        if( postProcess != null ) hasher.putString( postProcess.getClass().toString(), UTF_8 );
+        if( postProcess != null ) hasher.putInt( postProcess.templateHashCode() );
 
         aliases.forEach( ( k, v ) -> hasher.putString( k, UTF_8 ).putString( v, UTF_8 ) );
 
@@ -181,9 +182,11 @@ public class TemplateEngine implements Runnable {
 
         log.trace( "id '{}' acc '{}' template '{}' aliases '{}'", id, acc.getClass(), template, aliases );
 
+        TemplateConfiguration currentConfiguration = this.configuration;
         try {
             TemplateFunction tFunc = templates.get( id, () -> {
                 TemplateLexer lexer = new TemplateLexer( CharStreams.fromString( template ) );
+                lexer.configuration = currentConfiguration;
                 TemplateGrammar grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
                 if( errorStrategy == ErrorStrategy.ERROR ) {
                     lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
@@ -223,17 +226,17 @@ public class TemplateEngine implements Runnable {
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, @Nullable TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getRuntimeTemplate( name, type, template, acc, Map.of(), ErrorStrategy.ERROR, postProcess, listener );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, Map<String, String> aliases, @Nullable TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getRuntimeTemplate( name, type, template, acc, aliases, ErrorStrategy.ERROR, postProcess, listener );
     }
 
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
-    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+    getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc, ErrorStrategy errorStrategy, TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         return getRuntimeTemplate( name, type, template, acc, Map.of(), errorStrategy, postProcess, listener );
     }
 
@@ -242,15 +245,15 @@ public class TemplateEngine implements Runnable {
         return getRuntimeTemplate( name, type, template, acc, aliases, errorStrategy, null, listener );
     }
 
-    @SuppressWarnings( "unchecked" )
     public <TIn, TOut, TOutMutable, TA extends TemplateAccumulator<TOut, TOutMutable, TA>> Template<TIn, TOut, TOutMutable, TA, ?>
     getRuntimeTemplate( String name, TypeRef<TIn> type, String template, TA acc,
-                        Map<String, String> aliases, ErrorStrategy errorStrategy, Consumer<AstRender> postProcess, @Nullable TemplateEngineListener listener ) {
+                        Map<String, String> aliases, ErrorStrategy errorStrategy, @Nullable TemplateEnginePostProcess postProcess, @Nullable TemplateEngineListener listener ) {
         Objects.requireNonNull( template );
         Objects.requireNonNull( acc );
 
         try {
             TemplateLexer lexer = new TemplateLexer( CharStreams.fromString( template ) );
+            lexer.configuration = this.configuration;
             TemplateGrammar grammar = new TemplateGrammar( new BufferedTokenStream( lexer ), builtInFunction, errorStrategy );
             if( errorStrategy == ErrorStrategy.ERROR ) {
                 lexer.addErrorListener( ThrowingErrorListener.INSTANCE );
@@ -294,6 +297,10 @@ public class TemplateEngine implements Runnable {
         } catch( Exception e ) {
             log.error( "Could not walk through: " + diskCache, e );
         }
+    }
+
+    public interface TemplateEnginePostProcess extends Consumer<AstRender> {
+        int templateHashCode();
     }
 
     public static class TemplateFunction {

@@ -299,7 +299,15 @@ public class TemplateAstUtils {
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
                     TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
-                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
+                    boolean forceCast = false;
+                    if( fieldType.isInstanceOf( Ext.class ) ) {
+                        Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
+                        if( extClass != null ) {
+                            fieldType = new TemplateType( extClass, fieldType.nullable );
+                            forceCast = true;
+                        }
+                    }
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast, null );
                     result.add( ast );
                     currentTemplateType = fieldType;
                 } else {
@@ -443,7 +451,15 @@ public class TemplateAstUtils {
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
                     TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
-                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
+                    boolean forceCast = false;
+                    if( fieldType.isInstanceOf( Ext.class ) ) {
+                        Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
+                        if( extClass != null ) {
+                            fieldType = new TemplateType( extClass, fieldType.nullable );
+                            forceCast = true;
+                        }
+                    }
+                    AstRenderField ast = new AstRenderField( field.getName(), fieldType, forceCast, null );
                     result.add( ast );
                     currentTemplateType = fieldType;
                 } else {
@@ -655,6 +671,10 @@ public class TemplateAstUtils {
                     items.add( new AstRenderText( nl.value() ) );
                 } else if( item instanceof Expr e ) {
                     AstRender ast = toAst( new Exprs( List.of( e ) ), function, parentTemplateType, resultType, null,
+                        defaultValue, builtInFunction, errorStrategy );
+                    items.add( ast );
+                } else if( item instanceof Exprs subExprs ) {
+                    AstRender ast = toAst( subExprs, function, parentTemplateType, resultType, null,
                         defaultValue, builtInFunction, errorStrategy );
                     items.add( ast );
                 } else {

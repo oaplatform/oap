@@ -44,6 +44,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,23 +117,18 @@ public class RowBinaryObjectLogger {
         }
 
         LinkedHashMap<String, Dictionary> rootFields = new LinkedHashMap<>();
-        Map<String, List<Dictionary>> groups = new LinkedHashMap<>();
+        List<Dictionary> nestedFields = new ArrayList<>();
 
         for( Dictionary field : fields ) {
             String path = field.getPath();
             int dotIdx = path.indexOf( '.' );
             int orIndex = path.indexOf( '|' );
             if( orIndex > 0 ) {
-                String left = path.substring( 0, orIndex );
-                String right = path.substring( orIndex + 1 );
-
-                int lastFieldIndex = left.lastIndexOf( '.' );
-
-                rootFields.put( "if " + ( lastFieldIndex > 0 ? left.substring( 0, lastFieldIndex ) : left ) + " then " + left + " else " + right + " end", field );
+                rootFields.put( path, field );
             } else if( dotIdx < 0 ) {
                 rootFields.put( path, field );
             } else {
-                groups.computeIfAbsent( path.substring( 0, dotIdx ), k -> new ArrayList<>() ).add( field );
+                nestedFields.add( field );
             }
         }
 
@@ -140,20 +136,7 @@ public class RowBinaryObjectLogger {
             appendField( path, field, id, null, headers, rowTypes, expressions );
         } );
 
-        for( Map.Entry<String, List<Dictionary>> entry : groups.entrySet() ) {
-            String prefix = entry.getKey();
-            List<Dictionary> group = entry.getValue();
-            if( group.size() >= 2 ) {
-                expressions.add( "{{% with " + prefix + " }}" );
-                for( Dictionary field : group ) {
-                    appendField( field.getPath(), field, id, prefix, headers, rowTypes, expressions );
-                }
-                expressions.add( "{{% end }}" );
-            } else {
-                Dictionary first = group.getFirst();
-                appendField( first.getPath(), first, id, null, headers, rowTypes, expressions );
-            }
-        }
+        processNestedFields( nestedFields, null, id, headers, rowTypes, expressions );
 
         String template = String.join( "", expressions );
 
@@ -196,6 +179,8 @@ public class RowBinaryObjectLogger {
                 : defaultValue;
 
         String exprPath = stripPrefix != null ? path.substring( stripPrefix.length() + 1 ) : path;
+        if( exprPath.startsWith( "{" ) && exprPath.endsWith( "}" ) )
+            exprPath = exprPath.substring( 1, exprPath.length() - 1 ).trim();
         expressions.add( "{{ /* " + comment + " */" + toJavaType( rowType.javaType, collection ) + exprPath + " ?? " + pDefaultValue + templateFunction + " }}" );
         headers.add( name );
         if( collection ) {
@@ -203,6 +188,54 @@ public class RowBinaryObjectLogger {
         } else {
             rowTypes.add( new byte[] { rowType.templateType.id } );
         }
+    }
+
+    private void processNestedFields( List<Dictionary> fields, @Nullable String currentPrefix,
+                                      String id, List<String> headers, List<byte[]> rowTypes, List<String> expressions ) {
+        List<Dictionary> rootAtLevel = new ArrayList<>();
+        Map<String, List<Dictionary>> subgroups = new LinkedHashMap<>();
+
+        for( Dictionary field : fields ) {
+            String absPath = field.getPath();
+            String relPath = currentPrefix != null ? absPath.substring( currentPrefix.length() + 1 ) : absPath;
+            int dotIdx = relPath.indexOf( '.' );
+            if( dotIdx < 0 ) {
+                rootAtLevel.add( field );
+            } else {
+                subgroups.computeIfAbsent( relPath.substring( 0, dotIdx ), k -> new ArrayList<>() ).add( field );
+            }
+        }
+
+        for( Dictionary field : rootAtLevel ) {
+            appendField( field.getPath(), field, id, currentPrefix, headers, rowTypes, expressions );
+        }
+
+        for( List<Dictionary> group : subgroups.values() ) {
+            if( group.size() >= 2 ) {
+                String commonAbsPrefix = longestCommonPathPrefix( group );
+                String relWith = currentPrefix != null
+                    ? commonAbsPrefix.substring( currentPrefix.length() + 1 )
+                    : commonAbsPrefix;
+                expressions.add( "{{% with " + relWith + " }}" );
+                processNestedFields( group, commonAbsPrefix, id, headers, rowTypes, expressions );
+                expressions.add( "{{% end }}" );
+            } else {
+                appendField( group.get( 0 ).getPath(), group.get( 0 ), id, currentPrefix, headers, rowTypes, expressions );
+            }
+        }
+    }
+
+    private static String longestCommonPathPrefix( List<Dictionary> fields ) {
+        String[] first = fields.get( 0 ).getPath().split( "\\." );
+        int common = first.length - 1;
+        for( int i = 1; i < fields.size() && common > 0; i++ ) {
+            String[] other = fields.get( i ).getPath().split( "\\." );
+            int max = Math.min( common, other.length - 1 );
+            int c = 0;
+            while( c < max && first[c].equals( other[c] ) ) c++;
+            common = c;
+        }
+        return String.join( ".", Arrays.copyOf( first, common ) );
     }
 
     public boolean isLoggingAvailable() {

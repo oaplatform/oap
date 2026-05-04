@@ -11,15 +11,6 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
-import oap.template.tree.WithCondition;
-import oap.template.tree.ConditionExpr;
-import oap.template.tree.FieldConditionExpr;
-import oap.template.tree.AndConditionExpr;
-import oap.template.tree.OrConditionExpr;
-import oap.template.tree.NotConditionExpr;
-import oap.template.tree.CompareConditionExpr;
-import oap.template.tree.CompareValue;
-import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -41,11 +32,11 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
         $ret = new Expression(
           $BLOCK_COMMENT.text,
           $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
-          $ifCode.ctx != null ? $ifCode.ret : null,
+          $ifCode.ctx != null ? $ifCode.ret : ($pipeCode.ctx != null ? $pipeCode.ret : null),
           $withCode.ctx != null ? $withCode.ret : null,
           $exprsCode.ctx != null ? $exprsCode.ret : null,
           $defaultValue.ctx != null ? $defaultValue.ret : null,
@@ -54,8 +45,29 @@ expression returns [Expression ret]
     ;
 
 ifCode returns [IfCondition ret]
-    : IF ifCondition THEN thenCode=exprs (ELSE elseCode=exprs)? END {
+    : IF ifCondition THEN thenCode=ifBranchCode (ELSE elseCode=ifBranchCode)? END {
         $ret = new IfCondition( $ifCondition.ret, $thenCode.ret, $elseCode.ctx != null ? $elseCode.ret : null );
+      }
+    ;
+
+ifBranchCode returns [Exprs ret = new Exprs()]
+    : exprs           { $ret = $exprs.ret; }
+    | SSTRING         { $ret.concatenation = new Concatenation( List.of( sdStringToString( $SSTRING.text ) ) ); }
+    | DSTRING         { $ret.concatenation = new Concatenation( List.of( sdStringToString( $DSTRING.text ) ) ); }
+    | DECDIGITS       { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( $DECDIGITS.text ) ) ); }
+    | MINUS DECDIGITS { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $DECDIGITS.text ) ) ); }
+    | FLOAT           { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( $FLOAT.text ) ) ); }
+    | MINUS FLOAT     { $ret.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $FLOAT.text ) ) ); }
+    ;
+
+pipeCode returns [IfCondition ret]
+    : leftExprs=exprs PIPE rightExprs=exprs {
+        Exprs conditionExprs = new Exprs();
+        List<Expr> allExprs = $leftExprs.ret.exprs;
+        conditionExprs.exprs.addAll( allExprs.size() > 1
+            ? allExprs.subList( 0, allExprs.size() - 1 )
+            : allExprs );
+        $ret = new IfCondition( new FieldConditionExpr( conditionExprs ), $leftExprs.ret, $rightExprs.ret );
       }
     ;
 
@@ -207,7 +219,13 @@ citems returns [ArrayList<Object> ret = new ArrayList<>()]
     ;
 
 citem returns [Object ret]
-    : ID { $ret = new Expr( $ID.text, false, List.of() ); }
+    : firstId=ID (DOT ids+=ID)+ {
+        Exprs p = new Exprs();
+        p.exprs.add( new Expr( $firstId.text, false, List.of() ) );
+        for( Token id : $ids ) p.exprs.add( new Expr( id.getText(), false, List.of() ) );
+        $ret = p;
+      }
+    | ID { $ret = new Expr( $ID.text, false, List.of() ); }
     | DSTRING  { $ret = sdStringToString( $DSTRING.text ); }
     | SSTRING { $ret = sdStringToString( $SSTRING.text ); }
     | DECDIGITS { $ret = new NumericLiteral( $DECDIGITS.text ); }

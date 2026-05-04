@@ -44,6 +44,15 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         c.booleanField = true;
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val" );
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then 'yes' end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "yes" );
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then 2 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "2" );
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then -2.4 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "-2.4" );
     }
 
     @Test
@@ -81,6 +90,12 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         c.booleanField = false;
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else field2 end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "val2" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else 'no' end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "no" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else 1 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "1" );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {}, "{{ if booleanField then field else -2.1 end }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "-2.1" );
     }
 
     @Test
@@ -634,6 +649,37 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
         assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
             "{{ if intField == 6 then field else field2 end }}", STRING, null ).render( c ).get() )
             .isEqualTo( "hello" );
+    }
+
+    @Test
+    public void testPipeConditionLeftPresent() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = new TestTemplateClass();
+        c.child.field = "nested";
+        c.field = "root";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child.field | field }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "nested" );
+    }
+
+    @Test
+    public void testPipeConditionLeftAbsent() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.child = null;
+        c.field = "root";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ child.field | field }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "root" );
+    }
+
+    @Test
+    public void testPipeConditionSingleField() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = null;
+        c.field2 = "fallback";
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ field | field2 }}", STRING, null ).render( c ).get() )
+            .isEqualTo( "fallback" );
     }
 
 }

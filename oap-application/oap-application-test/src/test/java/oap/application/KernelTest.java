@@ -31,6 +31,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceOne.Complex;
+import oap.application.annotation.PreStart;
+import oap.application.annotation.Start;
 import oap.application.module.Module;
 import oap.concurrent.Threads;
 import oap.system.Env;
@@ -86,6 +88,7 @@ public class KernelTest extends Fixtures {
         TestLifecycle service;
         TestLifecycle thread;
         TestLifecycle delayScheduled;
+        TestAnnotation annotation;
 
         try( Kernel kernel = new Kernel( modules ) ) {
             kernel.start( Map.of( "boot.main", "lifecycle", "shutdown.serviceTimeout", 1 ) );
@@ -93,11 +96,13 @@ public class KernelTest extends Fixtures {
             service = kernel.<TestLifecycle>service( "lifecycle", "service" ).orElseThrow();
             thread = kernel.<TestLifecycle>service( "lifecycle.thread" ).orElseThrow();
             delayScheduled = kernel.<TestLifecycle>service( "lifecycle.delayScheduled" ).orElseThrow();
+            annotation = kernel.<TestAnnotation>service( "lifecycle.annotation" ).orElseThrow();
         }
 
-        assertThat( service.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
-        assertThat( thread.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
-        assertThat( delayScheduled.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
+        assertThat( service.str ).hasToString( "/preStart/start/preStop/stop" );
+        assertThat( thread.str ).hasToString( "/preStart/start/preStop/stop" );
+        assertThat( delayScheduled.str ).hasToString( "/preStart/start/preStop/stop" );
+        assertThat( annotation.str ).hasToString( "preStart(a) / start(b)" );
     }
 
     @Test
@@ -513,6 +518,20 @@ public class KernelTest extends Fixtures {
 
         public TestEnum( List<Enum> enums ) {
             this.enums.addAll( enums );
+        }
+    }
+
+    public static class TestAnnotation {
+        public final StringBuilder str = new StringBuilder();
+
+        @PreStart
+        public void a() {
+            str.append( "preStart(a)" );
+        }
+
+        @Start
+        public void b() {
+            str.append( " / start(b)" );
         }
     }
 

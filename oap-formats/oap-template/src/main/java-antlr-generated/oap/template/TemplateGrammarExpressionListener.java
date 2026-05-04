@@ -4,15 +4,6 @@ package oap.template;
 
 import oap.template.tree.*;
 import oap.template.tree.Math;
-import oap.template.tree.WithCondition;
-import oap.template.tree.ConditionExpr;
-import oap.template.tree.FieldConditionExpr;
-import oap.template.tree.AndConditionExpr;
-import oap.template.tree.OrConditionExpr;
-import oap.template.tree.NotConditionExpr;
-import oap.template.tree.CompareConditionExpr;
-import oap.template.tree.CompareValue;
-import oap.template.tree.LiteralCompareValue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -49,6 +40,26 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitIfCode(TemplateGrammarExpression.IfCodeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#ifBranchCode}.
+	 * @param ctx the parse tree
+	 */
+	void enterIfBranchCode(TemplateGrammarExpression.IfBranchCodeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#ifBranchCode}.
+	 * @param ctx the parse tree
+	 */
+	void exitIfBranchCode(TemplateGrammarExpression.IfBranchCodeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#pipeCode}.
+	 * @param ctx the parse tree
+	 */
+	void enterPipeCode(TemplateGrammarExpression.PipeCodeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#pipeCode}.
+	 * @param ctx the parse tree
+	 */
+	void exitPipeCode(TemplateGrammarExpression.PipeCodeContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#withCode}.
 	 * @param ctx the parse tree

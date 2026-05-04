@@ -19,4 +19,8 @@ services {
       delay = 1h
     }
   }
+  annotation {
+    implementation = oap.application.KernelTest.TestAnnotation
+    supervision.supervise = true
+  }
 }
