@@ -28,6 +28,7 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
 
     @Override
     public String write( LogStreamProtocol.ProtocolVersion protocolVersion, byte[] buffer, int offset, int length ) throws LoggerException {
+        lock.lock();
         try {
             refresh();
             Path filename = filename();
@@ -84,6 +85,8 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
                 out = null;
             }
             throw new LoggerException( e );
+        } finally {
+            lock.unlock();
         }
     }
 }
