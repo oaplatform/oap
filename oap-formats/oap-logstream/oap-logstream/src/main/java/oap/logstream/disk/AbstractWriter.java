@@ -153,18 +153,23 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     }
 
     protected void closeOutput() throws LoggerException {
-        if( out != null ) try {
-            stopwatch.count( out::close );
+        lock.lock();
+        try {
+            if( out != null ) try {
+                stopwatch.count( out::close );
 
-            long fileSize = Files.size( outFilename );
-            log.trace( "closing output {} ({} bytes)", this, fileSize );
-            Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
-            Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
-        } catch( IOException e ) {
-            throw new LoggerException( e );
+                long fileSize = Files.size( outFilename );
+                log.trace( "closing output {} ({} bytes)", this, fileSize );
+                Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
+                Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
+            } catch( IOException e ) {
+                throw new LoggerException( e );
+            } finally {
+                outFilename = null;
+                out = null;
+            }
         } finally {
-            outFilename = null;
-            out = null;
+            lock.unlock();
         }
     }
 
