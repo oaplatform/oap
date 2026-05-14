@@ -119,7 +119,7 @@ public class TemplateAstUtils {
                     } else {
                         Field field = findField( parentClass, expr.name );
 
-                        TemplateType fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
+                        TemplateType fieldType = new TemplateType( field.getGenericType() instanceof TypeVariable ? field.getType() : field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
                         if( fieldType.isInstanceOf( Ext.class ) ) {
                             Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
                             if( extClass != null ) {
