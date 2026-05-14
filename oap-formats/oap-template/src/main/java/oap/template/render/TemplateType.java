@@ -30,7 +30,6 @@ import oap.util.Lists;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +55,6 @@ public class TemplateType {
     public static Class<?> getTypeClass( Type type ) {
         return switch( type ) {
             case ParameterizedType parameterizedType -> getTypeClass( parameterizedType.getRawType() );
-            case TypeVariable typeVariable -> getTypeClass( typeVariable.getBounds()[0] );
             case null, default -> ( Class<?> ) type;
         };
 
