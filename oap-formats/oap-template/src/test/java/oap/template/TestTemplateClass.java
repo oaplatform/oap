@@ -92,6 +92,8 @@ public class TestTemplateClass {
     @JsonAlias( { "jsonTestAlias1", "jsonTestAlias2" } )
     public String jsonTest;
 
+    public TestTemplateClassGeneric genericChild;
+
     public String fieldM() {
         return field;
     }
@@ -114,5 +116,9 @@ public class TestTemplateClass {
 
     public static class ITestTemplateClassExt extends Ext {
 
+    }
+
+    public static class TestTemplateClassGeneric<T extends oap.template.TestTemplateClass> {
+        public int intField;
     }
 }

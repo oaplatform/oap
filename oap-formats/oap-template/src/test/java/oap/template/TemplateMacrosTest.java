@@ -88,12 +88,17 @@ public class TemplateMacrosTest extends Fixtures {
         c.floatObjectField = null;
         c.doubleObjectField = null;
 
+        c.genericChild = new TestTemplateClass.TestTemplateClassGeneric();
+        c.genericChild.intField = 12;
+
         assertThat( templateEngine.getTemplate( "testToString_byte", new TypeRef<TestTemplateClass>() {}, "{{ byteObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "str" );
         assertThat( templateEngine.getTemplate( "testToString_short", new TypeRef<TestTemplateClass>() {}, "{{ shortObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "str" );
         assertThat( templateEngine.getTemplate( "testToString_int", new TypeRef<TestTemplateClass>() {}, "{{ intObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "str" );
+        assertThat( templateEngine.getTemplate( "testToString_int2", new TypeRef<TestTemplateClass>() {}, "{{ genericChild.intField; toString() ?? '' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "12" );
         assertThat( templateEngine.getTemplate( "testToString_long", new TypeRef<TestTemplateClass>() {}, "{{ longObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "str" );
         assertThat( templateEngine.getTemplate( "testToString_float", new TypeRef<TestTemplateClass>() {}, "{{ floatObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
