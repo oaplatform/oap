@@ -32,7 +32,7 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) function? defaultValue? (IF ifCondition)? {
         $ret = new Expression(
           $BLOCK_COMMENT.text,
           $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
@@ -105,6 +105,24 @@ exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
       }
     | exprs {
         $ret.add( $exprs.ret );
+      }
+    | SSTRING {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( sdStringToString( $SSTRING.text ) ) ); $ret.add( e );
+      }
+    | DSTRING {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( sdStringToString( $DSTRING.text ) ) ); $ret.add( e );
+      }
+    | DECDIGITS {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( $DECDIGITS.text ) ) ); $ret.add( e );
+      }
+    | MINUS DECDIGITS {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $DECDIGITS.text ) ) ); $ret.add( e );
+      }
+    | FLOAT {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( $FLOAT.text ) ) ); $ret.add( e );
+      }
+    | MINUS FLOAT {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $FLOAT.text ) ) ); $ret.add( e );
       }
     ;
 

@@ -59,11 +59,14 @@ import oap.util.Arrays;
 import oap.util.Lists;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -77,6 +80,8 @@ import static org.apache.commons.lang3.StringUtils.stripStart;
 
 @Slf4j
 public class TemplateAstUtils {
+    private static final Pattern STEP_PATTERN = Pattern.compile( "(?:^|\\s)step\\s" );
+
     @SuppressWarnings( "checkstyle:ModifiedControlVariable" )
     public static TemplateType findExpressionResultType( TemplateType rootTemplateType, Exprs exprs, ErrorStrategy errorStrategy ) {
         return findExpressionResultType( rootTemplateType, exprs, errorStrategy, Map.of() );
@@ -116,7 +121,7 @@ public class TemplateAstUtils {
                     } else {
                         Field field = findField( parentClass, expr.name );
 
-                        TemplateType fieldType = new TemplateType( field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
+                        TemplateType fieldType = new TemplateType( getTypeFromField( field ), field.isAnnotationPresent( Nullable.class ) );
                         if( fieldType.isInstanceOf( Ext.class ) ) {
                             Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
                             if( extClass != null ) {
@@ -144,6 +149,10 @@ public class TemplateAstUtils {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
             return new TemplateType( String.class, false );
         }
+    }
+
+    private static @NonNull Type getTypeFromField( Field field ) {
+        return field.getGenericType() instanceof TypeVariable ? field.getType() : field.getGenericType();
     }
 
     static Field findField( Class<?> clazz, String fieldName ) throws NoSuchFieldException {
@@ -200,9 +209,16 @@ public class TemplateAstUtils {
             Exprs item = expression.or.getFirst();
             TemplateType effectiveType = item.rootScoped ? rootTemplateType
                 : ( item.varName != null && rangeVarTypes.containsKey( item.varName ) )
-                    ? rangeVarTypes.get( item.varName )
+                  ? rangeVarTypes.get( item.varName )
                     : templateType;
             TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( effectiveType, item, errorStrategy, rangeVarTypes );
+            if( expression.function != null ) {
+                List<Method> methods = builtInFunction.get( expression.function.name );
+                if( methods != null && !methods.isEmpty() ) {
+                    Method m = methods.get( 0 );
+                    expressionResultType = new TemplateType( m.getGenericReturnType(), m.isAnnotationPresent( javax.annotation.Nullable.class ) );
+                }
+            }
             AstRender itemAst = TemplateAstUtils.toAst( item, expression.function,
                 effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy, rangeVarTypes );
             list.add( itemAst );
@@ -298,7 +314,7 @@ public class TemplateAstUtils {
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                     boolean forceCast = false;
                     if( fieldType.isInstanceOf( Ext.class ) ) {
                         Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
@@ -350,7 +366,7 @@ public class TemplateAstUtils {
 
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
     private static AstRender toCompareConditionAst( Exprs conditionExprs, String op, String literal,
-                                                     TemplateType templateType, ErrorStrategy errorStrategy ) {
+                                                    TemplateType templateType, ErrorStrategy errorStrategy ) {
         try {
             TemplateType currentTemplateType = templateType;
             Chain result = new Chain();
@@ -380,7 +396,7 @@ public class TemplateAstUtils {
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                     AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
                     result.add( ast );
                     currentTemplateType = fieldType;
@@ -422,8 +438,6 @@ public class TemplateAstUtils {
         }
     }
 
-    private record ScopeAstResult( AstRender scopeAst, TemplateType scopeType ) {}
-
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
     private static ScopeAstResult toScopeAst( Exprs scopeExprs, TemplateType templateType, ErrorStrategy errorStrategy ) {
         try {
@@ -450,7 +464,7 @@ public class TemplateAstUtils {
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                     boolean forceCast = false;
                     if( fieldType.isInstanceOf( Ext.class ) ) {
                         Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
@@ -577,7 +591,7 @@ public class TemplateAstUtils {
 
                         boolean nullable = field.isAnnotationPresent( Nullable.class )
                             || ( !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class ) );
-                        TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                        TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                         boolean forceCast = false;
                         if( fieldType.isInstanceOf( Ext.class ) ) {
                             Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
@@ -660,7 +674,8 @@ public class TemplateAstUtils {
                         return toAst( mathExprs, function, parentTemplateType, resultType, null,
                             defaultValue, builtInFunction, errorStrategy );
                     }
-                } catch( NoSuchFieldException ignored ) { }
+                } catch( NoSuchFieldException ignored ) {
+                }
             }
 
             ArrayList<AstRender> items = new ArrayList<>();
@@ -810,8 +825,6 @@ public class TemplateAstUtils {
         }
         return astRoot;
     }
-
-    private static final Pattern STEP_PATTERN = Pattern.compile( "(?:^|\\s)step\\s" );
 
     private static AstRender buildRangeAst( BlockRangeElement r, TemplateType templateType, TemplateType rootTemplateType,
                                             Map<String, List<Method>> builtInFunction, ErrorStrategy errorStrategy ) throws NoSuchFieldException {
@@ -968,4 +981,6 @@ public class TemplateAstUtils {
 
         return new AstRenderFunction( new TemplateType( method.getGenericReturnType(), method.isAnnotationPresent( Nullable.class ) ), method, args );
     }
+
+    private record ScopeAstResult( AstRender scopeAst, TemplateType scopeType ) {}
 }

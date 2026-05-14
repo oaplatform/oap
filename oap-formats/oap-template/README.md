@@ -10,6 +10,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Delimiters](#delimiters)
     - [Custom expression delimiters](#custom-expression-delimiters)
   - [Whitespace trimming](#whitespace-trimming)
+  - [Literal value expressions](#literal-value-expressions)
   - [Field access](#field-access)
   - [Null safety](#null-safety)
   - [Default values (`??`)](#default-values-)
@@ -162,6 +163,24 @@ line1
 ```
 
 Renders as `line1content` when `flag` is `true` (the `\n` after `line1` is stripped).
+
+### Literal value expressions
+
+A template expression can contain a bare literal — no field access required:
+
+| Template | Output |
+|---|---|
+| `{{ 1 }}` | `1` |
+| `{{ 1.2 }}` | `1.2` |
+| `{{ -1.2 }}` | `-1.2` |
+| `{{ 'text' }}` | `text` |
+
+Useful for static values in otherwise-dynamic templates, or as branch values in if-then-else:
+
+```
+price={{ 0.0 }}, label={{ 'unknown' }}
+{{ if premium then user.discount else 0 end }}
+```
 
 ### Field access
 
@@ -616,6 +635,14 @@ All range forms accept an optional `{{% else %}}` branch. It renders when the co
 {{ obj ; toJson() }}
 ```
 
+A default value (`??`) can follow the function call:
+
+```
+{{ byteField ; toString() ?? 'n/a' }}
+```
+
+This renders `'n/a'` when `byteField` is null.
+
 ### Cast types
 
 `${ <java.lang.Double>field ?? 0.0 }` — forces the expression result to be interpreted as the given type. Useful when the field is typed as `Object` (e.g., in `Map<String, Object>`) but the actual runtime type is known.
@@ -651,6 +678,7 @@ Registered automatically from `META-INF/oap-template-macros.list` on the classpa
 | `toLowerCase()` | `(String src)` | Converts to lower case; null-safe |
 | `format(pattern)` | `(DateTime dt, String pattern)` | Formats a Joda `DateTime`; predefined patterns: `SIMPLE`, `MILLIS`, `SIMPLE_CLEAN`, `DATE` |
 | `toJson()` | `(Object obj)` | Serialises the value to JSON |
+| `toString()` | `(Byte\|Short\|Integer\|Long\|Float\|Double src)` | Converts a numeric wrapper to its string representation; returns `null` for `null` input (so `?? default` applies) |
 | `default(fallback)` | `(Object in, Object fallback)` | Returns fallback if in is null or empty |
 
 ---

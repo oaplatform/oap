@@ -131,4 +131,28 @@ public class TemplateMacros {
     public static String toJson( Object obj ) {
         return Binder.json.marshal( obj );
     }
+
+    public static String toString( Byte b ) {
+        return b == null ? null : String.valueOf( ( byte ) b );
+    }
+
+    public static String toString( Short s ) {
+        return s == null ? null : String.valueOf( ( short ) s );
+    }
+
+    public static String toString( Integer i ) {
+        return i == null ? null : String.valueOf( ( int ) i );
+    }
+
+    public static String toString( Long l ) {
+        return l == null ? null : String.valueOf( ( long ) l );
+    }
+
+    public static String toString( Float f ) {
+        return f == null ? null : String.valueOf( ( float ) f );
+    }
+
+    public static String toString( Double d ) {
+        return d == null ? null : String.valueOf( ( double ) d );
+    }
 }

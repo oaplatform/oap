@@ -53,6 +53,18 @@ public class TemplateEngineTest extends AbstractTemplateEngineTest {
     }
 
     @Test
+    public void testValue() {
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ 1 }}", STRING, null ).render( null ).get() )
+            .isEqualTo( "1" );
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ 1.2 }}", STRING, null ).render( null ).get() )
+            .isEqualTo( "1.2" );
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ -1.2 }}", STRING, null ).render( null ).get() )
+            .isEqualTo( "-1.2" );
+        assertThat( getTemplate( testMethodName, new TypeRef<Map<String, String>>() {}, "{{ 'a' }}", STRING, null ).render( null ).get() )
+            .isEqualTo( "a" );
+    }
+
+    @Test
     public void testWithoutDefaultValue() {
         TestTemplateClass c = new TestTemplateClass();
         c.childNullable = new TestTemplateClass();
