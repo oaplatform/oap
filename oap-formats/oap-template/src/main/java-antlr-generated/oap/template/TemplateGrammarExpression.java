@@ -146,8 +146,8 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		public PipeCodeContext pipeCode;
 		public WithCodeContext withCode;
 		public ExprsCodeContext exprsCode;
-		public DefaultValueContext defaultValue;
 		public FunctionContext function;
+		public DefaultValueContext defaultValue;
 		public IfCodeContext ifCode() {
 			return getRuleContext(IfCodeContext.class,0);
 		}
@@ -162,11 +162,11 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		}
 		public TerminalNode BLOCK_COMMENT() { return getToken(TemplateGrammarExpression.BLOCK_COMMENT, 0); }
 		public TerminalNode CAST_TYPE() { return getToken(TemplateGrammarExpression.CAST_TYPE, 0); }
-		public DefaultValueContext defaultValue() {
-			return getRuleContext(DefaultValueContext.class,0);
-		}
 		public FunctionContext function() {
 			return getRuleContext(FunctionContext.class,0);
+		}
+		public DefaultValueContext defaultValue() {
+			return getRuleContext(DefaultValueContext.class,0);
 		}
 		public TerminalNode IF() { return getToken(TemplateGrammarExpression.IF, 0); }
 		public IfConditionContext ifCondition() {
@@ -244,20 +244,20 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 			setState(69);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==DQUESTION) {
+			if (_la==SEMI) {
 				{
 				setState(68);
-				((ExpressionContext)_localctx).defaultValue = defaultValue();
+				((ExpressionContext)_localctx).function = function();
 				}
 			}
 
 			setState(72);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==SEMI) {
+			if (_la==DQUESTION) {
 				{
 				setState(71);
-				((ExpressionContext)_localctx).function = function();
+				((ExpressionContext)_localctx).defaultValue = defaultValue();
 				}
 			}
 
@@ -2616,8 +2616,8 @@ public class TemplateGrammarExpression extends TemplateGrammarAdaptor {
 		"\u0000?C\u0003\u0006\u0003\u0000@C\u0003\b\u0004\u0000AC\u0003\u000e\u0007"+
 		"\u0000B>\u0001\u0000\u0000\u0000B?\u0001\u0000\u0000\u0000B@\u0001\u0000"+
 		"\u0000\u0000BA\u0001\u0000\u0000\u0000CE\u0001\u0000\u0000\u0000DF\u0003"+
-		"\u001c\u000e\u0000ED\u0001\u0000\u0000\u0000EF\u0001\u0000\u0000\u0000"+
-		"FH\u0001\u0000\u0000\u0000GI\u0003\"\u0011\u0000HG\u0001\u0000\u0000\u0000"+
+		"\"\u0011\u0000ED\u0001\u0000\u0000\u0000EF\u0001\u0000\u0000\u0000FH\u0001"+
+		"\u0000\u0000\u0000GI\u0003\u001c\u000e\u0000HG\u0001\u0000\u0000\u0000"+
 		"HI\u0001\u0000\u0000\u0000IL\u0001\u0000\u0000\u0000JK\u0005\u0001\u0000"+
 		"\u0000KM\u0003\u0010\b\u0000LJ\u0001\u0000\u0000\u0000LM\u0001\u0000\u0000"+
 		"\u0000MN\u0001\u0000\u0000\u0000NO\u0006\u0000\uffff\uffff\u0000O\u0001"+

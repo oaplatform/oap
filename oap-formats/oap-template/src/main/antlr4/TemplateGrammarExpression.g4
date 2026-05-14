@@ -32,7 +32,7 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) defaultValue? function? (IF ifCondition)? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) function? defaultValue? (IF ifCondition)? {
         $ret = new Expression(
           $BLOCK_COMMENT.text,
           $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,

@@ -616,6 +616,14 @@ All range forms accept an optional `{{% else %}}` branch. It renders when the co
 {{ obj ; toJson() }}
 ```
 
+A default value (`??`) can follow the function call:
+
+```
+{{ byteField ; toString() ?? 'n/a' }}
+```
+
+This renders `'n/a'` when `byteField` is null.
+
 ### Cast types
 
 `${ <java.lang.Double>field ?? 0.0 }` — forces the expression result to be interpreted as the given type. Useful when the field is typed as `Object` (e.g., in `Map<String, Object>`) but the actual runtime type is known.
@@ -651,6 +659,7 @@ Registered automatically from `META-INF/oap-template-macros.list` on the classpa
 | `toLowerCase()` | `(String src)` | Converts to lower case; null-safe |
 | `format(pattern)` | `(DateTime dt, String pattern)` | Formats a Joda `DateTime`; predefined patterns: `SIMPLE`, `MILLIS`, `SIMPLE_CLEAN`, `DATE` |
 | `toJson()` | `(Object obj)` | Serialises the value to JSON |
+| `toString()` | `(Byte\|Short\|Integer\|Long\|Float\|Double src)` | Converts a numeric wrapper to its string representation; returns `null` for `null` input (so `?? default` applies) |
 | `default(fallback)` | `(Object in, Object fallback)` | Returns fallback if in is null or empty |
 
 ---

@@ -203,6 +203,13 @@ public class TemplateAstUtils {
                     ? rangeVarTypes.get( item.varName )
                     : templateType;
             TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( effectiveType, item, errorStrategy, rangeVarTypes );
+            if( expression.function != null ) {
+                List<Method> methods = builtInFunction.get( expression.function.name );
+                if( methods != null && !methods.isEmpty() ) {
+                    Method m = methods.get( 0 );
+                    expressionResultType = new TemplateType( m.getGenericReturnType(), m.isAnnotationPresent( javax.annotation.Nullable.class ) );
+                }
+            }
             AstRender itemAst = TemplateAstUtils.toAst( item, expression.function,
                 effectiveType, rootTemplateType, expressionResultType, castType, defaultValue, builtInFunction, errorStrategy, rangeVarTypes );
             list.add( itemAst );

@@ -25,8 +25,11 @@
 package oap.template;
 
 import oap.reflect.TypeRef;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import org.joda.time.DateTime;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -35,7 +38,19 @@ import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
-public class TemplateMacrosTest {
+public class TemplateMacrosTest extends Fixtures {
+    private final TestDirectoryFixture testDirectoryFixture;
+    private TemplateEngine templateEngine;
+
+    public TemplateMacrosTest() {
+        testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    }
+
+    @BeforeMethod
+    public void beforeMethod() {
+        templateEngine = new TemplateEngine( testDirectoryFixture.testDirectory(), Dates.d( 10 ) );
+    }
+
     @Test
     public void testUrlencode() {
         assertThat( TemplateMacros.urlencode( "12 ?3", 2 ) ).isEqualTo( "12%2B%253F3" );
@@ -59,7 +74,31 @@ public class TemplateMacrosTest {
             .isEqualTo( "[]" );
 
         c.listString = List.of( "1", "2", "3" );
-        assertThat( new TemplateEngine( Dates.d( 10 ) ).getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ listString; toJson() ?? [] }}", STRING, null, null ).render( c ).get() )
+        assertThat( templateEngine.getTemplate( "testListFieldDefaultValue", new TypeRef<TestTemplateClass>() {}, "{{ listString; toJson() ?? [] }}", STRING, null, null ).render( c ).get() )
             .isEqualTo( "[\"1\",\"2\",\"3\"]" );
+    }
+
+    @Test
+    public void testToString() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.byteObjectField = null;
+        c.shortObjectField = null;
+        c.intObjectField = null;
+        c.longObjectField = null;
+        c.floatObjectField = null;
+        c.doubleObjectField = null;
+
+        assertThat( templateEngine.getTemplate( "testToString_byte", new TypeRef<TestTemplateClass>() {}, "{{ byteObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "str" );
+        assertThat( templateEngine.getTemplate( "testToString_short", new TypeRef<TestTemplateClass>() {}, "{{ shortObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "str" );
+        assertThat( templateEngine.getTemplate( "testToString_int", new TypeRef<TestTemplateClass>() {}, "{{ intObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "str" );
+        assertThat( templateEngine.getTemplate( "testToString_long", new TypeRef<TestTemplateClass>() {}, "{{ longObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "str" );
+        assertThat( templateEngine.getTemplate( "testToString_float", new TypeRef<TestTemplateClass>() {}, "{{ floatObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "str" );
+        assertThat( templateEngine.getTemplate( "testToString_double", new TypeRef<TestTemplateClass>() {}, "{{ doubleObjectField; toString() ?? 'str' }}", STRING, null, null ).render( c ).get() )
+            .isEqualTo( "str" );
     }
 }
