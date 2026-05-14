@@ -106,6 +106,24 @@ exprsCode returns [ArrayList<Exprs> ret = new ArrayList<>()]
     | exprs {
         $ret.add( $exprs.ret );
       }
+    | SSTRING {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( sdStringToString( $SSTRING.text ) ) ); $ret.add( e );
+      }
+    | DSTRING {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( sdStringToString( $DSTRING.text ) ) ); $ret.add( e );
+      }
+    | DECDIGITS {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( $DECDIGITS.text ) ) ); $ret.add( e );
+      }
+    | MINUS DECDIGITS {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $DECDIGITS.text ) ) ); $ret.add( e );
+      }
+    | FLOAT {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( $FLOAT.text ) ) ); $ret.add( e );
+      }
+    | MINUS FLOAT {
+        Exprs e = new Exprs(); e.concatenation = new Concatenation( List.of( new NumericLiteral( "-" + $FLOAT.text ) ) ); $ret.add( e );
+      }
     ;
 
 ifCondition returns [ConditionExpr ret]

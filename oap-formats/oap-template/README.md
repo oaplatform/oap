@@ -10,6 +10,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
   - [Delimiters](#delimiters)
     - [Custom expression delimiters](#custom-expression-delimiters)
   - [Whitespace trimming](#whitespace-trimming)
+  - [Literal value expressions](#literal-value-expressions)
   - [Field access](#field-access)
   - [Null safety](#null-safety)
   - [Default values (`??`)](#default-values-)
@@ -162,6 +163,24 @@ line1
 ```
 
 Renders as `line1content` when `flag` is `true` (the `\n` after `line1` is stripped).
+
+### Literal value expressions
+
+A template expression can contain a bare literal — no field access required:
+
+| Template | Output |
+|---|---|
+| `{{ 1 }}` | `1` |
+| `{{ 1.2 }}` | `1.2` |
+| `{{ -1.2 }}` | `-1.2` |
+| `{{ 'text' }}` | `text` |
+
+Useful for static values in otherwise-dynamic templates, or as branch values in if-then-else:
+
+```
+price={{ 0.0 }}, label={{ 'unknown' }}
+{{ if premium then user.discount else 0 end }}
+```
 
 ### Field access
 
