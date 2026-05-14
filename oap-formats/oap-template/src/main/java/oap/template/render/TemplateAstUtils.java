@@ -59,11 +59,13 @@ import oap.util.Arrays;
 import oap.util.Lists;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStreams;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -119,7 +121,7 @@ public class TemplateAstUtils {
                     } else {
                         Field field = findField( parentClass, expr.name );
 
-                        TemplateType fieldType = new TemplateType( field.getGenericType() instanceof TypeVariable ? field.getType() : field.getGenericType(), field.isAnnotationPresent( Nullable.class ) );
+                        TemplateType fieldType = new TemplateType( getTypeFromField( field ), field.isAnnotationPresent( Nullable.class ) );
                         if( fieldType.isInstanceOf( Ext.class ) ) {
                             Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
                             if( extClass != null ) {
@@ -147,6 +149,10 @@ public class TemplateAstUtils {
             if( errorStrategy == ErrorStrategy.ERROR ) throw new TemplateException( e.getMessage(), e );
             return new TemplateType( String.class, false );
         }
+    }
+
+    private static @NonNull Type getTypeFromField( Field field ) {
+        return field.getGenericType() instanceof TypeVariable ? field.getType() : field.getGenericType();
     }
 
     static Field findField( Class<?> clazz, String fieldName ) throws NoSuchFieldException {
@@ -308,7 +314,7 @@ public class TemplateAstUtils {
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                     boolean forceCast = false;
                     if( fieldType.isInstanceOf( Ext.class ) ) {
                         Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
@@ -390,7 +396,7 @@ public class TemplateAstUtils {
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                     AstRenderField ast = new AstRenderField( field.getName(), fieldType, false, null );
                     result.add( ast );
                     currentTemplateType = fieldType;
@@ -458,7 +464,7 @@ public class TemplateAstUtils {
                     java.lang.reflect.Field field = findField( parentClass, expr.name );
                     boolean nullable = field.isAnnotationPresent( Nullable.class )
                         || !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class );
-                    TemplateType fieldType = new TemplateType( field.getGenericType(), nullable );
+                    TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                     boolean forceCast = false;
                     if( fieldType.isInstanceOf( Ext.class ) ) {
                         Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
@@ -585,7 +591,7 @@ public class TemplateAstUtils {
 
                         boolean nullable = field.isAnnotationPresent( Nullable.class )
                             || ( !field.getType().isPrimitive() && !field.isAnnotationPresent( Nonnull.class ) );
-                        TemplateType fieldType = new TemplateType( field.getGenericType() instanceof TypeVariable ? field.getType() : field.getGenericType(), nullable );
+                        TemplateType fieldType = new TemplateType( getTypeFromField( field ), nullable );
                         boolean forceCast = false;
                         if( fieldType.isInstanceOf( Ext.class ) ) {
                             Class<?> extClass = ExtDeserializer.extensionOf( parentClass, expr.name );
