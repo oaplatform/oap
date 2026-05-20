@@ -586,14 +586,14 @@ public final class Files {
 
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
     public static boolean wildcardMatch( String filename, String wildcardMatcher ) {
-        var wmPosition = 0;
-        var fnPosition = 0;
+        int wmPosition = 0;
+        int fnPosition = 0;
 
-        var mp = 0;
-        var cp = 0;
+        int mp = 0;
+        int cp = 0;
 
-        var fnLength = filename.length();
-        var wmLength = wildcardMatcher.length();
+        int fnLength = filename.length();
+        int wmLength = wildcardMatcher.length();
 
         char wm = 0;
 

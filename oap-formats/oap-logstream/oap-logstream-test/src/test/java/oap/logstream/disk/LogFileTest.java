@@ -1,5 +1,6 @@
 package oap.logstream.disk;
 
+import oap.logstream.CompletedLogLoggerException;
 import oap.logstream.LogId;
 import oap.template.Types;
 import oap.testng.Fixtures;
@@ -8,12 +9,15 @@ import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Map;
 
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.joda.time.DateTimeZone.UTC;
 
 
@@ -22,6 +26,11 @@ public class LogFileTest extends Fixtures {
 
     public LogFileTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
+    }
+
+    private static LogId newLogId() {
+        return new LogId( "fpp", "type", "host", Map.of(),
+            new String[] { "h1" }, new byte[][] { new byte[] { Types.STRING.id } } );
     }
 
     @Test
@@ -73,5 +82,143 @@ public class LogFileTest extends Fixtures {
 
         LogMetadata newLm = new LogFile( file ).getLogMetadata();
         assertThat( newLm.getDateTime( "time" ) ).isEqualTo( dt );
+    }
+
+    @Test
+    public void testLoadFromPath() {
+        Path base = testDirectoryFixture.testPath( "file.gz" );
+        assertThat( LogFile.loadFromPath( LogFile.pathFor( base, LogFile.EXTENSION_LOG_METADATA ) ).outFilename ).isEqualTo( base );
+        assertThat( LogFile.loadFromPath( LogFile.pathFor( base, LogFile.EXTENSION_LOG_TRANSACTION ) ).outFilename ).isEqualTo( base );
+        assertThat( LogFile.loadFromPath( LogFile.pathFor( base, LogFile.EXTENSION_LOG_COMPLETED ) ).outFilename ).isEqualTo( base );
+        assertThat( LogFile.loadFromPath( base ).outFilename ).isEqualTo( base );
+    }
+
+    @Test
+    public void testBeginTransactionNoFile() {
+        assertThat( new LogFile( testDirectoryFixture.testPath( "file" ) ).beginTransaction() ).isEqualTo( 0L );
+    }
+
+    @Test
+    public void testCommitTransaction() throws IOException {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        logFile.commitTransaction( 10 );
+        assertThat( Files.readString( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ) ) ).isEqualTo( "10" );
+        logFile.commitTransaction( 5 );
+        assertThat( Files.readString( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ) ) ).isEqualTo( "15" );
+    }
+
+    @Test
+    public void testReadyForUpload() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        logFile.readyForUpload();
+        assertThat( LogFile.pathFor( file, LogFile.EXTENSION_LOG_COMPLETED ) ).exists();
+        logFile.readyForUpload();
+    }
+
+    @Test
+    public void testIsCompleted() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        assertThat( logFile.isCompleted() ).isFalse();
+        logFile.readyForUpload();
+        assertThat( logFile.isCompleted() ).isTrue();
+    }
+
+    @Test
+    public void testIsValid() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        assertThat( logFile.isValid() ).isFalse();
+        logFile.create( newLogId() );
+        assertThat( logFile.isValid() ).isFalse();
+        logFile.commitTransaction( 0 );
+        assertThat( logFile.isValid() ).isTrue();
+        logFile.close();
+    }
+
+    @Test
+    public void testExistsAndValid() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        assertThat( logFile.existsAndValid() ).isFalse();
+
+        logFile.create( newLogId() );
+        logFile.commitTransaction( 0 );
+        assertThat( logFile.existsAndValid() ).isTrue();
+
+        logFile.readyForUpload();
+        assertThatThrownBy( logFile::existsAndValid ).isInstanceOf( CompletedLogLoggerException.class );
+
+        logFile.close();
+    }
+
+    @Test
+    public void testWriteAndCommitTransaction() throws IOException {
+        Path file = testDirectoryFixture.testPath( "file" );
+        byte[] data = "hello".getBytes( StandardCharsets.UTF_8 );
+
+        LogFile logFile = new LogFile( file ).create( newLogId() );
+        logFile.writeAndCommitTransaction( data, 0, data.length );
+
+        assertThat( Files.readAllBytes( file ) ).isEqualTo( data );
+        assertThat( Files.readString( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ) ) )
+            .isEqualTo( String.valueOf( data.length ) );
+        logFile.close();
+    }
+
+    @Test
+    public void testBeginTransactionWriteAndCommitTransaction() throws IOException {
+        Path file = testDirectoryFixture.testPath( "file" );
+        byte[] first = "hello".getBytes( StandardCharsets.UTF_8 );
+        byte[] second = "world".getBytes( StandardCharsets.UTF_8 );
+
+        LogFile logFile = new LogFile( file ).create( newLogId() );
+        logFile.beginTransactionWriteAndCommitTransaction( first, 0, first.length );
+        logFile.beginTransactionWriteAndCommitTransaction( second, 0, second.length );
+
+        assertThat( Files.readAllBytes( file ) ).isEqualTo( "helloworld".getBytes( StandardCharsets.UTF_8 ) );
+        logFile.close();
+    }
+
+    @Test
+    public void testGetDataSize() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        byte[] data = "hello".getBytes( StandardCharsets.UTF_8 );
+
+        LogFile logFile = new LogFile( file ).create( newLogId() );
+        logFile.writeAndCommitTransaction( data, 0, data.length );
+
+        assertThat( logFile.getDataSize() ).isEqualTo( data.length );
+        logFile.close();
+    }
+
+    @Test
+    public void testGetMaxModificationTime() throws IOException {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        assertThat( logFile.getMaxModificationTime() ).isEqualTo( -1L );
+
+        logFile.create( newLogId() );
+        logFile.commitTransaction( 0 );
+        logFile.readyForUpload();
+
+        Files.setLastModifiedTime( file, FileTime.fromMillis( 1_000_000L ) );
+        Files.setLastModifiedTime( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ), FileTime.fromMillis( 2_000_000L ) );
+        Files.setLastModifiedTime( LogFile.pathFor( file, LogFile.EXTENSION_LOG_METADATA ), FileTime.fromMillis( 3_000_000L ) );
+        Files.setLastModifiedTime( LogFile.pathFor( file, LogFile.EXTENSION_LOG_COMPLETED ), FileTime.fromMillis( 4_000_000L ) );
+
+        assertThat( logFile.getMaxModificationTime() ).isEqualTo( 4_000_000L );
+        logFile.close();
+    }
+
+    @Test
+    public void testClose() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        new LogFile( file ).close();
+
+        LogFile logFile = new LogFile( file ).create( newLogId() );
+        logFile.close();
     }
 }

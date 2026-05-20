@@ -42,11 +42,12 @@ public class LogFile {
     }
 
     public static LogFile loadFromPath( Path path ) {
-        if( path.endsWith( EXTENSION_LOG_METADATA ) ) {
+        String s = path.toString();
+        if( s.endsWith( EXTENSION_LOG_METADATA ) ) {
             return new LogFile( getMainFilePath( path, EXTENSION_LOG_METADATA ) );
-        } else if( path.endsWith( EXTENSION_LOG_TRANSACTION ) ) {
+        } else if( s.endsWith( EXTENSION_LOG_TRANSACTION ) ) {
             return new LogFile( getMainFilePath( path, EXTENSION_LOG_TRANSACTION ) );
-        } else if( path.endsWith( EXTENSION_LOG_COMPLETED ) ) {
+        } else if( s.endsWith( EXTENSION_LOG_COMPLETED ) ) {
             return new LogFile( getMainFilePath( path, EXTENSION_LOG_COMPLETED ) );
         }
         return new LogFile( path );
@@ -204,4 +205,49 @@ public class LogFile {
 
         return false;
     }
+
+    public boolean isCompleted() {
+        return Files.exists( pathFor( outFilename, EXTENSION_LOG_COMPLETED ) );
+    }
+
+    public boolean isValid() {
+        boolean mainFile = Files.exists( outFilename );
+        boolean transactionFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_TRANSACTION ) );
+        boolean metadataFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_METADATA ) );
+
+        return mainFile && transactionFile && metadataFile;
+    }
+
+    public long getMaxModificationTime() throws LoggerException {
+        try {
+            Path transactionFile = pathFor( outFilename, EXTENSION_LOG_TRANSACTION );
+            Path metadataFile = pathFor( outFilename, EXTENSION_LOG_METADATA );
+            Path completedFile = pathFor( outFilename, EXTENSION_LOG_COMPLETED );
+
+            boolean mainFile = Files.exists( outFilename );
+            boolean transactionFileExists = Files.exists( transactionFile );
+            boolean metadataFileExists = Files.exists( metadataFile );
+            boolean completedFileExists = Files.exists( completedFile );
+
+            long time = -1;
+
+            if( mainFile ) {
+                time = Long.max( time, Files.getLastModifiedTime( outFilename ).toMillis() );
+            }
+            if( transactionFileExists ) {
+                time = Long.max( time, Files.getLastModifiedTime( transactionFile ).toMillis() );
+            }
+            if( metadataFileExists ) {
+                time = Long.max( time, Files.getLastModifiedTime( metadataFile ).toMillis() );
+            }
+            if( completedFileExists ) {
+                time = Long.max( time, Files.getLastModifiedTime( completedFile ).toMillis() );
+            }
+
+            return time;
+        } catch( IOException e ) {
+            throw new LoggerException( e );
+        }
+    }
+
 }
