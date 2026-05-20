@@ -238,6 +238,31 @@ public class LogFileTest extends Fixtures {
     }
 
     @Test
+    public void testMoveTo() {
+        Path baseDir = testDirectoryFixture.testPath( "base" );
+        Path destDir = testDirectoryFixture.testPath( "dest" );
+
+        Path file = baseDir.resolve( "a/b/file.gz" );
+        LogFile logFile = new LogFile( file ).create( newLogId() );
+        logFile.commitTransaction( 0 );
+        logFile.readyForUpload();
+        logFile.close();
+
+        logFile.moveTo( destDir, baseDir );
+
+        assertThat( file ).doesNotExist();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_METADATA ) ).doesNotExist();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ).doesNotExist();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ) ).doesNotExist();
+
+        LogFile destLogFile = new LogFile( destDir.resolve( "a/b/file.gz" ) );
+        assertThat( destLogFile.outFilename ).exists();
+        assertThat( destLogFile.pathFor( LogFile.EXTENSION_LOG_METADATA ) ).exists();
+        assertThat( destLogFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ).exists();
+        assertThat( destLogFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ) ).exists();
+    }
+
+    @Test
     public void testDelete() {
         Path file = testDirectoryFixture.testPath( "file" );
         LogFile logFile = new LogFile( file ).create( newLogId() );

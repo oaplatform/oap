@@ -5,6 +5,7 @@ import oap.json.Binder;
 import oap.logstream.CompletedLogLoggerException;
 import oap.logstream.LogId;
 import oap.logstream.LoggerException;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -265,5 +266,43 @@ public class LogFile {
         } catch( IOException e ) {
             throw new LoggerException( e );
         }
+    }
+
+    public void moveTo( Path destinationDirectory, Path baseDirectory ) throws LoggerException {
+        Path transactionFile = pathFor( EXTENSION_LOG_TRANSACTION );
+        Path metadataFile = pathFor( EXTENSION_LOG_METADATA );
+        Path completedFile = pathFor( EXTENSION_LOG_COMPLETED );
+
+        boolean mainFileExists = Files.exists( outFilename );
+        boolean transactionFileExists = Files.exists( transactionFile );
+        boolean metadataFileExists = Files.exists( metadataFile );
+        boolean completedFileExists = Files.exists( completedFile );
+
+        if( mainFileExists ) {
+            moveFile( outFilename, baseDirectory, destinationDirectory );
+        }
+        if( transactionFileExists ) {
+            moveFile( transactionFile, baseDirectory, destinationDirectory );
+        }
+        if( metadataFileExists ) {
+            moveFile( metadataFile, baseDirectory, destinationDirectory );
+        }
+        if( completedFileExists ) {
+            moveFile( completedFile, baseDirectory, destinationDirectory );
+        }
+    }
+
+    private void moveFile( Path file, Path baseDirectory, Path destinationDirectory ) throws LoggerException {
+        try {
+            Path targetPath = getTargetPath( baseDirectory, file, destinationDirectory );
+            Files.createDirectories( targetPath.getParent() );
+            Files.move( file, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE );
+        } catch( IOException e ) {
+            throw new LoggerException( e );
+        }
+    }
+
+    private Path getTargetPath( Path baseDirectory, Path file, Path destinationDirectory ) {
+        return destinationDirectory.resolve( FilenameUtils.separatorsToUnix( file.toString().substring( baseDirectory.toString().length() + 1 ) ) );
     }
 }
