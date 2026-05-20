@@ -30,7 +30,7 @@ public class RowBinaryWriter extends AbstractWriter {
             Path filename = filename();
             if( logFile == null ) {
                 LogFile checkLogFile = new LogFile( filename );
-                if( !checkLogFile.existsAndValid() ) {
+                if( !checkLogFile.existsAndValid() && !checkLogFile.isCompleted() ) {
                     log.debug( "[{}] open new file v{}", filename, fileVersion );
                     logFile = checkLogFile.create( logId );
 

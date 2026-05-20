@@ -1,6 +1,5 @@
 package oap.logstream.disk;
 
-import oap.logstream.CompletedLogLoggerException;
 import oap.logstream.LogId;
 import oap.template.Types;
 import oap.testng.Fixtures;
@@ -17,7 +16,6 @@ import java.util.Map;
 
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.joda.time.DateTimeZone.UTC;
 
 
@@ -151,7 +149,7 @@ public class LogFileTest extends Fixtures {
         assertThat( logFile.existsAndValid() ).isTrue();
 
         logFile.readyForUpload();
-        assertThatThrownBy( logFile::existsAndValid ).isInstanceOf( CompletedLogLoggerException.class );
+        assertThat( logFile.existsAndValid() ).isFalse();
 
         logFile.close();
     }

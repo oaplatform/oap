@@ -2,7 +2,6 @@ package oap.logstream.disk;
 
 import lombok.ToString;
 import oap.json.Binder;
-import oap.logstream.CompletedLogLoggerException;
 import oap.logstream.LogId;
 import oap.logstream.LoggerException;
 import org.apache.commons.io.FilenameUtils;
@@ -200,13 +199,8 @@ public class LogFile {
         boolean mainFile = Files.exists( outFilename );
         boolean transactionFile = Files.exists( pathFor( EXTENSION_LOG_TRANSACTION ) );
         boolean metadataFile = Files.exists( pathFor( EXTENSION_LOG_METADATA ) );
-        boolean completedFile = Files.exists( pathFor( EXTENSION_LOG_COMPLETED ) );
 
         if( mainFile ) {
-            if( completedFile ) {
-                throw new CompletedLogLoggerException( outFilename + EXTENSION_LOG_COMPLETED + " already exists" );
-            }
-
             return transactionFile && metadataFile;
         }
 
