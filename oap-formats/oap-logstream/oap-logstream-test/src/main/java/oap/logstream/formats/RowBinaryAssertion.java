@@ -151,6 +151,12 @@ public class RowBinaryAssertion extends AbstractAssert<RowBinaryAssertion, RowBi
         return this;
     }
 
+    public RowBinaryAssertion hasSize( int size ) {
+        assertThat( actual.data ).hasSize( size );
+
+        return this;
+    }
+
     @ToString
     public static class RowBinaryData {
         public final String[] headers;
