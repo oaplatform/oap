@@ -99,12 +99,12 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
         logger.log( new TestData( "ff", "cc", 12, List.of( "1" ), null, Map.of( "map_val_long_as_int", 333L ) ), "prefix", Map.of(), "mylog" );
         logger.log( new TestData( null, "dd", 44, null, List.of( "2" ), Map.of( "map_val_long_as_int", 1L ) ), "prefix", Map.of(), "mylog" );
 
-        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( _ -> true );
-
-        assertThat( bytes ).isEqualTo( List.of(
-            List.of( "ff", 12, "ff", List.of( "1" ), 333 ),
-            List.of( "", 44, "dd", List.of( "2" ), 1 )
-        ) );
+        memoryLoggerBackend
+            .assertRowBinary( _ -> true )
+            .containsExactlyInAnyOrderEntriesOf(
+                List.of( "ff", 12, "ff", List.of( "1" ), 333 ),
+                List.of( "", 44, "dd", List.of( "2" ), 1 )
+            );
     }
 
     @Test
@@ -173,14 +173,10 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         MutableObject<String[]> headers = new MutableObject<>();
 
-        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( lid -> {
-            headers.setValue( lid.headers );
-            return true;
-        } );
-
-        assertThat( headers.get() ).isEqualTo( new String[] {"a", "or", "b", "a2", "aa2", "b2"} );
-
-        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", "a1", 1, "a2", "aa2", 2 ) ) );
+        memoryLoggerBackend
+            .assertRowBinary( lid -> true )
+            .containOnlyHeaders( "a", "or", "b", "a2", "aa2", "b2" )
+            .containsExactlyInAnyOrderEntriesOf( List.of( "a1", "a1", 1, "a2", "aa2", 2 ) );
 
         assertThat( listener.javaCode )
             .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
@@ -249,14 +245,10 @@ public class RowBinaryObjectLoggerTest extends Fixtures {
 
         MutableObject<String[]> headers = new MutableObject<>();
 
-        List<List<Object>> bytes = memoryLoggerBackend.asRowBinary( lid -> {
-            headers.setValue( lid.headers );
-            return true;
-        } );
-
-        assertThat( headers.get() ).isEqualTo( new String[] {"a", "a1", "a2", "aa2"} );
-
-        assertThat( bytes ).isEqualTo( List.of( List.of( "a1", "", "a2", "a2xaa2" ) ) );
+        memoryLoggerBackend
+            .assertRowBinary( lid -> true )
+            .containOnlyHeaders( "a", "a1", "a2", "aa2" )
+            .containsExactlyInAnyOrderEntriesOf( List.of( "a1", "", "a2", "a2xaa2" ) );
 
         assertThat( listener.javaCode )
             .isEqualTo( "{{ /* model MODEL1 id a path a type STRING defaultValue '' */<java.lang.String>a ?? \"\" }}"
