@@ -1,5 +1,6 @@
 package oap.logstream.disk;
 
+import oap.logstream.LogId;
 import oap.template.Types;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectoryFixture;
@@ -16,10 +17,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
 
-public class LogMetadataTest extends Fixtures {
+public class LogFileTest extends Fixtures {
     private final TestDirectoryFixture testDirectoryFixture;
 
-    public LogMetadataTest() {
+    public LogFileTest() {
         testDirectoryFixture = fixture( new TestDirectoryFixture() );
     }
 
@@ -27,11 +28,10 @@ public class LogMetadataTest extends Fixtures {
     public void testSave() {
         Path file = testDirectoryFixture.testPath( "file" );
 
-        LogMetadata metadata = new LogMetadata( "fpp", "type", "host", Map.of(),
-            new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } );
-        metadata.writeFor( file );
+        new LogFile( file ).create( new LogId( "fpp", "type", "host", Map.of(),
+            new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } ) );
 
-        assertFile( Path.of( file.toString() + ".metadata.yaml" ) ).hasContent( """
+        assertFile( Path.of( file + ".metadata.yaml" ) ).hasContent( """
             ---
             filePrefixPattern: "fpp"
             type: "type"
@@ -54,7 +54,9 @@ public class LogMetadataTest extends Fixtures {
             clientHostname: "host"
             """ );
 
-        LogMetadata metadata = LogMetadata.readFor( testDirectoryFixture.testPath( "file.gz" ) );
+        LogFile logFile = new LogFile( testDirectoryFixture.testPath( "file.gz" ) );
+
+        LogMetadata metadata = logFile.getLogMetadata();
         assertThat( metadata.headers ).isNull();
         assertThat( metadata.types ).isNull();
     }
@@ -63,21 +65,13 @@ public class LogMetadataTest extends Fixtures {
     public void testSaveLoad() {
         Path file = testDirectoryFixture.testPath( "file" );
 
-        LogMetadata metadata = new LogMetadata( "fpp", "type", "host", Map.of(),
-            new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } );
-        metadata.writeFor( file );
+        LogFile logFile = new LogFile( file ).create( new LogId( "fpp", "type", "host", Map.of(),
+            new String[] { "h1", "h2" }, new byte[][] { new byte[] { Types.STRING.id }, new byte[] { Types.STRING.id } } ) );
 
         DateTime dt = new DateTime( 2019, 11, 29, 10, 9, 0, 0, UTC );
-        LogMetadata.addProperty( file, "time", dt.toString() );
+        logFile.addProperty( "time", dt.toString() );
 
-        LogMetadata newLm = LogMetadata.readFor( file );
+        LogMetadata newLm = new LogFile( file ).getLogMetadata();
         assertThat( newLm.getDateTime( "time" ) ).isEqualTo( dt );
-    }
-
-    @Test
-    public void testPathForDataFromMetadata() {
-        Path metadataFilePath = testDirectoryFixture.testPath( "file.gz.metadata.yaml" );
-
-        assertThat( LogMetadata.pathForDataFromMetadata( metadataFilePath ) ).isEqualTo( testDirectoryFixture.testPath( "file.gz" ) );
     }
 }

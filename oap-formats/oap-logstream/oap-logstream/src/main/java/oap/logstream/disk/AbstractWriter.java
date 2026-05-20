@@ -39,14 +39,12 @@ import oap.util.Dates;
 import org.joda.time.DateTime;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
-public abstract class AbstractWriter<T extends Closeable> implements Closeable {
+public abstract class AbstractWriter implements Closeable {
     public final LogFormat logFormat;
     protected final TemplateEngine templateEngine;
     protected final Path logDirectory;
@@ -58,8 +56,7 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected final int maxVersions;
     protected final String hostname;
     protected final ReentrantLock lock = new ReentrantLock();
-    protected T out;
-    protected Path outFilename;
+    protected LogFile logFile;
     protected String lastPattern;
     protected int fileVersion = 1;
     protected boolean closed = false;
@@ -155,18 +152,17 @@ public abstract class AbstractWriter<T extends Closeable> implements Closeable {
     protected void closeOutput() throws LoggerException {
         lock.lock();
         try {
-            if( out != null ) try {
-                stopwatch.count( out::close );
+            if( logFile != null ) try {
+                stopwatch.count( logFile::close );
 
-                long fileSize = Files.size( outFilename );
+                long fileSize = logFile.getDataSize();
                 log.trace( "closing output {} ({} bytes)", this, fileSize );
                 Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
                 Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
-            } catch( IOException e ) {
-                throw new LoggerException( e );
+
+                logFile.readyForUpload();
             } finally {
-                outFilename = null;
-                out = null;
+                logFile = null;
             }
         } finally {
             lock.unlock();

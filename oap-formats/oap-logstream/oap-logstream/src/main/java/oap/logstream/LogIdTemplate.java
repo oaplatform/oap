@@ -66,7 +66,7 @@ public class LogIdTemplate {
 
         context.putAll( variables );
 
-        return templateEngine.getRuntimeTemplate( "LogIdTemplate", new TypeRef<Map<String, String>>() {}, template, TemplateAccumulators.STRING, null, null ).render( context ).get();
+        return templateEngine.getTemplate( "LogIdTemplate_" + logId.logType, new TypeRef<Map<String, String>>() {}, template, TemplateAccumulators.STRING, null, null ).render( context ).get();
     }
 
     public void init( Map<String, String> context, DateTime time, Timestamp timestamp, int version, String hostname ) {

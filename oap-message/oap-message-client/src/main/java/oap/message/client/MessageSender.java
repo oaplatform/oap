@@ -347,12 +347,12 @@ public class MessageSender implements Closeable, AutoCloseable {
                 case MessageProtocol.STATUS_UNKNOWN_ERROR_NO_RETRY -> {
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "error_no_retry" ).increment();
                     log.error( "[{}] unknown error -> no retry", uniqueName );
-                    lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR, status ) );
+                    lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR_NO_RETRY, status ) );
                 }
                 case MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE -> {
                     Metrics.counter( "oap.messages", "type", MessageProtocol.messageTypeToString( message.messageType ), "status", "unknown_message_type" ).increment();
                     log.error( "[{}] unknown message type: {}", uniqueName, status );
-                    lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR, status ) );
+                    lastStatus.put( message.messageType, Pair.__( MessageStatus.ERROR_NO_RETRY, status ) );
                 }
                 default -> {
                     String clientStatus = MessageProtocol.getStatus( status );
