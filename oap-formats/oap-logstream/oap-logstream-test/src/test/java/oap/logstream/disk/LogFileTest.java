@@ -87,9 +87,11 @@ public class LogFileTest extends Fixtures {
     @Test
     public void testLoadFromPath() {
         Path base = testDirectoryFixture.testPath( "file.gz" );
-        assertThat( LogFile.loadFromPath( LogFile.pathFor( base, LogFile.EXTENSION_LOG_METADATA ) ).outFilename ).isEqualTo( base );
-        assertThat( LogFile.loadFromPath( LogFile.pathFor( base, LogFile.EXTENSION_LOG_TRANSACTION ) ).outFilename ).isEqualTo( base );
-        assertThat( LogFile.loadFromPath( LogFile.pathFor( base, LogFile.EXTENSION_LOG_COMPLETED ) ).outFilename ).isEqualTo( base );
+        LogFile logFile = new LogFile( base );
+
+        assertThat( LogFile.loadFromPath( logFile.pathFor( LogFile.EXTENSION_LOG_METADATA ) ).outFilename ).isEqualTo( base );
+        assertThat( LogFile.loadFromPath( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ).outFilename ).isEqualTo( base );
+        assertThat( LogFile.loadFromPath( logFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ) ).outFilename ).isEqualTo( base );
         assertThat( LogFile.loadFromPath( base ).outFilename ).isEqualTo( base );
     }
 
@@ -103,9 +105,9 @@ public class LogFileTest extends Fixtures {
         Path file = testDirectoryFixture.testPath( "file" );
         LogFile logFile = new LogFile( file );
         logFile.commitTransaction( 10 );
-        assertThat( Files.readString( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ) ) ).isEqualTo( "10" );
+        assertThat( Files.readString( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ) ).isEqualTo( "10" );
         logFile.commitTransaction( 5 );
-        assertThat( Files.readString( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ) ) ).isEqualTo( "15" );
+        assertThat( Files.readString( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ) ).isEqualTo( "15" );
     }
 
     @Test
@@ -113,7 +115,7 @@ public class LogFileTest extends Fixtures {
         Path file = testDirectoryFixture.testPath( "file" );
         LogFile logFile = new LogFile( file );
         logFile.readyForUpload();
-        assertThat( LogFile.pathFor( file, LogFile.EXTENSION_LOG_COMPLETED ) ).exists();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ) ).exists();
         logFile.readyForUpload();
     }
 
@@ -163,7 +165,7 @@ public class LogFileTest extends Fixtures {
         logFile.writeAndCommitTransaction( data, 0, data.length );
 
         assertThat( Files.readAllBytes( file ) ).isEqualTo( data );
-        assertThat( Files.readString( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ) ) )
+        assertThat( Files.readString( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ) )
             .isEqualTo( String.valueOf( data.length ) );
         logFile.close();
     }
@@ -205,9 +207,9 @@ public class LogFileTest extends Fixtures {
         logFile.readyForUpload();
 
         Files.setLastModifiedTime( file, FileTime.fromMillis( 1_000_000L ) );
-        Files.setLastModifiedTime( LogFile.pathFor( file, LogFile.EXTENSION_LOG_TRANSACTION ), FileTime.fromMillis( 2_000_000L ) );
-        Files.setLastModifiedTime( LogFile.pathFor( file, LogFile.EXTENSION_LOG_METADATA ), FileTime.fromMillis( 3_000_000L ) );
-        Files.setLastModifiedTime( LogFile.pathFor( file, LogFile.EXTENSION_LOG_COMPLETED ), FileTime.fromMillis( 4_000_000L ) );
+        Files.setLastModifiedTime( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ), FileTime.fromMillis( 2_000_000L ) );
+        Files.setLastModifiedTime( logFile.pathFor( LogFile.EXTENSION_LOG_METADATA ), FileTime.fromMillis( 3_000_000L ) );
+        Files.setLastModifiedTime( logFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ), FileTime.fromMillis( 4_000_000L ) );
 
         assertThat( logFile.getMaxModificationTime() ).isEqualTo( 4_000_000L );
         logFile.close();
@@ -220,5 +222,41 @@ public class LogFileTest extends Fixtures {
 
         LogFile logFile = new LogFile( file ).create( newLogId() );
         logFile.close();
+    }
+
+    @Test
+    public void testGetTransactionPosition() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file );
+        assertThat( logFile.getTransactionPosition() ).isEqualTo( 0L );
+
+        logFile.commitTransaction( 10 );
+        assertThat( logFile.getTransactionPosition() ).isEqualTo( 10L );
+
+        logFile.commitTransaction( 5 );
+        assertThat( logFile.getTransactionPosition() ).isEqualTo( 15L );
+    }
+
+    @Test
+    public void testDelete() {
+        Path file = testDirectoryFixture.testPath( "file" );
+        LogFile logFile = new LogFile( file ).create( newLogId() );
+        logFile.commitTransaction( 0 );
+        logFile.readyForUpload();
+        logFile.close();
+
+        assertThat( file ).exists();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_METADATA ) ).exists();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ).exists();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ) ).exists();
+
+        logFile.delete();
+
+        assertThat( file ).doesNotExist();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_METADATA ) ).doesNotExist();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_TRANSACTION ) ).doesNotExist();
+        assertThat( logFile.pathFor( LogFile.EXTENSION_LOG_COMPLETED ) ).doesNotExist();
+
+        logFile.delete();
     }
 }

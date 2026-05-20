@@ -1,5 +1,6 @@
 package oap.logstream.disk;
 
+import lombok.ToString;
 import oap.json.Binder;
 import oap.logstream.CompletedLogLoggerException;
 import oap.logstream.LogId;
@@ -19,6 +20,7 @@ import java.nio.file.StandardOpenOption;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@ToString( exclude = "out" )
 public class LogFile {
     public static final String EXTENSION_LOG_METADATA = ".metadata.yaml";
     public static final String EXTENSION_LOG_TRANSACTION = ".metadata.transaction";
@@ -37,10 +39,6 @@ public class LogFile {
         this.out = out;
     }
 
-    public static Path pathFor( Path file, String extension ) {
-        return Path.of( file.toString() + extension );
-    }
-
     public static LogFile loadFromPath( Path path ) {
         String s = path.toString();
         if( s.endsWith( EXTENSION_LOG_METADATA ) ) {
@@ -55,6 +53,10 @@ public class LogFile {
 
     private static Path getMainFilePath( Path path, String ext ) {
         return Paths.get( path.toString().substring( 0, path.toString().length() - ext.length() ) );
+    }
+
+    public Path pathFor( String extension ) {
+        return Path.of( outFilename.toString() + extension );
     }
 
     public LogFile create( LogId logId ) {
@@ -72,7 +74,7 @@ public class LogFile {
 
     public long beginTransaction() throws LoggerException {
         try {
-            Path path = pathFor( outFilename, EXTENSION_LOG_TRANSACTION );
+            Path path = pathFor( EXTENSION_LOG_TRANSACTION );
 
             long dataSize;
             if( Files.exists( path ) ) {
@@ -87,10 +89,14 @@ public class LogFile {
         }
     }
 
+    public long getTransactionPosition() throws LoggerException {
+        return beginTransaction();
+    }
+
     public void commitTransaction( int length ) throws LoggerException {
         try {
-            Path path = pathFor( outFilename, EXTENSION_LOG_TRANSACTION );
-            Path tmpPath = pathFor( outFilename, EXTENSION_LOG_TRANSACTION + ".tmp" );
+            Path path = pathFor( EXTENSION_LOG_TRANSACTION );
+            Path tmpPath = pathFor( EXTENSION_LOG_TRANSACTION + ".tmp" );
 
             long dataSize;
             if( Files.exists( path ) ) {
@@ -111,7 +117,7 @@ public class LogFile {
 
     public void readyForUpload() throws LoggerException {
         try {
-            Files.createFile( pathFor( outFilename, EXTENSION_LOG_COMPLETED ) );
+            Files.createFile( pathFor( EXTENSION_LOG_COMPLETED ) );
         } catch( FileAlreadyExistsException ignored ) {
         } catch( IOException e ) {
             throw new LoggerException( e );
@@ -168,7 +174,7 @@ public class LogFile {
     }
 
     public LogMetadata getLogMetadata() {
-        return Binder.yaml.unmarshal( LogMetadata.class, pathFor( outFilename, EXTENSION_LOG_METADATA ) );
+        return Binder.yaml.unmarshal( LogMetadata.class, pathFor( EXTENSION_LOG_METADATA ) );
     }
 
     public void addProperty( String name, String value ) {
@@ -179,7 +185,7 @@ public class LogFile {
 
     private void syncLogMetadata( LogMetadata logMetadata ) {
         try {
-            Path path = pathFor( outFilename, EXTENSION_LOG_METADATA );
+            Path path = pathFor( EXTENSION_LOG_METADATA );
             Path tmpFile = Path.of( path + ".tmp" );
             Binder.yaml.marshal( tmpFile, logMetadata );
 
@@ -191,9 +197,9 @@ public class LogFile {
 
     public boolean existsAndValid() {
         boolean mainFile = Files.exists( outFilename );
-        boolean transactionFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_TRANSACTION ) );
-        boolean metadataFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_METADATA ) );
-        boolean completedFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_COMPLETED ) );
+        boolean transactionFile = Files.exists( pathFor( EXTENSION_LOG_TRANSACTION ) );
+        boolean metadataFile = Files.exists( pathFor( EXTENSION_LOG_METADATA ) );
+        boolean completedFile = Files.exists( pathFor( EXTENSION_LOG_COMPLETED ) );
 
         if( mainFile ) {
             if( completedFile ) {
@@ -207,22 +213,22 @@ public class LogFile {
     }
 
     public boolean isCompleted() {
-        return Files.exists( pathFor( outFilename, EXTENSION_LOG_COMPLETED ) );
+        return Files.exists( pathFor( EXTENSION_LOG_COMPLETED ) );
     }
 
     public boolean isValid() {
         boolean mainFile = Files.exists( outFilename );
-        boolean transactionFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_TRANSACTION ) );
-        boolean metadataFile = Files.exists( pathFor( outFilename, EXTENSION_LOG_METADATA ) );
+        boolean transactionFile = Files.exists( pathFor( EXTENSION_LOG_TRANSACTION ) );
+        boolean metadataFile = Files.exists( pathFor( EXTENSION_LOG_METADATA ) );
 
         return mainFile && transactionFile && metadataFile;
     }
 
     public long getMaxModificationTime() throws LoggerException {
         try {
-            Path transactionFile = pathFor( outFilename, EXTENSION_LOG_TRANSACTION );
-            Path metadataFile = pathFor( outFilename, EXTENSION_LOG_METADATA );
-            Path completedFile = pathFor( outFilename, EXTENSION_LOG_COMPLETED );
+            Path transactionFile = pathFor( EXTENSION_LOG_TRANSACTION );
+            Path metadataFile = pathFor( EXTENSION_LOG_METADATA );
+            Path completedFile = pathFor( EXTENSION_LOG_COMPLETED );
 
             boolean mainFile = Files.exists( outFilename );
             boolean transactionFileExists = Files.exists( transactionFile );
@@ -250,4 +256,14 @@ public class LogFile {
         }
     }
 
+    public void delete() throws LoggerException {
+        try {
+            Files.deleteIfExists( outFilename );
+            Files.deleteIfExists( pathFor( EXTENSION_LOG_METADATA ) );
+            Files.deleteIfExists( pathFor( EXTENSION_LOG_TRANSACTION ) );
+            Files.deleteIfExists( pathFor( EXTENSION_LOG_COMPLETED ) );
+        } catch( IOException e ) {
+            throw new LoggerException( e );
+        }
+    }
 }
