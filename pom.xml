@@ -56,7 +56,6 @@
         </repository>
     </distributionManagement>
 
-
     <properties>
         <oap.project.version>25.6.12</oap.project.version>
 
