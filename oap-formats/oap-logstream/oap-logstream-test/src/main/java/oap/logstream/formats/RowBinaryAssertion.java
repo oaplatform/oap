@@ -37,8 +37,16 @@ public class RowBinaryAssertion extends AbstractAssert<RowBinaryAssertion, RowBi
         return assertRowBinary( new ByteArrayInputStream( bytes ) );
     }
 
+    public static RowBinaryAssertion assertRowBinary( byte[] bytes, String[] headers, byte[][] types ) {
+        return assertRowBinary( new ByteArrayInputStream( bytes ), headers, types );
+    }
+
     public static RowBinaryAssertion assertRowBinary( InputStream inputStream ) {
         return new RowBinaryAssertion( new RowBinaryData( null, null, inputStream ) );
+    }
+
+    public static RowBinaryAssertion assertRowBinary( InputStream inputStream, String[] headers, byte[][] types ) {
+        return new RowBinaryAssertion( new RowBinaryData( headers, types, inputStream ) );
     }
 
     public static Row row( Object... cols ) {

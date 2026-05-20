@@ -24,17 +24,14 @@
 
 package oap.logstream;
 
-import com.google.common.base.Preconditions;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
-import oap.logstream.formats.rowbinary.RowBinaryInputStream;
+import oap.logstream.formats.RowBinaryAssertion;
 import oap.util.LinkedHashMaps;
-import org.apache.commons.lang3.ArrayUtils;
+import org.testng.Assert;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -130,41 +127,23 @@ public class MemoryLoggerBackend extends AbstractLoggerBackend {
     }
 
     @SneakyThrows
-    public List<List<Object>> asRowBinary( Predicate<LogId> filter, String... headers ) {
-        List<List<Object>> ret = new ArrayList<>();
+    public RowBinaryAssertion assertRowBinary( Predicate<LogId> filter ) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
+        String[] headers = null;
+        byte[][] types = null;
         for( LogId id : outputs.keySet() ) {
             if( filter.test( id ) ) {
-                IntArrayList rows = new IntArrayList();
-                if( headers.length == 0 ) {
-                    for( int i = 0; i < id.headers.length; i++ ) {
-                        rows.add( i );
-                    }
-                } else {
-                    for( String header : headers ) {
-                        int index = ArrayUtils.indexOf( id.headers, header );
-
-                        Preconditions.checkArgument( index >= 0, "header " + header + " not found" );
-
-                        rows.add( index );
-                    }
-                }
-
-                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
-                RowBinaryInputStream rowBinaryInputStream = new RowBinaryInputStream( byteArrayInputStream, id.headers, id.types );
-
-                List<Object> objects;
-                while( ( objects = rowBinaryInputStream.readRow() ) != null ) {
-                    ArrayList<Object> filtered = new ArrayList<>();
-                    for( int i : rows ) {
-                        filtered.add( objects.get( i ) );
-                    }
-
-                    ret.add( filtered );
-                }
+                baos.write( outputs.getOrDefault( id, new ByteArrayOutputStream() ).toByteArray() );
+                headers = id.headers;
+                types = id.types;
             }
         }
 
-        return ret;
+        if( headers == null ) {
+            Assert.fail( "No logs found!" );
+        }
+
+        return RowBinaryAssertion.assertRowBinary( baos.toByteArray(), headers, types );
     }
 }
