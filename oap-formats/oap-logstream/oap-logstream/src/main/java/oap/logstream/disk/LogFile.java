@@ -59,10 +59,9 @@ public class LogFile {
     public LogFile create( LogId logId ) {
         try {
             oap.io.Files.ensureDirectory( outFilename.getParent() );
-            FileChannel out = FileChannel.open( outFilename, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND );
+            out = FileChannel.open( outFilename, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND );
 
-            LogFile logFile = new LogFile( outFilename, out );
-            logFile.syncLogMetadata( new LogMetadata( logId ) );
+            syncLogMetadata( new LogMetadata( logId ) );
 
             return this;
         } catch( IOException e ) {
@@ -128,7 +127,9 @@ public class LogFile {
 
     public void close() {
         try {
-            out.close();
+            if( out != null ) {
+                out.close();
+            }
         } catch( IOException e ) {
             throw new LoggerException( e );
         }
