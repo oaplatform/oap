@@ -37,14 +37,14 @@ public class RowBinaryWriter extends AbstractWriter {
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
                     logFile.addProperty( "VERSION", logIdTemplate.getHashWithVersion( fileVersion, Inet.hostname() ) );
 
+                    log.trace( "[{}] write headers {}", filename, logId.headers );
+
                     FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
                     GZIPOutputStream gzip = new GZIPOutputStream( outputStream );
                     RowBinaryOutputStream rbOut = new RowBinaryOutputStream( gzip, List.of( logId.headers ), logId.types );
                     rbOut.close();
 
                     logFile.writeAndCommitTransaction( outputStream.array, 0, outputStream.length );
-
-                    log.trace( "[{}] write headers {}", filename, logId.headers );
                 } else {
                     log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
