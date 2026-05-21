@@ -165,23 +165,26 @@ public class RowBinaryWriterTest extends Fixtures {
         byte[] content1 = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "row1" ) ) ) );
         byte[] content2 = Compression.gzip( RowBinaryUtils.lines( List.of( List.of( "row2" ) ) ) );
 
-        Path v1 = logs.resolve( "1-file-02-4cd64dae0-1.rb.gz.rb.gz" );
-        Path v2 = logs.resolve( "1-file-02-4cd64dae0-2.rb.gz.rb.gz" );
+        Path v1 = logs.resolve( "1-file-02-47b82ddc0-1.rb.gz.rb.gz" );
+        Path v2 = logs.resolve( "1-file-02-47b82ddc0-2.rb.gz.rb.gz" );
 
         try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
 
+            writer.refresh();
+            assertThat( v1 ).exists();
+            assertThat( new LogFile( v1 ).isCompleted() ).isFalse();
+
             // refresh(true) forces closeOutput() — closes v1 and marks it completed via readyForUpload()
             writer.refresh( true );
-
             assertThat( v1 ).exists();
             assertThat( new LogFile( v1 ).isCompleted() ).isTrue();
 
             // v1 is completed — next write must go to v2
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
+            assertThat( v2 ).exists();
+            assertThat( new LogFile( v2 ).isCompleted() ).isFalse();
         }
-
-        assertThat( v2 ).exists();
 
         byte[] rb = Compression.ungzip( Files.readAllBytes( v2 ) );
         Pair<List<List<Object>>, List<String>> read = RowBinaryUtils.read( rb, 0, rb.length, null, null );

@@ -21,7 +21,7 @@ import java.nio.file.StandardOpenOption;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @ToString( exclude = "out" )
-public class LogFile {
+public class LogFile implements AutoCloseable {
     public static final String EXTENSION_LOG_METADATA = ".metadata.yaml";
     public static final String EXTENSION_LOG_TRANSACTION = ".metadata.transaction";
     public static final String EXTENSION_LOG_COMPLETED = ".metadata.completed";
@@ -132,6 +132,7 @@ public class LogFile {
         }
     }
 
+    @Override
     public void close() {
         try {
             if( out != null ) {

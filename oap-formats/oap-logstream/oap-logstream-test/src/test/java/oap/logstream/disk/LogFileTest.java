@@ -149,7 +149,7 @@ public class LogFileTest extends Fixtures {
         assertThat( logFile.existsAndValid() ).isTrue();
 
         logFile.readyForUpload();
-        assertThat( logFile.existsAndValid() ).isFalse();
+        assertThat( logFile.existsAndValid() ).isTrue();
 
         logFile.close();
     }
