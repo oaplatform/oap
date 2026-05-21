@@ -1,7 +1,6 @@
 package oap.logstream.disk;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
 import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol;
@@ -13,15 +12,12 @@ import oap.template.TemplateEngine;
 import oap.util.FastByteArrayOutputStream;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 @Slf4j
-public class RowBinaryWriter extends AbstractWriter<FileChannel> {
+public class RowBinaryWriter extends AbstractWriter {
     public RowBinaryWriter( TemplateEngine templateEngine, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, int maxVersions, String hostname ) {
         super( templateEngine, LogFormat.ROW_BINARY_GZ, logDirectory, filePattern, logId, bufferSize, timestamp, maxVersions, hostname );
     }
@@ -32,47 +28,34 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
         try {
             refresh();
             Path filename = filename();
-            if( out == null )
-                if( !java.nio.file.Files.exists( filename ) ) {
+            if( logFile == null ) {
+                LogFile checkLogFile = new LogFile( filename );
+                if( !checkLogFile.existsAndValid() && !checkLogFile.isCompleted() ) {
                     log.debug( "[{}] open new file v{}", filename, fileVersion );
-                    outFilename = filename;
-                    Files.ensureDirectory( filename.getParent() );
-                    out = FileChannel.open( filename, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE, StandardOpenOption.APPEND );
+                    logFile = checkLogFile.create( logId );
+
                     LogIdTemplate logIdTemplate = new LogIdTemplate( logId );
-                    new LogMetadata( logId ).withProperty( "VERSION", logIdTemplate.getHashWithVersion( fileVersion, Inet.hostname() ) ).writeFor( filename );
+                    logFile.addProperty( "VERSION", logIdTemplate.getHashWithVersion( fileVersion, Inet.hostname() ) );
+
+                    log.trace( "[{}] write headers {}", filename, logId.headers );
 
                     FastByteArrayOutputStream outputStream = new FastByteArrayOutputStream();
                     GZIPOutputStream gzip = new GZIPOutputStream( outputStream );
                     RowBinaryOutputStream rbOut = new RowBinaryOutputStream( gzip, List.of( logId.headers ), logId.types );
                     rbOut.close();
 
-                    ByteBuffer byteBuffer = ByteBuffer.wrap( outputStream.array, 0, outputStream.length );
-                    do {
-                        out.write( byteBuffer );
-                    } while( byteBuffer.hasRemaining() );
-                    out.force( true );
-
-                    LogMetadata.commitTransaction( filename, outputStream.length );
-
-                    log.trace( "[{}] write headers {}", filename, logId.headers );
+                    logFile.writeAndCommitTransaction( outputStream.array, 0, outputStream.length );
                 } else {
                     log.debug( "[{}] file exists v{}", filename, fileVersion );
                     fileVersion += 1;
                     if( fileVersion > maxVersions ) throw new IllegalStateException( "version > " + maxVersions );
                     return write( protocolVersion, buffer, offset, length );
                 }
+            }
+
             log.trace( "writing {} bytes to {}", length, this );
 
-            long position = LogMetadata.beginTransaction( filename );
-
-            ByteBuffer byteBuffer = ByteBuffer.wrap( buffer, offset, length );
-            do {
-                out.position( position );
-                out.write( byteBuffer );
-            } while( byteBuffer.hasRemaining() );
-            out.force( true );
-
-            LogMetadata.commitTransaction( filename, length );
+            logFile.beginTransactionWriteAndCommitTransaction( buffer, offset, length );
 
             return filename.toString();
 
@@ -81,8 +64,7 @@ public class RowBinaryWriter extends AbstractWriter<FileChannel> {
             try {
                 closeOutput();
             } finally {
-                outFilename = null;
-                out = null;
+                logFile = null;
             }
             throw new LoggerException( e );
         } finally {

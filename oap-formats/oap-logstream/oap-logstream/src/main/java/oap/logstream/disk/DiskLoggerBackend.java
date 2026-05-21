@@ -83,8 +83,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public final Path logDirectory;
     public final Timestamp timestamp;
     public final int bufferSize;
-    public final LoadingCache<LogId, AbstractWriter<? extends Closeable>> writers;
+    public final LoadingCache<LogId, AbstractWriter> writers;
     public final ScheduledExecutorService pool;
+    public final String hostname;
     protected final TemplateEngine templateEngine;
     public String filePattern = "{{ YEAR }}-{{ MONTH }}/{{ DAY }}/{{ LOG_TYPE }}_v{{ LOG_VERSION }}_{{ CLIENT_HOST }}-{{ YEAR }}-{{ MONTH }}-{{ DAY }}-{{ HOUR }}-{{ INTERVAL }}.tsv.gz";
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
@@ -92,7 +93,6 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     public volatile boolean closed;
-    public final String hostname;
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
         this( templateEngine, logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
@@ -121,7 +121,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             } )
             .build( new CacheLoader<>() {
                 @Override
-                public AbstractWriter<? extends Closeable> load( LogId id ) {
+                public AbstractWriter load( LogId id ) {
                     FilePatternConfiguration fp = filePatternByType.getOrDefault( id.logType.toUpperCase(), new FilePatternConfiguration( filePattern ) );
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
@@ -172,7 +172,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
         Metrics.counter( "logstream_logging_disk_counter", List.of( Tag.of( "from", hostName ) ) ).increment();
         Metrics.summary( "logstream_logging_disk_buffers", List.of( Tag.of( "from", hostName ) ) ).record( length );
-        AbstractWriter<? extends Closeable> writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
+        AbstractWriter writer = writers.get( new LogId( filePreffix, logType, hostName, properties, headers, types ) );
 
         log.trace( "logging {} bytes to {}", length, writer );
         try {
@@ -219,7 +219,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public void refresh( boolean forceSync ) {
         log.trace( "refresh forceSync {}", forceSync );
 
-        for( AbstractWriter<? extends Closeable> writer : writers.asMap().values() ) {
+        for( AbstractWriter writer : writers.asMap().values() ) {
             try {
                 writer.refresh( forceSync );
             } catch( Exception e ) {
