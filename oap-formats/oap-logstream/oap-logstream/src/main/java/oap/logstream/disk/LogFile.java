@@ -74,7 +74,7 @@ public class LogFile implements AutoCloseable {
 
     public long beginTransaction() throws LoggerException {
         try {
-            Path path = pathFor( EXTENSION_LOG_TRANSACTION );
+            Path path = getTransactionFile();
 
             long dataSize;
             if( Files.exists( path ) ) {
@@ -95,7 +95,7 @@ public class LogFile implements AutoCloseable {
 
     public void commitTransaction( int length ) throws LoggerException {
         try {
-            Path path = pathFor( EXTENSION_LOG_TRANSACTION );
+            Path path = getTransactionFile();
             Path tmpPath = pathFor( EXTENSION_LOG_TRANSACTION + ".tmp" );
 
             long dataSize;
@@ -175,7 +175,7 @@ public class LogFile implements AutoCloseable {
     }
 
     public LogMetadata getLogMetadata() {
-        return Binder.yaml.unmarshal( LogMetadata.class, pathFor( EXTENSION_LOG_METADATA ) );
+        return Binder.yaml.unmarshal( LogMetadata.class, getMetadataFile() );
     }
 
     public void addProperty( String name, String value ) {
@@ -186,7 +186,7 @@ public class LogFile implements AutoCloseable {
 
     private void syncLogMetadata( LogMetadata logMetadata ) {
         try {
-            Path path = pathFor( EXTENSION_LOG_METADATA );
+            Path path = getMetadataFile();
             Path tmpFile = Path.of( path + ".tmp" );
             Binder.yaml.marshal( tmpFile, logMetadata );
 
@@ -198,8 +198,8 @@ public class LogFile implements AutoCloseable {
 
     public boolean existsAndValid() {
         boolean mainFile = Files.exists( outFilename );
-        boolean transactionFile = Files.exists( pathFor( EXTENSION_LOG_TRANSACTION ) );
-        boolean metadataFile = Files.exists( pathFor( EXTENSION_LOG_METADATA ) );
+        boolean transactionFile = Files.exists( getTransactionFile() );
+        boolean metadataFile = Files.exists( getMetadataFile() );
 
         if( mainFile ) {
             return transactionFile && metadataFile;
@@ -209,22 +209,22 @@ public class LogFile implements AutoCloseable {
     }
 
     public boolean isCompleted() {
-        return Files.exists( pathFor( EXTENSION_LOG_COMPLETED ) );
+        return Files.exists( getCompletedFile() );
     }
 
     public boolean isValid() {
         boolean mainFile = Files.exists( outFilename );
-        boolean transactionFile = Files.exists( pathFor( EXTENSION_LOG_TRANSACTION ) );
-        boolean metadataFile = Files.exists( pathFor( EXTENSION_LOG_METADATA ) );
+        boolean transactionFile = Files.exists( getTransactionFile() );
+        boolean metadataFile = Files.exists( getMetadataFile() );
 
         return mainFile && transactionFile && metadataFile;
     }
 
     public long getMaxModificationTime() throws LoggerException {
         try {
-            Path transactionFile = pathFor( EXTENSION_LOG_TRANSACTION );
-            Path metadataFile = pathFor( EXTENSION_LOG_METADATA );
-            Path completedFile = pathFor( EXTENSION_LOG_COMPLETED );
+            Path transactionFile = getTransactionFile();
+            Path metadataFile = getMetadataFile();
+            Path completedFile = getCompletedFile();
 
             boolean mainFile = Files.exists( outFilename );
             boolean transactionFileExists = Files.exists( transactionFile );
@@ -252,21 +252,33 @@ public class LogFile implements AutoCloseable {
         }
     }
 
+    public Path getCompletedFile() {
+        return pathFor( EXTENSION_LOG_COMPLETED );
+    }
+
+    public Path getMetadataFile() {
+        return pathFor( EXTENSION_LOG_METADATA );
+    }
+
+    public Path getTransactionFile() {
+        return pathFor( EXTENSION_LOG_TRANSACTION );
+    }
+
     public void delete() throws LoggerException {
         try {
             Files.deleteIfExists( outFilename );
-            Files.deleteIfExists( pathFor( EXTENSION_LOG_METADATA ) );
-            Files.deleteIfExists( pathFor( EXTENSION_LOG_TRANSACTION ) );
-            Files.deleteIfExists( pathFor( EXTENSION_LOG_COMPLETED ) );
+            Files.deleteIfExists( getMetadataFile() );
+            Files.deleteIfExists( getTransactionFile() );
+            Files.deleteIfExists( getCompletedFile() );
         } catch( IOException e ) {
             throw new LoggerException( e );
         }
     }
 
     public void moveTo( Path destinationDirectory, Path baseDirectory ) throws LoggerException {
-        Path transactionFile = pathFor( EXTENSION_LOG_TRANSACTION );
-        Path metadataFile = pathFor( EXTENSION_LOG_METADATA );
-        Path completedFile = pathFor( EXTENSION_LOG_COMPLETED );
+        Path transactionFile = getTransactionFile();
+        Path metadataFile = getMetadataFile();
+        Path completedFile = getCompletedFile();
 
         boolean mainFileExists = Files.exists( outFilename );
         boolean transactionFileExists = Files.exists( transactionFile );
