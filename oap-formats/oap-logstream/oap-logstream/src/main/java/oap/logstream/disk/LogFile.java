@@ -1,5 +1,6 @@
 package oap.logstream.disk;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
 import oap.logstream.LogId;
@@ -21,6 +22,7 @@ import java.nio.file.StandardOpenOption;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @ToString( exclude = "out" )
+@EqualsAndHashCode( of = "outFilename" )
 public class LogFile implements AutoCloseable {
     public static final String EXTENSION_LOG_METADATA = ".metadata.yaml";
     public static final String EXTENSION_LOG_TRANSACTION = ".metadata.transaction";
