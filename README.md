@@ -25,3 +25,4 @@ A light-weight application framework to build high performant and distributed ja
 | Guide | Description |
 |---|---|
 | [Ext — Pluggable Field Extensions](docs/extension.md) | Attach pluggable typed sub-objects to bean fields via `oap.json.ext.Ext`; covers JSON deserialization and template engine integration |
+| [Testing](docs/testing.md) | Fixture lifecycle, `KernelFixture`, assertion helpers, MongoDB/S3 mocks, and benchmark harness |
