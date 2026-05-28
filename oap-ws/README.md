@@ -62,6 +62,6 @@ See the [oap-ws](oap-ws/) module for the full reference.
 | Runtime API introspection | `oap-ws-api-ws` |
 | OpenAPI / Swagger spec served at runtime | `oap-ws-openapi-ws` |
 | OpenAPI spec generated at build time | `oap-ws-openapi-maven-plugin` |
-| JWT / API-key authentication | `oap-ws-sso-api` |
+| JWT / API-key authentication (query params or headers) | `oap-ws-sso-api` |
 | File upload / download | `oap-ws-file-ws` |
 | Admin (log levels, JPath) | `oap-ws-admin-ws` |

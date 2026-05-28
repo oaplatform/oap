@@ -33,11 +33,27 @@ import oap.ws.sso.UserProvider;
 
 import java.util.Optional;
 
-import static oap.http.Http.StatusCode.CONFLICT;
 import static oap.http.Http.StatusCode.UNAUTHORIZED;
 import static oap.ws.sso.SSO.ISSUER;
 import static oap.ws.sso.SSO.SESSION_USER_KEY;
 
+/**
+ * Authenticates requests using an access key + API key pair.
+ *
+ * <p>Parameter lookup order:
+ * <ul>
+ *   <li><b>Access key</b>: query param {@code accessKey}, then header {@code X-Access-Token}</li>
+ *   <li><b>API key</b>: query param {@code X-API-Key}, then header {@code apiKey}</li>
+ * </ul>
+ *
+ * <p>Behaviour:
+ * <ul>
+ *   <li>If either parameter is absent — passes silently (no response).</li>
+ *   <li>If the key pair is invalid — returns {@code 401 Unauthorized}.</li>
+ *   <li>If valid — places the user in the session for the duration of the request;
+ *       {@code after()} removes all session keys afterwards.</li>
+ * </ul>
+ */
 @Slf4j
 public class ApiKeyInterceptor implements Interceptor {
     public static final String SESSION_API_KEY_AUTHENTICATED = "apiKeyAuthenticated";
@@ -51,12 +67,15 @@ public class ApiKeyInterceptor implements Interceptor {
     @Override
     public Optional<Response> before( InvocationContext context ) {
         String accessKey = context.exchange.getStringParameter( "accessKey" );
+        if( accessKey == null ) {
+            accessKey = context.exchange.getRequestHeader( "X-Access-Token" );
+        }
         if( accessKey == null ) return Optional.empty();
-        var apiKey = context.exchange.getStringParameter( "apiKey" );
+        String apiKey = context.exchange.getStringParameter( "X-API-Key" );
+        if( apiKey == null ) {
+            apiKey = context.exchange.getRequestHeader( "apiKey" );
+        }
         if( apiKey == null ) return Optional.empty();
-
-        if( context.session.containsKey( SESSION_USER_KEY ) )
-            return Optional.of( new Response( CONFLICT, "invoking service with apiKey while logged in" ) );
 
         User user = userProvider.getAuthenticatedByApiKey( accessKey, apiKey ).orElse( null );
         if( user != null ) {
@@ -74,6 +93,7 @@ public class ApiKeyInterceptor implements Interceptor {
         context.session.<Boolean>get( SESSION_API_KEY_AUTHENTICATED ).ifPresent( apiKeyAuthentication -> {
             if( apiKeyAuthentication ) {
                 log.trace( "removing temporary authentication of {}", context.session.get( SESSION_USER_KEY ) );
+
                 context.session.remove( SESSION_USER_KEY );
                 context.session.remove( SESSION_API_KEY_AUTHENTICATED );
                 context.session.remove( ISSUER );

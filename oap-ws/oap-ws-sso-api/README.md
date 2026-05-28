@@ -53,12 +53,18 @@ services {
 
 ### `ApiKeyInterceptor`
 
-Authenticates requests by `?accessKey=…&apiKey=…` query parameters.
+Authenticates requests using an access key + API key pair.
 
-- If both parameters are present and valid, the user is placed in the session for the duration of the request and removed in `after()`.
-- Returns **409 Conflict** if the session already has a logged-in user.
-- Returns **401 Unauthorized** if the key pair is invalid.
-- Passes silently if neither `accessKey` nor `apiKey` is present.
+**Parameter lookup order:**
+
+| Parameter | Query param | Header fallback |
+|---|---|---|
+| Access key | `?accessKey=…` | `X-Access-Token` |
+| API key | `?X-API-Key=…` | `apiKey` |
+
+- If either parameter is absent — passes silently (no response).
+- If the key pair is invalid — returns **401 Unauthorized**.
+- If valid — the user is placed in the session for the duration of the request; `after()` removes all session keys afterwards.
 
 ### `ThrottleLoginInterceptor`
 
