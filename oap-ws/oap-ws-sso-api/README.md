@@ -60,7 +60,7 @@ Authenticates requests using an access key + API key pair.
 | Parameter | Query param | Header fallback |
 |---|---|---|
 | Access key | `?accessKey=…` | `X-Access-Token` |
-| API key | `?X-API-Key=…` | `apiKey` |
+| API key | `?apiKey=…` | `X-API-Key` |
 
 - If either parameter is absent — passes silently (no response).
 - If the key pair is invalid — returns **401 Unauthorized**.

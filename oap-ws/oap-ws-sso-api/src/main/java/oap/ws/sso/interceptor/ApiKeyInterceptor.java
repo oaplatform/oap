@@ -71,9 +71,9 @@ public class ApiKeyInterceptor implements Interceptor {
             accessKey = context.exchange.getRequestHeader( "X-Access-Token" );
         }
         if( accessKey == null ) return Optional.empty();
-        String apiKey = context.exchange.getStringParameter( "X-API-Key" );
+        String apiKey = context.exchange.getStringParameter( "apiKey" );
         if( apiKey == null ) {
-            apiKey = context.exchange.getRequestHeader( "apiKey" );
+            apiKey = context.exchange.getRequestHeader( "X-API-Key" );
         }
         if( apiKey == null ) return Optional.empty();
 
