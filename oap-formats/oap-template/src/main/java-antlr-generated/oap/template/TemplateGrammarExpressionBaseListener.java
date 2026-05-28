@@ -42,6 +42,18 @@ public class TemplateGrammarExpressionBaseListener implements TemplateGrammarExp
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterConditionCode(TemplateGrammarExpression.ConditionCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConditionCode(TemplateGrammarExpression.ConditionCodeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterIfCode(TemplateGrammarExpression.IfCodeContext ctx) { }
 	/**
 	 * {@inheritDoc}

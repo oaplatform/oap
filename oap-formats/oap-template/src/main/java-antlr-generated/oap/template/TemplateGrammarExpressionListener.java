@@ -31,6 +31,16 @@ public interface TemplateGrammarExpressionListener extends ParseTreeListener {
 	 */
 	void exitExpression(TemplateGrammarExpression.ExpressionContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TemplateGrammarExpression#conditionCode}.
+	 * @param ctx the parse tree
+	 */
+	void enterConditionCode(TemplateGrammarExpression.ConditionCodeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TemplateGrammarExpression#conditionCode}.
+	 * @param ctx the parse tree
+	 */
+	void exitConditionCode(TemplateGrammarExpression.ConditionCodeContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TemplateGrammarExpression#ifCode}.
 	 * @param ctx the parse tree
 	 */

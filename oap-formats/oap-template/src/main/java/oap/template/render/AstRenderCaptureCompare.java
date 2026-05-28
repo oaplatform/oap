@@ -41,11 +41,13 @@ import java.util.Map;
 class AstRenderCaptureCompare extends AstRender {
     private final String op;
     private final String literal;
+    private final boolean literalIsString;
 
-    AstRenderCaptureCompare( TemplateType type, String op, String literal ) {
+    AstRenderCaptureCompare( TemplateType type, String op, String literal, boolean literalIsString ) {
         super( type );
         this.op = op;
         this.literal = literal;
+        this.literalIsString = literalIsString;
     }
 
     @Override
@@ -54,6 +56,24 @@ class AstRenderCaptureCompare extends AstRender {
         Class<?> tc = type.getTypeClass();
         String field = render.field;
         String boolVar = render.booleanIfVar;
+
+        if( literalIsString && tc != String.class ) {
+            switch( normOp ) {
+                case "==" -> {
+                    render.ntab().append( "%s = false;", boolVar );
+                    return;
+                }
+                case "!=" -> {
+                    render.ntab().append( "%s = true;", boolVar );
+                    return;
+                }
+                case ">", "<", ">=", "<=" -> {
+                    render.ntab().append( "%s = false;", boolVar );
+                    return;
+                }
+                default -> { /* contains / eqi: handled below with their own type logic */ }
+            }
+        }
 
         switch( normOp ) {
             case "==" -> {
@@ -107,7 +127,17 @@ class AstRenderCaptureCompare extends AstRender {
     @Override
     public void interpret( RuntimeContext ctx ) {
         if( ctx.booleanCapture != null ) {
-            ctx.booleanCapture[0] = TemplateConditionHelper.compare( ctx.currentObject, op, literal );
+            String normOp = normalizeOp( op );
+            if( literalIsString && !( ctx.currentObject instanceof String ) ) {
+                switch( normOp ) {
+                    case "==" -> ctx.booleanCapture[0] = false;
+                    case "!=" -> ctx.booleanCapture[0] = true;
+                    case ">", "<", ">=", "<=" -> ctx.booleanCapture[0] = false;
+                    default -> ctx.booleanCapture[0] = TemplateConditionHelper.compare( ctx.currentObject, op, literal );
+                }
+            } else {
+                ctx.booleanCapture[0] = TemplateConditionHelper.compare( ctx.currentObject, op, literal );
+            }
         }
     }
 

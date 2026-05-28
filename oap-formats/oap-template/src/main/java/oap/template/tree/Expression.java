@@ -38,20 +38,28 @@ public class Expression {
     public final IfCondition ifCondition;
     @Nullable
     public final WithCondition withCondition;
+    @Nullable
+    public final ConditionExpr conditionExpr;
     public final ArrayList<Exprs> or = new ArrayList<>();
     public final String defaultValue;
     public final Func function;
 
     public Expression( String comment, String castType, @Nullable IfCondition ifCondition, @Nullable List<Exprs> or, String defaultValue, Func function ) {
-        this( comment, castType, ifCondition, null, or, defaultValue, function );
+        this( comment, castType, ifCondition, null, null, or, defaultValue, function );
     }
 
     public Expression( String comment, String castType, @Nullable IfCondition ifCondition, @Nullable WithCondition withCondition,
                        @Nullable List<Exprs> or, String defaultValue, Func function ) {
+        this( comment, castType, ifCondition, withCondition, null, or, defaultValue, function );
+    }
+
+    public Expression( String comment, String castType, @Nullable IfCondition ifCondition, @Nullable WithCondition withCondition,
+                       @Nullable ConditionExpr conditionExpr, @Nullable List<Exprs> or, String defaultValue, Func function ) {
         this.comment = comment;
         this.castType = castType;
         this.ifCondition = ifCondition;
         this.withCondition = withCondition;
+        this.conditionExpr = conditionExpr;
         if( or != null ) {
             this.or.addAll( or );
         }
@@ -82,6 +90,7 @@ public class Expression {
             for( Exprs bodyExprs : withCondition.body )
                 sb.append( "└── " ).append( bodyExprs.print() ).append( '\n' );
         }
+        if( conditionExpr != null ) sb.append( "CONDITION " ).append( conditionExpr ).append( '\n' );
         if( !or.isEmpty() ) {
             sb.append( "ROOT\n" );
             sb.append( "└── " ).append( or.getFirst().print() );
