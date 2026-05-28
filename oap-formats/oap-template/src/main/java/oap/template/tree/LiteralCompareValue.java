@@ -24,4 +24,4 @@
 
 package oap.template.tree;
 
-public record LiteralCompareValue( String value ) implements CompareValue {}
+public record LiteralCompareValue( String value, boolean literalIsString ) implements CompareValue {}

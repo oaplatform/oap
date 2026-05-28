@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static oap.template.ErrorStrategy.ERROR;
+import static oap.template.TemplateAccumulators.OBJECT;
 import static oap.template.TemplateAccumulators.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -682,4 +683,136 @@ public class TemplateEngineConditionTest extends AbstractTemplateEngineTest {
             .isEqualTo( "fallback" );
     }
 
+    @Test
+    public void testConditionResultAsBoolean() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field = null;
+        c.intField = 4;
+        c.field2 = "fallback";
+
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ field2 == 'fallback' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ field == 'fallback' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ intField == 4 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName, new TypeRef<TestTemplateClass>() {},
+            "{{ intField == '4' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultEqKeyword() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field2 = "fallback";
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{ field2 eq 'fallback' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{ field2 eq 'other' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultNe() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.field2 = "fallback";
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{ field2 != 'other' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{ field2 != 'fallback' }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultNeKeyword() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{ intField ne 5 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "NoMatch", new TypeRef<TestTemplateClass>() {},
+            "{{ intField ne 4 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultGt() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{ intField > 3 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{ intField > 4 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultLt() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Match", new TypeRef<TestTemplateClass>() {},
+            "{{ intField < 5 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{ intField < 4 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultGe() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{ intField >= 4 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "Greater", new TypeRef<TestTemplateClass>() {},
+            "{{ intField >= 5 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultLe() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.intField = 4;
+        assertThat( getTemplate( testMethodName + "Equal", new TypeRef<TestTemplateClass>() {},
+            "{{ intField <= 4 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        assertThat( getTemplate( testMethodName + "Less", new TypeRef<TestTemplateClass>() {},
+            "{{ intField <= 3 }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultNot() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.booleanField = false;
+        assertThat( getTemplate( testMethodName + "False", new TypeRef<TestTemplateClass>() {},
+            "{{ not booleanField }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        c.booleanField = true;
+        assertThat( getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {},
+            "{{ not booleanField }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
+    @Test
+    public void testConditionResultBang() {
+        TestTemplateClass c = new TestTemplateClass();
+        c.booleanField = false;
+        assertThat( getTemplate( testMethodName + "False", new TypeRef<TestTemplateClass>() {},
+            "{{ !booleanField }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( true );
+        c.booleanField = true;
+        assertThat( getTemplate( testMethodName + "True", new TypeRef<TestTemplateClass>() {},
+            "{{ !booleanField }}", OBJECT, null ).render( c ).get() )
+            .isEqualTo( false );
+    }
+
 }
+

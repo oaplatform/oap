@@ -23,6 +23,7 @@ A compile-time template engine for the OAP framework. Each unique template strin
     - [Compound conditions](#compound-conditions)
     - [Comparison operators](#comparison-operators)
     - [Truthiness semantics](#truthiness-semantics)
+  - [Condition as boolean expression](#condition-as-boolean-expression)
   - [With scope (inline)](#with-scope-inline)
   - [With scope (block)](#with-scope-block)
   - [Range (block)](#range-block)
@@ -459,6 +460,48 @@ Any field type may appear in a `{{% if … }}` condition. The field value is coe
 {{% if tags }}Tags: {{ tags }}{{% end %}}
 {{% if name and tags }}{{ name }} has tags{{% end %}}
 ```
+
+### Condition as boolean expression
+
+A comparison or negation expression can be used as a standalone top-level expression. When rendered with the `OBJECT` accumulator, the result is a `Boolean` value instead of a string.
+
+```
+{{ field == 'value' }}
+{{ intField > 3 }}
+{{ not booleanField }}
+{{ !booleanField }}
+```
+
+| Expression | Result type | Example |
+|---|---|---|
+| `{{ field == 'x' }}` | `Boolean` | `true` when `field` equals `"x"` |
+| `{{ field != 'x' }}` | `Boolean` | `true` when `field` does not equal `"x"` |
+| `{{ intField > 5 }}` | `Boolean` | `true` when `intField > 5` |
+| `{{ intField < 5 }}` | `Boolean` | `true` when `intField < 5` |
+| `{{ intField >= 5 }}` | `Boolean` | `true` when `intField >= 5` |
+| `{{ intField <= 5 }}` | `Boolean` | `true` when `intField <= 5` |
+| `{{ field eq 'x' }}` | `Boolean` | keyword alias for `==` |
+| `{{ field ne 'x' }}` | `Boolean` | keyword alias for `!=` |
+| `{{ not boolField }}` | `Boolean` | `true` when `boolField` is `false` |
+| `{{ !boolField }}` | `Boolean` | same as `not` |
+
+**Type mismatch rule**: when a single-quoted or double-quoted string literal is compared against a non-`String` field using `==`, `!=`, or an ordering operator, the result is `false` for `==` and ordering operators, and `true` for `!=` (types can never be equal).
+
+```java
+Boolean match = (Boolean) engine
+    .getTemplate( "check", new TypeRef<MyBean>() {}, "{{ status == 'active' }}", OBJECT, null )
+    .render( bean ).get();
+
+Boolean greaterThan = (Boolean) engine
+    .getTemplate( "gt", new TypeRef<MyBean>() {}, "{{ score > 50 }}", OBJECT, null )
+    .render( bean ).get();
+
+Boolean negated = (Boolean) engine
+    .getTemplate( "neg", new TypeRef<MyBean>() {}, "{{ not isDeleted }}", OBJECT, null )
+    .render( bean ).get();
+```
+
+---
 
 ### With scope (inline)
 

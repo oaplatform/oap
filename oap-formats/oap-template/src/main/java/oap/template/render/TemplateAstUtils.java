@@ -226,6 +226,12 @@ public class TemplateAstUtils {
 
         AstRender mainAst = list.head();
 
+        ConditionExpr conditionExpr = expression.conditionExpr;
+        if( conditionExpr != null ) {
+            AstRender conditionAst = toConditionAst( conditionExpr, templateType, errorStrategy );
+            return new AstRenderConditionResult( new TemplateType( boolean.class, false ), conditionAst );
+        }
+
         IfCondition ifCondition = expression.ifCondition;
         if( ifCondition != null ) {
             TemplateType expressionResultType = TemplateAstUtils.findExpressionResultType( templateType, ifCondition.thenCode, errorStrategy );
@@ -277,8 +283,8 @@ public class TemplateAstUtils {
         } else if( cond instanceof NotConditionExpr n ) {
             return new AstRenderConditionNot( templateType, toConditionAst( n.inner(), templateType, errorStrategy ) );
         } else if( cond instanceof CompareConditionExpr c ) {
-            String literal = ( ( LiteralCompareValue ) c.right() ).value();
-            return toCompareConditionAst( c.left(), c.op(), literal, templateType, errorStrategy );
+            LiteralCompareValue lv = ( LiteralCompareValue ) c.right();
+            return toCompareConditionAst( c.left(), c.op(), lv.value(), lv.literalIsString(), templateType, errorStrategy );
         }
         throw new IllegalStateException( "Unknown ConditionExpr: " + cond );
     }
@@ -366,6 +372,7 @@ public class TemplateAstUtils {
 
     @SuppressWarnings( { "checkstyle:ModifiedControlVariable", "checkstyle:ParameterAssignment" } )
     private static AstRender toCompareConditionAst( Exprs conditionExprs, String op, String literal,
+                                                    boolean literalIsString,
                                                     TemplateType templateType, ErrorStrategy errorStrategy ) {
         try {
             TemplateType currentTemplateType = templateType;
@@ -416,12 +423,12 @@ public class TemplateAstUtils {
                 }
             }
 
-            AstRenderCaptureCompare captureNode = new AstRenderCaptureCompare( currentTemplateType, op, literal );
+            AstRenderCaptureCompare captureNode = new AstRenderCaptureCompare( currentTemplateType, op, literal, literalIsString );
 
             if( currentTemplateType.isOptional() ) {
                 TemplateType actualType = currentTemplateType.getActualTypeArguments0();
                 AstRenderOptional ast = new AstRenderOptional( actualType );
-                ast.addChild( new AstRenderCaptureCompare( actualType, op, literal ) );
+                ast.addChild( new AstRenderCaptureCompare( actualType, op, literal, literalIsString ) );
                 result.add( ast );
             } else if( currentTemplateType.nullable ) {
                 AstRenderNullable ast = new AstRenderNullable( currentTemplateType );

@@ -32,15 +32,25 @@ import oap.util.Lists;
 }
 
 expression returns [Expression ret]
-    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | exprsCode) function? defaultValue? (IF ifCondition)? {
+    : (BLOCK_COMMENT)? (CAST_TYPE)? (ifCode | pipeCode | withCode | conditionCode | exprsCode) function? defaultValue? (IF ifCondition)? {
         $ret = new Expression(
           $BLOCK_COMMENT.text,
           $CAST_TYPE.text != null ? $CAST_TYPE.text.substring( 1, $CAST_TYPE.text.length() - 1 ) : null,
           $ifCode.ctx != null ? $ifCode.ret : ($pipeCode.ctx != null ? $pipeCode.ret : null),
           $withCode.ctx != null ? $withCode.ret : null,
+          $conditionCode.ctx != null ? $conditionCode.ret : null,
           $exprsCode.ctx != null ? $exprsCode.ret : null,
           $defaultValue.ctx != null ? $defaultValue.ret : null,
           $function.ctx != null ? $function.ret : null );
+      }
+    ;
+
+conditionCode returns [ConditionExpr ret]
+    : ( NOT | BANG ) inner=conditionNot {
+        $ret = new NotConditionExpr( $inner.ret );
+      }
+    | left=exprs op=(EQEQ | EQ_KW | NEQ | NE_KW | GT_OP | LT_OP | GE_OP | LE_OP | EQI_KW | CONTAINS_KW) right=compareRhs {
+        $ret = new CompareConditionExpr( $left.ret, $op.getText(), $right.ret );
       }
     ;
 
@@ -154,13 +164,13 @@ conditionAtom returns [ConditionExpr ret]
     ;
 
 compareRhs returns [CompareValue ret]
-    : SSTRING         { $ret = new LiteralCompareValue( sdStringToString( $SSTRING.text ) ); }
-    | DSTRING         { $ret = new LiteralCompareValue( sdStringToString( $DSTRING.text ) ); }
-    | DECDIGITS       { $ret = new LiteralCompareValue( $DECDIGITS.text ); }
-    | MINUS DECDIGITS { $ret = new LiteralCompareValue( "-" + $DECDIGITS.text ); }
-    | FLOAT           { $ret = new LiteralCompareValue( $FLOAT.text ); }
-    | MINUS FLOAT     { $ret = new LiteralCompareValue( "-" + $FLOAT.text ); }
-    | BOOLEAN         { $ret = new LiteralCompareValue( $BOOLEAN.text ); }
+    : SSTRING         { $ret = new LiteralCompareValue( sdStringToString( $SSTRING.text ), true ); }
+    | DSTRING         { $ret = new LiteralCompareValue( sdStringToString( $DSTRING.text ), true ); }
+    | DECDIGITS       { $ret = new LiteralCompareValue( $DECDIGITS.text, false ); }
+    | MINUS DECDIGITS { $ret = new LiteralCompareValue( "-" + $DECDIGITS.text, false ); }
+    | FLOAT           { $ret = new LiteralCompareValue( $FLOAT.text, false ); }
+    | MINUS FLOAT     { $ret = new LiteralCompareValue( "-" + $FLOAT.text, false ); }
+    | BOOLEAN         { $ret = new LiteralCompareValue( $BOOLEAN.text, false ); }
     ;
     
 
