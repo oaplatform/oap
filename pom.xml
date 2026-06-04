@@ -57,7 +57,7 @@
     </distributionManagement>
 
     <properties>
-        <oap.project.version>25.6.15</oap.project.version>
+        <oap.project.version>25.6.16</oap.project.version>
 
         <oap.deps.config.version>25.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
@@ -113,6 +113,8 @@
 
         <oap.deps.dnsjava.version>3.6.4</oap.deps.dnsjava.version>
         <oap.deps.jetty-client.version>12.1.6</oap.deps.jetty-client.version>
+
+        <oap.deps.hivemq-mqtt-client.version>1.3.14</oap.deps.hivemq-mqtt-client.version>
 
         <!-- jsr305 -->
         <oap.deps.spotbugs>4.9.8</oap.deps.spotbugs>

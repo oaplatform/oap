@@ -19,5 +19,6 @@
         <module>oap-message-server</module>
         <module>oap-message-client</module>
         <module>oap-message-test</module>
+        <module>oap-message-mqtt</module>
     </modules>
 </project>
