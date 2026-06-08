@@ -131,7 +131,7 @@ public class MqttClient implements AutoCloseable, MqttClientConnectedListener, M
     }
 
     public void publish( String topic, byte[] bytes, long expire ) {
-        log.trace( "publish topic {} data {}", topic, new String( bytes, UTF_8 ) );
+        log.trace( "publish topic {} data {}", topic, bytes != null ? new String( bytes, UTF_8 ) : "<NULL-DELETE>" );
 
         Mqtt5PublishBuilder.Send.Complete<Mqtt5PublishResult> builder = client
             .toBlocking()

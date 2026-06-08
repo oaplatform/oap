@@ -23,6 +23,7 @@
     <modules>
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
+        <module>oap-storage-mqtt</module>
         <module>oap-storage-mongo-test</module>
 
         <module>oap-storage-cloud</module>

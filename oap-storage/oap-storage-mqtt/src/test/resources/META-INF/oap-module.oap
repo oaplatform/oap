@@ -1,0 +1,9 @@
+name = oap-storage-mqtt-test
+configurations = [
+  {
+    loader = oap.json.TypeIdFactory
+    config {
+      msp = oap.storage.mqtt.MongoStoragePublisherTest.TestMqttStoragePublisher
+    }
+  }
+]
