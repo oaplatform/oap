@@ -266,16 +266,6 @@ public class RowBinaryInputStream extends InputStream {
         ArrayList<T> list = new ArrayList<>( size );
 
         for( int i = 0; i < size; i++ ) {
-            boolean isNullable = nullable[i];
-
-            if( isNullable ) {
-                byte isNull = readByte();
-                if( isNull == 1 ) {
-                    list.add( null );
-                    continue;
-                }
-            }
-
             T v = readObject( clazz, i );
             list.add( v );
         }
