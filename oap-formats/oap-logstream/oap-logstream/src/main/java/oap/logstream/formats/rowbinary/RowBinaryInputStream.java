@@ -187,7 +187,7 @@ public class RowBinaryInputStream extends InputStream {
         return headers;
     }
 
-    public byte readByte() throws IOException {
+    private byte readByte() throws IOException {
         int read = in.read();
         if( read < 0 ) {
             throw new EOFException();
@@ -196,7 +196,7 @@ public class RowBinaryInputStream extends InputStream {
         return ( byte ) read;
     }
 
-    public boolean readBoolean() throws IOException {
+    private boolean readBoolean() throws IOException {
         int read = in.read();
         if( read < 0 ) {
             throw new EOFException();
@@ -210,7 +210,7 @@ public class RowBinaryInputStream extends InputStream {
         return in.read();
     }
 
-    public short readShort() throws IOException {
+    private short readShort() throws IOException {
         int ch1 = in.read();
         int ch2 = in.read();
         if( ( ch1 | ch2 ) < 0 )
@@ -218,7 +218,7 @@ public class RowBinaryInputStream extends InputStream {
         return ( short ) ( ( ch2 << 8 ) + ( ch1 << 0 ) );
     }
 
-    public int readInt() throws IOException {
+    private int readInt() throws IOException {
         readFully( readBuffer, 0, 4 );
 
         return ( ( ( 0xFF & readBuffer[0] ) ) << 0 )
@@ -227,7 +227,7 @@ public class RowBinaryInputStream extends InputStream {
             + ( ( ( 0xFF & readBuffer[3] ) ) << 24 );
     }
 
-    public long readLong() throws IOException {
+    private long readLong() throws IOException {
         readFully( readBuffer, 0, 8 );
 
         return ( ( readBuffer[0] & 0xFFL ) << 0 )
@@ -240,33 +240,33 @@ public class RowBinaryInputStream extends InputStream {
             + ( ( readBuffer[7] & 0xFFL ) << 56 );
     }
 
-    public float readFloat() throws IOException {
+    private float readFloat() throws IOException {
         return Float.intBitsToFloat( readInt() );
     }
 
-    public double readDouble() throws IOException {
+    private double readDouble() throws IOException {
         return Double.longBitsToDouble( readLong() );
     }
 
-    public DateTime readDateTime() throws IOException {
+    private DateTime readDateTime() throws IOException {
         return new DateTime( readInt() * 1000L, UTC );
     }
 
-    public Date readDate() throws IOException {
+    private Date readDate() throws IOException {
         return new Date( readShort() * 24L * 60L * 60L * 1000L );
     }
 
-    public Date readDate32() throws IOException {
+    private Date readDate32() throws IOException {
         return new Date( readInt() * 24L * 60L * 60L * 1000L );
     }
 
-    public <T> List<T> readList( Class<T> clazz ) throws IOException {
+    private <T> List<T> readList( Class<T> clazz, int col ) throws IOException {
         int size = readVarInt();
 
         ArrayList<T> list = new ArrayList<>( size );
 
         for( int i = 0; i < size; i++ ) {
-            T v = readObject( clazz, i );
+            T v = readObject( clazz, col );
             list.add( v );
         }
 
@@ -324,11 +324,11 @@ public class RowBinaryInputStream extends InputStream {
 
         try {
 
-            for( int i = 0; i < headers.length; i++ ) {
-                byte[] bytes = types[i];
+            for( int col = 0; col < headers.length; col++ ) {
+                byte[] bytes = types[col];
                 Types types = Types.valueOf( bytes[0] );
 
-                boolean isNullable = nullable[i];
+                boolean isNullable = nullable[col];
 
                 if( isNullable ) {
                     byte isNull = readByte();
@@ -341,7 +341,7 @@ public class RowBinaryInputStream extends InputStream {
                 row.add( switch( types ) {
                     case DATETIME -> readDateTime();
                     case DATE -> {
-                        boolean d32 = datetime32[i];
+                        boolean d32 = datetime32[col];
                         yield d32 ? readDate32() : readDate();
                     }
                     case BYTE -> readByte();
@@ -351,13 +351,13 @@ public class RowBinaryInputStream extends InputStream {
                     case FLOAT -> readFloat();
                     case DOUBLE -> readDouble();
                     case STRING -> {
-                        int length = fixedLength[i];
+                        int length = fixedLength[col];
                         yield length == 0 ? readString() : readString( length );
                     }
                     case BOOLEAN -> readBoolean();
                     case LIST -> {
                         Types listItemType = Types.valueOf( bytes[1] );
-                        yield readList( listItemType.clazz );
+                        yield readList( listItemType.clazz, col );
                     }
                     default -> throw new IllegalArgumentException( "unknown type " + types );
                 } );
