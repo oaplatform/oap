@@ -126,25 +126,29 @@ public class RowBinaryTest extends Fixtures {
                         { Types.BOOLEAN.id }, { Types.BYTE.id }, { Types.INTEGER.id }, { Types.LONG.id }, { Types.FLOAT.id }, { Types.DOUBLE.id }, { Types.DATETIME.id }, { Types.DATE.id }, { Types.LIST.id, Types.STRING.id }
                     } );
 
-                    assertThat( rowBinaryInputStream.readBoolean() ).isTrue();
-                    assertThat( rowBinaryInputStream.readByte() ).isEqualTo( ( byte ) 134 );
-                    assertThat( rowBinaryInputStream.readInt() ).isEqualTo( 12345 );
-                    assertThat( rowBinaryInputStream.readLong() ).isEqualTo( 1234567890123456789L );
-                    assertThat( rowBinaryInputStream.readFloat() ).isEqualTo( 123.45f );
-                    assertThat( rowBinaryInputStream.readDouble() ).isEqualTo( 123.4578901 );
-                    assertThat( rowBinaryInputStream.readDateTime() ).isEqualTo( new DateTime( 2025, 7, 10, 19, 21, 38, UTC ) );
-                    assertThat( rowBinaryInputStream.readDate() ).isEqualTo( new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ) );
-                    assertThat( rowBinaryInputStream.readList( String.class ) ).isEqualTo( List.of( "a", "b", "bb" ) );
+                    assertThat( rowBinaryInputStream.readRow() )
+                        .isEqualTo( List.of(
+                            true,
+                            ( byte ) 134,
+                            12345,
+                            1234567890123456789L,
+                            123.45f,
+                            123.4578901,
+                            new DateTime( 2025, 7, 10, 19, 21, 38, UTC ),
+                            new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
+                            List.of( "a", "b", "bb" ) ) );
 
-                    assertThat( rowBinaryInputStream.readBoolean() ).isFalse();
-                    assertThat( rowBinaryInputStream.readByte() ).isEqualTo( ( byte ) 1 );
-                    assertThat( rowBinaryInputStream.readInt() ).isEqualTo( 0 );
-                    assertThat( rowBinaryInputStream.readLong() ).isEqualTo( -123L );
-                    assertThat( rowBinaryInputStream.readFloat() ).isEqualTo( 0.045f );
-                    assertThat( rowBinaryInputStream.readDouble() ).isEqualTo( -10234567 );
-                    assertThat( rowBinaryInputStream.readDateTime() ).isEqualTo( new DateTime( 2025, 7, 10, 19, 21, 39, UTC ) );
-                    assertThat( rowBinaryInputStream.readDate() ).isEqualTo( new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ) );
-                    assertThat( rowBinaryInputStream.readList( String.class ) ).isEqualTo( List.of() );
+                    assertThat( rowBinaryInputStream.readRow() )
+                        .isEqualTo( List.of(
+                            false,
+                            ( byte ) 1,
+                            0,
+                            -123L,
+                            0.045f,
+                            -10234567,
+                            new DateTime( 2025, 7, 10, 19, 21, 39, UTC ),
+                            new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
+                            List.of() ) );
                 } );
 
             assertThat( client.query( "SELECT * FROM TEST FORMAT " + ClickHouseFormat.CSVWithNames ) )
