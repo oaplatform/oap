@@ -133,7 +133,7 @@ public class RowBinaryTest extends Fixtures {
                             12345,
                             1234567890123456789L,
                             123.45f,
-                            123.4578901,
+                            123.4578901d,
                             new DateTime( 2025, 7, 10, 19, 21, 38, UTC ),
                             new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
                             List.of( "a", "b", "bb" ) ) );
@@ -145,7 +145,7 @@ public class RowBinaryTest extends Fixtures {
                             0,
                             -123L,
                             0.045f,
-                            -10234567,
+                            -10234567d,
                             new DateTime( 2025, 7, 10, 19, 21, 39, UTC ),
                             new Date( new DateTime( 2025, 7, 10, 0, 0, 0, UTC ).getMillis() ),
                             List.of() ) );
