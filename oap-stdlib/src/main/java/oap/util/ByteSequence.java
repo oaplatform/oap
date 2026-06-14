@@ -28,11 +28,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.codec.binary.Hex;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 @EqualsAndHashCode
 @Data( staticConstructor = "of" )
 public class ByteSequence implements Serializable {
+    @Serial
     private static final long serialVersionUID = -7525710405210067693L;
 
     public final byte[] bytes;

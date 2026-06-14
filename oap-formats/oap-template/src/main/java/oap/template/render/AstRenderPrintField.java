@@ -31,6 +31,8 @@ import oap.template.runtime.RuntimeContext;
 
 import javax.annotation.Nullable;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @ToString( callSuper = true )
 public class AstRenderPrintField extends AstRender {
     @Nullable
@@ -63,18 +65,18 @@ public class AstRenderPrintField extends AstRender {
 
         Class<?> typeClass = castType.isOptional() ? castType.getActualTypeArguments0().getTypeClass() : castType.getTypeClass();
 
-        if( byte.class.equals( typeClass ) ) return "(byte)%s".formatted( value );
-        if( Byte.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).byteValue()".formatted( value );
+        if( byte.class.equals( typeClass ) ) return s( "(byte)${value}" );
+        if( Byte.class.isAssignableFrom( typeClass ) ) return s( "( ( Number ) ${value} ).byteValue()" );
         else if( short.class.equals( typeClass ) ) return "(short)%s".formatted( value );
-        else if( Short.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).shortValue()".formatted( value );
-        else if( int.class.equals( typeClass ) ) return "(int)%s".formatted( value );
-        else if( Integer.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).intValue()".formatted( value );
-        else if( long.class.equals( typeClass ) ) return "(long)%s".formatted( value );
-        else if( Long.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).longValue()".formatted( value );
+        else if( Short.class.isAssignableFrom( typeClass ) ) return s( "( ( Number ) ${value} ).shortValue()" );
+        else if( int.class.equals( typeClass ) ) return s( "(int)${value}" );
+        else if( Integer.class.isAssignableFrom( typeClass ) ) return s( "( ( Number ) ${value} ).intValue()" );
+        else if( long.class.equals( typeClass ) ) return s( "(long)${value}" );
+        else if( Long.class.isAssignableFrom( typeClass ) ) return s( "( ( Number ) ${value} ).longValue()" );
         else if( float.class.equals( typeClass ) ) return "(float)%s".formatted( value );
-        else if( Float.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).floatValue()".formatted( value );
-        else if( double.class.equals( typeClass ) ) return "(double)%s".formatted( value );
-        else if( Double.class.isAssignableFrom( typeClass ) ) return "( ( Number ) %s ).doubleValue()".formatted( value );
+        else if( Float.class.isAssignableFrom( typeClass ) ) return s( "( ( Number ) ${value} ).floatValue()" );
+        else if( double.class.equals( typeClass ) ) return s( "(double)${value}" );
+        else if( Double.class.isAssignableFrom( typeClass ) ) return s( "( ( Number ) ${value} ).doubleValue()" );
 
         return value;
     }
