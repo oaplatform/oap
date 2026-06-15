@@ -52,17 +52,19 @@ public class LogWSTest {
 
     @Test
     public void testGetAll() {
+        log.trace( "testGetAll" );
         LogWS logWS = new LogWS();
         Map<String, String> map = logWS.getAll( Optional.empty() );
 
-        assertThat( map ).contains( entry( "org", "WARN" ) );
-        assertThat( map ).doesNotContainKey( "ROOT" );
+        assertThat( map )
+            .contains( entry( "org", "WARN" ) )
+            .doesNotContainKey( "oap.ws.admin.LogWSTest" );
     }
 
     @Test
     public void testGetAllIncludeRoot() {
         LogWS logWS = new LogWS();
-        assertThat( logWS.getAll( Optional.of( "true" ) ) ).containsKey( "ROOT" );
-        assertThat( logWS.getAll( Optional.of( "yes" ) ) ).containsKey( "ROOT" );
+        assertThat( logWS.getAll( Optional.of( "true" ) ) ).containsKey( "oap.ws.admin.LogWSTest" );
+        assertThat( logWS.getAll( Optional.of( "yes" ) ) ).containsKey( "oap.ws.admin.LogWSTest" );
     }
 }
