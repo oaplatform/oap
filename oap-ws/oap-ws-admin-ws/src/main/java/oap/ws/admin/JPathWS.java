@@ -35,9 +35,14 @@ import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.ws.WsParam.From.QUERY;
 
@@ -49,16 +54,52 @@ public class JPathWS {
         this.kernel = kernel;
     }
 
+    public List<String> listServices( String pattern ) {
+        String regex = Arrays.stream( pattern.split( "\\*", -1 ) )
+            .map( Pattern::quote )
+            .collect( Collectors.joining( ".*" ) );
+        return kernel.services.moduleMap.entrySet().stream()
+            .flatMap( module -> module.getValue().keySet().stream()
+                .map( svc -> module.getKey() + "." + svc ) )
+            .filter( name -> name.matches( regex ) )
+            .sorted()
+            .collect( Collectors.toList() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public Object evaluatePath( String query ) {
+        AtomicReference<Object> result = new AtomicReference<>();
+        JPath.evaluate( s( "$${${query}}" ), ( Map<String, Object> ) ( Object ) kernel.services.moduleMap,
+            pointer -> result.set( pointer.get() ) );
+        return result.get();
+    }
+
     @SuppressWarnings( "unchecked" )
     @WsMethod( method = GET, path = "/" )
     public Response get( @WsParam( from = QUERY ) String query ) {
         log.debug( "query = {}", query );
         try {
+            if( query.contains( "*" ) ) {
+                return Response.jsonOk().withBody( listServices( query ), false );
+            }
+
             AtomicReference<Object> result = new AtomicReference<>();
 
             String[] fields = StringUtils.split( query, '.' );
+
+            if( fields.length > 1 ) {
+                JPath.evaluate( s( "$${${fields[0]}.${fields[1]}}" ), ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> {
+                    if( !( pointer instanceof NullPointer ) ) {
+                        result.set( fields[1] );
+                    }
+                } );
+            }
+            if( result.get() == null ) {
+                return new Response( Http.StatusCode.BAD_REQUEST ).withBody( s( "unknown module service ${fields[0]}.${fields[1]}" ) );
+            }
+
             if( fields.length > 0 ) {
-                JPath.evaluate( "${" + fields[0] + "}", ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> {
+                JPath.evaluate( s( "$${${fields[0]}}" ), ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> {
                     if( !( pointer instanceof NullPointer ) ) {
                         result.set( fields[0] );
                     }
@@ -70,20 +111,9 @@ public class JPathWS {
             }
             result.set( null );
 
-            if( fields.length > 1 ) {
-                JPath.evaluate( "${" + fields[0] + "." + fields[1] + "}", ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> {
-                    if( !( pointer instanceof NullPointer ) ) {
-                        result.set( fields[1] );
-                    }
-                } );
-            }
-            if( result.get() == null ) {
-                return new Response( Http.StatusCode.BAD_REQUEST ).withBody( "unknown module service " + fields[0] + "." + fields[1] );
-            }
             result.set( null );
 
-            JPath.evaluate( "${" + query + "}", ( Map<String, Object> ) ( Object ) kernel.services.moduleMap, pointer -> result.set( pointer.get() ) );
-            return Response.jsonOk().withBody( result.get(), false );
+            return Response.jsonOk().withBody( evaluatePath( query ), false );
         } catch( Exception e ) {
             log.error( e.getMessage(), e );
             return new Response( Http.StatusCode.BAD_REQUEST, e.getMessage(), Http.ContentType.TEXT_PLAIN ).withBody( Throwables.getStackTraceAsString( e ), true );

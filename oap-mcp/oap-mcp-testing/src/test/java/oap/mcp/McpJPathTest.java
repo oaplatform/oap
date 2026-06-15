@@ -12,45 +12,46 @@ package oap.mcp;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class McpLogTest extends AbstractMcpTest {
+public class McpJPathTest extends AbstractMcpTest {
     @Test
     public void listTools() {
         try( var client = createClient() ) {
             McpSchema.ListToolsResult result = client.listTools();
             assertThat( result.tools() )
                 .extracting( McpSchema.Tool::name )
-                .containsAll( java.util.List.of( "getLoggers", "resetLogging", "setLogLevel" ) );
+                .containsAll( List.of( "listServices", "queryService" ) );
         }
     }
 
     @Test
-    public void callGetLoggers() {
+    public void callListServices() {
         try( var client = createClient() ) {
-            McpSchema.CallToolResult result = client.callTool( new McpSchema.CallToolRequest( "getLoggers", Map.of() ) );
+            McpSchema.CallToolResult result = client.callTool( new McpSchema.CallToolRequest( "listServices", Map.of() ) );
             assertThat( result.isError() ).isFalse();
             assertThat( ( ( McpSchema.TextContent ) result.content().getFirst() ).text() ).isNotBlank();
         }
     }
 
     @Test
-    public void callGetLoggersAll() {
+    public void callListServicesWithPattern() {
         try( var client = createClient() ) {
             McpSchema.CallToolResult result = client.callTool(
-                new McpSchema.CallToolRequest( "getLoggers", Map.of( "all", "true" ) ) );
+                new McpSchema.CallToolRequest( "listServices", Map.of( "pattern", "*mcp*" ) ) );
             assertThat( result.isError() ).isFalse();
-            assertThat( ( ( McpSchema.TextContent ) result.content().getFirst() ).text() ).contains( "ROOT" );
+            assertThat( ( ( McpSchema.TextContent ) result.content().getFirst() ).text() ).contains( "oap-mcp-admin.mcp-jpath" );
         }
     }
 
     @Test
-    public void callSetLogLevel() {
+    public void callQueryService() {
         try( var client = createClient() ) {
-            McpSchema.CallToolResult result = client.callTool( new McpSchema.CallToolRequest( "setLogLevel",
-                Map.of( "package", "oap", "level", "DEBUG" ) ) );
+            McpSchema.CallToolResult result = client.callTool(
+                new McpSchema.CallToolRequest( "queryService", Map.of( "query", "oap-mcp-admin.mcp-jpath" ) ) );
             assertThat( result.isError() ).isFalse();
         }
     }
@@ -61,25 +62,16 @@ public class McpLogTest extends AbstractMcpTest {
             McpSchema.ListPromptsResult result = client.listPrompts();
             assertThat( result.prompts() )
                 .extracting( McpSchema.Prompt::name )
-                .containsAll( java.util.List.of( "analyzeLogging", "diagnosePackage" ) );
+                .containsAll( List.of( "inspectService" ) );
         }
     }
 
     @Test
-    public void getPromptAnalyzeLogging() {
+    public void getPromptInspectService() {
         try( var client = createClient() ) {
             McpSchema.GetPromptResult result = client.getPrompt(
-                new McpSchema.GetPromptRequest( "analyzeLogging", Map.of() ) );
-            assertThat( ( ( McpSchema.TextContent ) result.messages().getFirst().content() ).text() ).isNotBlank();
-        }
-    }
-
-    @Test
-    public void getPromptDiagnosePackage() {
-        try( var client = createClient() ) {
-            McpSchema.GetPromptResult result = client.getPrompt(
-                new McpSchema.GetPromptRequest( "diagnosePackage", Map.of( "package", "oap.ws" ) ) );
-            assertThat( ( ( McpSchema.TextContent ) result.messages().getFirst().content() ).text() ).contains( "oap.ws" );
+                new McpSchema.GetPromptRequest( "inspectService", Map.of( "service", "jpath" ) ) );
+            assertThat( ( ( McpSchema.TextContent ) result.messages().getFirst().content() ).text() ).contains( "jpath" );
         }
     }
 }
