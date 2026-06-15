@@ -68,6 +68,16 @@ public class McpLogTest extends Fixtures {
     }
 
     @Test
+    public void callGetLoggersAll() {
+        try( McpSyncClient client = createClient() ) {
+            McpSchema.CallToolResult result = client.callTool(
+                new McpSchema.CallToolRequest( "getLoggers", Map.of( "all", "true" ) ) );
+            assertThat( result.isError() ).isNotEqualTo( Boolean.TRUE );
+            assertThat( ( ( McpSchema.TextContent ) result.content().get( 0 ) ).text() ).contains( "ROOT" );
+        }
+    }
+
+    @Test
     public void callSetLogLevel() {
         try( McpSyncClient client = createClient() ) {
             McpSchema.CallToolResult result = client.callTool( new McpSchema.CallToolRequest( "setLogLevel",

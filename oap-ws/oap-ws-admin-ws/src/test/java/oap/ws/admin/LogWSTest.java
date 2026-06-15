@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.testng.annotations.Test;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -52,8 +53,16 @@ public class LogWSTest {
     @Test
     public void testGetAll() {
         LogWS logWS = new LogWS();
-        Map<String, String> map = logWS.getAll();
+        Map<String, String> map = logWS.getAll( Optional.empty() );
 
         assertThat( map ).contains( entry( "org", "WARN" ) );
+        assertThat( map ).doesNotContainKey( "ROOT" );
+    }
+
+    @Test
+    public void testGetAllIncludeRoot() {
+        LogWS logWS = new LogWS();
+        assertThat( logWS.getAll( Optional.of( "true" ) ) ).containsKey( "ROOT" );
+        assertThat( logWS.getAll( Optional.of( "yes" ) ) ).containsKey( "ROOT" );
     }
 }

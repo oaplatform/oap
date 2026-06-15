@@ -38,22 +38,27 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 import static oap.io.Resources.urlOrThrow;
 import static oap.ws.WsParam.From.PATH;
+import static oap.ws.WsParam.From.QUERY;
 
 @Slf4j
 public class LogWS {
     @WsMethod( path = "/", method = GET )
-    public Map<String, String> getAll() {
-        log.debug( "get all" );
+    public Map<String, String> getAll( @WsParam( from = QUERY ) Optional<String> all ) {
+        log.debug( "get all, all={}", all );
+
+        boolean includeAll = all.map( v -> v.equalsIgnoreCase( "true" ) || v.equalsIgnoreCase( "yes" ) ).orElse( false );
 
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
-
         LoggerContext loggerContext = ( LoggerContext ) LoggerFactory.getILoggerFactory();
         for( Logger logger : loggerContext.getLoggerList() ) {
-            if( logger.getLevel() != null ) {
+            if( includeAll ) {
+                map.put( logger.getName(), logger.getEffectiveLevel().toString() );
+            } else if( logger.getLevel() != null ) {
                 map.put( logger.getName(), logger.getLevel().toString() );
             }
         }
