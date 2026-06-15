@@ -1,0 +1,23 @@
+name = oap-mcp
+
+services {
+  mcp-service {
+    implementation = oap.mcp.McpService
+    parameters {
+      tools = []
+    }
+    supervision.supervise = true
+  }
+
+  mcp-settings-ws {
+    implementation = oap.mcp.McpWS
+    parameters {
+      mcpService = <modules.this.mcp-service>
+    }
+    ws-service {
+      path = /mcp
+      sessionAware = true
+      interceptors = <modules.oap-ws-sso-api.oap-ws-sso-api-key-interceptor>
+    }
+  }
+}

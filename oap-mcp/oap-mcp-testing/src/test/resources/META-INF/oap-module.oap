@@ -1,0 +1,15 @@
+name = oap-mcp-testing-test
+dependsOn = [oap-mcp, oap-mcp-admin]
+
+services {
+  test-user-provider {
+    implementation = oap.mcp.TestUserProvider
+  }
+
+  test-api-key-interceptor {
+    implementation = oap.ws.sso.interceptor.ApiKeyInterceptor
+    parameters {
+      userProvider = <modules.this.test-user-provider>
+    }
+  }
+}

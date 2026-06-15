@@ -1,0 +1,11 @@
+name = oap-mcp-admin
+dependsOn = [oap-ws-admin-ws]
+
+services {
+  mcp-log {
+    implementation = oap.mcp.admin.McpLog
+    parameters {
+      logWS = <modules.oap-ws-admin-ws.ws-log>
+    }
+  }
+}
