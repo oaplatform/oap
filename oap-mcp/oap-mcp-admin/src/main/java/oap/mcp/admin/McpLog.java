@@ -16,6 +16,7 @@ import oap.mcp.annotations.McpToolParam;
 import oap.ws.admin.LogWS;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -26,9 +27,14 @@ public class McpLog {
         this.logWS = logWS;
     }
 
-    @McpTool( name = "getLoggers", description = "Returns all loggers with their current log levels" )
-    public String getLoggers() {
-        Map<String, String> loggers = logWS.getAll();
+    @McpTool( name = "getLoggers",
+        description = "Returns loggers with their current log levels. Pass all=true to include loggers inheriting from root." )
+    public String getLoggers(
+        @McpToolParam( name = "all",
+            description = "Set to 'true' or 'yes' to include loggers inheriting their level from root",
+            required = false ) String all
+    ) {
+        Map<String, String> loggers = logWS.getAll( Optional.ofNullable( all ) );
         StringBuilder sb = new StringBuilder();
         loggers.forEach( ( name, level ) -> sb.append( name ).append( " = " ).append( level ).append( '\n' ) );
         return sb.toString();
@@ -59,14 +65,15 @@ public class McpLog {
 
     @McpPrompt( name = "diagnosePackage", description = "Diagnose logging for a specific Java package" )
     public String diagnosePackage(
-        @McpPromptParam( name = "package", description = "Java package name to diagnose", required = true ) String pkg
+        @McpPromptParam( name = "package", description = "Java package name or partial name to diagnose", required = true ) String pkg
     ) {
         return s( """
             You are a Java application expert. Diagnose the logging configuration for package '${pkg}'.
             Steps:
-            1. Use 'getLoggers' to check the current level for '${pkg}'.
-            2. If no explicit level is set, explain that it inherits from its parent logger.
-            3. Suggest an appropriate log level for debugging vs. production use.
-            4. Use 'setLogLevel' if a level change is needed.""" );
+            1. Call 'getLoggers' with all='true' to retrieve all loggers including those inheriting from root.
+            2. Filter the result to find all logger names that contain '${pkg}' as a substring.
+            3. Present the matching logger names and their current effective levels to the user.
+            4. Ask the user to confirm which exact logger name they want to target.
+            5. Once confirmed, suggest the appropriate log level and offer to call 'setLogLevel' with the confirmed name.""" );
     }
 }

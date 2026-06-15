@@ -62,8 +62,18 @@ public class McpLogTest extends Fixtures {
     public void callGetLoggers() {
         try( McpSyncClient client = createClient() ) {
             McpSchema.CallToolResult result = client.callTool( new McpSchema.CallToolRequest( "getLoggers", Map.of() ) );
-            assertThat( result.isError() ).isNotEqualTo( Boolean.TRUE );
-            assertThat( ( ( McpSchema.TextContent ) result.content().get( 0 ) ).text() ).isNotBlank();
+            assertThat( result.isError() ).isFalse();
+            assertThat( ( ( McpSchema.TextContent ) result.content().getFirst() ).text() ).isNotBlank();
+        }
+    }
+
+    @Test
+    public void callGetLoggersAll() {
+        try( McpSyncClient client = createClient() ) {
+            McpSchema.CallToolResult result = client.callTool(
+                new McpSchema.CallToolRequest( "getLoggers", Map.of( "all", "true" ) ) );
+            assertThat( result.isError() ).isFalse();
+            assertThat( ( ( McpSchema.TextContent ) result.content().getFirst() ).text() ).contains( "ROOT" );
         }
     }
 
@@ -72,7 +82,7 @@ public class McpLogTest extends Fixtures {
         try( McpSyncClient client = createClient() ) {
             McpSchema.CallToolResult result = client.callTool( new McpSchema.CallToolRequest( "setLogLevel",
                 Map.of( "package", "oap", "level", "DEBUG" ) ) );
-            assertThat( result.isError() ).isNotEqualTo( Boolean.TRUE );
+            assertThat( result.isError() ).isFalse();
         }
     }
 
@@ -91,7 +101,7 @@ public class McpLogTest extends Fixtures {
         try( McpSyncClient client = createClient() ) {
             McpSchema.GetPromptResult result = client.getPrompt(
                 new McpSchema.GetPromptRequest( "analyzeLogging", Map.of() ) );
-            assertThat( ( ( McpSchema.TextContent ) result.messages().get( 0 ).content() ).text() ).isNotBlank();
+            assertThat( ( ( McpSchema.TextContent ) result.messages().getFirst().content() ).text() ).isNotBlank();
         }
     }
 
@@ -100,7 +110,7 @@ public class McpLogTest extends Fixtures {
         try( McpSyncClient client = createClient() ) {
             McpSchema.GetPromptResult result = client.getPrompt(
                 new McpSchema.GetPromptRequest( "diagnosePackage", Map.of( "package", "oap.ws" ) ) );
-            assertThat( ( ( McpSchema.TextContent ) result.messages().get( 0 ).content() ).text() ).contains( "oap.ws" );
+            assertThat( ( ( McpSchema.TextContent ) result.messages().getFirst().content() ).text() ).contains( "oap.ws" );
         }
     }
 }
