@@ -29,6 +29,7 @@ import oap.ws.validate.ValidationErrors;
 
 import java.util.Optional;
 
+import static oap.ws.sso.WsSecurity.SYSTEM;
 import static oap.ws.validate.ValidationErrors.empty;
 import static oap.ws.validate.ValidationErrors.error;
 
@@ -37,5 +38,9 @@ public abstract class AbstractSecureWS {
         return loggedUser.isPresent()
             ? empty()
             : error( Http.StatusCode.UNAUTHORIZED, "not logged in" );
+    }
+
+    protected boolean isSystem( User loggedUser ) {
+        return loggedUser.getRoles().containsKey( SYSTEM );
     }
 }
