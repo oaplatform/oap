@@ -59,10 +59,31 @@ public class JPathWSTest extends Fixtures {
     }
 
     @Test
+    public void testListAllServices() {
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=*" ) )
+            .isOk()
+            .bodyContains( "oap-ws-admin-ws-test.test-service" );
+    }
+
+    @Test
+    public void testListServicesEndingWith() {
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=*test-service" ) )
+            .isOk()
+            .bodyContains( "oap-ws-admin-ws-test.test-service" );
+    }
+
+    @Test
+    public void testListServicesContaining() {
+        assertGet( kernel.httpUrl( "/system/admin/jpath?query=*admin*" ) )
+            .isOk()
+            .bodyContains( "oap-ws-admin-ws-test.test-service" );
+    }
+
+    @Test
     public void testUnknownModule() {
         assertGet( kernel.httpUrl( "/system/admin/jpath?query=unknown-module.test-service.instance.value" ) )
             .hasCode( BAD_REQUEST )
-            .hasBody( "unknown module unknown-module" );
+            .hasBody( "unknown module service unknown-module.test-service" );
         assertGet( kernel.httpUrl( "/system/admin/jpath?query=oap-ws-admin-ws-test.unknown-service.instance.value" ) )
             .hasCode( BAD_REQUEST )
             .hasBody( "unknown module service oap-ws-admin-ws-test.unknown-service" );

@@ -1,5 +1,5 @@
 name = oap-mcp-admin
-dependsOn = [oap-ws-admin-ws]
+dependsOn = [oap-ws-admin-ws, oap-mcp]
 
 services {
   mcp-log {
@@ -7,5 +7,13 @@ services {
     parameters {
       logWS = <modules.oap-ws-admin-ws.ws-log>
     }
+    link.tools = <modules.oap-mcp.mcp-service>
+  }
+  mcp-jpath {
+    implementation = oap.mcp.admin.McpJPath
+    parameters {
+      jPathWS = <modules.oap-ws-admin-ws.ws-jpath>
+    }
+    link.tools = <modules.oap-mcp.mcp-service>
   }
 }
