@@ -44,7 +44,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     private Path getPath( CloudURI path ) {
-        return Paths.get( basedir.toString(), path.container, path.path );
+        return Paths.get( basedir.toString(), path.container, path.path ).toAbsolutePath();
     }
 
     @Override
