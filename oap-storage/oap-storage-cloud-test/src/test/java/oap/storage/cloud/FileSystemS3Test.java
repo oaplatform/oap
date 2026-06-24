@@ -33,7 +33,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class FileSystemTest extends Fixtures {
+public class FileSystemS3Test extends Fixtures {
     public static final String TEST_BUCKET = "test-bucket";
     private static final S3MockFixture s3mockFixture;
     private static final TestDirectoryFixture testDirectoryFixture;
@@ -43,7 +43,7 @@ public class FileSystemTest extends Fixtures {
         s3mockFixture = suiteFixture( new S3MockFixture( testDirectoryFixture ) ).withInitialBuckets( TEST_BUCKET, "test2" );
     }
 
-    public FileSystemTest() {
+    public FileSystemS3Test() {
         fixture( new SystemTimerFixture( true ) );
     }
 

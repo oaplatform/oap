@@ -1,7 +1,9 @@
 package oap.storage.cloud;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
+import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -10,16 +12,25 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
+@Slf4j
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
+
+    private final Path basedir;
+
     public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
+        basedir = Paths.get( ( String ) fileSystemConfiguration.get( "file", container, "jclouds.filesystem.basedir" ) );
+        Preconditions.checkNotNull( basedir );
     }
 
     @Override
@@ -28,12 +39,12 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     private Path getPath( CloudURI path ) {
-        return Paths.get( "/" + path.path );
+        return Paths.get( basedir.toString(), path.container, path.path );
     }
 
     @Override
     public CompletableFuture<Boolean> containerExistsAsync( CloudURI path ) throws CloudException {
-        return CompletableFuture.completedFuture( true );
+        return CompletableFuture.completedFuture( Files.isDirectory( getPath( path ) ) );
     }
 
     @Override
@@ -49,6 +60,18 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     @Override
     public CompletableFuture<Void> deleteContainerAsync( CloudURI path ) {
+
+        Path fsPath = getPath( path );
+        if( !Files.isDirectory( fsPath ) ) {
+            return CompletableFuture.failedFuture( new CloudException( "Not a directory" ) );
+        }
+
+        try {
+            oap.io.Files.delete( fsPath );
+        } catch( Exception e ) {
+            return CompletableFuture.failedFuture( new CloudException( e ) );
+        }
+
         return CompletableFuture.completedFuture( null );
     }
 
@@ -64,45 +87,20 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     @Override
     public CompletableFuture<FileSystem.StorageItem> getMetadataAsync( CloudURI path ) {
-        return CompletableFuture.completedFuture( new FileSystem.StorageItem() {
-            @Override
-            public String getName() {
-                return getPath( path ).toString();
-            }
-
-            @Override
-            public URI getUri() {
-                return getPath( path ).toUri();
-            }
-
-            @Override
-            public String getETag() {
-                return "";
-            }
-
-            @Override
-            public DateTime getLastModified() {
-                try {
-                    return new DateTime( Files.getLastModifiedTime( getPath( path ) ).toMillis(), DateTimeZone.UTC );
-                } catch( IOException e ) {
-                    throw new CloudException( e );
-                }
-            }
-
-            @Override
-            public Long getSize() {
-                try {
-                    return Files.size( getPath( path ) );
-                } catch( IOException e ) {
-                    throw new CloudException( e );
-                }
-            }
-
-            @Override
-            public String getContentType() {
-                return "";
-            }
-        } );
+        try {
+            Path fsPath = getPath( path );
+            return CompletableFuture.completedFuture( new FileSystem.StorageItemImpl(
+                fsPath.toString(),
+                "",
+                fsPath.toUri(),
+                new DateTime( Files.getLastModifiedTime( fsPath ).toMillis(), DateTimeZone.UTC ),
+                Files.size( fsPath ),
+                Files.isDirectory( fsPath ) ? "application/x-directory" : "" ) );
+        } catch( NoSuchFileException e ) {
+            return CompletableFuture.completedFuture( null );
+        } catch( IOException e ) {
+            return CompletableFuture.failedFuture( new CloudException( e ) );
+        }
     }
 
     @Override
@@ -132,7 +130,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     @Override
     public CompletableFuture<? extends InputStream> getInputStreamAsync( CloudURI path ) {
         try {
-            return CompletableFuture.completedFuture( Files.newInputStream( getPath( path ) ) );
+            Path fsPath = getPath( path );
+
+            log.debug( "getInputStreamAsync '{}' -> '{}'", path, fsPath );
+
+            return CompletableFuture.completedFuture( Files.newInputStream( fsPath ) );
         } catch( IOException e ) {
             return CompletableFuture.failedFuture( new CloudException( e ) );
         }
@@ -141,7 +143,12 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     @Override
     public OutputStream getOutputStream( CloudURI path, Map<String, String> tags ) throws CloudException {
         try {
-            return Files.newOutputStream( getPath( path ) );
+            Path fsPath = getPath( path );
+
+            log.debug( "getOutputStream '{}' -> '{}'", path, fsPath );
+
+            oap.io.Files.ensureFile( fsPath );
+            return Files.newOutputStream( fsPath );
         } catch( IOException e ) {
             throw new CloudException( e );
         }
@@ -170,48 +177,39 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         try {
             Path filePath = getPath( path );
 
-            return CompletableFuture.completedFuture( new PageSet<>( null, Files.walk( filePath )
+            ArrayList<FileSystem.StorageItemImpl> list = new ArrayList<>();
+
+            Stream<Path> pathStream = Files.walk( filePath )
                 .filter( p -> !Files.isDirectory( p ) )
-                .map( p -> new FileSystem.StorageItem() {
-                    @Override
-                    public String getName() {
-                        return p.toString();
-                    }
+                .sorted();
 
-                    @Override
-                    public URI getUri() {
-                        return p.toUri();
-                    }
+            if( listOptions.continuationToken != null ) {
+                int skip = Integer.parseInt( listOptions.continuationToken );
+                pathStream = pathStream.skip( skip );
+            }
 
-                    @Override
-                    public String getETag() {
-                        return "";
-                    }
+            if( listOptions.maxKeys != null ) {
+                pathStream = pathStream.limit( listOptions.maxKeys );
+            }
 
-                    @Override
-                    public DateTime getLastModified() {
-                        try {
-                            return new DateTime( Files.getLastModifiedTime( p ).toMillis(), DateTimeZone.UTC );
-                        } catch( IOException e ) {
-                            throw new CloudException( e );
-                        }
-                    }
+            List<Path> files = pathStream.toList();
 
-                    @Override
-                    public Long getSize() {
-                        try {
-                            return Files.size( p );
-                        } catch( IOException e ) {
-                            throw new CloudException( e );
-                        }
-                    }
+            for( Path file : files ) {
+                try {
+                    list.add( new FileSystem.StorageItemImpl(
+                        FilenameUtils.separatorsToUnix( basedir.relativize( file ).toString() ),
+                        "",
+                        file.toUri(),
+                        new DateTime( Files.getLastModifiedTime( file ).toMillis(), DateTimeZone.UTC ),
+                        Files.size( file ),
+                        "" ) );
+                } catch( IOException e ) {
+                    return CompletableFuture.failedFuture( new CloudException( e ) );
+                }
 
-                    @Override
-                    public String getContentType() {
-                        return "";
-                    }
-                } )
-                .toList() ) );
+            }
+
+            return CompletableFuture.completedFuture( new PageSet<>( listOptions.maxKeys != null ? listOptions.maxKeys.toString() : null, list ) );
         } catch( IOException e ) {
             return CompletableFuture.failedFuture( new CloudException( e ) );
         }

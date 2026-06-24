@@ -26,6 +26,7 @@ package oap.io;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import io.github.itning.retry.RetryException;
+import io.github.itning.retry.Retryer;
 import io.github.itning.retry.RetryerBuilder;
 import io.github.itning.retry.strategy.stop.StopStrategies;
 import lombok.extern.slf4j.Slf4j;
@@ -379,7 +380,7 @@ public final class Files {
 
     public static void delete( Path path ) {
         try {
-            var retryer = RetryerBuilder.<FileVisitResult>newBuilder()
+            Retryer<FileVisitResult> retryer = RetryerBuilder.<FileVisitResult>newBuilder()
                 .retryIfException()
                 .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
                 .build();
