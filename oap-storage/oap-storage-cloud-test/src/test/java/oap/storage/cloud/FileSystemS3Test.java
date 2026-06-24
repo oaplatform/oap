@@ -8,6 +8,7 @@ import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -160,7 +161,7 @@ public class FileSystemS3Test extends Fixtures {
             "fs.default.clouds.container", TEST_BUCKET
         ) ) ) ) {
             Path path = testDirectoryFixture.testPath( "/container/test.file" );
-            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", null, path.toString() ) );
+            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", "", FilenameUtils.separatorsToUnix( testDirectoryFixture.testPath( "container/test.file" ).toString() ) ) );
         }
     }
 

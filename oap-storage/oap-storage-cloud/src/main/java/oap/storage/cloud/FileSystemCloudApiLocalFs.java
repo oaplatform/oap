@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -29,8 +30,12 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     private final Path basedir;
 
     public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        basedir = Paths.get( ( String ) fileSystemConfiguration.get( "file", container, "jclouds.filesystem.basedir" ) );
-        Preconditions.checkNotNull( basedir );
+        String basedir = ( String ) fileSystemConfiguration.get( "file", container, "jclouds.filesystem.basedir" );
+        if( basedir == null ) {
+            basedir = SystemUtils.IS_OS_WINDOWS ? "c:/" : "/";
+        }
+
+        this.basedir = Paths.get( basedir );
     }
 
     @Override

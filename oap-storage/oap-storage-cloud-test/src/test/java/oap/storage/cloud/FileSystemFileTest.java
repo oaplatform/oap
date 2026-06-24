@@ -7,6 +7,7 @@ import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -47,11 +48,7 @@ public class FileSystemFileTest extends Fixtures {
 
     @Test
     public void testGetDefaultURL() {
-        try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.clouds.scheme", "file",
-            "fs.default.clouds.container", "",
-            "fs.file.clouds.filesystem.basedir", basedir
-        ) ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( new CloudURI( "file", "", "a.file" ) );
             assertThat( fileSystem.getDefaultURL( "a.file" ) ).isEqualTo( new CloudURI( "file", "", "a.file" ) );
         }
@@ -65,6 +62,24 @@ public class FileSystemFileTest extends Fixtures {
             Files.write( filePath, "test string", ContentWriter.ofString() );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "file://logs/file.txt" ) );
+
+            assertThat( inputStream ).hasContent( "test string" );
+        }
+    }
+
+    @Test
+    public void testGetInputStreamWithoutBasedir() {
+        try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
+            "fs.default.clouds.scheme", "file",
+            "fs.default.clouds.container", ""
+        ) ) ) ) {
+            Path filePath = basedir.resolve( "logs/file.txt" );
+            log.debug( "file {}", filePath );
+            Files.write( filePath, "test string", ContentWriter.ofString() );
+
+            CloudURI path = new CloudURI( "file://" + FilenameUtils.separatorsToUnix( filePath.toString().substring( 1 ) ) );
+            log.debug( "path {}", path );
+            InputStream inputStream = fileSystem.getInputStream( path );
 
             assertThat( inputStream ).hasContent( "test string" );
         }
