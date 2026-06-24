@@ -162,13 +162,23 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     @Override
     public CompletableFuture<Void> uploadAsync( CloudURI destination, BlobData blobData ) throws CloudException {
         try {
+            Path destinationFs = getPath( destination );
+
+            log.debug( "uploadAsync '{}' -> '{}'", destination, destinationFs );
+
             switch( blobData.content ) {
-                case InputStream inputStream -> IoStreams.write( getPath( destination ), IoStreams.Encoding.PLAIN, inputStream );
-                case String str -> IoStreams.write( getPath( destination ), IoStreams.Encoding.PLAIN, str );
-                case byte[] bytes -> IoStreams.write( getPath( destination ), IoStreams.Encoding.PLAIN, new ByteArrayInputStream( bytes ) );
-                case ByteBuffer byteBuffer -> IoStreams.write( getPath( destination ), IoStreams.Encoding.PLAIN, new ByteArrayInputStream( byteBuffer.array() ) );
-                case File file -> Files.copy( file.toPath(), getPath( destination ) );
-                case Path path -> Files.copy( path, getPath( destination ) );
+                case InputStream inputStream -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, inputStream );
+                case String str -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, str );
+                case byte[] bytes -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( bytes ) );
+                case ByteBuffer byteBuffer -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( byteBuffer.array() ) );
+                case File file -> {
+                    oap.io.Files.ensureFile( destinationFs );
+                    Files.copy( file.toPath(), destinationFs );
+                }
+                case Path path -> {
+                    oap.io.Files.ensureFile( destinationFs );
+                    Files.copy( path, destinationFs );
+                }
                 case null, default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
             }
             return CompletableFuture.completedFuture( null );
