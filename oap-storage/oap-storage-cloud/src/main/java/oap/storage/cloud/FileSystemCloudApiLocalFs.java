@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -173,11 +174,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                 case ByteBuffer byteBuffer -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( byteBuffer.array() ) );
                 case File file -> {
                     oap.io.Files.ensureFile( destinationFs );
-                    Files.copy( file.toPath(), destinationFs );
+                    Files.copy( file.toPath(), destinationFs, StandardCopyOption.REPLACE_EXISTING );
                 }
                 case Path path -> {
                     oap.io.Files.ensureFile( destinationFs );
-                    Files.copy( path, destinationFs );
+                    Files.copy( path, destinationFs, StandardCopyOption.REPLACE_EXISTING );
                 }
                 case null, default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
             }

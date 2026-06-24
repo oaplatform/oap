@@ -238,6 +238,20 @@ public class FileSystemFileTest extends Fixtures {
     }
 
     @Test
+    public void testUploadFileOverwrite() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            Path source = testDirectoryFixture.testPath( "test/new-file.txt" );
+            Files.write( source, "content", ContentWriter.ofString() );
+            fileSystem.upload( new CloudURI( "file://test-bucket/path1/path2/file.txt" ), BlobData.builder().content( source ).build() );
+
+            Files.write( source, "content2", ContentWriter.ofString() );
+            fileSystem.upload( new CloudURI( "file://test-bucket/path1/path2/file.txt" ), BlobData.builder().content( source ).build() );
+
+            assertFile( basedir.resolve( "test-bucket/path1/path2/file.txt" ) ).hasContent( "content2" );
+        }
+    }
+
+    @Test
     public void testUploadBytes() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( new CloudURI( "file://test-bucket/file.txt" ), BlobData.builder().content( "content".getBytes( UTF_8 ) ).build() );
