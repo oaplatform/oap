@@ -170,7 +170,10 @@ public class McpService implements McpServerTransportProvider, Closeable {
 
     @Override
     public Mono<Void> closeGracefully() {
-        return Mono.fromRunnable( this::doClose );
+        return Mono.fromRunnable( () -> {
+            sessions.values().forEach( s -> s.queue().offer( SSE_CLOSE ) );
+            sessions.clear();
+        } );
     }
 
     public McpSession createSession( String sessionId ) {
@@ -220,12 +223,6 @@ public class McpService implements McpServerTransportProvider, Closeable {
 
     @Override
     public void close() {
-        doClose();
-    }
-
-    private void doClose() {
-        sessions.values().forEach( s -> s.queue().offer( SSE_CLOSE ) );
-        sessions.clear();
         server.closeGracefully();
     }
 
