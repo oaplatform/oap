@@ -2,6 +2,7 @@ package oap.storage.cloud;
 
 import lombok.EqualsAndHashCode;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -67,6 +68,6 @@ public class CloudURI implements Serializable {
 
     @Override
     public String toString() {
-        return scheme + "://" + ( container != null ? container : "" ) + "/" + path;
+        return scheme + "://" + ( StringUtils.isNotEmpty( container ) ? container + "/" : "" ) + path;
     }
 }

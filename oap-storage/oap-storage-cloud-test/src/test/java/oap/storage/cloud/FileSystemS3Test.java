@@ -8,6 +8,7 @@ import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -33,7 +34,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class FileSystemTest extends Fixtures {
+public class FileSystemS3Test extends Fixtures {
     public static final String TEST_BUCKET = "test-bucket";
     private static final S3MockFixture s3mockFixture;
     private static final TestDirectoryFixture testDirectoryFixture;
@@ -43,7 +44,7 @@ public class FileSystemTest extends Fixtures {
         s3mockFixture = suiteFixture( new S3MockFixture( testDirectoryFixture ) ).withInitialBuckets( TEST_BUCKET, "test2" );
     }
 
-    public FileSystemTest() {
+    public FileSystemS3Test() {
         fixture( new SystemTimerFixture( true ) );
     }
 
@@ -160,7 +161,7 @@ public class FileSystemTest extends Fixtures {
             "fs.default.clouds.container", TEST_BUCKET
         ) ) ) ) {
             Path path = testDirectoryFixture.testPath( "/container/test.file" );
-            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", null, path.toString() ) );
+            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", "", FilenameUtils.separatorsToUnix( testDirectoryFixture.testPath( "container/test.file" ).toString() ) ) );
         }
     }
 

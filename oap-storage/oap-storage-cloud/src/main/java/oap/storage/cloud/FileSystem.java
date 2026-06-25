@@ -265,7 +265,9 @@ public class FileSystem implements AutoCloseable {
     public CloudURI toLocalFilePath( Path path ) {
         log.debug( "toLocalFilePath {}", path );
 
-        return new CloudURI( "file", null, path.toString() );
+        String basedir = ( String ) fileSystemConfiguration.get( "file", "default", "jclouds.filesystem.basedir" );
+
+        return new CloudURI( "file", "", basedir != null ? Paths.get( basedir ).relativize( path ).toString() : Paths.get( "/" ).relativize( path ).toString() );
     }
 
     public File toFile( CloudURI cloudURI ) {
@@ -303,7 +305,6 @@ public class FileSystem implements AutoCloseable {
         private final String name;
         private final String eTag;
         private final URI uri;
-        private final DateTime creationDate;
         private final DateTime lastModified;
         private final Long size;
         private final String contentType;
