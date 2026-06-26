@@ -11,6 +11,7 @@ Services are plain Java classes — no framework annotations required. Everythin
 - [Application Configuration (application.conf)](#application-configuration-applicationconf)
 - [Reference Syntax](#reference-syntax)
 - [Supervision and Service Lifecycle](#supervision-and-service-lifecycle)
+- [Lifecycle Annotations](#lifecycle-annotations)
 - [Dependency Injection Mechanics](#dependency-injection-mechanics)
 - [Abstract Services](#abstract-services)
 - [Module Discovery](#module-discovery)
@@ -321,6 +322,42 @@ On `kernel.stop()`, the `Supervisor` stops services in reverse registration orde
 2. Supervised services have `preStop()` then `stop()` (or `close()`) called.
 
 `shutdown.serviceTimeout` (default `5s`) is the warn threshold per service. Set `shutdown.serviceAsyncShutdownAfterTimeout = true` to continue shutdown after a timeout rather than waiting.
+
+### Lifecycle Annotations
+
+As an alternative to relying on method names (`preStart`, `start`, etc.), lifecycle hooks can be declared with annotations from the `oap.application.annotation` package. The kernel discovers annotated methods at startup regardless of their name.
+
+| Annotation | Phase | Equivalent supervision field |
+|---|---|---|
+| `@PreStart` | Before service start | `preStartWith` |
+| `@Start` | Service start | `startWith` |
+| `@PreStop` | Before service stop | `preStopWith` |
+| `@Stop` | Service stop | `stopWith` |
+
+Annotations and name-based discovery are independent — both are applied. An annotated method named `start` is invoked by both paths; an annotated method with any other name is invoked only via the annotation.
+
+```java
+import oap.application.annotation.PreStart;
+import oap.application.annotation.Start;
+import oap.application.annotation.PreStop;
+import oap.application.annotation.Stop;
+
+public class MyService {
+    @PreStart
+    public void onBeforeStart() { /* runs before start */ }
+
+    @Start
+    public void onStart() { /* runs on start */ }
+
+    @PreStop
+    public void onBeforeStop() { /* runs before stop */ }
+
+    @Stop
+    public void onStop() { /* runs on stop */ }
+}
+```
+
+The service still needs `supervision.supervise = true` in its `oap-module.oap` declaration.
 
 ---
 
