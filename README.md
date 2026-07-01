@@ -2,6 +2,14 @@
 
 A light-weight application framework to build high performant and distributed java applications.
 
+## Build
+
+```bash
+./gradlew build           # full build
+./gradlew build -x test   # skip tests
+./gradlew publish         # publish to repository
+```
+
 ## Modules
 
 | Module | Description                                                                                                 |
@@ -18,7 +26,8 @@ A light-weight application framework to build high performant and distributed ja
 | [oap-storage](oap-storage/README.md) | In-memory object store (`MemoryStorage`) with MongoDB sync and cloud object storage                         |
 | [oap-highload](oap-highload/README.md) | CPU affinity utility for pinning threads to specific CPU cores                                              |
 | [oap-mail](oap-mail/README.md) | Email sending via SMTP and SendGrid with a persistent delivery queue                                        |
-| [oap-maven-plugin](oap-maven-plugin/README.md) | Build-time code generation: startup scripts and dictionary enum source files                                |
+| [oap-mcp](oap-mcp/README.md) | MCP (Model Context Protocol) server — SSE transport, `@McpTool`/`@McpPrompt` annotations, admin tools for log-level and JPath inspection |
+| [oap-maven-plugin](oap-maven-plugin/README.md) | Gradle plugins: `oap.copy` (resource packaging), `oap.startup-scripts` (launch scripts), `oap.dictionary` (enum codegen), `oap.openapi` (OpenAPI generation) |
 
 ## Guides
 
