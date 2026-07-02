@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.storage.mongo.mongoclienttest;
+package oap.storage.mongo.testmigrations;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
