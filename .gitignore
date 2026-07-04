@@ -9,6 +9,7 @@ modules.xml
 vcs.xml
 workspace.xml
 target/
+build/
 
 *.versionsBackup
 .surefire*
@@ -22,3 +23,4 @@ kotlinc.xml
 /.idea/runConfigurations.xml
 /.idea/sonarlint/*
 /codemr/*
+/.gradle

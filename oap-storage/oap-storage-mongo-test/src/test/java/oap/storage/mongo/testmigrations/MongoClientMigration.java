@@ -22,47 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.maven;
+package oap.storage.mongo.testmigrations;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import io.mongock.api.annotations.ChangeUnit;
+import io.mongock.api.annotations.Execution;
+import io.mongock.api.annotations.RollbackExecution;
+import org.bson.Document;
 
-public class FileSet implements Serializable {
-    private String directory;
-    private List<String> includes = new ArrayList<>();
-    private List<String> excludes = new ArrayList<>();
-    private boolean filtering;
+import java.util.Map;
 
-    public String getDirectory() {
-        return directory;
+
+@ChangeUnit( id = "MongoClientMigration", order = "1", systemVersion = "1" )
+public class MongoClientMigration {
+    @Execution
+    public void execution( MongoClient mongoClient, MongoDatabase mongoDatabase ) {
+        mongoDatabase
+            .getCollection( "test" )
+            .insertOne( new Document( Map.of( "_id", "test", "c", 17 ) ) );
+
+        mongoDatabase
+            .getCollection( "test" )
+            .insertOne( new Document( Map.of( "_id", "test3", "v", 1 ) ) );
     }
 
-    public void setDirectory( String directory ) {
-        this.directory = directory;
-    }
-
-    public List<String> getIncludes() {
-        return includes;
-    }
-
-    public void setIncludes( List<String> includes ) {
-        this.includes = includes;
-    }
-
-    public List<String> getExcludes() {
-        return excludes;
-    }
-
-    public void setExcludes( List<String> excludes ) {
-        this.excludes = excludes;
-    }
-
-    public boolean isFiltering() {
-        return filtering;
-    }
-
-    public void setFiltering( boolean filtering ) {
-        this.filtering = filtering;
+    @RollbackExecution
+    public void rollback( MongoDatabase mongoDatabase ) {
+        mongoDatabase.getCollection( "test" )
+            .deleteOne( Filters.eq( "_id", "test" ) );
+        mongoDatabase.getCollection( "test" )
+            .deleteOne( Filters.eq( "_id", "test3" ) );
     }
 }

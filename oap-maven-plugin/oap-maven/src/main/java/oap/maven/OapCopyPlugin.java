@@ -24,45 +24,12 @@
 
 package oap.maven;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 
-public class FileSet implements Serializable {
-    private String directory;
-    private List<String> includes = new ArrayList<>();
-    private List<String> excludes = new ArrayList<>();
-    private boolean filtering;
-
-    public String getDirectory() {
-        return directory;
-    }
-
-    public void setDirectory( String directory ) {
-        this.directory = directory;
-    }
-
-    public List<String> getIncludes() {
-        return includes;
-    }
-
-    public void setIncludes( List<String> includes ) {
-        this.includes = includes;
-    }
-
-    public List<String> getExcludes() {
-        return excludes;
-    }
-
-    public void setExcludes( List<String> excludes ) {
-        this.excludes = excludes;
-    }
-
-    public boolean isFiltering() {
-        return filtering;
-    }
-
-    public void setFiltering( boolean filtering ) {
-        this.filtering = filtering;
+public class OapCopyPlugin implements Plugin<Project> {
+    @Override
+    public void apply( Project project ) {
+        // Registers OapCopyTask type; consumers create their own copy tasks
     }
 }
