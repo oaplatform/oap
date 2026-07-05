@@ -27,7 +27,9 @@ dependencies {
     api("io.airlift:aircompressor:0.25")
     api("com.github.luben:zstd-jni:1.5.5-11")
     api("io.github.itning:guava-retrying3:3.0.3")
-    api("com.jasonclawson:jackson-dataformat-hocon:1.1.0")
+    api("com.jasonclawson:jackson-dataformat-hocon:1.1.0") {
+        exclude(group = "com.typesafe.config", module = "config")
+    }
     api("de.undercouch:bson4jackson:2.18.0")
     api("oap:config:25.0.1")
     api("org.apache.commons:commons-collections4")
