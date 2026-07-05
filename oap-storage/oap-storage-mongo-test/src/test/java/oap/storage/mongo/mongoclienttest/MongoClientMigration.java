@@ -22,16 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.maven;
+package oap.storage.mongo.mongoclienttest;
 
-public class FileSet extends org.apache.maven.model.FileSet {
-    private boolean filtering;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import io.mongock.api.annotations.ChangeUnit;
+import io.mongock.api.annotations.Execution;
+import io.mongock.api.annotations.RollbackExecution;
+import org.bson.Document;
 
-    public boolean isFiltering() {
-        return filtering;
+import java.util.Map;
+
+
+@ChangeUnit( id = "MongoClientMigration", order = "1", systemVersion = "1" )
+public class MongoClientMigration {
+    @Execution
+    public void execution( MongoClient mongoClient, MongoDatabase mongoDatabase ) {
+        mongoDatabase
+            .getCollection( "test" )
+            .insertOne( new Document( Map.of( "_id", "test", "c", 17 ) ) );
+
+        mongoDatabase
+            .getCollection( "test" )
+            .insertOne( new Document( Map.of( "_id", "test3", "v", 1 ) ) );
     }
 
-    public void setFiltering( boolean filtering ) {
-        this.filtering = filtering;
+    @RollbackExecution
+    public void rollback( MongoDatabase mongoDatabase ) {
+        mongoDatabase.getCollection( "test" )
+            .deleteOne( Filters.eq( "_id", "test" ) );
+        mongoDatabase.getCollection( "test" )
+            .deleteOne( Filters.eq( "_id", "test3" ) );
     }
 }

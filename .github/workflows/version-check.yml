@@ -21,4 +21,5 @@ jobs:
         id: actions_project_version_check
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          file-to-check: gradle.properties
+          file-to-check: pom.xml
+          pom-property-as-version: oap.project.version

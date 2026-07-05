@@ -58,7 +58,7 @@ public class MongoClientTest extends Fixtures {
 
     @Test
     public void migration() {
-        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.testmigrations" ) ) {
+        try( MongoClient client = mongoFixture.createMongoClient( "oap.storage.mongo.mongoclienttest" ) ) {
             client.preStart();
 
             assertThat( getDocumentField( client, "test", "c" ) ).isEqualTo( 17 );

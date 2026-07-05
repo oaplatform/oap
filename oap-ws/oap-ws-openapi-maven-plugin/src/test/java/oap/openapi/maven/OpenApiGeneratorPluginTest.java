@@ -22,16 +22,42 @@
  * SOFTWARE.
  */
 
-package oap.maven;
+package oap.openapi.maven;
 
-public class FileSet extends org.apache.maven.model.FileSet {
-    private boolean filtering;
+import oap.testng.Fixtures;
+import org.testng.annotations.Test;
 
-    public boolean isFiltering() {
-        return filtering;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class OpenApiGeneratorPluginTest extends Fixtures {
+
+    @Test
+    public void execute() throws Exception {
+        OpenApiGeneratorPlugin mojo = new OpenApiGeneratorPlugin();
+        mojo.setOutputPath( "swagger" );
+        mojo.setOutputType( "JSON" );
+        mojo.setExcludeModules( new ArrayList<>() );
+
+        mojo.execute();
     }
 
-    public void setFiltering( boolean filtering ) {
-        this.filtering = filtering;
+    @Test
+    public void execute2() throws Exception {
+        OpenApiGeneratorPlugin mojo = new OpenApiGeneratorPlugin();
+        mojo.setOutputPath( "swagger" );
+        mojo.setOutputType( "JSON" );
+
+        mojo.execute();
+    }
+
+    @Test
+    public void execute3() throws Exception {
+        OpenApiGeneratorPlugin mojo = new OpenApiGeneratorPlugin();
+        mojo.setOutputPath( "swagger" );
+        mojo.setOutputType( "JSON" );
+        mojo.setExcludeModules( Arrays.asList( "oap-ws" ) );
+
+        mojo.execute();
     }
 }
