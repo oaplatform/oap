@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>oap</groupId>
+        <artifactId>oap.maven</artifactId>
+        <version>25.1.0</version>
+    </parent>
+
+    <packaging>pom</packaging>
+    <artifactId>oap</artifactId>
+    <version>${oap.project.version}</version>
+
+    <name>oap</name>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>oap</groupId>
+                <artifactId>oap-dependencies</artifactId>
+                <version>25.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>oap-stdlib</module>
+        <module>oap-stdlib-test</module>
+        <module>oap-http</module>
+        <module>oap-mcp</module>
+        <module>oap-jpath</module>
+        <module>oap-message</module>
+        <module>oap-application</module>
+        <module>oap-formats</module>
+        <module>oap-storage</module>
+        <module>oap-mail</module>
+        <module>oap-statsdb</module>
+        <module>oap-ws</module>
+        <module>oap-highload</module>
+        <module>oap-maven-plugin</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>oap</id>
+            <url>https://maven.xenoss.net/repository/oap-maven/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>oap</id>
+            <url>https://maven.xenoss.net/repository/oap-maven/</url>
+        </repository>
+    </distributionManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.khbd.interp4j</groupId>
+            <artifactId>interp4j-core</artifactId>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <oap.project.version>25.9.0</oap.project.version>
+
+        <oap.deps.config.version>25.0.1</oap.deps.config.version>
+        <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
+
+        <oap.deps.localstack.version>1.21.4</oap.deps.localstack.version>
+        <oap.deps.mockito.version>5.18.0</oap.deps.mockito.version>
+        <oap.deps.byte-buddy.version>1.17.6</oap.deps.byte-buddy.version>
+
+        <oap.deps.apache.httpcomponents.version>4.4.16</oap.deps.apache.httpcomponents.version>
+        <oap.deps.apache.httpclient.version>4.5.14</oap.deps.apache.httpclient.version>
+        <oap.deps.apache.httpasyncclient.version>4.1.5</oap.deps.apache.httpasyncclient.version>
+        <oap.deps.apache.httpmime.version>4.5.14</oap.deps.apache.httpmime.version>
+
+        <oap.deps.hadoop.version>3.4.1</oap.deps.hadoop.version>
+        <oap.deps.testcontainers.version>2.0.5</oap.deps.testcontainers.version>
+
+        <oap.deps.jackson.version>2.19.4</oap.deps.jackson.version>
+        <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
+        <oap.deps.bson4jackson.version>2.18.0</oap.deps.bson4jackson.version>
+
+        <oap.deps.jol.version>0.17</oap.deps.jol.version>
+
+        <oap.deps.fastutil.version>8.5.12</oap.deps.fastutil.version>
+        <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
+        <oap.deps.fop.version>2.2.1</oap.deps.fop.version>
+        <oap.deps.aircompressor.version>0.25</oap.deps.aircompressor.version>
+        <oap.deps.luben-zstd-jni.version>1.5.5-11</oap.deps.luben-zstd-jni.version>
+        <oap.deps.fst.version>3.0.4-jdk17</oap.deps.fst.version>
+        <oap.deps.guava-retrying.version>3.0.3</oap.deps.guava-retrying.version>
+        <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
+        <oap.deps.disruptor.version>1.2.21</oap.deps.disruptor.version>
+
+        <oap.deps.maven.plexus-utils.version>4.0.2</oap.deps.maven.plexus-utils.version>
+        <oap.deps.build-helper-maven-plugin.version>3.6.1</oap.deps.build-helper-maven-plugin.version>
+        <oap.deps.maven-plugin-api.version>3.9.11</oap.deps.maven-plugin-api.version>
+        <oap.deps.maven-core.version>3.9.11</oap.deps.maven-core.version>
+        <oap.deps.maven-plugin-annotations.version>3.15.1</oap.deps.maven-plugin-annotations.version>
+        <oap.deps.maven-plugin-plugin.version>3.15.1</oap.deps.maven-plugin-plugin.version>
+        <oap.deps.plugins.antlr4.version>4.13.0</oap.deps.plugins.antlr4.version>
+        <oap.deps.asm.version>9.8</oap.deps.asm.version>
+
+        <oap.deps.undertow.version>2.3.23.Final</oap.deps.undertow.version>
+        <oap.deps.affinity.version>3.23.3</oap.deps.affinity.version>
+
+        <oap.deps.docker-java.version>3.3.4</oap.deps.docker-java.version>
+        <oap.deps.eddsa.version>0.2.0</oap.deps.eddsa.version>
+        <oap.deps.jsch.version>0.1.54</oap.deps.jsch.version>
+        <oap.deps.sshj.version>0.24.0</oap.deps.sshj.version>
+
+        <!--oap-mail-->
+        <oap.deps.javax.mail.version>1.6.2</oap.deps.javax.mail.version>
+        <oap.deps.sendgrid.version>4.9.3</oap.deps.sendgrid.version>
+
+        <oap.deps.dnsjava.version>3.6.4</oap.deps.dnsjava.version>
+        <oap.deps.jetty-client.version>12.1.6</oap.deps.jetty-client.version>
+
+        <!-- jsr305 -->
+        <oap.deps.spotbugs>4.9.8</oap.deps.spotbugs>
+
+        <oap.deps.netty.version>4.2.9.Final</oap.deps.netty.version>
+
+        <oap.deps.mcp.version>1.1.3</oap.deps.mcp.version>
+    </properties>
+</project>
