@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     private final Path basedir;
+    private final boolean removeEmptyFolders;
 
     public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
         String basedir = ( String ) fileSystemConfiguration.get( "file", container, "jclouds.filesystem.basedir" );
@@ -37,6 +38,9 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         }
 
         this.basedir = Paths.get( basedir );
+
+        Object removeEmptyFolders = fileSystemConfiguration.get( "file", container, "jclouds.filesystem.remove_empty_folders" );
+        this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 
     @Override
@@ -56,7 +60,17 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     @Override
     public CompletableFuture<Void> deleteBlobAsync( CloudURI path ) {
         try {
-            Files.delete( getPath( path ) );
+            Path fsPath = getPath( path );
+            Files.delete( fsPath );
+
+            if( removeEmptyFolders ) {
+                Path parent = fsPath.getParent();
+                while( parent != null && !parent.equals( basedir ) && parent.startsWith( basedir )
+                    && oap.io.Files.isDirectoryEmpty( parent ) ) {
+                    Files.delete( parent );
+                    parent = parent.getParent();
+                }
+            }
 
             return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
