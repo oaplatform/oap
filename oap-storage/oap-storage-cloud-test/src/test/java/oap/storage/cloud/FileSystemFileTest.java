@@ -8,17 +8,18 @@ import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
 import org.apache.commons.io.FilenameUtils;
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -144,13 +145,25 @@ public class FileSystemFileTest extends Fixtures {
         }
     }
 
-    @NotNull
+    @Nonnull
     private FileSystemConfiguration getFileSystemConfiguration() {
-        return new FileSystemConfiguration( Map.of(
+        return getFileSystemConfiguration( false );
+    }
+
+    @Nonnull
+    private FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.putAll( Map.of(
             "fs.default.clouds.scheme", "file",
             "fs.default.clouds.container", "",
             "fs.file.clouds.filesystem.basedir", basedir
         ) );
+
+        if( removeEmptyFolders ) {
+            map.put( "fs.file.clouds.filesystem.remove_empty_folders", true );
+        }
+
+        return new FileSystemConfiguration( map );
     }
 
     @Test
@@ -266,6 +279,40 @@ public class FileSystemFileTest extends Fixtures {
             Files.ensureDirectory( basedir.resolve( "test-bucket/folder/" ) );
 
             assertThat( fileSystem.getMetadata( new CloudURI( "file://test-bucket/folder/" ) ).getContentType() ).isEqualTo( "application/x-directory" );
+        }
+    }
+
+    @Test
+    public void testDeleteFileAndParentFolderIfEmpty() {
+        // 1. remove_empty_folders disabled -> parent folders remain after delete
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.upload( new CloudURI( "file://case1/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            fileSystem.deleteBlob( new CloudURI( "file://case1/folder1/folder2/file.txt" ) );
+
+            assertFile( basedir.resolve( "case1/folder1/folder2/file.txt" ) ).doesNotExist();
+            assertThat( basedir.resolve( "case1/folder1/folder2" ) ).exists();
+        }
+
+        // 2. enabled -> empty folder2 removed, folder1 kept (still has file2.txt)
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration( true ) ) ) {
+            fileSystem.upload( new CloudURI( "file://case2/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
+            fileSystem.upload( new CloudURI( "file://case2/folder1/file2.txt" ), BlobData.builder().content( "content2" ).build() );
+
+            fileSystem.deleteBlob( new CloudURI( "file://case2/folder1/folder2/file.txt" ) );
+
+            assertThat( basedir.resolve( "case2/folder1/folder2" ) ).doesNotExist();
+            assertThat( basedir.resolve( "case2/folder1" ) ).exists();
+        }
+
+        // 3. enabled -> whole empty chain removed up to basedir
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration( true ) ) ) {
+            fileSystem.upload( new CloudURI( "file://case3/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            fileSystem.deleteBlob( new CloudURI( "file://case3/folder1/folder2/file.txt" ) );
+
+            assertThat( basedir.resolve( "case3/folder1/folder2" ) ).doesNotExist();
+            assertThat( basedir.resolve( "case3/folder1" ) ).doesNotExist();
         }
     }
 }
