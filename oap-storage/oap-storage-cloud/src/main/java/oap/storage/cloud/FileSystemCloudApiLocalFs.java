@@ -34,7 +34,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
         String basedir = ( String ) fileSystemConfiguration.get( "file", container, "jclouds.filesystem.basedir" );
         if( basedir == null ) {
-            basedir = SystemUtils.IS_OS_WINDOWS ? "c:/" : "/";
+            basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
         }
 
         this.basedir = Paths.get( basedir );
@@ -48,7 +48,10 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         return CompletableFuture.completedFuture( getPath( path ).toFile().exists() );
     }
 
-    private Path getPath( CloudURI path ) {
+    protected Path getPath( CloudURI path ) {
+        if( path.path.startsWith( "/" ) ) {
+            return Paths.get( path.path ).normalize();
+        }
         return Paths.get( basedir.toString(), path.container, path.path ).normalize();
     }
 
@@ -184,8 +187,10 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
             switch( blobData.content ) {
                 case InputStream inputStream -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, inputStream );
                 case String str -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, str );
-                case byte[] bytes -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( bytes ) );
-                case ByteBuffer byteBuffer -> IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( byteBuffer.array() ) );
+                case byte[] bytes ->
+                    IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( bytes ) );
+                case ByteBuffer byteBuffer ->
+                    IoStreams.write( destinationFs, IoStreams.Encoding.PLAIN, new ByteArrayInputStream( byteBuffer.array() ) );
                 case File file -> {
                     oap.io.Files.ensureFile( destinationFs );
                     Files.copy( file.toPath(), destinationFs, StandardCopyOption.REPLACE_EXISTING );
@@ -239,7 +244,8 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
             }
 
-            return CompletableFuture.completedFuture( new PageSet<>( listOptions.maxKeys != null ? listOptions.maxKeys.toString() : null, list ) );
+            return CompletableFuture.completedFuture( new PageSet<>(
+                listOptions.maxKeys != null ? listOptions.maxKeys.toString() : null, list ) );
         } catch( IOException e ) {
             return CompletableFuture.failedFuture( new CloudException( e ) );
         }

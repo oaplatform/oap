@@ -215,7 +215,7 @@ public class FileSystemS3Test extends Fixtures {
     }
 
     @Test
-    public void testToFile() {
+    public void testToFile() throws IOException {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
                 "fs.default.clouds.scheme", "s3",
@@ -224,7 +224,7 @@ public class FileSystemS3Test extends Fixtures {
         );
 
         try( FileSystem fileSystem = new FileSystem( fileSystemConfiguration ) ) {
-            assertThat( fileSystem.toFile( new CloudURI( "file:///tmp/a/file1" ) ) ).isEqualTo( new File( "/tmp/a/file1" ) );
+            assertThat( fileSystem.toFile( new CloudURI( "file:///tmp/a/file1" ) ) ).isEqualTo( new File( "/tmp/a/file1" ).getCanonicalFile() );
         }
     }
 

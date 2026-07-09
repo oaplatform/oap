@@ -26,10 +26,12 @@ public class CloudURI implements Serializable {
             String container = u.getHost();
             String uriPath = u.getPath();
             uriPath = FilenameUtils.separatorsToUnix( uriPath );
-            if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
+            if( container != null && uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
 
             if( "file".equals( scheme ) ) {
-                uriPath = container + "/" + uriPath;
+                if( container != null ) {
+                    uriPath = container + "/" + uriPath;
+                }
                 this.container = "";
             } else {
                 this.container = container;

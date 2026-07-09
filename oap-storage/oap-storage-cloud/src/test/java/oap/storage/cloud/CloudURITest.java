@@ -19,5 +19,10 @@ public class CloudURITest {
         assertThat( cloudURI.scheme ).isEqualTo( "file" );
         assertThat( cloudURI.container ).isEmpty();
         assertThat( cloudURI.path ).isEqualTo( "my-bucket/logs/1.txt" );
+
+        cloudURI = new CloudURI( "file:///my-bucket/logs/1.txt" );
+        assertThat( cloudURI.scheme ).isEqualTo( "file" );
+        assertThat( cloudURI.container ).isEmpty();
+        assertThat( cloudURI.path ).isEqualTo( "/my-bucket/logs/1.txt" );
     }
 }
