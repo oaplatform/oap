@@ -238,9 +238,27 @@ public final class Asserts {
             super( actual.toFile(), FileAssertion.class );
         }
 
+        public FileAssertion contains( String... values ) {
+            String actual = Files.read( this.actual.toPath(), ofString() );
+            assertThat( actual ).contains( values );
+            return this;
+        }
+
+        public FileAssertion contains( Iterable<String> values ) {
+            String actual = Files.read( this.actual.toPath(), ofString() );
+            assertThat( actual ).contains( values );
+            return this;
+        }
+
+        public FileAssertion containsIgnoringCase( CharSequence sequence ) {
+            String actual = Files.read( this.actual.toPath(), ofString() );
+            assertThat( actual ).containsIgnoringCase( sequence );
+            return this;
+        }
+
         public FileAssertion hasSameContentAs( Path expected ) {
-            String actual = Files.readString( this.actual.toPath() );
-            assertThat( actual ).isEqualTo( Files.readString( expected ) );
+            String actual = Files.read( this.actual.toPath(), ofString() );
+            assertThat( actual ).isEqualTo( Files.read( expected, ofString() ) );
             return this;
         }
 
