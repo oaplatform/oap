@@ -23,10 +23,18 @@ public class CloudURI implements Serializable {
             URI u = new URI( uri );
 
             scheme = u.getScheme();
-            container = u.getHost();
+            String container = u.getHost();
             String uriPath = u.getPath();
             uriPath = FilenameUtils.separatorsToUnix( uriPath );
             if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
+
+            if( "file".equals( scheme ) ) {
+                uriPath = container + "/" + uriPath;
+                this.container = "";
+            } else {
+                this.container = container;
+            }
+
             path = uriPath;
 
             getProvider();
