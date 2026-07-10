@@ -12,4 +12,17 @@ public class CloudURITest {
         assertThat( cloudURI.container ).isEqualTo( "my-bucket" );
         assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
     }
+
+    @Test
+    public void testParseFile() {
+        CloudURI cloudURI = new CloudURI( "file://my-bucket/logs/1.txt" );
+        assertThat( cloudURI.scheme ).isEqualTo( "file" );
+        assertThat( cloudURI.container ).isEmpty();
+        assertThat( cloudURI.path ).isEqualTo( "my-bucket/logs/1.txt" );
+
+        cloudURI = new CloudURI( "file:///my-bucket/logs/1.txt" );
+        assertThat( cloudURI.scheme ).isEqualTo( "file" );
+        assertThat( cloudURI.container ).isEmpty();
+        assertThat( cloudURI.path ).isEqualTo( "/my-bucket/logs/1.txt" );
+    }
 }
