@@ -76,7 +76,7 @@ public class ModuleItem {
         if( this == o ) return true;
         if( o == null || getClass() != o.getClass() ) return false;
 
-        var that = ( ModuleItem ) o;
+        ModuleItem that = ( ModuleItem ) o;
 
         return module.name.equals( that.module.name );
     }
@@ -158,7 +158,7 @@ public class ModuleItem {
             if( this == o ) return true;
             if( o == null || getClass() != o.getClass() ) return false;
 
-            var that = ( ServiceItem ) o;
+            ServiceItem that = ( ServiceItem ) o;
 
             if( !moduleItem.module.name.equals( that.moduleItem.module.name ) ) return false;
             return serviceName.equals( that.serviceName );
@@ -172,7 +172,7 @@ public class ModuleItem {
         }
 
         public void addDependsOn( ServiceReference serviceReference ) {
-            var found = Lists.find2( dependsOn, d -> d.equals( serviceReference ) );
+            ServiceReference found = Lists.find2( dependsOn, d -> d.equals( serviceReference ) );
             if( found == null || found.required ) {
                 if( found != null ) dependsOn.remove( found );
                 dependsOn.add( serviceReference );
@@ -201,7 +201,7 @@ public class ModuleItem {
                 if( this == o ) return true;
                 if( o == null || getClass() != o.getClass() ) return false;
 
-                var that = ( ServiceReference ) o;
+                ServiceReference that = ( ServiceReference ) o;
 
                 return serviceItem.serviceName.equals( that.serviceItem.serviceName );
             }

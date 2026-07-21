@@ -488,13 +488,13 @@ public class Kernel implements Closeable, AutoCloseable {
         }
 
         if( service.supervision.thread ) {
-            supervisor.startThread( si.serviceName, instance, applicationConfiguration.shutdown );
+            supervisor.startThread( si, instance, applicationConfiguration.shutdown );
         } else {
             if( service.supervision.schedule && service.supervision.cron != null )
-                supervisor.scheduleCron( si.serviceName, ( Runnable ) instance,
+                supervisor.scheduleCron( si, ( Runnable ) instance,
                     service.supervision.cron );
             else if( service.supervision.schedule && service.supervision.delay != 0 )
-                supervisor.scheduleWithFixedDelay( si.serviceName, ( Runnable ) instance,
+                supervisor.scheduleWithFixedDelay( si, ( Runnable ) instance,
                     service.supervision.delay, MILLISECONDS );
         }
     }
