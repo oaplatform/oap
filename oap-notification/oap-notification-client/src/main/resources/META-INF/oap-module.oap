@@ -14,7 +14,7 @@ services {
   notification {
     implementation = oap.notification.NotificationService
     parameters {
-      id = "<change me>"
+//      id = "<change me>"
       notificationTransport = <modules.this.notification-transport>
     }
   }
