@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -93,7 +94,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     public volatile boolean closed;
-    protected ArrayList<FileWriterNotification> notifications = new ArrayList<>();
+    protected CopyOnWriteArrayList<FileWriterNotification> notifications = new CopyOnWriteArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
         this( templateEngine, logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
@@ -249,6 +250,10 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         for( FileWriterNotification notification : notifications ) {
             notification.fileClosed( outFilename );
         }
+    }
+
+    public void addNotification( FileWriterNotification notification ) {
+        this.notifications.add( notification );
     }
 
     @ToString
