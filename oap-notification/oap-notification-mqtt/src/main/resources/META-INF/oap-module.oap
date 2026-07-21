@@ -5,5 +5,10 @@ dependsOn = oap-notification
 services {
   mqtt-notification-transport {
     implementation = oap.notification.mqtt.HivemqNotificationTransport
+    parameters {
+      identifier = OAP
+      host = "<change me>"
+      port = 1883
+    }
   }
 }
