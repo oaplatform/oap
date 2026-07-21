@@ -88,7 +88,7 @@ public class RowBinaryWriterTest extends Fixtures {
         LogId logId = new LogId( "", "log", "log",
             Map.of( "p", "1" ), headers, types );
         Path logs = testDirectoryFixture.testPath( "logs" );
-        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
+        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost", null ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
             writer.write( CURRENT_PROTOCOL_VERSION, content2 );
         }
@@ -124,7 +124,7 @@ public class RowBinaryWriterTest extends Fixtures {
 
         int count = 10;
 
-        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
+        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost", null ) ) {
             try( ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor() ) {
                 for( long i = 0; i < count; i++ ) {
 
@@ -168,7 +168,7 @@ public class RowBinaryWriterTest extends Fixtures {
         Path v1 = logs.resolve( "1-file-02-47b82ddc0-1.rb.gz.rb.gz" );
         Path v2 = logs.resolve( "1-file-02-47b82ddc0-2.rb.gz.rb.gz" );
 
-        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost" ) ) {
+        try( RowBinaryWriter writer = new RowBinaryWriter( templateEngineFixture.templateEngine, logs, FILE_PATTERN, logId, 1024, BPH_12, 20, "localhost", null ) ) {
             writer.write( CURRENT_PROTOCOL_VERSION, content1 );
 
             writer.refresh();
