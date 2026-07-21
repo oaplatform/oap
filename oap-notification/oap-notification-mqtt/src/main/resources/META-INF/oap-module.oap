@@ -10,5 +10,6 @@ services {
       host = "<change me>"
       port = 1883
     }
+    supervision.supervise = true
   }
 }
