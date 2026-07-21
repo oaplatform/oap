@@ -140,7 +140,7 @@ public abstract class AbstractWriter implements Closeable {
 
                 lastPattern = currentPattern;
             } else {
-                log.debug( "refresh {}... SKIP", lastPattern );
+                log.trace( "refresh {}... SKIP", lastPattern );
             }
         } finally {
             lock.unlock();
