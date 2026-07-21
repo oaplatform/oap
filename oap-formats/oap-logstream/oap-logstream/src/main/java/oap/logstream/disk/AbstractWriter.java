@@ -55,6 +55,7 @@ public abstract class AbstractWriter implements Closeable {
     protected final Stopwatch stopwatch = new Stopwatch();
     protected final int maxVersions;
     protected final String hostname;
+    protected final FileWriterNotification notification;
     protected final ReentrantLock lock = new ReentrantLock();
     protected LogFile logFile;
     protected String lastPattern;
@@ -62,13 +63,14 @@ public abstract class AbstractWriter implements Closeable {
     protected boolean closed = false;
 
     protected AbstractWriter( TemplateEngine templateEngine, LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
-                              int maxVersions, String hostname ) {
+                              int maxVersions, String hostname, FileWriterNotification notification ) {
         this.templateEngine = templateEngine;
         this.logFormat = logFormat;
         this.logDirectory = logDirectory;
         this.filePattern = filePattern;
         this.maxVersions = maxVersions;
         this.hostname = hostname;
+        this.notification = notification;
 
         log.trace( "filePattern {}", filePattern );
         Preconditions.checkArgument( filePattern.matches( ".*[${]\\{\\s*LOG_VERSION\\s*}}?.*" ), "file pattern must contains LOG_VERSION variable" );
@@ -161,6 +163,7 @@ public abstract class AbstractWriter implements Closeable {
                 Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
 
                 logFile.readyForUpload();
+                notification.fileClosed( logFile.outFilename );
             } finally {
                 logFile = null;
             }

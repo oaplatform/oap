@@ -75,7 +75,7 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
  * <li>POD_NAME</li>
  */
 @Slf4j
-public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneable, AutoCloseable {
+public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWriterNotification, Cloneable, AutoCloseable {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
     public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
@@ -126,7 +126,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 
-                    return new RowBinaryWriter( templateEngine, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname );
+                    return new RowBinaryWriter( templateEngine, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
@@ -241,6 +241,10 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "writers", writers.size() )
             .toString();
+    }
+
+    @Override
+    public void fileClosed( Path outFilename ) {
     }
 
     @ToString
