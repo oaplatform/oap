@@ -93,6 +93,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     public volatile boolean closed;
+    protected ArrayList<FileWriterNotification> notifications = new ArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
         this( templateEngine, logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
@@ -116,8 +117,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         this.writers = CacheBuilder.newBuilder()
             .ticker( JodaTicker.JODA_TICKER )
             .expireAfterAccess( 60 / timestamp.bucketsPerHour * 3, TimeUnit.MINUTES )
-            .removalListener( notification -> {
-                Closeables.close( ( Closeable ) notification.getValue() );
+            .removalListener( l -> {
+                Closeables.close( ( Closeable ) l.getValue() );
             } )
             .build( new CacheLoader<>() {
                 @Override
@@ -245,6 +246,9 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
 
     @Override
     public void fileClosed( Path outFilename ) {
+        for( FileWriterNotification notification : notifications ) {
+            notification.fileClosed( outFilename );
+        }
     }
 
     @ToString
