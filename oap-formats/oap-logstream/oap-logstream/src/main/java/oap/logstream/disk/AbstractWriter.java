@@ -163,7 +163,10 @@ public abstract class AbstractWriter implements Closeable {
                 Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
 
                 logFile.readyForUpload();
-                notification.fileClosed( logFile.outFilename );
+
+                if( notification != null ) {
+                    notification.fileClosed( logFile.outFilename );
+                }
             } finally {
                 logFile = null;
             }
