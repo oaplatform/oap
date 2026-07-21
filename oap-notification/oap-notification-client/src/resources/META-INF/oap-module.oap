@@ -1,0 +1,21 @@
+name = oap-notification
+
+services {
+  mock-notification-transport {
+    implementation = oap.notification.MockNotificationTransport
+  }
+
+  notification-transport {
+    abstract = true
+    implementation = oap.notification.NotificationTransport
+    default = <modules.this.mock-notification-transport>
+  }
+
+  notification {
+    implementation = oap.notification.NotificationService
+    parameters {
+      id = "<change me>"
+      notificationTransport = <modules.this.notification-transport>
+    }
+  }
+}
