@@ -42,6 +42,7 @@ import org.assertj.core.api.AbstractFileAssert;
 import org.testng.Assert;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -58,7 +59,7 @@ import static org.testng.Assert.fail;
 public final class Asserts {
 
     @SneakyThrows
-    public static void eventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
+    public static void eventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts, @Nullable Runnable onFailure ) {
         boolean passed = false;
         Throwable exception = null;
         int count = retries;
@@ -71,6 +72,10 @@ public final class Asserts {
                 exception = e;
                 Threads.sleepSafely( retryTimeout );
                 count--;
+
+                if( onFailure != null ) {
+                    onFailure.run();
+                }
             }
         }
         if( !passed )
@@ -79,12 +84,20 @@ public final class Asserts {
     }
 
     public static void assertEventually( long retryTimeout, int retries, oap.util.function.Try.ThrowingRunnable asserts ) {
-        eventually( retryTimeout, retries, asserts );
+        assertEventually( retryTimeout, retries, asserts, null );
+    }
+
+    public static void assertEventually( long retryTimeout, int retries, oap.util.function.Try.ThrowingRunnable asserts, @Nullable Runnable onFailure ) {
+        eventually( retryTimeout, retries, asserts, onFailure );
     }
 
     public static void assertEventually( Duration duration, Duration retryInterval, oap.util.function.Try.ThrowingRunnable asserts ) {
+        assertEventually( duration, retryInterval, asserts, null );
+    }
+
+    public static void assertEventually( Duration duration, Duration retryInterval, oap.util.function.Try.ThrowingRunnable asserts, @Nullable Runnable onFailure ) {
         int retries = ( int ) ( duration.toMillis() / retryInterval.toMillis() );
-        eventually( retryInterval.toMillis(), retries, asserts );
+        eventually( retryInterval.toMillis(), retries, asserts, onFailure );
     }
 
     @Deprecated
