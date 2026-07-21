@@ -252,7 +252,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWrit
         }
     }
 
-    public void addNotification( FileWriterNotification notification ) {
+    public void addNotificationListener( FileWriterNotification notification ) {
         this.notifications.add( notification );
     }
 
