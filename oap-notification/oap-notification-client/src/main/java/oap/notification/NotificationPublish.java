@@ -18,8 +18,8 @@ public class NotificationPublish extends Notification {
         this.topic = topic;
     }
 
-    public NotificationPublish( String topic, String sender, Serializable message ) {
-        super( sender, message );
+    public NotificationPublish( String topic, Serializable message ) {
+        super( message );
 
         this.topic = topic;
     }

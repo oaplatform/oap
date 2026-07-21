@@ -12,18 +12,16 @@ public class Notification implements Serializable {
     @Serial
     private static final long serialVersionUID = -1730908173571715179L;
 
-    public final String sender;
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public final Serializable message;
 
     @JsonCreator
-    public Notification( String sender, Serializable message ) {
-        this.sender = sender;
+    public Notification( Serializable message ) {
         this.message = message;
     }
 
     public Notification( Notification notification ) {
-        this( notification.sender, notification.message );
+        this( notification.message );
     }
 }

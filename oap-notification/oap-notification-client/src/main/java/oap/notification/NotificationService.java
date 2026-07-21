@@ -5,16 +5,14 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class NotificationService {
-    public final String id;
     public final NotificationTransport notificationTransport;
 
-    public NotificationService( String id, NotificationTransport notificationTransport ) {
-        this.id = id;
+    public NotificationService( NotificationTransport notificationTransport ) {
         this.notificationTransport = notificationTransport;
     }
 
     public <TMessage extends Serializable> void sendNotification( String topic, Qos qos, TMessage message ) throws NotificationException {
-        notificationTransport.publish( topic, qos, new Notification( id, message ) );
+        notificationTransport.publish( topic, qos, new Notification( message ) );
     }
 
     public void subscribeToTopic( String topic, Consumer<NotificationPublish> notificationConsumer ) {

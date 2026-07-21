@@ -27,8 +27,8 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             notificationTransportClient1.start();
             notificationTransportClient2.start();
 
-            NotificationService notificationService1 = new NotificationService( "c1", notificationTransportClient1 );
-            NotificationService notificationService2 = new NotificationService( "c2", notificationTransportClient2 );
+            NotificationService notificationService1 = new NotificationService( notificationTransportClient1 );
+            NotificationService notificationService2 = new NotificationService( notificationTransportClient2 );
 
             notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, new TestNotificationMessage( "val1" ) );
 
