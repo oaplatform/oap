@@ -4,18 +4,21 @@ import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.connect.connack.Mqtt5ConnAck;
-import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
+import com.hivemq.client.mqtt.mqtt5.message.subscribe.Mqtt5Subscription;
 import com.hivemq.client.mqtt.mqtt5.message.subscribe.suback.Mqtt5SubAck;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.annotation.Start;
 import oap.application.annotation.Stop;
 import oap.json.Binder;
 import oap.notification.Notification;
+import oap.notification.NotificationPublish;
 import oap.notification.NotificationTransport;
 import oap.notification.Qos;
 import oap.util.Dates;
+import oap.util.Lists;
 
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -90,22 +93,23 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     }
 
     @Override
-    public void subscribe( String topic, Consumer<Notification> notificationConsumer ) {
+    public void subscribe( List<String> topics, Consumer<NotificationPublish> notificationConsumer ) {
         Mqtt5SubAck ack = client
             .subscribeWith()
-            .topicFilter( topic )
-            .callback( new Consumer<Mqtt5Publish>() {
-                @Override
-                public void accept( Mqtt5Publish mqtt5Publish ) {
-                    byte[] payloadAsBytes = mqtt5Publish.getPayloadAsBytes();
-                    notificationConsumer.accept( Binder.json.unmarshal( Notification.class, payloadAsBytes ) );
-                }
+            .addSubscriptions( Lists.map( topics, topic -> Mqtt5Subscription.builder().topicFilter( topic ).build() ) )
+            .callback( mqtt5Publish -> {
+                byte[] payloadAsBytes = mqtt5Publish.getPayloadAsBytes();
+
+                log.trace( "topic {} payload {}", mqtt5Publish.getTopic(),
+                    payloadAsBytes.length > 0 ? new String( payloadAsBytes ) : "<EMPTY>" );
+
+                notificationConsumer.accept( new NotificationPublish( mqtt5Publish.getTopic().toString(), Binder.json.unmarshal( Notification.class, payloadAsBytes ) ) );
             } )
             .send()
             .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
             .join();
 
-        log.trace( "publish topic {} result {}", topic, ack );
+        log.trace( "publish topics {} result {}", topics, ack );
     }
 
     private MqttQos convertQos( Qos qos ) {

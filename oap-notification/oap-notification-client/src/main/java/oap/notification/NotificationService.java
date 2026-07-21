@@ -1,6 +1,7 @@
 package oap.notification;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class NotificationService {
@@ -16,7 +17,11 @@ public class NotificationService {
         notificationTransport.publish( topic, qos, new Notification( id, message ) );
     }
 
-    public void subscribeToTopic( String topic, Consumer<Notification> notificationSupplier ) {
-        notificationTransport.subscribe( topic, notificationSupplier );
+    public void subscribeToTopic( String topic, Consumer<NotificationPublish> notificationConsumer ) {
+        notificationTransport.subscribe( topic, notificationConsumer );
+    }
+
+    public void subscribeToTopic( List<String> topics, Consumer<NotificationPublish> notificationConsumer ) {
+        notificationTransport.subscribe( topics, notificationConsumer );
     }
 }

@@ -1,5 +1,6 @@
 package oap.notification;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import oap.json.TypeIdFactory;
@@ -16,8 +17,13 @@ public class Notification implements Serializable {
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public final Serializable message;
 
+    @JsonCreator
     public Notification( String sender, Serializable message ) {
         this.sender = sender;
         this.message = message;
+    }
+
+    public Notification( Notification notification ) {
+        this( notification.sender, notification.message );
     }
 }
