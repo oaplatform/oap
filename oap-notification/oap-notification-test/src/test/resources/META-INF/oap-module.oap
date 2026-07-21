@@ -1,0 +1,14 @@
+name = oap-notification-test
+
+services {
+
+}
+
+configurations = [
+  {
+    loader = oap.json.TypeIdFactory
+    config {
+      oap-test-notification = oap.notification.TestNotificationMessage
+    }
+  }
+]
