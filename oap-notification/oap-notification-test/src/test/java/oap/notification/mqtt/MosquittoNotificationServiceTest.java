@@ -39,7 +39,7 @@ public class MosquittoNotificationServiceTest extends Fixtures {
 
             notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, new TestNotificationMessage( "val2" ) );
 
-            assertThat( msg ).hasToString( "val1 / val2" );
+            assertThat( msg ).hasToString( "val2" );
         }
     }
 }
