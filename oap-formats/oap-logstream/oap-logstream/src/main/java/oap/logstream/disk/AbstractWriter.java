@@ -127,7 +127,7 @@ public abstract class AbstractWriter implements Closeable {
             String currentPattern = currentPattern();
 
             if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
-                log.debug( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+                log.trace( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
 
                 String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
                 if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
