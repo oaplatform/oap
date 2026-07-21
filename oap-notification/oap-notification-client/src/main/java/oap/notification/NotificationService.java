@@ -13,7 +13,7 @@ public class NotificationService {
         this.notificationTransport = notificationTransport;
     }
 
-    public <TMessage extends Serializable> void sendNotification( String topic, Qos qos, TMessage message ) {
+    public <TMessage extends Serializable> void sendNotification( String topic, Qos qos, TMessage message ) throws NotificationException {
         notificationTransport.publish( topic, qos, new Notification( id, message ) );
     }
 

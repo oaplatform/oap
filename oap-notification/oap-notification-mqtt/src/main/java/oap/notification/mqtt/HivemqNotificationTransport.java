@@ -12,6 +12,7 @@ import oap.application.annotation.Start;
 import oap.application.annotation.Stop;
 import oap.json.Binder;
 import oap.notification.Notification;
+import oap.notification.NotificationException;
 import oap.notification.NotificationPublish;
 import oap.notification.NotificationTransport;
 import oap.notification.Qos;
@@ -77,19 +78,23 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     }
 
     @Override
-    public void publish( String topic, Qos qos, Notification notification ) {
-        log.trace( "publish topic {} qos {} notification {}", topic, qos, Binder.json.marshal( notification ) );
+    public void publish( String topic, Qos qos, Notification notification ) throws NotificationException {
+        try {
+            log.trace( "publish topic {} qos {} notification {}", topic, qos, Binder.json.marshal( notification ) );
 
-        Mqtt5PublishResult result = client
-            .publishWith()
-            .topic( topic )
-            .qos( convertQos( qos ) )
-            .payload( Binder.json.marshal( notification ).getBytes() )
-            .send()
-            .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
-            .join();
+            Mqtt5PublishResult result = client
+                .publishWith()
+                .topic( topic )
+                .qos( convertQos( qos ) )
+                .payload( Binder.json.marshal( notification ).getBytes() )
+                .send()
+                .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
+                .join();
 
-        log.trace( "publish topic {} qos {} result {}", topic, qos, result );
+            log.trace( "publish topic {} qos {} result {}", topic, qos, result );
+        } catch( CompletionException e ) {
+            throw new NotificationException( e.getCause() );
+        }
     }
 
     @Override
