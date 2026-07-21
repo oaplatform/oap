@@ -479,7 +479,7 @@ public class Kernel implements Closeable, AutoCloseable {
         Service service = si.service;
         Object instance = si.instance;
         if( service.supervision.supervise ) {
-            supervisor.startSupervised( si.serviceName, instance,
+            supervisor.startSupervised( si, instance,
                 service.supervision.preStartWith,
                 service.supervision.startWith,
                 service.supervision.preStopWith,
