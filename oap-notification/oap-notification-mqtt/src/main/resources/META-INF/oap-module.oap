@@ -6,7 +6,7 @@ services {
   mqtt-notification-transport {
     implementation = oap.notification.mqtt.HivemqNotificationTransport
     parameters {
-      identifier = OAP
+//      identifier = OAP
       host = "<change me>"
       port = 1883
     }
