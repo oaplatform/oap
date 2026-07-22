@@ -4,6 +4,13 @@ Built-in administration endpoints for OAP applications. All endpoints are mounte
 
 Depends on: `oap-ws`
 
+## Menu
+
+- [Log level control](#log-level-control--get-systemadminlogs)
+- [JPath query](#jpath-query--get-systemadminjpath)
+- [JSON schema](#json-schema--get-systemadminschema)
+- [Inspector UI](#inspector-ui--get-systemadmininspector)
+
 ## Endpoints
 
 ### Log level control — `GET /system/admin/logs`
@@ -51,6 +58,29 @@ Returns a pretty-printed JSON Schema document by classpath path.
 
 ```
 GET /system/admin/schema/?path=/oap/ws/file/schema/data.conf
+```
+
+---
+
+### Inspector UI — GET /system/admin/inspector
+
+Browsable HTML UI over the live Kernel service tree, built on the same JPath query engine as `/system/admin/jpath`.
+
+| Endpoint | Description |
+|---|---|
+| `GET /system/admin/inspector/ui` | Lists all `module.service` names as links, with a client-side filter box |
+| `GET /system/admin/inspector/ui/{moduleName}.{serviceName}` | Service details (implementation, enabled, dependsOn, supervision, listen, link, parameters) plus fields and methods tables, drillable via the value page |
+| `GET /system/admin/inspector/ui/value?query=...&mode=inspect\|json` | Evaluates a JPath query (same grammar as `/system/admin/jpath`). `mode=inspect` (default) shows fields/methods tables for the resulting object when it's not a leaf value (String/primitive/number); `mode=json` pretty-prints the JSON result via `Binder.json.marshal`. Either mode shows the stack trace if evaluation throws |
+
+```bash
+# service list with filter box
+curl http://localhost:8081/system/admin/inspector/ui
+
+# inspect a single service
+curl http://localhost:8081/system/admin/inspector/ui/oap-ws.session-manager
+
+# evaluate a JPath query, pretty-printed
+curl "http://localhost:8081/system/admin/inspector/ui/value?query=oap-ws.session-manager.expirationTime"
 ```
 
 ---

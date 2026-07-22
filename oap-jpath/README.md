@@ -134,3 +134,8 @@ The `Pointer` passed to `write` is one of:
 |---|---|
 | `PathNotFoundException` | A field or method named in the expression does not exist on the target object |
 | `ReflectionException` | Reflection access fails (e.g., module access denied) |
+
+## See also
+
+- [`JPathWS`](../oap-ws/oap-ws-admin-ws/README.md#jpath-query--get-systemadminjpath) — exposes JPath evaluation over the live Kernel service tree as a JSON HTTP endpoint.
+- [`InspectorWS`](../oap-ws/oap-ws-admin-ws/README.md#inspector-ui--get-systemadmininspector) — browsable HTML UI built on top of the same JPath queries.

@@ -382,6 +382,11 @@ public class HttpAsserts {
             return this;
         }
 
+        public HttpAssertion bodyDoesNotContain( String values ) {
+            assertString( response.contentString() ).doesNotContain( values );
+            return this;
+        }
+
         public HttpAssertion bodyContainsPattern( Pattern pattern ) {
             assertString( response.contentString() ).containsPattern( pattern );
             return this;

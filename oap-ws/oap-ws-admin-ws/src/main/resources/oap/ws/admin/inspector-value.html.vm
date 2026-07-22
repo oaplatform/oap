@@ -1,0 +1,21 @@
+<html>
+<head><title>Value: $query</title></head>
+<body>
+<p><a href="javascript:history.back()">&laquo; back</a></p>
+<h1>$query</h1>
+#if( !$error )
+<p>
+  <a href="value?query=$encodedQuery&mode=inspect">inspect</a>
+  |
+  <a href="value?query=$encodedQuery&mode=json">json</a>
+</p>
+#end
+#if( $error )
+  <pre>$stackTrace</pre>
+#elseif( $mode == "inspect" && $inspectable )
+  #parse( "oap/ws/admin/inspector-inspect-part.html.vm" )
+#else
+  <pre>$json</pre>
+#end
+</body>
+</html>

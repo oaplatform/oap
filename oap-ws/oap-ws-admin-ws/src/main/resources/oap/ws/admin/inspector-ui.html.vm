@@ -1,0 +1,22 @@
+<html>
+<head><title>Kernel Services</title></head>
+<body>
+<h1>Kernel Services</h1>
+<input type="text" id="filter" placeholder="filter..." onkeyup="filterServices()">
+<ul id="services">
+#foreach( $service in $services )
+  <li><a href="ui/$service">$service</a></li>
+#end
+</ul>
+<script>
+function filterServices() {
+  var text = document.getElementById( 'filter' ).value.toLowerCase();
+  var items = document.getElementById( 'services' ).getElementsByTagName( 'li' );
+  for ( var i = 0; i < items.length; i++ ) {
+    var show = items[i].textContent.toLowerCase().indexOf( text ) !== -1;
+    items[i].style.display = show ? '' : 'none';
+  }
+}
+</script>
+</body>
+</html>
