@@ -1,0 +1,47 @@
+<html>
+<head><title>Service: $reference</title></head>
+<body>
+<p><a href="../ui">&laquo; back to list</a></p>
+#if( $found )
+  <h1>$reference</h1>
+  <ul>
+    <li>module: $module</li>
+    <li>service: $serviceName</li>
+    <li>implementation: $implementation</li>
+    <li>enabled: $enabled</li>
+    <li>dependsOn:
+      <ul>
+      #foreach( $d in $dependsOn )
+        <li>$d</li>
+      #end
+      </ul>
+    </li>
+    <li>supervision: $supervision</li>
+    <li>listen:
+      <ul>
+      #foreach( $e in $listen.entrySet() )
+        <li>$e.key = $e.value</li>
+      #end
+      </ul>
+    </li>
+    <li>link:
+      <ul>
+      #foreach( $e in $link.entrySet() )
+        <li>$e.key = $e.value</li>
+      #end
+      </ul>
+    </li>
+    <li>parameters:
+      <ul>
+      #foreach( $e in $parameters.entrySet() )
+        <li>$e.key = $e.value</li>
+      #end
+      </ul>
+    </li>
+  </ul>
+  #parse( "oap/ws/admin/inspector-inspect-part.html.vm" )
+#else
+  <p>service not found: $reference</p>
+#end
+</body>
+</html>

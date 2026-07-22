@@ -1,0 +1,60 @@
+<h2>Fields</h2>
+<table border="1">
+  <tr><th>name</th><th>modifier</th><th>type</th><th>value</th></tr>
+  #foreach( $f in $fields )
+  <tr>
+    <td>$f.name</td>
+    <td>$f.modifier</td>
+    <td>$f.type</td>
+    <td>
+    #if( $f.value != "" )
+      $f.value
+    #else
+      <a href="value?query=$f.query">inspect</a>
+    #end
+    </td>
+  </tr>
+  #end
+</table>
+<h2>Methods</h2>
+<table border="1">
+  <tr><th>name</th><th>modifier</th><th>return type</th><th>parameters</th><th></th></tr>
+  #foreach( $m in $methods )
+  <tr>
+    <td>$m.name</td>
+    <td>$m.modifier</td>
+    <td>$m.returnType</td>
+    <td>$m.parameters</td>
+    <td>
+    #if( $m.zeroArg )
+      <a href="value?query=$m.query">inspect</a>
+    #else
+      <form onsubmit="return inspectMethod( this )" data-query="$m.query">
+      #foreach( $p in $m.params )
+        <input type="text" name="$p.name" data-kind="$p.kind" placeholder="$p.name" size="6">
+      #end
+        <button type="submit">inspect</button>
+      </form>
+    #end
+    </td>
+  </tr>
+  #end
+</table>
+<script>
+function inspectMethod( form ) {
+  var base = form.getAttribute( 'data-query' );
+  var inputs = form.getElementsByTagName( 'input' );
+  var args = [];
+  for ( var i = 0; i < inputs.length; i++ ) {
+    var kind = inputs[i].getAttribute( 'data-kind' );
+    var value = inputs[i].value;
+    if ( kind === 'string' ) {
+      args.push( '"' + value.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' ) + '"' );
+    } else {
+      args.push( value );
+    }
+  }
+  window.location.href = 'value?query=' + encodeURIComponent( base + '(' + args.join( ',' ) + ')' );
+  return false;
+}
+</script>

@@ -18,6 +18,17 @@ services {
       port = httpprivate
     }
   }
+  ws-inspector {
+    implementation = oap.ws.admin.InspectorWS
+    parameters {
+      jPathWS = <modules.this.ws-jpath>
+      kernel = <kernel.self>
+    }
+    ws-service {
+      path = system/admin/inspector
+      port = httpprivate
+    }
+  }
   ws-schema {
     implementation = oap.ws.admin.SchemaWS
     ws-service {
