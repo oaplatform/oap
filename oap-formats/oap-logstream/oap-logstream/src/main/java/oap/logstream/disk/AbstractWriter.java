@@ -28,7 +28,6 @@ import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Stopwatch;
 import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
@@ -52,7 +51,6 @@ public abstract class AbstractWriter implements Closeable {
     protected final LogId logId;
     protected final Timestamp timestamp;
     protected final int bufferSize;
-    protected final Stopwatch stopwatch = new Stopwatch();
     protected final int maxVersions;
     protected final String hostname;
     protected final FileWriterNotification notification;
@@ -122,7 +120,9 @@ public abstract class AbstractWriter implements Closeable {
     public void refresh( boolean forceSync ) {
         lock.lock();
         try {
-            log.debug( "refresh {}...", lastPattern );
+            if( logFile != null ) {
+                log.debug( "refresh {}...", lastPattern );
+            }
 
             String currentPattern = currentPattern();
 
@@ -155,12 +155,11 @@ public abstract class AbstractWriter implements Closeable {
         lock.lock();
         try {
             if( logFile != null ) try {
-                stopwatch.count( logFile::close );
+                logFile.close();
 
                 long fileSize = logFile.getDataSize();
                 log.trace( "closing output {} ({} bytes)", this, fileSize );
                 Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
-                Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
 
                 logFile.readyForUpload();
 
@@ -179,7 +178,9 @@ public abstract class AbstractWriter implements Closeable {
     public void close() {
         lock.lock();
         try {
-            log.debug( "closing {}", this );
+            if( logFile != null ) {
+                log.debug( "closing {}", this );
+            }
             closed = true;
             closeOutput();
         } finally {
