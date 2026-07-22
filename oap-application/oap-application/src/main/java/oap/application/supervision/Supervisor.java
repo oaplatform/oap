@@ -26,6 +26,7 @@ package oap.application.supervision;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.ApplicationConfiguration;
 import oap.application.KernelHelper;
+import oap.application.ModuleItem;
 import oap.concurrent.Executors;
 import oap.util.BiStream;
 import oap.util.Dates;
@@ -44,8 +45,8 @@ import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class Supervisor {
-    private final LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
-    private final LinkedHashMap<String, WrapperService<?>> wrappers = new LinkedHashMap<>();
+    private final LinkedHashMap<ModuleItem.ServiceItem, StartableService> supervised = new LinkedHashMap<>();
+    private final LinkedHashMap<ModuleItem.ServiceItem, WrapperService<?>> wrappers = new LinkedHashMap<>();
 
     private boolean stopped = false;
 
@@ -82,34 +83,34 @@ public class Supervisor {
         }
     }
 
-    public synchronized void startSupervised( String name, Object service,
+    public synchronized void startSupervised( ModuleItem.ServiceItem si, Object service,
                                               List<String> preStartWith, List<String> startWith,
                                               List<String> preStopWith, List<String> stopWith ) {
-        this.supervised.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
+        this.supervised.put( si, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
 //    public synchronized void startScheduledThread( String name, Object instance, long delay, TimeUnit milliseconds ) {
 //        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
 //    }
 
-    public synchronized void startThread( String name, Object instance, ApplicationConfiguration.ModuleShutdown shutdown ) {
-        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this, shutdown ) );
+    public synchronized void startThread( ModuleItem.ServiceItem si, Object instance, ApplicationConfiguration.ModuleShutdown shutdown ) {
+        this.wrappers.put( si, new ThreadService( si.toString(), ( Runnable ) instance, this, shutdown ) );
     }
 
-    public synchronized void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
-        this.wrappers.put( name, new DelayScheduledService( service, delay, unit ) );
+    public synchronized void scheduleWithFixedDelay( ModuleItem.ServiceItem si, Runnable service, long delay, TimeUnit unit ) {
+        this.wrappers.put( si, new DelayScheduledService( service, delay, unit ) );
     }
 
-    public synchronized void scheduleCron( String name, Runnable service, String cron ) {
-        this.wrappers.put( name, new CronScheduledService( service, cron ) );
+    public synchronized void scheduleCron( ModuleItem.ServiceItem si, Runnable service, String cron ) {
+        this.wrappers.put( si, new CronScheduledService( service, cron ) );
     }
 
     public synchronized void preStart() {
         log.debug( "pre starting..." );
 
-        this.supervised.forEach( ( name, service ) -> {
-            log.debug( "pre starting {}...", name );
-            KernelHelper.setThreadNameSuffix( name );
+        this.supervised.forEach( ( si, service ) -> {
+            log.debug( "pre starting {}...", si );
+            KernelHelper.setThreadNameSuffix( si.toString() );
             try {
                 service.preStart();
             } finally {
@@ -119,45 +120,45 @@ public class Supervisor {
 
         BiStream.of( this.wrappers )
             .reversed()
-            .forEach( ( name, service ) -> {
-                log.debug( "[{}] pre starting {}...", service.type(), name );
-                KernelHelper.setThreadNameSuffix( name );
+            .forEach( ( si, service ) -> {
+                log.debug( "[{}] pre starting {}...", service.type(), si );
+                KernelHelper.setThreadNameSuffix( si.toString() );
                 try {
                     service.preStart();
                 } finally {
                     KernelHelper.restoreThreadName();
                 }
-                log.debug( "[{}] pre starting {}... Done.", service.type(), name );
+                log.debug( "[{}] pre starting {}... Done.", service.type(), si );
             } );
     }
 
     public synchronized void start() {
         log.debug( "starting..." );
         this.stopped = false;
-        this.supervised.forEach( ( name, service ) -> {
-            log.debug( "starting {}...", name );
+        this.supervised.forEach( ( si, service ) -> {
+            log.debug( "starting {}...", si );
             long start = System.currentTimeMillis();
-            KernelHelper.setThreadNameSuffix( name );
+            KernelHelper.setThreadNameSuffix( si.toString() );
             try {
                 service.start();
             } finally {
                 KernelHelper.restoreThreadName();
             }
             long end = System.currentTimeMillis();
-            log.debug( "starting {}... Done. ({}ms)", name, end - start );
+            log.debug( "starting {}... Done. ({}ms)", si, end - start );
         } );
 
-        this.wrappers.forEach( ( name, service ) -> {
-            log.debug( "[{}] starting {}...", service.type(), name );
+        this.wrappers.forEach( ( si, service ) -> {
+            log.debug( "[{}] starting {}...", service.type(), si );
             long start = System.currentTimeMillis();
-            KernelHelper.setThreadNameSuffix( name );
+            KernelHelper.setThreadNameSuffix( si.toString() );
             try {
                 service.start();
             } finally {
                 KernelHelper.restoreThreadName();
             }
             long end = System.currentTimeMillis();
-            log.debug( "[{}] starting {}... Done. ({}ms)", service.type(), name, end - start );
+            log.debug( "[{}] starting {}... Done. ({}ms)", service.type(), si, end - start );
         } );
     }
 
@@ -168,36 +169,36 @@ public class Supervisor {
 
                 BiStream.of( this.wrappers )
                     .reversed()
-                    .forEach( ( name, service ) -> {
+                    .forEach( ( si, service ) -> {
                         Runnable func = () -> {
-                            log.debug( "[{}] pre stopping {}...", service.type(), name );
-                            KernelHelper.setThreadNameSuffix( name );
+                            log.debug( "[{}] pre stopping {}...", service.type(), si );
+                            KernelHelper.setThreadNameSuffix( si.toString() );
                             try {
                                 service.preStop();
                             } finally {
                                 KernelHelper.restoreThreadName();
                             }
-                            log.debug( "[{}] pre stopping {}... Done.", service.type(), name );
+                            log.debug( "[{}] pre stopping {}... Done.", service.type(), si );
                         };
 
-                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                        runAndDetectTimeout( si.toString(), shutdownConfiguration, func );
                     } );
 
                 BiStream.of( this.supervised )
                     .reversed()
-                    .forEach( ( name, service ) -> {
+                    .forEach( ( si, service ) -> {
                         Runnable func = () -> {
-                            log.debug( "pre stopping {}...", name );
-                            KernelHelper.setThreadNameSuffix( name );
+                            log.debug( "pre stopping {}...", si );
+                            KernelHelper.setThreadNameSuffix( si.toString() );
                             try {
                                 service.preStop();
                             } finally {
                                 KernelHelper.restoreThreadName();
                             }
-                            log.debug( "pre stopping {}... Done.", name );
+                            log.debug( "pre stopping {}... Done.", si );
                         };
 
-                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                        runAndDetectTimeout( si.toString(), shutdownConfiguration, func );
                     } );
             }
         }
@@ -211,37 +212,37 @@ public class Supervisor {
 
                 BiStream.of( this.wrappers )
                     .reversed()
-                    .forEach( ( name, service ) -> {
+                    .forEach( ( si, service ) -> {
                         Runnable func = () -> {
-                            log.debug( "[{}] stopping {}...", service.type(), name );
-                            KernelHelper.setThreadNameSuffix( name );
+                            log.debug( "[{}] stopping {}...", service.type(), si );
+                            KernelHelper.setThreadNameSuffix( si.toString() );
                             try {
                                 service.stop();
                             } finally {
                                 KernelHelper.restoreThreadName();
                             }
-                            log.debug( "[{}] stopping {}... Done.", service.type(), name );
+                            log.debug( "[{}] stopping {}... Done.", service.type(), si );
                         };
 
-                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                        runAndDetectTimeout( si.toString(), shutdownConfiguration, func );
                     } );
                 this.wrappers.clear();
 
                 BiStream.of( this.supervised )
                     .reversed()
-                    .forEach( ( name, service ) -> {
+                    .forEach( ( si, service ) -> {
                         Runnable func = () -> {
-                            log.debug( "stopping {}...", name );
-                            KernelHelper.setThreadNameSuffix( name );
+                            log.debug( "stopping {}...", si );
+                            KernelHelper.setThreadNameSuffix( si.toString() );
                             try {
                                 service.stop();
                             } finally {
                                 KernelHelper.restoreThreadName();
                             }
-                            log.debug( "stopping {}... Done.", name );
+                            log.debug( "stopping {}... Done.", si );
                         };
 
-                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                        runAndDetectTimeout( si.toString(), shutdownConfiguration, func );
                     } );
                 this.supervised.clear();
             }
@@ -255,40 +256,40 @@ public class Supervisor {
 
             try( ShutdownConfiguration shutdownConfiguration = new ShutdownConfiguration( shutdown ) ) {
                 BiStream.of( this.wrappers )
-                    .filter( ( name, _ ) -> name.equals( serviceName ) )
-                    .forEach( ( name, service ) -> {
+                    .filter( ( si, _ ) -> si.serviceName.equals( serviceName ) )
+                    .forEach( ( si, service ) -> {
                         Runnable func = () -> {
-                            log.debug( "[{}] stopping {}...", service.type(), name );
-                            KernelHelper.setThreadNameSuffix( name );
+                            log.debug( "[{}] stopping {}...", service.type(), si );
+                            KernelHelper.setThreadNameSuffix( si.toString() );
                             try {
                                 service.preStop();
                                 service.stop();
                             } finally {
                                 KernelHelper.restoreThreadName();
                             }
-                            log.debug( "[{}] stopping {}... Done.", service.type(), name );
+                            log.debug( "[{}] stopping {}... Done.", service.type(), si );
                         };
 
-                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                        runAndDetectTimeout( si.toString(), shutdownConfiguration, func );
                     } );
                 this.wrappers.clear();
 
                 BiStream.of( this.supervised )
-                    .filter( ( name, _ ) -> name.equals( serviceName ) )
-                    .forEach( ( name, service ) -> {
+                    .filter( ( si, _ ) -> si.serviceName.equals( serviceName ) )
+                    .forEach( ( si, service ) -> {
                         Runnable func = () -> {
-                            log.debug( "stopping {}...", name );
-                            KernelHelper.setThreadNameSuffix( name );
+                            log.debug( "stopping {}...", si );
+                            KernelHelper.setThreadNameSuffix( si.toString() );
                             try {
                                 service.preStop();
                                 service.stop();
                             } finally {
                                 KernelHelper.restoreThreadName();
                             }
-                            log.debug( "stopping {}... Done.", name );
+                            log.debug( "stopping {}... Done.", si );
                         };
 
-                        runAndDetectTimeout( name, shutdownConfiguration, func );
+                        runAndDetectTimeout( si.toString(), shutdownConfiguration, func );
                     } );
             }
         }

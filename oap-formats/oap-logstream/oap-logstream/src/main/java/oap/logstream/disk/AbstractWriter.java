@@ -28,7 +28,6 @@ import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Stopwatch;
 import oap.logstream.LogId;
 import oap.logstream.LogIdTemplate;
 import oap.logstream.LogStreamProtocol.ProtocolVersion;
@@ -52,9 +51,9 @@ public abstract class AbstractWriter implements Closeable {
     protected final LogId logId;
     protected final Timestamp timestamp;
     protected final int bufferSize;
-    protected final Stopwatch stopwatch = new Stopwatch();
     protected final int maxVersions;
     protected final String hostname;
+    protected final FileWriterNotification notification;
     protected final ReentrantLock lock = new ReentrantLock();
     protected LogFile logFile;
     protected String lastPattern;
@@ -62,13 +61,14 @@ public abstract class AbstractWriter implements Closeable {
     protected boolean closed = false;
 
     protected AbstractWriter( TemplateEngine templateEngine, LogFormat logFormat, Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp,
-                              int maxVersions, String hostname ) {
+                              int maxVersions, String hostname, FileWriterNotification notification ) {
         this.templateEngine = templateEngine;
         this.logFormat = logFormat;
         this.logDirectory = logDirectory;
         this.filePattern = filePattern;
         this.maxVersions = maxVersions;
         this.hostname = hostname;
+        this.notification = notification;
 
         log.trace( "filePattern {}", filePattern );
         Preconditions.checkArgument( filePattern.matches( ".*[${]\\{\\s*LOG_VERSION\\s*}}?.*" ), "file pattern must contains LOG_VERSION variable" );
@@ -120,12 +120,14 @@ public abstract class AbstractWriter implements Closeable {
     public void refresh( boolean forceSync ) {
         lock.lock();
         try {
-            log.debug( "refresh {}...", lastPattern );
+            if( logFile != null ) {
+                log.debug( "refresh {}...", lastPattern );
+            }
 
             String currentPattern = currentPattern();
 
             if( forceSync || !Objects.equals( this.lastPattern, currentPattern ) ) {
-                log.debug( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
+                log.trace( "lastPattern {} currentPattern {} version {}", lastPattern, currentPattern, fileVersion );
 
                 String patternWithPreviousVersion = currentPattern( fileVersion - 1 );
                 if( !Objects.equals( patternWithPreviousVersion, this.lastPattern ) ) {
@@ -138,7 +140,7 @@ public abstract class AbstractWriter implements Closeable {
 
                 lastPattern = currentPattern;
             } else {
-                log.debug( "refresh {}... SKIP", lastPattern );
+                log.trace( "refresh {}... SKIP", lastPattern );
             }
         } finally {
             lock.unlock();
@@ -153,14 +155,17 @@ public abstract class AbstractWriter implements Closeable {
         lock.lock();
         try {
             if( logFile != null ) try {
-                stopwatch.count( logFile::close );
+                logFile.close();
 
                 long fileSize = logFile.getDataSize();
                 log.trace( "closing output {} ({} bytes)", this, fileSize );
                 Metrics.summary( "logstream_logging_server_bucket_size" ).record( fileSize );
-                Metrics.summary( "logstream_logging_server_bucket_time_seconds" ).record( Dates.nanosToSeconds( stopwatch.elapsed() ) );
 
                 logFile.readyForUpload();
+
+                if( notification != null ) {
+                    notification.fileClosed( logFile.outFilename );
+                }
             } finally {
                 logFile = null;
             }
@@ -173,7 +178,9 @@ public abstract class AbstractWriter implements Closeable {
     public void close() {
         lock.lock();
         try {
-            log.debug( "closing {}", this );
+            if( logFile != null ) {
+                log.debug( "closing {}", this );
+            }
             closed = true;
             closeOutput();
         } finally {

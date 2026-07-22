@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -75,7 +76,7 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
  * <li>POD_NAME</li>
  */
 @Slf4j
-public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneable, AutoCloseable {
+public class DiskLoggerBackend extends AbstractLoggerBackend implements FileWriterNotification, Cloneable, AutoCloseable {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
     public final LinkedHashMap<String, FilePatternConfiguration> filePatternByType = new LinkedHashMap<>();
@@ -93,6 +94,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
     public long refreshInitDelay = Dates.s( 10 );
     public long refreshPeriod = Dates.s( 10 );
     public volatile boolean closed;
+    protected CopyOnWriteArrayList<FileWriterNotification> notifications = new CopyOnWriteArrayList<>();
 
     public DiskLoggerBackend( TemplateEngine templateEngine, Path logDirectory, Timestamp timestamp, int bufferSize, String hostname ) {
         this( templateEngine, logDirectory, new WriterConfiguration(), timestamp, bufferSize, hostname );
@@ -116,8 +118,8 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
         this.writers = CacheBuilder.newBuilder()
             .ticker( JodaTicker.JODA_TICKER )
             .expireAfterAccess( 60 / timestamp.bucketsPerHour * 3, TimeUnit.MINUTES )
-            .removalListener( notification -> {
-                Closeables.close( ( Closeable ) notification.getValue() );
+            .removalListener( l -> {
+                Closeables.close( ( Closeable ) l.getValue() );
             } )
             .build( new CacheLoader<>() {
                 @Override
@@ -126,7 +128,7 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
 
                     log.trace( "new writer id '{}' filePattern '{}'", id, fp );
 
-                    return new RowBinaryWriter( templateEngine, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname );
+                    return new RowBinaryWriter( templateEngine, DiskLoggerBackend.this.logDirectory, fp.path, id, bufferSize, timestamp, maxVersions, hostname, DiskLoggerBackend.this );
                 }
             } );
         Metrics.gauge( "logstream_logging_disk_writers", List.of( Tag.of( "path", this.logDirectory.toString() ) ),
@@ -241,6 +243,17 @@ public class DiskLoggerBackend extends AbstractLoggerBackend implements Cloneabl
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "writers", writers.size() )
             .toString();
+    }
+
+    @Override
+    public void fileClosed( Path outFilename ) {
+        for( FileWriterNotification notification : notifications ) {
+            notification.fileClosed( outFilename );
+        }
+    }
+
+    public void addNotificationListener( FileWriterNotification notification ) {
+        this.notifications.add( notification );
     }
 
     @ToString

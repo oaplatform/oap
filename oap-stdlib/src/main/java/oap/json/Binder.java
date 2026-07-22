@@ -89,6 +89,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.from;
 
@@ -275,6 +276,11 @@ public class Binder {
     private static String getLimitation( String json ) {
         if( json != null && json.length() > 20 ) return json.substring( 0, 20 ) + "...";
         return json;
+    }
+
+    private static String getLimitation( byte[] json ) {
+        if( json != null && json.length > 20 ) return new String( json, UTF_8 ).substring( 0, 20 ) + "...";
+        return json != null ? new String( json, UTF_8 ) : null;
     }
 
     public ObjectMapper getMapper() {
@@ -552,6 +558,15 @@ public class Binder {
     }
 
     public <T> T unmarshal( Class<T> clazz, String json ) throws JsonException {
+        try {
+            return mapper.readValue( json, clazz );
+        } catch( Exception e ) {
+            log.trace( "Cannot deserialize [{}] into {}", json, clazz.getCanonicalName() );
+            throw new JsonException( "Cannot deserialize [" + getLimitation( json ) + "] to class: " + clazz.getCanonicalName(), e );
+        }
+    }
+
+    public <T> T unmarshal( Class<T> clazz, byte[] json ) throws JsonException {
         try {
             return mapper.readValue( json, clazz );
         } catch( Exception e ) {
