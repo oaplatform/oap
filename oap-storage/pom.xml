@@ -27,6 +27,7 @@
 
         <module>oap-storage-cloud</module>
         <module>oap-storage-cloud-aws-s3</module>
+        <module>oap-storage-cloud-ftp</module>
         <module>oap-storage-cloud-test</module>
     </modules>
 </project>

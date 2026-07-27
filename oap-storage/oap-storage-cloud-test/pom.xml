@@ -32,6 +32,18 @@
         </dependency>
 
         <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-storage-cloud-ftp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ftpserver</groupId>
+            <artifactId>ftpserver-core</artifactId>
+            <version>${oap.deps.ftpserver.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
             <version>${oap.deps.testcontainers.version}</version>

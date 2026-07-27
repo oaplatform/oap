@@ -22,6 +22,8 @@ scheme://container/path/to/object
 | `gcs` | Google Cloud Storage |
 | `ab` | Azure Blob Storage |
 | `file` | Local filesystem |
+| `ftp` | FTP (requires `oap-storage-cloud-ftp` on classpath) |
+| `ftps` | FTP over TLS (requires `oap-storage-cloud-ftp` on classpath) |
 
 ```java
 CloudURI uri = new CloudURI( "s3://my-bucket/data/report-2024-06-01.json" );
@@ -174,3 +176,30 @@ Required configuration keys for S3:
 | `fs.s3.clouds.region` | AWS region (e.g. `us-east-1`) |
 | `fs.s3.clouds.endpoint` | Override endpoint URL (e.g. for LocalStack) |
 | `fs.s3.clouds.s3.virtual-host-buckets` | `false` for path-style access (LocalStack, MinIO) |
+
+---
+
+## FTP
+
+Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
+
+Unlike `s3`/`gcs`/`ab`, `container` here is just a connection-identity key (parallel to a bucket name) used to look up credentials — it is not part of the remote path. `host` defaults to `container` itself, so `ftp://myhost/some/path.txt` works with zero configuration beyond credentials.
+
+Required/optional configuration keys:
+
+| Key | Description |
+|---|---|
+| `fs.ftp.clouds.host` | FTP server host (defaults to the URI's container/host segment) |
+| `fs.ftp.clouds.port` | FTP server port (default `21`) |
+| `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
+| `fs.ftp.clouds.credential` | FTP password |
+| `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
+| `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
+| `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+
+```java
+CloudURI dest = new CloudURI( "ftp://ftp.example.com/reports/2024-06-01.json" );
+fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
+```
+
+FTP has no bucket/container abstraction beyond the connection itself: `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException`. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.

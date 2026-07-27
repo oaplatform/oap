@@ -72,6 +72,8 @@ public class CloudURI implements Serializable {
             case "gcs" -> "google-cloud-storage";
             case "ab" -> "azureblob";
             case "file" -> "filesystem";
+            case "ftp" -> "ftp";
+            case "ftps" -> "ftp";
             default -> throw new CloudException( "unsupported schema " + scheme );
         };
     }
