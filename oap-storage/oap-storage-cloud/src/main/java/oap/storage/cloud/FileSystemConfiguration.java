@@ -7,6 +7,7 @@ import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +62,7 @@ public class FileSystemConfiguration {
         }
 
         String defaultScheme = getDefaultScheme();
-        String defaultContainer = getDefaultContainer();
+        String defaultContainer = tryGetDefaultContainer();
 
         log.info( "DefaultScheme {} DefaultContainer {}", defaultScheme, defaultContainer );
         log.info( "fs {}", properties );
@@ -75,10 +76,20 @@ public class FileSystemConfiguration {
         return getDefault( "container" );
     }
 
+    @Nullable
+    public String tryGetDefaultContainer() {
+        return tryGetDefault( "container" );
+    }
+
     private String getDefault( String parameter ) {
+        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default.jclouds." + parameter + " is required" );
+    }
+
+    @Nullable
+    private String tryGetDefault( String parameter ) {
         Map<String, Object> defaults = properties.get( "default" );
         Preconditions.checkNotNull( defaults, "fs.default is required" );
-        return Preconditions.checkNotNull( ( String ) defaults.get( "jclouds." + parameter ), "fs.default.jclouds." + parameter + " is required" );
+        return ( String ) defaults.get( "jclouds." + parameter );
     }
 
     private LinkedHashMap<String, Object> toStringList( Object configuration ) {

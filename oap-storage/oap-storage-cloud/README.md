@@ -22,6 +22,8 @@ scheme://container/path/to/object
 | `gcs` | Google Cloud Storage |
 | `ab` | Azure Blob Storage |
 | `file` | Local filesystem |
+| `ftp` | FTP (requires `oap-storage-cloud-ftp` on classpath) |
+| `ftps` | FTP over TLS (requires `oap-storage-cloud-ftp` on classpath) |
 
 ```java
 CloudURI uri = new CloudURI( "s3://my-bucket/data/report-2024-06-01.json" );
@@ -174,3 +176,32 @@ Required configuration keys for S3:
 | `fs.s3.clouds.region` | AWS region (e.g. `us-east-1`) |
 | `fs.s3.clouds.endpoint` | Override endpoint URL (e.g. for LocalStack) |
 | `fs.s3.clouds.s3.virtual-host-buckets` | `false` for path-style access (LocalStack, MinIO) |
+
+---
+
+## FTP
+
+Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
+
+Like `file`, FTP/FTPS have no bucket/container concept — a single connection (one server, one remote tree) serves the whole scheme. `container` is always empty; the URI's authority segment (if present) is folded into the path rather than treated as a host, so `ftp://reports/2024-06-01.json` addresses the remote path `reports/2024-06-01.json`, not a host named `reports`. The actual server to connect to always comes from config — `fs.ftp.clouds.host` is required.
+
+Required/optional configuration keys:
+
+| Key | Description |
+|---|---|
+| `fs.ftp.clouds.host` | FTP server host (required) |
+| `fs.ftp.clouds.port` | FTP server port (default `21`) |
+| `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
+| `fs.ftp.clouds.credential` | FTP password |
+| `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
+| `fs.ftp.clouds.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
+| `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
+| `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+
+```java
+// fs.ftp.clouds.host = ftp.example.com (configured separately, not part of the URI)
+CloudURI dest = new CloudURI( "ftp://reports/2024-06-01.json" );
+fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
+```
+
+`createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.

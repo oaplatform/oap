@@ -257,7 +257,7 @@ public class FileSystem implements AutoCloseable {
         log.debug( "getDefaultURL {}", path );
 
         return new CloudURI( fileSystemConfiguration.getDefaultScheme(),
-            fileSystemConfiguration.getDefaultContainer(),
+            fileSystemConfiguration.tryGetDefaultContainer(),
             FilenameUtils.separatorsToUnix( path )
         );
     }
