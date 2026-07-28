@@ -29,11 +29,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
 public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi {
@@ -42,6 +45,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     protected final String username;
     protected final String password;
     protected final boolean passiveMode;
+    protected final boolean removeEmptyFolders;
 
     protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String container ) {
         Object hostObj = fileSystemConfiguration.get( scheme, container, "jclouds.host" );
@@ -58,6 +62,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
         Object passive = fileSystemConfiguration.get( scheme, container, "jclouds.passive-mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
+
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "jclouds.remove-empty-folders" );
+        this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 
     protected abstract FTPClient createClient() throws IOException;
@@ -72,12 +79,12 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             int reply = client.getReplyCode();
             if( !FTPReply.isPositiveCompletion( reply ) ) {
                 client.disconnect();
-                throw new CloudException( "FTP server refused connection " + host + ":" + port + " reply " + reply );
+                throw new CloudException( s( "FTP server refused connection ${host}:${port} reply ${reply}" ) );
             }
 
             if( !client.login( username, password ) ) {
                 client.disconnect();
-                throw new CloudException( "FTP login failed for user " + username + " at " + host + ":" + port );
+                throw new CloudException( s( "FTP login failed for user ${username} at ${host}:${port}" ) );
             }
 
             client.setFileType( FTP.BINARY_FILE_TYPE );
@@ -106,9 +113,20 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         }
     }
 
+    /**
+     * FTP commands are resolved relative to the client's current working directory, which
+     * {@link #ensureRemoteDirectory} mutates as a side effect. Always addressing the server with
+     * absolute paths keeps every operation independent of that CWD state.
+     */
+    private static String absolute( String path ) {
+        return path.startsWith( "/" ) ? path : "/" + path;
+    }
+
     private static String parentOf( String path ) {
         int idx = path.lastIndexOf( '/' );
-        return idx >= 0 ? path.substring( 0, idx ) : "";
+        if( idx < 0 ) return "";
+        if( idx == 0 ) return "/";
+        return path.substring( 0, idx );
     }
 
     private static String nameOf( String path ) {
@@ -171,7 +189,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) {
         FTPClient client = connect();
         try {
-            return CompletableFuture.completedFuture( findFile( client, path.path ) != null );
+            return CompletableFuture.completedFuture( findFile( client, absolute( path.path ) ) != null );
         } catch( IOException e ) {
             return CompletableFuture.failedFuture( new CloudException( e ) );
         } finally {
@@ -194,14 +212,33 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public CompletableFuture<Void> deleteBlobAsync( CloudURI path ) {
         FTPClient client = connect();
         try {
-            if( !client.deleteFile( path.path ) ) {
+            if( !client.deleteFile( absolute( path.path ) ) ) {
                 return CompletableFuture.failedFuture( new CloudException( "cannot delete " + path ) );
             }
+
+            if( removeEmptyFolders ) {
+                removeEmptyParents( client, parentOf( absolute( path.path ) ) );
+            }
+
             return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
             return CompletableFuture.failedFuture( new CloudException( e ) );
         } finally {
             disconnect( client );
+        }
+    }
+
+    private void removeEmptyParents( FTPClient client, String dirPath ) throws IOException {
+        String parent = dirPath;
+        while( !parent.isEmpty() && !"/".equals( parent ) ) {
+            FTPFile[] children = client.listFiles( parent );
+            boolean empty = children == null || children.length == 0
+                || Arrays.stream( children )
+                .allMatch( f -> ".".equals( f.getName() ) || "..".equals( f.getName() ) );
+
+            if( !empty || !client.removeDirectory( parent ) ) break;
+
+            parent = parentOf( parent );
         }
     }
 
@@ -224,7 +261,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public CompletableFuture<? extends FileSystem.StorageItem> getMetadataAsync( CloudURI path ) {
         FTPClient client = connect();
         try {
-            FTPFile file = findFile( client, path.path );
+            FTPFile file = findFile( client, absolute( path.path ) );
             if( file == null ) return CompletableFuture.completedFuture( null );
 
             return CompletableFuture.completedFuture( toStorageItem( path, file ) );
@@ -241,7 +278,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         try {
             oap.io.Files.ensureFile( destination );
             try( OutputStream out = Files.newOutputStream( destination ) ) {
-                if( !client.retrieveFile( source.path, out ) ) {
+                if( !client.retrieveFile( absolute( source.path ), out ) ) {
                     return CompletableFuture.failedFuture( new CloudException( "cannot download " + source ) );
                 }
             }
@@ -260,14 +297,14 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient sourceClient = connect();
         FTPClient destinationClient = connect();
         try {
-            InputStream in = sourceClient.retrieveFileStream( source.path );
+            InputStream in = sourceClient.retrieveFileStream( absolute( source.path ) );
             if( in == null ) {
                 return CompletableFuture.failedFuture( new CloudException( "cannot open source stream " + source ) );
             }
 
-            ensureRemoteDirectory( destinationClient, parentOf( destination.path ) );
+            ensureRemoteDirectory( destinationClient, parentOf( absolute( destination.path ) ) );
 
-            boolean stored = destinationClient.storeFile( destination.path, in );
+            boolean stored = destinationClient.storeFile( absolute( destination.path ), in );
             in.close();
 
             if( !stored || !sourceClient.completePendingCommand() ) {
@@ -287,7 +324,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public CompletableFuture<? extends InputStream> getInputStreamAsync( CloudURI path ) {
         FTPClient client = connect();
         try {
-            InputStream in = client.retrieveFileStream( path.path );
+            InputStream in = client.retrieveFileStream( absolute( path.path ) );
             if( in == null ) {
                 disconnect( client );
                 return CompletableFuture.failedFuture( new CloudException( "cannot open " + path ) );
@@ -303,9 +340,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public OutputStream getOutputStream( CloudURI path, Map<String, String> tags ) {
         FTPClient client = connect();
         try {
-            ensureRemoteDirectory( client, parentOf( path.path ) );
+            ensureRemoteDirectory( client, parentOf( absolute( path.path ) ) );
 
-            OutputStream out = client.storeFileStream( path.path );
+            OutputStream out = client.storeFileStream( absolute( path.path ) );
             if( out == null ) {
                 disconnect( client );
                 throw new CloudException( "cannot open output stream for " + path );
@@ -321,21 +358,22 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public CompletableFuture<Void> uploadAsync( CloudURI destination, BlobData blobData ) {
         FTPClient client = connect();
         try {
-            ensureRemoteDirectory( client, parentOf( destination.path ) );
+            ensureRemoteDirectory( client, parentOf( absolute( destination.path ) ) );
 
+            String remotePath = absolute( destination.path );
             boolean stored = switch( blobData.content ) {
-                case InputStream inputStream -> client.storeFile( destination.path, inputStream );
-                case String str -> client.storeFile( destination.path, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
-                case byte[] bytes -> client.storeFile( destination.path, new ByteArrayInputStream( bytes ) );
-                case ByteBuffer byteBuffer -> client.storeFile( destination.path, new ByteArrayInputStream( byteBuffer.array() ) );
+                case InputStream inputStream -> client.storeFile( remotePath, inputStream );
+                case String str -> client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
+                case byte[] bytes -> client.storeFile( remotePath, new ByteArrayInputStream( bytes ) );
+                case ByteBuffer byteBuffer -> client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
                 case File file -> {
                     try( InputStream fis = new FileInputStream( file ) ) {
-                        yield client.storeFile( destination.path, fis );
+                        yield client.storeFile( remotePath, fis );
                     }
                 }
                 case Path path -> {
                     try( InputStream fis = Files.newInputStream( path ) ) {
-                        yield client.storeFile( destination.path, fis );
+                        yield client.storeFile( remotePath, fis );
                     }
                 }
                 case null -> throw new CloudException( "content must not be null" );
@@ -359,7 +397,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = connect();
         try {
             List<FileSystem.StorageItemImpl> all = new ArrayList<>();
-            walk( client, path, path.path, all );
+            walk( client, path, absolute( path.path ), all );
             all.sort( Comparator.comparing( FileSystem.StorageItemImpl::getName ) );
 
             Stream<FileSystem.StorageItemImpl> stream = all.stream();

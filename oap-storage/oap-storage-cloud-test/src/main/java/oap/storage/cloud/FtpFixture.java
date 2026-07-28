@@ -18,8 +18,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class FtpFixture extends AbstractFixture<FtpFixture> {
@@ -112,18 +112,27 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
     }
 
     public FileSystemConfiguration getFileSystemConfiguration( String container ) {
+        return getFileSystemConfiguration( container, false );
+    }
+
+    public FileSystemConfiguration getFileSystemConfiguration( String container, boolean removeEmptyFolders ) {
         String scheme = tls ? "ftps" : "ftp";
 
-        return new FileSystemConfiguration( Map.of(
-            "fs." + scheme + ".clouds.host", "localhost",
-            "fs." + scheme + ".clouds.port", port,
-            "fs." + scheme + ".clouds.identity", USERNAME,
-            "fs." + scheme + ".clouds.credential", PASSWORD,
-            "fs." + scheme + ".clouds.trust-all", true,
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put( "fs." + scheme + ".clouds.host", "localhost" );
+        map.put( "fs." + scheme + ".clouds.port", port );
+        map.put( "fs." + scheme + ".clouds.identity", USERNAME );
+        map.put( "fs." + scheme + ".clouds.credential", PASSWORD );
+        map.put( "fs." + scheme + ".clouds.trust-all", true );
 
-            "fs.default.clouds.scheme", scheme,
-            "fs.default.clouds.container", container
-        ) );
+        if( removeEmptyFolders ) {
+            map.put( "fs." + scheme + ".clouds.remove-empty-folders", true );
+        }
+
+        map.put( "fs.default.clouds.scheme", scheme );
+        map.put( "fs.default.clouds.container", container );
+
+        return new FileSystemConfiguration( map );
     }
 
     public Path resolve( String relativePath ) {

@@ -194,6 +194,7 @@ Required/optional configuration keys:
 | `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
 | `fs.ftp.clouds.credential` | FTP password |
 | `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
+| `fs.ftp.clouds.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
 | `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
 | `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 

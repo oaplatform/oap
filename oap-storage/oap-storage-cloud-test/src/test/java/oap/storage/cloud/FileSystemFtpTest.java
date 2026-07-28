@@ -180,4 +180,38 @@ public class FileSystemFtpTest extends Fixtures {
             assertThat( fileSystem.getMetadata( new CloudURI( "ftp", CONTAINER, "folder" ) ).getContentType() ).isEqualTo( "application/x-directory" );
         }
     }
+
+    @Test
+    public void testDeleteFileAndParentFolderIfEmpty() {
+        // 1. remove_empty_folders disabled -> parent folders remain after delete
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.upload( new CloudURI( "ftp://" + CONTAINER + "/case1/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            fileSystem.deleteBlob( new CloudURI( "ftp://" + CONTAINER + "/case1/folder1/folder2/file.txt" ) );
+
+            assertThat( ftpFixture.resolve( "case1/folder1/folder2/file.txt" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( "case1/folder1/folder2" ) ).exists();
+        }
+
+        // 2. enabled -> empty folder2 removed, folder1 kept (still has file2.txt)
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( CONTAINER, true ) ) ) {
+            fileSystem.upload( new CloudURI( "ftp://" + CONTAINER + "/case2/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
+            fileSystem.upload( new CloudURI( "ftp://" + CONTAINER + "/case2/folder1/file2.txt" ), BlobData.builder().content( "content2" ).build() );
+
+            fileSystem.deleteBlob( new CloudURI( "ftp://" + CONTAINER + "/case2/folder1/folder2/file.txt" ) );
+
+            assertThat( ftpFixture.resolve( "case2/folder1/folder2" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( "case2/folder1" ) ).exists();
+        }
+
+        // 3. enabled -> whole empty chain removed
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( CONTAINER, true ) ) ) {
+            fileSystem.upload( new CloudURI( "ftp://" + CONTAINER + "/case3/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            fileSystem.deleteBlob( new CloudURI( "ftp://" + CONTAINER + "/case3/folder1/folder2/file.txt" ) );
+
+            assertThat( ftpFixture.resolve( "case3/folder1/folder2" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( "case3/folder1" ) ).doesNotExist();
+        }
+    }
 }
