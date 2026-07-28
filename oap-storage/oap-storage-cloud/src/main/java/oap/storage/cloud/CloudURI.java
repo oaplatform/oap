@@ -20,7 +20,9 @@ public class CloudURI implements Serializable {
 
     public CloudURI( String uri ) throws CloudException {
         try {
-            URI u = new URI( uri );
+            // java.net.URI rejects a bare "scheme://" (empty authority with no path) as malformed;
+            // normalize it to the equivalent, parseable triple-slash form.
+            URI u = new URI( uri.endsWith( "://" ) ? uri + "/" : uri );
 
             scheme = u.getScheme();
             String container = u.getHost();
@@ -28,9 +30,9 @@ public class CloudURI implements Serializable {
             uriPath = FilenameUtils.separatorsToUnix( uriPath );
             if( container != null && uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
 
-            if( "file".equals( scheme ) ) {
+            if( "file".equals( scheme ) || "ftp".equals( scheme ) || "ftps".equals( scheme ) ) {
                 if( container != null ) {
-                    uriPath = container + "/" + uriPath;
+                    uriPath = uriPath.isEmpty() ? container : container + "/" + uriPath;
                 }
                 this.container = "";
             } else {

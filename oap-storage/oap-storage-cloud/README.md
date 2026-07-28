@@ -183,13 +183,13 @@ Required configuration keys for S3:
 
 Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
 
-Unlike `s3`/`gcs`/`ab`, `container` here is just a connection-identity key (parallel to a bucket name) used to look up credentials — it is not part of the remote path. `host` defaults to `container` itself, so `ftp://myhost/some/path.txt` works with zero configuration beyond credentials.
+Like `file`, FTP/FTPS have no bucket/container concept — a single connection (one server, one remote tree) serves the whole scheme. `container` is always empty; the URI's authority segment (if present) is folded into the path rather than treated as a host, so `ftp://reports/2024-06-01.json` addresses the remote path `reports/2024-06-01.json`, not a host named `reports`. The actual server to connect to always comes from config — `fs.ftp.clouds.host` is required.
 
 Required/optional configuration keys:
 
 | Key | Description |
 |---|---|
-| `fs.ftp.clouds.host` | FTP server host (defaults to the URI's container/host segment) |
+| `fs.ftp.clouds.host` | FTP server host (required) |
 | `fs.ftp.clouds.port` | FTP server port (default `21`) |
 | `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
 | `fs.ftp.clouds.credential` | FTP password |
@@ -199,8 +199,9 @@ Required/optional configuration keys:
 | `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 
 ```java
-CloudURI dest = new CloudURI( "ftp://ftp.example.com/reports/2024-06-01.json" );
+// fs.ftp.clouds.host = ftp.example.com (configured separately, not part of the URI)
+CloudURI dest = new CloudURI( "ftp://reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 
-FTP has no bucket/container abstraction beyond the connection itself: `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException`. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
+`createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.

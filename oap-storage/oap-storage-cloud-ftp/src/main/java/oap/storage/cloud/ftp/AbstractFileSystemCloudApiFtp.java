@@ -49,7 +49,10 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String container ) {
         Object hostObj = fileSystemConfiguration.get( scheme, container, "jclouds.host" );
-        this.host = hostObj != null ? hostObj.toString() : container;
+        if( hostObj == null ) {
+            throw new CloudException( "fs." + scheme + ".clouds.host is required" );
+        }
+        this.host = hostObj.toString();
 
         Object portObj = fileSystemConfiguration.get( scheme, container, "jclouds.port" );
         this.port = portObj != null ? Integer.parseInt( portObj.toString() ) : 21;

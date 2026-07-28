@@ -30,15 +30,15 @@ public class CloudURITest {
     public void testParseFtp() {
         CloudURI cloudURI = new CloudURI( "ftp://my-server/logs/1.txt" );
         assertThat( cloudURI.scheme ).isEqualTo( "ftp" );
-        assertThat( cloudURI.container ).isEqualTo( "my-server" );
-        assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
+        assertThat( cloudURI.container ).isEmpty();
+        assertThat( cloudURI.path ).isEqualTo( "my-server/logs/1.txt" );
     }
 
     @Test
     public void testParseFtps() {
         CloudURI cloudURI = new CloudURI( "ftps://my-server/logs/1.txt" );
         assertThat( cloudURI.scheme ).isEqualTo( "ftps" );
-        assertThat( cloudURI.container ).isEqualTo( "my-server" );
-        assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
+        assertThat( cloudURI.container ).isEmpty();
+        assertThat( cloudURI.path ).isEqualTo( "my-server/logs/1.txt" );
     }
 }

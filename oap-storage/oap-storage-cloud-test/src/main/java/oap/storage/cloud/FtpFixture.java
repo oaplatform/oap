@@ -14,6 +14,7 @@ import org.apache.ftpserver.ssl.SslConfigurationFactory;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 import org.apache.ftpserver.usermanager.impl.WritePermission;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -111,11 +112,11 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return testDirectoryFixture.testDirectory();
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( String container ) {
+    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container ) {
         return getFileSystemConfiguration( container, false );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( String container, boolean removeEmptyFolders ) {
+    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
@@ -130,7 +131,9 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         }
 
         map.put( "fs.default.clouds.scheme", scheme );
-        map.put( "fs.default.clouds.container", container );
+        if( container != null ) {
+            map.put( "fs.default.clouds.container", container );
+        }
 
         return new FileSystemConfiguration( map );
     }
