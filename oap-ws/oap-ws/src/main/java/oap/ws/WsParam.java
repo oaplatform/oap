@@ -43,6 +43,8 @@ public @interface WsParam {
 
     String description() default "";
 
+    boolean nullable() default false;
+
     enum From {
         QUERY, PATH, BODY, HEADER, SESSION, COOKIE
     }

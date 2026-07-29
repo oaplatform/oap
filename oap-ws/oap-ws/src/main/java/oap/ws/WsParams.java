@@ -30,6 +30,7 @@ import oap.reflect.Reflection;
 import oap.util.Sets;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Deque;
@@ -89,10 +90,18 @@ public class WsParams {
         if( parameter.type().isOptional() ) {
             return Optional.ofNullable( value );
         }
-        if( value == null ) {
+        if( value != null ) {
+            return value;
+        }
+        if( parameter.type().isPrimitive() ) {
             throw new WsClientException( "'" + parameter + "' is required" );
         }
-        return value;
+        boolean nullable = parameter.findAnnotation( WsParam.class ).map( WsParam::nullable ).orElse( false )
+            || parameter.findAnnotation( Nullable.class ).isPresent();
+        if( nullable ) {
+            return null;
+        }
+        throw new WsClientException( "'" + parameter + "' is required" );
     }
 
     public static Object fromCookie( HttpServerExchange exchange, Reflection.Parameter parameter, WsParam wsParam ) throws WsClientException {

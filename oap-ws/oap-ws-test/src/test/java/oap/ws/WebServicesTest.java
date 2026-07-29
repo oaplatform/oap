@@ -34,6 +34,7 @@ import oap.testng.TestDirectoryFixture;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -165,9 +166,39 @@ public class WebServicesTest extends Fixtures {
     }
 
     @Test
+    public void nullable() {
+        assertGet( kernel.httpUrl( "/x/v/math/sumabnull?a=1&b=2" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "3" );
+        assertGet( kernel.httpUrl( "/x/v/math/sumabnull?a=1" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "1" );
+    }
+
+    @Test
+    public void nullableExplicit() {
+        assertGet( kernel.httpUrl( "/x/v/math/sumabnullexplicit?a=1&b=2" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "3" );
+        assertGet( kernel.httpUrl( "/x/v/math/sumabnullexplicit?a=1" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "1" );
+    }
+
+    @Test
+    public void nullableBoolean() {
+        assertGet( kernel.httpUrl( "/x/v/math/flag?f=true" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "true" );
+        assertGet( kernel.httpUrl( "/x/v/math/flag" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "" );
+    }
+
+    @Test
     public void parameterList() {
         assertGet( kernel.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
             .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "6" );
+    }
+
+    @Test
+    public void missingListParameter() {
+        assertGet( kernel.httpUrl( "/x/v/math/sum?a=1" ) )
+            .responded( OK, "OK", Http.ContentType.APPLICATION_JSON, "1" );
     }
 
     @Test
@@ -258,6 +289,18 @@ public class WebServicesTest extends Fixtures {
 
         public int sumabopt( int a, Optional<Integer> b ) {
             return a + b.orElse( 0 );
+        }
+
+        public int sumabnull( int a, @Nullable Integer b ) {
+            return a + ( b != null ? b : 0 );
+        }
+
+        public int sumabnullexplicit( int a, @WsParam( nullable = true ) Long b ) {
+            return a + ( b != null ? b.intValue() : 0 );
+        }
+
+        public Boolean flag( @Nullable Boolean f ) {
+            return f;
         }
 
         public String id( String a ) {
