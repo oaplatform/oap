@@ -105,6 +105,7 @@ public class InvocationContext {
 
     @SuppressWarnings( { "unchecked", "checkstyle:ParameterAssignment" } )
     private Object map( Reflection reflection, Object value ) {
+        if( value == null ) return null;
         try {
             if( reflection.isOptional() && value instanceof Optional optValue )
                 return optValue.isEmpty()

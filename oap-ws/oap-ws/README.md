@@ -210,13 +210,25 @@ public Response handle( HttpServerExchange exchange, Session session ) { … }
 | Parameter type | Behaviour |
 |---|---|
 | `String` | Raw string value |
-| primitives (`int`, `long`, `boolean`, …) | Parsed from string |
+| primitives (`int`, `long`, `boolean`, …) | Parsed from string; always required — a primitive can't be `null` |
 | `enum` | `Enum.valueOf()` from string |
 | `Optional<T>` | `Optional.empty()` when missing; never throws for absent values |
-| `List<String>` | All values for a repeated query parameter |
+| `List<String>` | All values for a repeated query parameter; empty list when missing |
 | any other POJO | JSON-deserialized from the string or body |
 
-A missing required (non-`Optional`) parameter throws `WsClientException` (400).
+A missing required (non-`Optional`, non-`List`) parameter throws `WsClientException` (400) — for example a missing `Integer` or `String` argument.
+
+**Opting a reference-type parameter out of that requirement** — mark it nullable so a missing value resolves to `null` instead of throwing:
+
+```java
+public int sumab( int a, @WsParam( nullable = true ) Integer b ) { … }          // @WsParam already present
+public int sumab( int a, @Nullable Integer b ) { … }                            // @WsParam absent (default QUERY)
+```
+
+- `@WsParam( nullable = true )` — use when the parameter already carries a `@WsParam` annotation (any `From`: `QUERY`, `HEADER`, `COOKIE`, `SESSION`).
+- `javax.annotation.Nullable` — use on a bare parameter that has no `@WsParam` at all.
+
+This only applies to reference types (`Integer`, `Boolean`, `Long`, custom POJOs, …) — primitives ignore both annotations and remain required, since there is no `null` to assign them.
 
 ---
 
