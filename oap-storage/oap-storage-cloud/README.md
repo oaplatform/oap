@@ -185,6 +185,8 @@ Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and 
 
 Like `file`, FTP/FTPS have no bucket/container concept — a single connection (one server, one remote tree) serves the whole scheme. `container` is always empty; the URI's authority segment (if present) is folded into the path rather than treated as a host, so `ftp://reports/2024-06-01.json` addresses the remote path `reports/2024-06-01.json`, not a host named `reports`. The actual server to connect to always comes from config — `fs.ftp.clouds.host` is required.
 
+FTP control connections (TCP connect + login) are pooled per backend instance using [Apache Commons Pool 2](https://commons.apache.org/proper/commons-pool/) — operations borrow a connection from the pool and return it when done instead of reconnecting/logging in on every call. Pooled connections are validated with an FTP `NOOP` before reuse, so idle connections dropped by the server/firewall are transparently replaced.
+
 Required/optional configuration keys:
 
 | Key | Description |
@@ -195,6 +197,8 @@ Required/optional configuration keys:
 | `fs.ftp.clouds.credential` | FTP password |
 | `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
 | `fs.ftp.clouds.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
+| `fs.ftp.clouds.pool-max-size` | Max pooled FTP connections per backend instance (default `8`) |
+| `fs.ftp.clouds.pool-max-wait-millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
 | `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
 | `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 

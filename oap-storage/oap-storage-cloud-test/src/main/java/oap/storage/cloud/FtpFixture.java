@@ -117,6 +117,10 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
     }
 
     public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders ) {
+        return getFileSystemConfiguration( container, removeEmptyFolders, null );
+    }
+
+    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
@@ -128,6 +132,10 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
 
         if( removeEmptyFolders ) {
             map.put( "fs." + scheme + ".clouds.remove-empty-folders", true );
+        }
+
+        if( poolMaxSize != null ) {
+            map.put( "fs." + scheme + ".clouds.pool-max-size", poolMaxSize );
         }
 
         map.put( "fs.default.clouds.scheme", scheme );

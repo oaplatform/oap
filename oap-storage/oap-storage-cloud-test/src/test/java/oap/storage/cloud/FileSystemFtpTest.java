@@ -17,7 +17,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -211,6 +216,45 @@ public class FileSystemFtpTest extends Fixtures {
 
             assertThat( ftpFixture.resolve( "case3/folder1/folder2" ) ).doesNotExist();
             assertThat( ftpFixture.resolve( "case3/folder1" ) ).doesNotExist();
+        }
+    }
+
+    @Test
+    public void testPoolReusesConnectionSequentially() {
+        ftpFixture.writeFile( "logs/file1.txt", "1" );
+
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, 1 ) ) ) {
+            for( int i = 0; i < 5; i++ ) {
+                assertTrue( fileSystem.blobExists( new CloudURI( "ftp://logs/file1.txt" ) ) );
+            }
+        }
+    }
+
+    @Test
+    public void testPoolHandlesConcurrentUploads() {
+        int poolMaxSize = 2;
+        int uploads = 10;
+
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, poolMaxSize ) ) ) {
+            ExecutorService executor = Executors.newFixedThreadPool( uploads );
+            try {
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                for( int i = 0; i < uploads; i++ ) {
+                    int idx = i;
+                    futures.add( CompletableFuture.runAsync( () ->
+                        fileSystem.upload( new CloudURI( "ftp://concurrent/file" + idx + ".txt" ),
+                            BlobData.builder().content( "content" + idx ).build() ), executor ) );
+                }
+
+                assertThat( CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) ) )
+                    .succeedsWithin( 30, TimeUnit.SECONDS );
+            } finally {
+                executor.shutdown();
+            }
+        }
+
+        for( int i = 0; i < uploads; i++ ) {
+            assertThat( ftpFixture.readFile( "concurrent/file" + i + ".txt" ) ).isEqualTo( "content" + i );
         }
     }
 }
