@@ -36,11 +36,11 @@ import java.util.concurrent.TimeUnit;
  * {@link Semaphore} gates task start: {@code execute}/{@code submit}/{@code invokeAll}/{@code invokeAny}
  * block while {@code threads} tasks are already running, and unblock as tasks complete.
  */
-class BlockingVirtualThreadPerTaskExecutor extends AbstractExecutorService {
+class FixedBlockingVirtualThreadPerTaskExecutor extends AbstractExecutorService {
     private final ExecutorService delegate = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor();
     private final Semaphore semaphore;
 
-    BlockingVirtualThreadPerTaskExecutor( int threads ) {
+    FixedBlockingVirtualThreadPerTaskExecutor( int threads ) {
         this.semaphore = new Semaphore( threads );
     }
 

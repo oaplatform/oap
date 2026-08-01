@@ -75,8 +75,8 @@ public final class Executors {
             0, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory, new ThreadPoolExecutor.BlockingPolicy() );
     }
 
-    public static ExecutorService newBlockingVirtualThreadPerTaskExecutor( int threads ) {
-        return new BlockingVirtualThreadPerTaskExecutor( threads );
+    public static ExecutorService newFixedBlockingVirtualThreadPerTaskExecutor( int threads ) {
+        return new FixedBlockingVirtualThreadPerTaskExecutor( threads );
     }
 
     public static ScheduledExecutorService newScheduledThreadPool( int corePoolSize, String threadPrefix ) {
