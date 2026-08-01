@@ -257,4 +257,35 @@ public class FileSystemFtpTest extends Fixtures {
             assertThat( ftpFixture.readFile( "concurrent/file" + i + ".txt" ) ).isEqualTo( "content" + i );
         }
     }
+
+    @Test
+    public void testPoolHandlesManyParallelUploads() {
+        int poolMaxSize = 8;
+        int uploads = 1000;
+
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, poolMaxSize ) ) ) {
+            ExecutorService executor = Executors.newFixedThreadPool( 50 );
+            try {
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                for( int i = 0; i < uploads; i++ ) {
+                    int idx = i;
+                    futures.add( CompletableFuture.runAsync( () ->
+                        fileSystem.upload( new CloudURI( "ftp://bulk/file" + idx + ".txt" ),
+                            BlobData.builder().content( "content" + idx ).build() ), executor ) );
+                }
+
+                assertThat( CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) ) )
+                    .succeedsWithin( 120, TimeUnit.SECONDS );
+            } finally {
+                executor.shutdown();
+            }
+
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( "ftp://bulk/" ), ListOptions.builder().build() );
+            assertThat( list.size() ).isEqualTo( uploads );
+        }
+
+        for( int idx : new int[] { 0, 1, 500, 998, 999 } ) {
+            assertThat( ftpFixture.readFile( "bulk/file" + idx + ".txt" ) ).isEqualTo( "content" + idx );
+        }
+    }
 }
