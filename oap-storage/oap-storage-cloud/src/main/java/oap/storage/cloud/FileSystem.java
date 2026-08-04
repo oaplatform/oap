@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
@@ -92,12 +91,6 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
-    public CompletableFuture<? extends InputStream> getInputStreamAsync( CloudURI path ) {
-        log.debug( "getInputStream {}", path );
-
-        return getCloudApi( path ).getInputStreamAsync( path );
-    }
-
     public InputStream getInputStream( CloudURI path ) throws CloudException {
         log.debug( "getInputStream {}", path );
 
@@ -106,16 +99,6 @@ public class FileSystem implements AutoCloseable {
 
     public OutputStream getOutputStream( CloudURI cloudURI, Map<String, String> tags ) throws CloudException {
         return getCloudApi( cloudURI ).getOutputStream( cloudURI, tags );
-    }
-
-    public CompletableFuture<Void> downloadFileAsync( String source, Path destination ) {
-        return downloadFileAsync( new CloudURI( source ), destination );
-    }
-
-    public CompletableFuture<Void> downloadFileAsync( CloudURI source, Path destination ) {
-        log.debug( "downloadFile {} to {}", source, destination );
-
-        return getCloudApi( source ).downloadFileAsync( source, destination );
     }
 
     public void downloadFile( String source, Path destination ) throws CloudException {
@@ -128,33 +111,10 @@ public class FileSystem implements AutoCloseable {
         getCloudApi( source ).downloadFile( source, destination );
     }
 
-    public CompletableFuture<Void> uploadAsync( CloudURI destination, BlobData blobData ) {
-        log.debug( "upload byte[] to {} (blobData {})", destination, blobData );
-
-        return getCloudApi( destination ).uploadAsync( destination, blobData );
-    }
-
     public void upload( CloudURI destination, BlobData blobData ) throws CloudException {
         log.debug( "upload byte[] to {} (blobData {})", destination, blobData );
 
         getCloudApi( destination ).upload( destination, blobData );
-    }
-
-    public CompletableFuture<Void> copyAsync( CloudURI source, CloudURI destination, Map<String, String> tags ) {
-        log.debug( "copy {} to {} (tags {})", source, destination, tags );
-
-        FileSystemCloudApi destinationCloudApi = getCloudApi( destination );
-
-        if( isLocalFile( source ) ) {
-            return destinationCloudApi.uploadAsync( destination, BlobData.builder().content( toFile( source ).toPath() ).tags( tags ).build() );
-        }
-
-        FileSystemCloudApi sourceCloudApi = getCloudApi( source );
-
-        return sourceCloudApi.getInputStreamAsync( source )
-            .thenCompose( inputStream ->
-                destinationCloudApi.uploadAsync( destination, BlobData.builder().content( inputStream ).tags( tags ).build() )
-                    .thenAccept( _ -> Closeables.close( inputStream ) ) );
     }
 
     public void copy( CloudURI source, CloudURI destination, Map<String, String> tags ) throws CloudException {
@@ -177,18 +137,8 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
-    public CompletableFuture<? extends PageSet<? extends StorageItem>> listAsync( CloudURI path, ListOptions listOptions ) {
-        return getCloudApi( path ).listAsync( path, listOptions );
-    }
-
     public PageSet<? extends StorageItem> list( CloudURI path, ListOptions listOptions ) throws CloudException {
         return getCloudApi( path ).list( path, listOptions );
-    }
-
-    public CompletableFuture<? extends StorageItem> getMetadataAsync( CloudURI path ) {
-        log.debug( "getMetadata {}", path );
-
-        return getCloudApi( path ).getMetadataAsync( path );
     }
 
     @Nullable
@@ -198,18 +148,10 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( path ).getMetadata( path );
     }
 
-    public CompletableFuture<Void> deleteBlobAsync( CloudURI path ) {
-        return getCloudApi( path ).deleteBlobAsync( path );
-    }
-
     public void deleteBlob( CloudURI path ) throws CloudException {
         log.debug( "deleteBlob {}", path );
 
         getCloudApi( path ).deleteBlob( path );
-    }
-
-    public CompletableFuture<Boolean> deleteContainerIfEmptyAsync( CloudURI path ) {
-        return getCloudApi( path ).deleteContainerIfEmptyAsync( path );
     }
 
     public boolean deleteContainerIfEmpty( CloudURI path ) {
@@ -218,20 +160,10 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( path ).deleteContainerIfEmpty( path );
     }
 
-    public CompletableFuture<Void> deleteContainerAsync( CloudURI path ) {
-        return getCloudApi( path ).deleteContainerAsync( path );
-    }
-
     public void deleteContainer( CloudURI path ) throws CloudException {
         log.debug( "deleteContainer {}", path );
 
         getCloudApi( path ).deleteContainer( path );
-    }
-
-    public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) {
-        log.debug( "blobExists {}", path );
-
-        return getCloudApi( path ).blobExistsAsync( path );
     }
 
     public boolean blobExists( CloudURI path ) throws CloudException {
@@ -240,22 +172,10 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( path ).blobExists( path );
     }
 
-    public CompletableFuture<Boolean> containerExistsAsync( CloudURI path ) {
-        log.debug( "containerExists {}", path );
-
-        return getCloudApi( path ).containerExistsAsync( path );
-    }
-
     public boolean containerExists( CloudURI path ) {
         log.debug( "containerExists {}", path );
 
         return getCloudApi( path ).containerExists( path );
-    }
-
-    public CompletableFuture<Boolean> createContainerAsync( CloudURI path ) {
-        log.debug( "createContainer {}", path );
-
-        return getCloudApi( path ).createContainerAsync( path );
     }
 
     public boolean createContainer( CloudURI path ) throws CloudException {

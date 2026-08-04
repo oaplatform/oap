@@ -126,7 +126,7 @@ CloudURI defaultUri = fs.getDefaultURL( "reports/today.json" );
 
 ### Operations reference
 
-Every synchronous method has an `...Async` counterpart returning `CompletableFuture`.
+All methods are synchronous/blocking.
 
 | Method | Description |
 |---|---|
@@ -159,7 +159,7 @@ s3=com.example.MyS3CloudApi
 
 The class must have a constructor `(FileSystemConfiguration, String container)`.
 
-Every method has a required `...Async(CloudURI, ...)` variant and a default synchronous wrapper that calls `.join()`.
+Every method is a required synchronous, blocking method.
 
 ---
 

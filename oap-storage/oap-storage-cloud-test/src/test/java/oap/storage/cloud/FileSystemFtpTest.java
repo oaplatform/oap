@@ -113,8 +113,7 @@ public class FileSystemFtpTest extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.copyAsync( fileSystem.toLocalFilePath( path ), new CloudURI( "ftp://logs/my-file.txt.gz" ), Map.of() ) )
-                .succeedsWithin( 30, TimeUnit.SECONDS );
+            fileSystem.copy( fileSystem.toLocalFilePath( path ), new CloudURI( "ftp://logs/my-file.txt.gz" ), Map.of() );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "ftp://logs/my-file.txt.gz" ) );
 

@@ -24,38 +24,9 @@
             <artifactId>s3</artifactId>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk.crt</groupId>
-            <artifactId>aws-crt</artifactId>
-        </dependency>
-        <dependency>
             <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3-transfer-manager</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>s3</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>sdk-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>utils</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>software.amazon.awssdk</groupId>
-                    <artifactId>regions</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>software.amazon.awssdk.crt</groupId>
-                    <artifactId>aws-crt</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>apache5-client</artifactId>
+            <version>2.50.2</version>
         </dependency>
 
         <dependency>

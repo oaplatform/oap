@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
@@ -233,39 +232,39 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     @Override
-    public CompletableFuture<Boolean> blobExistsAsync( CloudURI path ) {
+    public boolean blobExists( CloudURI path ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
             boolean exists = findFile( client, absolute( path.path ) ) != null;
             healthy = true;
-            return CompletableFuture.completedFuture( exists );
+            return exists;
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( client, healthy );
         }
     }
 
     @Override
-    public CompletableFuture<Boolean> containerExistsAsync( CloudURI path ) {
+    public boolean containerExists( CloudURI path ) {
         try {
             FTPClient client = borrow();
             release( client, true );
-            return CompletableFuture.completedFuture( true );
+            return true;
         } catch( CloudException e ) {
-            return CompletableFuture.completedFuture( false );
+            return false;
         }
     }
 
     @Override
-    public CompletableFuture<Void> deleteBlobAsync( CloudURI path ) {
+    public void deleteBlob( CloudURI path ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
             if( !client.deleteFile( absolute( path.path ) ) ) {
                 healthy = true;
-                return CompletableFuture.failedFuture( new CloudException( "cannot delete " + path ) );
+                throw new CloudException( "cannot delete " + path );
             }
 
             if( removeEmptyFolders ) {
@@ -273,9 +272,8 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             }
 
             healthy = true;
-            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( client, healthy );
         }
@@ -296,59 +294,58 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     @Override
-    public CompletableFuture<Void> deleteContainerAsync( CloudURI path ) throws CloudException {
+    public void deleteContainer( CloudURI path ) throws CloudException {
         throw new CloudException( "not supported" );
     }
 
     @Override
-    public CompletableFuture<Boolean> createContainerAsync( CloudURI path ) {
-        return CompletableFuture.completedFuture( false );
+    public boolean createContainer( CloudURI path ) {
+        return false;
     }
 
     @Override
-    public CompletableFuture<Boolean> deleteContainerIfEmptyAsync( CloudURI path ) {
-        return CompletableFuture.completedFuture( false );
+    public boolean deleteContainerIfEmpty( CloudURI path ) {
+        return false;
     }
 
     @Override
-    public CompletableFuture<? extends FileSystem.StorageItem> getMetadataAsync( CloudURI path ) {
+    public FileSystem.StorageItem getMetadata( CloudURI path ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
             FTPFile file = findFile( client, absolute( path.path ) );
             healthy = true;
-            if( file == null ) return CompletableFuture.completedFuture( null );
+            if( file == null ) return null;
 
-            return CompletableFuture.completedFuture( toStorageItem( path, file ) );
+            return toStorageItem( path, file );
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( client, healthy );
         }
     }
 
     @Override
-    public CompletableFuture<Void> downloadFileAsync( CloudURI source, Path destination ) {
+    public void downloadFile( CloudURI source, Path destination ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
             oap.io.Files.ensureFile( destination );
             try( OutputStream out = Files.newOutputStream( destination ) ) {
                 if( !client.retrieveFile( absolute( source.path ), out ) ) {
-                    return CompletableFuture.failedFuture( new CloudException( "cannot download " + source ) );
+                    throw new CloudException( "cannot download " + source );
                 }
             }
             healthy = true;
-            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( client, healthy );
         }
     }
 
     @Override
-    public CompletableFuture<Void> copyAsync( CloudURI source, CloudURI destination ) {
+    public void copy( CloudURI source, CloudURI destination ) {
         Preconditions.checkArgument( source.scheme.equals( destination.scheme ) );
 
         FTPClient sourceClient = borrow();
@@ -360,7 +357,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             if( in == null ) {
                 sourceHealthy = true;
                 destinationHealthy = true;
-                return CompletableFuture.failedFuture( new CloudException( "cannot open source stream " + source ) );
+                throw new CloudException( "cannot open source stream " + source );
             }
 
             ensureRemoteDirectory( destinationClient, parentOf( absolute( destination.path ) ) );
@@ -373,12 +370,10 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             destinationHealthy = stored;
 
             if( !stored || !completed ) {
-                return CompletableFuture.failedFuture( new CloudException( "cannot copy " + source + " to " + destination ) );
+                throw new CloudException( "cannot copy " + source + " to " + destination );
             }
-
-            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( sourceClient, sourceHealthy );
             release( destinationClient, destinationHealthy );
@@ -386,18 +381,18 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     @Override
-    public CompletableFuture<? extends InputStream> getInputStreamAsync( CloudURI path ) {
+    public InputStream getInputStream( CloudURI path ) {
         FTPClient client = borrow();
         try {
             InputStream in = client.retrieveFileStream( absolute( path.path ) );
             if( in == null ) {
                 release( client, true );
-                return CompletableFuture.failedFuture( new CloudException( "cannot open " + path ) );
+                throw new CloudException( "cannot open " + path );
             }
-            return CompletableFuture.completedFuture( new FtpInputStream( this, client, in ) );
+            return new FtpInputStream( this, client, in );
         } catch( IOException e ) {
             release( client, false );
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         }
     }
 
@@ -420,7 +415,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     @Override
-    public CompletableFuture<Void> uploadAsync( CloudURI destination, BlobData blobData ) {
+    public void upload( CloudURI destination, BlobData blobData ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
@@ -447,20 +442,19 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             };
 
             if( !stored ) {
-                return CompletableFuture.failedFuture( new CloudException( "cannot upload to " + destination ) );
+                throw new CloudException( "cannot upload to " + destination );
             }
 
             healthy = true;
-            return CompletableFuture.completedFuture( null );
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( client, healthy );
         }
     }
 
     @Override
-    public CompletableFuture<PageSet<? extends FileSystem.StorageItem>> listAsync( CloudURI path, ListOptions listOptions ) {
+    public PageSet<? extends FileSystem.StorageItem> list( CloudURI path, ListOptions listOptions ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
@@ -482,9 +476,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             String nextToken = listOptions.maxKeys != null ? String.valueOf( skip + result.size() ) : null;
 
             healthy = true;
-            return CompletableFuture.completedFuture( new PageSet<>( nextToken, result ) );
+            return new PageSet<>( nextToken, result );
         } catch( IOException e ) {
-            return CompletableFuture.failedFuture( new CloudException( e ) );
+            throw new CloudException( e );
         } finally {
             release( client, healthy );
         }
