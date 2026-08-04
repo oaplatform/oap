@@ -344,7 +344,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                 body.writeInputStream( pingedInputStream );
             } );
 
-            return new CloudOutputStream( s3TransferManager, completedUploadCompletableFuture, pipedOutputStream, future, threadPoolExecutor );
+            return new CloudOutputStream( completedUploadCompletableFuture, pipedOutputStream, future, threadPoolExecutor );
         } catch( Exception e ) {
             log.error( e.getMessage(), e );
 
@@ -352,7 +352,6 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                 completedUploadCompletableFuture.completeExceptionally( e );
             }
             Closeables.close( threadPoolExecutor );
-            Closeables.close( s3TransferManager );
             throw Throwables.propagate( e );
         }
     }
@@ -457,16 +456,13 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     }
 
     public static class CloudOutputStream extends OutputStream {
-        private final S3TransferManager s3TransferManager;
         private final CompletableFuture<CompletedUpload> completedUploadCompletableFuture;
         private final PipedOutputStream pipedOutputStream;
         private final Future<?> future;
         private final ThreadPoolExecutor threadPoolExecutor;
 
-        public CloudOutputStream( S3TransferManager s3TransferManager,
-                                  CompletableFuture<CompletedUpload> completedUploadCompletableFuture,
+        public CloudOutputStream( CompletableFuture<CompletedUpload> completedUploadCompletableFuture,
                                   PipedOutputStream pipedOutputStream, Future<?> future, ThreadPoolExecutor threadPoolExecutor ) {
-            this.s3TransferManager = s3TransferManager;
             this.completedUploadCompletableFuture = completedUploadCompletableFuture;
             this.pipedOutputStream = pipedOutputStream;
             this.future = future;
@@ -508,7 +504,6 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                 log.error( e.getMessage(), e );
             }
             Closeables.close( threadPoolExecutor );
-            Closeables.close( s3TransferManager );
         }
     }
 }
