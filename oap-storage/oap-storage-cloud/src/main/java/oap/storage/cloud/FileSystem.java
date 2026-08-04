@@ -143,8 +143,13 @@ public class FileSystem implements AutoCloseable {
     public CompletableFuture<Void> copyAsync( CloudURI source, CloudURI destination, Map<String, String> tags ) {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
-        FileSystemCloudApi sourceCloudApi = getCloudApi( source );
         FileSystemCloudApi destinationCloudApi = getCloudApi( destination );
+
+        if( isLocalFile( source ) ) {
+            return destinationCloudApi.uploadAsync( destination, BlobData.builder().content( toFile( source ).toPath() ).tags( tags ).build() );
+        }
+
+        FileSystemCloudApi sourceCloudApi = getCloudApi( source );
 
         return sourceCloudApi.getInputStreamAsync( source )
             .thenCompose( inputStream ->
@@ -155,8 +160,14 @@ public class FileSystem implements AutoCloseable {
     public void copy( CloudURI source, CloudURI destination, Map<String, String> tags ) throws CloudException {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
-        FileSystemCloudApi sourceCloudApi = getCloudApi( source );
         FileSystemCloudApi destinationCloudApi = getCloudApi( destination );
+
+        if( isLocalFile( source ) ) {
+            destinationCloudApi.upload( destination, BlobData.builder().content( toFile( source ).toPath() ).tags( tags ).build() );
+            return;
+        }
+
+        FileSystemCloudApi sourceCloudApi = getCloudApi( source );
 
         try( InputStream inputStream = sourceCloudApi.getInputStream( source ) ) {
             destinationCloudApi.upload( destination, BlobData.builder().content( inputStream ).tags( tags ).build() );
@@ -269,6 +280,10 @@ public class FileSystem implements AutoCloseable {
 
         return new CloudURI( "file", "", basedir != null ? Paths.get( basedir ).relativize( path ).toString()
             : Paths.get( "/" ).relativize( path ).toString() );
+    }
+
+    public boolean isLocalFile( CloudURI cloudURI ) {
+        return "file".equals( cloudURI.scheme );
     }
 
     public File toFile( CloudURI cloudURI ) {

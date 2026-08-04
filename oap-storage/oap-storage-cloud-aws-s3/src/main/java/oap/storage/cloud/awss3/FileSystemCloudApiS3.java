@@ -390,13 +390,17 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
         Upload upload = s3TransferManager.upload( uploadRequest );
 
-        if( blobData.content instanceof InputStream is ) {
-            ( ( BlockingInputStreamAsyncRequestBody ) body ).writeInputStream( is );
-        }
-
-        return upload.completionFuture()
+        CompletableFuture<Void> result = upload.completionFuture()
             .thenAccept( _ -> {} )
             .exceptionallyCompose( e -> CompletableFuture.failedFuture( propagate( e ) ) );
+
+        if( blobData.content instanceof InputStream is ) {
+            ThreadPoolExecutor writer = Executors.newFixedBlockingThreadPool( 1, new NamedThreadFactory( "fs-upload-" + cloudURI ) );
+            writer.submit( () -> ( ( BlockingInputStreamAsyncRequestBody ) body ).writeInputStream( is ) );
+            result = result.whenComplete( ( r, e ) -> Closeables.close( writer ) );
+        }
+
+        return result;
     }
 
     @Override
