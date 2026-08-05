@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofString;
@@ -97,6 +96,32 @@ public class FileSystemS3Test extends Fixtures {
     }
 
     @Test
+    public void testGetOutputStreamMultipart() throws IOException {
+        int partSize = 5 * 1024 * 1024;
+        byte[] chunk = new byte[ 1024 * 1024 ];
+        for( int i = 0; i < chunk.length; i++ ) {
+            chunk[i] = ( byte ) ( 'a' + ( i % 26 ) );
+        }
+
+        int totalSize = partSize + chunk.length;
+
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            try( OutputStream outputStream = fileSystem.getOutputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/big-file.bin" ), Map.of( "test-tag", "tag-val" ) ) ) {
+                int written = 0;
+                while( written < totalSize ) {
+                    outputStream.write( chunk );
+                    written += chunk.length;
+                }
+            }
+
+            assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/big-file.bin" ) ).contains( entry( "test-tag", "tag-val" ) );
+
+            byte[] content = s3mockFixture.readFile( TEST_BUCKET, "logs/big-file.bin", ContentReader.ofBytes(), Encoding.PLAIN );
+            assertThat( content.length ).isEqualTo( totalSize );
+        }
+    }
+
+    @Test
     public void testGetMetadata() throws URISyntaxException {
         Path path = testDirectoryFixture.testPath( "my-file.txt" );
         Files.write( path, "test string", ContentWriter.ofString() );
@@ -133,8 +158,7 @@ public class FileSystemS3Test extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.copyAsync( fileSystem.toLocalFilePath( path ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) ) )
-                .succeedsWithin( 30, TimeUnit.SECONDS );
+            fileSystem.copy( fileSystem.toLocalFilePath( path ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ) );
 

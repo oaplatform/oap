@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.testng.Asserts.assertFile;
@@ -134,8 +133,7 @@ public class FileSystemFileTest extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.copyAsync( fileSystem.toLocalFilePath( path ), new CloudURI( "file://logs/my-file.txt.gz" ), Map.of() ) )
-                .succeedsWithin( 30, TimeUnit.SECONDS );
+            fileSystem.copy( fileSystem.toLocalFilePath( path ), new CloudURI( "file://logs/my-file.txt.gz" ), Map.of() );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "file://logs/my-file.txt.gz" ) );
 
