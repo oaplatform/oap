@@ -59,4 +59,14 @@ public class OpenapiWSTest extends Fixtures {
             .respondedJson( Http.StatusCode.OK, "OK",
                 contentOfTestResource( getClass(), "openapiWithoutDeprecated.json", Map.of() ) );
     }
+
+    @Test
+    public void openapiFiltersByOwnPort() {
+        assertGet( kernel.httpUrl( "/system/openapi" ) )
+            .bodyDoesNotContain( "/private-api" );
+
+        assertGet( kernel.httpUrl( "/system/admin/openapi" ) )
+            .bodyContains( "/private-api" )
+            .bodyDoesNotContain( "\"/api" );
+    }
 }

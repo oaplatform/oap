@@ -57,7 +57,8 @@ public class Info {
 
     public List<WebServiceInfo> services() {
         return BiStream.of( webServices.services )
-            .mapToObj( ( context, ws ) -> new WebServiceInfo( Reflect.reflect( ws.getClass() ), context ) )
+            .mapToObj( ( context, ws ) -> new WebServiceInfo( Reflect.reflect( ws.getClass() ), context,
+                webServices.servicePorts.getOrDefault( context, Optional.empty() ) ) )
             .toList();
     }
 
@@ -74,10 +75,12 @@ public class Info {
         private final Reflection reflection;
         public final String context;
         public final String name;
+        public final Optional<String> port;
 
-        public WebServiceInfo( Reflection clazz, String context ) {
+        public WebServiceInfo( Reflection clazz, String context, Optional<String> port ) {
             this.reflection = clazz;
             this.context = context;
+            this.port = port;
             this.name = clazz.name();
         }
 

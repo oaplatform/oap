@@ -39,6 +39,7 @@ import java.util.Optional;
 @Slf4j
 public class WebServices {
     public final LinkedHashMap<String, Object> services = new LinkedHashMap<>();
+    public final LinkedHashMap<String, Optional<String>> servicePorts = new LinkedHashMap<>();
     private final NioHttpServer server;
     private final SessionManager sessionManager;
     private final Kernel kernel;
@@ -102,6 +103,7 @@ public class WebServices {
                       Optional<String> port, List<NioHttpServer.PortType> portType ) {
 
         services.put( context, service );
+        servicePorts.put( context, port );
         bind( context, new WebService( service, sessionAware, sessionManager, interceptors, compressionSupport ), compressionSupport, blocking, port, portType );
     }
 

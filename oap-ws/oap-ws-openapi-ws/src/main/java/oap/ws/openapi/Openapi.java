@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.ws.WebServices;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 public class Openapi {
@@ -49,12 +50,17 @@ public class Openapi {
     }
 
     public OpenAPI generateOpenApi( boolean skipDeprecated ) {
+        return generateOpenApi( skipDeprecated, Optional.empty() );
+    }
+
+    public OpenAPI generateOpenApi( boolean skipDeprecated, Optional<String> port ) {
         OpenapiGenerator openapiGenerator = new OpenapiGenerator(
             info.title,
             info.description,
             new OpenapiGenerator.Settings( OpenapiGenerator.Settings.OutputType.JSON, skipDeprecated ) );
         openapiGenerator.beforeProcesingServices();
         for( Map.Entry<String, Object> ws : webServices.services.entrySet() ) {
+            if( !webServices.servicePorts.getOrDefault( ws.getKey(), Optional.empty() ).equals( port ) ) continue;
             openapiGenerator.processWebservice( ws.getValue().getClass(), ws.getKey() );
         }
         openapiGenerator.afterProcesingServices();

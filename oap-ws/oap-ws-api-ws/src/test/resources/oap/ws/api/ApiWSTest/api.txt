@@ -1,6 +1,6 @@
 # SERVICES #####################################################################
 ## oap.ws.api.ExampleWS ########################################################
-Bound to example
+Bound to example (port: default)
 Methods:
 	Method bean
 	[GET, POST] /example/bean
@@ -186,7 +186,7 @@ Methods:
 
 
 ## oap.ws.api.TestRecursiveWS ##################################################
-Bound to recursion
+Bound to recursion (port: default)
 Methods:
 	Method methodWithRecursiveObject
 	[GET] /recursion/getRecursiveObject
@@ -198,7 +198,7 @@ Methods:
 
 
 ## oap.ws.api.ApiWS ############################################################
-Bound to system/api
+Bound to system/api (port: default)
 Methods:
 	Method api
 	Description Generates description of WS method with parameters and result
