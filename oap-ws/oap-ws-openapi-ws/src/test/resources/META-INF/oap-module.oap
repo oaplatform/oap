@@ -17,6 +17,13 @@ services {
     implementation = oap.ws.openapi.ExampleNewWS
     ws-service.path = example
   }
+  test-private-service {
+    implementation = oap.ws.openapi.TestWS
+    ws-service {
+      path = private-api
+      port = httpprivate
+    }
+  }
 }
 
 configurations = [

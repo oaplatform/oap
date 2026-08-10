@@ -12,7 +12,6 @@ services {
     parameters {
       title = openapi module
       description = Awesome module
-      version = 0.0.1
     }
   }
 
@@ -30,5 +29,17 @@ services {
       openapi = <modules.this.openapi>
     }
     ws-service.path = system/openapi
+  }
+
+  openapi-ws-private {
+    implementation = oap.ws.openapi.OpenapiWS
+    parameters {
+      openapi = <modules.this.openapi>
+      port = httpprivate
+    }
+    ws-service {
+      path = system/admin/openapi
+      port = httpprivate
+    }
   }
 }

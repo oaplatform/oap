@@ -42,20 +42,26 @@ import static oap.http.server.nio.HttpServerExchange.HttpMethod.GET;
 public class OpenapiWS {
 
     private final Openapi openapi;
+    private final Optional<String> port;
 
     public OpenapiWS( Openapi openapi ) {
+        this( openapi, Optional.empty() );
+    }
+
+    public OpenapiWS( Openapi openapi, Optional<String> port ) {
         this.openapi = openapi;
+        this.port = port;
     }
 
     /**
-     * Generates openapi documentation for all web services in appropriate oap-module.oap
+     * Generates openapi documentation for web services bound to the same port as this service
      *
      * @return openapi documentation
      */
     @WsMethod( path = "/", method = GET, description = "Generates OpenAPI 3.0 json document" )
     @WsValidate( { "isValid" } )
     public OpenAPI openapi( @WsParam Optional<Boolean> skipDeprecated ) {
-        return openapi.generateOpenApi( skipDeprecated.orElse( true ) );
+        return openapi.generateOpenApi( skipDeprecated.orElse( true ), port );
     }
 
     @OpenapiIgnore

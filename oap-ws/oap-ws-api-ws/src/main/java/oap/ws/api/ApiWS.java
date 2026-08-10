@@ -78,7 +78,7 @@ public class ApiWS {
         for( Info.WebServiceInfo ws : info.services() ) {
             log.trace( "service {} -> {}", ws.context, ws.name );
             result += "## " + ws.name + " " + "#".repeat( Math.max( 0, 76 - ws.name.length() ) ) + "\n";
-            result += "Bound to " + ws.context + "\n";
+            result += "Bound to " + ws.context + " (port: " + ws.port.orElse( "default" ) + ")\n";
             result += "Methods:\n";
 
             for( Info.WebMethodInfo m : ws.methods( withDeprecated ) ) {

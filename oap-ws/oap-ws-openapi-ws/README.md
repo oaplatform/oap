@@ -10,10 +10,34 @@ Depends on: `oap-ws`, `oap-ws-api-ws`
 GET /system/openapi
 ```
 
-Returns the OpenAPI 3.x YAML document describing all registered web services (except those marked `@OpenapiIgnore`).
+Returns the OpenAPI 3.x YAML document describing the web services bound to the **same port** as this endpoint (except those marked `@OpenapiIgnore`). `OpenapiWS` only documents services reachable on its own port — it does not aggregate services from other ports.
 
 ```bash
 curl http://localhost:8080/system/openapi
+```
+
+### Private (`httpprivate`) services
+
+To document services bound to `httpprivate` (e.g. admin/internal endpoints), declare a second `OpenapiWS` instance with `port = httpprivate`:
+
+```hocon
+services {
+  openapi-ws-private {
+    implementation = oap.ws.openapi.OpenapiWS
+    parameters {
+      openapi = <modules.this.openapi>
+      port = httpprivate
+    }
+    ws-service {
+      path = system/admin/openapi
+      port = httpprivate
+    }
+  }
+}
+```
+
+```bash
+curl http://localhost:8081/system/admin/openapi
 ```
 
 ## OAP Module Integration
