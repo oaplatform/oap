@@ -1,5 +1,7 @@
 package oap.storage.cloud;
 
+import oap.io.content.ContentReader;
+import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
@@ -33,7 +35,7 @@ public class FileSystemFtpsTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null ) ) ) {
             fileSystem.upload( new CloudURI( "ftps://file.txt" ), BlobData.builder().content( "content" ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt" ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "ftps://file.txt" ) );
             assertThat( inputStream ).hasContent( "content" );
@@ -42,7 +44,7 @@ public class FileSystemFtpsTest extends Fixtures {
 
     @Test
     public void testDownloadFile() {
-        ftpFixture.writeFile( "logs/file.txt", "test string" );
+        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null ) ) ) {
             assertThat( fileSystem.blobExists( new CloudURI( "ftps://logs/file.txt" ) ) ).isTrue();
