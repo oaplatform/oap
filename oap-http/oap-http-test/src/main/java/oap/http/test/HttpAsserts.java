@@ -23,12 +23,14 @@
  */
 package oap.http.test;
 
+import com.google.common.net.MediaType;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.experimental.ExtensionMethod;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Cookie;
+import oap.http.Http;
 import oap.http.Response;
 import oap.http.client.JettyRequestExtensions;
 import oap.http.client.OapHttpClient;
@@ -40,12 +42,13 @@ import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -53,7 +56,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.joda.time.DateTime;
 import org.testng.internal.collections.Ints;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -163,23 +165,32 @@ public class HttpAsserts {
     }
 
     @SneakyThrows
-    private static @Nonnull HttpAssertion getResponseAsHttpAssertion( org.eclipse.jetty.client.Request request ) {
-        ContentResponse contentResponse = request
+    private static HttpAssertion getResponseAsHttpAssertion( org.eclipse.jetty.client.Request request ) {
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        request
             .timeout( 10, TimeUnit.MINUTES )
-            .send();
+            .send( listener );
 
-        String mediaType = contentResponse.getMediaType();
+        org.eclipse.jetty.client.Response response = listener.get( 10, TimeUnit.MINUTES );
+
+        String contentType = response.getHeaders().get( Http.Headers.CONTENT_TYPE );
+        String mediaType = contentType != null ? MediaType.parse( contentType ).type() : null;
 
         ArrayList<Pair<String, String>> headers = new ArrayList<>();
-        HttpFields responseHeaders = contentResponse.getHeaders();
+        HttpFields responseHeaders = response.getHeaders();
         responseHeaders.forEach( field -> {
             HttpHeader header = field.getHeader();
             headers.add( __( field.getName(), field.getValue() ) );
         } );
 
-        return new HttpAssertion( new Response(
-            request.getURI().toString(),
-            contentResponse.getStatus(), contentResponse.getReason(), headers, mediaType != null ? mediaType : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( contentResponse.getContent() ) ) );
+        try( InputStream input = listener.getInputStream() ) {
+            byte[] bytes = IOUtils.toByteArray( input );
+
+            return new HttpAssertion( new Response(
+                request.getURI().toString(),
+                response.getStatus(), response.getReason(), headers, mediaType != null ? mediaType
+                : APPLICATION_OCTET_STREAM, new ByteArrayInputStream( bytes ) ) );
+        }
     }
 
     public static HttpAssertion assertPut( String uri, String content, String contentType ) {
