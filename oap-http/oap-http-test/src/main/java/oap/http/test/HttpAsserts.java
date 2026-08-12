@@ -174,7 +174,7 @@ public class HttpAsserts {
         org.eclipse.jetty.client.Response response = listener.get( 10, TimeUnit.MINUTES );
 
         String contentType = response.getHeaders().get( Http.Headers.CONTENT_TYPE );
-        String mediaType = contentType != null ? MediaType.parse( contentType ).type() : null;
+        String mediaType = contentType != null ? MediaType.parse( contentType ).withoutParameters().toString() : null;
 
         ArrayList<Pair<String, String>> headers = new ArrayList<>();
         HttpFields responseHeaders = response.getHeaders();
