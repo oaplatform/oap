@@ -3,6 +3,7 @@ package oap.storage.cloud;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import oap.io.IoStreams;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
 import oap.testng.AbstractFixture;
@@ -150,15 +151,19 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return homeDirectory().resolve( relativePath );
     }
 
-    public void writeFile( String relativePath, String content ) {
-        Files.write( resolve( relativePath ), content, ContentWriter.ofString() );
+    public <T> void writeFile( String relativePath, T content, ContentWriter<T> contentWriter ) {
+        Files.write( resolve( relativePath ), content, contentWriter );
     }
 
     public void createDirectory( String relativePath ) {
         Files.ensureDirectory( resolve( relativePath ) );
     }
 
-    public String readFile( String relativePath ) {
-        return Files.read( resolve( relativePath ), ContentReader.ofString() );
+    public <T> T readFile( String relativePath, ContentReader<T> contentReader ) {
+        return Files.read( resolve( relativePath ), contentReader );
+    }
+
+    public <T> T readFile( String relativePath, IoStreams.Encoding encoding, ContentReader<T> contentReader ) {
+        return Files.read( resolve( relativePath ), encoding, contentReader );
     }
 }

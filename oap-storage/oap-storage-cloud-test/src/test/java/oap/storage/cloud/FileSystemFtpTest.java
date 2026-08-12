@@ -3,6 +3,7 @@ package oap.storage.cloud;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
+import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -61,7 +63,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testGetInputStream() {
-        ftpFixture.writeFile( "logs/file.txt", "test string" );
+        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "ftp://logs/file.txt" ) );
@@ -79,13 +81,13 @@ public class FileSystemFtpTest extends Fixtures {
                 outputStream.write( "567".getBytes() );
             }
 
-            assertThat( ftpFixture.readFile( "logs/file.txt" ) ).isEqualTo( "123567" );
+            assertThat( ftpFixture.readFile( "logs/file.txt", ContentReader.ofString() ) ).isEqualTo( "123567" );
         }
     }
 
     @Test
     public void testGetMetadata() {
-        ftpFixture.writeFile( "logs/file.txt", "test string" );
+        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( "ftp", null, "logs/file.txt" ) );
@@ -98,7 +100,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testDownloadFile() {
-        ftpFixture.writeFile( "logs/file.txt", "test string" );
+        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.downloadFile( "ftp://logs/file.txt", testDirectoryFixture.testPath( "file.txt" ) );
@@ -128,8 +130,8 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testExistsListAndDelete() {
-        ftpFixture.writeFile( "logs/file1.txt", "1" );
-        ftpFixture.writeFile( "logs/file2.txt", "2" );
+        ftpFixture.writeFile( "logs/file1.txt", "1", ContentWriter.ofString() );
+        ftpFixture.writeFile( "logs/file2.txt", "2", ContentWriter.ofString() );
         ftpFixture.createDirectory( "logs/folder1" );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
@@ -162,7 +164,7 @@ public class FileSystemFtpTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( new CloudURI( "ftp://file.txt" ), BlobData.builder().content( "content" ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt" ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
         }
     }
 
@@ -171,7 +173,7 @@ public class FileSystemFtpTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( new CloudURI( "ftp://file.txt" ), BlobData.builder().content( "content".getBytes( UTF_8 ) ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt" ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
         }
     }
 
@@ -220,7 +222,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testPoolReusesConnectionSequentially() {
-        ftpFixture.writeFile( "logs/file1.txt", "1" );
+        ftpFixture.writeFile( "logs/file1.txt", "1", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, 1 ) ) ) {
             for( int i = 0; i < 5; i++ ) {
@@ -253,7 +255,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         for( int i = 0; i < uploads; i++ ) {
-            assertThat( ftpFixture.readFile( "concurrent/file" + i + ".txt" ) ).isEqualTo( "content" + i );
+            assertThat( ftpFixture.readFile( "concurrent/file" + i + ".txt", ContentReader.ofString() ) ).isEqualTo( "content" + i );
         }
     }
 
@@ -284,7 +286,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         for( int idx : new int[] { 0, 1, 500, 998, 999 } ) {
-            assertThat( ftpFixture.readFile( "bulk/file" + idx + ".txt" ) ).isEqualTo( "content" + idx );
+            assertThat( ftpFixture.readFile( s( "bulk/file${idx}.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" + idx );
         }
     }
 }
