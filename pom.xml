@@ -67,7 +67,7 @@
     </dependencies>
 
     <properties>
-        <oap.project.version>25.10.5</oap.project.version>
+        <oap.project.version>25.10.6</oap.project.version>
 
         <oap.deps.config.version>25.0.1</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
@@ -110,7 +110,7 @@
         <oap.deps.plugins.antlr4.version>4.13.0</oap.deps.plugins.antlr4.version>
         <oap.deps.asm.version>9.8</oap.deps.asm.version>
 
-        <oap.deps.undertow.version>2.3.23.Final</oap.deps.undertow.version>
+        <oap.deps.undertow.version>2.4.2.Final</oap.deps.undertow.version>
         <oap.deps.affinity.version>3.23.3</oap.deps.affinity.version>
 
         <oap.deps.docker-java.version>3.3.4</oap.deps.docker-java.version>
