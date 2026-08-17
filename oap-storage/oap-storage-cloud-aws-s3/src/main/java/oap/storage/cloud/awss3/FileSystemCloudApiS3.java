@@ -83,13 +83,13 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         S3ClientBuilder builder = S3Client.builder()
             .httpClientBuilder( Apache5HttpClient.builder() );
 
-        Object regionObj = fileSystemConfiguration.get( "s3", bucketName, "jclouds.region" );
+        Object regionObj = fileSystemConfiguration.get( "s3", bucketName, "clouds.region" );
         if( regionObj == null ) {
             regionObj = System.getenv( "AWS_REGION" );
         }
         Region region = regionObj != null ? Region.of( regionObj.toString() ) : Region.AWS_GLOBAL;
 
-        Object endpoint = fileSystemConfiguration.get( "s3", bucketName, "jclouds.endpoint" );
+        Object endpoint = fileSystemConfiguration.get( "s3", bucketName, "clouds.endpoint" );
         if( endpoint != null ) {
             S3EndpointParams s3EndpointParams = S3EndpointParams.builder().endpoint( endpoint.toString() )
                 .region( region )
@@ -98,8 +98,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             builder = builder.endpointOverride( s3Endpoint.url() ).forcePathStyle( true );
         }
 
-        Object accessKey = fileSystemConfiguration.get( "s3", bucketName, "jclouds.identity" );
-        Object accessSecret = fileSystemConfiguration.get( "s3", bucketName, "jclouds.credential" );
+        Object accessKey = fileSystemConfiguration.get( "s3", bucketName, "clouds.identity" );
+        Object accessSecret = fileSystemConfiguration.get( "s3", bucketName, "clouds.credential" );
 
         if( accessKey != null && accessSecret != null ) {
             builder = builder.credentialsProvider( StaticCredentialsProvider.create( AwsBasicCredentials.create( accessKey.toString(), accessSecret.toString() ) ) );

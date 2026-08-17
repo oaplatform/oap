@@ -70,22 +70,22 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             this.port = 21;
         }
 
-        Object identity = fileSystemConfiguration.get( scheme, container, "jclouds.identity" );
+        Object identity = fileSystemConfiguration.get( scheme, container, "clouds.identity" );
         this.username = identity != null ? identity.toString() : "anonymous";
 
-        Object credential = fileSystemConfiguration.get( scheme, container, "jclouds.credential" );
+        Object credential = fileSystemConfiguration.get( scheme, container, "clouds.credential" );
         this.password = credential != null ? credential.toString() : "";
 
-        Object passive = fileSystemConfiguration.get( scheme, container, "jclouds.passive-mode" );
+        Object passive = fileSystemConfiguration.get( scheme, container, "clouds.passive-mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "jclouds.remove-empty-folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "clouds.remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
-        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "jclouds.pool-max-size" );
+        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-size" );
         int poolMaxSize = poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
-        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "jclouds.pool-max-wait-millis" );
+        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-wait-millis" );
         long poolMaxWaitMillis = poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 
         GenericObjectPoolConfig<FTPClient> poolConfig = new GenericObjectPoolConfig<>();

@@ -48,15 +48,9 @@ public class FileSystemConfiguration {
             String id = toks[1];
 
             int start = 2;
-            if( !toks[2].equals( "jclouds" ) && !toks[2].equals( "clouds" ) ) {
+            if( !toks[2].equals( "clouds" ) ) {
                 id = id + "." + toks[2].replace( "\\.", "." );
                 start++;
-            }
-
-            if( start < toks.length - 1 ) {
-                if( toks[start].equals( "clouds" ) ) {
-                    toks[start] = "jclouds";
-                }
             }
 
             String property = StringUtils.join( toks, ".", start, toks.length );
@@ -155,14 +149,14 @@ public class FileSystemConfiguration {
     }
 
     private String getDefault( String parameter ) {
-        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default.jclouds." + parameter + " is required" );
+        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default.clouds." + parameter + " is required" );
     }
 
     @Nullable
     private String tryGetDefault( String parameter ) {
         Map<String, Object> defaults = properties.get( "default" );
         Preconditions.checkNotNull( defaults, "fs.default is required" );
-        return ( String ) defaults.get( "jclouds." + parameter );
+        return ( String ) defaults.get( "clouds." + parameter );
     }
 
     private Pair<Map<String, Map<String, Object>>, Map<String, Map<String, Map<String, Object>>>> splitBySize( Map<String, Object> fs ) {
@@ -224,7 +218,7 @@ public class FileSystemConfiguration {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 
         properties.forEach( ( k, m ) -> {
-            m.forEach( ( k2, v ) -> map.put( s( "${k}.${k2}" ), v ) );
+            m.forEach( ( k2, v ) -> map.put( s( "fs.${k}.${k2}" ), v ) );
         } );
 
         return Binder.json.marshal( map );

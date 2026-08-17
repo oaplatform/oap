@@ -13,18 +13,18 @@ public class FileSystemConfigurationTest {
     public void getDefault() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of( "fs.s3.test-bucket.clouds.endpoint", "http://localhost/s3/tb",
-                "fs.s3.jclouds.endpoint", "http://localhost/s3",
+                "fs.s3.clouds.endpoint", "http://localhost/s3",
                 "fs", Map.of(
-                    "default.jclouds.scheme", "s3",
+                    "default.clouds.scheme", "s3",
                     "default.clouds.container", "test-bucket"
                 )
             )
         );
 
         assertThat( fileSystemConfiguration.get( "s3", "my-container" ) )
-            .contains( entry( "jclouds.endpoint", "http://localhost/s3" ) );
+            .contains( entry( "clouds.endpoint", "http://localhost/s3" ) );
         assertThat( fileSystemConfiguration.get( "s3", "test-bucket" ) )
-            .contains( entry( "jclouds.endpoint", "http://localhost/s3/tb" ) );
+            .contains( entry( "clouds.endpoint", "http://localhost/s3/tb" ) );
 
         assertThat( fileSystemConfiguration.getDefaultScheme() ).isEqualTo( "s3" );
         assertThat( fileSystemConfiguration.getDefaultContainer() ).isEqualTo( "test-bucket" );
@@ -39,15 +39,15 @@ public class FileSystemConfigurationTest {
             Map.of(
                 "fs.s3.clouds.test", "${env.TMP_S3_SCHEME}",
                 "fs.s3.clouds.test2", "${TMP_S3_SCHEME}",
-                "fs.s3.jclouds.test3", "${env.unknown}-${unknown}",
-                "fs.default.jclouds.scheme", "s3",
-                "fs.default.jclouds.container", "test-bucket"
+                "fs.s3.clouds.test3", "${env.unknown}-${unknown}",
+                "fs.default.clouds.scheme", "s3",
+                "fs.default.clouds.container", "test-bucket"
             )
         );
 
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test" ) ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test2" ) ).isEqualTo( "file" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test2" ) ).isEqualTo( "file" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
     }
 
     @Test
@@ -65,9 +65,9 @@ public class FileSystemConfigurationTest {
             )
         );
 
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test" ) ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test2" ) ).isEqualTo( "file" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test2" ) ).isEqualTo( "file" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
     }
 
     @Test
@@ -81,8 +81,8 @@ public class FileSystemConfigurationTest {
             )
         );
 
-        assertThat( fileSystemConfiguration.get( "ftp", "ftp.server1.com", "jclouds.identity" ) ).isEqualTo( "as" );
-        assertThat( fileSystemConfiguration.get( "ftp", "localhost:12345", "jclouds.identity" ) ).isEqualTo( "as2" );
+        assertThat( fileSystemConfiguration.get( "ftp", "ftp.server1.com", "clouds.identity" ) ).isEqualTo( "as" );
+        assertThat( fileSystemConfiguration.get( "ftp", "localhost:12345", "clouds.identity" ) ).isEqualTo( "as2" );
     }
 
     @Test
@@ -98,9 +98,9 @@ public class FileSystemConfigurationTest {
             "fs.s3.clouds.identity", "override-id"
         ) );
 
-        assertThat( merged.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "override-id" );
-        assertThat( merged.get( "s3", "", "jclouds.region" ) ).isEqualTo( "us-east-1" );
-        assertThat( base.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "base-id" );
+        assertThat( merged.get( "s3", "", "clouds.identity" ) ).isEqualTo( "override-id" );
+        assertThat( merged.get( "s3", "", "clouds.region" ) ).isEqualTo( "us-east-1" );
+        assertThat( base.get( "s3", "", "clouds.identity" ) ).isEqualTo( "base-id" );
         assertThat( merged.getDefaultScheme() ).isEqualTo( "s3" );
     }
 
@@ -121,8 +121,8 @@ public class FileSystemConfigurationTest {
 
         FileSystemConfiguration merged = base.copyWith( overrides );
 
-        assertThat( merged.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "override-id" );
-        assertThat( merged.get( "s3", "", "jclouds.region" ) ).isEqualTo( "us-east-1" );
-        assertThat( base.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "base-id" );
+        assertThat( merged.get( "s3", "", "clouds.identity" ) ).isEqualTo( "override-id" );
+        assertThat( merged.get( "s3", "", "clouds.region" ) ).isEqualTo( "us-east-1" );
+        assertThat( base.get( "s3", "", "clouds.identity" ) ).isEqualTo( "base-id" );
     }
 }
