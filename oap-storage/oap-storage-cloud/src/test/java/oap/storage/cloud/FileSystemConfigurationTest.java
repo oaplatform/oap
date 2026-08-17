@@ -84,4 +84,23 @@ public class FileSystemConfigurationTest {
         assertThat( fileSystemConfiguration.get( "ftp", "ftp.server1.com", "jclouds.identity" ) ).isEqualTo( "as" );
         assertThat( fileSystemConfiguration.get( "ftp", "localhost:12345", "jclouds.identity" ) ).isEqualTo( "as2" );
     }
+
+    @Test
+    public void testCopyWith() {
+        FileSystemConfiguration base = new FileSystemConfiguration( Map.of(
+            "fs.s3.clouds.identity", "base-id",
+            "fs.s3.clouds.region", "us-east-1",
+            "fs.default.clouds.scheme", "s3",
+            "fs.default.clouds.container", "my-bucket"
+        ) );
+
+        FileSystemConfiguration merged = base.copyWith( Map.of(
+            "fs.s3.clouds.identity", "override-id"
+        ) );
+
+        assertThat( merged.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "override-id" );
+        assertThat( merged.get( "s3", "", "jclouds.region" ) ).isEqualTo( "us-east-1" );
+        assertThat( base.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "base-id" );
+        assertThat( merged.getDefaultScheme() ).isEqualTo( "s3" );
+    }
 }

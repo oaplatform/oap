@@ -23,13 +23,42 @@ import static oap.util.Pair.__;
 @ToString
 @Slf4j
 public class FileSystemConfiguration {
-    private final LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Map<String, Object>> properties;
 
     public FileSystemConfiguration( Map<String, Object> configuration ) {
+        this.properties = parse( configuration );
+        logDefaults();
+    }
+
+    private FileSystemConfiguration( LinkedHashMap<String, Map<String, Object>> properties ) {
+        this.properties = properties;
+        logDefaults();
+    }
+
+    /**
+     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
+     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
+     */
+    public FileSystemConfiguration copyWith( Map<String, Object> newConfiguration ) {
+        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
+            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
+        }
+
+        for( Map.Entry<String, Map<String, Object>> entry : parse( newConfiguration ).entrySet() ) {
+            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
+        }
+
+        return new FileSystemConfiguration( merged );
+    }
+
+    private static LinkedHashMap<String, Map<String, Object>> parse( Map<String, Object> configuration ) {
+        LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
+
         LinkedHashMap<String, Object> fsList = toStringList( configuration );
         log.trace( "string fs {}", fsList );
 
-        for( var entry : fsList.entrySet() ) {
+        for( Map.Entry<String, Object> entry : fsList.entrySet() ) {
             String[] toks = entry.getKey().split( "(?<!\\\\)\\." );
 
             Preconditions.checkArgument( "fs".equals( toks[0] ) );
@@ -47,7 +76,7 @@ public class FileSystemConfiguration {
                 }
             }
 
-            var property = StringUtils.join( toks, ".", start, toks.length );
+            String property = StringUtils.join( toks, ".", start, toks.length );
 
             String value = new StringSubstitutor( key -> {
                 if( key.startsWith( "env." ) ) {
@@ -61,6 +90,10 @@ public class FileSystemConfiguration {
 
         }
 
+        return properties;
+    }
+
+    private void logDefaults() {
         String defaultScheme = getDefaultScheme();
         String defaultContainer = tryGetDefaultContainer();
 
@@ -92,7 +125,7 @@ public class FileSystemConfiguration {
         return ( String ) defaults.get( "jclouds." + parameter );
     }
 
-    private LinkedHashMap<String, Object> toStringList( Object configuration ) {
+    private static LinkedHashMap<String, Object> toStringList( Object configuration ) {
         var ret = new LinkedHashMap<String, Object>();
 
         toStringList( configuration, ret, "" );
@@ -101,11 +134,11 @@ public class FileSystemConfiguration {
     }
 
     @SuppressWarnings( "unchecked" )
-    private void toStringList( Object configuration, LinkedHashMap<String, Object> map, String prefix ) {
+    private static void toStringList( Object configuration, LinkedHashMap<String, Object> map, String prefix ) {
         if( configuration instanceof Map ) {
             Map<String, Object> objectMap = ( Map<String, Object> ) configuration;
 
-            for( var entry : objectMap.entrySet() ) {
+            for( Map.Entry<String, Object> entry : objectMap.entrySet() ) {
                 String keyPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
 
                 toStringList( entry.getValue(), map, keyPrefix );
@@ -119,7 +152,7 @@ public class FileSystemConfiguration {
         Map<String, Map<String, Object>> defaultFs = new LinkedHashMap<>();
         Map<String, Map<String, Map<String, Object>>> containerFs = new LinkedHashMap<>();
 
-        for( var entry : fs.entrySet() ) {
+        for( Map.Entry<String, Object> entry : fs.entrySet() ) {
             String[] toks = entry.getKey().split( "(?<!\\\\)\\." );
             log.trace( "toks {}", List.of( toks ) );
 
