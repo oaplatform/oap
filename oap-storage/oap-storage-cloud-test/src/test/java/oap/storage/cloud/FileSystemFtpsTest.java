@@ -24,19 +24,19 @@ public class FileSystemFtpsTest extends Fixtures {
         fixture( new SystemTimerFixture( true ) );
     }
 
+    private static CloudURI ftpsUri( String path ) {
+        return new CloudURI( "ftps", ftpFixture.hostPort(), path );
+    }
+
     @BeforeMethod
     public void beforeMethod() {
         oap.io.Files.delete( ftpFixture.homeDirectory() );
         oap.io.Files.ensureDirectory( ftpFixture.homeDirectory() );
     }
 
-    private static CloudURI ftpsUri( String path ) {
-        return new CloudURI( "ftps", ftpFixture.hostPort(), path );
-    }
-
     @Test
     public void testUploadAndGetInputStream() {
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration() ) ) {
             fileSystem.upload( ftpsUri( "file.txt" ), BlobData.builder().content( "content" ).build() );
 
             assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
@@ -50,7 +50,7 @@ public class FileSystemFtpsTest extends Fixtures {
     public void testDownloadFile() {
         ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration() ) ) {
             assertThat( fileSystem.blobExists( ftpsUri( "logs/file.txt" ) ) ).isTrue();
         }
     }

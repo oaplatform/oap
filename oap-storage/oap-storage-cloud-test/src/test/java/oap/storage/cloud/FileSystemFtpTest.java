@@ -47,18 +47,18 @@ public class FileSystemFtpTest extends Fixtures {
         fixture( new SystemTimerFixture( true ) );
     }
 
-    @BeforeMethod
-    public void beforeMethod() {
-        Files.delete( ftpFixture.homeDirectory() );
-        Files.ensureDirectory( ftpFixture.homeDirectory() );
-    }
-
     private static String container() {
         return ftpFixture.hostPort();
     }
 
     private static CloudURI ftpUri( String path ) {
         return new CloudURI( "ftp", container(), path );
+    }
+
+    @BeforeMethod
+    public void beforeMethod() {
+        Files.delete( ftpFixture.homeDirectory() );
+        Files.ensureDirectory( ftpFixture.homeDirectory() );
     }
 
     @Test
@@ -133,7 +133,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @NotNull
     private FileSystemConfiguration getFileSystemConfiguration() {
-        return ftpFixture.getFileSystemConfiguration( null );
+        return ftpFixture.getFileSystemConfiguration();
     }
 
     @Test
@@ -207,7 +207,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         // 2. enabled -> empty folder2 removed, folder1 kept (still has file2.txt)
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, true ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( true ) ) ) {
             fileSystem.upload( ftpUri( "case2/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
             fileSystem.upload( ftpUri( "case2/folder1/file2.txt" ), BlobData.builder().content( "content2" ).build() );
 
@@ -218,7 +218,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         // 3. enabled -> whole empty chain removed
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, true ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( true ) ) ) {
             fileSystem.upload( ftpUri( "case3/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
 
             fileSystem.deleteBlob( ftpUri( "case3/folder1/folder2/file.txt" ) );
@@ -232,7 +232,7 @@ public class FileSystemFtpTest extends Fixtures {
     public void testPoolReusesConnectionSequentially() {
         ftpFixture.writeFile( "logs/file1.txt", "1", ContentWriter.ofString() );
 
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, 1 ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( false, 1 ) ) ) {
             for( int i = 0; i < 5; i++ ) {
                 assertTrue( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) );
             }
@@ -244,7 +244,7 @@ public class FileSystemFtpTest extends Fixtures {
         int poolMaxSize = 2;
         int uploads = 10;
 
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, poolMaxSize ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( false, poolMaxSize ) ) ) {
             ExecutorService executor = Executors.newFixedThreadPool( uploads );
             try {
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -272,7 +272,7 @@ public class FileSystemFtpTest extends Fixtures {
         int poolMaxSize = 8;
         int uploads = 1000;
 
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( null, false, poolMaxSize ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( false, poolMaxSize ) ) ) {
             ExecutorService executor = Executors.newFixedThreadPool( 50 );
             try {
                 List<CompletableFuture<Void>> futures = new ArrayList<>();

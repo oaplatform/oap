@@ -115,17 +115,20 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return testDirectoryFixture.testDirectory();
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container ) {
-        return getFileSystemConfiguration( container, false );
+    public FileSystemConfiguration getFileSystemConfiguration() {
+        return getFileSystemConfiguration( false );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders ) {
-        return getFileSystemConfiguration( container, removeEmptyFolders, null );
+    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
+        return getFileSystemConfiguration( removeEmptyFolders, null );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return getFileSystemConfiguration( removeEmptyFolders, poolMaxSize, true );
+    }
+
+    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
         String scheme = tls ? "ftps" : "ftp";
-        String hostPort = "localhost:" + port;
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put( "fs." + scheme + ".clouds.identity", USERNAME );
@@ -140,10 +143,16 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
             map.put( "fs." + scheme + ".clouds.pool-max-size", poolMaxSize );
         }
 
-        map.put( "fs.default.clouds.scheme", scheme );
-        map.put( "fs.default.clouds.container", container != null ? container : hostPort );
+        if( addDefaults ) {
+            map.put( "fs.default.clouds.scheme", scheme );
+            map.put( "fs.default.clouds.container", hostPort() );
+        }
 
         return new FileSystemConfiguration( map );
+    }
+
+    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfiguration( removeEmptyFolders, poolMaxSize, addDefaults ) );
     }
 
     public String hostPort() {

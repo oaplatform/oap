@@ -103,4 +103,26 @@ public class FileSystemConfigurationTest {
         assertThat( base.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "base-id" );
         assertThat( merged.getDefaultScheme() ).isEqualTo( "s3" );
     }
+
+    @Test
+    public void testCopyWithFileSystemConfiguration() {
+        FileSystemConfiguration base = new FileSystemConfiguration( Map.of(
+            "fs.s3.clouds.identity", "base-id",
+            "fs.s3.clouds.region", "us-east-1",
+            "fs.default.clouds.scheme", "s3",
+            "fs.default.clouds.container", "my-bucket"
+        ) );
+
+        FileSystemConfiguration overrides = new FileSystemConfiguration( Map.of(
+            "fs.s3.clouds.identity", "override-id",
+            "fs.default.clouds.scheme", "s3",
+            "fs.default.clouds.container", "my-bucket"
+        ) );
+
+        FileSystemConfiguration merged = base.copyWith( overrides );
+
+        assertThat( merged.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "override-id" );
+        assertThat( merged.get( "s3", "", "jclouds.region" ) ).isEqualTo( "us-east-1" );
+        assertThat( base.get( "s3", "", "jclouds.identity" ) ).isEqualTo( "base-id" );
+    }
 }

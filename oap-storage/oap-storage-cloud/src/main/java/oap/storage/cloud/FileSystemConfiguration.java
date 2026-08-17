@@ -39,6 +39,23 @@ public class FileSystemConfiguration {
      * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
      * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
      */
+    public FileSystemConfiguration copyWith( FileSystemConfiguration newConfiguration ) {
+        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
+            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
+        }
+
+        for( Map.Entry<String, Map<String, Object>> entry : newConfiguration.properties.entrySet() ) {
+            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
+        }
+
+        return new FileSystemConfiguration( merged );
+    }
+
+    /**
+     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
+     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
+     */
     public FileSystemConfiguration copyWith( Map<String, Object> newConfiguration ) {
         LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
         for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
