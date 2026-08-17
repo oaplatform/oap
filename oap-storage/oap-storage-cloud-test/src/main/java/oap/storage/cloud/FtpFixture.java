@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class FtpFixture extends AbstractFixture<FtpFixture> {
     public static final String USERNAME = "ftp-test-user";
@@ -123,10 +125,9 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
 
     public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
         String scheme = tls ? "ftps" : "ftp";
+        String hostPort = "localhost:" + port;
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs." + scheme + ".clouds.host", "localhost" );
-        map.put( "fs." + scheme + ".clouds.port", port );
         map.put( "fs." + scheme + ".clouds.identity", USERNAME );
         map.put( "fs." + scheme + ".clouds.credential", PASSWORD );
         map.put( "fs." + scheme + ".clouds.trust-all", true );
@@ -140,11 +141,13 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         }
 
         map.put( "fs.default.clouds.scheme", scheme );
-        if( container != null ) {
-            map.put( "fs.default.clouds.container", container );
-        }
+        map.put( "fs.default.clouds.container", container != null ? container : hostPort );
 
         return new FileSystemConfiguration( map );
+    }
+
+    public String hostPort() {
+        return s( "localhost:${port}" );
     }
 
     public Path resolve( String relativePath ) {

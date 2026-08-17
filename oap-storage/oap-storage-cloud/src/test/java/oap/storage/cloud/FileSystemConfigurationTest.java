@@ -69,4 +69,19 @@ public class FileSystemConfigurationTest {
         assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test2" ) ).isEqualTo( "file" );
         assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "jclouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
     }
+
+    @Test
+    public void testEscapedDotContainer() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
+            Map.of(
+                "fs.ftp.ftp\\.server1\\.com.clouds.identity", "as",
+                "fs.ftp.localhost:12345.clouds.identity", "as2",
+                "fs.default.clouds.scheme", "ftp",
+                "fs.default.clouds.container", "localhost:12345"
+            )
+        );
+
+        assertThat( fileSystemConfiguration.get( "ftp", "ftp.server1.com", "jclouds.identity" ) ).isEqualTo( "as" );
+        assertThat( fileSystemConfiguration.get( "ftp", "localhost:12345", "jclouds.identity" ) ).isEqualTo( "as2" );
+    }
 }

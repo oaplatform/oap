@@ -37,7 +37,7 @@ public class FileSystemConfiguration {
 
             int start = 2;
             if( !toks[2].equals( "jclouds" ) && !toks[2].equals( "clouds" ) ) {
-                id = id + "." + toks[2];
+                id = id + "." + toks[2].replace( "\\.", "." );
                 start++;
             }
 

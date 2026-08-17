@@ -86,7 +86,7 @@ services {
 
 ## `FileSystem`
 
-Stateless facade that routes calls to the right backend by URI scheme. Backends are cached per scheme and closed with `FileSystem.close()`.
+Stateless facade that routes calls to the right backend by URI scheme. Backend instances are cached and closed with `FileSystem.close()`; the cache key granularity depends on the backend — most (S3, `file`) are cached per scheme, while backends implementing `ContainerScopedCloudApi` (FTP/FTPS) are cached per scheme **and** container, since `container` identifies a distinct server connection for them rather than a request-scoped parameter.
 
 ```java
 FileSystem fs = new FileSystem( config );
@@ -183,7 +183,9 @@ Required configuration keys for S3:
 
 Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
 
-Like `file`, FTP/FTPS have no bucket/container concept — a single connection (one server, one remote tree) serves the whole scheme. `container` is always empty; the URI's authority segment (if present) is folded into the path rather than treated as a host, so `ftp://reports/2024-06-01.json` addresses the remote path `reports/2024-06-01.json`, not a host named `reports`. The actual server to connect to always comes from config — `fs.ftp.clouds.host` is required.
+Unlike `file`, FTP/FTPS **require** a container: the URI's host (optionally `:port`) identifies the FTP server to connect to. `ftp://ftp.example.com:2121/reports/2024-06-01.json` connects to `ftp.example.com:2121` and addresses the remote path `reports/2024-06-01.json`. A URI with no host (e.g. `ftp:///reports/file.txt`, `ftp://`) throws `CloudException`.
+
+Each distinct `host[:port]` gets its own pooled connection set — using two different FTP hosts through the same `FileSystem` instance connects to both independently, they don't share a connection pool.
 
 FTP control connections (TCP connect + login) are pooled per backend instance using [Apache Commons Pool 2](https://commons.apache.org/proper/commons-pool/) — operations borrow a connection from the pool and return it when done instead of reconnecting/logging in on every call. Pooled connections are validated with an FTP `NOOP` before reuse, so idle connections dropped by the server/firewall are transparently replaced.
 
@@ -191,8 +193,6 @@ Required/optional configuration keys:
 
 | Key | Description |
 |---|---|
-| `fs.ftp.clouds.host` | FTP server host (required) |
-| `fs.ftp.clouds.port` | FTP server port (default `21`) |
 | `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
 | `fs.ftp.clouds.credential` | FTP password |
 | `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
@@ -203,9 +203,19 @@ Required/optional configuration keys:
 | `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 
 ```java
-// fs.ftp.clouds.host = ftp.example.com (configured separately, not part of the URI)
-CloudURI dest = new CloudURI( "ftp://reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "ftp://ftp.example.com/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
+
+### Per-host FTP configuration overrides
+
+Config keys follow `fs.<scheme>.<container>.clouds.<property>`, where `<container>` must exactly match the runtime `host[:port]` value derived from the URI. Since config keys are dot-delimited, a literal dot inside the host must be escaped as `\.` so it isn't parsed as a key-path separator — a host with no dots (just `localhost` or `localhost:12345`, port digits included) needs no escaping:
+
+```
+fs.ftp.localhost:12345.clouds.identity = as
+fs.ftp.ftp\.server1\.com.clouds.identity = as
+```
+
+A container-specific entry overrides `fs.ftp.clouds.<property>` only for that exact host; other hosts keep falling back to the scheme-wide default.
 
 `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
