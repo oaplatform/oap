@@ -35,40 +35,6 @@ public class FileSystemConfiguration {
         logDefaults();
     }
 
-    /**
-     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
-     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
-     */
-    public FileSystemConfiguration copyWith( FileSystemConfiguration newConfiguration ) {
-        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
-        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
-            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
-        }
-
-        for( Map.Entry<String, Map<String, Object>> entry : newConfiguration.properties.entrySet() ) {
-            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
-        }
-
-        return new FileSystemConfiguration( merged );
-    }
-
-    /**
-     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
-     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
-     */
-    public FileSystemConfiguration copyWith( Map<String, Object> newConfiguration ) {
-        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
-        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
-            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
-        }
-
-        for( Map.Entry<String, Map<String, Object>> entry : parse( newConfiguration ).entrySet() ) {
-            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
-        }
-
-        return new FileSystemConfiguration( merged );
-    }
-
     private static LinkedHashMap<String, Map<String, Object>> parse( Map<String, Object> configuration ) {
         LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
 
@@ -110,6 +76,63 @@ public class FileSystemConfiguration {
         return properties;
     }
 
+    private static LinkedHashMap<String, Object> toStringList( Object configuration ) {
+        var ret = new LinkedHashMap<String, Object>();
+
+        toStringList( configuration, ret, "" );
+
+        return ret;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static void toStringList( Object configuration, LinkedHashMap<String, Object> map, String prefix ) {
+        if( configuration instanceof Map ) {
+            Map<String, Object> objectMap = ( Map<String, Object> ) configuration;
+
+            for( Map.Entry<String, Object> entry : objectMap.entrySet() ) {
+                String keyPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+
+                toStringList( entry.getValue(), map, keyPrefix );
+            }
+        } else {
+            map.put( prefix, configuration );
+        }
+    }
+
+    /**
+     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
+     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
+     */
+    public FileSystemConfiguration copyWith( FileSystemConfiguration newConfiguration ) {
+        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
+            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
+        }
+
+        for( Map.Entry<String, Map<String, Object>> entry : newConfiguration.properties.entrySet() ) {
+            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
+        }
+
+        return new FileSystemConfiguration( merged );
+    }
+
+    /**
+     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
+     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
+     */
+    public FileSystemConfiguration copyWith( Map<String, Object> newConfiguration ) {
+        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
+            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
+        }
+
+        for( Map.Entry<String, Map<String, Object>> entry : parse( newConfiguration ).entrySet() ) {
+            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
+        }
+
+        return new FileSystemConfiguration( merged );
+    }
+
     private void logDefaults() {
         String defaultScheme = getDefaultScheme();
         String defaultContainer = tryGetDefaultContainer();
@@ -140,29 +163,6 @@ public class FileSystemConfiguration {
         Map<String, Object> defaults = properties.get( "default" );
         Preconditions.checkNotNull( defaults, "fs.default is required" );
         return ( String ) defaults.get( "jclouds." + parameter );
-    }
-
-    private static LinkedHashMap<String, Object> toStringList( Object configuration ) {
-        var ret = new LinkedHashMap<String, Object>();
-
-        toStringList( configuration, ret, "" );
-
-        return ret;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static void toStringList( Object configuration, LinkedHashMap<String, Object> map, String prefix ) {
-        if( configuration instanceof Map ) {
-            Map<String, Object> objectMap = ( Map<String, Object> ) configuration;
-
-            for( Map.Entry<String, Object> entry : objectMap.entrySet() ) {
-                String keyPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
-
-                toStringList( entry.getValue(), map, keyPrefix );
-            }
-        } else {
-            map.put( prefix, configuration );
-        }
     }
 
     private Pair<Map<String, Map<String, Object>>, Map<String, Map<String, Map<String, Object>>>> splitBySize( Map<String, Object> fs ) {
@@ -220,6 +220,13 @@ public class FileSystemConfiguration {
 
     @Override
     public String toString() {
-        return Binder.json.marshal( properties );
+
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+
+        properties.forEach( ( k, m ) -> {
+            m.forEach( ( k2, v ) -> map.put( s( "${k}.${k2}" ), v ) );
+        } );
+
+        return Binder.json.marshal( map );
     }
 }
