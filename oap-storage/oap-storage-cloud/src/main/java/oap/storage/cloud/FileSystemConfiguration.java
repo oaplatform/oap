@@ -1,8 +1,8 @@
 package oap.storage.cloud;
 
 import com.google.common.base.Preconditions;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.json.Binder;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static oap.util.Pair.__;
 
 /**
@@ -20,7 +21,6 @@ import static oap.util.Pair.__;
  * fs.[s3|gcs|ab][.container?].identity
  * fs.[s3|gcs|ab][.container?].credential
  */
-@ToString
 @Slf4j
 public class FileSystemConfiguration {
     private final LinkedHashMap<String, Map<String, Object>> properties;
@@ -213,8 +213,13 @@ public class FileSystemConfiguration {
     public Object getOrThrow( String scheme, String container, String name ) {
         Object res = get( scheme, container, name );
         if( res == null ) {
-            throw new CloudException( "fs." + scheme + "." + name + " is required" );
+            throw new CloudException( s( "fs.${scheme}.${name} is required" ) );
         }
         return res;
+    }
+
+    @Override
+    public String toString() {
+        return Binder.json.marshal( properties );
     }
 }
