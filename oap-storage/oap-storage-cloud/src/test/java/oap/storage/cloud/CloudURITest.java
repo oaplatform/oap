@@ -30,15 +30,33 @@ public class CloudURITest {
     public void testParseFtp() {
         CloudURI cloudURI = new CloudURI( "ftp://my-server/logs/1.txt" );
         assertThat( cloudURI.scheme ).isEqualTo( "ftp" );
-        assertThat( cloudURI.container ).isEmpty();
-        assertThat( cloudURI.path ).isEqualTo( "my-server/logs/1.txt" );
+        assertThat( cloudURI.container ).isEqualTo( "my-server" );
+        assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
+    }
+
+    @Test
+    public void testParseFtpWithPort() {
+        CloudURI cloudURI = new CloudURI( "ftp://localhost:12345/my_path" );
+        assertThat( cloudURI.scheme ).isEqualTo( "ftp" );
+        assertThat( cloudURI.container ).isEqualTo( "localhost:12345" );
+        assertThat( cloudURI.path ).isEqualTo( "my_path" );
+    }
+
+    @Test( expectedExceptions = CloudException.class )
+    public void testParseFtpRequiresContainer() {
+        new CloudURI( "ftp:///logs/1.txt" );
+    }
+
+    @Test( expectedExceptions = CloudException.class )
+    public void testParseFtpNoAuthorityRequiresContainer() {
+        new CloudURI( "ftp://" );
     }
 
     @Test
     public void testParseFtps() {
         CloudURI cloudURI = new CloudURI( "ftps://my-server/logs/1.txt" );
         assertThat( cloudURI.scheme ).isEqualTo( "ftps" );
-        assertThat( cloudURI.container ).isEmpty();
-        assertThat( cloudURI.path ).isEqualTo( "my-server/logs/1.txt" );
+        assertThat( cloudURI.container ).isEqualTo( "my-server" );
+        assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
     }
 }

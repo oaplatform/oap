@@ -1,8 +1,8 @@
 package oap.storage.cloud;
 
 import com.google.common.base.Preconditions;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.json.Binder;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static oap.util.Pair.__;
 
 /**
@@ -20,34 +21,39 @@ import static oap.util.Pair.__;
  * fs.[s3|gcs|ab][.container?].identity
  * fs.[s3|gcs|ab][.container?].credential
  */
-@ToString
 @Slf4j
 public class FileSystemConfiguration {
-    private final LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Map<String, Object>> properties;
 
     public FileSystemConfiguration( Map<String, Object> configuration ) {
+        this.properties = parse( configuration );
+        logDefaults();
+    }
+
+    private FileSystemConfiguration( LinkedHashMap<String, Map<String, Object>> properties ) {
+        this.properties = properties;
+        logDefaults();
+    }
+
+    private static LinkedHashMap<String, Map<String, Object>> parse( Map<String, Object> configuration ) {
+        LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
+
         LinkedHashMap<String, Object> fsList = toStringList( configuration );
         log.trace( "string fs {}", fsList );
 
-        for( var entry : fsList.entrySet() ) {
+        for( Map.Entry<String, Object> entry : fsList.entrySet() ) {
             String[] toks = entry.getKey().split( "(?<!\\\\)\\." );
 
             Preconditions.checkArgument( "fs".equals( toks[0] ) );
             String id = toks[1];
 
             int start = 2;
-            if( !toks[2].equals( "jclouds" ) && !toks[2].equals( "clouds" ) ) {
-                id = id + "." + toks[2];
+            if( !toks[2].equals( "clouds" ) ) {
+                id = id + "." + toks[2].replace( "\\.", "." );
                 start++;
             }
 
-            if( start < toks.length - 1 ) {
-                if( toks[start].equals( "clouds" ) ) {
-                    toks[start] = "jclouds";
-                }
-            }
-
-            var property = StringUtils.join( toks, ".", start, toks.length );
+            String property = StringUtils.join( toks, ".", start, toks.length );
 
             String value = new StringSubstitutor( key -> {
                 if( key.startsWith( "env." ) ) {
@@ -61,6 +67,67 @@ public class FileSystemConfiguration {
 
         }
 
+        return properties;
+    }
+
+    private static LinkedHashMap<String, Object> toStringList( Object configuration ) {
+        var ret = new LinkedHashMap<String, Object>();
+
+        toStringList( configuration, ret, "" );
+
+        return ret;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static void toStringList( Object configuration, LinkedHashMap<String, Object> map, String prefix ) {
+        if( configuration instanceof Map ) {
+            Map<String, Object> objectMap = ( Map<String, Object> ) configuration;
+
+            for( Map.Entry<String, Object> entry : objectMap.entrySet() ) {
+                String keyPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+
+                toStringList( entry.getValue(), map, keyPrefix );
+            }
+        } else {
+            map.put( prefix, configuration );
+        }
+    }
+
+    /**
+     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
+     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
+     */
+    public FileSystemConfiguration copyWith( FileSystemConfiguration newConfiguration ) {
+        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
+            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
+        }
+
+        for( Map.Entry<String, Map<String, Object>> entry : newConfiguration.properties.entrySet() ) {
+            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
+        }
+
+        return new FileSystemConfiguration( merged );
+    }
+
+    /**
+     * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
+     * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
+     */
+    public FileSystemConfiguration copyWith( Map<String, Object> newConfiguration ) {
+        LinkedHashMap<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for( Map.Entry<String, Map<String, Object>> entry : this.properties.entrySet() ) {
+            merged.put( entry.getKey(), new LinkedHashMap<>( entry.getValue() ) );
+        }
+
+        for( Map.Entry<String, Map<String, Object>> entry : parse( newConfiguration ).entrySet() ) {
+            merged.computeIfAbsent( entry.getKey(), x -> new LinkedHashMap<>() ).putAll( entry.getValue() );
+        }
+
+        return new FileSystemConfiguration( merged );
+    }
+
+    private void logDefaults() {
         String defaultScheme = getDefaultScheme();
         String defaultContainer = tryGetDefaultContainer();
 
@@ -82,44 +149,21 @@ public class FileSystemConfiguration {
     }
 
     private String getDefault( String parameter ) {
-        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default.jclouds." + parameter + " is required" );
+        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default.clouds." + parameter + " is required" );
     }
 
     @Nullable
     private String tryGetDefault( String parameter ) {
         Map<String, Object> defaults = properties.get( "default" );
         Preconditions.checkNotNull( defaults, "fs.default is required" );
-        return ( String ) defaults.get( "jclouds." + parameter );
-    }
-
-    private LinkedHashMap<String, Object> toStringList( Object configuration ) {
-        var ret = new LinkedHashMap<String, Object>();
-
-        toStringList( configuration, ret, "" );
-
-        return ret;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private void toStringList( Object configuration, LinkedHashMap<String, Object> map, String prefix ) {
-        if( configuration instanceof Map ) {
-            Map<String, Object> objectMap = ( Map<String, Object> ) configuration;
-
-            for( var entry : objectMap.entrySet() ) {
-                String keyPrefix = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
-
-                toStringList( entry.getValue(), map, keyPrefix );
-            }
-        } else {
-            map.put( prefix, configuration );
-        }
+        return ( String ) defaults.get( "clouds." + parameter );
     }
 
     private Pair<Map<String, Map<String, Object>>, Map<String, Map<String, Map<String, Object>>>> splitBySize( Map<String, Object> fs ) {
         Map<String, Map<String, Object>> defaultFs = new LinkedHashMap<>();
         Map<String, Map<String, Map<String, Object>>> containerFs = new LinkedHashMap<>();
 
-        for( var entry : fs.entrySet() ) {
+        for( Map.Entry<String, Object> entry : fs.entrySet() ) {
             String[] toks = entry.getKey().split( "(?<!\\\\)\\." );
             log.trace( "toks {}", List.of( toks ) );
 
@@ -163,8 +207,20 @@ public class FileSystemConfiguration {
     public Object getOrThrow( String scheme, String container, String name ) {
         Object res = get( scheme, container, name );
         if( res == null ) {
-            throw new CloudException( "fs." + scheme + "." + name + " is required" );
+            throw new CloudException( s( "fs.${scheme}.${name} is required" ) );
         }
         return res;
+    }
+
+    @Override
+    public String toString() {
+
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+
+        properties.forEach( ( k, m ) -> {
+            m.forEach( ( k2, v ) -> map.put( s( "fs.${k}.${k2}" ), v ) );
+        } );
+
+        return Binder.json.marshal( map );
     }
 }

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.cloud.BlobData;
 import oap.storage.cloud.CloudException;
 import oap.storage.cloud.CloudURI;
+import oap.storage.cloud.ContainerScopedCloudApi;
 import oap.storage.cloud.FileSystem;
 import oap.storage.cloud.FileSystemCloudApi;
 import oap.storage.cloud.FileSystemConfiguration;
@@ -41,7 +42,7 @@ import java.util.stream.Stream;
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
-public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi {
+public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi, ContainerScopedCloudApi {
     private static final int DEFAULT_POOL_MAX_SIZE = 8;
     private static final long DEFAULT_POOL_MAX_WAIT_MILLIS = 30_000;
 
@@ -55,31 +56,36 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     private final GenericObjectPool<FTPClient> pool;
 
     protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String container ) {
-        Object hostObj = fileSystemConfiguration.get( scheme, container, "jclouds.host" );
-        if( hostObj == null ) {
-            throw new CloudException( "fs." + scheme + ".clouds.host is required" );
+        if( container == null || container.isBlank() ) {
+            throw new CloudException( "fs." + scheme + ": container (ftp server host[:port]) is required" );
         }
-        this.host = hostObj.toString();
 
-        Object portObj = fileSystemConfiguration.get( scheme, container, "jclouds.port" );
-        this.port = portObj != null ? Integer.parseInt( portObj.toString() ) : 21;
+        int colonIdx = container.lastIndexOf( ':' );
+        if( colonIdx > 0 && colonIdx < container.length() - 1
+            && container.substring( colonIdx + 1 ).chars().allMatch( Character::isDigit ) ) {
+            this.host = container.substring( 0, colonIdx );
+            this.port = Integer.parseInt( container.substring( colonIdx + 1 ) );
+        } else {
+            this.host = container;
+            this.port = 21;
+        }
 
-        Object identity = fileSystemConfiguration.get( scheme, container, "jclouds.identity" );
+        Object identity = fileSystemConfiguration.get( scheme, container, "clouds.identity" );
         this.username = identity != null ? identity.toString() : "anonymous";
 
-        Object credential = fileSystemConfiguration.get( scheme, container, "jclouds.credential" );
+        Object credential = fileSystemConfiguration.get( scheme, container, "clouds.credential" );
         this.password = credential != null ? credential.toString() : "";
 
-        Object passive = fileSystemConfiguration.get( scheme, container, "jclouds.passive-mode" );
+        Object passive = fileSystemConfiguration.get( scheme, container, "clouds.passive-mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "jclouds.remove-empty-folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "clouds.remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
-        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "jclouds.pool-max-size" );
+        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-size" );
         int poolMaxSize = poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
-        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "jclouds.pool-max-wait-millis" );
+        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-wait-millis" );
         long poolMaxWaitMillis = poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 
         GenericObjectPoolConfig<FTPClient> poolConfig = new GenericObjectPoolConfig<>();

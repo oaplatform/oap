@@ -31,14 +31,14 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     private final boolean removeEmptyFolders;
 
     public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        String basedir = ( String ) fileSystemConfiguration.get( "file", container, "jclouds.filesystem.basedir" );
+        String basedir = ( String ) fileSystemConfiguration.get( "file", container, "clouds.filesystem.basedir" );
         if( basedir == null ) {
             basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
         }
 
         this.basedir = Paths.get( basedir );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( "file", container, "jclouds.filesystem.remove_empty_folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( "file", container, "clouds.filesystem.remove_empty_folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 

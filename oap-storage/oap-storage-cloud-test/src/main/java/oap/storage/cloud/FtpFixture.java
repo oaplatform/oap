@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class FtpFixture extends AbstractFixture<FtpFixture> {
     public static final String USERNAME = "ftp-test-user";
@@ -113,20 +115,22 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return testDirectoryFixture.testDirectory();
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container ) {
-        return getFileSystemConfiguration( container, false );
+    public FileSystemConfiguration getFileSystemConfiguration() {
+        return getFileSystemConfiguration( false );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders ) {
-        return getFileSystemConfiguration( container, removeEmptyFolders, null );
+    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
+        return getFileSystemConfiguration( removeEmptyFolders, null );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( @Nullable String container, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return getFileSystemConfiguration( removeEmptyFolders, poolMaxSize, true );
+    }
+
+    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs." + scheme + ".clouds.host", "localhost" );
-        map.put( "fs." + scheme + ".clouds.port", port );
         map.put( "fs." + scheme + ".clouds.identity", USERNAME );
         map.put( "fs." + scheme + ".clouds.credential", PASSWORD );
         map.put( "fs." + scheme + ".clouds.trust-all", true );
@@ -139,12 +143,20 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
             map.put( "fs." + scheme + ".clouds.pool-max-size", poolMaxSize );
         }
 
-        map.put( "fs.default.clouds.scheme", scheme );
-        if( container != null ) {
-            map.put( "fs.default.clouds.container", container );
+        if( addDefaults ) {
+            map.put( "fs.default.clouds.scheme", scheme );
+            map.put( "fs.default.clouds.container", hostPort() );
         }
 
         return new FileSystemConfiguration( map );
+    }
+
+    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfiguration( removeEmptyFolders, poolMaxSize, addDefaults ) );
+    }
+
+    public String hostPort() {
+        return s( "localhost:${port}" );
     }
 
     public Path resolve( String relativePath ) {

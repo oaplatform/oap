@@ -30,11 +30,17 @@ public class CloudURI implements Serializable {
             uriPath = FilenameUtils.separatorsToUnix( uriPath );
             if( container != null && uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
 
-            if( "file".equals( scheme ) || "ftp".equals( scheme ) || "ftps".equals( scheme ) ) {
+            if( "file".equals( scheme ) ) {
                 if( container != null ) {
                     uriPath = uriPath.isEmpty() ? container : container + "/" + uriPath;
                 }
                 this.container = "";
+            } else if( "ftp".equals( scheme ) || "ftps".equals( scheme ) ) {
+                if( container == null || container.isEmpty() ) {
+                    throw new CloudException( "fs." + scheme + ": container (ftp server host[:port]) is required in the URI, e.g. " + scheme + "://host:port/path" );
+                }
+                int port = u.getPort();
+                this.container = port >= 0 ? container + ":" + port : container;
             } else {
                 this.container = container;
             }

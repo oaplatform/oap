@@ -67,16 +67,19 @@ public class FileSystem implements AutoCloseable {
     }
 
     private FileSystemCloudApi getCloudApi( CloudURI cloudURI ) throws CloudException {
+        Class<? extends FileSystemCloudApi> impl = providers.get( cloudURI.scheme );
+        if( impl == null ) {
+            throw new CloudException( "Unknown provider for the scheme " + cloudURI.scheme );
+        }
+
+        String cacheKey = ContainerScopedCloudApi.class.isAssignableFrom( impl )
+            ? cloudURI.scheme + "://" + cloudURI.container
+            : cloudURI.scheme;
+
         try {
-            return apis.get( cloudURI.scheme,
+            return apis.get( cacheKey,
                 () -> {
                     try {
-                        Class<? extends FileSystemCloudApi> impl = providers.get( cloudURI.scheme );
-
-                        if( impl == null ) {
-                            throw new CloudException( "Unknown provider for the scheme " + cloudURI.scheme );
-                        }
-
                         return impl.getConstructor( FileSystemConfiguration.class, String.class ).newInstance( fileSystemConfiguration, cloudURI.container );
                     } catch( Exception e ) {
                         throw new CloudException( "Invlid provider for the scheme " + cloudURI.scheme, e );
@@ -196,7 +199,7 @@ public class FileSystem implements AutoCloseable {
     public CloudURI toLocalFilePath( Path path ) {
         log.debug( "toLocalFilePath {}", path );
 
-        String basedir = ( String ) fileSystemConfiguration.get( "file", "default", "jclouds.filesystem.basedir" );
+        String basedir = ( String ) fileSystemConfiguration.get( "file", "default", "clouds.filesystem.basedir" );
 
         return new CloudURI( "file", "", basedir != null ? Paths.get( basedir ).relativize( path ).toString()
             : Paths.get( "/" ).relativize( path ).toString() );
