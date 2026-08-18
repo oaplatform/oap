@@ -14,6 +14,7 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -45,6 +46,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -224,17 +226,27 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
     @NotNull
     public FileSystemConfiguration getFileSystemConfiguration( String container ) {
-        return new FileSystemConfiguration( Map.of(
-            "fs.s3.clouds.identity", "access_key",
-            "fs.s3.clouds.credential", "access_secret",
-            "fs.s3.clouds.region", Region.AWS_GLOBAL.id(),
-            "fs.s3.clouds.s3.virtual-host-buckets", false,
-            "fs.s3.clouds.endpoint", "http://localhost:" + getHttpPort(),
-            "fs.s3.clouds.headers", "DEBUG",
-
-            "fs.default.clouds.scheme", "s3",
-            "fs.default.clouds.container", container
-        ) );
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( container, true ) );
     }
 
+    public Map<String, Object> getFileSystemConfigurationMap( @Nullable String container, boolean addDefaults ) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put( "fs.s3.clouds.identity", "access_key" );
+        map.put( "fs.s3.clouds.credential", "access_secret" );
+        map.put( "fs.s3.clouds.region", Region.AWS_GLOBAL.id() );
+        map.put( "fs.s3.clouds.s3.virtual-host-buckets", false );
+        map.put( "fs.s3.clouds.endpoint", "http://localhost:" + getHttpPort() );
+
+        if( addDefaults ) {
+            Preconditions.checkArgument( container != null, "container cannot be null" );
+            map.put( "fs.default.clouds.scheme", "s3" );
+            map.put( "fs.default.clouds.container", container );
+        }
+
+        return map;
+    }
+
+    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, @Nullable String container, boolean addDefaults ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( container, addDefaults ) );
+    }
 }
