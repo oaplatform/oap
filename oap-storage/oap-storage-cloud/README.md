@@ -199,6 +199,9 @@ Required/optional configuration keys:
 | `fs.ftp.clouds.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
 | `fs.ftp.clouds.pool-max-size` | Max pooled FTP connections per backend instance (default `8`) |
 | `fs.ftp.clouds.pool-max-wait-millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
+| `fs.ftp.clouds.connect-timeout-millis` | TCP connect timeout, in milliseconds (default `30000`) |
+| `fs.ftp.clouds.default-timeout-millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
+| `fs.ftp.clouds.so-timeout-millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
 | `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
 | `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 
