@@ -2,6 +2,7 @@ package oap.storage.cloud.ftp;
 
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
+import oap.io.Closeables;
 import oap.storage.cloud.BlobData;
 import oap.storage.cloud.CloudException;
 import oap.storage.cloud.CloudURI;
@@ -45,6 +46,9 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi, ContainerScopedCloudApi {
     private static final int DEFAULT_POOL_MAX_SIZE = 8;
     private static final long DEFAULT_POOL_MAX_WAIT_MILLIS = 30_000;
+    private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 30_000;
+    private static final int DEFAULT_DEFAULT_TIMEOUT_MILLIS = 30_000;
+    private static final int DEFAULT_SO_TIMEOUT_MILLIS = 30_000;
 
     protected final String host;
     protected final int port;
@@ -52,6 +56,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     protected final String password;
     protected final boolean passiveMode;
     protected final boolean removeEmptyFolders;
+    protected final int connectTimeoutMillis;
+    protected final int defaultTimeoutMillis;
+    protected final int soTimeoutMillis;
 
     private final GenericObjectPool<FTPClient> pool;
 
@@ -82,11 +89,25 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "clouds.remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
+        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.connect-timeout-millis" );
+        this.connectTimeoutMillis = connectTimeoutObj != null ? Integer.parseInt( connectTimeoutObj.toString() )
+            : DEFAULT_CONNECT_TIMEOUT_MILLIS;
+
+        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.default-timeout-millis" );
+        this.defaultTimeoutMillis = defaultTimeoutObj != null ? Integer.parseInt( defaultTimeoutObj.toString() )
+            : DEFAULT_DEFAULT_TIMEOUT_MILLIS;
+
+        Object soTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.so-timeout-millis" );
+        this.soTimeoutMillis =
+            soTimeoutObj != null ? Integer.parseInt( soTimeoutObj.toString() ) : DEFAULT_SO_TIMEOUT_MILLIS;
+
         Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-size" );
-        int poolMaxSize = poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
+        int poolMaxSize =
+            poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
         Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-wait-millis" );
-        long poolMaxWaitMillis = poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
+        long poolMaxWaitMillis =
+            poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 
         GenericObjectPoolConfig<FTPClient> poolConfig = new GenericObjectPoolConfig<>();
         poolConfig.setMaxTotal( poolMaxSize );
@@ -97,6 +118,38 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         this.pool = new GenericObjectPool<>( new FtpClientPooledObjectFactory( this ), poolConfig );
     }
 
+    protected static void disconnect( FTPClient client ) {
+        try {
+            if( client.isConnected() ) {
+                client.logout();
+                client.disconnect();
+            }
+        } catch( IOException e ) {
+            log.debug( "error disconnecting ftp client", e );
+        }
+    }
+
+    /**
+     * FTP commands are resolved relative to the client's current working directory, which
+     * {@link #ensureRemoteDirectory} mutates as a side effect. Always addressing the server with
+     * absolute paths keeps every operation independent of that CWD state.
+     */
+    private static String absolute( String path ) {
+        return path.startsWith( "/" ) ? path : "/" + path;
+    }
+
+    private static String parentOf( String path ) {
+        int idx = path.lastIndexOf( '/' );
+        if( idx < 0 ) return "";
+        if( idx == 0 ) return "/";
+        return path.substring( 0, idx );
+    }
+
+    private static String nameOf( String path ) {
+        int idx = path.lastIndexOf( '/' );
+        return idx >= 0 ? path.substring( idx + 1 ) : path;
+    }
+
     protected abstract FTPClient createClient() throws IOException;
 
     protected void afterLogin( FTPClient client ) throws IOException {
@@ -105,7 +158,12 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     FTPClient createAndLoginClient() {
         try {
             FTPClient client = createClient();
+            client.setConnectTimeout( connectTimeoutMillis );
+            client.setDefaultTimeout( defaultTimeoutMillis );
+
             client.connect( host, port );
+            client.setSoTimeout( soTimeoutMillis );
+
             int reply = client.getReplyCode();
             if( !FTPReply.isPositiveCompletion( reply ) ) {
                 client.disconnect();
@@ -152,38 +210,6 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         } catch( Exception e ) {
             log.debug( "error releasing ftp client", e );
         }
-    }
-
-    protected static void disconnect( FTPClient client ) {
-        try {
-            if( client.isConnected() ) {
-                client.logout();
-                client.disconnect();
-            }
-        } catch( IOException e ) {
-            log.debug( "error disconnecting ftp client", e );
-        }
-    }
-
-    /**
-     * FTP commands are resolved relative to the client's current working directory, which
-     * {@link #ensureRemoteDirectory} mutates as a side effect. Always addressing the server with
-     * absolute paths keeps every operation independent of that CWD state.
-     */
-    private static String absolute( String path ) {
-        return path.startsWith( "/" ) ? path : "/" + path;
-    }
-
-    private static String parentOf( String path ) {
-        int idx = path.lastIndexOf( '/' );
-        if( idx < 0 ) return "";
-        if( idx == 0 ) return "/";
-        return path.substring( 0, idx );
-    }
-
-    private static String nameOf( String path ) {
-        int idx = path.lastIndexOf( '/' );
-        return idx >= 0 ? path.substring( idx + 1 ) : path;
     }
 
     private void ensureRemoteDirectory( FTPClient client, String dirPath ) throws IOException {
@@ -393,7 +419,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             InputStream in = client.retrieveFileStream( absolute( path.path ) );
             if( in == null ) {
                 release( client, true );
-                throw new CloudException( "cannot open " + path );
+                throw new CloudException( s( "cannot open ${path}" ) );
             }
             return new FtpInputStream( this, client, in );
         } catch( IOException e ) {
@@ -411,7 +437,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             OutputStream out = client.storeFileStream( absolute( path.path ) );
             if( out == null ) {
                 release( client, true );
-                throw new CloudException( "cannot open output stream for " + path );
+                throw new CloudException( s( "cannot open output stream for ${path}" ) );
             }
             return new FtpOutputStream( this, client, out );
         } catch( IOException e ) {
@@ -430,9 +456,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             String remotePath = absolute( destination.path );
             boolean stored = switch( blobData.content ) {
                 case InputStream inputStream -> client.storeFile( remotePath, inputStream );
-                case String str -> client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
+                case String str ->
+                    client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
                 case byte[] bytes -> client.storeFile( remotePath, new ByteArrayInputStream( bytes ) );
-                case ByteBuffer byteBuffer -> client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
+                case ByteBuffer byteBuffer ->
+                    client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
                 case File file -> {
                     try( InputStream fis = new FileInputStream( file ) ) {
                         yield client.storeFile( remotePath, fis );
@@ -517,7 +545,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     private static class FtpInputStream extends InputStream {
         private final AbstractFileSystemCloudApiFtp owner;
         private final FTPClient client;
-        private final InputStream delegate;
+        private InputStream delegate;
 
         FtpInputStream( AbstractFileSystemCloudApiFtp owner, FTPClient client, InputStream delegate ) {
             this.owner = owner;
@@ -537,12 +565,16 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
         @Override
         public void close() throws IOException {
-            boolean healthy = false;
-            try {
-                delegate.close();
-                healthy = client.completePendingCommand();
-            } finally {
-                owner.release( client, healthy );
+            if( delegate != null ) {
+                boolean healthy = false;
+                try {
+                    Closeables.close( delegate );
+
+                    healthy = client.completePendingCommand();
+                } finally {
+                    delegate = null;
+                    owner.release( client, healthy );
+                }
             }
         }
     }
@@ -550,7 +582,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     private static class FtpOutputStream extends OutputStream {
         private final AbstractFileSystemCloudApiFtp owner;
         private final FTPClient client;
-        private final OutputStream delegate;
+        private OutputStream delegate;
 
         FtpOutputStream( AbstractFileSystemCloudApiFtp owner, FTPClient client, OutputStream delegate ) {
             this.owner = owner;
@@ -575,15 +607,19 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
         @Override
         public void close() throws IOException {
-            boolean healthy = false;
-            try {
-                delegate.close();
-                healthy = client.completePendingCommand();
-                if( !healthy ) {
-                    throw new CloudException( "incomplete ftp transfer" );
+            if( delegate != null ) {
+                boolean healthy = false;
+                try {
+                    Closeables.close( delegate );
+
+                    healthy = client.completePendingCommand();
+                    if( !healthy ) {
+                        throw new CloudException( "incomplete ftp transfer" );
+                    }
+                } finally {
+                    delegate = null;
+                    owner.release( client, healthy );
                 }
-            } finally {
-                owner.release( client, healthy );
             }
         }
     }

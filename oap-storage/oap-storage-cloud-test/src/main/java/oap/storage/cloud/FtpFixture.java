@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -124,10 +125,10 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
     }
 
     public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
-        return getFileSystemConfiguration( removeEmptyFolders, poolMaxSize, true );
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, true ) );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+    public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
@@ -148,11 +149,11 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
             map.put( "fs.default.clouds.container", hostPort() );
         }
 
-        return new FileSystemConfiguration( map );
+        return map;
     }
 
     public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfiguration( removeEmptyFolders, poolMaxSize, addDefaults ) );
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, addDefaults ) );
     }
 
     public String hostPort() {
