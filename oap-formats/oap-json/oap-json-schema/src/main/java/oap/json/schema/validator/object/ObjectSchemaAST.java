@@ -26,7 +26,9 @@ package oap.json.schema.validator.object;
 import oap.json.schema.AbstractSchemaAST;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
     public final Optional<Boolean> additionalProperties;
@@ -34,10 +36,12 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
     public final Optional<Boolean> nested;
     public final Optional<Dynamic> dynamic;
     public final LinkedHashMap<String, AbstractSchemaAST> properties;
+    public final List<String> required;
 
     public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                             Optional<String> extendsValue, Optional<Boolean> nested, Optional<Dynamic> dynamic,
                             LinkedHashMap<String, AbstractSchemaAST> properties,
+                            List<String> required,
                             String path ) {
         super( common, path );
         this.additionalProperties = additionalProperties;
@@ -45,6 +49,7 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
         this.nested = nested;
         this.dynamic = dynamic;
         this.properties = properties;
+        this.required = required;
     }
 
     @Override
@@ -56,6 +61,7 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
             nested.isPresent() ? nested : cs.nested,
             dynamic.isPresent() ? dynamic : cs.dynamic,
             merge( properties, cs.properties ),
+            Stream.concat( required.stream(), cs.required.stream() ).distinct().toList(),
             path
         );
     }
