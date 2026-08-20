@@ -369,6 +369,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
         assertOk( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, false );
         assertFailure( schema1, "{'field1': {'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, "/field1/enabled: required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'c': 1, 'a': 2 }}", _ -> schema2, "/field1/type: required property is missing" );
         assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1 }}", _ -> schema2, "/field1/a: required property is missing" );
         assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'a': 2 }}", _ -> schema2, "/field1/c: required property is missing" );
     }

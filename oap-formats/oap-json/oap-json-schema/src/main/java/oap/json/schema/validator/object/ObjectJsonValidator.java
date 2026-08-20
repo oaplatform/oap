@@ -84,7 +84,8 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         JsonValidatorProperties branchProperties = properties.withoutAdditionalProperties();
 
         schema.ifSchema.ifPresent( ifAst -> {
-            boolean matches = properties.validator.apply( branchProperties, ifAst, value ).isEmpty();
+            boolean matches = declaredPropertiesPresent( ifAst, value )
+                && properties.validator.apply( branchProperties, ifAst, value ).isEmpty();
             if( matches ) {
                 schema.thenSchema.ifPresent( thenAst -> errors.addAll( properties.validator.apply( branchProperties, thenAst, value ) ) );
             } else {
@@ -129,6 +130,11 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         }
 
         return errors;
+    }
+
+    private static boolean declaredPropertiesPresent( AbstractSchemaAST ast, Object value ) {
+        if( !( ast instanceof ObjectSchemaAST objectAst ) || !( value instanceof Map<?, ?> map ) ) return true;
+        return objectAst.properties.keySet().stream().allMatch( k -> map.get( k ) != null );
     }
 
     @Override
