@@ -60,10 +60,16 @@ These keywords apply to most types:
 | `extends: "path/to/schema"` | Merge properties from another schema file |
 | `required: [name, ...]` | Instance must contain every listed property name (draft 2020-12 style; distinct from per-field `required: true`) |
 | `if: {…}`, `then: {…}`, `else: {…}` | Conditional composition (draft 2020-12): when the instance validates against `if`, it must also validate against `then`; otherwise it must validate against `else`. Either branch may be omitted, in which case it imposes no constraint |
+| `allOf: [ {…}, … ]` | Draft 2020-12 boolean combination: instance must validate against every listed subschema |
+| `anyOf: [ {…}, … ]` | Draft 2020-12 boolean combination: instance must validate against at least one listed subschema |
+| `oneOf: [ {…}, … ]` | Draft 2020-12 boolean combination: instance must validate against exactly one listed subschema |
+| `not: {…}` | Draft 2020-12 boolean combination: instance must NOT validate against the given subschema |
 
 > `required: [name, ...]` is the preferred form. Per-field `required: true` (see common keywords above) is deprecated.
 
 > `if`/`then`/`else` subschemas must declare an explicit `type` like any other schema node in this module (draft JSON Schema examples often omit `type` — that's not valid here).
+
+> `allOf`/`anyOf`/`oneOf`/`not` subschemas must likewise declare an explicit `type`. Like `if`/`then`/`else`, they are only recognized on `object`-typed schema nodes.
 
 ```hocon
 // select postal_code format based on country, US vs Canada
@@ -76,6 +82,46 @@ These keywords apply to most types:
   if   { type = object, properties { country { type = string, enum = [ "United States of America" ] } }, required = [ country ] }
   then { type = object, properties { postal_code { type = string, pattern = "[0-9]{5}(-[0-9]{4})?" } } }
   else { type = object, properties { postal_code { type = string, pattern = "[A-Z][0-9][A-Z] [0-9][A-Z][0-9]" } } }
+}
+```
+
+```hocon
+// allOf of two if/then pairs, each independently constraining postal_code by country
+{
+  type = object
+  properties {
+    country     { type = string }
+    postal_code { type = string }
+  }
+  allOf = [
+    {
+      type = object
+      if   { type = object, properties { country { type = string, enum = [ "US" ] } }, required = [ country ] }
+      then { type = object, properties { postal_code { type = string, pattern = "[0-9]{5}(-[0-9]{4})?" } } }
+    }
+    {
+      type = object
+      if   { type = object, properties { country { type = string, enum = [ "CA" ] } }, required = [ country ] }
+      then { type = object, properties { postal_code { type = string, pattern = "[A-Z][0-9][A-Z] [0-9][A-Z][0-9]" } } }
+    }
+  ]
+}
+
+// oneOf — instance must match exactly one of the alternative shapes
+{
+  type = object
+  properties { kind { type = string }, amount { type = double } }
+  oneOf = [
+    { type = object, properties { kind { type = string, enum = [ fixed ] } }, required = [ kind ] }
+    { type = object, properties { kind { type = string, enum = [ percent ] } }, required = [ kind ] }
+  ]
+}
+
+// not — instance must not match the given schema
+{
+  type = object
+  properties { status { type = string } }
+  not { type = object, properties { status { type = string, enum = [ deleted ] } }, required = [ status ] }
 }
 ```
 

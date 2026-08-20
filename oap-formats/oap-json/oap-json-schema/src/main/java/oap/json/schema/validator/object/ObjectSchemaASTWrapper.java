@@ -48,6 +48,10 @@ public class ObjectSchemaASTWrapper extends AbstractSchemaASTWrapper<ObjectSchem
     Optional<AbstractSchemaASTWrapper> ifSchema = Optional.empty();
     Optional<AbstractSchemaASTWrapper> thenSchema = Optional.empty();
     Optional<AbstractSchemaASTWrapper> elseSchema = Optional.empty();
+    List<AbstractSchemaASTWrapper> allOf = List.of();
+    List<AbstractSchemaASTWrapper> anyOf = List.of();
+    List<AbstractSchemaASTWrapper> oneOf = List.of();
+    Optional<AbstractSchemaASTWrapper> notSchema = Optional.empty();
 
     public ObjectSchemaASTWrapper( SchemaId id ) {
         super( id );
@@ -61,9 +65,13 @@ public class ObjectSchemaASTWrapper extends AbstractSchemaASTWrapper<ObjectSchem
         final Optional<AbstractSchemaAST> resolvedIf = ifSchema.map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) );
         final Optional<AbstractSchemaAST> resolvedThen = thenSchema.map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) );
         final Optional<AbstractSchemaAST> resolvedElse = elseSchema.map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) );
+        final List<AbstractSchemaAST> resolvedAllOf = allOf.stream().map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) ).toList();
+        final List<AbstractSchemaAST> resolvedAnyOf = anyOf.stream().map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) ).toList();
+        final List<AbstractSchemaAST> resolvedOneOf = oneOf.stream().map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) ).toList();
+        final Optional<AbstractSchemaAST> resolvedNot = notSchema.map( w -> context.computeIfAbsent( w.id, () -> w.unwrap( context ) ) );
 
         final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, nested, dynamic, p, required,
-            resolvedIf, resolvedThen, resolvedElse, id.toString() );
+            resolvedIf, resolvedThen, resolvedElse, resolvedAllOf, resolvedAnyOf, resolvedOneOf, resolvedNot, id.toString() );
         return extendsSchema.map( es -> objectSchemaAST.merge( es.unwrap( context ) ) ).orElse( objectSchemaAST );
     }
 

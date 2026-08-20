@@ -40,6 +40,10 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
     public final Optional<AbstractSchemaAST> ifSchema;
     public final Optional<AbstractSchemaAST> thenSchema;
     public final Optional<AbstractSchemaAST> elseSchema;
+    public final List<AbstractSchemaAST> allOf;
+    public final List<AbstractSchemaAST> anyOf;
+    public final List<AbstractSchemaAST> oneOf;
+    public final Optional<AbstractSchemaAST> notSchema;
 
     public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                             Optional<String> extendsValue, Optional<Boolean> nested, Optional<Dynamic> dynamic,
@@ -48,6 +52,10 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
                             Optional<AbstractSchemaAST> ifSchema,
                             Optional<AbstractSchemaAST> thenSchema,
                             Optional<AbstractSchemaAST> elseSchema,
+                            List<AbstractSchemaAST> allOf,
+                            List<AbstractSchemaAST> anyOf,
+                            List<AbstractSchemaAST> oneOf,
+                            Optional<AbstractSchemaAST> notSchema,
                             String path ) {
         super( common, path );
         this.additionalProperties = additionalProperties;
@@ -59,6 +67,10 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
         this.ifSchema = ifSchema;
         this.thenSchema = thenSchema;
         this.elseSchema = elseSchema;
+        this.allOf = allOf;
+        this.anyOf = anyOf;
+        this.oneOf = oneOf;
+        this.notSchema = notSchema;
     }
 
     @Override
@@ -74,6 +86,10 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
             ifSchema.isPresent() ? ifSchema : cs.ifSchema,
             thenSchema.isPresent() ? thenSchema : cs.thenSchema,
             elseSchema.isPresent() ? elseSchema : cs.elseSchema,
+            Stream.concat( allOf.stream(), cs.allOf.stream() ).distinct().toList(),
+            Stream.concat( anyOf.stream(), cs.anyOf.stream() ).distinct().toList(),
+            Stream.concat( oneOf.stream(), cs.oneOf.stream() ).distinct().toList(),
+            notSchema.isPresent() ? notSchema : cs.notSchema,
             path
         );
     }
