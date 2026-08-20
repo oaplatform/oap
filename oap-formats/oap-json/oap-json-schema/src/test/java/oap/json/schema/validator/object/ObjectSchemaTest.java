@@ -110,6 +110,18 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void additionalPropertiesFalseDoesNotLeakIntoAllOfBranch() {
+        String schema = "{"
+            + "additionalProperties: false, "
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "allOf: [ { required = [a] } ]"
+            + "}";
+
+        assertOk( schema, "{'a': 'x'}" );
+    }
+
+    @Test
     public void requiredArrayOk() {
         String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
 
@@ -316,18 +328,27 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testAllOf() {
-        String schema = """
+        String schema1 = """
+            {
+              type = object
+              additionalProperties = false
+              properties {
+                field1 = {"$ref" = "/schema/test2" }
+              }
+            }""";
+
+        String schema2 = """
             {
               type = object
               properties {
                 enabled.type = boolean
-                minTotalClicks.type = integer
-                minTotalInstalls.type = integer
+                a.type = integer
+                b.type = integer
                 type {
                   type = string
-                  enum = [CPI, CPC]
+                  enum = [B1, A2]
                 }
-                minImpressions.type = integer
+                c.type = integer
                 trafficLeak {
                   type = double
                   minimum = 0.0
@@ -338,15 +359,15 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
               required = [enabled, type]
 
               allOf:
-                - if {properties {enabled.const: true, type.const: CPC}}
-                  then {required = [minTotalClicks]}
-                - if {properties {enabled.const: true, type.const: CPI}}
-                  then {required = [minTotalInstalls]}
+                - if {properties {enabled.const: true, type.const: A2}}
+                  then {required = [a]}
+                - if {properties {enabled.const: true, type.const: B1}}
+                  then {required = [b]}
                 - if {properties {enabled.const: true}}
-                  then {required = [minImpressions]}
+                  then {required = [c]}
             }""";
 
-        assertOk( schema, "{'enabled': true, 'type': 'CPC', 'minImpressions': 1, 'minTotalClicks': 2 }" );
+        assertOk( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, false );
     }
 
     @Test

@@ -74,6 +74,11 @@ public class JsonValidatorProperties {
             .orElse( this );
     }
 
+    public JsonValidatorProperties withoutAdditionalProperties() {
+        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, path, forceIgnoreAdditionalProperties,
+            Optional.empty(), ignoreRequiredDefault, validator );
+    }
+
 
     public String error( String message ) {
         return error( path, message );

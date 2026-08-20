@@ -81,31 +81,33 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             .filter( v -> !objectProperties.containsKey( v ) )
             .toList();
 
+        JsonValidatorProperties branchProperties = properties.withoutAdditionalProperties();
+
         schema.ifSchema.ifPresent( ifAst -> {
-            boolean matches = properties.validator.apply( properties, ifAst, value ).isEmpty();
+            boolean matches = properties.validator.apply( branchProperties, ifAst, value ).isEmpty();
             if( matches ) {
-                schema.thenSchema.ifPresent( thenAst -> errors.addAll( properties.validator.apply( properties, thenAst, value ) ) );
+                schema.thenSchema.ifPresent( thenAst -> errors.addAll( properties.validator.apply( branchProperties, thenAst, value ) ) );
             } else {
-                schema.elseSchema.ifPresent( elseAst -> errors.addAll( properties.validator.apply( properties, elseAst, value ) ) );
+                schema.elseSchema.ifPresent( elseAst -> errors.addAll( properties.validator.apply( branchProperties, elseAst, value ) ) );
             }
         } );
 
-        schema.allOf.forEach( ast -> errors.addAll( properties.validator.apply( properties, ast, value ) ) );
+        schema.allOf.forEach( ast -> errors.addAll( properties.validator.apply( branchProperties, ast, value ) ) );
 
         if( !schema.anyOf.isEmpty()
-            && schema.anyOf.stream().noneMatch( ast -> properties.validator.apply( properties, ast, value ).isEmpty() ) ) {
+            && schema.anyOf.stream().noneMatch( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ) ) {
             errors.add( properties.error( "instance does not match any schema in anyOf" ) );
         }
 
         if( !schema.oneOf.isEmpty() ) {
-            long matched = schema.oneOf.stream().filter( ast -> properties.validator.apply( properties, ast, value ).isEmpty() ).count();
+            long matched = schema.oneOf.stream().filter( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ).count();
             if( matched != 1 ) {
                 errors.add( properties.error( "instance must match exactly one schema in oneOf, matched " + matched ) );
             }
         }
 
         schema.notSchema.ifPresent( notAst -> {
-            if( properties.validator.apply( properties, notAst, value ).isEmpty() ) {
+            if( properties.validator.apply( branchProperties, notAst, value ).isEmpty() ) {
                 errors.add( properties.error( "instance must not be valid against the schema in not" ) );
             }
         } );
