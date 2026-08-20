@@ -114,7 +114,8 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
 
         if( !properties.ignoreRequiredDefault ) {
             for( String name : schema.required ) {
-                if( objectProperties.containsKey( name ) && mapValue.get( name ) == null ) {
+                boolean gateOk = !schema.properties.containsKey( name ) || objectProperties.containsKey( name );
+                if( gateOk && mapValue.get( name ) == null ) {
                     errors.add( properties.withPath( name ).error( "required property is missing" ) );
                 }
             }
