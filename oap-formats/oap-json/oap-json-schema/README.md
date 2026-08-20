@@ -25,7 +25,7 @@ These keywords apply to most types:
 
 | Keyword | Description |
 |---|---|
-| `required: true` | Field must be present and non-null |
+| `required: true` | **Deprecated** — per-field marker meaning the field must be present and non-null. Prefer the object-level `required: [name, ...]` array (draft 2020-12 style, see `object` keywords below) |
 | `default: <value>` | Default value applied when the field is null (returned from validate) |
 | `enum: [val1, val2]` | Static allowed-values constraint |
 | `enum: {json-path: fieldName}` | Dynamic enum — allowed values taken from another field in the same object |
@@ -58,6 +58,9 @@ These keywords apply to most types:
 | `properties: { name: {…} }` | Named child schemas |
 | `additionalProperties: false` | Reject properties not listed in `properties` |
 | `extends: "path/to/schema"` | Merge properties from another schema file |
+| `required: [name, ...]` | Instance must contain every listed property name (draft 2020-12 style; distinct from per-field `required: true`) |
+
+> `required: [name, ...]` is the preferred form. Per-field `required: true` (see common keywords above) is deprecated.
 
 ### `array`
 
@@ -117,6 +120,16 @@ Uses another schema as the type for a field or array items.
     age    { type = integer, minimum = 0 }
     active { type = boolean, default = true }
   }
+}
+
+// Object with draft 2020-12 style required properties
+{
+  type = object
+  properties {
+    name { type = string }
+    age  { type = integer, minimum = 0 }
+  }
+  required = [name]
 }
 
 // Array of objects

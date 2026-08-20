@@ -27,6 +27,8 @@ package oap.json.schema.validator.object;
 import oap.json.schema.AbstractSchemaTest;
 import org.testng.annotations.Test;
 
+import static oap.json.schema.ResourceSchemaStorage.INSTANCE;
+
 public class ObjectSchemaTest extends AbstractSchemaTest {
     @Test
     public void object() {
@@ -105,5 +107,47 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "{}" );
         assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );
+    }
+
+    @Test
+    public void requiredArrayOk() {
+        String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
+
+        assertOk( schema, "{'a': 'x'}" );
+    }
+
+    @Test
+    public void requiredArrayMissing() {
+        String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
+
+        assertFailure( schema, "{}", "/a: required property is missing" );
+    }
+
+    @Test
+    public void requiredArrayNullValue() {
+        String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
+
+        assertFailure( schema, "{'a': null}", "/a: required property is missing" );
+    }
+
+    @Test
+    public void requiredArrayMultiple() {
+        String schema = "{type: object, properties: {a: {type: string}, b: {type: string}}, required: [a, b]}";
+
+        assertFailure( schema, "{'a': 'x'}", "/b: required property is missing" );
+    }
+
+    @Test
+    public void requiredArrayIgnoreRequiredDefault() {
+        String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
+
+        assertOk( schema, "{}", true );
+    }
+
+    @Test
+    public void requiredArrayDoesNotCollideWithPerFieldRequired() {
+        String schema = "{type: object, properties: {a: {type: string, required: true}, b: {type: string}}, required: [b]}";
+
+        assertFailure( schema, "{}", INSTANCE, "/a: required property is missing", "/b: required property is missing" );
     }
 }

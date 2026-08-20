@@ -233,7 +233,7 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
 
         public Optional<BooleanReference> asBooleanReference( String field ) {
             Object enabledObj = properties.node.get( field );
-            if( enabledObj == null ) return Optional.empty();
+            if( enabledObj == null || enabledObj instanceof List ) return Optional.empty();
 
             if( enabledObj instanceof Boolean enabled ) {
                 return Optional.of( enabled ? BooleanReference.TRUE : BooleanReference.FALSE );

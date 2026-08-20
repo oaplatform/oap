@@ -44,6 +44,7 @@ public class ObjectSchemaASTWrapper extends AbstractSchemaASTWrapper<ObjectSchem
     Optional<String> extendsValue;
     Optional<Boolean> nested;
     Optional<Dynamic> dynamic;
+    List<String> required = List.of();
 
     public ObjectSchemaASTWrapper( SchemaId id ) {
         super( id );
@@ -54,7 +55,7 @@ public class ObjectSchemaASTWrapper extends AbstractSchemaASTWrapper<ObjectSchem
         final LinkedHashMap<String, AbstractSchemaAST> p = new LinkedHashMap<>();
         declaredProperties.forEach( ( key, value ) -> p.put( key, context.computeIfAbsent( value.id, () -> value.unwrap( context ) ) ) );
 
-        final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, nested, dynamic, p, id.toString() );
+        final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, nested, dynamic, p, required, id.toString() );
         return extendsSchema.map( es -> objectSchemaAST.merge( es.unwrap( context ) ) ).orElse( objectSchemaAST );
     }
 
