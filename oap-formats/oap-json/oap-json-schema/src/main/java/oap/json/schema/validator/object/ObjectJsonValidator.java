@@ -89,6 +89,26 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             }
         } );
 
+        schema.allOf.forEach( ast -> errors.addAll( properties.validator.apply( properties, ast, value ) ) );
+
+        if( !schema.anyOf.isEmpty()
+            && schema.anyOf.stream().noneMatch( ast -> properties.validator.apply( properties, ast, value ).isEmpty() ) ) {
+            errors.add( properties.error( "instance does not match any schema in anyOf" ) );
+        }
+
+        if( !schema.oneOf.isEmpty() ) {
+            long matched = schema.oneOf.stream().filter( ast -> properties.validator.apply( properties, ast, value ).isEmpty() ).count();
+            if( matched != 1 ) {
+                errors.add( properties.error( "instance must match exactly one schema in oneOf, matched " + matched ) );
+            }
+        }
+
+        schema.notSchema.ifPresent( notAst -> {
+            if( properties.validator.apply( properties, notAst, value ).isEmpty() ) {
+                errors.add( properties.error( "instance must not be valid against the schema in not" ) );
+            }
+        } );
+
         if( !properties.ignoreRequiredDefault ) {
             for( String name : schema.required ) {
                 if( objectProperties.containsKey( name ) && mapValue.get( name ) == null ) {
@@ -129,6 +149,11 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         wrapper.ifSchema = node( context ).asAST( "if", context ).optional();
         wrapper.thenSchema = node( context ).asAST( "then", context ).optional();
         wrapper.elseSchema = node( context ).asAST( "else", context ).optional();
+
+        wrapper.allOf = node( context ).asListAST( "allOf", context ).optional().orElse( List.of() );
+        wrapper.anyOf = node( context ).asListAST( "anyOf", context ).optional().orElse( List.of() );
+        wrapper.oneOf = node( context ).asListAST( "oneOf", context ).optional().orElse( List.of() );
+        wrapper.notSchema = node( context ).asAST( "not", context ).optional();
 
         return wrapper;
     }

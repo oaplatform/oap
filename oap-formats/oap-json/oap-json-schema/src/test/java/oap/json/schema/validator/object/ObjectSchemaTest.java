@@ -212,4 +212,103 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "{}" );
     }
+
+    @Test
+    public void allOfOk() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}, b: {type: string}}, "
+            + "allOf: [ {type: object, properties: {a: {type: string}}, required: [a]}, {type: object, properties: {b: {type: string}}, required: [b]} ]"
+            + "}";
+
+        assertOk( schema, "{'a': 'x', 'b': 'y'}" );
+    }
+
+    @Test
+    public void allOfFailure() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}, b: {type: string}}, "
+            + "allOf: [ {type: object, properties: {a: {type: string}}, required: [a]}, {type: object, properties: {b: {type: string}}, required: [b]} ]"
+            + "}";
+
+        assertFailure( schema, "{'a': 'x'}", "/b: required property is missing" );
+    }
+
+    @Test
+    public void anyOfOk() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "anyOf: [ {type: object, properties: {a: {type: string, enum: [foo]}}, required: [a]}, {type: object, properties: {a: {type: string, enum: [bar]}}, required: [a]} ]"
+            + "}";
+
+        assertOk( schema, "{'a': 'bar'}" );
+    }
+
+    @Test
+    public void anyOfFailure() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "anyOf: [ {type: object, properties: {a: {type: string, enum: [foo]}}, required: [a]}, {type: object, properties: {a: {type: string, enum: [bar]}}, required: [a]} ]"
+            + "}";
+
+        assertFailure( schema, "{'a': 'baz'}", "instance does not match any schema in anyOf" );
+    }
+
+    @Test
+    public void oneOfOk() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "oneOf: [ {type: object, properties: {a: {type: string, enum: [foo]}}, required: [a]}, {type: object, properties: {a: {type: string, enum: [bar]}}, required: [a]} ]"
+            + "}";
+
+        assertOk( schema, "{'a': 'bar'}" );
+    }
+
+    @Test
+    public void oneOfFailureNoneMatch() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "oneOf: [ {type: object, properties: {a: {type: string, enum: [foo]}}, required: [a]}, {type: object, properties: {a: {type: string, enum: [bar]}}, required: [a]} ]"
+            + "}";
+
+        assertFailure( schema, "{'a': 'baz'}", "instance must match exactly one schema in oneOf, matched 0" );
+    }
+
+    @Test
+    public void oneOfFailureMultipleMatch() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "oneOf: [ {type: object, properties: {a: {type: string}}}, {type: object, properties: {a: {type: string}}} ]"
+            + "}";
+
+        assertFailure( schema, "{'a': 'x'}", "instance must match exactly one schema in oneOf, matched 2" );
+    }
+
+    @Test
+    public void notOk() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
+            + "}";
+
+        assertOk( schema, "{'a': 'allowed'}" );
+    }
+
+    @Test
+    public void notFailure() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
+            + "}";
+
+        assertFailure( schema, "{'a': 'forbidden'}", "instance must not be valid against the schema in not" );
+    }
 }

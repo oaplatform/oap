@@ -26,6 +26,7 @@ package oap.json.schema;
 import oap.util.Lists;
 import oap.util.Pair;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,6 +151,27 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
                     }
                     context.astW.putIfAbsent( aw.id, aw );
                     return aw;
+                } ) );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public PropertyParser<List<AbstractSchemaASTWrapper>> asListAST( String property, JsonSchemaParserContext context ) {
+            return new PropertyParser<>( property, properties,
+                Optional.ofNullable( ( List<Object> ) properties.node.get( property ) ).map( list -> {
+                    List<AbstractSchemaASTWrapper> result = new ArrayList<>();
+                    for( int i = 0; i < list.size(); i++ ) {
+                        NodeResponse nodeResponse = context.withNode( property + "[" + i + "]", list.get( i ) );
+
+                        AbstractSchemaASTWrapper aw;
+                        if( nodeResponse.schema != null ) {
+                            aw = nodeResponse.schema;
+                        } else {
+                            aw = context.mapParser.apply( nodeResponse.context );
+                        }
+                        context.astW.putIfAbsent( aw.id, aw );
+                        result.add( aw );
+                    }
+                    return result;
                 } ) );
         }
 
