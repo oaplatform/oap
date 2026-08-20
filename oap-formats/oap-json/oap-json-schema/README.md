@@ -30,7 +30,7 @@ These keywords apply to most types:
 | `enum: [val1, val2]` | Static allowed-values constraint |
 | `enum: {json-path: fieldName}` | Dynamic enum — allowed values taken from another field in the same object |
 | `enum: {json-path: fieldName, ne: excluded}` | Dynamic enum with one value excluded |
-| `enabled: {json-path: fieldName, eq: value}` | Field is only validated when another field equals a specific value |
+| `enabled: {json-path: fieldName, eq: value}` | **Deprecated** — field is only validated when another field equals a specific value. Prefer object-level `if`/`then`/`else` (draft 2020-12 style, see `object` keywords below) |
 
 ## Type-specific keywords
 
@@ -59,8 +59,25 @@ These keywords apply to most types:
 | `additionalProperties: false` | Reject properties not listed in `properties` |
 | `extends: "path/to/schema"` | Merge properties from another schema file |
 | `required: [name, ...]` | Instance must contain every listed property name (draft 2020-12 style; distinct from per-field `required: true`) |
+| `if: {…}`, `then: {…}`, `else: {…}` | Conditional composition (draft 2020-12): when the instance validates against `if`, it must also validate against `then`; otherwise it must validate against `else`. Either branch may be omitted, in which case it imposes no constraint |
 
 > `required: [name, ...]` is the preferred form. Per-field `required: true` (see common keywords above) is deprecated.
+
+> `if`/`then`/`else` subschemas must declare an explicit `type` like any other schema node in this module (draft JSON Schema examples often omit `type` — that's not valid here).
+
+```hocon
+// select postal_code format based on country, US vs Canada
+{
+  type = object
+  properties {
+    country     { type = string }
+    postal_code { type = string }
+  }
+  if   { type = object, properties { country { type = string, enum = [ "United States of America" ] } }, required = [ country ] }
+  then { type = object, properties { postal_code { type = string, pattern = "[0-9]{5}(-[0-9]{4})?" } } }
+  else { type = object, properties { postal_code { type = string, pattern = "[A-Z][0-9][A-Z] [0-9][A-Z][0-9]" } } }
+}
+```
 
 ### `array`
 

@@ -150,4 +150,66 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
         assertFailure( schema, "{}", INSTANCE, "/a: required property is missing", "/b: required property is missing" );
     }
+
+    @Test
+    public void ifThenOk() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}, b: {type: string}}, "
+            + "if: {type: object, properties: {a: {type: string}}, required: [a]}, "
+            + "then: {type: object, properties: {b: {type: string}}, required: [b]}"
+            + "}";
+
+        assertOk( schema, "{'a': 'x', 'b': 'y'}" );
+    }
+
+    @Test
+    public void ifThenElseThenBranch() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {country: {type: string}, postalCode: {type: string}}, "
+            + "if: {type: object, properties: {country: {type: string, enum: [US]}}, required: [country]}, "
+            + "then: {type: object, properties: {postalCode: {type: string}}, required: [postalCode]}, "
+            + "else: {type: object, properties: {postalCode: {type: string}}}"
+            + "}";
+
+        assertFailure( schema, "{'country': 'US'}", "/postalCode: required property is missing" );
+    }
+
+    @Test
+    public void ifThenElseElseBranch() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {country: {type: string}, postalCode: {type: string}}, "
+            + "if: {type: object, properties: {country: {type: string, enum: [US]}}, required: [country]}, "
+            + "then: {type: object, properties: {postalCode: {type: string}}, required: [postalCode]}, "
+            + "else: {type: object, properties: {postalCode: {type: string}}, required: [postalCode]}"
+            + "}";
+
+        assertFailure( schema, "{'country': 'CA'}", "/postalCode: required property is missing" );
+    }
+
+    @Test
+    public void ifWithoutThenOrElse() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "if: {type: object, properties: {a: {type: string}}, required: [a]}"
+            + "}";
+
+        assertOk( schema, "{'a': 'x'}" );
+        assertOk( schema, "{}" );
+    }
+
+    @Test
+    public void ifFailsNoElseBranch() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {type: string}, b: {type: string}}, "
+            + "if: {type: object, properties: {a: {type: string}}, required: [a]}, "
+            + "then: {type: object, properties: {b: {type: string}}, required: [b]}"
+            + "}";
+
+        assertOk( schema, "{}" );
+    }
 }
