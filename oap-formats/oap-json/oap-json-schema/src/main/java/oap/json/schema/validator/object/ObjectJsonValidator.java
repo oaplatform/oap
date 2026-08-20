@@ -33,6 +33,7 @@ import oap.util.Stream;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -140,7 +141,7 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         wrapper.extendsSchema = wrapper.extendsValue
             .map( url -> ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) );
 
-        wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
+        wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).optional().orElseGet( LinkedHashMap::new );
 
         wrapper.required = node( context ).asList( "required" ).optional()
             .map( list -> list.stream().map( String.class::cast ).toList() )

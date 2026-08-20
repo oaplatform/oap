@@ -69,7 +69,7 @@
     <properties>
         <oap.project.version>25.11.4</oap.project.version>
 
-        <oap.deps.config.version>25.0.1</oap.deps.config.version>
+        <oap.deps.config.version>25.1.0.CE-191-oap-config-Block-arrays-YAML-style.37</oap.deps.config.version>
         <oap.deps.oap-teamcity.version>25.0.0</oap.deps.oap-teamcity.version>
 
         <oap.deps.localstack.version>1.21.4</oap.deps.localstack.version>

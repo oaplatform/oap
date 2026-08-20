@@ -292,23 +292,83 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void notOk() {
-        String schema = "{"
-            + "type: object, "
-            + "properties: {a: {type: string}}, "
-            + "not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
-            + "}";
+        String schema = """
+            {
+                type: object
+                properties: {a: {type: string}}
+                not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}
+            }""";
 
         assertOk( schema, "{'a': 'allowed'}" );
     }
 
     @Test
     public void notFailure() {
+        String schema = """
+            {
+                type: object
+                properties: {a: {type: string}}
+                not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}
+            }""";
+
+        assertFailure( schema, "{'a': 'forbidden'}", "instance must not be valid against the schema in not" );
+    }
+
+    @Test
+    public void testAllOf() {
+        String schema = """
+            {
+              type = object
+              properties {
+                enabled.type = boolean
+                minTotalClicks.type = integer
+                minTotalInstalls.type = integer
+                type {
+                  type = string
+                  enum = [CPI, CPC]
+                }
+                minImpressions.type = integer
+                trafficLeak {
+                  type = double
+                  minimum = 0.0
+                  maximum = 1.0
+                }
+              }
+
+              required = [enabled, type]
+
+              allOf:
+                - if {properties {enabled.const: true, type.const: CPC}}
+                  then {required = [minTotalClicks]}
+                - if {properties {enabled.const: true, type.const: CPI}}
+                  then {required = [minTotalInstalls]}
+                - if {properties {enabled.const: true}}
+                  then {required = [minImpressions]}
+            }""";
+
+        assertOk( schema, "{'enabled': true, 'type': 'CPC', 'minImpressions': 1, 'minTotalClicks': 2 }" );
+    }
+
+    @Test
+    public void typelessObjectInference() {
         String schema = "{"
             + "type: object, "
             + "properties: {a: {type: string}}, "
-            + "not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
+            + "not: {properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
             + "}";
 
+        assertOk( schema, "{'a': 'allowed'}" );
         assertFailure( schema, "{'a': 'forbidden'}", "instance must not be valid against the schema in not" );
+    }
+
+    @Test
+    public void typelessAnyInference() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {const: true}}"
+            + "}";
+
+        assertOk( schema, "{'a': true}" );
+        assertFailure( schema, "{'a': 'nope'}", "/a: instance does not equal const value 'true'" );
     }
 }

@@ -47,6 +47,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
         public final Optional<BooleanReference> enabled;
         public final Optional<Object> defaultValue;
         public final Optional<EnumFunction> enumValue;
+        public final Optional<Object> constValue;
         public final Optional<String> title;
         public final Optional<String> description;
         public final ArrayList<Object> examples = new ArrayList<>();
@@ -56,6 +57,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                                 Optional<BooleanReference> enabled,
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
+                                Optional<Object> constValue,
                                 Optional<String> title,
                                 Optional<String> description,
                                 List<Object> examples
@@ -65,6 +67,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
             this.enabled = enabled;
             this.defaultValue = defaultValue;
             this.enumValue = enumValue;
+            this.constValue = constValue;
             this.title = title;
             this.description = description;
             this.examples.addAll( examples );
@@ -78,6 +81,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                 enabled.isPresent() ? enabled : common.enabled,
                 defaultValue.isPresent() ? defaultValue : common.defaultValue,
                 enumValue.isPresent() ? enumValue : common.enumValue,
+                constValue.isPresent() ? constValue : common.constValue,
                 title.isPresent() ? title : common.title,
                 description.isPresent() ? description : common.description,
                 Lists.concat( examples, examples )
