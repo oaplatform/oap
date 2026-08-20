@@ -37,11 +37,17 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
     public final Optional<Dynamic> dynamic;
     public final LinkedHashMap<String, AbstractSchemaAST> properties;
     public final List<String> required;
+    public final Optional<AbstractSchemaAST> ifSchema;
+    public final Optional<AbstractSchemaAST> thenSchema;
+    public final Optional<AbstractSchemaAST> elseSchema;
 
     public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                             Optional<String> extendsValue, Optional<Boolean> nested, Optional<Dynamic> dynamic,
                             LinkedHashMap<String, AbstractSchemaAST> properties,
                             List<String> required,
+                            Optional<AbstractSchemaAST> ifSchema,
+                            Optional<AbstractSchemaAST> thenSchema,
+                            Optional<AbstractSchemaAST> elseSchema,
                             String path ) {
         super( common, path );
         this.additionalProperties = additionalProperties;
@@ -50,6 +56,9 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
         this.dynamic = dynamic;
         this.properties = properties;
         this.required = required;
+        this.ifSchema = ifSchema;
+        this.thenSchema = thenSchema;
+        this.elseSchema = elseSchema;
     }
 
     @Override
@@ -62,6 +71,9 @@ public class ObjectSchemaAST extends AbstractSchemaAST<ObjectSchemaAST> {
             dynamic.isPresent() ? dynamic : cs.dynamic,
             merge( properties, cs.properties ),
             Stream.concat( required.stream(), cs.required.stream() ).distinct().toList(),
+            ifSchema.isPresent() ? ifSchema : cs.ifSchema,
+            thenSchema.isPresent() ? thenSchema : cs.thenSchema,
+            elseSchema.isPresent() ? elseSchema : cs.elseSchema,
             path
         );
     }

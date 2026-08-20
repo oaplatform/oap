@@ -80,6 +80,15 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             .filter( v -> !objectProperties.containsKey( v ) )
             .toList();
 
+        schema.ifSchema.ifPresent( ifAst -> {
+            boolean matches = properties.validator.apply( properties, ifAst, value ).isEmpty();
+            if( matches ) {
+                schema.thenSchema.ifPresent( thenAst -> errors.addAll( properties.validator.apply( properties, thenAst, value ) ) );
+            } else {
+                schema.elseSchema.ifPresent( elseAst -> errors.addAll( properties.validator.apply( properties, elseAst, value ) ) );
+            }
+        } );
+
         if( !properties.ignoreRequiredDefault ) {
             for( String name : schema.required ) {
                 if( objectProperties.containsKey( name ) && mapValue.get( name ) == null ) {
@@ -116,6 +125,10 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         wrapper.required = node( context ).asList( "required" ).optional()
             .map( list -> list.stream().map( String.class::cast ).toList() )
             .orElse( List.of() );
+
+        wrapper.ifSchema = node( context ).asAST( "if", context ).optional();
+        wrapper.thenSchema = node( context ).asAST( "then", context ).optional();
+        wrapper.elseSchema = node( context ).asAST( "else", context ).optional();
 
         return wrapper;
     }
