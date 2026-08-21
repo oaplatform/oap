@@ -4,7 +4,7 @@ Data-driven JSON schema validation for the OAP platform. Schemas are HOCON or JS
 
 ## Schema types
 
-Schemas are written in HOCON (or JSON). Every schema node has a `type` field.
+Schemas are written in HOCON (or JSON). Every schema node normally has a `type` field, but it may be omitted — see [Type inference](#type-inference) below.
 
 | Type | Description |
 |---|---|
@@ -30,7 +30,22 @@ These keywords apply to most types:
 | `enum: [val1, val2]` | Static allowed-values constraint |
 | `enum: {json-path: fieldName}` | Dynamic enum — allowed values taken from another field in the same object |
 | `enum: {json-path: fieldName, ne: excluded}` | Dynamic enum with one value excluded |
+| `const: <value>` | Instance must equal this exact value (draft 2020-12) |
 | `enabled: {json-path: fieldName, eq: value}` | **Deprecated** — field is only validated when another field equals a specific value. Prefer object-level `if`/`then`/`else` (draft 2020-12 style, see `object` keywords below) |
+
+## Type inference
+
+`type` may be omitted on any schema node (except the schema root). When it's missing, the type is inferred from the node's own keywords, in order:
+
+| If the node has... | Inferred type |
+|---|---|
+| `required: [...]` (a list), `properties`, `additionalProperties`, `extends`, `if`/`then`/`else`, `allOf`/`anyOf`/`oneOf`/`not`, `nested`, `dynamic` | `object` |
+| `items`, `minItems`, `maxItems`, `id` | `array` |
+| `minLength`, `maxLength`, `pattern` | `string` |
+| `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` | `double` (typeless numeric schemas can't distinguish `integer`/`long`/`double` — declare `type` explicitly when precision matters) |
+| none of the above (only `const`, `enum`, `default`, `title`, `description`, `examples`, or empty) | `any` — no type check is applied, only whatever common keywords are present |
+
+`boolean`, `date`, and `dictionary` schemas have no keywords of their own to infer from, so they still require an explicit `type`. `object` schemas may also omit `properties` entirely (e.g. a pure `if`/`then`/`allOf` combinator with no fields of its own).
 
 ## Type-specific keywords
 
@@ -67,9 +82,7 @@ These keywords apply to most types:
 
 > `required: [name, ...]` is the preferred form. Per-field `required: true` (see common keywords above) is deprecated.
 
-> `if`/`then`/`else` subschemas must declare an explicit `type` like any other schema node in this module (draft JSON Schema examples often omit `type` — that's not valid here).
-
-> `allOf`/`anyOf`/`oneOf`/`not` subschemas must likewise declare an explicit `type`. Like `if`/`then`/`else`, they are only recognized on `object`-typed schema nodes.
+> `if`/`then`/`else`/`allOf`/`anyOf`/`oneOf`/`not` subschemas may omit `type` — see [Type inference](#type-inference). They're only recognized on `object`-typed schema nodes (explicit or inferred).
 
 ```hocon
 // select postal_code format based on country, US vs Canada
@@ -122,6 +135,23 @@ These keywords apply to most types:
   type = object
   properties { status { type = string } }
   not { type = object, properties { status { type = string, enum = [ deleted ] } }, required = [ status ] }
+}
+
+// allOf of typeless if/then combinators (type inferred as object from `if`/`then`;
+// the leaf `const` schemas below have no structural keywords, so they infer as `any`)
+{
+  type = object
+  properties {
+    enabled.type = boolean
+    type         { type = string, enum = [CPI, CPC] }
+    minTotalClicks.type   = integer
+    minTotalInstalls.type = integer
+  }
+  required = [enabled, type]
+  allOf = [
+    { if { properties { enabled.const = true, type.const = CPC } }, then { required = [minTotalClicks] } }
+    { if { properties { enabled.const = true, type.const = CPI } }, then { required = [minTotalInstalls] } }
+  ]
 }
 ```
 

@@ -110,6 +110,18 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void additionalPropertiesFalseDoesNotLeakIntoAllOfBranch() {
+        String schema = "{"
+            + "additionalProperties: false, "
+            + "type: object, "
+            + "properties: {a: {type: string}}, "
+            + "allOf: [ { required = [a] } ]"
+            + "}";
+
+        assertOk( schema, "{'a': 'x'}" );
+    }
+
+    @Test
     public void requiredArrayOk() {
         String schema = "{type: object, properties: {a: {type: string}}, required: [a]}";
 
@@ -292,23 +304,96 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void notOk() {
-        String schema = "{"
-            + "type: object, "
-            + "properties: {a: {type: string}}, "
-            + "not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
-            + "}";
+        String schema = """
+            {
+                type: object
+                properties: {a: {type: string}}
+                not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}
+            }""";
 
         assertOk( schema, "{'a': 'allowed'}" );
     }
 
     @Test
     public void notFailure() {
+        String schema = """
+            {
+                type: object
+                properties: {a: {type: string}}
+                not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}
+            }""";
+
+        assertFailure( schema, "{'a': 'forbidden'}", "instance must not be valid against the schema in not" );
+    }
+
+    @Test
+    public void testAllOf() {
+        String schema1 = """
+            {
+              type = object
+              additionalProperties = false
+              properties {
+                field1 = {"$ref" = "/schema/test2" }
+              }
+            }""";
+
+        String schema2 = """
+            {
+              type = object
+              properties {
+                enabled.type = boolean
+                a.type = integer
+                b.type = integer
+                type {
+                  type = string
+                  enum = [B1, A2]
+                }
+                c.type = integer
+                trafficLeak {
+                  type = double
+                  minimum = 0.0
+                  maximum = 1.0
+                }
+              }
+
+              required = [enabled, type]
+
+              allOf:
+                - if {properties {enabled.const: true, type.const: A2}}
+                  then {required = [a]}
+                - if {properties {enabled.const: true, type.const: B1}}
+                  then {required = [b]}
+                - if {properties {enabled.const: true}}
+                  then {required = [c]}
+            }""";
+
+        assertOk( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, false );
+        assertFailure( schema1, "{'field1': {'type': 'A2', 'c': 1, 'a': 2 }}", _ -> schema2, "/field1/enabled: required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'c': 1, 'a': 2 }}", _ -> schema2, "/field1/type: required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'c': 1 }}", _ -> schema2, "/field1/a: required property is missing" );
+        assertFailure( schema1, "{'field1': {'enabled': true, 'type': 'A2', 'a': 2 }}", _ -> schema2, "/field1/c: required property is missing" );
+    }
+
+    @Test
+    public void typelessObjectInference() {
         String schema = "{"
             + "type: object, "
             + "properties: {a: {type: string}}, "
-            + "not: {type: object, properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
+            + "not: {properties: {a: {type: string, enum: [forbidden]}}, required: [a]}"
             + "}";
 
+        assertOk( schema, "{'a': 'allowed'}" );
         assertFailure( schema, "{'a': 'forbidden'}", "instance must not be valid against the schema in not" );
+    }
+
+    @Test
+    public void typelessAnyInference() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {a: {const: true}}"
+            + "}";
+
+        assertOk( schema, "{'a': true}" );
+        assertFailure( schema, "{'a': 'nope'}", "/a: instance does not equal const value 'true'" );
     }
 }

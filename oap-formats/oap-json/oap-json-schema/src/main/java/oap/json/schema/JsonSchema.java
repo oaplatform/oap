@@ -41,6 +41,7 @@ import oap.util.Lists;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -168,6 +169,9 @@ public class JsonSchema {
                 } )
                 .ifPresent( e -> errors.add( properties.error( "instance of '" + value + "' does not match any member resolve the enumeration "
                     + e.apply( properties.rootJson, properties.path ) ) ) );
+            schema.common.constValue
+                .filter( c -> !Objects.equals( c, value ) )
+                .ifPresent( c -> errors.add( properties.error( "instance does not equal const value '" + c + "'" ) ) );
             return errors;
         }
     }

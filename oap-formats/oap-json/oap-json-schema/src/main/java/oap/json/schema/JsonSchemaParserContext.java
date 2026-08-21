@@ -24,13 +24,24 @@
 package oap.json.schema;
 
 import java.util.HashMap;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class JsonSchemaParserContext {
     public static final SchemaId ROOT_ID = new SchemaId( "", "", "" );
+
+    private static final Set<String> OBJECT_HINT_KEYS = Set.of(
+        "properties", "additionalProperties", "extends", "if", "then", "else",
+        "allOf", "anyOf", "oneOf", "not", "nested", "dynamic" );
+    private static final Set<String> ARRAY_HINT_KEYS = Set.of( "items", "minItems", "maxItems", "id" );
+    private static final Set<String> STRING_HINT_KEYS = Set.of( "minLength", "maxLength", "pattern" );
+    private static final Set<String> NUMBER_HINT_KEYS = Set.of( "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum" );
+
     public final Map<?, ?> node;
     public final String schemaType;
     public final Function<JsonSchemaParserContext, AbstractSchemaASTWrapper> mapParser;
@@ -89,6 +100,16 @@ public class JsonSchemaParserContext {
                     astW,
                     ast,
                     storage ) );
+            } else if( schemaTypeObj == null ) {
+                return new NodeResponse( new JsonSchemaParserContext( schemaName, map,
+                    inferSchemaType( map ),
+                    mapParser,
+                    urlParser,
+                    rootPath,
+                    SchemaPath.resolve( path, field ),
+                    astW,
+                    ast,
+                    storage ) );
             } else {
                 throw new UnknownTypeValidationSyntaxException(
                     "Unknown SchemaType type: " + ( schemaType == null ? "nothing"
@@ -96,6 +117,15 @@ public class JsonSchemaParserContext {
                 );
             }
         }
+    }
+
+    private static String inferSchemaType( Map<?, ?> node ) {
+        if( node.get( "required" ) instanceof List ) return "object";
+        if( !Collections.disjoint( node.keySet(), OBJECT_HINT_KEYS ) ) return "object";
+        if( !Collections.disjoint( node.keySet(), ARRAY_HINT_KEYS ) ) return "array";
+        if( !Collections.disjoint( node.keySet(), STRING_HINT_KEYS ) ) return "string";
+        if( !Collections.disjoint( node.keySet(), NUMBER_HINT_KEYS ) ) return "double";
+        return "any";
     }
 
     public <T extends AbstractSchemaASTWrapper> T createWrapper( Function<SchemaId, T> creator ) {

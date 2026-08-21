@@ -215,6 +215,7 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             return new AbstractSchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
+                Optional.ofNullable( properties.node.get( "const" ) ),
                 asString( "title" ).optional(),
                 asString( "description" ).optional(),
                 asList( "examples" ).optional().orElse( List.of() )

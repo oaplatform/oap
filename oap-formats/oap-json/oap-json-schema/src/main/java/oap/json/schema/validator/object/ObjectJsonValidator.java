@@ -33,6 +33,7 @@ import oap.util.Stream;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,38 +81,42 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
             .filter( v -> !objectProperties.containsKey( v ) )
             .toList();
 
+        JsonValidatorProperties branchProperties = properties.withoutAdditionalProperties();
+
         schema.ifSchema.ifPresent( ifAst -> {
-            boolean matches = properties.validator.apply( properties, ifAst, value ).isEmpty();
+            boolean matches = declaredPropertiesPresent( ifAst, value )
+                && properties.validator.apply( branchProperties, ifAst, value ).isEmpty();
             if( matches ) {
-                schema.thenSchema.ifPresent( thenAst -> errors.addAll( properties.validator.apply( properties, thenAst, value ) ) );
+                schema.thenSchema.ifPresent( thenAst -> errors.addAll( properties.validator.apply( branchProperties, thenAst, value ) ) );
             } else {
-                schema.elseSchema.ifPresent( elseAst -> errors.addAll( properties.validator.apply( properties, elseAst, value ) ) );
+                schema.elseSchema.ifPresent( elseAst -> errors.addAll( properties.validator.apply( branchProperties, elseAst, value ) ) );
             }
         } );
 
-        schema.allOf.forEach( ast -> errors.addAll( properties.validator.apply( properties, ast, value ) ) );
+        schema.allOf.forEach( ast -> errors.addAll( properties.validator.apply( branchProperties, ast, value ) ) );
 
         if( !schema.anyOf.isEmpty()
-            && schema.anyOf.stream().noneMatch( ast -> properties.validator.apply( properties, ast, value ).isEmpty() ) ) {
+            && schema.anyOf.stream().noneMatch( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ) ) {
             errors.add( properties.error( "instance does not match any schema in anyOf" ) );
         }
 
         if( !schema.oneOf.isEmpty() ) {
-            long matched = schema.oneOf.stream().filter( ast -> properties.validator.apply( properties, ast, value ).isEmpty() ).count();
+            long matched = schema.oneOf.stream().filter( ast -> properties.validator.apply( branchProperties, ast, value ).isEmpty() ).count();
             if( matched != 1 ) {
                 errors.add( properties.error( "instance must match exactly one schema in oneOf, matched " + matched ) );
             }
         }
 
         schema.notSchema.ifPresent( notAst -> {
-            if( properties.validator.apply( properties, notAst, value ).isEmpty() ) {
+            if( properties.validator.apply( branchProperties, notAst, value ).isEmpty() ) {
                 errors.add( properties.error( "instance must not be valid against the schema in not" ) );
             }
         } );
 
         if( !properties.ignoreRequiredDefault ) {
             for( String name : schema.required ) {
-                if( objectProperties.containsKey( name ) && mapValue.get( name ) == null ) {
+                boolean gateOk = !schema.properties.containsKey( name ) || objectProperties.containsKey( name );
+                if( gateOk && mapValue.get( name ) == null ) {
                     errors.add( properties.withPath( name ).error( "required property is missing" ) );
                 }
             }
@@ -127,6 +132,11 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         return errors;
     }
 
+    private static boolean declaredPropertiesPresent( AbstractSchemaAST ast, Object value ) {
+        if( !( ast instanceof ObjectSchemaAST objectAst ) || !( value instanceof Map<?, ?> map ) ) return true;
+        return objectAst.properties.keySet().stream().allMatch( k -> map.get( k ) != null );
+    }
+
     @Override
     public ObjectSchemaASTWrapper parse( JsonSchemaParserContext context ) {
         var wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
@@ -140,7 +150,7 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         wrapper.extendsSchema = wrapper.extendsValue
             .map( url -> ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) );
 
-        wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
+        wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).optional().orElseGet( LinkedHashMap::new );
 
         wrapper.required = node( context ).asList( "required" ).optional()
             .map( list -> list.stream().map( String.class::cast ).toList() )
