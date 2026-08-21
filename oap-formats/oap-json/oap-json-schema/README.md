@@ -32,6 +32,7 @@ These keywords apply to most types:
 | `enum: {json-path: fieldName, ne: excluded}` | Dynamic enum with one value excluded |
 | `const: <value>` | Instance must equal this exact value (draft 2020-12) |
 | `enabled: {json-path: fieldName, eq: value}` | **Deprecated** — field is only validated when another field equals a specific value. Prefer object-level `if`/`then`/`else` (draft 2020-12 style, see `object` keywords below) |
+| `errorMessage: {…}` | Per-keyword custom error messages — see [Custom error messages](#custom-error-messages) |
 
 ## Type inference
 
@@ -164,6 +165,54 @@ These keywords apply to most types:
 | `maxItems: N` | Maximum number of elements |
 | `idField: "fieldName"` | Identity field for object-array diff (used by `JsonDiff`) |
 | `idField: "{index}"` | Use element position as identity for diff |
+
+## Custom error messages
+
+Any schema node may carry an `errorMessage` object to override the built-in message for one or more failing keywords, ajv-errors style:
+
+```hocon
+{
+  type = object
+  properties {
+    firstName { type = string }
+    foo       { type = array, items { type = string }, maxItems = 3 }
+  }
+  errorMessage {
+    maxItems = "foo must have at most 3 items"
+    type     = "Invalid type"
+  }
+}
+```
+
+A custom message **fully replaces** the default text — there's no automatic `/path: ` prefix. The message is run through `java.text.MessageFormat`, with `{0}` always bound to the current validation path (empty string at the schema root); remember to escape literal single quotes as `''`. Some keywords pass extra values as `{1}`, `{2}`, … (e.g. `type` passes the actual and allowed type).
+
+```hocon
+{
+  type = object
+  properties { age { type = integer, minimum = 18, errorMessage { minimum = "{0}: must be at least 18" } } }
+}
+// age = 10  ->  "age: must be at least 18"
+```
+
+`required: [name, ...]` (the object-level array form) supports a message per property name instead of one shared message:
+
+```hocon
+{
+  type = object
+  properties { foo { type = double }, bar { type = string } }
+  required = [foo, bar]
+  errorMessage {
+    required {
+      foo = "{0}: ''foo'' is required"
+      bar = "{0}: ''bar'' is required"
+    }
+  }
+}
+```
+
+Supported keywords: `type` (every schema type), `required` (both the per-field `required: true` marker and, with a per-property map, the object-level `required: [...]` array), `additionalProperties`, `minLength`/`maxLength`/`pattern` (`string`/`text`), `minItems`/`maxItems` (`array`), `minimum`/`maximum` (`integer`/`long`/`double` — covers both the plain and `exclusiveMinimum`/`exclusiveMaximum` variants of each bound), `enum`, `const`, and `date` (the `date` type's parse-failure message). There's no `format` or `dependencies` keyword in this validator (dates are their own `type = date`), so `errorMessage` has nothing to attach to for those.
+
+`errorMessage` on a subschema (e.g. inside `if`/`then`/`allOf`) only applies to failures produced by validating *that* subschema — it doesn't retroactively apply to the same-named property's schema elsewhere.
 
 ## Schema composition
 
