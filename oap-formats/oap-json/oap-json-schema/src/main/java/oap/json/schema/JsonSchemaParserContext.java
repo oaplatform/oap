@@ -50,6 +50,8 @@ public class JsonSchemaParserContext {
     public final HashMap<SchemaId, AbstractSchemaASTWrapper> astW;
     public final HashMap<SchemaId, AbstractSchemaAST> ast;
     public final SchemaStorage storage;
+    public final SchemaId enclosingObjectId;
+    public final boolean conditionalBranch;
     private final String schemaName;
 
     public JsonSchemaParserContext(
@@ -61,7 +63,23 @@ public class JsonSchemaParserContext {
         String rootPath, String path,
         HashMap<SchemaId, AbstractSchemaASTWrapper> astW,
         HashMap<SchemaId, AbstractSchemaAST> ast,
-        SchemaStorage storage ) {
+        SchemaStorage storage,
+        SchemaId enclosingObjectId ) {
+        this( schemaName, node, schemaType, mapParser, urlParser, rootPath, path, astW, ast, storage, enclosingObjectId, false );
+    }
+
+    public JsonSchemaParserContext(
+        String schemaName,
+        Map<?, ?> node,
+        String schemaType,
+        Function<JsonSchemaParserContext, AbstractSchemaASTWrapper> mapParser,
+        BiFunction<String, String, AbstractSchemaASTWrapper> urlParser,
+        String rootPath, String path,
+        HashMap<SchemaId, AbstractSchemaASTWrapper> astW,
+        HashMap<SchemaId, AbstractSchemaAST> ast,
+        SchemaStorage storage,
+        SchemaId enclosingObjectId,
+        boolean conditionalBranch ) {
         this.schemaName = schemaName;
         this.node = node;
         this.schemaType = schemaType;
@@ -72,9 +90,20 @@ public class JsonSchemaParserContext {
         this.astW = astW;
         this.ast = ast;
         this.storage = storage;
+        this.enclosingObjectId = enclosingObjectId;
+        this.conditionalBranch = conditionalBranch;
+    }
+
+    public JsonSchemaParserContext withEnclosingObject( SchemaId id ) {
+        return new JsonSchemaParserContext( schemaName, node, schemaType, mapParser, urlParser,
+            rootPath, path, astW, ast, storage, id, conditionalBranch );
     }
 
     public final NodeResponse withNode( String field, Object mapObject ) {
+        return withNode( field, mapObject, false );
+    }
+
+    public final NodeResponse withNode( String field, Object mapObject, boolean conditionalBranch ) {
         if( !( mapObject instanceof Map<?, ?> map ) )
             throw new JsonSchemaException( "object expected, but " + mapObject );
 
@@ -98,7 +127,9 @@ public class JsonSchemaParserContext {
                     SchemaPath.resolve( path, field ),
                     astW,
                     ast,
-                    storage ) );
+                    storage,
+                    enclosingObjectId,
+                    conditionalBranch ) );
             } else if( schemaTypeObj == null ) {
                 return new NodeResponse( new JsonSchemaParserContext( schemaName, map,
                     resolveSchemaType( field, map ),
@@ -108,7 +139,9 @@ public class JsonSchemaParserContext {
                     SchemaPath.resolve( path, field ),
                     astW,
                     ast,
-                    storage ) );
+                    storage,
+                    enclosingObjectId,
+                    conditionalBranch ) );
             } else {
                 throw new UnknownTypeValidationSyntaxException(
                     "Unknown SchemaType type: " + ( schemaType == null ? "nothing"
@@ -119,7 +152,7 @@ public class JsonSchemaParserContext {
     }
 
     private String resolveSchemaType( String field, Map<?, ?> node ) {
-        AbstractSchemaASTWrapper root = astW.get( ROOT_ID );
+        AbstractSchemaASTWrapper root = enclosingObjectId != null ? astW.get( enclosingObjectId ) : null;
         if( root instanceof ContainerSchemaASTWrapper container ) {
             List<AbstractSchemaASTWrapper> siblings = container.getChildren().get( field );
             if( siblings != null && !siblings.isEmpty() && siblings.get( 0 ).common != null )

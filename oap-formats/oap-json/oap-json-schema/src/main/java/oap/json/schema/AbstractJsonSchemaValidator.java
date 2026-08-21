@@ -140,9 +140,13 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
         }
 
         public PropertyParser<AbstractSchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
+            return asAST( property, context, false );
+        }
+
+        public PropertyParser<AbstractSchemaASTWrapper> asAST( String property, JsonSchemaParserContext context, boolean conditionalBranch ) {
             return new PropertyParser<>( property, properties,
                 Optional.ofNullable( context.node.get( property ) ).map( n -> {
-                    NodeResponse nodeResponse = context.withNode( property, n );
+                    NodeResponse nodeResponse = context.withNode( property, n, conditionalBranch );
 
                     AbstractSchemaASTWrapper aw;
 
@@ -156,13 +160,17 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
                 } ) );
         }
 
-        @SuppressWarnings( "unchecked" )
         public PropertyParser<List<AbstractSchemaASTWrapper>> asListAST( String property, JsonSchemaParserContext context ) {
+            return asListAST( property, context, false );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public PropertyParser<List<AbstractSchemaASTWrapper>> asListAST( String property, JsonSchemaParserContext context, boolean conditionalBranch ) {
             return new PropertyParser<>( property, properties,
                 Optional.ofNullable( ( List<Object> ) properties.node.get( property ) ).map( list -> {
                     List<AbstractSchemaASTWrapper> result = new ArrayList<>();
                     for( int i = 0; i < list.size(); i++ ) {
-                        NodeResponse nodeResponse = context.withNode( property + "[" + i + "]", list.get( i ) );
+                        NodeResponse nodeResponse = context.withNode( property + "[" + i + "]", list.get( i ), conditionalBranch );
 
                         AbstractSchemaASTWrapper aw;
                         if( nodeResponse.schema != null ) {
@@ -262,13 +270,13 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
 
         public ConditionalASTWrapper asConditional( JsonSchemaParserContext context ) {
             return new ConditionalASTWrapper(
-                asAST( "if", context ).optional(),
-                asAST( "then", context ).optional(),
-                asAST( "else", context ).optional(),
-                asListAST( "allOf", context ).optional().orElse( List.of() ),
-                asListAST( "anyOf", context ).optional().orElse( List.of() ),
-                asListAST( "oneOf", context ).optional().orElse( List.of() ),
-                asAST( "not", context ).optional()
+                asAST( "if", context, true ).optional(),
+                asAST( "then", context, true ).optional(),
+                asAST( "else", context, true ).optional(),
+                asListAST( "allOf", context, true ).optional().orElse( List.of() ),
+                asListAST( "anyOf", context, true ).optional().orElse( List.of() ),
+                asListAST( "oneOf", context, true ).optional().orElse( List.of() ),
+                asAST( "not", context, true ).optional()
             );
         }
 

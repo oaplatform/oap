@@ -48,6 +48,24 @@ These keywords apply to most types:
 
 `boolean`, `date`, and `dictionary` schemas have no keywords of their own to infer from, so they still require an explicit `type`. `object` schemas may also omit `properties` entirely (e.g. a pure `if`/`then`/`allOf` combinator with no fields of its own).
 
+**Enclosing-object type inheritance:** before falling back to the hint-key table above, a typeless node whose key matches a property name declared on the *nearest enclosing object schema* (directly, or via `extends`) adopts that property's `type` instead. This lets `if`/`then`/`else`/`allOf`/`anyOf`/`oneOf`/`not` branches redeclare a constraint for an existing sibling property (e.g. a tighter `minimum`) without repeating its `type`. "Nearest enclosing object" means the actual `object` schema that owns the `properties`/`if`/`then`/… in question — `if`/`then`/`else`/`allOf`/`anyOf`/`oneOf`/`not` themselves don't count as a new enclosing object for this purpose, so a `then` nested inside another `then` still resolves against the same real object:
+
+```hocon
+{
+  type = object
+  properties {
+    test {
+      type = object
+      properties { a { type = integer, maximum = 10 }, b.type = integer }
+      if   { properties.b.const = 4 }
+      then { properties.a.minimum = 1 }   // "a" has no type here — inherits `integer` from test's own "a" property
+    }
+  }
+}
+```
+
+This match is by key name only (not "must be inside `properties`"), so a branch node that happens to share a name with a property of the enclosing object elsewhere in the schema will also inherit its type. Only `type` is inherited this way — other fields (`minLength`, `default`, …) are not merged in.
+
 ## Type-specific keywords
 
 ### `string` / `text`

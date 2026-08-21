@@ -66,20 +66,25 @@ public class ConditionalSchemaTest extends AbstractSchemaTest {
     public void testMinMax() {
         String schema = """
             {
-                type = object
+                type = object,
                 properties {
-                    a {
-                      type = integer
-                      maximum = 10
+                    test {
+                        type = object
+                        properties {
+                            a {
+                              type = integer
+                              maximum = 10
+                            }
+                            b.type = integer
+                        }
+                        if { properties.b.const: 4 }
+                        then { required = [a], properties.a.minimum = 1}
                     }
-                    b.type = integer
                 }
-                if { properties.b.const: 4 }
-                then { properties.a.minimum = 1}
             }""";
 
-        assertOk( schema, "{'a':0, 'b':3}" );
-        assertFailure( schema, "{'a':0, 'b':4}", "/a: number 0 is lower than the required minimum 1" );
-        assertFailure( schema, "{'a':11, 'b':4}", "/a: number 11 is greater than the required maximum 10" );
+        assertOk( schema, "{'test': {'a':0, 'b':3} }" );
+        assertFailure( schema, "{'test': {'a':0, 'b':4} }", "/test/a: number 0 is lower than the required minimum 1" );
+        assertFailure( schema, "{'test': {'a':11, 'b':4} }", "/test/a: number 11 is greater than the required maximum 10" );
     }
 }

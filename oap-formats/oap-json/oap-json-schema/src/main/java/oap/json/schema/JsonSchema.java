@@ -78,7 +78,7 @@ public class JsonSchema {
             "", null, "",
             this::parse,
             ( rp, schemaPath ) -> parse( schemaPath, storage.get( schemaPath ), rp, storage ),
-            "", "", new HashMap<>(), new HashMap<>(), storage );
+            "", "", new HashMap<>(), new HashMap<>(), storage, null );
 
         this.schema = parse( schemaJson, context ).unwrap( context );
     }
@@ -251,7 +251,7 @@ public class JsonSchema {
             null, "",
             this::parse,
             ( rp, schemaPath ) -> parse( schemaPath, storage.get( schemaPath ), rp, storage ),
-            rootPath, "", new HashMap<>(), new HashMap<>(), storage );
+            rootPath, "", new HashMap<>(), new HashMap<>(), storage, null );
         return parse( schema, context );
     }
 

@@ -102,8 +102,11 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
     }
 
     @Override
-    public ObjectSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-        var wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
+    public ObjectSchemaASTWrapper parse( JsonSchemaParserContext rawContext ) {
+        var wrapper = rawContext.createWrapper( ObjectSchemaASTWrapper::new );
+        final JsonSchemaParserContext context = rawContext.conditionalBranch
+            ? rawContext
+            : rawContext.withEnclosingObject( wrapper.id );
 
         wrapper.common = node( context ).asCommon();
         wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
