@@ -38,8 +38,8 @@ import java.util.Optional;
 
 public class ObjectSchemaASTWrapper extends AbstractSchemaASTWrapper<ObjectSchemaAST> implements ContainerSchemaASTWrapper {
 
-    Optional<ObjectSchemaASTWrapper> extendsSchema;
-    LinkedHashMap<String, AbstractSchemaASTWrapper<?>> declaredProperties;
+    Optional<ObjectSchemaASTWrapper> extendsSchema = Optional.empty();
+    LinkedHashMap<String, AbstractSchemaASTWrapper<?>> declaredProperties = new LinkedHashMap<>();
     Optional<Boolean> additionalProperties;
     Optional<String> extendsValue;
     Optional<Boolean> nested;

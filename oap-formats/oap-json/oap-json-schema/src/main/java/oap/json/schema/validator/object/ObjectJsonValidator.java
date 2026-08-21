@@ -106,7 +106,6 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         var wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
 
         wrapper.common = node( context ).asCommon();
-        wrapper.conditional = node( context ).asConditional( context );
         wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
         wrapper.extendsValue = node( context ).asString( "extends" ).optional();
         wrapper.nested = node( context ).asBoolean( "nested" ).optional();
@@ -120,6 +119,8 @@ public class ObjectJsonValidator extends AbstractJsonSchemaValidator<ObjectSchem
         wrapper.required = node( context ).asList( "required" ).optional()
             .map( list -> list.stream().map( String.class::cast ).toList() )
             .orElse( List.of() );
+
+        wrapper.conditional = node( context ).asConditional( context );
 
         return wrapper;
     }

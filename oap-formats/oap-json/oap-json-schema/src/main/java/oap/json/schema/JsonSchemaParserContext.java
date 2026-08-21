@@ -101,7 +101,7 @@ public class JsonSchemaParserContext {
                     storage ) );
             } else if( schemaTypeObj == null ) {
                 return new NodeResponse( new JsonSchemaParserContext( schemaName, map,
-                    inferSchemaType( map ),
+                    resolveSchemaType( field, map ),
                     mapParser,
                     urlParser,
                     rootPath,
@@ -116,6 +116,16 @@ public class JsonSchemaParserContext {
                 );
             }
         }
+    }
+
+    private String resolveSchemaType( String field, Map<?, ?> node ) {
+        AbstractSchemaASTWrapper root = astW.get( ROOT_ID );
+        if( root instanceof ContainerSchemaASTWrapper container ) {
+            List<AbstractSchemaASTWrapper> siblings = container.getChildren().get( field );
+            if( siblings != null && !siblings.isEmpty() && siblings.get( 0 ).common != null )
+                return siblings.get( 0 ).common.schemaType;
+        }
+        return inferSchemaType( node );
     }
 
     private static String inferSchemaType( Map<?, ?> node ) {
