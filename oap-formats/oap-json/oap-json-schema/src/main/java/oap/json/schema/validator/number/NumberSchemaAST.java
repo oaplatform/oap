@@ -24,6 +24,7 @@
 package oap.json.schema.validator.number;
 
 import oap.json.schema.AbstractSchemaAST;
+import oap.json.schema.ConditionalAST;
 
 import java.util.Optional;
 
@@ -36,10 +37,10 @@ public class NumberSchemaAST extends AbstractSchemaAST<NumberSchemaAST> {
 
     public Optional<Double> maximum;
 
-    public NumberSchemaAST( CommonSchemaAST common, Optional<Boolean> exclusiveMinimum,
+    public NumberSchemaAST( CommonSchemaAST common, ConditionalAST conditional, Optional<Boolean> exclusiveMinimum,
                             Optional<Boolean> exclusiveMaximum, Optional<Double> minimum,
                             Optional<Double> maximum, String path ) {
-        super( common, path );
+        super( common, conditional, path );
         this.exclusiveMinimum = exclusiveMinimum;
         this.exclusiveMaximum = exclusiveMaximum;
         this.minimum = minimum;
@@ -50,6 +51,7 @@ public class NumberSchemaAST extends AbstractSchemaAST<NumberSchemaAST> {
     public NumberSchemaAST merge( NumberSchemaAST cs ) {
         return new NumberSchemaAST(
             common.merge( cs.common ),
+            conditional.merge( cs.conditional ),
             exclusiveMinimum.isPresent() ? exclusiveMinimum : cs.exclusiveMinimum,
             exclusiveMaximum.isPresent() ? exclusiveMaximum : cs.exclusiveMaximum,
             minimum.isPresent() ? minimum : cs.minimum,

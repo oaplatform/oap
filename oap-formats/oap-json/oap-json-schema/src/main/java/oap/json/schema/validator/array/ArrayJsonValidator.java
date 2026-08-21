@@ -44,10 +44,10 @@ public class ArrayJsonValidator extends AbstractJsonSchemaValidator<ArraySchemaA
         List<String> errors = new ArrayList<>();
 
         schema.minItems.filter( minItems -> arrayValue.size() < minItems )
-            .ifPresent( minItems -> errors.add( properties.error( "array " + arrayValue + " has less than minItems elements " + minItems ) ) );
+            .ifPresent( minItems -> errors.add( properties.error( schema, "minItems", "array " + arrayValue + " has less than minItems elements " + minItems, arrayValue, minItems ) ) );
 
         schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
-            .ifPresent( maxItems -> errors.add( properties.error( "array " + arrayValue + " has more than maxItems elements " + maxItems ) ) );
+            .ifPresent( maxItems -> errors.add( properties.error( schema, "maxItems", "array " + arrayValue + " has more than maxItems elements " + maxItems, arrayValue, maxItems ) ) );
 
         for( int i = 0; i < arrayValue.size(); i++ ) {
             var validatorProperties = properties
@@ -65,6 +65,7 @@ public class ArrayJsonValidator extends AbstractJsonSchemaValidator<ArraySchemaA
         final ArraySchemaASTWrapper wrapper = context.createWrapper( ArraySchemaASTWrapper::new );
 
         wrapper.common = node( context ).asCommon();
+        wrapper.conditional = node( context ).asConditional( context );
         wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
         wrapper.minItems = node( context ).asInt( "minItems" ).optional();
         wrapper.maxItems = node( context ).asInt( "maxItems" ).optional();

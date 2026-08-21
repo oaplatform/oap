@@ -42,6 +42,6 @@ public class NumberSchemaASTWrapper extends AbstractSchemaASTWrapper<NumberSchem
 
     @Override
     public NumberSchemaAST unwrap( JsonSchemaParserContext context ) {
-        return new NumberSchemaAST( common, exclusiveMinimum, exclusiveMaximum, minimum, maximum, id.toString() );
+        return new NumberSchemaAST( common, conditional.unwrap( context ), exclusiveMinimum, exclusiveMaximum, minimum, maximum, id.toString() );
     }
 }

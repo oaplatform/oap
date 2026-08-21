@@ -45,15 +45,15 @@ public class StringJsonValidator extends AbstractJsonSchemaValidator<StringSchem
 
         schema.minLength
             .filter( minLength -> strValue.length() < minLength )
-            .ifPresent( minLength -> errors.add( properties.error( "string " + strValue + " is shorter than minLength " + minLength ) ) );
+            .ifPresent( minLength -> errors.add( properties.error( schema, "minLength", "string " + strValue + " is shorter than minLength " + minLength, strValue, minLength ) ) );
 
         schema.maxLength
             .filter( maxLength -> strValue.length() > maxLength )
-            .ifPresent( maxLength -> errors.add( properties.error( "string " + strValue + " is longer than maxLength " + maxLength ) ) );
+            .ifPresent( maxLength -> errors.add( properties.error( schema, "maxLength", "string " + strValue + " is longer than maxLength " + maxLength, strValue, maxLength ) ) );
 
         schema.pattern
             .filter( pattern -> !pattern.matcher( strValue ).matches() )
-            .ifPresent( pattern -> errors.add( properties.error( "string " + strValue + " does not match specified regex " + pattern ) ) );
+            .ifPresent( pattern -> errors.add( properties.error( schema, "pattern", "string " + strValue + " does not match specified regex " + pattern, strValue, pattern ) ) );
 
         return errors;
     }
@@ -62,6 +62,7 @@ public class StringJsonValidator extends AbstractJsonSchemaValidator<StringSchem
     public StringSchemaASTWrapper parse( JsonSchemaParserContext context ) {
         final StringSchemaASTWrapper wrapper = context.createWrapper( StringSchemaASTWrapper::new );
         wrapper.common = node( context ).asCommon();
+        wrapper.conditional = node( context ).asConditional( context );
         wrapper.minLength = node( context ).asInt( "minLength" ).optional();
         wrapper.maxLength = node( context ).asInt( "maxLength" ).optional();
         wrapper.pattern = node( context ).asPattern( "pattern" ).optional();

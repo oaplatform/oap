@@ -54,13 +54,15 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
     }
 
     public static List<String> typeFailed( JsonValidatorProperties properties, AbstractSchemaAST<?> schema, Object value ) {
-        return Lists.of( properties.error( "instance type is " + getType( value )
-            + ", but allowed type is " + schema.common.schemaType ) );
+        String actualType = getType( value );
+        return Lists.of( properties.error( schema, "type", "instance type is " + actualType
+            + ", but allowed type is " + schema.common.schemaType, actualType, schema.common.schemaType ) );
     }
 
     public static DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
         DefaultSchemaASTWrapper wrapper = new DefaultSchemaASTWrapper( context.getId() );
         wrapper.common = node( context ).asCommon();
+        wrapper.conditional = node( context ).asConditional( context );
 
         return wrapper;
     }
@@ -206,11 +208,14 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             return OperationFunction.parse( map );
         }
 
+        @SuppressWarnings( "unchecked" )
         public AbstractSchemaAST.CommonSchemaAST asCommon() {
             Optional<BooleanReference> required = asBooleanReference( "required" );
             Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
             Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
             Object anEnum = properties.node.get( "enum" );
+            Object errorMessageObj = properties.node.get( "errorMessage" );
+            Map<String, Object> errorMessage = errorMessageObj instanceof Map<?, ?> m ? ( Map<String, Object> ) m : Map.of();
 
             return new AbstractSchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
@@ -218,7 +223,8 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
                 Optional.ofNullable( properties.node.get( "const" ) ),
                 asString( "title" ).optional(),
                 asString( "description" ).optional(),
-                asList( "examples" ).optional().orElse( List.of() )
+                asList( "examples" ).optional().orElse( List.of() ),
+                errorMessage
             );
         }
 
@@ -252,6 +258,18 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
             );
 
             return new PropertyParser<>( property, properties, map.map( _ -> p ) );
+        }
+
+        public ConditionalASTWrapper asConditional( JsonSchemaParserContext context ) {
+            return new ConditionalASTWrapper(
+                asAST( "if", context ).optional(),
+                asAST( "then", context ).optional(),
+                asAST( "else", context ).optional(),
+                asListAST( "allOf", context ).optional().orElse( List.of() ),
+                asListAST( "anyOf", context ).optional().orElse( List.of() ),
+                asListAST( "oneOf", context ).optional().orElse( List.of() ),
+                asAST( "not", context ).optional()
+            );
         }
 
         public Optional<BooleanReference> asBooleanReference( String field ) {

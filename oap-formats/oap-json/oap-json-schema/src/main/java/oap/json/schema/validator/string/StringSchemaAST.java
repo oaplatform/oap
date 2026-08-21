@@ -24,6 +24,7 @@
 package oap.json.schema.validator.string;
 
 import oap.json.schema.AbstractSchemaAST;
+import oap.json.schema.ConditionalAST;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -33,9 +34,9 @@ public class StringSchemaAST extends AbstractSchemaAST<StringSchemaAST> {
     public final Optional<Integer> maxLength;
     public final Optional<Pattern> pattern;
 
-    public StringSchemaAST( AbstractSchemaAST.CommonSchemaAST common, Optional<Integer> minLength, Optional<Integer> maxLength,
+    public StringSchemaAST( AbstractSchemaAST.CommonSchemaAST common, ConditionalAST conditional, Optional<Integer> minLength, Optional<Integer> maxLength,
                             Optional<Pattern> pattern, String path ) {
-        super( common, path );
+        super( common, conditional, path );
         this.minLength = minLength;
         this.maxLength = maxLength;
         this.pattern = pattern;
@@ -45,6 +46,7 @@ public class StringSchemaAST extends AbstractSchemaAST<StringSchemaAST> {
     public StringSchemaAST merge( StringSchemaAST cs ) {
         return new StringSchemaAST(
             common.merge( cs.common ),
+            conditional.merge( cs.conditional ),
             minLength.isPresent() ? minLength : cs.minLength,
             maxLength.isPresent() ? maxLength : cs.maxLength,
             pattern.isPresent() ? pattern : cs.pattern,

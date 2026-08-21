@@ -50,7 +50,7 @@ public class ArraySchemaASTWrapper extends AbstractSchemaASTWrapper<ArraySchemaA
 
     @Override
     public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
-        return new ArraySchemaAST( common, additionalProperties, minItems, maxItems, idField,
+        return new ArraySchemaAST( common, conditional.unwrap( context ), additionalProperties, minItems, maxItems, idField,
             context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
     }
 

@@ -87,4 +87,19 @@ public class JsonValidatorProperties {
     public String error( Optional<String> path, String message ) {
         return path.map( p -> "/" + p + ": " ).orElse( "" ) + message;
     }
+
+    public String error( AbstractSchemaAST schema, String keyword, String defaultMessage, Object... args ) {
+        Optional<String> custom = schema.common.errorMessage( keyword );
+        if( custom.isEmpty() ) return error( defaultMessage );
+        Object[] fmtArgs = new Object[ args.length + 1 ];
+        fmtArgs[0] = path.orElse( "" );
+        System.arraycopy( args, 0, fmtArgs, 1, args.length );
+        return java.text.MessageFormat.format( custom.get(), fmtArgs );
+    }
+
+    public String requiredError( AbstractSchemaAST schema, String propertyName, String defaultMessage ) {
+        Optional<String> custom = schema.common.errorMessage( "required", propertyName );
+        if( custom.isEmpty() ) return error( defaultMessage );
+        return java.text.MessageFormat.format( custom.get(), path.orElse( "" ) );
+    }
 }

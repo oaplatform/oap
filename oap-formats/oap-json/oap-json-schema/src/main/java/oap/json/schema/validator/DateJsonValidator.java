@@ -48,7 +48,7 @@ public class DateJsonValidator extends AbstractJsonSchemaValidator<DefaultSchema
         final List<String> errors = new ArrayList<>();
 
         Dates.parseDateWithTimeZone( dateValue )
-            .ifFailure( e -> errors.add( properties.error( e.getMessage() ) ) );
+            .ifFailure( e -> errors.add( properties.error( schema, "date", e.getMessage(), dateValue ) ) );
 
         return errors;
     }

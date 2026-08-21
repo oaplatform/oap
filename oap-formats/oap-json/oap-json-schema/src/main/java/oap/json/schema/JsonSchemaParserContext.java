@@ -36,8 +36,7 @@ public class JsonSchemaParserContext {
     public static final SchemaId ROOT_ID = new SchemaId( "", "", "" );
 
     private static final Set<String> OBJECT_HINT_KEYS = Set.of(
-        "properties", "additionalProperties", "extends", "if", "then", "else",
-        "allOf", "anyOf", "oneOf", "not", "nested", "dynamic" );
+        "properties", "additionalProperties", "extends", "nested", "dynamic" );
     private static final Set<String> ARRAY_HINT_KEYS = Set.of( "items", "minItems", "maxItems", "id" );
     private static final Set<String> STRING_HINT_KEYS = Set.of( "minLength", "maxLength", "pattern" );
     private static final Set<String> NUMBER_HINT_KEYS = Set.of( "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum" );
