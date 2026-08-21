@@ -30,6 +30,7 @@ import lombok.ToString;
 public abstract class AbstractSchemaASTWrapper<TAST extends AbstractSchemaAST<TAST>> {
     public final SchemaId id;
     public AbstractSchemaAST.CommonSchemaAST common;
+    public ConditionalASTWrapper conditional = ConditionalASTWrapper.EMPTY;
 
     public AbstractSchemaASTWrapper( SchemaId id ) {
         this.id = id;

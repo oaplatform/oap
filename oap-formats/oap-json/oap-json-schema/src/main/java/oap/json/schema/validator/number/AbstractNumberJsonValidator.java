@@ -46,16 +46,16 @@ public abstract class AbstractNumberJsonValidator<T extends Number> extends Abst
         final List<String> errors = new ArrayList<>();
 
         schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-            .ifPresent( minimum -> errors.add( properties.error( "number " + print( doubleValue ) + " is lower than the required minimum " + print( minimum ) ) ) );
+            .ifPresent( minimum -> errors.add( properties.error( schema, "minimum", "number " + print( doubleValue ) + " is lower than the required minimum " + print( minimum ), doubleValue, minimum ) ) );
 
         schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-            .ifPresent( maximum -> errors.add( properties.error( "number " + print( doubleValue ) + " is greater than the required maximum " + print( maximum ) ) ) );
+            .ifPresent( maximum -> errors.add( properties.error( schema, "maximum", "number " + print( doubleValue ) + " is greater than the required maximum " + print( maximum ), doubleValue, maximum ) ) );
 
         schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-            .ifPresent( minimum -> errors.add( properties.error( "number " + print( doubleValue ) + " is not strictly greater than the required minimum " + print( minimum ) ) ) );
+            .ifPresent( minimum -> errors.add( properties.error( schema, "minimum", "number " + print( doubleValue ) + " is not strictly greater than the required minimum " + print( minimum ), doubleValue, minimum ) ) );
 
         schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-            .ifPresent( maximum -> errors.add( properties.error( "number " + print( doubleValue ) + " is not strictly lower than the required maximum " + print( maximum ) ) ) );
+            .ifPresent( maximum -> errors.add( properties.error( schema, "maximum", "number " + print( doubleValue ) + " is not strictly lower than the required maximum " + print( maximum ), doubleValue, maximum ) ) );
 
         return errors;
     }
@@ -69,6 +69,7 @@ public abstract class AbstractNumberJsonValidator<T extends Number> extends Abst
         final NumberSchemaASTWrapper wrapper = context.createWrapper( NumberSchemaASTWrapper::new );
 
         wrapper.common = node( context ).asCommon();
+        wrapper.conditional = node( context ).asConditional( context );
         wrapper.exclusiveMinimum = node( context ).asBoolean( "exclusiveMinimum" ).optional();
         wrapper.exclusiveMaximum = node( context ).asBoolean( "exclusiveMaximum" ).optional();
         wrapper.minimum = node( context ).asDouble( "minimum" ).optional();

@@ -25,6 +25,7 @@
 package oap.json.schema.validator.dictionary;
 
 import oap.json.schema.AbstractSchemaAST;
+import oap.json.schema.ConditionalAST;
 
 import java.util.Optional;
 
@@ -32,14 +33,14 @@ public class DictionarySchemaAST extends AbstractSchemaAST<DictionarySchemaAST> 
     public final String name;
     public final Optional<DictionarySchemaAST> parent;
 
-    public DictionarySchemaAST( CommonSchemaAST common, String name, Optional<DictionarySchemaAST> parent, String path ) {
-        super( common, path );
+    public DictionarySchemaAST( CommonSchemaAST common, ConditionalAST conditional, String name, Optional<DictionarySchemaAST> parent, String path ) {
+        super( common, conditional, path );
         this.name = name;
         this.parent = parent;
     }
 
     @Override
     public DictionarySchemaAST merge( DictionarySchemaAST cs ) {
-        return new DictionarySchemaAST( common.merge( cs.common ), name, parent, path );
+        return new DictionarySchemaAST( common.merge( cs.common ), conditional.merge( cs.conditional ), name, parent, path );
     }
 }

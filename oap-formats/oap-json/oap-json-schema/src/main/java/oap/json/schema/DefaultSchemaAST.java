@@ -25,12 +25,12 @@
 package oap.json.schema;
 
 public class DefaultSchemaAST extends AbstractSchemaAST<DefaultSchemaAST> {
-    public DefaultSchemaAST( CommonSchemaAST common, String path ) {
-        super( common, path );
+    public DefaultSchemaAST( CommonSchemaAST common, ConditionalAST conditional, String path ) {
+        super( common, conditional, path );
     }
 
     @Override
     public DefaultSchemaAST merge( DefaultSchemaAST cs ) {
-        return new DefaultSchemaAST( common.merge( cs.common ), path );
+        return new DefaultSchemaAST( common.merge( cs.common ), conditional.merge( cs.conditional ), path );
     }
 }

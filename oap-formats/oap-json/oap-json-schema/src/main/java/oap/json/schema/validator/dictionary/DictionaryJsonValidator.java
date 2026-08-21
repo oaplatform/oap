@@ -136,6 +136,7 @@ public class DictionaryJsonValidator extends AbstractJsonSchemaValidator<Diction
         DictionarySchemaASTWrapper wrapper = context.createWrapper( DictionarySchemaASTWrapper::new );
 
         wrapper.common = node( context ).asCommon();
+        wrapper.conditional = node( context ).asConditional( context );
         wrapper.name = node( context ).asString( "name" ).optional();
         wrapper.parent = node( context ).asMap( "parent" ).optional()
             .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.resolve( context.rootPath, jp ) ) );

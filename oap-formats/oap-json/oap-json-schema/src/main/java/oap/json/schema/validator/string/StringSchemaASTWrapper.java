@@ -42,6 +42,6 @@ public class StringSchemaASTWrapper extends AbstractSchemaASTWrapper<StringSchem
 
     @Override
     public StringSchemaAST unwrap( JsonSchemaParserContext context ) {
-        return new StringSchemaAST( common, minLength, maxLength, pattern, id.toString() );
+        return new StringSchemaAST( common, conditional.unwrap( context ), minLength, maxLength, pattern, id.toString() );
     }
 }

@@ -29,14 +29,17 @@ import oap.util.Mergeable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implements Mergeable<T> {
     public final String path;
     public final CommonSchemaAST common;
+    public final ConditionalAST conditional;
 
-    public AbstractSchemaAST( CommonSchemaAST common, String path ) {
+    public AbstractSchemaAST( CommonSchemaAST common, ConditionalAST conditional, String path ) {
         this.common = common;
+        this.conditional = conditional;
         this.path = path;
     }
 
@@ -51,6 +54,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
         public final Optional<String> title;
         public final Optional<String> description;
         public final ArrayList<Object> examples = new ArrayList<>();
+        public final Map<String, Object> errorMessage;
 
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
@@ -60,7 +64,8 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                                 Optional<Object> constValue,
                                 Optional<String> title,
                                 Optional<String> description,
-                                List<Object> examples
+                                List<Object> examples,
+                                Map<String, Object> errorMessage
         ) {
             this.schemaType = schemaType;
             this.required = required;
@@ -71,6 +76,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
             this.title = title;
             this.description = description;
             this.examples.addAll( examples );
+            this.errorMessage = errorMessage;
         }
 
         @Override
@@ -84,8 +90,18 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                 constValue.isPresent() ? constValue : common.constValue,
                 title.isPresent() ? title : common.title,
                 description.isPresent() ? description : common.description,
-                Lists.concat( examples, examples )
+                Lists.concat( examples, examples ),
+                errorMessage.isEmpty() ? common.errorMessage : errorMessage
             );
+        }
+
+        public Optional<String> errorMessage( String keyword ) {
+            return errorMessage.get( keyword ) instanceof String s ? Optional.of( s ) : Optional.empty();
+        }
+
+        public Optional<String> errorMessage( String keyword, String subKey ) {
+            return errorMessage.get( keyword ) instanceof Map<?, ?> m
+                && m.get( subKey ) instanceof String s ? Optional.of( s ) : Optional.empty();
         }
     }
 }
