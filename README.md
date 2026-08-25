@@ -26,3 +26,11 @@ A light-weight application framework to build high performant and distributed ja
 |---|---|
 | [Ext — Pluggable Field Extensions](docs/extension.md) | Attach pluggable typed sub-objects to bean fields via `oap.json.ext.Ext`; covers JSON deserialization and template engine integration |
 | [Testing](docs/testing.md) | Fixture lifecycle, `KernelFixture`, assertion helpers, MongoDB/S3 mocks, and benchmark harness |
+
+## Related Projects
+
+| Project | Description |
+|---|---|
+| [oap-config](https://github.com/oaplatform/config) | HOCON-based configuration library used by the Kernel to parse `oap-module.oap` / `application.conf` |
+| [oap-config-plugin](https://github.com/oaplatform/intellij-hocon) | IntelliJ IDEA plugin: HOCON language support (syntax highlighting, references) |
+| [oap-application-plugin](https://github.com/oaplatform/oap-application-plugin) | IntelliJ IDEA plugin: navigation/completion for OAP Kernel service definitions |
