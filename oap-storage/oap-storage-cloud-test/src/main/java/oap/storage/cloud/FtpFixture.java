@@ -147,6 +147,8 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         if( addDefaults ) {
             map.put( "fs.default.clouds.scheme", scheme );
             map.put( "fs.default.clouds.container", hostPort() );
+        } else {
+            map.put( "fs.ftp.clouds.container", hostPort() );
         }
 
         return map;
