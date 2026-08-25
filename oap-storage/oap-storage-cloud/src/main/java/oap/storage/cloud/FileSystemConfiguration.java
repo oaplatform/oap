@@ -144,6 +144,20 @@ public class FileSystemConfiguration {
     }
 
     @Nullable
+    public String getDefaultContainer( String scheme ) {
+        if( getDefaultScheme().equals( scheme ) ) {
+            return getDefaultContainer();
+        }
+
+        Map<String, Object> conf = properties.get( scheme );
+        if( conf == null ) {
+            return null;
+        }
+
+        return ( String ) conf.get( "clouds.container" );
+    }
+
+    @Nullable
     public String tryGetDefaultContainer() {
         return tryGetDefault( "container" );
     }

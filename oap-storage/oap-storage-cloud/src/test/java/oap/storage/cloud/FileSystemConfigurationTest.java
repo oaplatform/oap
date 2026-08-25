@@ -31,6 +31,23 @@ public class FileSystemConfigurationTest {
     }
 
     @Test
+    public void getDefaultContainer() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
+            Map.of( "fs.s3.test-bucket.clouds.endpoint", "http://localhost/s3/tb",
+                "fs.s3.clouds.endpoint", "http://localhost/s3",
+                "fs", Map.of(
+                    "default.clouds.scheme", "s3",
+                    "default.clouds.container", "test-bucket"
+                ),
+                "fs.ftp.clouds.container", "host:1234"
+            )
+        );
+
+        assertThat( fileSystemConfiguration.getDefaultContainer( "ftp" ) ).isEqualTo(  "host:1234" );
+        assertThat( fileSystemConfiguration.getDefaultContainer( "s3" ) ).isEqualTo(  "test-bucket" );
+    }
+
+    @Test
     public void testProperties() {
         Env.set( "TMP_S3_SCHEME", "s3" );
         System.setProperty( "TMP_S3_SCHEME", "file" );
