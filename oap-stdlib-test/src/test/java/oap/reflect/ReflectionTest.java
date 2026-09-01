@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -251,6 +252,51 @@ public class ReflectionTest {
     }
 
     @Test
+    public void constructorWithMapOfOptionalParams() {
+        OptionalParams p1 = Reflect.reflect( OptionalParams.class ).newInstance( Map.of( "id", "id-1" ) );
+        WithMapOfOptionalParams instance = Reflect.reflect( WithMapOfOptionalParams.class )
+            .newInstance( Map.of( "params", Map.of( "k1", p1 ) ) );
+
+        assertThat( instance.params ).containsExactly( Map.entry( "k1", p1 ) );
+        assertThat( instance.params.get( "k1" ).nullable ).isNull();
+    }
+
+    @Test
+    public void constructorWithJsonPropertyAlias() {
+        WithJsonPropertyAlias instance = Reflect.reflect( WithJsonPropertyAlias.class )
+            .newInstance( Map.of( "identifier", "id-1" ) );
+        assertThat( instance.id ).isEqualTo( "id-1" );
+        assertThat( instance.note ).isNull();
+
+        WithJsonPropertyAlias full = Reflect.reflect( WithJsonPropertyAlias.class )
+            .newInstance( Map.of( "identifier", "id-1", "note", "hi" ) );
+        assertThat( full.note ).isEqualTo( "hi" );
+
+        // the real Java parameter name ("id") no longer matches once aliased
+        assertThatExceptionOfType( ReflectException.class )
+            .isThrownBy( () -> Reflect.reflect( WithJsonPropertyAlias.class )
+                .newInstance( Map.of( "id", "id-1" ) ) );
+    }
+
+    @Test
+    public void constructorWithJsonAlias() {
+        // primary Java parameter name still works
+        WithJsonAlias byName = Reflect.reflect( WithJsonAlias.class ).newInstance( Map.of( "id", "id-0" ) );
+        assertThat( byName.id ).isEqualTo( "id-0" );
+
+        // and so does each @JsonAlias-declared alternate name
+        WithJsonAlias byAlias1 = Reflect.reflect( WithJsonAlias.class ).newInstance( Map.of( "identifier", "id-1" ) );
+        assertThat( byAlias1.id ).isEqualTo( "id-1" );
+
+        WithJsonAlias byAlias2 = Reflect.reflect( WithJsonAlias.class ).newInstance( Map.of( "oldId", "id-2" ) );
+        assertThat( byAlias2.id ).isEqualTo( "id-2" );
+
+        // an unrelated key matches none of them
+        assertThatExceptionOfType( ReflectException.class )
+            .isThrownBy( () -> Reflect.reflect( WithJsonAlias.class ).newInstance( Map.of( "unrelated", "x" ) ) );
+    }
+
+    @Test
     public void method() throws NoSuchMethodException {
         assertThat( Reflect.reflect( C.class )
             .method( I.class.getDeclaredMethod( "m", String.class ) ) )
@@ -379,6 +425,35 @@ class OptionalParams {
         this.id = id;
         this.nullable = nullable;
         this.jsonNotRequired = jsonNotRequired;
+    }
+}
+
+@SuppressWarnings( "unused" )
+class WithMapOfOptionalParams {
+    Map<String, OptionalParams> params;
+
+    WithMapOfOptionalParams( Map<String, OptionalParams> params ) {
+        this.params = params;
+    }
+}
+
+@SuppressWarnings( "unused" )
+class WithJsonPropertyAlias {
+    String id;
+    String note;
+
+    WithJsonPropertyAlias( @JsonProperty( value = "identifier", required = true ) String id, @JsonProperty( value = "note", required = false ) String note ) {
+        this.id = id;
+        this.note = note;
+    }
+}
+
+@SuppressWarnings( "unused" )
+class WithJsonAlias {
+    String id;
+
+    WithJsonAlias( @JsonAlias( { "identifier", "oldId" } ) String id ) {
+        this.id = id;
     }
 }
 

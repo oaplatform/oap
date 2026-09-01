@@ -137,6 +137,28 @@ public Order( String id, @Nullable String note ) { ... }
 Order o = r.newInstance( Map.of( "id", "o-1" ) ); // note == null, no exception
 ```
 
+### Parameter aliasing via `@JsonProperty`
+
+`@JsonProperty("xxx")` (or `@JsonProperty(value = "xxx")`) renames the lookup key for a constructor parameter — `newInstance` reads it from `args.get("xxx")` instead of the Java parameter name.
+
+Note: `JsonProperty.required()` defaults to `false`, so a plain `@JsonProperty("xxx")` also makes the parameter optional (see above) — pass `required = true` if the aliased parameter must still be present in `args`.
+
+```java
+public Order( @JsonProperty( value = "order_id", required = true ) String id ) { ... }
+
+Order o = r.newInstance( Map.of( "order_id", "o-1" ) ); // id == "o-1"
+```
+
+`@JsonAlias({ "a", "b" })` adds further acceptable lookup keys *on top of* the parameter's existing name/`@JsonProperty` value — `newInstance` accepts args under any of them:
+
+```java
+public Order( @JsonAlias( { "order_id", "orderId" } ) String id ) { ... }
+
+r.newInstance( Map.of( "id", "o-1" ) );       // still matches (Java parameter name)
+r.newInstance( Map.of( "order_id", "o-1" ) ); // also matches
+r.newInstance( Map.of( "orderId", "o-1" ) );  // also matches
+```
+
 ---
 
 ## `oap.id.Identifier<I, T>`

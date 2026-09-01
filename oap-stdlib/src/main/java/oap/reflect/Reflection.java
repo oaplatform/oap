@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
 import com.google.common.base.Suppliers;
@@ -440,16 +441,18 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
             super( constructor );
             trySetAccessible( this.underlying );
             this.parameters = Lists.map( constructor.getParameters(), Parameter::new );
-            this.parameterNames = new LinkedHashSet<>( Lists.map( constructor.getParameters(), java.lang.reflect.Parameter::getName ) );
+            LinkedHashSet<String> names = new LinkedHashSet<>();
+            for( Parameter p : parameters ) names.addAll( p.keys() );
+            this.parameterNames = names;
             this.parameterTypes = Suppliers.memoize( () -> Lists.map( parameters, Reflection.Parameter::type ) );
         }
 
         public boolean hasParameter( String name ) {
-            return Lists.contains( this.parameters, p -> Objects.equals( p.name(), name ) );
+            return Lists.contains( this.parameters, p -> p.keys().contains( name ) );
         }
 
         public Parameter getParameter( String name ) {
-            return Lists.find2( parameters, p -> p.name().equals( name ) );
+            return Lists.find2( parameters, p -> p.keys().contains( name ) );
         }
 
         public String name() {
@@ -479,8 +482,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
                 //step 1: new instance
                 Object[] cArgs = Stream.of( parameters )
                     .map( p -> {
-                        Object value = args.get( p.name() );
-                        return !ignoreCast.contains( p.name() ) ? coercions.cast( p.type(), value ) : value;
+                        String resolvedKey = p.keys().stream().filter( args::containsKey ).findFirst().orElse( p.key() );
+                        Object value = args.get( resolvedKey );
+                        return !ignoreCast.contains( resolvedKey ) ? coercions.cast( p.type(), value ) : value;
                     } )
                     .toArray();
                 T instance = invoke( cArgs );
@@ -530,8 +534,9 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public boolean nameMatch( Map<String, Object> args ) {
-            for( String name : parameterNames ) {
-                if( !args.containsKey( name ) && !getParameter( name ).isOptional() ) return false;
+            for( Parameter p : parameters ) {
+                boolean present = p.keys().stream().anyMatch( args::containsKey );
+                if( !present && !p.isOptional() ) return false;
             }
             return true;
         }
@@ -556,6 +561,20 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         public boolean isOptional() {
             return findAnnotation( Nullable.class ).isPresent()
                 || findAnnotation( JsonProperty.class ).map( a -> !a.required() ).orElse( false );
+        }
+
+        public String key() {
+            return findAnnotation( JsonProperty.class )
+                .map( JsonProperty::value )
+                .filter( v -> !v.isEmpty() )
+                .orElse( name() );
+        }
+
+        public List<String> keys() {
+            List<String> result = new ArrayList<>();
+            result.add( key() );
+            findAnnotation( JsonAlias.class ).ifPresent( a -> result.addAll( List.of( a.value() ) ) );
+            return result;
         }
     }
 
