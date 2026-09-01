@@ -127,6 +127,16 @@ r.fields.forEach( field -> System.out.println( field.name() + " : " + field.type
 
 `Coercions.basic()` is the default type-coercion registry (String→int, String→enum, etc.) used by the Kernel when wiring service parameters.
 
+### Optional constructor parameters
+
+A constructor parameter can be omitted from the `args` map passed to `newInstance` if it is annotated `@javax.annotation.Nullable` or `@com.fasterxml.jackson.annotation.JsonProperty(required = false)` — it is then passed as `null`. All other parameters must still be present as keys in `args`.
+
+```java
+public Order( String id, @Nullable String note ) { ... }
+
+Order o = r.newInstance( Map.of( "id", "o-1" ) ); // note == null, no exception
+```
+
 ---
 
 ## `oap.id.Identifier<I, T>`

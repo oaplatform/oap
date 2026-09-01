@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeToken;
@@ -33,6 +34,7 @@ import oap.util.Stream;
 import oap.util.function.Functions;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Modifier;
@@ -528,7 +530,10 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
         }
 
         public boolean nameMatch( Map<String, Object> args ) {
-            return args.keySet().containsAll( parameterNames );
+            for( String name : parameterNames ) {
+                if( !args.containsKey( name ) && !getParameter( name ).isOptional() ) return false;
+            }
+            return true;
         }
     }
 
@@ -546,6 +551,11 @@ public class Reflection extends AbstractAnnotated<Class<?>> {
 
         public String name() {
             return underlying.getName();
+        }
+
+        public boolean isOptional() {
+            return findAnnotation( Nullable.class ).isPresent()
+                || findAnnotation( JsonProperty.class ).map( a -> !a.required() ).orElse( false );
         }
     }
 

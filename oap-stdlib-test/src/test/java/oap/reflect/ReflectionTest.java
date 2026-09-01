@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.AssocList;
@@ -31,6 +32,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import org.testng.annotations.Test;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -233,6 +235,22 @@ public class ReflectionTest {
     }
 
     @Test
+    public void constructorWithOptionalParameters() {
+        OptionalParams instance = Reflect.reflect( OptionalParams.class ).newInstance( Map.of( "id", "id-1" ) );
+        assertThat( instance.id ).isEqualTo( "id-1" );
+        assertThat( instance.nullable ).isNull();
+        assertThat( instance.jsonNotRequired ).isNull();
+
+        OptionalParams full = Reflect.reflect( OptionalParams.class )
+            .newInstance( Map.of( "id", "id-1", "nullable", "n", "jsonNotRequired", "j" ) );
+        assertThat( full.nullable ).isEqualTo( "n" );
+        assertThat( full.jsonNotRequired ).isEqualTo( "j" );
+
+        assertThatExceptionOfType( ReflectException.class )
+            .isThrownBy( () -> Reflect.reflect( OptionalParams.class ).newInstance( Map.of() ) );
+    }
+
+    @Test
     public void method() throws NoSuchMethodException {
         assertThat( Reflect.reflect( C.class )
             .method( I.class.getDeclaredMethod( "m", String.class ) ) )
@@ -350,6 +368,19 @@ class MatchingConstructor {
 }
 
 class NoConstructors {}
+
+@SuppressWarnings( "unused" )
+class OptionalParams {
+    String id;
+    String nullable;
+    String jsonNotRequired;
+
+    OptionalParams( String id, @Nullable String nullable, @JsonProperty( required = false ) String jsonNotRequired ) {
+        this.id = id;
+        this.nullable = nullable;
+        this.jsonNotRequired = jsonNotRequired;
+    }
+}
 
 
 @SuppressWarnings( "unused" )
