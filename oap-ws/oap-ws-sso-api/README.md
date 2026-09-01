@@ -16,10 +16,28 @@ public Response delete( @WsParam( from = From.PATH ) String id ) { … }
 
 | Attribute | Default | Description |
 |---|---|---|
-| `realm` | `"SYSTEM"` | Authentication realm. Built-in values: `SYSTEM`, `USER`. Can also be a method parameter name — the realm value is then resolved dynamically from that parameter at invocation time. |
+| `realm` | `"SYSTEM"` | Authentication realm — see [Realms](#realms) below. |
 | `permissions` | — | One or more permission strings the authenticated user must hold. Required. |
 
 The `JWTSecurityInterceptor` short-circuits with **401** if no valid token is present, or **403** if the user lacks the required permissions.
+
+### Realms
+
+`realm()` controls which permission/role scope a `@WsSecurity` check is evaluated against. There is no `Realm` type — it's a plain `String`, and its meaning depends on the value:
+
+| Realm | Value | Resolution | Use case |
+|---|---|---|---|
+| `SYSTEM` (default) | literal `"SYSTEM"` | fixed, not tied to any request data | Global/admin checks, e.g. `DELETE /{id}` requiring `ADMIN` |
+| `USER` | literal `"USER"` | fixed | Checks against the caller's own account, e.g. `GET /profile` |
+| custom | any other string | treated as **a method parameter name**; the actual realm value is resolved dynamically at invocation time via that parameter (`InvocationContext.getPrivateParameter`) | Multi-tenant/per-entity scoping, e.g. `@WsSecurity(realm = "organizationId", ...)` — the realm is the caller's `organizationId` argument, so role checks are scoped per organization |
+
+```java
+@WsMethod( path = "/{organizationId}/items", method = HttpMethod.GET )
+@WsSecurity( realm = "organizationId", permissions = { "READ" } )
+public Response list( @WsParam( from = From.PATH ) String organizationId ) { … }
+```
+
+`WsSecurity.SYSTEM_REALMS` (`Set.of(SYSTEM, USER)`) is what `JWTSecurityInterceptor` checks to decide fixed vs. dynamic resolution — only `SYSTEM`/`USER` are literals; every other `realm()` value must name an existing method parameter, or the request fails with **403 "realm is not passed"**.
 
 ---
 
