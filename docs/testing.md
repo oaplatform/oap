@@ -7,7 +7,7 @@ OAP provides a fixture lifecycle framework, assertion helpers, and integration u
 | `oap-stdlib-test` | `oap-stdlib-test` | Core fixtures, `Asserts`, `JsonAsserts`, `MetricsFixture`, `Benchmark` |
 | `oap-application-test` | `oap-application:oap-application-test` | `KernelFixture` — full Kernel boot |
 | `oap-storage-mongo-test` | `oap-storage:oap-storage-mongo-test` | `MongoFixture` — embedded MongoDB |
-| `oap-storage-cloud-test` | `oap-storage:oap-storage-cloud-test` | `S3MockFixture` — LocalStack S3 |
+| `oap-storage-cloud-test` | `oap-storage:oap-storage-cloud-test` | `S3MockFixture` — LocalStack S3, `SambaServerFixture` — Samba SMB server |
 | `oap-template-test` | `oap-formats:oap-template-test` | `TemplateEngineFixture` |
 
 ---
@@ -343,6 +343,47 @@ public class CloudStorageTest extends Fixtures {
 | `deleteAll()` | Delete all objects in all buckets |
 | `getFileSystemConfiguration(bucket)` | Return OAP cloud-FS config pointing at the fixture endpoint |
 | `getHttpPort()` | Return the allocated HTTP port |
+
+---
+
+## `SambaServerFixture`
+
+Starts a [dockurr/samba](https://hub.docker.com/r/dockurr/samba) container sharing a fixture-managed host directory. Requires Docker. `container()` returns `host:port/`+`SambaServerFixture.SHARE` — that's the value any `smb://` `CloudURI` pointed at this fixture must use as its `container`.
+
+```java
+public class CloudStorageSmbTest extends Fixtures {
+    private final SambaServerFixture smb = fixture( new SambaServerFixture() );
+
+    @Test
+    public void readsFile() {
+        smb.writeFile( "data.json", "{}", ContentWriter.ofString() );
+
+        CloudURI uri = new CloudURI( "smb", smb.container(), "data.json" );
+        try( FileSystem fs = new FileSystem( smb.getFileSystemConfiguration() ) ) {
+            assertThat( fs.getInputStream( uri ) ).hasContent( "{}" );
+        }
+    }
+}
+```
+
+### Fixture variables
+
+| Variable | Value |
+|---|---|
+| `SMB_PORT` | Allocated Samba server port |
+
+### Key methods
+
+| Method | Description |
+|---|---|
+| `hostPort()` | Return `localhost:<allocated port>` |
+| `container()` | Return `hostPort()` + `/` + `SHARE` — the `CloudURI` container for this fixture's share |
+| `homeDirectory()` | Return the host directory backing the share |
+| `writeFile(path, content, writer)` | Write a file directly to the share root (bypassing SMB) |
+| `readFile(path, reader)` / `readFile(path, encoding, reader)` | Read a file directly from the share root |
+| `createDirectory(path)` | Create a directory under the share root |
+| `getFileSystemConfiguration()` | Return OAP cloud-FS config pointing at the fixture, `fs.default.clouds.scheme=smb` |
+| `getFileSystemConfigurationMap(addDefaults)` | Same, as a raw config map, without/with the `fs.default.*` keys |
 
 ---
 

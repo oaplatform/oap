@@ -24,6 +24,7 @@ scheme://container/path/to/object
 | `file` | Local filesystem |
 | `ftp` | FTP (requires `oap-storage-cloud-ftp` on classpath) |
 | `ftps` | FTP over TLS (requires `oap-storage-cloud-ftp` on classpath) |
+| `smb` | SMB/CIFS (requires `oap-storage-cloud-smb` on classpath) |
 
 ```java
 CloudURI uri = new CloudURI( "s3://my-bucket/data/report-2024-06-01.json" );
@@ -222,3 +223,28 @@ fs.ftp.ftp\.server1\.com.clouds.identity = as
 A container-specific entry overrides `fs.ftp.clouds.<property>` only for that exact host; other hosts keep falling back to the scheme-wide default.
 
 `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
+
+---
+
+## SMB
+
+Add the `oap-storage-cloud-smb` artifact to your dependencies. The `smb://` scheme (backed by [jcifs-ng](https://github.com/codelibs/jcifs)) is registered automatically via `cloud-service.properties`.
+
+Like FTP, SMB **requires** a container, but the container is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `smb://fileserver:445/reports/2024-06-01.json` connects to `fileserver:445`, addresses share `reports`, and the remaining path (`2024-06-01.json`) is relative to that share. A URI with no host, or no share segment, throws `CloudException`.
+
+Each distinct `host[:port]/share` gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two shares on the same server don't share a session.
+
+Required/optional configuration keys:
+
+| Key | Description |
+|---|---|
+| `fs.smb.clouds.identity` | SMB username (default `guest`) |
+| `fs.smb.clouds.credential` | SMB password |
+| `fs.smb.clouds.domain` | NTLM domain/workgroup (default empty) |
+
+```java
+CloudURI dest = new CloudURI( "smb://fileserver/reports/2024-06-01.json" );
+fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
+```
+
+`createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — SMB shares aren't created/deleted through this client. SMB has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
