@@ -29,11 +29,10 @@ import static dev.khbd.interp4j.core.Interpolations.s;
  */
 @Slf4j
 public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
-    private static final String VERSION = "4.22.6";
     public static final String SHARE = "shared";
     public static final String USERNAME = "smb-test-user";
     public static final String PASSWORD = "smb-test-password";
-
+    private static final String VERSION = "4.22.6";
     @Getter
     private final int port;
     private final TestDirectoryFixture testDirectoryFixture;
@@ -59,11 +58,12 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
             Ports.Binding.bindPort( port ),
             new ExposedPort( 445 ) );
 
-        container = new GenericContainer<>( DockerImageName.parse( "dockurr/samba:" + VERSION ) )
+        container = new GenericContainer<>( DockerImageName.parse( s( "dockurr/samba:${VERSION}" ) ) )
             .withExposedPorts( 445 )
             .withEnv( "NAME", SHARE )
             .withEnv( "USER", USERNAME )
             .withEnv( "PASS", PASSWORD )
+            .withEnv( "RW", "true" )
             // dockurr/samba only uses /shared to auto-detect UID/GID at startup; smbd actually
             // serves /storage (see its smb.conf `[shared] path = /storage`), so that's what must
             // be bind-mounted for the share content to be visible on the host and vice versa.
