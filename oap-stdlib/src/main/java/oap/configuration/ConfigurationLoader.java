@@ -14,12 +14,13 @@ import oap.io.Resources;
 import oap.json.HoconFactoryWithSystemProperties;
 import oap.util.Lists;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
 public class ConfigurationLoader {
@@ -30,19 +31,19 @@ public class ConfigurationLoader {
             synchronized( ConfigurationLoader.class ) {
                 if( configurations == null ) {
                     configurations = new HashMap<>();
-                    try {
-                        List<URL> urls = Lists.concat(
-                            Resources.urls( "META-INF/oap-module.oap" ),
-                            Resources.urls( "META-INF/oap-module.conf" )
-                        );
-                        log.trace( "urls {}", urls );
+                    List<URL> urls = Lists.concat(
+                        Resources.urls( "META-INF/oap-module.oap" ),
+                        Resources.urls( "META-INF/oap-module.conf" )
+                    );
+                    log.trace( "urls {}", urls );
 
-                        ObjectMapper objectMapper = new ObjectMapper( new HoconFactoryWithSystemProperties( log ) );
-                        objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                        objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
-                        objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
+                    ObjectMapper objectMapper = new ObjectMapper( new HoconFactoryWithSystemProperties( log ) );
+                    objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                    objectMapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
+                    objectMapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
 
-                        for( URL url : urls ) {
+                    for( URL url : urls ) {
+                        try {
                             Configurations conf = objectMapper.readValue( url, Configurations.class );
                             log.trace( "conf {}", conf );
 
@@ -50,12 +51,14 @@ public class ConfigurationLoader {
                                 ArrayList<Configuration<?>> list = configurations.computeIfAbsent( c.loader, l -> new ArrayList<>() );
                                 list.add( c );
                             }
+                        } catch( Exception e ) {
+                            log.error( "url {}", url );
+                            log.error( e.getMessage(), e );
+                            throw new RuntimeException( s( "${url}: ${e.getMessage()}" ), e );
                         }
-
-                        log.trace( "configurations {}", configurations );
-                    } catch( IOException e ) {
-                        throw new RuntimeException( e );
                     }
+
+                    log.trace( "configurations {}", configurations );
                 }
             }
         }
