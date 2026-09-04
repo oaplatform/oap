@@ -5,27 +5,29 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.content.ContentReader;
 import oap.io.content.ContentWriter;
 import oap.testng.AbstractFixture;
-import oap.testng.TestDirectoryFixture;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.ThrowingFunction;
 
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
- * Starts a <a href="https://hub.docker.com/r/dockurr/samba">dockurr/samba</a> container and shares
- * a fixture-managed host directory. {@link #container()} returns {@code host:port/}{@link #SHARE},
- * which is what {@code CloudURI}'s {@code container} field must be for this fixture's share.
+ * Starts a <a href="https://hub.docker.com/r/dockurr/samba">dockurr/samba</a> container. {@link #container()}
+ * returns {@code host:port/}{@link #SHARE}, which is what {@code CloudURI}'s {@code container} field must be
+ * for this fixture's share. All fixture I/O (seeding/reading/reset) goes through the Docker Engine API
+ * (copy/exec), not a host bind mount — a bind mount's host path must resolve on the Docker daemon's side too,
+ * which breaks when the test JVM and daemon don't share a filesystem (e.g. Docker-in-Docker on Linux CI).
  */
 @Slf4j
 public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
@@ -35,19 +37,10 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     private static final String VERSION = "4.22.6";
     @Getter
     private final int port;
-    private final TestDirectoryFixture testDirectoryFixture;
     private GenericContainer<?> container;
 
-    public SambaServerFixture( TestDirectoryFixture testDirectoryFixture ) {
-        this.testDirectoryFixture = testDirectoryFixture;
-
-        port = definePort( "SMB_PORT" );
-
-        addChild( testDirectoryFixture );
-    }
-
     public SambaServerFixture() {
-        this( new TestDirectoryFixture( "-smb" ) );
+        port = definePort( "SMB_PORT" );
     }
 
     @Override
@@ -64,10 +57,6 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
             .withEnv( "USER", USERNAME )
             .withEnv( "PASS", PASSWORD )
             .withEnv( "RW", "true" )
-            // dockurr/samba only uses /shared to auto-detect UID/GID at startup; smbd actually
-            // serves /storage (see its smb.conf `[shared] path = /storage`), so that's what must
-            // be bind-mounted for the share content to be visible on the host and vice versa.
-            .withFileSystemBind( testDirectoryFixture.testDirectory().toAbsolutePath().toString(), "/storage", BindMode.READ_WRITE )
             .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) )
             .withLogConsumer( new Slf4jLogConsumer( log ) );
         container.start();
@@ -80,10 +69,6 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
         }
 
         super.after();
-    }
-
-    public Path homeDirectory() {
-        return testDirectoryFixture.testDirectory();
     }
 
     public String hostPort() {
@@ -117,23 +102,49 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
         return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( addDefaults ) );
     }
 
-    public Path resolve( String relativePath ) {
-        return homeDirectory().resolve( relativePath );
+    /**
+     * Wipes the share's content. Call between tests to isolate state.
+     */
+    public void reset() {
+        exec( "sh", "-c", "rm -rf /storage/*" );
     }
 
     public <T> void writeFile( String relativePath, T content, ContentWriter<T> contentWriter ) {
-        Files.write( resolve( relativePath ), content, contentWriter );
+        container.copyFileToContainer( Transferable.of( contentWriter.write( content ) ), "/storage/" + relativePath );
+        openUpPermissions();
     }
 
     public void createDirectory( String relativePath ) {
-        Files.ensureDirectory( resolve( relativePath ) );
+        exec( "mkdir", "-p", "/storage/" + relativePath );
+        openUpPermissions();
+    }
+
+    /**
+     * docker cp / exec run as root, so anything they create is root-owned; smbd operates as
+     * {@link #USERNAME} (via smb.conf's `force user`), which then can't write/delete inside a
+     * root-owned directory. Reopen permissions after every host-side mutation.
+     */
+    private void openUpPermissions() {
+        exec( "chmod", "-R", "0777", "/storage" );
     }
 
     public <T> T readFile( String relativePath, ContentReader<T> contentReader ) {
-        return Files.read( resolve( relativePath ), contentReader );
+        return copyFrom( relativePath, contentReader::read );
     }
 
     public <T> T readFile( String relativePath, IoStreams.Encoding encoding, ContentReader<T> contentReader ) {
-        return Files.read( resolve( relativePath ), encoding, contentReader );
+        return copyFrom( relativePath, is -> contentReader.read( IoStreams.in( is, encoding ) ) );
+    }
+
+    private <T> T copyFrom( String relativePath, ThrowingFunction<InputStream, T> function ) {
+        return container.copyFileFromContainer( "/storage/" + relativePath, function );
+    }
+
+    private void exec( String... command ) {
+        try {
+            container.execInContainer( command );
+        } catch( IOException | InterruptedException e ) {
+            throw new CloudException( e );
+        }
     }
 }

@@ -32,7 +32,7 @@ public class FileSystemSmbTest extends Fixtures {
 
     static {
         testDirectoryFixture = suiteFixture( new TestDirectoryFixture( "-smb-client" ) );
-        smbFixture = suiteFixture( new SambaServerFixture( testDirectoryFixture ) );
+        smbFixture = suiteFixture( new SambaServerFixture() );
     }
 
     public FileSystemSmbTest() {
@@ -41,8 +41,7 @@ public class FileSystemSmbTest extends Fixtures {
 
     @BeforeMethod
     public void beforeMethod() {
-        Files.delete( smbFixture.homeDirectory() );
-        Files.ensureDirectory( smbFixture.homeDirectory() );
+        smbFixture.reset();
     }
 
     @Test

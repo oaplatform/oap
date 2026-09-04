@@ -378,10 +378,10 @@ public class CloudStorageSmbTest extends Fixtures {
 |---|---|
 | `hostPort()` | Return `localhost:<allocated port>` |
 | `container()` | Return `hostPort()` + `/` + `SHARE` — the `CloudURI` container for this fixture's share |
-| `homeDirectory()` | Return the host directory backing the share |
 | `writeFile(path, content, writer)` | Write a file directly to the share root (bypassing SMB) |
 | `readFile(path, reader)` / `readFile(path, encoding, reader)` | Read a file directly from the share root |
 | `createDirectory(path)` | Create a directory under the share root |
+| `reset()` | Wipe the share's content; call between tests to isolate state |
 | `getFileSystemConfiguration()` | Return OAP cloud-FS config pointing at the fixture, `fs.default.clouds.scheme=smb` |
 | `getFileSystemConfigurationMap(addDefaults)` | Same, as a raw config map, without/with the `fs.default.*` keys |
 
