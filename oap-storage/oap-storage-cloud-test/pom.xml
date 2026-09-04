@@ -38,6 +38,12 @@
         </dependency>
 
         <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-storage-cloud-smb</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.ftpserver</groupId>
             <artifactId>ftpserver-core</artifactId>
             <version>${oap.deps.ftpserver.version}</version>

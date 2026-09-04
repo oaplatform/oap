@@ -41,6 +41,20 @@ public class CloudURI implements Serializable {
                 }
                 int port = u.getPort();
                 this.container = port >= 0 ? container + ":" + port : container;
+            } else if( "smb".equals( scheme ) ) {
+                if( container == null || container.isEmpty() ) {
+                    throw new CloudException( "fs.smb: container (smb server host[:port]) is required in the URI, e.g. smb://host:port/share/path" );
+                }
+                int port = u.getPort();
+                String hostPort = port >= 0 ? container + ":" + port : container;
+
+                int slashIdx = uriPath.indexOf( '/' );
+                String share = slashIdx >= 0 ? uriPath.substring( 0, slashIdx ) : uriPath;
+                if( share.isEmpty() ) {
+                    throw new CloudException( "fs.smb: share is required in the URI, e.g. smb://host:port/share/path" );
+                }
+                this.container = hostPort + "/" + share;
+                uriPath = slashIdx >= 0 ? uriPath.substring( slashIdx + 1 ) : "";
             } else {
                 this.container = container;
             }
@@ -82,6 +96,7 @@ public class CloudURI implements Serializable {
             case "file" -> "filesystem";
             case "ftp" -> "ftp";
             case "ftps" -> "ftp";
+            case "smb" -> "smb";
             default -> throw new CloudException( "unsupported schema " + scheme );
         };
     }
