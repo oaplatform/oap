@@ -45,6 +45,14 @@ public class FileSystemSmbTest extends Fixtures {
     }
 
     @Test
+    public void testToUri() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            assertThat( fileSystem.toUri( fileSystem.getDefaultURL( "logs/file.txt" ) ) )
+                .isEqualTo( "smb://" + smbFixture.container() + "/logs/file.txt" );
+        }
+    }
+
+    @Test
     public void testGetInputStream() {
         smbFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 

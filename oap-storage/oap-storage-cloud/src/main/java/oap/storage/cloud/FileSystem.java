@@ -11,6 +11,7 @@ import oap.io.Closeables;
 import oap.io.Resources;
 import oap.util.Maps;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -30,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
 public class FileSystem implements AutoCloseable {
@@ -264,6 +267,42 @@ public class FileSystem implements AutoCloseable {
         log.debug( "getDefaultURL {}", path );
 
         return new CloudURI( fileSystemConfiguration.getDefaultAlias(), FilenameUtils.separatorsToUnix( path ) );
+    }
+
+    /**
+     * Renders a {@code CloudURI} as a "native"-looking URI string using the alias's resolved backend
+     * scheme and connection, instead of the {@code fs://<alias>/<path>} address:
+     * <ul>
+     *     <li>{@code s3} → {@code s3://<bucket>/<path>}</li>
+     *     <li>{@code ftp}/{@code ftps} → {@code ftp(s)://<host[:port]>/<path>}</li>
+     *     <li>{@code smb} → {@code smb://<host[:port]/share>/<path>}</li>
+     *     <li>{@code file} → {@code file://<basedir>/<path>}</li>
+     *     <li>anything else → falls back to {@code fs://<alias>/<path>} ({@code cloudURI.toString()})</li>
+     * </ul>
+     */
+    public String toUri( CloudURI cloudURI ) {
+        String scheme = resolveScheme( cloudURI.alias );
+
+        switch( scheme ) {
+            case "s3", "ftp", "ftps", "smb" -> {
+                String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, cloudURI.alias, "container" );
+                return s( "${scheme}://${container}/${cloudURI.path}" );
+            }
+            case "file" -> {
+                String basedir = ( String ) fileSystemConfiguration.get( scheme, cloudURI.alias, "filesystem.basedir" );
+                if( basedir == null ) {
+                    basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
+                }
+                basedir = FilenameUtils.separatorsToUnix( basedir );
+                if( basedir.endsWith( "/" ) ) {
+                    basedir = basedir.substring( 0, basedir.length() - 1 );
+                }
+                return s( "file://${basedir}/${cloudURI.path}" );
+            }
+            default -> {
+                return cloudURI.toString();
+            }
+        }
     }
 
     public CloudURI toLocalFilePath( Path path ) {

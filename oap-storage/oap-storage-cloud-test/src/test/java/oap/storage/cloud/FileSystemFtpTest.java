@@ -66,6 +66,13 @@ public class FileSystemFtpTest extends Fixtures {
     }
 
     @Test
+    public void testToUri() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            assertThat( fileSystem.toUri( ftpUri( "logs/file.txt" ) ) ).isEqualTo( "ftp://" + ftpFixture.hostPort() + "/logs/file.txt" );
+        }
+    }
+
+    @Test
     public void testGetInputStream() {
         ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
