@@ -279,6 +279,28 @@ public class FileSystemS3Test extends Fixtures {
     }
 
     @Test
+    public void testBasedir() {
+        FileSystemConfiguration configuration = getFileSystemConfiguration()
+            .copyWith( Map.of( "fs.s3.filesystem.basedir", "sub/dir" ) );
+
+        try( FileSystem fileSystem = new FileSystem( configuration ) ) {
+            fileSystem.upload( new CloudURI( s3mockFixture.alias(), "file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            assertThat( s3mockFixture.readFile( TEST_BUCKET, "sub/dir/file.txt", ofString(), Encoding.from( "file.txt" ) ) ).isEqualTo( "content" );
+
+            assertThat( fileSystem.toUri( new CloudURI( s3mockFixture.alias(), "file.txt" ) ) )
+                .isEqualTo( "s3://" + TEST_BUCKET + "/sub/dir/file.txt" );
+
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( s3mockFixture.alias(), "" ), ListOptions.builder().build() );
+            assertThat( list.size() ).isEqualTo( 1 );
+            assertEquals( "file.txt", list.get( 0 ).getName() );
+
+            fileSystem.deleteBlob( new CloudURI( s3mockFixture.alias(), "file.txt" ) );
+            assertFalse( fileSystem.blobExists( new CloudURI( s3mockFixture.alias(), "file.txt" ) ) );
+        }
+    }
+
+    @Test
     public void testFolder() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             s3mockFixture.createFolder( "test-bucket", "folder/" );

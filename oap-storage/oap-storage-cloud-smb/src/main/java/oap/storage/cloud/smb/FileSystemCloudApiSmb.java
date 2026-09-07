@@ -50,6 +50,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     private final String host;
     private final int port;
     private final String share;
+    private final String basedir;
     private final CIFSContext cifsContext;
 
     public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String alias ) {
@@ -81,6 +82,8 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
         Object domainObj = fileSystemConfiguration.get( "smb", alias, "domain" );
         String domain = domainObj != null ? domainObj.toString() : "";
 
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "smb", alias, "filesystem.basedir" ) );
+
         try {
             CIFSContext baseContext = new BaseContext( new PropertyConfiguration( new Properties() ) );
             this.cifsContext = baseContext.withCredentials( new NtlmPasswordAuthenticator( domain, username, password ) );
@@ -89,8 +92,25 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
         }
     }
 
+    private static String normalizeBasedir( Object basedirObj ) {
+        if( basedirObj == null ) return "";
+        String str = basedirObj.toString();
+        int start = 0, end = str.length();
+        while( start < end && str.charAt( start ) == '/' ) start++;
+        while( end > start && str.charAt( end - 1 ) == '/' ) end--;
+        return str.substring( start, end );
+    }
+
+    private String physicalPath( String path ) {
+        return basedir.isEmpty() ? path : basedir + "/" + path;
+    }
+
+    private String rawUrl( String physicalPath ) {
+        return s( "smb://${host}:${port}/${share}/${physicalPath}" );
+    }
+
     private String buildUrl( String path ) {
-        return s( "smb://${host}:${port}/${share}/${path}" );
+        return rawUrl( physicalPath( path ) );
     }
 
     private SmbFile smbFile( CloudURI path ) {
@@ -103,7 +123,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
 
     private URI buildUri( CloudURI path ) {
         try {
-            return new URI( "smb", null, host, port, "/" + share + "/" + path.path, null, null );
+            return new URI( "smb", null, host, port, "/" + share + "/" + physicalPath( path.path ), null, null );
         } catch( URISyntaxException e ) {
             throw new CloudException( e );
         }
@@ -116,7 +136,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     }
 
     private void ensureParentDirectory( CloudURI path ) {
-        String parent = parentOf( path.path );
+        String parent = physicalPath( parentOf( path.path ) );
         if( parent.isEmpty() ) return;
 
         try {
@@ -125,7 +145,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
                 if( segment.isEmpty() ) continue;
                 current.append( segment ).append( '/' );
 
-                SmbFile dir = new SmbFile( buildUrl( current.toString() ), cifsContext );
+                SmbFile dir = new SmbFile( rawUrl( current.toString() ), cifsContext );
                 if( dir.exists() ) continue;
 
                 try {
@@ -142,9 +162,9 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
         }
     }
 
-    private boolean directoryAppeared( String path ) throws IOException {
+    private boolean directoryAppeared( String physicalPath ) throws IOException {
         for( int attempt = 0; attempt < 5; attempt++ ) {
-            if( new SmbFile( buildUrl( path ), cifsContext ).exists() ) return true;
+            if( new SmbFile( rawUrl( physicalPath ), cifsContext ).exists() ) return true;
 
             try {
                 Thread.sleep( 100 );

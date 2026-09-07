@@ -169,6 +169,28 @@ public class FileSystemSmbTest extends Fixtures {
     }
 
     @Test
+    public void testBasedir() {
+        FileSystemConfiguration configuration = getFileSystemConfiguration()
+            .copyWith( Map.of( "fs.smb.filesystem.basedir", "sub/dir" ) );
+
+        try( FileSystem fileSystem = new FileSystem( configuration ) ) {
+            fileSystem.upload( fileSystem.getDefaultURL( "file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            assertThat( smbFixture.readFile( "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+
+            assertThat( fileSystem.toUri( fileSystem.getDefaultURL( "file.txt" ) ) )
+                .isEqualTo( "smb://" + smbFixture.container() + "/sub/dir/file.txt" );
+
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( fileSystem.getDefaultURL( "" ), ListOptions.builder().build() );
+            assertThat( list.size() ).isEqualTo( 1 );
+            assertEquals( "file.txt", list.get( 0 ).getName() );
+
+            fileSystem.deleteBlob( fileSystem.getDefaultURL( "file.txt" ) );
+            assertFalse( fileSystem.blobExists( fileSystem.getDefaultURL( "file.txt" ) ) );
+        }
+    }
+
+    @Test
     public void testFolder() {
         smbFixture.createDirectory( "folder" );
 

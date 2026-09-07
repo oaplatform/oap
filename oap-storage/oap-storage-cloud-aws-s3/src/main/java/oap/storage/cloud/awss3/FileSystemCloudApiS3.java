@@ -78,10 +78,12 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     private static final int PART_SIZE = 5 * 1024 * 1024;
 
     private final String bucketName;
+    private final String basedir;
     private final S3Client s3Client;
 
     public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String alias ) {
         this.bucketName = ( String ) fileSystemConfiguration.getOrThrow( "s3", alias, "container" );
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "s3", alias, "filesystem.basedir" ) );
 
         S3ClientBuilder builder = S3Client.builder()
             .httpClientBuilder( Apache5HttpClient.builder() );
@@ -125,9 +127,29 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         return new DateTime( obj.getEpochSecond() * 1000, DateTimeZone.UTC );
     }
 
+    private static String normalizeBasedir( Object basedirObj ) {
+        if( basedirObj == null ) return "";
+        String str = basedirObj.toString();
+        int start = 0, end = str.length();
+        while( start < end && str.charAt( start ) == '/' ) start++;
+        while( end > start && str.charAt( end - 1 ) == '/' ) end--;
+        return str.substring( start, end );
+    }
+
+    private String resolveKey( String path ) {
+        return basedir.isEmpty() ? path : basedir + "/" + path;
+    }
+
+    private String relativeKey( String key ) {
+        if( basedir.isEmpty() ) return key;
+        if( key.equals( basedir ) ) return "";
+        if( key.startsWith( basedir + "/" ) ) return key.substring( basedir.length() + 1 );
+        return key;
+    }
+
     @Override
     public boolean blobExists( CloudURI path ) {
-        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( bucketName ).key( path.path ).build();
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( bucketName ).key( resolveKey( path.path ) ).build();
 
         try {
             s3Client.headObject( headObjectRequest );
@@ -157,7 +179,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     @Override
     public void deleteBlob( CloudURI path ) {
-        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket( bucketName ).key( path.path ).build();
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket( bucketName ).key( resolveKey( path.path ) ).build();
 
         try {
             s3Client.deleteObject( deleteRequest );
@@ -222,7 +244,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     @Override
     public FileSystem.StorageItem getMetadata( CloudURI path ) {
-        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( bucketName ).key( path.path ).build();
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket( bucketName ).key( resolveKey( path.path ) ).build();
 
         try {
             HeadObjectResponse headObjectResponse = s3Client.headObject( headObjectRequest );
@@ -236,7 +258,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                 @Override
                 public URI getUri() {
                     try {
-                        return s3Client.utilities().getUrl( b -> b.bucket( bucketName ).key( path.path ).build() ).toURI();
+                        return s3Client.utilities().getUrl( b -> b.bucket( bucketName ).key( resolveKey( path.path ) ).build() ).toURI();
                     } catch( URISyntaxException e ) {
                         throw new CloudException( e );
                     }
@@ -271,7 +293,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     @Override
     public void downloadFile( CloudURI source, Path destination ) throws CloudException {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket( bucketName ).key( source.path ).build();
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket( bucketName ).key( resolveKey( source.path ) ).build();
 
         try {
             oap.io.Files.ensureFile( destination );
@@ -291,8 +313,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
             .sourceBucket( bucketName )
             .destinationBucket( bucketName )
-            .sourceKey( source.path )
-            .destinationKey( destination.path )
+            .sourceKey( resolveKey( source.path ) )
+            .destinationKey( resolveKey( destination.path ) )
             .build();
 
         try {
@@ -305,7 +327,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     @Override
     public InputStream getInputStream( CloudURI path ) {
         try {
-            return s3Client.getObject( GetObjectRequest.builder().bucket( bucketName ).key( path.path ).build() );
+            return s3Client.getObject( GetObjectRequest.builder().bucket( bucketName ).key( resolveKey( path.path ) ).build() );
         } catch( SdkException e ) {
             throw new CloudException( e );
         }
@@ -337,7 +359,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     private void putObject( CloudURI cloudURI, BlobData blobData, RequestBody requestBody ) {
         PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
             .bucket( bucketName )
-            .key( cloudURI.path )
+            .key( resolveKey( cloudURI.path ) )
             .tagging( getTagging( blobData.tags ) );
 
         if( blobData.contentType != null ) {
@@ -361,8 +383,9 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     @Override
     public PageSet<? extends FileSystem.StorageItem> list( CloudURI path, ListOptions listOptions ) {
         ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder().bucket( bucketName );
-        if( !path.path.isEmpty() ) {
-            builder.prefix( path.path );
+        String prefix = resolveKey( path.path );
+        if( !prefix.isEmpty() ) {
+            builder.prefix( prefix );
         }
         if( listOptions.continuationToken != null ) {
             builder.continuationToken( listOptions.continuationToken );
@@ -378,12 +401,12 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             return new PageSet<>( listObjectsV2Response.nextContinuationToken(), Lists.map( listObjectsV2Response.contents(), obj -> new FileSystem.StorageItem() {
                 @Override
                 public String getName() {
-                    return obj.key();
+                    return relativeKey( obj.key() );
                 }
 
                 @Override
                 public URI getUri() {
-                    return s3Client.utilities().parseUri( URI.create( new CloudURI( path.alias, obj.key() ).toString() ) ).uri();
+                    return s3Client.utilities().parseUri( URI.create( new CloudURI( path.alias, relativeKey( obj.key() ) ).toString() ) ).uri();
                 }
 
                 @Override
@@ -472,7 +495,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         private String createMultipartUpload() {
             CreateMultipartUploadRequest.Builder builder = CreateMultipartUploadRequest.builder()
                 .bucket( bucketName )
-                .key( cloudURI.path )
+                .key( resolveKey( cloudURI.path ) )
                 .tagging( getTagging( tags ) );
             if( contentType != null ) {
                 builder.contentType( contentType );
@@ -483,7 +506,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         private void uploadCurrentBuffer() {
             UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
                 .bucket( bucketName )
-                .key( cloudURI.path )
+                .key( resolveKey( cloudURI.path ) )
                 .uploadId( uploadId )
                 .partNumber( partNumber )
                 .build();
@@ -501,7 +524,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             try {
                 s3Client.abortMultipartUpload( AbortMultipartUploadRequest.builder()
                     .bucket( bucketName )
-                    .key( cloudURI.path )
+                    .key( resolveKey( cloudURI.path ) )
                     .uploadId( uploadId )
                     .build() );
             } catch( SdkException e ) {
@@ -520,7 +543,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                 if( uploadId == null ) {
                     PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
                         .bucket( bucketName )
-                        .key( cloudURI.path )
+                        .key( resolveKey( cloudURI.path ) )
                         .tagging( getTagging( tags ) );
                     if( contentType != null ) {
                         putObjectRequestBuilder.contentType( contentType );
@@ -535,7 +558,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
                 s3Client.completeMultipartUpload( CompleteMultipartUploadRequest.builder()
                     .bucket( bucketName )
-                    .key( cloudURI.path )
+                    .key( resolveKey( cloudURI.path ) )
                     .uploadId( uploadId )
                     .multipartUpload( CompletedMultipartUpload.builder().parts( completedParts ).build() )
                     .build() );
