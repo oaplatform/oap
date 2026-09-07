@@ -302,6 +302,27 @@ public class FileSystemFtpTest extends Fixtures {
     }
 
     @Test
+    public void testBasedir() {
+        FileSystemConfiguration configuration = getFileSystemConfiguration()
+            .copyWith( Map.of( s( "fs.${ftpFixture.alias()}.filesystem.basedir" ), "sub/dir" ) );
+
+        try( FileSystem fileSystem = new FileSystem( configuration ) ) {
+            fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            assertThat( ftpFixture.readFile( "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+
+            assertThat( fileSystem.toUri( ftpUri( "file.txt" ) ) ).isEqualTo( "ftp://" + ftpFixture.hostPort() + "/sub/dir/file.txt" );
+
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( ftpUri( "" ), ListOptions.builder().build() );
+            assertThat( list.size() ).isEqualTo( 1 );
+            assertEquals( "file.txt", list.get( 0 ).getName() );
+
+            fileSystem.deleteBlob( ftpUri( "file.txt" ) );
+            assertFalse( fileSystem.blobExists( ftpUri( "file.txt" ) ) );
+        }
+    }
+
+    @Test
     public void testDifferentHostsUseIndependentConnectionPools() {
         ftpFixture.writeFile( "shared/file.txt", "primary", ContentWriter.ofString() );
 

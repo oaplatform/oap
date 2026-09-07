@@ -229,6 +229,7 @@ Required configuration keys for S3 (each supports the alias-override / scheme-wi
 | `fs.s3.credential` | AWS secret access key |
 | `fs.s3.region` | AWS region (e.g. `us-east-1`) |
 | `fs.s3.endpoint` | Override endpoint URL (e.g. for LocalStack); when set, path-style access is forced automatically |
+| `fs.s3.filesystem.basedir` | Optional key prefix within the bucket; every object key is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ---
 
@@ -258,6 +259,7 @@ Required/optional configuration keys (each supports the alias-override / scheme-
 | `fs.ftp.so-timeout-millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
 | `fs.ftps.tls-mode` | `explicit` (default) or `implicit` |
 | `fs.ftps.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+| `fs.ftp.filesystem.basedir` | Optional remote path prefix; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java
 CloudURI dest = new CloudURI( "fs://my-ftp-alias/reports/2024-06-01.json" );
@@ -295,6 +297,7 @@ Required/optional configuration keys (each supports the alias-override / scheme-
 | `fs.smb.identity` | SMB username (default `guest`) |
 | `fs.smb.credential` | SMB password |
 | `fs.smb.domain` | NTLM domain/workgroup (default empty) |
+| `fs.smb.filesystem.basedir` | Optional path prefix within the share; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java
 CloudURI dest = new CloudURI( "fs://my-smb-alias/reports/2024-06-01.json" );

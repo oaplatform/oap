@@ -55,6 +55,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     protected final String password;
     protected final boolean passiveMode;
     protected final boolean removeEmptyFolders;
+    protected final String basedir;
     protected final int connectTimeoutMillis;
     protected final int defaultTimeoutMillis;
     protected final int soTimeoutMillis;
@@ -87,6 +88,8 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
         Object removeEmptyFolders = fileSystemConfiguration.get( scheme, alias, "remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
+
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( scheme, alias, "filesystem.basedir" ) );
 
         Object connectTimeoutObj = fileSystemConfiguration.get( scheme, alias, "connect-timeout-millis" );
         this.connectTimeoutMillis = connectTimeoutObj != null ? Integer.parseInt( connectTimeoutObj.toString() )
@@ -135,6 +138,35 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
      */
     private static String absolute( String path ) {
         return path.startsWith( "/" ) ? path : "/" + path;
+    }
+
+    private static String normalizeBasedir( Object basedirObj ) {
+        if( basedirObj == null ) return "";
+        String str = basedirObj.toString();
+        int start = 0, end = str.length();
+        while( start < end && str.charAt( start ) == '/' ) start++;
+        while( end > start && str.charAt( end - 1 ) == '/' ) end--;
+        return str.substring( start, end );
+    }
+
+    /**
+     * Maps a logical, basedir-relative {@link CloudURI} path to the physical path sent to the FTP server.
+     */
+    private String physicalPath( String logicalPath ) {
+        if( basedir.isEmpty() ) return logicalPath;
+        return logicalPath.isEmpty() ? basedir : basedir + "/" + logicalPath;
+    }
+
+    /**
+     * Reverse of {@link #physicalPath}: strips the leading slash and {@link #basedir} prefix off a
+     * server-absolute path, so it can be stored back into a {@link CloudURI} as a logical path.
+     */
+    private String toLogicalPath( String physicalAbsolutePath ) {
+        String path = physicalAbsolutePath.startsWith( "/" ) ? physicalAbsolutePath.substring( 1 ) : physicalAbsolutePath;
+        if( basedir.isEmpty() ) return path;
+        if( path.equals( basedir ) ) return "";
+        if( path.startsWith( basedir + "/" ) ) return path.substring( basedir.length() + 1 );
+        return path;
     }
 
     private static String parentOf( String path ) {
@@ -256,7 +288,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     private URI buildUri( CloudURI path ) {
         try {
-            return new URI( scheme, null, host, port, "/" + path.path, null, null );
+            return new URI( scheme, null, host, port, "/" + physicalPath( path.path ), null, null );
         } catch( URISyntaxException e ) {
             throw new CloudException( e );
         }
@@ -267,7 +299,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            boolean exists = findFile( client, absolute( path.path ) ) != null;
+            boolean exists = findFile( client, absolute( physicalPath( path.path ) ) ) != null;
             healthy = true;
             return exists;
         } catch( IOException e ) {
@@ -293,13 +325,13 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            if( !client.deleteFile( absolute( path.path ) ) ) {
+            if( !client.deleteFile( absolute( physicalPath( path.path ) ) ) ) {
                 healthy = true;
                 throw new CloudException( "cannot delete " + path );
             }
 
             if( removeEmptyFolders ) {
-                removeEmptyParents( client, parentOf( absolute( path.path ) ) );
+                removeEmptyParents( client, parentOf( absolute( physicalPath( path.path ) ) ) );
             }
 
             healthy = true;
@@ -311,8 +343,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     private void removeEmptyParents( FTPClient client, String dirPath ) throws IOException {
+        String floor = basedir.isEmpty() ? "/" : "/" + basedir;
         String parent = dirPath;
-        while( !parent.isEmpty() && !"/".equals( parent ) ) {
+        while( !parent.isEmpty() && !"/".equals( parent ) && !parent.equals( floor ) ) {
             FTPFile[] children = client.listFiles( parent );
             boolean empty = children == null || children.length == 0
                 || Arrays.stream( children )
@@ -344,7 +377,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            FTPFile file = findFile( client, absolute( path.path ) );
+            FTPFile file = findFile( client, absolute( physicalPath( path.path ) ) );
             healthy = true;
             if( file == null ) return null;
 
@@ -363,7 +396,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         try {
             oap.io.Files.ensureFile( destination );
             try( OutputStream out = Files.newOutputStream( destination ) ) {
-                if( !client.retrieveFile( absolute( source.path ), out ) ) {
+                if( !client.retrieveFile( absolute( physicalPath( source.path ) ), out ) ) {
                     throw new CloudException( "cannot download " + source );
                 }
             }
@@ -382,16 +415,16 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         boolean sourceHealthy = false;
         boolean destinationHealthy = false;
         try {
-            InputStream in = sourceClient.retrieveFileStream( absolute( source.path ) );
+            InputStream in = sourceClient.retrieveFileStream( absolute( physicalPath( source.path ) ) );
             if( in == null ) {
                 sourceHealthy = true;
                 destinationHealthy = true;
                 throw new CloudException( "cannot open source stream " + source );
             }
 
-            ensureRemoteDirectory( destinationClient, parentOf( absolute( destination.path ) ) );
+            ensureRemoteDirectory( destinationClient, parentOf( absolute( physicalPath( destination.path ) ) ) );
 
-            boolean stored = destinationClient.storeFile( absolute( destination.path ), in );
+            boolean stored = destinationClient.storeFile( absolute( physicalPath( destination.path ) ), in );
             in.close();
 
             boolean completed = sourceClient.completePendingCommand();
@@ -413,7 +446,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public InputStream getInputStream( CloudURI path ) {
         FTPClient client = borrow();
         try {
-            InputStream in = client.retrieveFileStream( absolute( path.path ) );
+            InputStream in = client.retrieveFileStream( absolute( physicalPath( path.path ) ) );
             if( in == null ) {
                 release( client, true );
                 throw new CloudException( s( "cannot open ${path}" ) );
@@ -429,9 +462,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public OutputStream getOutputStream( CloudURI path, Map<String, String> tags ) {
         FTPClient client = borrow();
         try {
-            ensureRemoteDirectory( client, parentOf( absolute( path.path ) ) );
+            ensureRemoteDirectory( client, parentOf( absolute( physicalPath( path.path ) ) ) );
 
-            OutputStream out = client.storeFileStream( absolute( path.path ) );
+            OutputStream out = client.storeFileStream( absolute( physicalPath( path.path ) ) );
             if( out == null ) {
                 release( client, true );
                 throw new CloudException( s( "cannot open output stream for ${path}" ) );
@@ -448,9 +481,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            ensureRemoteDirectory( client, parentOf( absolute( destination.path ) ) );
+            ensureRemoteDirectory( client, parentOf( absolute( physicalPath( destination.path ) ) ) );
 
-            String remotePath = absolute( destination.path );
+            String remotePath = absolute( physicalPath( destination.path ) );
             boolean stored = switch( blobData.content ) {
                 case InputStream inputStream -> client.storeFile( remotePath, inputStream );
                 case String str ->
@@ -490,7 +523,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         boolean healthy = false;
         try {
             List<FileSystem.StorageItemImpl> all = new ArrayList<>();
-            walk( client, path, absolute( path.path ), all );
+            walk( client, path, absolute( physicalPath( path.path ) ), all );
             all.sort( Comparator.comparing( FileSystem.StorageItemImpl::getName ) );
 
             Stream<FileSystem.StorageItemImpl> stream = all.stream();
@@ -529,7 +562,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             if( file.isDirectory() ) {
                 walk( client, base, childPath, acc );
             } else {
-                acc.add( toStorageItem( base.withPath( childPath ), file ) );
+                acc.add( toStorageItem( base.withPath( toLogicalPath( childPath ) ), file ) );
             }
         }
     }

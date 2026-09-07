@@ -286,7 +286,17 @@ public class FileSystem implements AutoCloseable {
         switch( scheme ) {
             case "s3", "ftp", "ftps", "smb" -> {
                 String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, cloudURI.alias, "container" );
-                return s( "${scheme}://${container}/${cloudURI.path}" );
+                Object basedirObj = fileSystemConfiguration.get( scheme, cloudURI.alias, "filesystem.basedir" );
+                String basedir = "";
+                if( basedirObj != null ) {
+                    String str = basedirObj.toString();
+                    int start = 0, end = str.length();
+                    while( start < end && str.charAt( start ) == '/' ) start++;
+                    while( end > start && str.charAt( end - 1 ) == '/' ) end--;
+                    basedir = str.substring( start, end );
+                }
+                String resolvedPath = basedir.isEmpty() ? cloudURI.path : s( "${basedir}/${cloudURI.path}" );
+                return s( "${scheme}://${container}/${resolvedPath}" );
             }
             case "file" -> {
                 String basedir = ( String ) fileSystemConfiguration.get( scheme, cloudURI.alias, "filesystem.basedir" );
