@@ -64,6 +64,14 @@ public class FileSystemS3Test extends Fixtures {
     }
 
     @Test
+    public void testToUri() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            assertThat( fileSystem.toUri( new CloudURI( s3mockFixture.alias(), "logs/file.txt" ) ) )
+                .isEqualTo( "s3://" + TEST_BUCKET + "/logs/file.txt" );
+        }
+    }
+
+    @Test
     public void testGetInputStream() {
         Path path = testDirectoryFixture.testPath( "my-file.txt" );
         Files.write( path, "test string", ContentWriter.ofString() );
