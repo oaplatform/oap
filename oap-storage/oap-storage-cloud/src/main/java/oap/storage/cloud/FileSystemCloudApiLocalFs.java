@@ -1,6 +1,5 @@
 package oap.storage.cloud;
 
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
 import org.apache.commons.io.FilenameUtils;
@@ -30,15 +29,15 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     private final Path basedir;
     private final boolean removeEmptyFolders;
 
-    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        String basedir = ( String ) fileSystemConfiguration.get( "file", container, "clouds.filesystem.basedir" );
+    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String alias ) {
+        String basedir = ( String ) fileSystemConfiguration.get( "file", alias, "filesystem.basedir" );
         if( basedir == null ) {
             basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
         }
 
         this.basedir = Paths.get( basedir );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( "file", container, "clouds.filesystem.remove_empty_folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( "file", alias, "filesystem.remove_empty_folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 
@@ -51,7 +50,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         if( path.path.startsWith( "/" ) ) {
             return Paths.get( path.path ).normalize();
         }
-        return Paths.get( basedir.toString(), path.container, path.path ).normalize();
+        return Paths.get( basedir.toString(), path.path ).normalize();
     }
 
     @Override
@@ -131,8 +130,6 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     @Override
     public void copy( CloudURI source, CloudURI destination ) {
-        Preconditions.checkArgument( source.scheme.equals( destination.scheme ) );
-
         try {
             Files.copy( getPath( source ), getPath( destination ) );
         } catch( IOException e ) {

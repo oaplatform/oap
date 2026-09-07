@@ -2,7 +2,6 @@ package oap.storage.cloud;
 
 import lombok.EqualsAndHashCode;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -12,97 +11,55 @@ import java.net.URISyntaxException;
 @EqualsAndHashCode
 public class CloudURI implements Serializable {
     @Serial
-    private static final long serialVersionUID = -435068850003366392L;
+    private static final long serialVersionUID = -435068850003366393L;
 
-    public final String scheme;
-    public final String container;
+    public final String alias;
     public final String path;
 
     public CloudURI( String uri ) throws CloudException {
         try {
-            // java.net.URI rejects a bare "scheme://" (empty authority with no path) as malformed;
+            // java.net.URI rejects a bare "fs://" (empty authority with no path) as malformed;
             // normalize it to the equivalent, parseable triple-slash form.
             URI u = new URI( uri.endsWith( "://" ) ? uri + "/" : uri );
 
-            scheme = u.getScheme();
-            String container = u.getHost();
-            String uriPath = u.getPath();
-            uriPath = FilenameUtils.separatorsToUnix( uriPath );
-            if( container != null && uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
-
-            if( "file".equals( scheme ) ) {
-                if( container != null ) {
-                    uriPath = uriPath.isEmpty() ? container : container + "/" + uriPath;
-                }
-                this.container = "";
-            } else if( "ftp".equals( scheme ) || "ftps".equals( scheme ) ) {
-                if( container == null || container.isEmpty() ) {
-                    throw new CloudException( "fs." + scheme + ": container (ftp server host[:port]) is required in the URI, e.g. " + scheme + "://host:port/path" );
-                }
-                int port = u.getPort();
-                this.container = port >= 0 ? container + ":" + port : container;
-            } else if( "smb".equals( scheme ) ) {
-                if( container == null || container.isEmpty() ) {
-                    throw new CloudException( "fs.smb: container (smb server host[:port]) is required in the URI, e.g. smb://host:port/share/path" );
-                }
-                int port = u.getPort();
-                String hostPort = port >= 0 ? container + ":" + port : container;
-
-                int slashIdx = uriPath.indexOf( '/' );
-                String share = slashIdx >= 0 ? uriPath.substring( 0, slashIdx ) : uriPath;
-                if( share.isEmpty() ) {
-                    throw new CloudException( "fs.smb: share is required in the URI, e.g. smb://host:port/share/path" );
-                }
-                this.container = hostPort + "/" + share;
-                uriPath = slashIdx >= 0 ? uriPath.substring( slashIdx + 1 ) : "";
-            } else {
-                this.container = container;
+            String scheme = u.getScheme();
+            if( scheme != null && !"fs".equals( scheme ) ) {
+                throw new CloudException( "fs: expected URI scheme 'fs', got '" + scheme + "' — use fs://<alias>/<path>" );
             }
 
-            path = uriPath;
+            String alias = u.getHost();
+            if( alias == null || alias.isEmpty() ) {
+                throw new CloudException( "fs: alias is required in the URI, e.g. fs://<alias>/<path>" );
+            }
 
-            getProvider();
+            String uriPath = FilenameUtils.separatorsToUnix( u.getPath() );
+            if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
+
+            this.alias = alias;
+            this.path = uriPath;
         } catch( URISyntaxException e ) {
             throw new CloudException( e );
         }
     }
 
-    public CloudURI( String scheme, String container, String path ) {
-        this.scheme = scheme;
-        this.container = container;
+    public CloudURI( String alias, String path ) {
+        this.alias = alias;
 
         String unixPath = FilenameUtils.separatorsToUnix( path );
 
         this.path = unixPath.startsWith( "/" ) ? unixPath.substring( 1 ) : unixPath;
     }
 
-    public CloudURI withContainer( String container ) {
-        return new CloudURI( this.scheme, container, this.path );
+    public CloudURI withAlias( String alias ) {
+        return new CloudURI( alias, this.path );
     }
 
     public CloudURI withPath( String path ) {
-        return new CloudURI( this.scheme, this.container, path );
-    }
-
-    public CloudURI withSchema( String scheme ) {
-        return new CloudURI( scheme, this.container, this.path );
-    }
-
-    public String getProvider() {
-        return switch( scheme ) {
-            case "s3" -> "aws-s3";
-            case "gcs" -> "google-cloud-storage";
-            case "ab" -> "azureblob";
-            case "file" -> "filesystem";
-            case "ftp" -> "ftp";
-            case "ftps" -> "ftp";
-            case "smb" -> "smb";
-            default -> throw new CloudException( "unsupported schema " + scheme );
-        };
+        return new CloudURI( this.alias, path );
     }
 
     @Override
     public String toString() {
-        return scheme + "://" + ( StringUtils.isNotEmpty( container ) ? container + "/" : "" ) + path;
+        return "fs://" + alias + "/" + path;
     }
 }

@@ -6,15 +6,17 @@ Depends on: `oap-stdlib`
 
 ## `CloudURI`
 
-Every path is represented as a `CloudURI`:
+Every path is represented as a `CloudURI`, addressed by **alias**, not by backend/container directly:
 
 ```
-scheme://container/path/to/object
-  │          │          │
-  │          │          └─ object key (no leading slash)
-  │          └─ bucket / container name
-  └─ backend scheme
+fs://alias/path/to/object
+  │     │       │
+  │     │       └─ object key (no leading slash)
+  │     └─ named target: resolves to a backend scheme + connection (container) via config
+  └─ fixed literal scheme
 ```
+
+The alias is the only thing the URI carries — which backend scheme it maps to (`s3`, `ftp`, `smb`, ...) and which concrete connection (bucket, host[:port], host[:port]/share, ...) it uses are both resolved from `FileSystemConfiguration` at call time (see below).
 
 | Scheme | Backend |
 |---|---|
@@ -27,41 +29,87 @@ scheme://container/path/to/object
 | `smb` | SMB/CIFS (requires `oap-storage-cloud-smb` on classpath) |
 
 ```java
-CloudURI uri = new CloudURI( "s3://my-bucket/data/report-2024-06-01.json" );
-// uri.scheme    = "s3"
-// uri.container = "my-bucket"
-// uri.path      = "data/report-2024-06-01.json"
+CloudURI uri = new CloudURI( "fs://my-alias/data/report-2024-06-01.json" );
+// uri.alias = "my-alias"
+// uri.path  = "data/report-2024-06-01.json"
+
+// equivalent, canonical constructor
+CloudURI uri2 = new CloudURI( "my-alias", "data/report-2024-06-01.json" );
 
 // Builder-style copies
 CloudURI other = uri.withPath( "data/report-2024-06-02.json" );
+CloudURI otherAlias = uri.withAlias( "other-alias" );
 ```
+
+### Migrating a legacy `scheme://container/path` string
+
+`FileSystem.resolve(String)` accepts the old `scheme://container/path` shape (as used before aliases existed) and maps it onto whichever alias is configured for that scheme+container, falling back to the default alias if the scheme matches but no alias declares that exact container:
+
+```java
+CloudURI uri = fileSystem.resolve( "s3://my-bucket/data/report-2024-06-01.json" );
+```
+
+Throws `CloudException` if no alias can be resolved for the given scheme+container, and always throws for `file://...` (local paths have no container to match against — use `fs://file/<path>` or `new CloudURI("file", path)` directly). `fs://...` input passes straight through to `new CloudURI(uri)`.
 
 ---
 
 ## `FileSystemConfiguration`
 
-Holds per-scheme (and optionally per-container) credentials and settings. Keys follow the pattern:
+Holds per-scheme, per-alias, and global-default credentials and settings. Keys follow the pattern:
 
 ```
-fs.<scheme>[.<container>].clouds.<property>
+fs.<scheme>.<property>[.<alias>]
+fs.default.<property>
 ```
 
-The `fs.default.clouds.scheme` and `fs.default.clouds.container` entries define the default used by `FileSystem.getDefaultURL(path)`.
+Looking up a property for a given `(scheme, alias)` tries, in order:
+1. `fs.<scheme>.<property>.<alias>` — alias-specific override
+2. `fs.<scheme>.<property>` — scheme-wide default
+3. `fs.default.<property>` — global fallback (new tier; previously `fs.default.clouds.*` only ever selected which scheme+container was "the default," it was never a general property fallback)
+
+`fs.default.scheme` names the default backend; `fs.default.alias` names the default alias used by `FileSystem.getDefaultURL(path)`. `fs.default.alias` is **optional** — when absent, the default alias falls back to `fs.default.scheme`'s own name (e.g. `fs.default.scheme = ftp` alone means `fs://ftp/...` is the default target).
+
+### Aliases
+
+An alias is a named target (a backend scheme + connection). It's **detected from configuration** — no separate declaration list:
+
+- The default alias is registered from `fs.default.scheme` + `fs.default.alias` (or just `fs.default.scheme` alone, per above).
+- Any additional alias is registered the moment it appears in a `fs.<scheme>.container.<alias>` key — `container` is the anchor property every alias needs to actually connect to something, so declaring it is what makes the alias exist.
+- A bare alias equal to an installed backend's scheme name (`fs://ftp/...`, `fs://file/...`) resolves implicitly with **zero** alias-related config, so single-target setups need nothing beyond the scheme-wide properties.
 
 ```java
 FileSystemConfiguration config = new FileSystemConfiguration( Map.of(
-    // S3 credentials (apply to all buckets unless overridden per-container)
-    "fs.s3.clouds.identity",   "AKIAIOSFODNN7EXAMPLE",
-    "fs.s3.clouds.credential", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    "fs.s3.clouds.region",     "us-east-1",
+    // S3 credentials (apply to every alias on this scheme unless overridden per-alias)
+    "fs.s3.identity",   "AKIAIOSFODNN7EXAMPLE",
+    "fs.s3.credential", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "fs.s3.region",     "us-east-1",
+    "fs.s3.container",  "my-bucket",
 
     // Default target
-    "fs.default.clouds.scheme",    "s3",
-    "fs.default.clouds.container", "my-bucket"
+    "fs.default.scheme", "s3",
+    "fs.default.alias",  "my-alias"
 ) );
 ```
 
 Values support `${env.VAR_NAME}` and `${system.property}` substitution.
+
+### Multi-alias example
+
+```
+fs.default.scheme  = ftp
+fs.default.alias   = primary
+fs.ftp.container   = ftp.example.com:21
+fs.ftp.identity    = shared-user
+fs.ftp.credential  = shared-pass
+
+# a second account on the same server: only identity/credential differ,
+# container is repeated so this alias gets registered
+fs.ftp.container.secondary  = ftp.example.com:21
+fs.ftp.identity.secondary   = other-user
+fs.ftp.credential.secondary = other-pass
+```
+
+`fs://primary/...` connects as `shared-user`; `fs://secondary/...` connects to the same host as `other-user`.
 
 ### OAP module configuration
 
@@ -72,12 +120,13 @@ dependsOn = [oap-storage-cloud]
 services {
   oap-storage-cloud.oap-cloud-configuration.parameters {
     configuration {
-      fs.s3.clouds.identity   = ${?AWS_ACCESS_KEY_ID}
-      fs.s3.clouds.credential = ${?AWS_SECRET_ACCESS_KEY}
-      fs.s3.clouds.region     = us-east-1
+      fs.s3.identity   = ${?AWS_ACCESS_KEY_ID}
+      fs.s3.credential = ${?AWS_SECRET_ACCESS_KEY}
+      fs.s3.region     = us-east-1
+      fs.s3.container  = my-bucket
 
-      fs.default.clouds.scheme    = s3
-      fs.default.clouds.container = my-bucket
+      fs.default.scheme = s3
+      fs.default.alias  = my-alias
     }
   }
 }
@@ -87,13 +136,13 @@ services {
 
 ## `FileSystem`
 
-Stateless facade that routes calls to the right backend by URI scheme. Backend instances are cached and closed with `FileSystem.close()`; the cache key granularity depends on the backend — most (S3, `file`) are cached per scheme, while backends implementing `ContainerScopedCloudApi` (FTP/FTPS) are cached per scheme **and** container, since `container` identifies a distinct server connection for them rather than a request-scoped parameter.
+Stateless facade that routes calls to the right backend by resolving the URI's alias to a scheme (via `FileSystemConfiguration`, falling back to an installed backend's scheme name for a bare self-named alias). Backend instances are cached and closed with `FileSystem.close()`, keyed by `scheme://alias` — every backend is alias-scoped, since alias is the stable per-connection identity (this also means two aliases on the same S3 bucket with different credentials get independent cached clients, not a shared one).
 
 ```java
 FileSystem fs = new FileSystem( config );
 
 // Upload
-CloudURI dest = new CloudURI( "s3://my-bucket/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-alias/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder()
     .content( jsonBytes )
     .tags( Map.of( "env", "prod" ) )
@@ -113,7 +162,7 @@ fs.copy( src, dest, Map.of( "copied", "true" ) );
 
 // List objects
 PageSet<? extends FileSystem.StorageItem> page = fs.list(
-    new CloudURI( "s3://my-bucket/reports/" ),
+    new CloudURI( "my-alias", "reports/" ),
     ListOptions.builder().maxResults( 100 ).build()
 );
 
@@ -121,8 +170,11 @@ PageSet<? extends FileSystem.StorageItem> page = fs.list(
 FileSystem.StorageItem meta = fs.getMetadata( dest );
 // meta.getName(), meta.getSize(), meta.getLastModified(), meta.getETag(), meta.getContentType()
 
-// Default URL from configured scheme + container
+// Default URL from fs.default.scheme/fs.default.alias
 CloudURI defaultUri = fs.getDefaultURL( "reports/today.json" );
+
+// Migrate a legacy scheme://container/path string to an alias-based CloudURI
+CloudURI legacyResolved = fs.resolve( "s3://my-bucket/reports/today.json" );
 ```
 
 ### Operations reference
@@ -144,8 +196,9 @@ All methods are synchronous/blocking.
 | `createContainer(uri)` | Create a bucket/container |
 | `deleteContainer(uri)` | Delete an empty bucket/container |
 | `deleteContainerIfEmpty(uri)` | Delete only if empty; returns `boolean` |
-| `getDefaultURL(path)` | Build a `CloudURI` using the configured default scheme + container |
-| `toLocalFilePath(path)` | Convert a `java.nio.Path` to a `file://` `CloudURI` |
+| `getDefaultURL(path)` | Build a `CloudURI` using `fs.default.alias` |
+| `resolve(legacyUri)` | Map a legacy `scheme://container/path` string onto the alias configured for that scheme+container |
+| `toLocalFilePath(path)` | Convert a `java.nio.Path` to a `fs://file/...` `CloudURI` |
 
 ---
 
@@ -158,7 +211,7 @@ Interface implemented by each backend. Register a new implementation by placing 
 s3=com.example.MyS3CloudApi
 ```
 
-The class must have a constructor `(FileSystemConfiguration, String container)`.
+The class must have a constructor `(FileSystemConfiguration, String alias)` — each backend resolves its own connection details (bucket, host[:port], ...) from config via `fileSystemConfiguration.getOrThrow(scheme, alias, "container")`, rather than receiving them pre-parsed.
 
 Every method is a required synchronous, blocking method.
 
@@ -168,15 +221,15 @@ Every method is a required synchronous, blocking method.
 
 Add the `oap-storage-cloud-aws-s3` artifact to your dependencies. The `s3://` scheme is registered automatically via `cloud-service.properties` — no additional wiring is needed.
 
-Required configuration keys for S3:
+Required configuration keys for S3 (each supports the alias-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
-| `fs.s3.clouds.identity` | AWS access key ID |
-| `fs.s3.clouds.credential` | AWS secret access key |
-| `fs.s3.clouds.region` | AWS region (e.g. `us-east-1`) |
-| `fs.s3.clouds.endpoint` | Override endpoint URL (e.g. for LocalStack) |
-| `fs.s3.clouds.s3.virtual-host-buckets` | `false` for path-style access (LocalStack, MinIO) |
+| `fs.s3.container` | Bucket name |
+| `fs.s3.identity` | AWS access key ID |
+| `fs.s3.credential` | AWS secret access key |
+| `fs.s3.region` | AWS region (e.g. `us-east-1`) |
+| `fs.s3.endpoint` | Override endpoint URL (e.g. for LocalStack); when set, path-style access is forced automatically |
 
 ---
 
@@ -184,43 +237,44 @@ Required configuration keys for S3:
 
 Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
 
-Unlike `file`, FTP/FTPS **require** a container: the URI's host (optionally `:port`) identifies the FTP server to connect to. `ftp://ftp.example.com:2121/reports/2024-06-01.json` connects to `ftp.example.com:2121` and addresses the remote path `reports/2024-06-01.json`. A URI with no host (e.g. `ftp:///reports/file.txt`, `ftp://`) throws `CloudException`.
+Unlike `file`, FTP/FTPS **require** a container: `fs.ftp.container[.<alias>]` (`host[:port]`) identifies the FTP server an alias connects to. `getOrThrow` throws `CloudException` if no container can be resolved for the alias.
 
-Each distinct `host[:port]` gets its own pooled connection set — using two different FTP hosts through the same `FileSystem` instance connects to both independently, they don't share a connection pool.
+Each distinct alias gets its own pooled connection set — two aliases pointing at different hosts (or even the same host with different credentials) never share a connection pool.
 
 FTP control connections (TCP connect + login) are pooled per backend instance using [Apache Commons Pool 2](https://commons.apache.org/proper/commons-pool/) — operations borrow a connection from the pool and return it when done instead of reconnecting/logging in on every call. Pooled connections are validated with an FTP `NOOP` before reuse, so idle connections dropped by the server/firewall are transparently replaced.
 
-Required/optional configuration keys:
+Required/optional configuration keys (each supports the alias-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
-| `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
-| `fs.ftp.clouds.credential` | FTP password |
-| `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
-| `fs.ftp.clouds.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
-| `fs.ftp.clouds.pool-max-size` | Max pooled FTP connections per backend instance (default `8`) |
-| `fs.ftp.clouds.pool-max-wait-millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
-| `fs.ftp.clouds.connect-timeout-millis` | TCP connect timeout, in milliseconds (default `30000`) |
-| `fs.ftp.clouds.default-timeout-millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
-| `fs.ftp.clouds.so-timeout-millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
-| `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
-| `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+| `fs.ftp.container` | `host[:port]` of the FTP server (default port `21`) |
+| `fs.ftp.identity` | FTP username (default `anonymous`) |
+| `fs.ftp.credential` | FTP password |
+| `fs.ftp.passive-mode` | `true`/`false` (default `true`) |
+| `fs.ftp.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
+| `fs.ftp.pool-max-size` | Max pooled FTP connections per backend instance (default `8`) |
+| `fs.ftp.pool-max-wait-millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
+| `fs.ftp.connect-timeout-millis` | TCP connect timeout, in milliseconds (default `30000`) |
+| `fs.ftp.default-timeout-millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
+| `fs.ftp.so-timeout-millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
+| `fs.ftps.tls-mode` | `explicit` (default) or `implicit` |
+| `fs.ftps.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 
 ```java
-CloudURI dest = new CloudURI( "ftp://ftp.example.com/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-ftp-alias/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 
-### Per-host FTP configuration overrides
+### Per-alias FTP configuration overrides
 
-Config keys follow `fs.<scheme>.<container>.clouds.<property>`, where `<container>` must exactly match the runtime `host[:port]` value derived from the URI. Since config keys are dot-delimited, a literal dot inside the host must be escaped as `\.` so it isn't parsed as a key-path separator — a host with no dots (just `localhost` or `localhost:12345`, port digits included) needs no escaping:
+Declaring `fs.ftp.container.<alias>` registers `<alias>` and gives it its own connection target; pairing it with `fs.ftp.identity.<alias>`/`fs.ftp.credential.<alias>` gives that alias its own credentials too (see the [multi-alias example](#multi-alias-example) above). Since the lookup mechanism probes exact key strings rather than positionally splitting stored keys, alias names needs no dot-escaping, unlike the old per-container scheme:
 
 ```
-fs.ftp.localhost:12345.clouds.identity = as
-fs.ftp.ftp\.server1\.com.clouds.identity = as
+fs.ftp.container.reporting-server = ftp.server1.example.com:21
+fs.ftp.identity.reporting-server  = as
 ```
 
-A container-specific entry overrides `fs.ftp.clouds.<property>` only for that exact host; other hosts keep falling back to the scheme-wide default.
+An alias-specific entry overrides `fs.ftp.<property>` only for that exact alias; other aliases on the same scheme keep falling back to the scheme-wide default, and ultimately to `fs.default.<property>`.
 
 `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
 
@@ -230,20 +284,21 @@ A container-specific entry overrides `fs.ftp.clouds.<property>` only for that ex
 
 Add the `oap-storage-cloud-smb` artifact to your dependencies. The `smb://` scheme (backed by [jcifs-ng](https://github.com/codelibs/jcifs)) is registered automatically via `cloud-service.properties`.
 
-Like FTP, SMB **requires** a container, but the container is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `smb://fileserver:445/reports/2024-06-01.json` connects to `fileserver:445`, addresses share `reports`, and the remaining path (`2024-06-01.json`) is relative to that share. A URI with no host, or no share segment, throws `CloudException`.
+Like FTP, SMB **requires** a container, but `fs.smb.container[.<alias>]` is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `fs.smb.container = fileserver:445/reports` addresses share `reports` on `fileserver:445`; the object path is relative to that share. `getOrThrow` throws `CloudException` if no container (or no share segment within it) can be resolved for the alias.
 
-Each distinct `host[:port]/share` gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two shares on the same server don't share a session.
+Each alias gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two aliases never share a session, even if they point at the same share.
 
-Required/optional configuration keys:
+Required/optional configuration keys (each supports the alias-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
-| `fs.smb.clouds.identity` | SMB username (default `guest`) |
-| `fs.smb.clouds.credential` | SMB password |
-| `fs.smb.clouds.domain` | NTLM domain/workgroup (default empty) |
+| `fs.smb.container` | `host[:port]/share` |
+| `fs.smb.identity` | SMB username (default `guest`) |
+| `fs.smb.credential` | SMB password |
+| `fs.smb.domain` | NTLM domain/workgroup (default empty) |
 
 ```java
-CloudURI dest = new CloudURI( "smb://fileserver/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-smb-alias/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 

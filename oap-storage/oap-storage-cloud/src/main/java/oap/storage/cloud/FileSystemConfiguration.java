@@ -3,35 +3,32 @@ package oap.storage.cloud;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
-import oap.util.Pair;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-
-import static dev.khbd.interp4j.core.Interpolations.s;
-import static oap.util.Pair.__;
+import java.util.Optional;
 
 /**
- * fs.[s3|gcs|ab][.container?].endpoint
- * fs.[s3|gcs|ab][.container?].identity
- * fs.[s3|gcs|ab][.container?].credential
+ * fs.default.scheme
+ * fs.default.alias (optional, falls back to fs.default.scheme's own name)
+ * fs.[s3|gcs|ab|ftp|ftps|smb|file].<property>[.<alias>]
  */
 @Slf4j
 public class FileSystemConfiguration {
     private final LinkedHashMap<String, Map<String, Object>> properties;
+    private final Map<String, String> aliasToScheme;
 
     public FileSystemConfiguration( Map<String, Object> configuration ) {
         this.properties = parse( configuration );
+        this.aliasToScheme = buildAliasRegistry( properties );
         logDefaults();
     }
 
     private FileSystemConfiguration( LinkedHashMap<String, Map<String, Object>> properties ) {
         this.properties = properties;
+        this.aliasToScheme = buildAliasRegistry( properties );
         logDefaults();
     }
 
@@ -42,18 +39,13 @@ public class FileSystemConfiguration {
         log.trace( "string fs {}", fsList );
 
         for( Map.Entry<String, Object> entry : fsList.entrySet() ) {
-            String[] toks = entry.getKey().split( "(?<!\\\\)\\." );
+            String[] toks = entry.getKey().split( "\\.", 3 );
 
-            Preconditions.checkArgument( "fs".equals( toks[0] ) );
+            Preconditions.checkArgument( toks.length == 3 && "fs".equals( toks[0] ),
+                "invalid fs configuration key: " + entry.getKey() );
+
             String id = toks[1];
-
-            int start = 2;
-            if( !toks[2].equals( "clouds" ) ) {
-                id = id + "." + toks[2].replace( "\\.", "." );
-                start++;
-            }
-
-            String property = StringUtils.join( toks, ".", start, toks.length );
+            String property = toks[2];
 
             String value = new StringSubstitutor( key -> {
                 if( key.startsWith( "env." ) ) {
@@ -94,6 +86,39 @@ public class FileSystemConfiguration {
     }
 
     /**
+     * Discovers the alias -> scheme registry: every {@code fs.<scheme>.container.<alias>} key registers
+     * {@code alias -> scheme}; the default alias/scheme is always registered from {@code fs.default.alias}/
+     * {@code fs.default.scheme}, even without its own {@code container.<alias>} entry (it may rely on the
+     * scheme-wide {@code fs.<scheme>.container}).
+     */
+    private static Map<String, String> buildAliasRegistry( Map<String, Map<String, Object>> properties ) {
+        Map<String, String> registry = new LinkedHashMap<>();
+
+        for( Map.Entry<String, Map<String, Object>> schemeEntry : properties.entrySet() ) {
+            String scheme = schemeEntry.getKey();
+            if( "default".equals( scheme ) ) continue;
+
+            for( String property : schemeEntry.getValue().keySet() ) {
+                if( property.startsWith( "container." ) ) {
+                    registry.put( property.substring( "container.".length() ), scheme );
+                }
+            }
+        }
+
+        Map<String, Object> defaults = properties.get( "default" );
+        if( defaults != null ) {
+            Object defaultScheme = defaults.get( "scheme" );
+            if( defaultScheme != null ) {
+                Object defaultAlias = defaults.get( "alias" );
+                String alias = defaultAlias != null ? ( String ) defaultAlias : ( String ) defaultScheme;
+                registry.put( alias, ( String ) defaultScheme );
+            }
+        }
+
+        return registry;
+    }
+
+    /**
      * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
      * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
      */
@@ -128,10 +153,7 @@ public class FileSystemConfiguration {
     }
 
     private void logDefaults() {
-        String defaultScheme = getDefaultScheme();
-        String defaultContainer = tryGetDefaultContainer();
-
-        log.info( "DefaultScheme {} DefaultContainer {}", defaultScheme, defaultContainer );
+        log.info( "DefaultScheme {} DefaultAlias {}", tryGetDefault( "scheme" ), tryGetDefault( "alias" ) );
         log.info( "fs {}", properties );
     }
 
@@ -139,89 +161,89 @@ public class FileSystemConfiguration {
         return getDefault( "scheme" );
     }
 
-    public String getDefaultContainer() {
-        return getDefault( "container" );
+    /**
+     * Returns {@code fs.default.alias} if set, else falls back to {@code fs.default.scheme}'s own name
+     * (the same "bare alias == scheme name" self-resolution {@link FileSystem} uses for zero-config,
+     * single-target setups) — {@code fs.default.alias} is optional.
+     */
+    public String getDefaultAlias() {
+        String alias = tryGetDefault( "alias" );
+        return alias != null ? alias : getDefaultScheme();
     }
 
     @Nullable
-    public String getDefaultContainer( String scheme ) {
-        if( getDefaultScheme().equals( scheme ) ) {
-            return getDefaultContainer();
-        }
-
-        Map<String, Object> conf = properties.get( scheme );
-        if( conf == null ) {
-            return null;
-        }
-
-        return ( String ) conf.get( "clouds.container" );
-    }
-
-    @Nullable
-    public String tryGetDefaultContainer() {
-        return tryGetDefault( "container" );
+    public String tryGetDefaultAlias() {
+        return tryGetDefault( "alias" );
     }
 
     private String getDefault( String parameter ) {
-        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default.clouds." + parameter + " is required" );
+        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default." + parameter + " is required" );
     }
 
     @Nullable
     private String tryGetDefault( String parameter ) {
         Map<String, Object> defaults = properties.get( "default" );
         Preconditions.checkNotNull( defaults, "fs.default is required" );
-        return ( String ) defaults.get( "clouds." + parameter );
+        return ( String ) defaults.get( parameter );
     }
 
-    private Pair<Map<String, Map<String, Object>>, Map<String, Map<String, Map<String, Object>>>> splitBySize( Map<String, Object> fs ) {
-        Map<String, Map<String, Object>> defaultFs = new LinkedHashMap<>();
-        Map<String, Map<String, Map<String, Object>>> containerFs = new LinkedHashMap<>();
+    /**
+     * Resolves an alias to its scheme via the discovered registry (fs.&lt;scheme&gt;.container.&lt;alias&gt;
+     * entries, plus fs.default.alias/fs.default.scheme). Does not know about implicit self-alias-equals-scheme-name
+     * fallback — that requires the set of installed backend schemes, which only {@link FileSystem} knows.
+     */
+    public Optional<String> findScheme( String alias ) {
+        return Optional.ofNullable( aliasToScheme.get( alias ) );
+    }
 
-        for( Map.Entry<String, Object> entry : fs.entrySet() ) {
-            String[] toks = entry.getKey().split( "(?<!\\\\)\\." );
-            log.trace( "toks {}", List.of( toks ) );
+    public String getScheme( String alias ) {
+        return findScheme( alias ).orElseThrow( () -> new CloudException(
+            "fs: alias '" + alias + "' cannot be resolved to a scheme; declare fs.<scheme>.container." + alias
+                + ", or set fs.default.alias/fs.default.scheme" ) );
+    }
 
-            if( toks.length > 3 ) {
-                toMap( containerFs, toks, entry.getValue() );
-            } else {
-                toMap( defaultFs, toks, entry.getValue() );
+    /**
+     * Finds the alias registered under `scheme` whose resolved `container` property equals `container` —
+     * used to map a legacy `scheme://container/path` URI onto an alias. Falls back to the default alias if
+     * its scheme matches and its container (alias-specific or scheme-wide) matches.
+     */
+    public Optional<String> findAliasByContainer( String scheme, String container ) {
+        Map<String, Object> schemeMap = properties.get( scheme );
+        if( schemeMap == null ) return Optional.empty();
+
+        for( Map.Entry<String, Object> entry : schemeMap.entrySet() ) {
+            if( entry.getKey().startsWith( "container." ) && container.equals( entry.getValue() ) ) {
+                return Optional.of( entry.getKey().substring( "container.".length() ) );
             }
         }
 
-        return __( defaultFs, containerFs );
-    }
-
-    private void toMap( Map<String, ? extends Object> map, String[] toks, Object value ) {
-        Object l = map;
-        for( int i = 1; i < toks.length; i++ ) {
-            int finalI = i;
-            l = ( ( Map ) l ).computeIfAbsent( toks[i], t -> finalI < toks.length - 1 ? new HashMap<String, Object>()
-                : value );
-        }
-    }
-
-    public Map<String, Object> get( String scheme, String container ) {
-        Map<String, Object> conf = properties.get( scheme + "." + container );
-        if( conf == null ) {
-            conf = properties.get( scheme );
-        }
-        if( conf == null ) {
-            conf = Map.of();
+        Object schemeWideContainer = schemeMap.get( "container" );
+        if( container.equals( schemeWideContainer )
+            && scheme.equals( tryGetDefault( "scheme" ) ) ) {
+            return Optional.of( getDefaultAlias() );
         }
 
-        return conf;
+        return Optional.empty();
     }
 
-    public Object get( String scheme, String container, String name ) {
-        Map<String, Object> conf = get( scheme, container );
+    public Object get( String scheme, @Nullable String alias, String property ) {
+        Map<String, Object> schemeMap = properties.getOrDefault( scheme, Map.of() );
 
-        return conf.get( name );
+        if( alias != null ) {
+            Object value = schemeMap.get( property + "." + alias );
+            if( value != null ) return value;
+        }
+
+        Object value = schemeMap.get( property );
+        if( value != null ) return value;
+
+        return properties.getOrDefault( "default", Map.of() ).get( property );
     }
 
-    public Object getOrThrow( String scheme, String container, String name ) {
-        Object res = get( scheme, container, name );
+    public Object getOrThrow( String scheme, @Nullable String alias, String property ) {
+        Object res = get( scheme, alias, property );
         if( res == null ) {
-            throw new CloudException( s( "fs.${scheme}.${name} is required" ) );
+            throw new CloudException( "fs." + scheme + "." + property + ( alias != null ? "." + alias : "" ) + " is required" );
         }
         return res;
     }
@@ -232,7 +254,7 @@ public class FileSystemConfiguration {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 
         properties.forEach( ( k, m ) -> {
-            m.forEach( ( k2, v ) -> map.put( s( "fs.${k}.${k2}" ), v ) );
+            m.forEach( ( k2, v ) -> map.put( "fs." + k + "." + k2, v ) );
         } );
 
         return Binder.json.marshal( map );

@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.cloud.BlobData;
 import oap.storage.cloud.CloudException;
 import oap.storage.cloud.CloudURI;
-import oap.storage.cloud.ContainerScopedCloudApi;
 import oap.storage.cloud.FileSystem;
 import oap.storage.cloud.FileSystemCloudApi;
 import oap.storage.cloud.FileSystemConfiguration;
@@ -41,11 +40,11 @@ import java.util.stream.Stream;
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
- * {@code container} is {@code host[:port]/share} — one backend instance (and its {@code CIFSContext}
- * session) is created per share, not per server.
+ * {@code fs.smb.container[.<alias>]} is {@code host[:port]/share} — one backend instance (and its
+ * {@code CIFSContext} session) is created per alias, not per server.
  */
 @Slf4j
-public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScopedCloudApi {
+public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     private static final int DEFAULT_PORT = 445;
 
     private final String host;
@@ -53,10 +52,8 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
     private final String share;
     private final CIFSContext cifsContext;
 
-    public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        if( container == null || container.isBlank() ) {
-            throw new CloudException( "fs.smb: container (smb server host[:port]/share) is required" );
-        }
+    public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String alias ) {
+        String container = ( String ) fileSystemConfiguration.getOrThrow( "smb", alias, "container" );
 
         int slashIdx = container.indexOf( '/' );
         String hostPort = slashIdx >= 0 ? container.substring( 0, slashIdx ) : container;
@@ -75,13 +72,13 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
             this.port = DEFAULT_PORT;
         }
 
-        Object identity = fileSystemConfiguration.get( "smb", container, "clouds.identity" );
+        Object identity = fileSystemConfiguration.get( "smb", alias, "identity" );
         String username = identity != null ? identity.toString() : "guest";
 
-        Object credential = fileSystemConfiguration.get( "smb", container, "clouds.credential" );
+        Object credential = fileSystemConfiguration.get( "smb", alias, "credential" );
         String password = credential != null ? credential.toString() : "";
 
-        Object domainObj = fileSystemConfiguration.get( "smb", container, "clouds.domain" );
+        Object domainObj = fileSystemConfiguration.get( "smb", alias, "domain" );
         String domain = domainObj != null ? domainObj.toString() : "";
 
         try {
@@ -106,7 +103,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
 
     private URI buildUri( CloudURI path ) {
         try {
-            return new URI( path.scheme, null, host, port, "/" + share + "/" + path.path, null, null );
+            return new URI( "smb", null, host, port, "/" + share + "/" + path.path, null, null );
         } catch( URISyntaxException e ) {
             throw new CloudException( e );
         }

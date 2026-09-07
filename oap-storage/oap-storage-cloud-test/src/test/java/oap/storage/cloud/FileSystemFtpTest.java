@@ -47,12 +47,8 @@ public class FileSystemFtpTest extends Fixtures {
         fixture( new SystemTimerFixture( true ) );
     }
 
-    private static String container() {
-        return ftpFixture.hostPort();
-    }
-
     private static CloudURI ftpUri( String path ) {
-        return new CloudURI( "ftp", container(), path );
+        return new CloudURI( ftpFixture.alias(), path );
     }
 
     @BeforeMethod
@@ -111,7 +107,7 @@ public class FileSystemFtpTest extends Fixtures {
         ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.downloadFile( "ftp://" + container() + "/logs/file.txt", testDirectoryFixture.testPath( "file.txt" ) );
+            fileSystem.downloadFile( ftpUri( "logs/file.txt" ), testDirectoryFixture.testPath( "file.txt" ) );
 
             assertThat( testDirectoryFixture.testPath( "file.txt" ) ).hasContent( "test string" );
         }
@@ -263,7 +259,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         for( int i = 0; i < uploads; i++ ) {
-            assertThat( ftpFixture.readFile( "concurrent/file" + i + ".txt", ContentReader.ofString() ) ).isEqualTo( "content" + i );
+            assertThat( ftpFixture.readFile( s( "concurrent/file${i}.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" + i );
         }
     }
 
@@ -307,9 +303,12 @@ public class FileSystemFtpTest extends Fixtures {
         try {
             secondFtpFixture.writeFile( "shared/file.txt", "secondary", ContentWriter.ofString() );
 
-            try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            FileSystemConfiguration config = secondFtpFixture.updateWithFtp(
+                getFileSystemConfiguration(), "secondary", false, null, false );
+
+            try( FileSystem fileSystem = new FileSystem( config ) ) {
                 CloudURI primaryUri = ftpUri( "shared/file.txt" );
-                CloudURI secondaryUri = new CloudURI( "ftp", secondFtpFixture.hostPort(), "shared/file.txt" );
+                CloudURI secondaryUri = new CloudURI( "secondary", "shared/file.txt" );
 
                 assertThat( fileSystem.getInputStream( primaryUri ) ).hasContent( "primary" );
                 assertThat( fileSystem.getInputStream( secondaryUri ) ).hasContent( "secondary" );

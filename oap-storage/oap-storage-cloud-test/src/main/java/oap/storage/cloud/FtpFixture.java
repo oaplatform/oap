@@ -128,34 +128,66 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return new FileSystemConfiguration( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, true ) );
     }
 
+    public String alias() {
+        return tls ? "ftps" : "ftp";
+    }
+
     public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs." + scheme + ".clouds.identity", USERNAME );
-        map.put( "fs." + scheme + ".clouds.credential", PASSWORD );
-        map.put( "fs." + scheme + ".clouds.trust-all", true );
+        map.put( s( "fs.${scheme}.identity" ), USERNAME );
+        map.put( s( "fs.${scheme}.credential" ), PASSWORD );
+        map.put( s( "fs.${scheme}.trust-all" ), true );
+        map.put( s( "fs.${scheme}.container" ), hostPort() );
 
         if( removeEmptyFolders ) {
-            map.put( "fs." + scheme + ".clouds.remove-empty-folders", true );
+            map.put( s( "fs.${scheme}.remove-empty-folders" ), true );
         }
 
         if( poolMaxSize != null ) {
-            map.put( "fs." + scheme + ".clouds.pool-max-size", poolMaxSize );
+            map.put( s( "fs.${scheme}.pool-max-size" ), poolMaxSize );
         }
 
         if( addDefaults ) {
-            map.put( "fs.default.clouds.scheme", scheme );
-            map.put( "fs.default.clouds.container", hostPort() );
-        } else {
-            map.put( "fs.ftp.clouds.container", hostPort() );
+            map.put( "fs.default.scheme", scheme );
         }
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, addDefaults ) );
+    /**
+     * Builds config for this server under a non-default `alias` — layers a second server/identity onto
+     * an existing {@link FileSystemConfiguration} via {@link #updateWithFtp} without colliding with the
+     * default (unaliased) registration.
+     */
+    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+        String scheme = tls ? "ftps" : "ftp";
+        String suffix = addDefaults ? "" : s( ".${alias}" );
+
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put( s( "fs.${scheme}.identity${suffix}" ), USERNAME );
+        map.put( s( "fs.${scheme}.credential${suffix}" ), PASSWORD );
+        map.put( s( "fs.${scheme}.trust-all${suffix}" ), true );
+        map.put( s( "fs.${scheme}.container${suffix}" ), hostPort() );
+
+        if( removeEmptyFolders ) {
+            map.put( s( "fs.${scheme}.remove-empty-folders${suffix}" ), true );
+        }
+
+        if( poolMaxSize != null ) {
+            map.put( s( "fs.${scheme}.pool-max-size${suffix}" ), poolMaxSize );
+        }
+
+        if( addDefaults ) {
+            map.put( "fs.default.scheme", scheme );
+        }
+
+        return map;
+    }
+
+    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, removeEmptyFolders, poolMaxSize, addDefaults ) );
     }
 
     public String hostPort() {
