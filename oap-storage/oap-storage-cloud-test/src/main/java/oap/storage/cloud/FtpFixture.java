@@ -133,54 +133,33 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
     }
 
     public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
-        String scheme = tls ? "ftps" : "ftp";
-
-        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.${scheme}.identity" ), USERNAME );
-        map.put( s( "fs.${scheme}.credential" ), PASSWORD );
-        map.put( s( "fs.${scheme}.trust-all" ), true );
-        map.put( s( "fs.${scheme}.container" ), hostPort() );
-
-        if( removeEmptyFolders ) {
-            map.put( s( "fs.${scheme}.remove-empty-folders" ), true );
-        }
-
-        if( poolMaxSize != null ) {
-            map.put( s( "fs.${scheme}.pool-max-size" ), poolMaxSize );
-        }
-
-        if( addDefaults ) {
-            map.put( "fs.default.scheme", scheme );
-        }
-
-        return map;
+        return getFileSystemConfigurationMap( alias(), removeEmptyFolders, poolMaxSize, addDefaults );
     }
 
     /**
-     * Builds config for this server under a non-default `alias` — layers a second server/identity onto
-     * an existing {@link FileSystemConfiguration} via {@link #updateWithFtp} without colliding with the
-     * default (unaliased) registration.
+     * Builds config for this server under `alias` — always registers `alias` via `container.<alias>`
+     * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
+     * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithFtp}.
      */
     public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
         String scheme = tls ? "ftps" : "ftp";
-        String suffix = addDefaults ? "" : s( ".${alias}" );
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.${scheme}.identity${suffix}" ), USERNAME );
-        map.put( s( "fs.${scheme}.credential${suffix}" ), PASSWORD );
-        map.put( s( "fs.${scheme}.trust-all${suffix}" ), true );
-        map.put( s( "fs.${scheme}.container${suffix}" ), hostPort() );
+        map.put( s( "fs.${scheme}.identity.${alias}" ), USERNAME );
+        map.put( s( "fs.${scheme}.credential.${alias}" ), PASSWORD );
+        map.put( s( "fs.${scheme}.trust-all.${alias}" ), true );
+        map.put( s( "fs.${scheme}.container.${alias}" ), hostPort() );
 
         if( removeEmptyFolders ) {
-            map.put( s( "fs.${scheme}.remove-empty-folders${suffix}" ), true );
+            map.put( s( "fs.${scheme}.remove-empty-folders.${alias}" ), true );
         }
 
         if( poolMaxSize != null ) {
-            map.put( s( "fs.${scheme}.pool-max-size${suffix}" ), poolMaxSize );
+            map.put( s( "fs.${scheme}.pool-max-size.${alias}" ), poolMaxSize );
         }
 
         if( addDefaults ) {
-            map.put( "fs.default.scheme", scheme );
+            map.put( "fs.default.alias", alias );
         }
 
         return map;

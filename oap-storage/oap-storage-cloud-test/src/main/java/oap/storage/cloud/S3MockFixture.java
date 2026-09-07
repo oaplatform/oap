@@ -235,49 +235,30 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     }
 
     public Map<String, Object> getFileSystemConfigurationMap( @Nullable String container, boolean addDefaults ) {
-        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs.s3.identity", "access_key" );
-        map.put( "fs.s3.credential", "access_secret" );
-        map.put( "fs.s3.region", Region.AWS_GLOBAL.id() );
-        map.put( "fs.s3.endpoint", "http://localhost:" + getHttpPort() );
-
-        if( addDefaults ) {
-            Preconditions.checkArgument( container != null, "container cannot be null" );
-        }
-        if( container != null ) {
-            map.put( "fs.s3.container", container );
-        }
-
-        if( addDefaults ) {
-            map.put( "fs.default.scheme", "s3" );
-        }
-
-        return map;
+        return getFileSystemConfigurationMap( alias(), container, addDefaults );
     }
 
     /**
-     * Builds config for this mock under a non-default `alias` — layers a second bucket/identity onto an
-     * existing {@link FileSystemConfiguration} via {@link #updateWithS3} without colliding with the
-     * default (unaliased) registration.
+     * Builds config for this mock under `alias` — always registers `alias` via `container.<alias>`
+     * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
+     * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithS3}.
      */
     public Map<String, Object> getFileSystemConfigurationMap( String alias, @Nullable String container, boolean addDefaults ) {
-        String suffix = addDefaults ? "" : "." + alias;
-
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.s3.identity${suffix}" ), "access_key" );
-        map.put( s( "fs.s3.credential${suffix}" ), "access_secret" );
-        map.put( s( "fs.s3.region${suffix}" ), Region.AWS_GLOBAL.id() );
-        map.put( s( "fs.s3.endpoint${suffix}" ), s( "http://localhost:${getHttpPort()}" ) );
+        map.put( s( "fs.s3.identity.${alias}" ), "access_key" );
+        map.put( s( "fs.s3.credential.${alias}" ), "access_secret" );
+        map.put( s( "fs.s3.region.${alias}" ), Region.AWS_GLOBAL.id() );
+        map.put( s( "fs.s3.endpoint.${alias}" ), s( "http://localhost:${getHttpPort()}" ) );
 
         if( addDefaults ) {
             Preconditions.checkArgument( container != null, "container cannot be null" );
         }
         if( container != null ) {
-            map.put( s( "fs.s3.container${suffix}" ), container );
+            map.put( s( "fs.s3.container.${alias}" ), container );
         }
 
         if( addDefaults ) {
-            map.put( "fs.default.scheme", "s3" );
+            map.put( "fs.default.alias", alias );
         }
 
         return map;

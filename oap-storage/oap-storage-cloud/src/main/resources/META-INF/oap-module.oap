@@ -11,8 +11,7 @@ services {
 //        fs.s3.headers = DEBUG
 
         fs.s3.container = test-bucket
-        fs.default.scheme = s3
-        fs.default.alias = my-alias
+        fs.default.alias = s3
       }
     }
   }

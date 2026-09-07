@@ -70,7 +70,6 @@ public class FileSystemFileTest extends Fixtures {
     @Test
     public void testGetInputStreamWithoutBasedir() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.scheme", "file",
             "fs.default.alias", "file"
         ) ) ) ) {
             Path filePath = basedir.resolve( "logs/file.txt" );
@@ -152,7 +151,6 @@ public class FileSystemFileTest extends Fixtures {
     private FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.putAll( Map.of(
-            "fs.default.scheme", "file",
             "fs.default.alias", "file",
             "fs.file.filesystem.basedir", basedir
         ) );

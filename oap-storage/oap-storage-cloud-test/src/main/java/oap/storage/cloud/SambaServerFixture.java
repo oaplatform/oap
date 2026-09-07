@@ -88,33 +88,22 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     }
 
     public Map<String, Object> getFileSystemConfigurationMap( boolean addDefaults ) {
-        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs.smb.identity", USERNAME );
-        map.put( "fs.smb.credential", PASSWORD );
-        map.put( "fs.smb.container", container() );
-
-        if( addDefaults ) {
-            map.put( "fs.default.scheme", "smb" );
-        }
-
-        return map;
+        return getFileSystemConfigurationMap( alias(), addDefaults );
     }
 
     /**
-     * Builds config for this share under a non-default `alias` — layers a second share/identity onto an
-     * existing {@link FileSystemConfiguration} via {@link #updateWithSmb} without colliding with the
-     * default (unaliased) registration.
+     * Builds config for this share under `alias` — always registers `alias` via `container.<alias>`
+     * (and identity/credential alongside it), whether it's the default target or a secondary one layered
+     * onto an existing {@link FileSystemConfiguration} via {@link #updateWithSmb}.
      */
     public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean addDefaults ) {
-        String suffix = addDefaults ? "" : s( ".${alias}" );
-
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.smb.identity${suffix}" ), USERNAME );
-        map.put( s( "fs.smb.credential${suffix}" ), PASSWORD );
-        map.put( s( "fs.smb.container${suffix}" ), container() );
+        map.put( s( "fs.smb.identity.${alias}" ), USERNAME );
+        map.put( s( "fs.smb.credential.${alias}" ), PASSWORD );
+        map.put( s( "fs.smb.container.${alias}" ), container() );
 
         if( addDefaults ) {
-            map.put( "fs.default.scheme", "smb" );
+            map.put( "fs.default.alias", alias );
         }
 
         return map;
@@ -137,7 +126,7 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     }
 
     public void createDirectory( String relativePath ) {
-        exec( "mkdir", "-p", "/storage/" + relativePath );
+        exec( "mkdir", "-p", s( "/storage/${relativePath}" ) );
         openUpPermissions();
     }
 

@@ -60,8 +60,7 @@ fs.s3.credential = access_secret
 fs.s3.region     = aws-global
 fs.s3.endpoint   = http://localhost:<HTTP_PORT>
 fs.s3.container  = <container>
-fs.default.scheme = s3
-fs.default.alias  = primary
+fs.default.alias = s3
 ```
 
 Use it directly with `new FileSystem(config)` or pass it to a `KernelFixture`-based test via `application.conf` variable substitution.

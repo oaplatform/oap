@@ -11,8 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * fs.default.scheme
- * fs.default.alias (optional, falls back to fs.default.scheme's own name)
+ * fs.default.alias (required — the only fs.default.* key)
  * fs.[s3|gcs|ab|ftp|ftps|smb|file].<property>[.<alias>]
  */
 @Slf4j
@@ -87,9 +86,9 @@ public class FileSystemConfiguration {
 
     /**
      * Discovers the alias -> scheme registry: every {@code fs.<scheme>.container.<alias>} key registers
-     * {@code alias -> scheme}; the default alias/scheme is always registered from {@code fs.default.alias}/
-     * {@code fs.default.scheme}, even without its own {@code container.<alias>} entry (it may rely on the
-     * scheme-wide {@code fs.<scheme>.container}).
+     * {@code alias -> scheme}. An alias not found here (e.g. the default alias, when it's simply named
+     * after its own scheme) resolves instead via the "bare alias == scheme name" convention applied by
+     * {@link #findAliasByContainer} and by {@link FileSystem}'s dispatch.
      */
     private static Map<String, String> buildAliasRegistry( Map<String, Map<String, Object>> properties ) {
         Map<String, String> registry = new LinkedHashMap<>();
@@ -102,16 +101,6 @@ public class FileSystemConfiguration {
                 if( property.startsWith( "container." ) ) {
                     registry.put( property.substring( "container.".length() ), scheme );
                 }
-            }
-        }
-
-        Map<String, Object> defaults = properties.get( "default" );
-        if( defaults != null ) {
-            Object defaultScheme = defaults.get( "scheme" );
-            if( defaultScheme != null ) {
-                Object defaultAlias = defaults.get( "alias" );
-                String alias = defaultAlias != null ? ( String ) defaultAlias : ( String ) defaultScheme;
-                registry.put( alias, ( String ) defaultScheme );
             }
         }
 
@@ -153,27 +142,12 @@ public class FileSystemConfiguration {
     }
 
     private void logDefaults() {
-        log.info( "DefaultScheme {} DefaultAlias {}", tryGetDefault( "scheme" ), tryGetDefault( "alias" ) );
+        log.info( "DefaultAlias {}", tryGetDefault( "alias" ) );
         log.info( "fs {}", properties );
     }
 
-    public String getDefaultScheme() {
-        return getDefault( "scheme" );
-    }
-
-    /**
-     * Returns {@code fs.default.alias} if set, else falls back to {@code fs.default.scheme}'s own name
-     * (the same "bare alias == scheme name" self-resolution {@link FileSystem} uses for zero-config,
-     * single-target setups) — {@code fs.default.alias} is optional.
-     */
     public String getDefaultAlias() {
-        String alias = tryGetDefault( "alias" );
-        return alias != null ? alias : getDefaultScheme();
-    }
-
-    @Nullable
-    public String tryGetDefaultAlias() {
-        return tryGetDefault( "alias" );
+        return getDefault( "alias" );
     }
 
     private String getDefault( String parameter ) {
@@ -189,8 +163,8 @@ public class FileSystemConfiguration {
 
     /**
      * Resolves an alias to its scheme via the discovered registry (fs.&lt;scheme&gt;.container.&lt;alias&gt;
-     * entries, plus fs.default.alias/fs.default.scheme). Does not know about implicit self-alias-equals-scheme-name
-     * fallback — that requires the set of installed backend schemes, which only {@link FileSystem} knows.
+     * entries). Does not know about the implicit self-alias-equals-scheme-name fallback — that requires
+     * the set of installed backend schemes, which only {@link FileSystem} knows.
      */
     public Optional<String> findScheme( String alias ) {
         return Optional.ofNullable( aliasToScheme.get( alias ) );
@@ -198,14 +172,13 @@ public class FileSystemConfiguration {
 
     public String getScheme( String alias ) {
         return findScheme( alias ).orElseThrow( () -> new CloudException(
-            "fs: alias '" + alias + "' cannot be resolved to a scheme; declare fs.<scheme>.container." + alias
-                + ", or set fs.default.alias/fs.default.scheme" ) );
+            "fs: alias '" + alias + "' cannot be resolved to a scheme; declare fs.<scheme>.container." + alias ) );
     }
 
     /**
      * Finds the alias registered under `scheme` whose resolved `container` property equals `container` —
-     * used to map a legacy `scheme://container/path` URI onto an alias. Falls back to the default alias if
-     * its scheme matches and its container (alias-specific or scheme-wide) matches.
+     * used to map a legacy `scheme://container/path` URI onto an alias. Falls back to the scheme's own
+     * name (the "bare alias == scheme name" convention) when `container` matches the scheme-wide container.
      */
     public Optional<String> findAliasByContainer( String scheme, String container ) {
         Map<String, Object> schemeMap = properties.get( scheme );
@@ -218,9 +191,8 @@ public class FileSystemConfiguration {
         }
 
         Object schemeWideContainer = schemeMap.get( "container" );
-        if( container.equals( schemeWideContainer )
-            && scheme.equals( tryGetDefault( "scheme" ) ) ) {
-            return Optional.of( getDefaultAlias() );
+        if( container.equals( schemeWideContainer ) ) {
+            return Optional.of( scheme );
         }
 
         return Optional.empty();

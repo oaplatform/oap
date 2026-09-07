@@ -55,7 +55,6 @@ public class FileSystemS3Test extends Fixtures {
     @Test
     public void testGetDefaultURL() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.scheme", "s3",
             "fs.default.alias", "my-alias",
             "fs.s3.container", TEST_BUCKET
         ) ) ) ) {
@@ -182,7 +181,6 @@ public class FileSystemS3Test extends Fixtures {
     @Test
     public void testToLocalFilePath() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.scheme", "s3",
             "fs.default.alias", "my-alias",
             "fs.s3.container", TEST_BUCKET
         ) ) ) ) {
@@ -244,8 +242,7 @@ public class FileSystemS3Test extends Fixtures {
     public void testToFile() throws IOException {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.default.scheme", "s3",
-                "fs.default.alias", "my-alias",
+                    "fs.default.alias", "my-alias",
                 "fs.s3.container", "test-bucket"
             )
         );

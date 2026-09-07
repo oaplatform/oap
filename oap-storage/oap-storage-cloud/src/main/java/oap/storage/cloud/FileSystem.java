@@ -159,12 +159,7 @@ public class FileSystem implements AutoCloseable {
 
             String resolvedContainer = container;
             String alias = fileSystemConfiguration.findAliasByContainer( scheme, container )
-                .orElseGet( () -> {
-                    if( scheme.equals( fileSystemConfiguration.getDefaultScheme() ) ) {
-                        return fileSystemConfiguration.getDefaultAlias();
-                    }
-                    throw new CloudException( "fs: cannot resolve legacy uri '" + uri + "' to any alias (scheme " + scheme + ", container " + resolvedContainer + ")" );
-                } );
+                .orElseThrow( () -> new CloudException( "fs: cannot resolve legacy uri '" + uri + "' to any alias (scheme " + scheme + ", container " + resolvedContainer + ")" ) );
 
             return new CloudURI( alias, path );
         } catch( URISyntaxException e ) {
