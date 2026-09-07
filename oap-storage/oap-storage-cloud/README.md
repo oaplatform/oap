@@ -43,7 +43,7 @@ CloudURI otherAlias = uri.withAlias( "other-alias" );
 
 ### Migrating a legacy `scheme://container/path` string
 
-`FileSystem.resolve(String)` accepts the old `scheme://container/path` shape (as used before aliases existed) and maps it onto whichever alias is configured for that scheme+container, falling back to the default alias if the scheme matches but no alias declares that exact container:
+`FileSystem.resolve(String)` accepts the old `scheme://container/path` shape (as used before aliases existed) and maps it onto whichever alias is configured for that scheme+container, falling back to the scheme's own name (the "bare alias == scheme name" convention) when the container matches the scheme-wide one:
 
 ```java
 CloudURI uri = fileSystem.resolve( "s3://my-bucket/data/report-2024-06-01.json" );
@@ -65,17 +65,16 @@ fs.default.<property>
 Looking up a property for a given `(scheme, alias)` tries, in order:
 1. `fs.<scheme>.<property>.<alias>` — alias-specific override
 2. `fs.<scheme>.<property>` — scheme-wide default
-3. `fs.default.<property>` — global fallback (new tier; previously `fs.default.clouds.*` only ever selected which scheme+container was "the default," it was never a general property fallback)
+3. `fs.default.<property>` — global fallback (new tier; previously `fs.default.clouds.*` only ever selected which scheme+container was "the default," it was never a general property fallback). Note `fs.default.alias` itself is not looked up this way — it's read directly by `getDefaultAlias()`.
 
-`fs.default.scheme` names the default backend; `fs.default.alias` names the default alias used by `FileSystem.getDefaultURL(path)`. `fs.default.alias` is **optional** — when absent, the default alias falls back to `fs.default.scheme`'s own name (e.g. `fs.default.scheme = ftp` alone means `fs://ftp/...` is the default target).
+`fs.default.alias` is the **only** `fs.default.*` key, and it's required — it names the default alias used by `FileSystem.getDefaultURL(path)`. There's no separate `fs.default.scheme`: the default alias's backend scheme is resolved the same way every other alias's is (see below).
 
 ### Aliases
 
 An alias is a named target (a backend scheme + connection). It's **detected from configuration** — no separate declaration list:
 
-- The default alias is registered from `fs.default.scheme` + `fs.default.alias` (or just `fs.default.scheme` alone, per above).
-- Any additional alias is registered the moment it appears in a `fs.<scheme>.container.<alias>` key — `container` is the anchor property every alias needs to actually connect to something, so declaring it is what makes the alias exist.
-- A bare alias equal to an installed backend's scheme name (`fs://ftp/...`, `fs://file/...`) resolves implicitly with **zero** alias-related config, so single-target setups need nothing beyond the scheme-wide properties.
+- Any alias is registered the moment it appears in a `fs.<scheme>.container.<alias>` key — `container` is the anchor property every alias needs to actually connect to something, so declaring it is what makes the alias exist. This applies equally to the default alias — it's not special-cased.
+- A bare alias equal to an installed backend's scheme name (`fs://ftp/...`, `fs://file/...`) resolves implicitly with **zero** alias-related config, so single-target setups need nothing beyond the scheme-wide properties. The simplest way to satisfy the required `fs.default.alias` is to set it to the scheme's own name (`fs.default.alias = ftp`), which needs no `container.<alias>` registration at all.
 
 ```java
 FileSystemConfiguration config = new FileSystemConfiguration( Map.of(
@@ -85,9 +84,8 @@ FileSystemConfiguration config = new FileSystemConfiguration( Map.of(
     "fs.s3.region",     "us-east-1",
     "fs.s3.container",  "my-bucket",
 
-    // Default target
-    "fs.default.scheme", "s3",
-    "fs.default.alias",  "my-alias"
+    // Default target: "s3" is both the scheme and the alias here (self-name convention)
+    "fs.default.alias", "s3"
 ) );
 ```
 
@@ -96,11 +94,13 @@ Values support `${env.VAR_NAME}` and `${system.property}` substitution.
 ### Multi-alias example
 
 ```
-fs.default.scheme  = ftp
 fs.default.alias   = primary
 fs.ftp.container   = ftp.example.com:21
 fs.ftp.identity    = shared-user
 fs.ftp.credential  = shared-pass
+
+# the default alias needs its own container.<alias> registration since "primary" isn't a scheme name
+fs.ftp.container.primary    = ftp.example.com:21
 
 # a second account on the same server: only identity/credential differ,
 # container is repeated so this alias gets registered
@@ -125,8 +125,7 @@ services {
       fs.s3.region     = us-east-1
       fs.s3.container  = my-bucket
 
-      fs.default.scheme = s3
-      fs.default.alias  = my-alias
+      fs.default.alias = s3
     }
   }
 }
@@ -170,7 +169,7 @@ PageSet<? extends FileSystem.StorageItem> page = fs.list(
 FileSystem.StorageItem meta = fs.getMetadata( dest );
 // meta.getName(), meta.getSize(), meta.getLastModified(), meta.getETag(), meta.getContentType()
 
-// Default URL from fs.default.scheme/fs.default.alias
+// Default URL from fs.default.alias
 CloudURI defaultUri = fs.getDefaultURL( "reports/today.json" );
 
 // Migrate a legacy scheme://container/path string to an alias-based CloudURI
