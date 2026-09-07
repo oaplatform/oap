@@ -4,47 +4,114 @@ import oap.system.Env;
 import org.testng.annotations.Test;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 public class FileSystemConfigurationTest {
     @Test
-    public void getDefault() {
-        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
-            Map.of( "fs.s3.test-bucket.clouds.endpoint", "http://localhost/s3/tb",
-                "fs.s3.clouds.endpoint", "http://localhost/s3",
-                "fs", Map.of(
-                    "default.clouds.scheme", "s3",
-                    "default.clouds.container", "test-bucket"
-                )
-            )
-        );
+    public void testThreeTierFallback() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "ftp",
+            "fs.default.alias", "primary",
+            "fs.ftp.container", "ftp.example.com:21",
+            "fs.ftp.identity", "shared-user",
+            "fs.ftp.credential", "shared-pass",
+            "fs.ftp.container.secondary", "ftp.example.com:21",
+            "fs.ftp.identity.secondary", "other-user",
+            "fs.ftp.credential.secondary", "other-pass"
+        ) );
 
-        assertThat( fileSystemConfiguration.get( "s3", "my-container" ) )
-            .contains( entry( "clouds.endpoint", "http://localhost/s3" ) );
-        assertThat( fileSystemConfiguration.get( "s3", "test-bucket" ) )
-            .contains( entry( "clouds.endpoint", "http://localhost/s3/tb" ) );
-
-        assertThat( fileSystemConfiguration.getDefaultScheme() ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.getDefaultContainer() ).isEqualTo( "test-bucket" );
+        // alias-specific override wins
+        assertThat( fileSystemConfiguration.get( "ftp", "secondary", "identity" ) ).isEqualTo( "other-user" );
+        // no alias-specific override -> falls to scheme-wide
+        assertThat( fileSystemConfiguration.get( "ftp", "secondary", "container" ) ).isEqualTo( "ftp.example.com:21" );
+        assertThat( fileSystemConfiguration.get( "ftp", "primary", "identity" ) ).isEqualTo( "shared-user" );
+        // no property at all for this alias/scheme -> falls to fs.default.<property> (absent here -> null)
+        assertThat( fileSystemConfiguration.get( "ftp", "primary", "domain" ) ).isNull();
     }
 
     @Test
-    public void getDefaultContainer() {
-        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
-            Map.of( "fs.s3.test-bucket.clouds.endpoint", "http://localhost/s3/tb",
-                "fs.s3.clouds.endpoint", "http://localhost/s3",
-                "fs", Map.of(
-                    "default.clouds.scheme", "s3",
-                    "default.clouds.container", "test-bucket"
-                ),
-                "fs.ftp.clouds.container", "host:1234"
-            )
-        );
+    public void testFallsBackToFsDefaultProperty() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.default.identity", "default-identity",
+            "fs.s3.container", "my-bucket"
+        ) );
 
-        assertThat( fileSystemConfiguration.getDefaultContainer( "ftp" ) ).isEqualTo(  "host:1234" );
-        assertThat( fileSystemConfiguration.getDefaultContainer( "s3" ) ).isEqualTo(  "test-bucket" );
+        // neither fs.s3.identity.primary nor fs.s3.identity is declared -> falls all the way to fs.default.identity
+        assertThat( fileSystemConfiguration.get( "s3", "primary", "identity" ) ).isEqualTo( "default-identity" );
+    }
+
+    @Test
+    public void testGetDefaultSchemeAndAlias() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "my-alias",
+            "fs.s3.container", "test-bucket"
+        ) );
+
+        assertThat( fileSystemConfiguration.getDefaultScheme() ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getDefaultAlias() ).isEqualTo( "my-alias" );
+    }
+
+    @Test
+    public void testDefaultAliasOptionalFallsBackToSchemeName() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "ftp",
+            "fs.ftp.container", "host:21"
+        ) );
+
+        assertThat( fileSystemConfiguration.getDefaultScheme() ).isEqualTo( "ftp" );
+        // no fs.default.alias -> falls back to the scheme's own name
+        assertThat( fileSystemConfiguration.getDefaultAlias() ).isEqualTo( "ftp" );
+        assertThat( fileSystemConfiguration.getScheme( "ftp" ) ).isEqualTo( "ftp" );
+        assertThat( fileSystemConfiguration.get( "ftp", "ftp", "container" ) ).isEqualTo( "host:21" );
+    }
+
+    @Test
+    public void testFindSchemeAndGetScheme() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.s3.container", "bucket-a",
+            "fs.s3.container.secondary", "bucket-b"
+        ) );
+
+        assertThat( fileSystemConfiguration.getScheme( "primary" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getScheme( "secondary" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.findScheme( "unknown-alias" ) ).isEqualTo( Optional.empty() );
+    }
+
+    @Test( expectedExceptions = CloudException.class )
+    public void testGetSchemeThrowsForUnknownAlias() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.s3.container", "bucket-a"
+        ) );
+
+        fileSystemConfiguration.getScheme( "unknown-alias" );
+    }
+
+    @Test
+    public void testFindAliasByContainer() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.s3.container", "bucket-a",
+            "fs.s3.container.secondary", "bucket-b"
+        ) );
+
+        // exact per-alias container match
+        assertThat( fileSystemConfiguration.findAliasByContainer( "s3", "bucket-b" ) ).isEqualTo( Optional.of( "secondary" ) );
+        // scheme-wide container match -> falls back to the default alias (since its scheme matches)
+        assertThat( fileSystemConfiguration.findAliasByContainer( "s3", "bucket-a" ) ).isEqualTo( Optional.of( "primary" ) );
+        // no match at all
+        assertThat( fileSystemConfiguration.findAliasByContainer( "s3", "bucket-c" ) ).isEqualTo( Optional.empty() );
+        // unknown scheme entirely
+        assertThat( fileSystemConfiguration.findAliasByContainer( "ftp", "host:21" ) ).isEqualTo( Optional.empty() );
     }
 
     @Test
@@ -54,92 +121,75 @@ public class FileSystemConfigurationTest {
 
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.s3.clouds.test", "${env.TMP_S3_SCHEME}",
-                "fs.s3.clouds.test2", "${TMP_S3_SCHEME}",
-                "fs.s3.clouds.test3", "${env.unknown}-${unknown}",
-                "fs.default.clouds.scheme", "s3",
-                "fs.default.clouds.container", "test-bucket"
+                "fs.s3.test", "${env.TMP_S3_SCHEME}",
+                "fs.s3.test2", "${TMP_S3_SCHEME}",
+                "fs.s3.test3", "${env.unknown}-${unknown}",
+                "fs.default.scheme", "s3",
+                "fs.default.alias", "primary",
+                "fs.s3.container", "test-bucket"
             )
         );
 
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test" ) ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test2" ) ).isEqualTo( "file" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "primary", "test" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "primary", "test2" ) ).isEqualTo( "file" );
+        assertThat( fileSystemConfiguration.getOrThrow( "s3", "primary", "test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
     }
 
     @Test
-    public void testOapCloudsProperties() {
-        Env.set( "TMP_S3_SCHEME", "s3" );
-        System.setProperty( "TMP_S3_SCHEME", "file" );
+    public void testAliasContainingDotIsSafeWithNoEscaping() {
+        // the new lookup mechanism probes exact key strings ("property" + "." + alias) rather than
+        // positionally splitting stored keys, so a dot inside an alias name needs no escaping at all.
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.default.scheme", "ftp",
+            "fs.default.alias", "my.alias",
+            "fs.ftp.container", "host:21",
+            "fs.ftp.identity.my.alias", "dotted-user"
+        ) );
 
-        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
-            Map.of(
-                "fs.s3.clouds.test", "${env.TMP_S3_SCHEME}",
-                "fs.s3.clouds.test2", "${TMP_S3_SCHEME}",
-                "fs.s3.clouds.test3", "${env.unknown}-${unknown}",
-                "fs.default.clouds.scheme", "s3",
-                "fs.default.clouds.container", "test-bucket"
-            )
-        );
-
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test" ) ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test2" ) ).isEqualTo( "file" );
-        assertThat( fileSystemConfiguration.getOrThrow( "s3", "", "clouds.test3" ) ).isEqualTo( "${env.unknown}-${unknown}" );
-    }
-
-    @Test
-    public void testEscapedDotContainer() {
-        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
-            Map.of(
-                "fs.ftp.ftp\\.server1\\.com.clouds.identity", "as",
-                "fs.ftp.localhost:12345.clouds.identity", "as2",
-                "fs.default.clouds.scheme", "ftp",
-                "fs.default.clouds.container", "localhost:12345"
-            )
-        );
-
-        assertThat( fileSystemConfiguration.get( "ftp", "ftp.server1.com", "clouds.identity" ) ).isEqualTo( "as" );
-        assertThat( fileSystemConfiguration.get( "ftp", "localhost:12345", "clouds.identity" ) ).isEqualTo( "as2" );
+        assertThat( fileSystemConfiguration.get( "ftp", "my.alias", "identity" ) ).isEqualTo( "dotted-user" );
     }
 
     @Test
     public void testCopyWith() {
         FileSystemConfiguration base = new FileSystemConfiguration( Map.of(
-            "fs.s3.clouds.identity", "base-id",
-            "fs.s3.clouds.region", "us-east-1",
-            "fs.default.clouds.scheme", "s3",
-            "fs.default.clouds.container", "my-bucket"
+            "fs.s3.identity", "base-id",
+            "fs.s3.region", "us-east-1",
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.s3.container", "my-bucket"
         ) );
 
         FileSystemConfiguration merged = base.copyWith( Map.of(
-            "fs.s3.clouds.identity", "override-id"
+            "fs.s3.identity", "override-id"
         ) );
 
-        assertThat( merged.get( "s3", "", "clouds.identity" ) ).isEqualTo( "override-id" );
-        assertThat( merged.get( "s3", "", "clouds.region" ) ).isEqualTo( "us-east-1" );
-        assertThat( base.get( "s3", "", "clouds.identity" ) ).isEqualTo( "base-id" );
+        assertThat( merged.get( "s3", "primary", "identity" ) ).isEqualTo( "override-id" );
+        assertThat( merged.get( "s3", "primary", "region" ) ).isEqualTo( "us-east-1" );
+        assertThat( base.get( "s3", "primary", "identity" ) ).isEqualTo( "base-id" );
         assertThat( merged.getDefaultScheme() ).isEqualTo( "s3" );
     }
 
     @Test
     public void testCopyWithFileSystemConfiguration() {
         FileSystemConfiguration base = new FileSystemConfiguration( Map.of(
-            "fs.s3.clouds.identity", "base-id",
-            "fs.s3.clouds.region", "us-east-1",
-            "fs.default.clouds.scheme", "s3",
-            "fs.default.clouds.container", "my-bucket"
+            "fs.s3.identity", "base-id",
+            "fs.s3.region", "us-east-1",
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.s3.container", "my-bucket"
         ) );
 
         FileSystemConfiguration overrides = new FileSystemConfiguration( Map.of(
-            "fs.s3.clouds.identity", "override-id",
-            "fs.default.clouds.scheme", "s3",
-            "fs.default.clouds.container", "my-bucket"
+            "fs.s3.identity", "override-id",
+            "fs.default.scheme", "s3",
+            "fs.default.alias", "primary",
+            "fs.s3.container", "my-bucket"
         ) );
 
         FileSystemConfiguration merged = base.copyWith( overrides );
 
-        assertThat( merged.get( "s3", "", "clouds.identity" ) ).isEqualTo( "override-id" );
-        assertThat( merged.get( "s3", "", "clouds.region" ) ).isEqualTo( "us-east-1" );
-        assertThat( base.get( "s3", "", "clouds.identity" ) ).isEqualTo( "base-id" );
+        assertThat( merged.get( "s3", "primary", "identity" ) ).isEqualTo( "override-id" );
+        assertThat( merged.get( "s3", "primary", "region" ) ).isEqualTo( "us-east-1" );
+        assertThat( base.get( "s3", "primary", "identity" ) ).isEqualTo( "base-id" );
     }
 }

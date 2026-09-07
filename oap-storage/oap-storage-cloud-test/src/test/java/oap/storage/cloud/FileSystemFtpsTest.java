@@ -25,7 +25,7 @@ public class FileSystemFtpsTest extends Fixtures {
     }
 
     private static CloudURI ftpsUri( String path ) {
-        return new CloudURI( "ftps", ftpFixture.hostPort(), path );
+        return new CloudURI( ftpFixture.alias(), path );
     }
 
     @BeforeMethod

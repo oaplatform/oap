@@ -1,12 +1,10 @@
 package oap.storage.cloud.ftp;
 
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.storage.cloud.BlobData;
 import oap.storage.cloud.CloudException;
 import oap.storage.cloud.CloudURI;
-import oap.storage.cloud.ContainerScopedCloudApi;
 import oap.storage.cloud.FileSystem;
 import oap.storage.cloud.FileSystemCloudApi;
 import oap.storage.cloud.FileSystemConfiguration;
@@ -43,13 +41,14 @@ import java.util.stream.Stream;
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
-public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi, ContainerScopedCloudApi {
+public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi {
     private static final int DEFAULT_POOL_MAX_SIZE = 8;
     private static final long DEFAULT_POOL_MAX_WAIT_MILLIS = 30_000;
     private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 30_000;
     private static final int DEFAULT_DEFAULT_TIMEOUT_MILLIS = 30_000;
     private static final int DEFAULT_SO_TIMEOUT_MILLIS = 30_000;
 
+    protected final String scheme;
     protected final String host;
     protected final int port;
     protected final String username;
@@ -62,10 +61,10 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     private final GenericObjectPool<FTPClient> pool;
 
-    protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String container ) {
-        if( container == null || container.isBlank() ) {
-            throw new CloudException( "fs." + scheme + ": container (ftp server host[:port]) is required" );
-        }
+    protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String alias ) {
+        this.scheme = scheme;
+
+        String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, alias, "container" );
 
         int colonIdx = container.lastIndexOf( ':' );
         if( colonIdx > 0 && colonIdx < container.length() - 1
@@ -77,35 +76,35 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             this.port = 21;
         }
 
-        Object identity = fileSystemConfiguration.get( scheme, container, "clouds.identity" );
+        Object identity = fileSystemConfiguration.get( scheme, alias, "identity" );
         this.username = identity != null ? identity.toString() : "anonymous";
 
-        Object credential = fileSystemConfiguration.get( scheme, container, "clouds.credential" );
+        Object credential = fileSystemConfiguration.get( scheme, alias, "credential" );
         this.password = credential != null ? credential.toString() : "";
 
-        Object passive = fileSystemConfiguration.get( scheme, container, "clouds.passive-mode" );
+        Object passive = fileSystemConfiguration.get( scheme, alias, "passive-mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "clouds.remove-empty-folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, alias, "remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
-        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.connect-timeout-millis" );
+        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, alias, "connect-timeout-millis" );
         this.connectTimeoutMillis = connectTimeoutObj != null ? Integer.parseInt( connectTimeoutObj.toString() )
             : DEFAULT_CONNECT_TIMEOUT_MILLIS;
 
-        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.default-timeout-millis" );
+        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, alias, "default-timeout-millis" );
         this.defaultTimeoutMillis = defaultTimeoutObj != null ? Integer.parseInt( defaultTimeoutObj.toString() )
             : DEFAULT_DEFAULT_TIMEOUT_MILLIS;
 
-        Object soTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.so-timeout-millis" );
+        Object soTimeoutObj = fileSystemConfiguration.get( scheme, alias, "so-timeout-millis" );
         this.soTimeoutMillis =
             soTimeoutObj != null ? Integer.parseInt( soTimeoutObj.toString() ) : DEFAULT_SO_TIMEOUT_MILLIS;
 
-        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-size" );
+        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, alias, "pool-max-size" );
         int poolMaxSize =
             poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
-        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-wait-millis" );
+        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, alias, "pool-max-wait-millis" );
         long poolMaxWaitMillis =
             poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 
@@ -257,7 +256,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     private URI buildUri( CloudURI path ) {
         try {
-            return new URI( path.scheme, null, host, port, "/" + path.path, null, null );
+            return new URI( scheme, null, host, port, "/" + path.path, null, null );
         } catch( URISyntaxException e ) {
             throw new CloudException( e );
         }
@@ -378,8 +377,6 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     @Override
     public void copy( CloudURI source, CloudURI destination ) {
-        Preconditions.checkArgument( source.scheme.equals( destination.scheme ) );
-
         FTPClient sourceClient = borrow();
         FTPClient destinationClient = borrow();
         boolean sourceHealthy = false;

@@ -51,6 +51,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -229,24 +230,60 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
         return new FileSystemConfiguration( getFileSystemConfigurationMap( container, true ) );
     }
 
+    public String alias() {
+        return "s3";
+    }
+
     public Map<String, Object> getFileSystemConfigurationMap( @Nullable String container, boolean addDefaults ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs.s3.clouds.identity", "access_key" );
-        map.put( "fs.s3.clouds.credential", "access_secret" );
-        map.put( "fs.s3.clouds.region", Region.AWS_GLOBAL.id() );
-        map.put( "fs.s3.clouds.s3.virtual-host-buckets", false );
-        map.put( "fs.s3.clouds.endpoint", "http://localhost:" + getHttpPort() );
+        map.put( "fs.s3.identity", "access_key" );
+        map.put( "fs.s3.credential", "access_secret" );
+        map.put( "fs.s3.region", Region.AWS_GLOBAL.id() );
+        map.put( "fs.s3.endpoint", "http://localhost:" + getHttpPort() );
 
         if( addDefaults ) {
             Preconditions.checkArgument( container != null, "container cannot be null" );
-            map.put( "fs.default.clouds.scheme", "s3" );
-            map.put( "fs.default.clouds.container", container );
+        }
+        if( container != null ) {
+            map.put( "fs.s3.container", container );
+        }
+
+        if( addDefaults ) {
+            map.put( "fs.default.scheme", "s3" );
         }
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, @Nullable String container, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( container, addDefaults ) );
+    /**
+     * Builds config for this mock under a non-default `alias` — layers a second bucket/identity onto an
+     * existing {@link FileSystemConfiguration} via {@link #updateWithS3} without colliding with the
+     * default (unaliased) registration.
+     */
+    public Map<String, Object> getFileSystemConfigurationMap( String alias, @Nullable String container, boolean addDefaults ) {
+        String suffix = addDefaults ? "" : "." + alias;
+
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put( s( "fs.s3.identity${suffix}" ), "access_key" );
+        map.put( s( "fs.s3.credential${suffix}" ), "access_secret" );
+        map.put( s( "fs.s3.region${suffix}" ), Region.AWS_GLOBAL.id() );
+        map.put( s( "fs.s3.endpoint${suffix}" ), s( "http://localhost:${getHttpPort()}" ) );
+
+        if( addDefaults ) {
+            Preconditions.checkArgument( container != null, "container cannot be null" );
+        }
+        if( container != null ) {
+            map.put( s( "fs.s3.container${suffix}" ), container );
+        }
+
+        if( addDefaults ) {
+            map.put( "fs.default.scheme", "s3" );
+        }
+
+        return map;
+    }
+
+    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, String alias, @Nullable String container, boolean addDefaults ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, container, addDefaults ) );
     }
 }

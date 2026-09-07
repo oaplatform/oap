@@ -24,7 +24,7 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
  * Starts a <a href="https://hub.docker.com/r/dockurr/samba">dockurr/samba</a> container. {@link #container()}
- * returns {@code host:port/}{@link #SHARE}, which is what {@code CloudURI}'s {@code container} field must be
+ * returns {@code host:port/}{@link #SHARE}, which is what {@code fs.smb.container[.<alias>]} must be set to
  * for this fixture's share. All fixture I/O (seeding/reading/reset) goes through the Docker Engine API
  * (copy/exec), not a host bind mount — a bind mount's host path must resolve on the Docker daemon's side too,
  * which breaks when the test JVM and daemon don't share a filesystem (e.g. Docker-in-Docker on Linux CI).
@@ -76,7 +76,11 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     }
 
     public String container() {
-        return hostPort() + "/" + SHARE;
+        return s( "${hostPort()}/${SHARE}" );
+    }
+
+    public String alias() {
+        return "smb";
     }
 
     public FileSystemConfiguration getFileSystemConfiguration() {
@@ -85,21 +89,39 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
 
     public Map<String, Object> getFileSystemConfigurationMap( boolean addDefaults ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs.smb.clouds.identity", USERNAME );
-        map.put( "fs.smb.clouds.credential", PASSWORD );
+        map.put( "fs.smb.identity", USERNAME );
+        map.put( "fs.smb.credential", PASSWORD );
+        map.put( "fs.smb.container", container() );
 
         if( addDefaults ) {
-            map.put( "fs.default.clouds.scheme", "smb" );
-            map.put( "fs.default.clouds.container", container() );
-        } else {
-            map.put( "fs.smb.clouds.container", container() );
+            map.put( "fs.default.scheme", "smb" );
         }
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( addDefaults ) );
+    /**
+     * Builds config for this share under a non-default `alias` — layers a second share/identity onto an
+     * existing {@link FileSystemConfiguration} via {@link #updateWithSmb} without colliding with the
+     * default (unaliased) registration.
+     */
+    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean addDefaults ) {
+        String suffix = addDefaults ? "" : s( ".${alias}" );
+
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put( s( "fs.smb.identity${suffix}" ), USERNAME );
+        map.put( s( "fs.smb.credential${suffix}" ), PASSWORD );
+        map.put( s( "fs.smb.container${suffix}" ), container() );
+
+        if( addDefaults ) {
+            map.put( "fs.default.scheme", "smb" );
+        }
+
+        return map;
+    }
+
+    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, String alias, boolean addDefaults ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, addDefaults ) );
     }
 
     /**
