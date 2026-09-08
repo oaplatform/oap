@@ -69,6 +69,22 @@ Looking up a property for a given `(scheme, configurationId)` tries, in order:
 
 `fs.default.*` is entirely optional — there's no required key under it, and a config with no `fs.default.*` at all is perfectly valid.
 
+### Overriding via system properties and environment variables
+
+Any `fs.*` key can also be supplied as a JVM system property or an OS environment variable, without touching the map/HOCON config — useful for ops-level overrides. Priority, highest first:
+
+1. Environment variable
+2. JVM system property
+3. The `Map`/HOCON passed to the constructor
+
+```bash
+java -Dfs.s3.container=override-bucket -jar app.jar
+# or
+export fs.s3.container=override-bucket
+```
+
+`_` is not a valid character in this key namespace — any `_` in a system-property or environment-variable key is normalized to `-` before matching, so `fs.file.filesystem.remove_empty_folders` behaves identically to `fs.file.filesystem.remove-empty-folders`. This normalization applies only to system properties/env vars, not to keys in the `Map`/HOCON argument.
+
 ### ConfigurationIds
 
 A configurationId is a named target (a backend scheme + connection). It's **detected from configuration** — no separate declaration list, and every caller states the configurationId it means explicitly (`FileSystem` has no notion of "the default one"):

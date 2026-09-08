@@ -37,7 +37,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
         this.basedir = Paths.get( basedir );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( "file", configurationId, "filesystem.remove_empty_folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( "file", configurationId, "filesystem.remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 
