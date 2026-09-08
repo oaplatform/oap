@@ -177,6 +177,16 @@ public class FileSystemConfigurationTest {
     }
 
     @Test
+    public void testConfigurationIdWithDotsRegistersViaContainerKey() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.ftp.container.my.configuration.id", "host:21"
+        ) );
+
+        assertThat( fileSystemConfiguration.getSchemeOrThrow( "my.configuration.id" ) ).isEqualTo( "ftp" );
+        assertThat( fileSystemConfiguration.get( "ftp", "my.configuration.id", "container" ) ).isEqualTo( "host:21" );
+    }
+
+    @Test
     public void testConfigurationIdContainingDotIsSafeWithNoEscaping() {
         // the new lookup mechanism probes exact key strings ("property" + "." + configurationId) rather than
         // positionally splitting stored keys, so a dot inside a configurationId needs no escaping at all.
