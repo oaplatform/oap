@@ -312,13 +312,17 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
-    public CloudURI toLocalFilePath( String configurationId, Path path ) {
-        log.debug( "toLocalFilePath {} {}", configurationId, path );
+    public CloudURI toLocalFileURI( String configurationId, Path path ) {
+        log.debug( "toLocalFileURI {} {}", configurationId, path );
 
         String basedir = ( String ) fileSystemConfiguration.get( "file", configurationId, "filesystem.basedir" );
 
         return new CloudURI( configurationId, basedir != null ? Paths.get( basedir ).relativize( path ).toString()
             : Paths.get( "/" ).relativize( path ).toString() );
+    }
+
+    public CloudURI toLocalFileURI( String configurationId, String path ) {
+        return toLocalFileURI( configurationId, Paths.get( path ) );
     }
 
     public boolean isLocalFile( CloudURI cloudURI ) {

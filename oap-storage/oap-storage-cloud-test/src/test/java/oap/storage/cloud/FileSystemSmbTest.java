@@ -112,7 +112,7 @@ public class FileSystemSmbTest extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( fileSystem.toLocalFilePath( "file", path ), smbUri( "logs/my-file.txt.gz" ), Map.of() );
+            fileSystem.copy( fileSystem.toLocalFileURI( "file", path ), smbUri( "logs/my-file.txt.gz" ), Map.of() );
 
             InputStream inputStream = fileSystem.getInputStream( smbUri( "logs/my-file.txt.gz" ) );
 
