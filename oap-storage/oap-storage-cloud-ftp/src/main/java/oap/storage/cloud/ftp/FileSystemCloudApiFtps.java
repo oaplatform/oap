@@ -14,10 +14,10 @@ public class FileSystemCloudApiFtps extends AbstractFileSystemCloudApiFtp {
     public FileSystemCloudApiFtps( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
         super( fileSystemConfiguration, "ftps", configurationId );
 
-        Object tlsMode = fileSystemConfiguration.get( "ftps", configurationId, "tls-mode" );
+        Object tlsMode = fileSystemConfiguration.get( "ftps", configurationId, "tls_mode" );
         implicitTls = tlsMode != null && "implicit".equalsIgnoreCase( tlsMode.toString() );
 
-        Object trustAllObj = fileSystemConfiguration.get( "ftps", configurationId, "trust-all" );
+        Object trustAllObj = fileSystemConfiguration.get( "ftps", configurationId, "trust_all" );
         trustAll = trustAllObj != null && Boolean.parseBoolean( trustAllObj.toString() );
     }
 

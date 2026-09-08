@@ -8,6 +8,7 @@ import org.apache.commons.text.StringSubstitutor;
 import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -31,11 +32,50 @@ public class FileSystemConfiguration {
         logDefaults();
     }
 
+    private static final Pattern PART_PATTERN = Pattern.compile( "[A-Za-z0-9]+(_[A-Za-z0-9]+)*" );
+
+    private static void validateKeyParts( String key ) {
+        for( String part : key.split( "\\." ) ) {
+            Preconditions.checkArgument( PART_PATTERN.matcher( part ).matches(),
+                s( "invalid fs configuration key part '${part}' in key '${key}': only letters, digits, and single underscores are allowed" ) );
+        }
+    }
+
+    /**
+     * Decodes an OS environment variable name into the dotted `fs.*` key it represents, or {@code null} if
+     * it isn't one (no `FS_` prefix). `.` in the key becomes a single `_`; a literal `_` already in the key
+     * becomes `__`. E.g. {@code FS_A_B_D} -&gt; {@code fs.a.b.d}, {@code FS_A_B_D__F} -&gt; {@code fs.a.b.d_f}.
+     */
+    private static String decodeEnvKey( String envName ) {
+        if( !envName.startsWith( "FS_" ) ) return null;
+
+        StringBuilder sentinelized = new StringBuilder();
+        int i = 0;
+        while( i < envName.length() ) {
+            if( envName.charAt( i ) == '_' && i + 1 < envName.length() && envName.charAt( i + 1 ) == '_' ) {
+                sentinelized.append( ' ' );
+                i += 2;
+            } else {
+                sentinelized.append( envName.charAt( i ) );
+                i++;
+            }
+        }
+
+        String[] parts = sentinelized.toString().split( "_", -1 );
+        StringBuilder key = new StringBuilder();
+        for( int j = 0; j < parts.length; j++ ) {
+            if( j > 0 ) key.append( '.' );
+            key.append( parts[j].replace( ' ', '_' ).toLowerCase() );
+        }
+        return key.toString();
+    }
+
     /**
      * Builds the id-&gt;property-&gt;value structure from `configuration`, overlaid with `fs.*` JVM system
-     * properties and `fs.*` OS environment variables. Priority, highest first: env, system properties, `configuration`.
-     * `_` is not a valid character in this class's key namespace — any `_` in a system-property/env key is
-     * normalized to `-` (e.g. `fs.file.filesystem.remove_empty_folders` behaves as `...remove-empty-folders`).
+     * properties (used as-is) and OS environment variables (matched by `FS_` prefix and decoded back into a
+     * dotted key — see {@link #decodeEnvKey}). Priority, highest first: env, system properties, `configuration`.
+     * Every dot-separated part of every key may contain only letters, digits, and single underscores
+     * (see {@link #validateKeyParts}).
      */
     private static LinkedHashMap<String, Map<String, Object>> parse( Map<String, Object> configuration ) {
         LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
@@ -44,11 +84,12 @@ public class FileSystemConfiguration {
         log.trace( "string fs {}", fsList );
 
         for( String key : System.getProperties().stringPropertyNames() ) {
-            if( key.startsWith( "fs." ) ) fsList.put( key.replace( '_', '-' ), System.getProperty( key ) );
+            if( key.startsWith( "fs." ) ) fsList.put( key, System.getProperty( key ) );
         }
 
         for( Map.Entry<String, String> entry : System.getenv().entrySet() ) {
-            if( entry.getKey().startsWith( "fs." ) ) fsList.put( entry.getKey().replace( '_', '-' ), entry.getValue() );
+            String key = decodeEnvKey( entry.getKey() );
+            if( key != null ) fsList.put( key, entry.getValue() );
         }
 
         for( Map.Entry<String, Object> entry : fsList.entrySet() ) {
@@ -56,6 +97,8 @@ public class FileSystemConfiguration {
 
             Preconditions.checkArgument( toks.length == 3 && "fs".equals( toks[0] ),
                 "invalid fs configuration key: " + entry.getKey() );
+
+            validateKeyParts( entry.getKey() );
 
             String id = toks[1];
             String property = toks[2];

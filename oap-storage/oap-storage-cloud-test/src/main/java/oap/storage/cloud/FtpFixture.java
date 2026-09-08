@@ -139,15 +139,15 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put( s( "fs.${scheme}.identity.${configurationId}" ), USERNAME );
         map.put( s( "fs.${scheme}.credential.${configurationId}" ), PASSWORD );
-        map.put( s( "fs.${scheme}.trust-all.${configurationId}" ), true );
+        map.put( s( "fs.${scheme}.trust_all.${configurationId}" ), true );
         map.put( s( "fs.${scheme}.container.${configurationId}" ), hostPort() );
 
         if( removeEmptyFolders ) {
-            map.put( s( "fs.${scheme}.remove-empty-folders.${configurationId}" ), true );
+            map.put( s( "fs.${scheme}.remove_empty_folders.${configurationId}" ), true );
         }
 
         if( poolMaxSize != null ) {
-            map.put( s( "fs.${scheme}.pool-max-size.${configurationId}" ), poolMaxSize );
+            map.put( s( "fs.${scheme}.pool_max_size.${configurationId}" ), poolMaxSize );
         }
 
         return map;
