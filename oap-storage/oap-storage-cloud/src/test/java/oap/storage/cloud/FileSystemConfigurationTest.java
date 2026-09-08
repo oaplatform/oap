@@ -164,6 +164,30 @@ public class FileSystemConfigurationTest {
     }
 
     @Test
+    public void testSystemPropertyUnderscoreNormalizedToHyphen() {
+        System.setProperty( "fs.file.filesystem.remove_empty_folders", "true" );
+        try {
+            FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of() );
+
+            assertThat( fileSystemConfiguration.get( "file", null, "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
+        } finally {
+            System.clearProperty( "fs.file.filesystem.remove_empty_folders" );
+        }
+    }
+
+    @Test
+    public void testEnvUnderscoreNormalizedToHyphen() {
+        Env.set( "fs.file.filesystem.remove_empty_folders", "true" );
+        try {
+            FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of() );
+
+            assertThat( fileSystemConfiguration.get( "file", null, "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
+        } finally {
+            Env.set( "fs.file.filesystem.remove_empty_folders", null );
+        }
+    }
+
+    @Test
     public void testConfigurationIdContainingDotIsSafeWithNoEscaping() {
         // the new lookup mechanism probes exact key strings ("property" + "." + configurationId) rather than
         // positionally splitting stored keys, so a dot inside a configurationId needs no escaping at all.

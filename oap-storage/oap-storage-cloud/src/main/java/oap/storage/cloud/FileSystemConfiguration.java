@@ -35,6 +35,8 @@ public class FileSystemConfiguration {
     /**
      * Builds the id-&gt;property-&gt;value structure from `configuration`, overlaid with `fs.*` JVM system
      * properties and `fs.*` OS environment variables. Priority, highest first: env, system properties, `configuration`.
+     * `_` is not a valid character in this class's key namespace — any `_` in a system-property/env key is
+     * normalized to `-` (e.g. `fs.file.filesystem.remove_empty_folders` behaves as `...remove-empty-folders`).
      */
     private static LinkedHashMap<String, Map<String, Object>> parse( Map<String, Object> configuration ) {
         LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
@@ -43,11 +45,11 @@ public class FileSystemConfiguration {
         log.trace( "string fs {}", fsList );
 
         for( String key : System.getProperties().stringPropertyNames() ) {
-            if( key.startsWith( "fs." ) ) fsList.put( key, System.getProperty( key ) );
+            if( key.startsWith( "fs." ) ) fsList.put( key.replace( '_', '-' ), System.getProperty( key ) );
         }
 
         for( Map.Entry<String, String> entry : System.getenv().entrySet() ) {
-            if( entry.getKey().startsWith( "fs." ) ) fsList.put( entry.getKey(), entry.getValue() );
+            if( entry.getKey().startsWith( "fs." ) ) fsList.put( entry.getKey().replace( '_', '-' ), entry.getValue() );
         }
 
         for( Map.Entry<String, Object> entry : fsList.entrySet() ) {

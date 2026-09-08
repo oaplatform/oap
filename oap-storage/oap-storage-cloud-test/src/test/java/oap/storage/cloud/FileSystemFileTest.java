@@ -161,7 +161,7 @@ public class FileSystemFileTest extends Fixtures {
         ) );
 
         if( removeEmptyFolders ) {
-            map.put( "fs.file.filesystem.remove_empty_folders", true );
+            map.put( "fs.file.filesystem.remove-empty-folders", true );
         }
 
         return new FileSystemConfiguration( map );
@@ -285,7 +285,7 @@ public class FileSystemFileTest extends Fixtures {
 
     @Test
     public void testDeleteFileAndParentFolderIfEmpty() {
-        // 1. remove_empty_folders disabled -> parent folders remain after delete
+        // 1. remove-empty-folders disabled -> parent folders remain after delete
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( new CloudURI( "file", "case1/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
 

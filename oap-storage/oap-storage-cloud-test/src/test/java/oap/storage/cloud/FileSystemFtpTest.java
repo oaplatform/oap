@@ -200,7 +200,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testDeleteFileAndParentFolderIfEmpty() {
-        // 1. remove_empty_folders disabled -> parent folders remain after delete
+        // 1. remove-empty-folders disabled -> parent folders remain after delete
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( ftpUri( "case1/folder1/folder2/file.txt" ), BlobData.builder().content( "content" ).build() );
 
