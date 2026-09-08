@@ -40,8 +40,8 @@ import java.util.stream.Stream;
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
- * {@code fs.smb.container[.<alias>]} is {@code host[:port]/share} — one backend instance (and its
- * {@code CIFSContext} session) is created per alias, not per server.
+ * {@code fs.smb.container[.<configurationId>]} is {@code host[:port]/share} — one backend instance (and its
+ * {@code CIFSContext} session) is created per configurationId, not per server.
  */
 @Slf4j
 public class FileSystemCloudApiSmb implements FileSystemCloudApi {
@@ -53,8 +53,8 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     private final String basedir;
     private final CIFSContext cifsContext;
 
-    public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String alias ) {
-        String container = ( String ) fileSystemConfiguration.getOrThrow( "smb", alias, "container" );
+    public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        String container = ( String ) fileSystemConfiguration.getOrThrow( "smb", configurationId, "container" );
 
         int slashIdx = container.indexOf( '/' );
         String hostPort = slashIdx >= 0 ? container.substring( 0, slashIdx ) : container;
@@ -73,16 +73,16 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
             this.port = DEFAULT_PORT;
         }
 
-        Object identity = fileSystemConfiguration.get( "smb", alias, "identity" );
+        Object identity = fileSystemConfiguration.get( "smb", configurationId, "identity" );
         String username = identity != null ? identity.toString() : "guest";
 
-        Object credential = fileSystemConfiguration.get( "smb", alias, "credential" );
+        Object credential = fileSystemConfiguration.get( "smb", configurationId, "credential" );
         String password = credential != null ? credential.toString() : "";
 
-        Object domainObj = fileSystemConfiguration.get( "smb", alias, "domain" );
+        Object domainObj = fileSystemConfiguration.get( "smb", configurationId, "domain" );
         String domain = domainObj != null ? domainObj.toString() : "";
 
-        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "smb", alias, "filesystem.basedir" ) );
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "smb", configurationId, "filesystem.basedir" ) );
 
         try {
             CIFSContext baseContext = new BaseContext( new PropertyConfiguration( new Properties() ) );

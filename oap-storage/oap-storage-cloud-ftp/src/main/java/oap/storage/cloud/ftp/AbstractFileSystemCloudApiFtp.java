@@ -62,10 +62,10 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     private final GenericObjectPool<FTPClient> pool;
 
-    protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String alias ) {
+    protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String configurationId ) {
         this.scheme = scheme;
 
-        String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, alias, "container" );
+        String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, configurationId, "container" );
 
         int colonIdx = container.lastIndexOf( ':' );
         if( colonIdx > 0 && colonIdx < container.length() - 1
@@ -77,37 +77,37 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             this.port = 21;
         }
 
-        Object identity = fileSystemConfiguration.get( scheme, alias, "identity" );
+        Object identity = fileSystemConfiguration.get( scheme, configurationId, "identity" );
         this.username = identity != null ? identity.toString() : "anonymous";
 
-        Object credential = fileSystemConfiguration.get( scheme, alias, "credential" );
+        Object credential = fileSystemConfiguration.get( scheme, configurationId, "credential" );
         this.password = credential != null ? credential.toString() : "";
 
-        Object passive = fileSystemConfiguration.get( scheme, alias, "passive-mode" );
+        Object passive = fileSystemConfiguration.get( scheme, configurationId, "passive-mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, alias, "remove-empty-folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, configurationId, "remove-empty-folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
-        this.basedir = normalizeBasedir( fileSystemConfiguration.get( scheme, alias, "filesystem.basedir" ) );
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( scheme, configurationId, "filesystem.basedir" ) );
 
-        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, alias, "connect-timeout-millis" );
+        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "connect-timeout-millis" );
         this.connectTimeoutMillis = connectTimeoutObj != null ? Integer.parseInt( connectTimeoutObj.toString() )
             : DEFAULT_CONNECT_TIMEOUT_MILLIS;
 
-        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, alias, "default-timeout-millis" );
+        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "default-timeout-millis" );
         this.defaultTimeoutMillis = defaultTimeoutObj != null ? Integer.parseInt( defaultTimeoutObj.toString() )
             : DEFAULT_DEFAULT_TIMEOUT_MILLIS;
 
-        Object soTimeoutObj = fileSystemConfiguration.get( scheme, alias, "so-timeout-millis" );
+        Object soTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "so-timeout-millis" );
         this.soTimeoutMillis =
             soTimeoutObj != null ? Integer.parseInt( soTimeoutObj.toString() ) : DEFAULT_SO_TIMEOUT_MILLIS;
 
-        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, alias, "pool-max-size" );
+        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, configurationId, "pool-max-size" );
         int poolMaxSize =
             poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
-        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, alias, "pool-max-wait-millis" );
+        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, configurationId, "pool-max-wait-millis" );
         long poolMaxWaitMillis =
             poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 

@@ -70,28 +70,28 @@ public class FileSystem implements AutoCloseable {
         this.fileSystemConfiguration = fileSystemConfiguration;
     }
 
-    private String resolveScheme( String alias ) {
-        return fileSystemConfiguration.findScheme( alias )
+    private String resolveScheme( String configurationId ) {
+        return fileSystemConfiguration.findScheme( configurationId )
             .orElseGet( () -> {
-                if( providers.containsKey( alias ) ) return alias;
-                throw new CloudException( "fs: cannot resolve alias '" + alias + "' to any known scheme" );
+                if( providers.containsKey( configurationId ) ) return configurationId;
+                throw new CloudException( "fs: cannot resolve configurationId '" + configurationId + "' to any known scheme" );
             } );
     }
 
     private FileSystemCloudApi getCloudApi( CloudURI cloudURI ) throws CloudException {
-        String scheme = resolveScheme( cloudURI.alias );
+        String scheme = resolveScheme( cloudURI.configurationId );
         Class<? extends FileSystemCloudApi> impl = providers.get( scheme );
         if( impl == null ) {
             throw new CloudException( "Unknown provider for the scheme " + scheme );
         }
 
-        String cacheKey = scheme + "://" + cloudURI.alias;
+        String cacheKey = scheme + "://" + cloudURI.configurationId;
 
         try {
             return apis.get( cacheKey,
                 () -> {
                     try {
-                        return impl.getConstructor( FileSystemConfiguration.class, String.class ).newInstance( fileSystemConfiguration, cloudURI.alias );
+                        return impl.getConstructor( FileSystemConfiguration.class, String.class ).newInstance( fileSystemConfiguration, cloudURI.configurationId );
                     } catch( Exception e ) {
                         throw new CloudException( "Invlid provider for the scheme " + scheme, e );
                     }
@@ -107,10 +107,9 @@ public class FileSystem implements AutoCloseable {
 
     /**
      * Resolves a legacy {@code scheme://container/path} URI string (ftp/ftps/smb/s3/gcs/ab) to a
-     * {@code CloudURI} by finding the alias registered for that scheme+container, falling back to the
-     * default alias when the scheme matches the configured default. {@code fs://} input is already in
-     * the new format and passes straight through; {@code file://} has no meaningful container-based
-     * mapping and always throws.
+     * {@code CloudURI} by finding the configurationId registered for that scheme+container. {@code fs://}
+     * input is already in the new format and passes straight through; {@code file://} has no meaningful
+     * container-based mapping and always throws.
      */
     public CloudURI resolve( String uri ) throws CloudException {
         try {
@@ -121,7 +120,7 @@ public class FileSystem implements AutoCloseable {
                 return new CloudURI( uri );
             }
             if( "file".equals( scheme ) ) {
-                throw new CloudException( "fs: file:// URIs cannot be resolved to an alias; use fs://file/<path> or new CloudURI(\"file\", path)" );
+                throw new CloudException( "fs: file:// URIs cannot be resolved to a configurationId; use fs://file/<path> or new CloudURI(\"file\", path)" );
             }
 
             String host = u.getHost();
@@ -161,10 +160,10 @@ public class FileSystem implements AutoCloseable {
             }
 
             String resolvedContainer = container;
-            String alias = fileSystemConfiguration.findAliasByContainer( scheme, container )
-                .orElseThrow( () -> new CloudException( "fs: cannot resolve legacy uri '" + uri + "' to any alias (scheme " + scheme + ", container " + resolvedContainer + ")" ) );
+            String configurationId = fileSystemConfiguration.findConfigurationIdByContainer( scheme, container )
+                .orElseThrow( () -> new CloudException( "fs: cannot resolve legacy uri '" + uri + "' to any configurationId (scheme " + scheme + ", container " + resolvedContainer + ")" ) );
 
-            return new CloudURI( alias, path );
+            return new CloudURI( configurationId, path );
         } catch( URISyntaxException e ) {
             throw new CloudException( e );
         }
@@ -263,36 +262,30 @@ public class FileSystem implements AutoCloseable {
         return getCloudApi( path ).createContainer( path );
     }
 
-    public CloudURI getDefaultURL( String path ) {
-        log.debug( "getDefaultURL {}", path );
+    public CloudURI getDefaultURL( String configurationId, String path ) {
+        log.debug( "getDefaultURL configurationId {} path {}", configurationId, path );
 
-        return getDefaultURL( fileSystemConfiguration.getDefaultAlias(), path );
-    }
-
-    public CloudURI getDefaultURL( String alias, String path ) {
-        log.debug( "getDefaultURL alias {} path {}", alias, path );
-
-        return new CloudURI( alias, FilenameUtils.separatorsToUnix( path ) );
+        return new CloudURI( configurationId, FilenameUtils.separatorsToUnix( path ) );
     }
 
     /**
-     * Renders a {@code CloudURI} as a "native"-looking URI string using the alias's resolved backend
-     * scheme and connection, instead of the {@code fs://<alias>/<path>} address:
+     * Renders a {@code CloudURI} as a "native"-looking URI string using the configurationId's resolved backend
+     * scheme and connection, instead of the {@code fs://<configurationId>/<path>} address:
      * <ul>
      *     <li>{@code s3} → {@code s3://<bucket>/<path>}</li>
      *     <li>{@code ftp}/{@code ftps} → {@code ftp(s)://<host[:port]>/<path>}</li>
      *     <li>{@code smb} → {@code smb://<host[:port]/share>/<path>}</li>
      *     <li>{@code file} → {@code file://<basedir>/<path>}</li>
-     *     <li>anything else → falls back to {@code fs://<alias>/<path>} ({@code cloudURI.toString()})</li>
+     *     <li>anything else → falls back to {@code fs://<configurationId>/<path>} ({@code cloudURI.toString()})</li>
      * </ul>
      */
     public String toUri( CloudURI cloudURI ) {
-        String scheme = resolveScheme( cloudURI.alias );
+        String scheme = resolveScheme( cloudURI.configurationId );
 
         switch( scheme ) {
             case "s3", "ftp", "ftps", "smb" -> {
-                String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, cloudURI.alias, "container" );
-                Object basedirObj = fileSystemConfiguration.get( scheme, cloudURI.alias, "filesystem.basedir" );
+                String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, cloudURI.configurationId, "container" );
+                Object basedirObj = fileSystemConfiguration.get( scheme, cloudURI.configurationId, "filesystem.basedir" );
                 String basedir = "";
                 if( basedirObj != null ) {
                     String str = basedirObj.toString();
@@ -305,7 +298,7 @@ public class FileSystem implements AutoCloseable {
                 return s( "${scheme}://${container}/${resolvedPath}" );
             }
             case "file" -> {
-                String basedir = ( String ) fileSystemConfiguration.get( scheme, cloudURI.alias, "filesystem.basedir" );
+                String basedir = ( String ) fileSystemConfiguration.get( scheme, cloudURI.configurationId, "filesystem.basedir" );
                 if( basedir == null ) {
                     basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
                 }
@@ -321,23 +314,23 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
-    public CloudURI toLocalFilePath( String alias, Path path ) {
-        log.debug( "toLocalFilePath {} {}", alias, path );
+    public CloudURI toLocalFilePath( String configurationId, Path path ) {
+        log.debug( "toLocalFilePath {} {}", configurationId, path );
 
-        String basedir = ( String ) fileSystemConfiguration.get( "file", alias, "filesystem.basedir" );
+        String basedir = ( String ) fileSystemConfiguration.get( "file", configurationId, "filesystem.basedir" );
 
-        return new CloudURI( alias, basedir != null ? Paths.get( basedir ).relativize( path ).toString()
+        return new CloudURI( configurationId, basedir != null ? Paths.get( basedir ).relativize( path ).toString()
             : Paths.get( "/" ).relativize( path ).toString() );
     }
 
     public boolean isLocalFile( CloudURI cloudURI ) {
-        return "file".equals( resolveScheme( cloudURI.alias ) );
+        return "file".equals( resolveScheme( cloudURI.configurationId ) );
     }
 
     public File toFile( CloudURI cloudURI ) {
-        Preconditions.checkArgument( "file".equals( resolveScheme( cloudURI.alias ) ) );
+        Preconditions.checkArgument( "file".equals( resolveScheme( cloudURI.configurationId ) ) );
 
-        try( FileSystemCloudApiLocalFs fileSystemCloudApiLocalFs = new FileSystemCloudApiLocalFs( fileSystemConfiguration, cloudURI.alias ) ) {
+        try( FileSystemCloudApiLocalFs fileSystemCloudApiLocalFs = new FileSystemCloudApiLocalFs( fileSystemConfiguration, cloudURI.configurationId ) ) {
             return fileSystemCloudApiLocalFs.getPath( cloudURI ).toFile();
         }
     }

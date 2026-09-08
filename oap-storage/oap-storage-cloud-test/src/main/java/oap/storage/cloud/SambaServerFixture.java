@@ -24,7 +24,7 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
  * Starts a <a href="https://hub.docker.com/r/dockurr/samba">dockurr/samba</a> container. {@link #container()}
- * returns {@code host:port/}{@link #SHARE}, which is what {@code fs.smb.container[.<alias>]} must be set to
+ * returns {@code host:port/}{@link #SHARE}, which is what {@code fs.smb.container[.<configurationId>]} must be set to
  * for this fixture's share. All fixture I/O (seeding/reading/reset) goes through the Docker Engine API
  * (copy/exec), not a host bind mount — a bind mount's host path must resolve on the Docker daemon's side too,
  * which breaks when the test JVM and daemon don't share a filesystem (e.g. Docker-in-Docker on Linux CI).
@@ -79,34 +79,26 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
         return s( "${hostPort()}/${SHARE}" );
     }
 
-    public String alias() {
-        return "smb";
-    }
-
-    public FileSystemConfiguration getFileSystemConfiguration() {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap() );
-    }
-
-    public Map<String, Object> getFileSystemConfigurationMap() {
-        return getFileSystemConfigurationMap( alias() );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId ) {
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( configurationId ) );
     }
 
     /**
-     * Builds config for this share under `alias` — always registers `alias` via `container.<alias>`
+     * Builds config for this share under `configurationId` — always registers `configurationId` via `container.<configurationId>`
      * (and identity/credential alongside it), whether it's the default target or a secondary one layered
      * onto an existing {@link FileSystemConfiguration} via {@link #updateWithSmb}.
      */
-    public Map<String, Object> getFileSystemConfigurationMap( String alias ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.smb.identity.${alias}" ), USERNAME );
-        map.put( s( "fs.smb.credential.${alias}" ), PASSWORD );
-        map.put( s( "fs.smb.container.${alias}" ), container() );
+        map.put( s( "fs.smb.identity.${configurationId}" ), USERNAME );
+        map.put( s( "fs.smb.credential.${configurationId}" ), PASSWORD );
+        map.put( s( "fs.smb.container.${configurationId}" ), container() );
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, String alias ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias ) );
+    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( configurationId ) );
     }
 
     /**

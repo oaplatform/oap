@@ -81,20 +81,20 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     private final String basedir;
     private final S3Client s3Client;
 
-    public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String alias ) {
-        this.bucketName = ( String ) fileSystemConfiguration.getOrThrow( "s3", alias, "container" );
-        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "s3", alias, "filesystem.basedir" ) );
+    public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        this.bucketName = ( String ) fileSystemConfiguration.getOrThrow( "s3", configurationId, "container" );
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "s3", configurationId, "filesystem.basedir" ) );
 
         S3ClientBuilder builder = S3Client.builder()
             .httpClientBuilder( Apache5HttpClient.builder() );
 
-        Object regionObj = fileSystemConfiguration.get( "s3", alias, "region" );
+        Object regionObj = fileSystemConfiguration.get( "s3", configurationId, "region" );
         if( regionObj == null ) {
             regionObj = System.getenv( "AWS_REGION" );
         }
         Region region = regionObj != null ? Region.of( regionObj.toString() ) : Region.AWS_GLOBAL;
 
-        Object endpoint = fileSystemConfiguration.get( "s3", alias, "endpoint" );
+        Object endpoint = fileSystemConfiguration.get( "s3", configurationId, "endpoint" );
         if( endpoint != null ) {
             S3EndpointParams s3EndpointParams = S3EndpointParams.builder().endpoint( endpoint.toString() )
                 .region( region )
@@ -103,8 +103,8 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
             builder = builder.endpointOverride( s3Endpoint.url() ).forcePathStyle( true );
         }
 
-        Object accessKey = fileSystemConfiguration.get( "s3", alias, "identity" );
-        Object accessSecret = fileSystemConfiguration.get( "s3", alias, "credential" );
+        Object accessKey = fileSystemConfiguration.get( "s3", configurationId, "identity" );
+        Object accessSecret = fileSystemConfiguration.get( "s3", configurationId, "credential" );
 
         if( accessKey != null && accessSecret != null ) {
             builder = builder.credentialsProvider( StaticCredentialsProvider.create( AwsBasicCredentials.create( accessKey.toString(), accessSecret.toString() ) ) );
@@ -406,7 +406,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
                 @Override
                 public URI getUri() {
-                    return s3Client.utilities().parseUri( URI.create( new CloudURI( path.alias, relativeKey( obj.key() ) ).toString() ) ).uri();
+                    return s3Client.utilities().parseUri( URI.create( new CloudURI( path.configurationId, relativeKey( obj.key() ) ).toString() ) ).uri();
                 }
 
                 @Override

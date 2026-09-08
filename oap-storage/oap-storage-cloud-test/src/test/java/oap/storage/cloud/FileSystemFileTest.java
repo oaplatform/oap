@@ -49,8 +49,8 @@ public class FileSystemFileTest extends Fixtures {
     @Test
     public void testGetDefaultURL() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( new CloudURI( "file", "a.file" ) );
-            assertThat( fileSystem.getDefaultURL( "a.file" ) ).isEqualTo( new CloudURI( "file", "a.file" ) );
+            assertThat( fileSystem.getDefaultURL( "file", "/a.file" ) ).isEqualTo( new CloudURI( "file", "a.file" ) );
+            assertThat( fileSystem.getDefaultURL( "file", "a.file" ) ).isEqualTo( new CloudURI( "file", "a.file" ) );
         }
     }
 
@@ -77,9 +77,7 @@ public class FileSystemFileTest extends Fixtures {
 
     @Test
     public void testGetInputStreamWithoutBasedir() {
-        try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.alias", "file"
-        ) ) ) ) {
+        try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of() ) ) ) {
             Path filePath = basedir.resolve( "logs/file.txt" );
             log.debug( "file {}", filePath );
             Files.write( filePath, "test string", ContentWriter.ofString() );
@@ -159,7 +157,6 @@ public class FileSystemFileTest extends Fixtures {
     private FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.putAll( Map.of(
-            "fs.default.alias", "file",
             "fs.file.filesystem.basedir", basedir
         ) );
 
