@@ -332,7 +332,7 @@ public class FileSystemFtpTest extends Fixtures {
             secondFtpFixture.writeFile( "shared/file.txt", "secondary", ContentWriter.ofString() );
 
             FileSystemConfiguration config = secondFtpFixture.updateWithFtp(
-                getFileSystemConfiguration(), "secondary", false, null, false );
+                getFileSystemConfiguration(), "secondary", false, null );
 
             try( FileSystem fileSystem = new FileSystem( config ) ) {
                 CloudURI primaryUri = ftpUri( "shared/file.txt" );

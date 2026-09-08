@@ -125,15 +125,15 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
     }
 
     public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, true ) );
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize ) );
     }
 
     public String alias() {
         return tls ? "ftps" : "ftp";
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
-        return getFileSystemConfigurationMap( alias(), removeEmptyFolders, poolMaxSize, addDefaults );
+    public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return getFileSystemConfigurationMap( alias(), removeEmptyFolders, poolMaxSize );
     }
 
     /**
@@ -141,7 +141,7 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
      * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
      * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithFtp}.
      */
-    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
@@ -158,15 +158,11 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
             map.put( s( "fs.${scheme}.pool-max-size.${alias}" ), poolMaxSize );
         }
 
-        if( addDefaults ) {
-            map.put( "fs.default.alias", alias );
-        }
-
         return map;
     }
 
-    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, removeEmptyFolders, poolMaxSize, addDefaults ) );
+    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, removeEmptyFolders, poolMaxSize ) );
     }
 
     public String hostPort() {
