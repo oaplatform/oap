@@ -8,7 +8,6 @@ import org.apache.commons.text.StringSubstitutor;
 import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -103,7 +102,7 @@ public class FileSystemConfiguration {
      * Discovers the configurationId -> scheme registry: every {@code fs.<scheme>.container.<configurationId>} key
      * registers {@code configurationId -> scheme}. A configurationId not found here (e.g. one simply named after
      * its own scheme) resolves instead via the "bare configurationId == scheme name" convention applied by
-     * {@link #findConfigurationIdByContainer} and by {@link FileSystem}'s dispatch.
+     * {@link FileSystem}'s dispatch.
      */
     private static Map<String, String> buildConfigurationIdRegistry( Map<String, Map<String, Object>> properties ) {
         Map<String, String> registry = new LinkedHashMap<>();
@@ -166,21 +165,25 @@ public class FileSystemConfiguration {
 
     /**
      * Resolves a configurationId to its scheme via the discovered registry
-     * (fs.&lt;scheme&gt;.container.&lt;configurationId&gt; entries). Does not know about the implicit
-     * self-configurationId-equals-scheme-name fallback — that requires the set of installed backend schemes,
-     * which only {@link FileSystem} knows.
+     * (fs.&lt;scheme&gt;.container.&lt;configurationId&gt; entries), or {@code null} if unresolved. Does not know
+     * about the implicit self-configurationId-equals-scheme-name fallback — that requires the set of installed
+     * backend schemes, which only {@link FileSystem} knows.
      */
-    public Optional<String> findScheme( String configurationId ) {
-        return Optional.ofNullable( configurationIdToScheme.get( configurationId ) );
-    }
-
+    @Nullable
     public String getScheme( String configurationId ) {
-        return findScheme( configurationId ).orElseThrow( () -> new CloudException(
-            s( "fs: configurationId '${configurationId}' cannot be resolved to a scheme; declare fs.<scheme>.container.${configurationId}" ) ) );
+        return configurationIdToScheme.get( configurationId );
     }
 
-    public String getScheme( CloudURI cloudURI ) {
-        return getScheme( cloudURI.configurationId );
+    public String getSchemeOrThrow( String configurationId ) {
+        String scheme = getScheme( configurationId );
+        if( scheme == null ) {
+            throw new CloudException( s( "fs: configurationId '${configurationId}' cannot be resolved to a scheme; declare fs.<scheme>.container.${configurationId}" ) );
+        }
+        return scheme;
+    }
+
+    public String getSchemeOrThrow( CloudURI cloudURI ) {
+        return getSchemeOrThrow( cloudURI.configurationId );
     }
 
     /**
@@ -188,52 +191,29 @@ public class FileSystemConfiguration {
      * declares it). Use to validate a configurationId up front, without needing its resolved scheme.
      */
     public FileSystemConfiguration required( String configurationId ) {
-        getScheme( configurationId );
+        getSchemeOrThrow( configurationId );
 
         return this;
     }
 
-    /**
-     * Finds the configurationId registered under `scheme` whose resolved `container` property equals `container` —
-     * used to map a legacy `scheme://container/path` URI onto a configurationId. Falls back to the scheme's own
-     * name (the "bare configurationId == scheme name" convention) when `container` matches the scheme-wide container.
-     */
-    public Optional<String> findConfigurationIdByContainer( String scheme, String container ) {
-        Map<String, Object> schemeMap = properties.get( scheme );
-        if( schemeMap == null ) return Optional.empty();
+    public Object get( String scheme, String configurationId, String property ) {
+        Preconditions.checkNotNull( configurationId, "configurationId is required" );
 
-        for( Map.Entry<String, Object> entry : schemeMap.entrySet() ) {
-            if( entry.getKey().startsWith( "container." ) && container.equals( entry.getValue() ) ) {
-                return Optional.of( entry.getKey().substring( "container.".length() ) );
-            }
-        }
-
-        Object schemeWideContainer = schemeMap.get( "container" );
-        if( container.equals( schemeWideContainer ) ) {
-            return Optional.of( scheme );
-        }
-
-        return Optional.empty();
-    }
-
-    public Object get( String scheme, @Nullable String configurationId, String property ) {
         Map<String, Object> schemeMap = properties.getOrDefault( scheme, Map.of() );
 
-        if( configurationId != null ) {
-            Object value = schemeMap.get( s( "${property}.${configurationId}" ) );
-            if( value != null ) return value;
-        }
+        Object value = schemeMap.get( s( "${property}.${configurationId}" ) );
+        if( value != null ) return value;
 
-        Object value = schemeMap.get( property );
+        value = schemeMap.get( property );
         if( value != null ) return value;
 
         return properties.getOrDefault( "default", Map.of() ).get( property );
     }
 
-    public Object getOrThrow( String scheme, @Nullable String configurationId, String property ) {
+    public Object getOrThrow( String scheme, String configurationId, String property ) {
         Object res = get( scheme, configurationId, property );
         if( res == null ) {
-            throw new CloudException( "fs." + scheme + "." + property + ( configurationId != null ? "." + configurationId : "" ) + " is required" );
+            throw new CloudException( s( "fs.${scheme}.${property}.${configurationId} is required" ) );
         }
         return res;
     }
