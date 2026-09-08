@@ -170,15 +170,10 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
         }
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean addDefaults ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String alias ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put( s( "fs.file.container.${alias}" ), "" );
         map.put( s( "fs.file.filesystem.basedir.${alias}" ), testDirectory() );
-
-        if( addDefaults ) {
-            map.put( "fs.default.alias", alias );
-        }
-
         return map;
     }
 

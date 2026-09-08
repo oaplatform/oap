@@ -84,11 +84,11 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     }
 
     public FileSystemConfiguration getFileSystemConfiguration() {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( true ) );
+        return new FileSystemConfiguration( getFileSystemConfigurationMap() );
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( boolean addDefaults ) {
-        return getFileSystemConfigurationMap( alias(), addDefaults );
+    public Map<String, Object> getFileSystemConfigurationMap() {
+        return getFileSystemConfigurationMap( alias() );
     }
 
     /**
@@ -96,21 +96,17 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
      * (and identity/credential alongside it), whether it's the default target or a secondary one layered
      * onto an existing {@link FileSystemConfiguration} via {@link #updateWithSmb}.
      */
-    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean addDefaults ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String alias ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put( s( "fs.smb.identity.${alias}" ), USERNAME );
         map.put( s( "fs.smb.credential.${alias}" ), PASSWORD );
         map.put( s( "fs.smb.container.${alias}" ), container() );
 
-        if( addDefaults ) {
-            map.put( "fs.default.alias", alias );
-        }
-
         return map;
     }
 
-    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, String alias, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, addDefaults ) );
+    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, String alias ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias ) );
     }
 
     /**

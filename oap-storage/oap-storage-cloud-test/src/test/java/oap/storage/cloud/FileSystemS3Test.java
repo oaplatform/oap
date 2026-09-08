@@ -183,7 +183,7 @@ public class FileSystemS3Test extends Fixtures {
 
     @NotNull
     private FileSystemConfiguration getFileSystemConfiguration() {
-        return s3mockFixture.updateWithS3( s3mockFixture.getFileSystemConfiguration( TEST_BUCKET ), "test2", "test2", false );
+        return s3mockFixture.updateWithS3( s3mockFixture.getFileSystemConfiguration( TEST_BUCKET ), "test2", "test2" );
     }
 
     @Test

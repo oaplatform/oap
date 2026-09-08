@@ -14,7 +14,6 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -227,15 +226,15 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
 
     @NotNull
     public FileSystemConfiguration getFileSystemConfiguration( String container ) {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( container, true ) );
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( container ) );
     }
 
     public String alias() {
         return "s3";
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( @Nullable String container, boolean addDefaults ) {
-        return getFileSystemConfigurationMap( alias(), container, addDefaults );
+    public Map<String, Object> getFileSystemConfigurationMap( String container ) {
+        return getFileSystemConfigurationMap( alias(), container );
     }
 
     /**
@@ -243,28 +242,18 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
      * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
      * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithS3}.
      */
-    public Map<String, Object> getFileSystemConfigurationMap( String alias, @Nullable String container, boolean addDefaults ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String alias, String container ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put( s( "fs.s3.identity.${alias}" ), "access_key" );
         map.put( s( "fs.s3.credential.${alias}" ), "access_secret" );
         map.put( s( "fs.s3.region.${alias}" ), Region.AWS_GLOBAL.id() );
         map.put( s( "fs.s3.endpoint.${alias}" ), s( "http://localhost:${getHttpPort()}" ) );
-
-        if( addDefaults ) {
-            Preconditions.checkArgument( container != null, "container cannot be null" );
-        }
-        if( container != null ) {
-            map.put( s( "fs.s3.container.${alias}" ), container );
-        }
-
-        if( addDefaults ) {
-            map.put( "fs.default.alias", alias );
-        }
+        map.put( s( "fs.s3.container.${alias}" ), container );
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, String alias, @Nullable String container, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, container, addDefaults ) );
+    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, String alias, String container ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, container ) );
     }
 }
