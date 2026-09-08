@@ -62,6 +62,31 @@ public class FileSystemConfigurationTest {
     }
 
     @Test
+    public void testFsDefaultIsOptional() {
+        // no fs.default.* key at all -> construction succeeds; only calling getDefaultAlias() fails
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.s3.container", "test-bucket"
+        ) );
+
+        assertThat( fileSystemConfiguration.get( "s3", null, "container" ) ).isEqualTo( "test-bucket" );
+
+        try {
+            fileSystemConfiguration.getDefaultAlias();
+            org.testng.Assert.fail( "expected NullPointerException" );
+        } catch( NullPointerException expected ) {
+            // fs.default.alias still required when actually requested
+        }
+    }
+
+    @Test( expectedExceptions = CloudException.class )
+    public void testAliasCannotBeUsedByMultipleSchemes() {
+        new FileSystemConfiguration( Map.of(
+            "fs.s3.container.shared", "bucket",
+            "fs.ftp.container.shared", "host:21"
+        ) );
+    }
+
+    @Test
     public void testFindSchemeAndGetScheme() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
             "fs.default.alias", "primary",
