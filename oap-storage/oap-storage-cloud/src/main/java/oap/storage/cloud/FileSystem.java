@@ -266,7 +266,13 @@ public class FileSystem implements AutoCloseable {
     public CloudURI getDefaultURL( String path ) {
         log.debug( "getDefaultURL {}", path );
 
-        return new CloudURI( fileSystemConfiguration.getDefaultAlias(), FilenameUtils.separatorsToUnix( path ) );
+        return getDefaultURL( fileSystemConfiguration.getDefaultAlias(), path );
+    }
+
+    public CloudURI getDefaultURL( String alias, String path ) {
+        log.debug( "getDefaultURL alias {} path {}", alias, path );
+
+        return new CloudURI( alias, FilenameUtils.separatorsToUnix( path ) );
     }
 
     /**
