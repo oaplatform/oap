@@ -43,13 +43,13 @@ CloudURI otherConfigurationId = uri.withConfigurationId( "other-configuration-id
 
 ### Migrating a legacy `scheme://container/path` string
 
-`FileSystem.resolve(String)` accepts the old `scheme://container/path` shape (as used before configurationIds existed) and maps it onto whichever configurationId is configured for that scheme+container, falling back to the scheme's own name (the "bare configurationId == scheme name" convention) when the container matches the scheme-wide one:
+`FileSystem.resolve(configurationId, String)` accepts the old `scheme://container/path` shape (as used before configurationIds existed) and tags the result with the given `configurationId` directly — the URI's container doesn't need to be registered in config at all:
 
 ```java
-CloudURI uri = fileSystem.resolve( "s3://my-bucket/data/report-2024-06-01.json" );
+CloudURI uri = fileSystem.resolve( "my-configuration-id", "s3://my-bucket/data/report-2024-06-01.json" );
 ```
 
-Throws `CloudException` if no configurationId can be resolved for the given scheme+container, and always throws for `file://...` (local paths have no container to match against — use `fs://file/<path>` or `new CloudURI("file", path)` directly). `fs://...` input passes straight through to `new CloudURI(uri)`.
+Always throws for `file://...` (local paths have no container to match against — use `fs://file/<path>` or `new CloudURI("file", path)` directly). `fs://...` input passes straight through to `new CloudURI(uri)`, with its embedded alias replaced by `configurationId`.
 
 ---
 
@@ -185,7 +185,7 @@ FileSystem.StorageItem meta = fs.getMetadata( dest );
 CloudURI defaultUri = fs.getDefaultURL( "my-configuration-id", "reports/today.json" );
 
 // Migrate a legacy scheme://container/path string to a configurationId-based CloudURI
-CloudURI legacyResolved = fs.resolve( "s3://my-bucket/reports/today.json" );
+CloudURI legacyResolved = fs.resolve( "my-configuration-id", "s3://my-bucket/reports/today.json" );
 ```
 
 ### Operations reference
@@ -208,7 +208,7 @@ All methods are synchronous/blocking.
 | `deleteContainer(uri)` | Delete an empty bucket/container |
 | `deleteContainerIfEmpty(uri)` | Delete only if empty; returns `boolean` |
 | `getDefaultURL(configurationId, path)` | Build a `CloudURI` for the given configurationId, normalizing path separators |
-| `resolve(legacyUri)` | Map a legacy `scheme://container/path` string onto the configurationId configured for that scheme+container |
+| `resolve(configurationId, legacyUri)` | Map a legacy `scheme://container/path` string onto the given configurationId |
 | `toLocalFilePath(configurationId, path)` | Convert a `java.nio.Path` to a `fs://<configurationId>/...` `CloudURI` for the given `file` configurationId |
 
 ---

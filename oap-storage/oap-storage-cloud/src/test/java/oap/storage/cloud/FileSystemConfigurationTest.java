@@ -4,7 +4,6 @@ import oap.system.Env;
 import org.testng.annotations.Test;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +46,7 @@ public class FileSystemConfigurationTest {
             "fs.s3.container", "test-bucket"
         ) );
 
-        assertThat( fileSystemConfiguration.get( "s3", null, "container" ) ).isEqualTo( "test-bucket" );
+        assertThat( fileSystemConfiguration.get( "s3", "unused", "container" ) ).isEqualTo( "test-bucket" );
     }
 
     @Test( expectedExceptions = CloudException.class )
@@ -59,24 +58,24 @@ public class FileSystemConfigurationTest {
     }
 
     @Test
-    public void testFindSchemeAndGetScheme() {
+    public void testGetSchemeAndGetSchemeOrThrow() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
             "fs.s3.container.primary", "bucket-a",
             "fs.s3.container.secondary", "bucket-b"
         ) );
 
-        assertThat( fileSystemConfiguration.getScheme( "primary" ) ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.getScheme( "secondary" ) ).isEqualTo( "s3" );
-        assertThat( fileSystemConfiguration.findScheme( "unknown-configurationId" ) ).isEqualTo( Optional.empty() );
+        assertThat( fileSystemConfiguration.getSchemeOrThrow( "primary" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getSchemeOrThrow( "secondary" ) ).isEqualTo( "s3" );
+        assertThat( fileSystemConfiguration.getScheme( "unknown-configurationId" ) ).isNull();
     }
 
     @Test( expectedExceptions = CloudException.class )
-    public void testGetSchemeThrowsForUnknownConfigurationId() {
+    public void testGetSchemeOrThrowThrowsForUnknownConfigurationId() {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
             "fs.s3.container", "bucket-a"
         ) );
 
-        fileSystemConfiguration.getScheme( "unknown-configurationId" );
+        fileSystemConfiguration.getSchemeOrThrow( "unknown-configurationId" );
     }
 
     @Test
@@ -95,23 +94,6 @@ public class FileSystemConfigurationTest {
         ) );
 
         fileSystemConfiguration.required( "unknown-configurationId" );
-    }
-
-    @Test
-    public void testFindConfigurationIdByContainer() {
-        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
-            "fs.s3.container", "bucket-a",
-            "fs.s3.container.secondary", "bucket-b"
-        ) );
-
-        // exact per-configurationId container match
-        assertThat( fileSystemConfiguration.findConfigurationIdByContainer( "s3", "bucket-b" ) ).isEqualTo( Optional.of( "secondary" ) );
-        // scheme-wide container match -> falls back to the scheme's own name as the configurationId
-        assertThat( fileSystemConfiguration.findConfigurationIdByContainer( "s3", "bucket-a" ) ).isEqualTo( Optional.of( "s3" ) );
-        // no match at all
-        assertThat( fileSystemConfiguration.findConfigurationIdByContainer( "s3", "bucket-c" ) ).isEqualTo( Optional.empty() );
-        // unknown scheme entirely
-        assertThat( fileSystemConfiguration.findConfigurationIdByContainer( "ftp", "host:21" ) ).isEqualTo( Optional.empty() );
     }
 
     @Test
@@ -141,7 +123,7 @@ public class FileSystemConfigurationTest {
                 "fs.s3.container", "from-map"
             ) );
 
-            assertThat( fileSystemConfiguration.get( "s3", null, "container" ) ).isEqualTo( "from-system-property" );
+            assertThat( fileSystemConfiguration.get( "s3", "unused", "container" ) ).isEqualTo( "from-system-property" );
         } finally {
             System.clearProperty( "fs.s3.container" );
         }
@@ -156,7 +138,7 @@ public class FileSystemConfigurationTest {
                 "fs.s3.container", "from-map"
             ) );
 
-            assertThat( fileSystemConfiguration.get( "s3", null, "container" ) ).isEqualTo( "from-env" );
+            assertThat( fileSystemConfiguration.get( "s3", "unused", "container" ) ).isEqualTo( "from-env" );
         } finally {
             System.clearProperty( "fs.s3.container" );
             Env.set( "fs.s3.container", null );
@@ -169,7 +151,7 @@ public class FileSystemConfigurationTest {
         try {
             FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of() );
 
-            assertThat( fileSystemConfiguration.get( "file", null, "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
+            assertThat( fileSystemConfiguration.get( "file", "unused", "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
         } finally {
             System.clearProperty( "fs.file.filesystem.remove_empty_folders" );
         }
@@ -181,7 +163,7 @@ public class FileSystemConfigurationTest {
         try {
             FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of() );
 
-            assertThat( fileSystemConfiguration.get( "file", null, "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
+            assertThat( fileSystemConfiguration.get( "file", "unused", "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
         } finally {
             Env.set( "fs.file.filesystem.remove_empty_folders", null );
         }

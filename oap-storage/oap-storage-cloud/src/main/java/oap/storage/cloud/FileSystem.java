@@ -42,9 +42,9 @@ public class FileSystem implements AutoCloseable {
         try {
             List<URL> urls = Resources.urls( FileSystem.class, "/cloud-service.properties" );
 
-            for( var url : urls ) {
+            for( URL url : urls ) {
                 log.debug( "url {}", url );
-                try( var is = url.openStream() ) {
+                try( InputStream is = url.openStream() ) {
                     Properties properties = new Properties();
                     properties.load( is );
 
@@ -71,21 +71,20 @@ public class FileSystem implements AutoCloseable {
     }
 
     private String resolveScheme( String configurationId ) {
-        return fileSystemConfiguration.findScheme( configurationId )
-            .orElseGet( () -> {
-                if( providers.containsKey( configurationId ) ) return configurationId;
-                throw new CloudException( "fs: cannot resolve configurationId '" + configurationId + "' to any known scheme" );
-            } );
+        String scheme = fileSystemConfiguration.getScheme( configurationId );
+        if( scheme != null ) return scheme;
+        if( providers.containsKey( configurationId ) ) return configurationId;
+        throw new CloudException( "fs: cannot resolve configurationId '" + configurationId + "' to any known scheme" );
     }
 
     private FileSystemCloudApi getCloudApi( CloudURI cloudURI ) throws CloudException {
         String scheme = resolveScheme( cloudURI.configurationId );
         Class<? extends FileSystemCloudApi> impl = providers.get( scheme );
         if( impl == null ) {
-            throw new CloudException( "Unknown provider for the scheme " + scheme );
+            throw new CloudException( s( "Unknown provider for the scheme ${scheme}" ) );
         }
 
-        String cacheKey = scheme + "://" + cloudURI.configurationId;
+        String cacheKey = s( "${scheme}://${cloudURI.configurationId}" );
 
         try {
             return apis.get( cacheKey,
@@ -106,79 +105,45 @@ public class FileSystem implements AutoCloseable {
     }
 
     /**
-     * Derives {@code {container, path}} from a legacy {@code scheme://container/path} URI, per scheme's
-     * addressing shape. Shared by both {@link #resolve(String)} and {@link #resolve(String, String)}.
+     * Derives {@code path} from a legacy {@code scheme://container/path} URI, per scheme's addressing shape
+     * (e.g. for {@code smb} the leading {@code share} segment is stripped off, since it's part of the
+     * container, not the path). Used by {@link #resolve(String, String)}.
      */
-    private String[] parseContainerAndPath( URI u, String scheme ) throws CloudException {
+    private String parsePath( URI u, String scheme ) throws CloudException {
         String host = u.getHost();
         String uriPath = FilenameUtils.separatorsToUnix( u.getPath() );
         if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
 
         if( "ftp".equals( scheme ) || "ftps".equals( scheme ) ) {
             if( host == null || host.isEmpty() ) {
-                throw new CloudException( "fs." + scheme + ": container (ftp server host[:port]) is required in the URI, e.g. " + scheme + "://host:port/path" );
+                throw new CloudException( s( "fs.${scheme}: container (ftp server host[:port]) is required in the URI, e.g. ${scheme}://host:port/path" ) );
             }
-            int port = u.getPort();
-            String container = port >= 0 ? host + ":" + port : host;
-            return new String[] { container, uriPath };
+            return uriPath;
         } else if( "smb".equals( scheme ) ) {
             if( host == null || host.isEmpty() ) {
                 throw new CloudException( "fs.smb: container (smb server host[:port]) is required in the URI, e.g. smb://host:port/share/path" );
             }
-            int port = u.getPort();
-            String hostPort = port >= 0 ? host + ":" + port : host;
 
             int slashIdx = uriPath.indexOf( '/' );
             String share = slashIdx >= 0 ? uriPath.substring( 0, slashIdx ) : uriPath;
             if( share.isEmpty() ) {
                 throw new CloudException( "fs.smb: share is required in the URI, e.g. smb://host:port/share/path" );
             }
-            String container = hostPort + "/" + share;
-            String path = slashIdx >= 0 ? uriPath.substring( slashIdx + 1 ) : "";
-            return new String[] { container, path };
+            return slashIdx >= 0 ? uriPath.substring( slashIdx + 1 ) : "";
         } else {
             if( host == null || host.isEmpty() ) {
                 throw new CloudException( s( "fs.${scheme}: container is required in the URI, e.g. ${scheme}://container/path" ) );
             }
-            return new String[] { host, uriPath };
+            return uriPath;
         }
     }
 
     /**
      * Resolves a legacy {@code scheme://container/path} URI string (ftp/ftps/smb/s3/gcs/ab) to a
-     * {@code CloudURI} by finding the configurationId registered for that scheme+container. {@code fs://}
-     * input is already in the new format and passes straight through; {@code file://} has no meaningful
-     * container-based mapping and always throws.
-     */
-    public CloudURI resolve( String uri ) throws CloudException {
-        try {
-            URI u = new URI( uri.endsWith( "://" ) ? uri + "/" : uri );
-            String scheme = u.getScheme();
-
-            if( "fs".equals( scheme ) ) {
-                return new CloudURI( uri );
-            }
-            if( "file".equals( scheme ) ) {
-                throw new CloudException( "fs: file:// URIs cannot be resolved to a configurationId; use fs://file/<path> or new CloudURI(\"file\", path)" );
-            }
-
-            String[] containerAndPath = parseContainerAndPath( u, scheme );
-            String container = containerAndPath[0];
-            String path = containerAndPath[1];
-
-            String configurationId = fileSystemConfiguration.findConfigurationIdByContainer( scheme, container )
-                .orElseThrow( () -> new CloudException( s( "fs: cannot resolve legacy uri '${uri}' to any configurationId (scheme ${scheme}, container ${container})" ) ) );
-
-            return new CloudURI( configurationId, path );
-        } catch( URISyntaxException e ) {
-            throw new CloudException( e );
-        }
-    }
-
-    /**
-     * Resolves a legacy {@code scheme://container/path} URI string the same way {@link #resolve(String)} does,
-     * but tags the result with the given `configurationId` directly instead of looking one up via the URI's
-     * container — the container doesn't need to be registered in config at all.
+     * {@code CloudURI}, tagging the result with the given `configurationId` directly — the URI's
+     * container doesn't need to be registered in config at all. {@code fs://} input is already in
+     * the new format and passes straight through (its own alias is replaced with `configurationId`);
+     * {@code file://} has no meaningful container-based mapping and always throws.
      */
     public CloudURI resolve( String configurationId, String uri ) throws CloudException {
         Preconditions.checkNotNull( configurationId, "configurationId is required" );
@@ -194,7 +159,7 @@ public class FileSystem implements AutoCloseable {
                 throw new CloudException( "fs: file:// URIs cannot be resolved this way; use fs://file/<path> or new CloudURI(\"file\", path)" );
             }
 
-            String path = parseContainerAndPath( u, scheme )[1];
+            String path = parsePath( u, scheme );
 
             return new CloudURI( configurationId, path );
         } catch( URISyntaxException e ) {
