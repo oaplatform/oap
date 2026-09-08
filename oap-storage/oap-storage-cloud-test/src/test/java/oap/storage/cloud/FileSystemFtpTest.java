@@ -74,6 +74,22 @@ public class FileSystemFtpTest extends Fixtures {
     }
 
     @Test
+    public void testResolveWithConfigurationId() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            CloudURI resolved = fileSystem.resolve( "other-configuration-id", "ftp://" + ftpFixture.hostPort() + "/logs/file.txt" );
+
+            assertThat( resolved ).isEqualTo( new CloudURI( "other-configuration-id", "logs/file.txt" ) );
+        }
+    }
+
+    @Test( expectedExceptions = NullPointerException.class )
+    public void testResolveWithConfigurationIdRequiresNonNull() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.resolve( null, "ftp://" + ftpFixture.hostPort() + "/logs/file.txt" );
+        }
+    }
+
+    @Test
     public void testGetInputStream() {
         ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
