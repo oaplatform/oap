@@ -226,7 +226,7 @@ All methods are synchronous/blocking.
 | `deleteContainerIfEmpty(uri)` | Delete only if empty; returns `boolean` |
 | `getDefaultURL(configurationId, path)` | Build a `CloudURI` for the given configurationId, normalizing path separators |
 | `resolve(configurationId, legacyUri)` | Map a legacy `scheme://container/path` string onto the given configurationId |
-| `toLocalFilePath(configurationId, path)` | Convert a `java.nio.Path` to a `fs://<configurationId>/...` `CloudURI` for the given `file` configurationId |
+| `toLocalFileURI(configurationId, path)` | Convert a `java.nio.Path` or `String` to a `fs://<configurationId>/...` `CloudURI` for the given `file` configurationId |
 
 ---
 
