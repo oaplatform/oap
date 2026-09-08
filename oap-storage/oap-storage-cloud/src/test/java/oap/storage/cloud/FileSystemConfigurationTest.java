@@ -132,7 +132,7 @@ public class FileSystemConfigurationTest {
     @Test
     public void testEnvOverridesSystemPropertyAndMapValue() {
         System.setProperty( "fs.s3.container", "from-system-property" );
-        Env.set( "fs.s3.container", "from-env" );
+        Env.set( "FS_S3_CONTAINER", "from-env" );
         try {
             FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
                 "fs.s3.container", "from-map"
@@ -141,31 +141,38 @@ public class FileSystemConfigurationTest {
             assertThat( fileSystemConfiguration.get( "s3", "unused", "container" ) ).isEqualTo( "from-env" );
         } finally {
             System.clearProperty( "fs.s3.container" );
-            Env.set( "fs.s3.container", null );
+            Env.set( "FS_S3_CONTAINER", null );
         }
     }
 
     @Test
-    public void testSystemPropertyUnderscoreNormalizedToHyphen() {
-        System.setProperty( "fs.file.filesystem.remove_empty_folders", "true" );
-        try {
-            FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of() );
+    public void testKeyPartAllowsLettersDigitsAndSingleUnderscore() {
+        FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+            "fs.a_b.a_b.d", "value1"
+        ) );
 
-            assertThat( fileSystemConfiguration.get( "file", "unused", "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
-        } finally {
-            System.clearProperty( "fs.file.filesystem.remove_empty_folders" );
-        }
+        assertThat( fileSystemConfiguration.get( "a_b", "unused", "a_b.d" ) ).isEqualTo( "value1" );
+    }
+
+    @Test( expectedExceptions = IllegalArgumentException.class )
+    public void testKeyPartRejectsHyphen() {
+        new FileSystemConfiguration( Map.of( "fs.a.b-c", "value" ) );
+    }
+
+    @Test( expectedExceptions = IllegalArgumentException.class )
+    public void testKeyPartRejectsDoubleUnderscore() {
+        new FileSystemConfiguration( Map.of( "fs.a.b__c", "value" ) );
     }
 
     @Test
-    public void testEnvUnderscoreNormalizedToHyphen() {
-        Env.set( "fs.file.filesystem.remove_empty_folders", "true" );
+    public void testEnvVariableTranslatesDotsAndUnderscores() {
+        Env.set( "FS_FILE_FILESYSTEM_REMOVE__EMPTY__FOLDERS", "true" );
         try {
             FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of() );
 
-            assertThat( fileSystemConfiguration.get( "file", "unused", "filesystem.remove-empty-folders" ) ).isEqualTo( "true" );
+            assertThat( fileSystemConfiguration.get( "file", "unused", "filesystem.remove_empty_folders" ) ).isEqualTo( "true" );
         } finally {
-            Env.set( "fs.file.filesystem.remove_empty_folders", null );
+            Env.set( "FS_FILE_FILESYSTEM_REMOVE__EMPTY__FOLDERS", null );
         }
     }
 

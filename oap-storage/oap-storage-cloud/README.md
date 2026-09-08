@@ -69,6 +69,14 @@ Looking up a property for a given `(scheme, configurationId)` tries, in order:
 
 `fs.default.*` is entirely optional — there's no required key under it, and a config with no `fs.default.*` at all is perfectly valid.
 
+### Key charset
+
+Every dot-separated part of an `fs.*` key may contain only letters, digits, and single underscores as internal separators. No hyphens, no leading/trailing/double underscore.
+
+- `fs.a_b.a_b.d` — valid
+- `fs.a.b-g` — invalid (hyphen)
+- `fs.a__b` — invalid (double underscore)
+
 ### Overriding via system properties and environment variables
 
 Any `fs.*` key can also be supplied as a JVM system property or an OS environment variable, without touching the map/HOCON config — useful for ops-level overrides. Priority, highest first:
@@ -77,13 +85,22 @@ Any `fs.*` key can also be supplied as a JVM system property or an OS environmen
 2. JVM system property
 3. The `Map`/HOCON passed to the constructor
 
+System properties are matched by literal `fs.` prefix and used as-is, no translation:
+
 ```bash
 java -Dfs.s3.container=override-bucket -jar app.jar
-# or
-export fs.s3.container=override-bucket
 ```
 
-`_` is not a valid character in this key namespace — any `_` in a system-property or environment-variable key is normalized to `-` before matching, so `fs.file.filesystem.remove_empty_folders` behaves identically to `fs.file.filesystem.remove-empty-folders`. This normalization applies only to system properties/env vars, not to keys in the `Map`/HOCON argument.
+Environment variables use conventional `FS_...` naming and are decoded back into a dotted key: `.` in the key becomes a single `_` in the env name, and a literal `_` already in the key becomes `__` in the env name.
+
+| Property | Env variable |
+|---|---|
+| `fs.a.b.d` | `FS_A_B_D` |
+| `fs.a.b.d_f` | `FS_A_B_D__F` |
+
+```bash
+export FS_S3_CONTAINER=override-bucket
+```
 
 ### ConfigurationIds
 
@@ -262,15 +279,15 @@ Required/optional configuration keys (each supports the configurationId-override
 | `fs.ftp.container` | `host[:port]` of the FTP server (default port `21`) |
 | `fs.ftp.identity` | FTP username (default `anonymous`) |
 | `fs.ftp.credential` | FTP password |
-| `fs.ftp.passive-mode` | `true`/`false` (default `true`) |
-| `fs.ftp.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
-| `fs.ftp.pool-max-size` | Max pooled FTP connections per backend instance (default `8`) |
-| `fs.ftp.pool-max-wait-millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
-| `fs.ftp.connect-timeout-millis` | TCP connect timeout, in milliseconds (default `30000`) |
-| `fs.ftp.default-timeout-millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
-| `fs.ftp.so-timeout-millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
-| `fs.ftps.tls-mode` | `explicit` (default) or `implicit` |
-| `fs.ftps.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+| `fs.ftp.passive_mode` | `true`/`false` (default `true`) |
+| `fs.ftp.remove_empty_folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
+| `fs.ftp.pool_max_size` | Max pooled FTP connections per backend instance (default `8`) |
+| `fs.ftp.pool_max_wait_millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
+| `fs.ftp.connect_timeout_millis` | TCP connect timeout, in milliseconds (default `30000`) |
+| `fs.ftp.default_timeout_millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
+| `fs.ftp.so_timeout_millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
+| `fs.ftps.tls_mode` | `explicit` (default) or `implicit` |
+| `fs.ftps.trust_all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
 | `fs.ftp.filesystem.basedir` | Optional remote path prefix; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java

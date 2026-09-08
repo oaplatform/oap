@@ -83,31 +83,31 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         Object credential = fileSystemConfiguration.get( scheme, configurationId, "credential" );
         this.password = credential != null ? credential.toString() : "";
 
-        Object passive = fileSystemConfiguration.get( scheme, configurationId, "passive-mode" );
+        Object passive = fileSystemConfiguration.get( scheme, configurationId, "passive_mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, configurationId, "remove-empty-folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, configurationId, "remove_empty_folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
         this.basedir = normalizeBasedir( fileSystemConfiguration.get( scheme, configurationId, "filesystem.basedir" ) );
 
-        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "connect-timeout-millis" );
+        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "connect_timeout_millis" );
         this.connectTimeoutMillis = connectTimeoutObj != null ? Integer.parseInt( connectTimeoutObj.toString() )
             : DEFAULT_CONNECT_TIMEOUT_MILLIS;
 
-        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "default-timeout-millis" );
+        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "default_timeout_millis" );
         this.defaultTimeoutMillis = defaultTimeoutObj != null ? Integer.parseInt( defaultTimeoutObj.toString() )
             : DEFAULT_DEFAULT_TIMEOUT_MILLIS;
 
-        Object soTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "so-timeout-millis" );
+        Object soTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "so_timeout_millis" );
         this.soTimeoutMillis =
             soTimeoutObj != null ? Integer.parseInt( soTimeoutObj.toString() ) : DEFAULT_SO_TIMEOUT_MILLIS;
 
-        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, configurationId, "pool-max-size" );
+        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, configurationId, "pool_max_size" );
         int poolMaxSize =
             poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
-        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, configurationId, "pool-max-wait-millis" );
+        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, configurationId, "pool_max_wait_millis" );
         long poolMaxWaitMillis =
             poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 
