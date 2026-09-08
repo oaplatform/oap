@@ -4,8 +4,8 @@ import oap.storage.cloud.FileSystemConfiguration;
 import org.apache.commons.net.ftp.FTPClient;
 
 public class FileSystemCloudApiFtp extends AbstractFileSystemCloudApiFtp {
-    public FileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String alias ) {
-        super( fileSystemConfiguration, "ftp", alias );
+    public FileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        super( fileSystemConfiguration, "ftp", configurationId );
     }
 
     @Override

@@ -225,35 +225,27 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     }
 
     @NotNull
-    public FileSystemConfiguration getFileSystemConfiguration( String container ) {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( container ) );
-    }
-
-    public String alias() {
-        return "s3";
-    }
-
-    public Map<String, Object> getFileSystemConfigurationMap( String container ) {
-        return getFileSystemConfigurationMap( alias(), container );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId, String container ) {
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( configurationId, container ) );
     }
 
     /**
-     * Builds config for this mock under `alias` — always registers `alias` via `container.<alias>`
+     * Builds config for this mock under `configurationId` — always registers `configurationId` via `container.<configurationId>`
      * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
      * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithS3}.
      */
-    public Map<String, Object> getFileSystemConfigurationMap( String alias, String container ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId, String container ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.s3.identity.${alias}" ), "access_key" );
-        map.put( s( "fs.s3.credential.${alias}" ), "access_secret" );
-        map.put( s( "fs.s3.region.${alias}" ), Region.AWS_GLOBAL.id() );
-        map.put( s( "fs.s3.endpoint.${alias}" ), s( "http://localhost:${getHttpPort()}" ) );
-        map.put( s( "fs.s3.container.${alias}" ), container );
+        map.put( s( "fs.s3.identity.${configurationId}" ), "access_key" );
+        map.put( s( "fs.s3.credential.${configurationId}" ), "access_secret" );
+        map.put( s( "fs.s3.region.${configurationId}" ), Region.AWS_GLOBAL.id() );
+        map.put( s( "fs.s3.endpoint.${configurationId}" ), s( "http://localhost:${getHttpPort()}" ) );
+        map.put( s( "fs.s3.container.${configurationId}" ), container );
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, String alias, String container ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, container ) );
+    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, String configurationId, String container ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( configurationId, container ) );
     }
 }

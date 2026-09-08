@@ -13,6 +13,7 @@ import java.io.InputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileSystemFtpsTest extends Fixtures {
+    public static final String CONFIGURATION_ID = "ftps";
     private static final FtpFixture ftpFixture;
 
     static {
@@ -25,7 +26,7 @@ public class FileSystemFtpsTest extends Fixtures {
     }
 
     private static CloudURI ftpsUri( String path ) {
-        return new CloudURI( ftpFixture.alias(), path );
+        return new CloudURI( CONFIGURATION_ID, path );
     }
 
     @BeforeMethod
@@ -36,7 +37,7 @@ public class FileSystemFtpsTest extends Fixtures {
 
     @Test
     public void testUploadAndGetInputStream() {
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration() ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( CONFIGURATION_ID ) ) ) {
             fileSystem.upload( ftpsUri( "file.txt" ), BlobData.builder().content( "content" ).build() );
 
             assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
@@ -50,7 +51,7 @@ public class FileSystemFtpsTest extends Fixtures {
     public void testDownloadFile() {
         ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
 
-        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration() ) ) {
+        try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( CONFIGURATION_ID ) ) ) {
             assertThat( fileSystem.blobExists( ftpsUri( "logs/file.txt" ) ) ).isTrue();
         }
     }

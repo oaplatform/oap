@@ -11,23 +11,22 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * fs.default.alias (required — the only fs.default.* key)
- * fs.[s3|gcs|ab|ftp|ftps|smb|file].<property>[.<alias>]
+ * fs.[s3|gcs|ab|ftp|ftps|smb|file].<property>[.<configurationId>]
  */
 @Slf4j
 public class FileSystemConfiguration {
     private final LinkedHashMap<String, Map<String, Object>> properties;
-    private final Map<String, String> aliasToScheme;
+    private final Map<String, String> configurationIdToScheme;
 
     public FileSystemConfiguration( Map<String, Object> configuration ) {
         this.properties = parse( configuration );
-        this.aliasToScheme = buildAliasRegistry( properties );
+        this.configurationIdToScheme = buildConfigurationIdRegistry( properties );
         logDefaults();
     }
 
     private FileSystemConfiguration( LinkedHashMap<String, Map<String, Object>> properties ) {
         this.properties = properties;
-        this.aliasToScheme = buildAliasRegistry( properties );
+        this.configurationIdToScheme = buildConfigurationIdRegistry( properties );
         logDefaults();
     }
 
@@ -85,12 +84,12 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Discovers the alias -> scheme registry: every {@code fs.<scheme>.container.<alias>} key registers
-     * {@code alias -> scheme}. An alias not found here (e.g. the default alias, when it's simply named
-     * after its own scheme) resolves instead via the "bare alias == scheme name" convention applied by
-     * {@link #findAliasByContainer} and by {@link FileSystem}'s dispatch.
+     * Discovers the configurationId -> scheme registry: every {@code fs.<scheme>.container.<configurationId>} key
+     * registers {@code configurationId -> scheme}. A configurationId not found here (e.g. one simply named after
+     * its own scheme) resolves instead via the "bare configurationId == scheme name" convention applied by
+     * {@link #findConfigurationIdByContainer} and by {@link FileSystem}'s dispatch.
      */
-    private static Map<String, String> buildAliasRegistry( Map<String, Map<String, Object>> properties ) {
+    private static Map<String, String> buildConfigurationIdRegistry( Map<String, Map<String, Object>> properties ) {
         Map<String, String> registry = new LinkedHashMap<>();
 
         for( Map.Entry<String, Map<String, Object>> schemeEntry : properties.entrySet() ) {
@@ -100,10 +99,10 @@ public class FileSystemConfiguration {
             for( String property : schemeEntry.getValue().keySet() ) {
                 if( !property.startsWith( "container." ) ) continue;
 
-                String alias = property.substring( "container.".length() );
-                String existingScheme = registry.put( alias, scheme );
+                String configurationId = property.substring( "container.".length() );
+                String existingScheme = registry.put( configurationId, scheme );
                 if( existingScheme != null && !existingScheme.equals( scheme ) ) {
-                    throw new CloudException( "fs: alias '" + alias + "' cannot be registered to multiple schemes: "
+                    throw new CloudException( "fs: configurationId '" + configurationId + "' cannot be registered to multiple schemes: "
                         + existingScheme + ", " + scheme );
                 }
             }
@@ -147,45 +146,40 @@ public class FileSystemConfiguration {
     }
 
     private void logDefaults() {
-        log.info( "DefaultAlias {}", tryGetDefault( "alias" ) );
         log.info( "fs {}", properties );
     }
 
-    public String getDefaultAlias() {
-        return getDefault( "alias" );
+    /**
+     * Resolves a configurationId to its scheme via the discovered registry
+     * (fs.&lt;scheme&gt;.container.&lt;configurationId&gt; entries). Does not know about the implicit
+     * self-configurationId-equals-scheme-name fallback — that requires the set of installed backend schemes,
+     * which only {@link FileSystem} knows.
+     */
+    public Optional<String> findScheme( String configurationId ) {
+        return Optional.ofNullable( configurationIdToScheme.get( configurationId ) );
     }
 
-    private String getDefault( String parameter ) {
-        return Preconditions.checkNotNull( tryGetDefault( parameter ), "fs.default." + parameter + " is required" );
-    }
-
-    @Nullable
-    private String tryGetDefault( String parameter ) {
-        Map<String, Object> defaults = properties.get( "default" );
-        if( defaults == null ) return null;
-        return ( String ) defaults.get( parameter );
+    public String getScheme( String configurationId ) {
+        return findScheme( configurationId ).orElseThrow( () -> new CloudException(
+            "fs: configurationId '" + configurationId + "' cannot be resolved to a scheme; declare fs.<scheme>.container." + configurationId ) );
     }
 
     /**
-     * Resolves an alias to its scheme via the discovered registry (fs.&lt;scheme&gt;.container.&lt;alias&gt;
-     * entries). Does not know about the implicit self-alias-equals-scheme-name fallback — that requires
-     * the set of installed backend schemes, which only {@link FileSystem} knows.
+     * Throws if `configurationId` isn't registered to any scheme (i.e. no `fs.<scheme>.container.<configurationId>`
+     * declares it). Use to validate a configurationId up front, without needing its resolved scheme.
      */
-    public Optional<String> findScheme( String alias ) {
-        return Optional.ofNullable( aliasToScheme.get( alias ) );
-    }
+    public FileSystemConfiguration required( String configurationId ) {
+        getScheme( configurationId );
 
-    public String getScheme( String alias ) {
-        return findScheme( alias ).orElseThrow( () -> new CloudException(
-            "fs: alias '" + alias + "' cannot be resolved to a scheme; declare fs.<scheme>.container." + alias ) );
+        return this;
     }
 
     /**
-     * Finds the alias registered under `scheme` whose resolved `container` property equals `container` —
-     * used to map a legacy `scheme://container/path` URI onto an alias. Falls back to the scheme's own
-     * name (the "bare alias == scheme name" convention) when `container` matches the scheme-wide container.
+     * Finds the configurationId registered under `scheme` whose resolved `container` property equals `container` —
+     * used to map a legacy `scheme://container/path` URI onto a configurationId. Falls back to the scheme's own
+     * name (the "bare configurationId == scheme name" convention) when `container` matches the scheme-wide container.
      */
-    public Optional<String> findAliasByContainer( String scheme, String container ) {
+    public Optional<String> findConfigurationIdByContainer( String scheme, String container ) {
         Map<String, Object> schemeMap = properties.get( scheme );
         if( schemeMap == null ) return Optional.empty();
 
@@ -203,11 +197,11 @@ public class FileSystemConfiguration {
         return Optional.empty();
     }
 
-    public Object get( String scheme, @Nullable String alias, String property ) {
+    public Object get( String scheme, @Nullable String configurationId, String property ) {
         Map<String, Object> schemeMap = properties.getOrDefault( scheme, Map.of() );
 
-        if( alias != null ) {
-            Object value = schemeMap.get( property + "." + alias );
+        if( configurationId != null ) {
+            Object value = schemeMap.get( property + "." + configurationId );
             if( value != null ) return value;
         }
 
@@ -217,10 +211,10 @@ public class FileSystemConfiguration {
         return properties.getOrDefault( "default", Map.of() ).get( property );
     }
 
-    public Object getOrThrow( String scheme, @Nullable String alias, String property ) {
-        Object res = get( scheme, alias, property );
+    public Object getOrThrow( String scheme, @Nullable String configurationId, String property ) {
+        Object res = get( scheme, configurationId, property );
         if( res == null ) {
-            throw new CloudException( "fs." + scheme + "." + property + ( alias != null ? "." + alias : "" ) + " is required" );
+            throw new CloudException( "fs." + scheme + "." + property + ( configurationId != null ? "." + configurationId : "" ) + " is required" );
         }
         return res;
     }

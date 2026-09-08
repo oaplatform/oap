@@ -116,53 +116,45 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return testDirectoryFixture.testDirectory();
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration() {
-        return getFileSystemConfiguration( false );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId ) {
+        return getFileSystemConfiguration( configurationId, false );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
-        return getFileSystemConfiguration( removeEmptyFolders, null );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId, boolean removeEmptyFolders ) {
+        return getFileSystemConfiguration( configurationId, removeEmptyFolders, null );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize ) );
-    }
-
-    public String alias() {
-        return tls ? "ftps" : "ftp";
-    }
-
-    public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
-        return getFileSystemConfigurationMap( alias(), removeEmptyFolders, poolMaxSize );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( configurationId, removeEmptyFolders, poolMaxSize ) );
     }
 
     /**
-     * Builds config for this server under `alias` — always registers `alias` via `container.<alias>`
+     * Builds config for this server under `configurationId` — always registers `configurationId` via `container.<configurationId>`
      * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
      * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithFtp}.
      */
-    public Map<String, Object> getFileSystemConfigurationMap( String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( s( "fs.${scheme}.identity.${alias}" ), USERNAME );
-        map.put( s( "fs.${scheme}.credential.${alias}" ), PASSWORD );
-        map.put( s( "fs.${scheme}.trust-all.${alias}" ), true );
-        map.put( s( "fs.${scheme}.container.${alias}" ), hostPort() );
+        map.put( s( "fs.${scheme}.identity.${configurationId}" ), USERNAME );
+        map.put( s( "fs.${scheme}.credential.${configurationId}" ), PASSWORD );
+        map.put( s( "fs.${scheme}.trust-all.${configurationId}" ), true );
+        map.put( s( "fs.${scheme}.container.${configurationId}" ), hostPort() );
 
         if( removeEmptyFolders ) {
-            map.put( s( "fs.${scheme}.remove-empty-folders.${alias}" ), true );
+            map.put( s( "fs.${scheme}.remove-empty-folders.${configurationId}" ), true );
         }
 
         if( poolMaxSize != null ) {
-            map.put( s( "fs.${scheme}.pool-max-size.${alias}" ), poolMaxSize );
+            map.put( s( "fs.${scheme}.pool-max-size.${configurationId}" ), poolMaxSize );
         }
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, String alias, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( alias, removeEmptyFolders, poolMaxSize ) );
+    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, String configurationId, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( configurationId, removeEmptyFolders, poolMaxSize ) );
     }
 
     public String hostPort() {

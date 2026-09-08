@@ -29,15 +29,15 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     private final Path basedir;
     private final boolean removeEmptyFolders;
 
-    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String alias ) {
-        String basedir = ( String ) fileSystemConfiguration.get( "file", alias, "filesystem.basedir" );
+    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        String basedir = ( String ) fileSystemConfiguration.get( "file", configurationId, "filesystem.basedir" );
         if( basedir == null ) {
             basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
         }
 
         this.basedir = Paths.get( basedir );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( "file", alias, "filesystem.remove_empty_folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( "file", configurationId, "filesystem.remove_empty_folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 

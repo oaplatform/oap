@@ -6,17 +6,17 @@ Depends on: `oap-stdlib`
 
 ## `CloudURI`
 
-Every path is represented as a `CloudURI`, addressed by **alias**, not by backend/container directly:
+Every path is represented as a `CloudURI`, addressed by **configurationId**, not by backend/container directly:
 
 ```
-fs://alias/path/to/object
-  │     │       │
-  │     │       └─ object key (no leading slash)
-  │     └─ named target: resolves to a backend scheme + connection (container) via config
+fs://configurationId/path/to/object
+  │         │              │
+  │         │              └─ object key (no leading slash)
+  │         └─ named target: resolves to a backend scheme + connection (container) via config
   └─ fixed literal scheme
 ```
 
-The alias is the only thing the URI carries — which backend scheme it maps to (`s3`, `ftp`, `smb`, ...) and which concrete connection (bucket, host[:port], host[:port]/share, ...) it uses are both resolved from `FileSystemConfiguration` at call time (see below).
+The configurationId is the only thing the URI carries — which backend scheme it maps to (`s3`, `ftp`, `smb`, ...) and which concrete connection (bucket, host[:port], host[:port]/share, ...) it uses are both resolved from `FileSystemConfiguration` at call time (see below).
 
 | Scheme | Backend |
 |---|---|
@@ -29,81 +29,79 @@ The alias is the only thing the URI carries — which backend scheme it maps to 
 | `smb` | SMB/CIFS (requires `oap-storage-cloud-smb` on classpath) |
 
 ```java
-CloudURI uri = new CloudURI( "fs://my-alias/data/report-2024-06-01.json" );
-// uri.alias = "my-alias"
-// uri.path  = "data/report-2024-06-01.json"
+CloudURI uri = new CloudURI( "fs://my-configuration-id/data/report-2024-06-01.json" );
+// uri.configurationId = "my-configuration-id"
+// uri.path            = "data/report-2024-06-01.json"
 
 // equivalent, canonical constructor
-CloudURI uri2 = new CloudURI( "my-alias", "data/report-2024-06-01.json" );
+CloudURI uri2 = new CloudURI( "my-configuration-id", "data/report-2024-06-01.json" );
 
 // Builder-style copies
 CloudURI other = uri.withPath( "data/report-2024-06-02.json" );
-CloudURI otherAlias = uri.withAlias( "other-alias" );
+CloudURI otherConfigurationId = uri.withConfigurationId( "other-configuration-id" );
 ```
 
 ### Migrating a legacy `scheme://container/path` string
 
-`FileSystem.resolve(String)` accepts the old `scheme://container/path` shape (as used before aliases existed) and maps it onto whichever alias is configured for that scheme+container, falling back to the scheme's own name (the "bare alias == scheme name" convention) when the container matches the scheme-wide one:
+`FileSystem.resolve(String)` accepts the old `scheme://container/path` shape (as used before configurationIds existed) and maps it onto whichever configurationId is configured for that scheme+container, falling back to the scheme's own name (the "bare configurationId == scheme name" convention) when the container matches the scheme-wide one:
 
 ```java
 CloudURI uri = fileSystem.resolve( "s3://my-bucket/data/report-2024-06-01.json" );
 ```
 
-Throws `CloudException` if no alias can be resolved for the given scheme+container, and always throws for `file://...` (local paths have no container to match against — use `fs://file/<path>` or `new CloudURI("file", path)` directly). `fs://...` input passes straight through to `new CloudURI(uri)`.
+Throws `CloudException` if no configurationId can be resolved for the given scheme+container, and always throws for `file://...` (local paths have no container to match against — use `fs://file/<path>` or `new CloudURI("file", path)` directly). `fs://...` input passes straight through to `new CloudURI(uri)`.
 
 ---
 
 ## `FileSystemConfiguration`
 
-Holds per-scheme, per-alias, and global-default credentials and settings. Keys follow the pattern:
+Holds per-scheme, per-configurationId, and global-default credentials and settings. Keys follow the pattern:
 
 ```
-fs.<scheme>.<property>[.<alias>]
+fs.<scheme>.<property>[.<configurationId>]
 fs.default.<property>
 ```
 
-Looking up a property for a given `(scheme, alias)` tries, in order:
-1. `fs.<scheme>.<property>.<alias>` — alias-specific override
+Looking up a property for a given `(scheme, configurationId)` tries, in order:
+1. `fs.<scheme>.<property>.<configurationId>` — configurationId-specific override
 2. `fs.<scheme>.<property>` — scheme-wide default
-3. `fs.default.<property>` — global fallback (new tier; previously `fs.default.clouds.*` only ever selected which scheme+container was "the default," it was never a general property fallback). Note `fs.default.alias` itself is not looked up this way — it's read directly by `getDefaultAlias()`.
+3. `fs.default.<property>` — global fallback, for any property, across every scheme
 
-`fs.default.alias` is the **only** `fs.default.*` key, and it's required — it names the default alias used by `FileSystem.getDefaultURL(path)`. There's no separate `fs.default.scheme`: the default alias's backend scheme is resolved the same way every other alias's is (see below).
+`fs.default.*` is entirely optional — there's no required key under it, and a config with no `fs.default.*` at all is perfectly valid.
 
-### Aliases
+### ConfigurationIds
 
-An alias is a named target (a backend scheme + connection). It's **detected from configuration** — no separate declaration list:
+A configurationId is a named target (a backend scheme + connection). It's **detected from configuration** — no separate declaration list, and every caller states the configurationId it means explicitly (`FileSystem` has no notion of "the default one"):
 
-- Any alias is registered the moment it appears in a `fs.<scheme>.container.<alias>` key — `container` is the anchor property every alias needs to actually connect to something, so declaring it is what makes the alias exist. This applies equally to the default alias — it's not special-cased.
-- A bare alias equal to an installed backend's scheme name (`fs://ftp/...`, `fs://file/...`) resolves implicitly with **zero** alias-related config, so single-target setups need nothing beyond the scheme-wide properties. The simplest way to satisfy the required `fs.default.alias` is to set it to the scheme's own name (`fs.default.alias = ftp`), which needs no `container.<alias>` registration at all.
+- Any configurationId is registered the moment it appears in a `fs.<scheme>.container.<configurationId>` key — `container` is the anchor property every configurationId needs to actually connect to something, so declaring it is what makes the configurationId exist.
+- A bare configurationId equal to an installed backend's scheme name (`fs://ftp/...`, `fs://file/...`) resolves implicitly with **zero** configurationId-related config, so single-target setups need nothing beyond the scheme-wide properties.
+- `FileSystemConfiguration.required(String configurationId)` validates up front that a configurationId is registered to some scheme, throwing `CloudException` immediately if not.
 
 ```java
 FileSystemConfiguration config = new FileSystemConfiguration( Map.of(
-    // S3 credentials (apply to every alias on this scheme unless overridden per-alias)
+    // S3 credentials (apply to every configurationId on this scheme unless overridden per-configurationId)
     "fs.s3.identity",   "AKIAIOSFODNN7EXAMPLE",
     "fs.s3.credential", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
     "fs.s3.region",     "us-east-1",
-    "fs.s3.container",  "my-bucket",
-
-    // Default target: "s3" is both the scheme and the alias here (self-name convention)
-    "fs.default.alias", "s3"
+    "fs.s3.container",  "my-bucket"
+    // "s3" is both the scheme and the configurationId here (self-name convention) — no further registration needed
 ) );
 ```
 
 Values support `${env.VAR_NAME}` and `${system.property}` substitution.
 
-### Multi-alias example
+### Multi-configurationId example
 
 ```
-fs.default.alias   = primary
 fs.ftp.container   = ftp.example.com:21
 fs.ftp.identity    = shared-user
 fs.ftp.credential  = shared-pass
 
-# the default alias needs its own container.<alias> registration since "primary" isn't a scheme name
+# the primary account: container is repeated so this configurationId gets registered
 fs.ftp.container.primary    = ftp.example.com:21
 
 # a second account on the same server: only identity/credential differ,
-# container is repeated so this alias gets registered
+# container is repeated so this configurationId gets registered
 fs.ftp.container.secondary  = ftp.example.com:21
 fs.ftp.identity.secondary   = other-user
 fs.ftp.credential.secondary = other-pass
@@ -124,8 +122,6 @@ services {
       fs.s3.credential = ${?AWS_SECRET_ACCESS_KEY}
       fs.s3.region     = us-east-1
       fs.s3.container  = my-bucket
-
-      fs.default.alias = s3
     }
   }
 }
@@ -135,13 +131,13 @@ services {
 
 ## `FileSystem`
 
-Stateless facade that routes calls to the right backend by resolving the URI's alias to a scheme (via `FileSystemConfiguration`, falling back to an installed backend's scheme name for a bare self-named alias). Backend instances are cached and closed with `FileSystem.close()`, keyed by `scheme://alias` — every backend is alias-scoped, since alias is the stable per-connection identity (this also means two aliases on the same S3 bucket with different credentials get independent cached clients, not a shared one).
+Stateless facade that routes calls to the right backend by resolving the URI's configurationId to a scheme (via `FileSystemConfiguration`, falling back to an installed backend's scheme name for a bare self-named configurationId). Backend instances are cached and closed with `FileSystem.close()`, keyed by `scheme://configurationId` — every backend is configurationId-scoped, since configurationId is the stable per-connection identity (this also means two configurationIds on the same S3 bucket with different credentials get independent cached clients, not a shared one).
 
 ```java
 FileSystem fs = new FileSystem( config );
 
 // Upload
-CloudURI dest = new CloudURI( "fs://my-alias/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-configuration-id/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder()
     .content( jsonBytes )
     .tags( Map.of( "env", "prod" ) )
@@ -161,7 +157,7 @@ fs.copy( src, dest, Map.of( "copied", "true" ) );
 
 // List objects
 PageSet<? extends FileSystem.StorageItem> page = fs.list(
-    new CloudURI( "my-alias", "reports/" ),
+    new CloudURI( "my-configuration-id", "reports/" ),
     ListOptions.builder().maxResults( 100 ).build()
 );
 
@@ -169,10 +165,10 @@ PageSet<? extends FileSystem.StorageItem> page = fs.list(
 FileSystem.StorageItem meta = fs.getMetadata( dest );
 // meta.getName(), meta.getSize(), meta.getLastModified(), meta.getETag(), meta.getContentType()
 
-// Default URL from fs.default.alias
-CloudURI defaultUri = fs.getDefaultURL( "reports/today.json" );
+// Build a CloudURI for a given configurationId
+CloudURI defaultUri = fs.getDefaultURL( "my-configuration-id", "reports/today.json" );
 
-// Migrate a legacy scheme://container/path string to an alias-based CloudURI
+// Migrate a legacy scheme://container/path string to a configurationId-based CloudURI
 CloudURI legacyResolved = fs.resolve( "s3://my-bucket/reports/today.json" );
 ```
 
@@ -195,9 +191,9 @@ All methods are synchronous/blocking.
 | `createContainer(uri)` | Create a bucket/container |
 | `deleteContainer(uri)` | Delete an empty bucket/container |
 | `deleteContainerIfEmpty(uri)` | Delete only if empty; returns `boolean` |
-| `getDefaultURL(path)` | Build a `CloudURI` using `fs.default.alias` |
-| `resolve(legacyUri)` | Map a legacy `scheme://container/path` string onto the alias configured for that scheme+container |
-| `toLocalFilePath(alias, path)` | Convert a `java.nio.Path` to a `fs://<alias>/...` `CloudURI` for the given `file` alias |
+| `getDefaultURL(configurationId, path)` | Build a `CloudURI` for the given configurationId, normalizing path separators |
+| `resolve(legacyUri)` | Map a legacy `scheme://container/path` string onto the configurationId configured for that scheme+container |
+| `toLocalFilePath(configurationId, path)` | Convert a `java.nio.Path` to a `fs://<configurationId>/...` `CloudURI` for the given `file` configurationId |
 
 ---
 
@@ -210,7 +206,7 @@ Interface implemented by each backend. Register a new implementation by placing 
 s3=com.example.MyS3CloudApi
 ```
 
-The class must have a constructor `(FileSystemConfiguration, String alias)` — each backend resolves its own connection details (bucket, host[:port], ...) from config via `fileSystemConfiguration.getOrThrow(scheme, alias, "container")`, rather than receiving them pre-parsed.
+The class must have a constructor `(FileSystemConfiguration, String configurationId)` — each backend resolves its own connection details (bucket, host[:port], ...) from config via `fileSystemConfiguration.getOrThrow(scheme, configurationId, "container")`, rather than receiving them pre-parsed.
 
 Every method is a required synchronous, blocking method.
 
@@ -220,7 +216,7 @@ Every method is a required synchronous, blocking method.
 
 Add the `oap-storage-cloud-aws-s3` artifact to your dependencies. The `s3://` scheme is registered automatically via `cloud-service.properties` — no additional wiring is needed.
 
-Required configuration keys for S3 (each supports the alias-override / scheme-wide / `fs.default.*` fallback chain):
+Required configuration keys for S3 (each supports the configurationId-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
@@ -237,13 +233,13 @@ Required configuration keys for S3 (each supports the alias-override / scheme-wi
 
 Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
 
-Unlike `file`, FTP/FTPS **require** a container: `fs.ftp.container[.<alias>]` (`host[:port]`) identifies the FTP server an alias connects to. `getOrThrow` throws `CloudException` if no container can be resolved for the alias.
+Unlike `file`, FTP/FTPS **require** a container: `fs.ftp.container[.<configurationId>]` (`host[:port]`) identifies the FTP server a configurationId connects to. `getOrThrow` throws `CloudException` if no container can be resolved for the configurationId.
 
-Each distinct alias gets its own pooled connection set — two aliases pointing at different hosts (or even the same host with different credentials) never share a connection pool.
+Each distinct configurationId gets its own pooled connection set — two configurationIds pointing at different hosts (or even the same host with different credentials) never share a connection pool.
 
 FTP control connections (TCP connect + login) are pooled per backend instance using [Apache Commons Pool 2](https://commons.apache.org/proper/commons-pool/) — operations borrow a connection from the pool and return it when done instead of reconnecting/logging in on every call. Pooled connections are validated with an FTP `NOOP` before reuse, so idle connections dropped by the server/firewall are transparently replaced.
 
-Required/optional configuration keys (each supports the alias-override / scheme-wide / `fs.default.*` fallback chain):
+Required/optional configuration keys (each supports the configurationId-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
@@ -262,20 +258,20 @@ Required/optional configuration keys (each supports the alias-override / scheme-
 | `fs.ftp.filesystem.basedir` | Optional remote path prefix; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java
-CloudURI dest = new CloudURI( "fs://my-ftp-alias/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-ftp-configuration-id/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 
-### Per-alias FTP configuration overrides
+### Per-configurationId FTP configuration overrides
 
-Declaring `fs.ftp.container.<alias>` registers `<alias>` and gives it its own connection target; pairing it with `fs.ftp.identity.<alias>`/`fs.ftp.credential.<alias>` gives that alias its own credentials too (see the [multi-alias example](#multi-alias-example) above). Since the lookup mechanism probes exact key strings rather than positionally splitting stored keys, alias names needs no dot-escaping, unlike the old per-container scheme:
+Declaring `fs.ftp.container.<configurationId>` registers `<configurationId>` and gives it its own connection target; pairing it with `fs.ftp.identity.<configurationId>`/`fs.ftp.credential.<configurationId>` gives that configurationId its own credentials too (see the [multi-configurationId example](#multi-configurationid-example) above). Since the lookup mechanism probes exact key strings rather than positionally splitting stored keys, configurationId names need no dot-escaping, unlike the old per-container scheme:
 
 ```
 fs.ftp.container.reporting-server = ftp.server1.example.com:21
 fs.ftp.identity.reporting-server  = as
 ```
 
-An alias-specific entry overrides `fs.ftp.<property>` only for that exact alias; other aliases on the same scheme keep falling back to the scheme-wide default, and ultimately to `fs.default.<property>`.
+A configurationId-specific entry overrides `fs.ftp.<property>` only for that exact configurationId; other configurationIds on the same scheme keep falling back to the scheme-wide default, and ultimately to `fs.default.<property>`.
 
 `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
 
@@ -285,11 +281,11 @@ An alias-specific entry overrides `fs.ftp.<property>` only for that exact alias;
 
 Add the `oap-storage-cloud-smb` artifact to your dependencies. The `smb://` scheme (backed by [jcifs-ng](https://github.com/codelibs/jcifs)) is registered automatically via `cloud-service.properties`.
 
-Like FTP, SMB **requires** a container, but `fs.smb.container[.<alias>]` is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `fs.smb.container = fileserver:445/reports` addresses share `reports` on `fileserver:445`; the object path is relative to that share. `getOrThrow` throws `CloudException` if no container (or no share segment within it) can be resolved for the alias.
+Like FTP, SMB **requires** a container, but `fs.smb.container[.<configurationId>]` is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `fs.smb.container = fileserver:445/reports` addresses share `reports` on `fileserver:445`; the object path is relative to that share. `getOrThrow` throws `CloudException` if no container (or no share segment within it) can be resolved for the configurationId.
 
-Each alias gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two aliases never share a session, even if they point at the same share.
+Each configurationId gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two configurationIds never share a session, even if they point at the same share.
 
-Required/optional configuration keys (each supports the alias-override / scheme-wide / `fs.default.*` fallback chain):
+Required/optional configuration keys (each supports the configurationId-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
@@ -300,7 +296,7 @@ Required/optional configuration keys (each supports the alias-override / scheme-
 | `fs.smb.filesystem.basedir` | Optional path prefix within the share; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java
-CloudURI dest = new CloudURI( "fs://my-smb-alias/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-smb-configuration-id/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 
