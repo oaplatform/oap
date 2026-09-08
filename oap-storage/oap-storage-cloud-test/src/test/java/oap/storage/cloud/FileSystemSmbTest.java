@@ -106,7 +106,7 @@ public class FileSystemSmbTest extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( fileSystem.toLocalFilePath( path ), fileSystem.getDefaultURL( "logs/my-file.txt.gz" ), Map.of() );
+            fileSystem.copy( fileSystem.toLocalFilePath( "file", path ), fileSystem.getDefaultURL( "logs/my-file.txt.gz" ), Map.of() );
 
             InputStream inputStream = fileSystem.getInputStream( fileSystem.getDefaultURL( "logs/my-file.txt.gz" ) );
 

@@ -98,8 +98,13 @@ public class FileSystemConfiguration {
             if( "default".equals( scheme ) ) continue;
 
             for( String property : schemeEntry.getValue().keySet() ) {
-                if( property.startsWith( "container." ) ) {
-                    registry.put( property.substring( "container.".length() ), scheme );
+                if( !property.startsWith( "container." ) ) continue;
+
+                String alias = property.substring( "container.".length() );
+                String existingScheme = registry.put( alias, scheme );
+                if( existingScheme != null && !existingScheme.equals( scheme ) ) {
+                    throw new CloudException( "fs: alias '" + alias + "' cannot be registered to multiple schemes: "
+                        + existingScheme + ", " + scheme );
                 }
             }
         }
@@ -157,7 +162,7 @@ public class FileSystemConfiguration {
     @Nullable
     private String tryGetDefault( String parameter ) {
         Map<String, Object> defaults = properties.get( "default" );
-        Preconditions.checkNotNull( defaults, "fs.default is required" );
+        if( defaults == null ) return null;
         return ( String ) defaults.get( parameter );
     }
 

@@ -197,7 +197,7 @@ All methods are synchronous/blocking.
 | `deleteContainerIfEmpty(uri)` | Delete only if empty; returns `boolean` |
 | `getDefaultURL(path)` | Build a `CloudURI` using `fs.default.alias` |
 | `resolve(legacyUri)` | Map a legacy `scheme://container/path` string onto the alias configured for that scheme+container |
-| `toLocalFilePath(path)` | Convert a `java.nio.Path` to a `fs://file/...` `CloudURI` |
+| `toLocalFilePath(alias, path)` | Convert a `java.nio.Path` to a `fs://<alias>/...` `CloudURI` for the given `file` alias |
 
 ---
 

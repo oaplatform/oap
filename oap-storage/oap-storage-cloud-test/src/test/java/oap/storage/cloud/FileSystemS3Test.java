@@ -166,7 +166,7 @@ public class FileSystemS3Test extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( fileSystem.toLocalFilePath( path ), new CloudURI( s3mockFixture.alias(), "logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
+            fileSystem.copy( fileSystem.toLocalFilePath( "file", path ), new CloudURI( s3mockFixture.alias(), "logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( s3mockFixture.alias(), "logs/my-file.txt.gz" ) );
 
@@ -193,7 +193,7 @@ public class FileSystemS3Test extends Fixtures {
             "fs.s3.container", TEST_BUCKET
         ) ) ) ) {
             Path path = testDirectoryFixture.testPath( "/container/test.file" );
-            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", FilenameUtils.separatorsToUnix( testDirectoryFixture.testPath( "container/test.file" ).toString() ) ) );
+            assertThat( fileSystem.toLocalFilePath( "file", path ) ).isEqualTo( new CloudURI( "file", FilenameUtils.separatorsToUnix( testDirectoryFixture.testPath( "container/test.file" ).toString() ) ) );
         }
     }
 

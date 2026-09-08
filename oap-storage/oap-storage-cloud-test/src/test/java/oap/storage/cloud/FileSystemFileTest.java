@@ -140,7 +140,7 @@ public class FileSystemFileTest extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( fileSystem.toLocalFilePath( path ), new CloudURI( "file", "logs/my-file.txt.gz" ), Map.of() );
+            fileSystem.copy( fileSystem.toLocalFilePath( "file", path ), new CloudURI( "file", "logs/my-file.txt.gz" ), Map.of() );
 
             InputStream inputStream = fileSystem.getInputStream( new CloudURI( "file", "logs/my-file.txt.gz" ) );
 
@@ -174,7 +174,7 @@ public class FileSystemFileTest extends Fixtures {
     public void testToLocalFilePath() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             Path path = testDirectoryFixture.testPath( "/container/test.file" );
-            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", "../container/test.file" ) );
+            assertThat( fileSystem.toLocalFilePath( "file", path ) ).isEqualTo( new CloudURI( "file", "../container/test.file" ) );
         }
     }
 
