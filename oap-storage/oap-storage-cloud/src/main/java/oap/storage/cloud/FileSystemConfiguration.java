@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 /**
  * fs.[s3|gcs|ab|ftp|ftps|smb|file].<property>[.<configurationId>]
  */
@@ -30,11 +32,23 @@ public class FileSystemConfiguration {
         logDefaults();
     }
 
+    /**
+     * Builds the id-&gt;property-&gt;value structure from `configuration`, overlaid with `fs.*` JVM system
+     * properties and `fs.*` OS environment variables. Priority, highest first: env, system properties, `configuration`.
+     */
     private static LinkedHashMap<String, Map<String, Object>> parse( Map<String, Object> configuration ) {
         LinkedHashMap<String, Map<String, Object>> properties = new LinkedHashMap<>();
 
         LinkedHashMap<String, Object> fsList = toStringList( configuration );
         log.trace( "string fs {}", fsList );
+
+        for( String key : System.getProperties().stringPropertyNames() ) {
+            if( key.startsWith( "fs." ) ) fsList.put( key, System.getProperty( key ) );
+        }
+
+        for( Map.Entry<String, String> entry : System.getenv().entrySet() ) {
+            if( entry.getKey().startsWith( "fs." ) ) fsList.put( entry.getKey(), entry.getValue() );
+        }
 
         for( Map.Entry<String, Object> entry : fsList.entrySet() ) {
             String[] toks = entry.getKey().split( "\\.", 3 );
@@ -102,8 +116,7 @@ public class FileSystemConfiguration {
                 String configurationId = property.substring( "container.".length() );
                 String existingScheme = registry.put( configurationId, scheme );
                 if( existingScheme != null && !existingScheme.equals( scheme ) ) {
-                    throw new CloudException( "fs: configurationId '" + configurationId + "' cannot be registered to multiple schemes: "
-                        + existingScheme + ", " + scheme );
+                    throw new CloudException( s( "fs: configurationId '${configurationId}' cannot be registered to multiple schemes: ${existingScheme}, ${scheme}" ) );
                 }
             }
         }
@@ -161,7 +174,7 @@ public class FileSystemConfiguration {
 
     public String getScheme( String configurationId ) {
         return findScheme( configurationId ).orElseThrow( () -> new CloudException(
-            "fs: configurationId '" + configurationId + "' cannot be resolved to a scheme; declare fs.<scheme>.container." + configurationId ) );
+            s( "fs: configurationId '${configurationId}' cannot be resolved to a scheme; declare fs.<scheme>.container.${configurationId}" ) ) );
     }
 
     /**
@@ -201,7 +214,7 @@ public class FileSystemConfiguration {
         Map<String, Object> schemeMap = properties.getOrDefault( scheme, Map.of() );
 
         if( configurationId != null ) {
-            Object value = schemeMap.get( property + "." + configurationId );
+            Object value = schemeMap.get( s( "${property}.${configurationId}" ) );
             if( value != null ) return value;
         }
 
@@ -225,7 +238,7 @@ public class FileSystemConfiguration {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 
         properties.forEach( ( k, m ) -> {
-            m.forEach( ( k2, v ) -> map.put( "fs." + k + "." + k2, v ) );
+            m.forEach( ( k2, v ) -> map.put( s( "fs.${k}.${k2}" ), v ) );
         } );
 
         return Binder.json.marshal( map );

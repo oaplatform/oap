@@ -134,6 +134,36 @@ public class FileSystemConfigurationTest {
     }
 
     @Test
+    public void testSystemPropertyOverridesMapValue() {
+        System.setProperty( "fs.s3.container", "from-system-property" );
+        try {
+            FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+                "fs.s3.container", "from-map"
+            ) );
+
+            assertThat( fileSystemConfiguration.get( "s3", null, "container" ) ).isEqualTo( "from-system-property" );
+        } finally {
+            System.clearProperty( "fs.s3.container" );
+        }
+    }
+
+    @Test
+    public void testEnvOverridesSystemPropertyAndMapValue() {
+        System.setProperty( "fs.s3.container", "from-system-property" );
+        Env.set( "fs.s3.container", "from-env" );
+        try {
+            FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
+                "fs.s3.container", "from-map"
+            ) );
+
+            assertThat( fileSystemConfiguration.get( "s3", null, "container" ) ).isEqualTo( "from-env" );
+        } finally {
+            System.clearProperty( "fs.s3.container" );
+            Env.set( "fs.s3.container", null );
+        }
+    }
+
+    @Test
     public void testConfigurationIdContainingDotIsSafeWithNoEscaping() {
         // the new lookup mechanism probes exact key strings ("property" + "." + configurationId) rather than
         // positionally splitting stored keys, so a dot inside a configurationId needs no escaping at all.
