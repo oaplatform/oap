@@ -179,6 +179,10 @@ public class FileSystemConfiguration {
             s( "fs: configurationId '${configurationId}' cannot be resolved to a scheme; declare fs.<scheme>.container.${configurationId}" ) ) );
     }
 
+    public String getScheme( CloudURI cloudURI ) {
+        return getScheme( cloudURI.configurationId );
+    }
+
     /**
      * Throws if `configurationId` isn't registered to any scheme (i.e. no `fs.<scheme>.container.<configurationId>`
      * declares it). Use to validate a configurationId up front, without needing its resolved scheme.

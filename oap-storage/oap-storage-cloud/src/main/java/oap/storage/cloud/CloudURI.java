@@ -8,6 +8,8 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @EqualsAndHashCode
 public class CloudURI implements Serializable {
     @Serial
@@ -60,6 +62,6 @@ public class CloudURI implements Serializable {
 
     @Override
     public String toString() {
-        return "fs://" + configurationId + "/" + path;
+        return s( "fs://${configurationId}/${path}" );
     }
 }
