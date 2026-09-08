@@ -213,6 +213,18 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
+    public void copy( Path source, CloudURI destination, Map<String, String> tags ) throws CloudException {
+        log.debug( "copy {} to {} (tags {})", source, destination, tags );
+
+        getCloudApi( destination ).upload( destination, BlobData.builder().content( source ).tags( tags ).build() );
+    }
+
+    public void copy( File source, CloudURI destination, Map<String, String> tags ) throws CloudException {
+        log.debug( "copy {} to {} (tags {})", source, destination, tags );
+
+        getCloudApi( destination ).upload( destination, BlobData.builder().content( source ).tags( tags ).build() );
+    }
+
     public PageSet<? extends StorageItem> list( CloudURI path, ListOptions listOptions ) throws CloudException {
         return getCloudApi( path ).list( path, listOptions );
     }
@@ -334,6 +346,14 @@ public class FileSystem implements AutoCloseable {
 
         try( FileSystemCloudApiLocalFs fileSystemCloudApiLocalFs = new FileSystemCloudApiLocalFs( fileSystemConfiguration, cloudURI.configurationId ) ) {
             return fileSystemCloudApiLocalFs.getPath( cloudURI ).toFile();
+        }
+    }
+
+    public Path toLocalFilePath( String configurationId, String path ) {
+        Preconditions.checkArgument( "file".equals( resolveScheme( configurationId ) ) );
+
+        try( FileSystemCloudApiLocalFs fileSystemCloudApiLocalFs = new FileSystemCloudApiLocalFs( fileSystemConfiguration, configurationId ) ) {
+            return fileSystemCloudApiLocalFs.getPath( new CloudURI( configurationId, path ) );
         }
     }
 

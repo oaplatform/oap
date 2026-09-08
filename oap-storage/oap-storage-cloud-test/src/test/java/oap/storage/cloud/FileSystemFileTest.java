@@ -148,6 +148,38 @@ public class FileSystemFileTest extends Fixtures {
         }
     }
 
+    @Test
+    public void testCopyFromLocalPath() {
+        Path path = testDirectoryFixture.testPath( "folder/my-file.txt.gz" );
+        Files.write( path, "test string", ContentWriter.ofString() );
+
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.copy( path, new CloudURI( "file", "logs/my-file.txt.gz" ), Map.of() );
+
+            InputStream inputStream = fileSystem.getInputStream( new CloudURI( "file", "logs/my-file.txt.gz" ) );
+
+            assertThat( IoStreams.in( inputStream, IoStreams.Encoding.GZIP ) ).hasContent( "test string" );
+
+            assertFile( basedir.resolve( "logs/my-file.txt.gz" ) ).hasContent( "test string", IoStreams.Encoding.GZIP );
+        }
+    }
+
+    @Test
+    public void testCopyFromLocalFile() {
+        Path path = testDirectoryFixture.testPath( "folder/my-file2.txt.gz" );
+        Files.write( path, "test string", ContentWriter.ofString() );
+
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.copy( path.toFile(), new CloudURI( "file", "logs/my-file2.txt.gz" ), Map.of() );
+
+            InputStream inputStream = fileSystem.getInputStream( new CloudURI( "file", "logs/my-file2.txt.gz" ) );
+
+            assertThat( IoStreams.in( inputStream, IoStreams.Encoding.GZIP ) ).hasContent( "test string" );
+
+            assertFile( basedir.resolve( "logs/my-file2.txt.gz" ) ).hasContent( "test string", IoStreams.Encoding.GZIP );
+        }
+    }
+
     @Nonnull
     private FileSystemConfiguration getFileSystemConfiguration() {
         return getFileSystemConfiguration( false );
