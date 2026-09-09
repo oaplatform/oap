@@ -206,6 +206,42 @@ public class FileSystemFtpTest extends Fixtures {
     }
 
     @Test
+    public void testUploadFile() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            Path source = testDirectoryFixture.testPath( "upload/file.txt" );
+            Files.write( source, "content", ContentWriter.ofString() );
+
+            fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( source.toFile() ).build() );
+            fileSystem.upload( ftpUri( "file.txt2" ), BlobData.builder().content( source.toFile() ).build() );
+
+            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( fileSystem.getInputStream( ftpUri( "file.txt" ) ) ).hasContent( "content" );
+
+            assertThat( ftpFixture.readFile( "file.txt2", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( fileSystem.getInputStream( ftpUri( "file.txt2" ) ) ).hasContent( "content" );
+        }
+    }
+
+    @Test
+    public void testUploadPath() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            Path source = testDirectoryFixture.testPath( "upload/file.txt" );
+            Files.write( source, "content", ContentWriter.ofString() );
+
+            fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( source ).build() );
+            fileSystem.upload( ftpUri( "file.txt2" ), BlobData.builder().content( source ).build() );
+            fileSystem.upload( ftpUri( "file.txt3" ), BlobData.builder().content( source ).build() );
+
+            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( fileSystem.getInputStream( ftpUri( "file.txt" ) ) ).hasContent( "content" );
+            assertThat( ftpFixture.readFile( "file.txt2", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( fileSystem.getInputStream( ftpUri( "file.txt2" ) ) ).hasContent( "content" );
+            assertThat( ftpFixture.readFile( "file.txt3", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( fileSystem.getInputStream( ftpUri( "file.txt3" ) ) ).hasContent( "content" );
+        }
+    }
+
+    @Test
     public void testFolder() {
         ftpFixture.createDirectory( "folder" );
 
@@ -271,8 +307,8 @@ public class FileSystemFtpTest extends Fixtures {
                 for( int i = 0; i < uploads; i++ ) {
                     int idx = i;
                     futures.add( CompletableFuture.runAsync( () ->
-                        fileSystem.upload( ftpUri( "concurrent/file" + idx + ".txt" ),
-                            BlobData.builder().content( "content" + idx ).build() ), executor ) );
+                        fileSystem.upload( ftpUri( s( "concurrent/file${idx}.txt" ) ),
+                            BlobData.builder().content( s( "content${idx}" ) ).build() ), executor ) );
                 }
 
                 assertThat( CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) ) )
@@ -299,8 +335,8 @@ public class FileSystemFtpTest extends Fixtures {
                 for( int i = 0; i < uploads; i++ ) {
                     int idx = i;
                     futures.add( CompletableFuture.runAsync( () ->
-                        fileSystem.upload( ftpUri( "bulk/file" + idx + ".txt" ),
-                            BlobData.builder().content( "content" + idx ).build() ), executor ) );
+                        fileSystem.upload( ftpUri( s( "bulk/file${idx}.txt" ) ),
+                            BlobData.builder().content( s( "content${idx}" ) ).build() ), executor ) );
                 }
 
                 assertThat( CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) ) )
