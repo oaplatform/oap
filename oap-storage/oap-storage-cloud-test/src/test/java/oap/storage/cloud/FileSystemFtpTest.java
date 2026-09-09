@@ -69,7 +69,7 @@ public class FileSystemFtpTest extends Fixtures {
     @Test
     public void testToUri() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertThat( fileSystem.toUri( ftpUri( "logs/file.txt" ) ) ).isEqualTo( "ftp://" + ftpFixture.hostPort() + "/logs/file.txt" );
+            assertThat( fileSystem.toUri( ftpUri( "logs/file.txt" ) ) ).isEqualTo( "ftp://" + ftpFixture.hostPort() + "/" + CONFIGURATION_ID + "/logs/file.txt" );
         }
     }
 
@@ -357,12 +357,12 @@ public class FileSystemFtpTest extends Fixtures {
     @Test
     public void testBasedir() {
         FileSystemConfiguration configuration = getFileSystemConfiguration()
-            .copyWith( Map.of( s( "fs.${CONFIGURATION_ID}.filesystem.basedir" ), "sub/dir" ) );
+            .copyWith( Map.of( s( "fs.${CONFIGURATION_ID}.filesystem.basedir.${CONFIGURATION_ID}" ), "sub/dir" ) );
 
         try( FileSystem fileSystem = new FileSystem( configuration ) ) {
             fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( "content" ).build() );
 
-            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( Files.read( ftpFixture.homeDirectory().resolve( "sub/dir/file.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" );
 
             assertThat( fileSystem.toUri( ftpUri( "file.txt" ) ) ).isEqualTo( s( "ftp://${ftpFixture.hostPort()}/sub/dir/file.txt" ) );
 
@@ -382,7 +382,7 @@ public class FileSystemFtpTest extends Fixtures {
         FtpFixture secondFtpFixture = new FtpFixture();
         secondFtpFixture.before();
         try {
-            secondFtpFixture.writeFile( CONFIGURATION_ID, "shared/file.txt", "secondary", ContentWriter.ofString() );
+            secondFtpFixture.writeFile( "secondary", "shared/file.txt", "secondary", ContentWriter.ofString() );
 
             FileSystemConfiguration config = secondFtpFixture.updateWithFtp(
                 getFileSystemConfiguration(), "secondary", false, null );
