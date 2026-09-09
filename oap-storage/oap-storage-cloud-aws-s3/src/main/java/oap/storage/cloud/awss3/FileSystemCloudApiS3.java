@@ -78,6 +78,7 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
 
     private final String bucketName;
     private final String basedir;
+    private final String uriPrefix;
     private final S3Client s3Client;
 
     public FileSystemCloudApiS3( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
@@ -100,6 +101,9 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
                 .build();
             Endpoint s3Endpoint = new DefaultS3EndpointProvider().resolveEndpoint( s3EndpointParams ).join();
             builder = builder.endpointOverride( s3Endpoint.url() ).forcePathStyle( true );
+            this.uriPrefix = trimTrailingSlash( s3Endpoint.url().toString() );
+        } else {
+            this.uriPrefix = regionObj != null ? "https://s3." + regionObj + ".amazonaws.com" : "https://s3.amazonaws.com";
         }
 
         Object accessKey = fileSystemConfiguration.get( "s3", configurationId, "identity" );
@@ -135,6 +139,10 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         return str.substring( start, end );
     }
 
+    private static String trimTrailingSlash( String str ) {
+        return str.endsWith( "/" ) ? str.substring( 0, str.length() - 1 ) : str;
+    }
+
     private String resolveKey( String path ) {
         return basedir.isEmpty() ? path : basedir + "/" + path;
     }
@@ -144,6 +152,11 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
         if( key.equals( basedir ) ) return "";
         if( key.startsWith( basedir + "/" ) ) return key.substring( basedir.length() + 1 );
         return key;
+    }
+
+    @Override
+    public String toUri( CloudURI path ) {
+        return uriPrefix + "/" + bucketName + "/" + path.path;
     }
 
     @Override

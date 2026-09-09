@@ -11,7 +11,6 @@ import oap.io.Closeables;
 import oap.io.Resources;
 import oap.util.Maps;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -279,49 +278,13 @@ public class FileSystem implements AutoCloseable {
     }
 
     /**
-     * Renders a {@code CloudURI} as a "native"-looking URI string using the configurationId's resolved backend
-     * scheme and connection, instead of the {@code fs://<configurationId>/<path>} address:
-     * <ul>
-     *     <li>{@code s3} → {@code s3://<bucket>/<path>}</li>
-     *     <li>{@code ftp}/{@code ftps} → {@code ftp(s)://<host[:port]>/<path>}</li>
-     *     <li>{@code smb} → {@code smb://<host[:port]/share>/<path>}</li>
-     *     <li>{@code file} → {@code file://<basedir>/<path>}</li>
-     *     <li>anything else → falls back to {@code fs://<configurationId>/<path>} ({@code cloudURI.toString()})</li>
-     * </ul>
+     * Renders a {@code CloudURI} as a "native"-looking URI string; delegates to the resolved backend's
+     * {@link FileSystemCloudApi#toUri(CloudURI)}.
      */
     public String toUri( CloudURI cloudURI ) {
-        String scheme = resolveScheme( cloudURI.configurationId );
+        log.debug( "toUri {}", cloudURI );
 
-        switch( scheme ) {
-            case "s3", "ftp", "ftps", "smb" -> {
-                String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, cloudURI.configurationId, "container" );
-                Object basedirObj = fileSystemConfiguration.get( scheme, cloudURI.configurationId, "filesystem.basedir" );
-                String basedir = "";
-                if( basedirObj != null ) {
-                    String str = basedirObj.toString();
-                    int start = 0, end = str.length();
-                    while( start < end && str.charAt( start ) == '/' ) start++;
-                    while( end > start && str.charAt( end - 1 ) == '/' ) end--;
-                    basedir = str.substring( start, end );
-                }
-                String resolvedPath = basedir.isEmpty() ? cloudURI.path : s( "${basedir}/${cloudURI.path}" );
-                return s( "${scheme}://${container}/${resolvedPath}" );
-            }
-            case "file" -> {
-                String basedir = ( String ) fileSystemConfiguration.get( scheme, cloudURI.configurationId, "filesystem.basedir" );
-                if( basedir == null ) {
-                    basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
-                }
-                basedir = FilenameUtils.separatorsToUnix( basedir );
-                if( basedir.endsWith( "/" ) ) {
-                    basedir = basedir.substring( 0, basedir.length() - 1 );
-                }
-                return s( "file://${basedir}/${cloudURI.path}" );
-            }
-            default -> {
-                return cloudURI.toString();
-            }
-        }
+        return getCloudApi( cloudURI ).toUri( cloudURI );
     }
 
     public CloudURI toLocalFileURI( String configurationId, Path path ) {

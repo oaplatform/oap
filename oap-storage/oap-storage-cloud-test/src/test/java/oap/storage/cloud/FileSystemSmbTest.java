@@ -202,7 +202,7 @@ public class FileSystemSmbTest extends Fixtures {
             assertThat( smbFixture.readFile( "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
 
             assertThat( fileSystem.toUri( smbUri( "file.txt" ) ) )
-                .isEqualTo( s( "smb://${smbFixture.container()}/sub/dir/file.txt" ) );
+                .isEqualTo( s( "smb://${smbFixture.container()}/file.txt" ) );
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( smbUri( "" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 1 );
