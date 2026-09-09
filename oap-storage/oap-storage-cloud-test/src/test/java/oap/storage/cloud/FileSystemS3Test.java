@@ -58,8 +58,8 @@ public class FileSystemS3Test extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
             "fs.s3.container", TEST_BUCKET
         ) ) ) ) {
-            assertThat( fileSystem.getDefaultURL( "my-alias", "/a.file" ) ).isEqualTo( new CloudURI( "my-alias", "a.file" ) );
-            assertThat( fileSystem.getDefaultURL( "my-alias", "a.file" ) ).isEqualTo( new CloudURI( "my-alias", "a.file" ) );
+            assertThat( fileSystem.getDefaultURL( "my-configurationId", "/a.file" ) ).isEqualTo( new CloudURI( "my-configurationId", "a.file" ) );
+            assertThat( fileSystem.getDefaultURL( "my-configurationId", "a.file" ) ).isEqualTo( new CloudURI( "my-configurationId", "a.file" ) );
         }
     }
 

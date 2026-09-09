@@ -141,6 +141,7 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         map.put( s( "fs.${scheme}.credential.${configurationId}" ), PASSWORD );
         map.put( s( "fs.${scheme}.trust_all.${configurationId}" ), true );
         map.put( s( "fs.${scheme}.container.${configurationId}" ), hostPort() );
+        map.put( s( "fs.${scheme}.filesystem.basedir.${configurationId}" ), testDirectoryFixture.testPath( configurationId ) );
 
         if( removeEmptyFolders ) {
             map.put( s( "fs.${scheme}.remove_empty_folders.${configurationId}" ), true );

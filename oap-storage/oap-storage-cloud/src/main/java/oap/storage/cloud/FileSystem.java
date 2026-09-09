@@ -142,7 +142,7 @@ public class FileSystem implements AutoCloseable {
      * Resolves a legacy {@code scheme://container/path} URI string (ftp/ftps/smb/s3/gcs/ab) to a
      * {@code CloudURI}, tagging the result with the given `configurationId` directly — the URI's
      * container doesn't need to be registered in config at all. {@code fs://} input is already in
-     * the new format and passes straight through (its own alias is replaced with `configurationId`);
+     * the new format and passes straight through (its own configurationId is replaced with `configurationId`);
      * {@code file://} has no meaningful container-based mapping and always throws.
      */
     public CloudURI resolve( String configurationId, String uri ) throws CloudException {

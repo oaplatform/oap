@@ -7,8 +7,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CloudURITest {
     @Test
     public void testParse() {
-        CloudURI cloudURI = new CloudURI( "fs://my-alias/logs/1.txt" );
-        assertThat( cloudURI.configurationId ).isEqualTo( "my-alias" );
+        CloudURI cloudURI = new CloudURI( "fs://my-configurationId/logs/1.txt" );
+        assertThat( cloudURI.configurationId ).isEqualTo( "my-configurationId" );
         assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
     }
 
@@ -39,21 +39,21 @@ public class CloudURITest {
 
     @Test
     public void testTwoArgConstructorStripsLeadingSlash() {
-        CloudURI cloudURI = new CloudURI( "my-alias", "/logs/1.txt" );
-        assertThat( cloudURI.configurationId ).isEqualTo( "my-alias" );
+        CloudURI cloudURI = new CloudURI( "my-configurationId", "/logs/1.txt" );
+        assertThat( cloudURI.configurationId ).isEqualTo( "my-configurationId" );
         assertThat( cloudURI.path ).isEqualTo( "logs/1.txt" );
     }
 
     @Test
     public void testToString() {
-        assertThat( new CloudURI( "my-alias", "logs/1.txt" ).toString() ).isEqualTo( "fs://my-alias/logs/1.txt" );
+        assertThat( new CloudURI( "my-configurationId", "logs/1.txt" ).toString() ).isEqualTo( "fs://my-configurationId/logs/1.txt" );
     }
 
     @Test
     public void testWithConfigurationIdAndWithPath() {
-        CloudURI cloudURI = new CloudURI( "my-alias", "logs/1.txt" );
+        CloudURI cloudURI = new CloudURI( "my-configurationId", "logs/1.txt" );
 
-        assertThat( cloudURI.withConfigurationId( "other-alias" ) ).isEqualTo( new CloudURI( "other-alias", "logs/1.txt" ) );
-        assertThat( cloudURI.withPath( "logs/2.txt" ) ).isEqualTo( new CloudURI( "my-alias", "logs/2.txt" ) );
+        assertThat( cloudURI.withConfigurationId( "other-configurationId" ) ).isEqualTo( new CloudURI( "other-configurationId", "logs/1.txt" ) );
+        assertThat( cloudURI.withPath( "logs/2.txt" ) ).isEqualTo( new CloudURI( "my-configurationId", "logs/2.txt" ) );
     }
 }
