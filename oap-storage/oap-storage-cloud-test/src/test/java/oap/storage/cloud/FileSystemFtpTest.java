@@ -91,7 +91,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testGetInputStream() {
-        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             InputStream inputStream = fileSystem.getInputStream( ftpUri( "logs/file.txt" ) );
@@ -109,13 +109,13 @@ public class FileSystemFtpTest extends Fixtures {
                 outputStream.write( "567".getBytes() );
             }
 
-            assertThat( ftpFixture.readFile( "logs/file.txt", ContentReader.ofString() ) ).isEqualTo( "123567" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "logs/file.txt", ContentReader.ofString() ) ).isEqualTo( "123567" );
         }
     }
 
     @Test
     public void testGetMetadata() {
-        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             FileSystem.StorageItem item = fileSystem.getMetadata( ftpUri( "logs/file.txt" ) );
@@ -128,7 +128,7 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testDownloadFile() {
-        ftpFixture.writeFile( "logs/file.txt", "test string", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/file.txt", "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.downloadFile( ftpUri( "logs/file.txt" ), testDirectoryFixture.testPath( "file.txt" ) );
@@ -158,9 +158,9 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testExistsListAndDelete() {
-        ftpFixture.writeFile( "logs/file1.txt", "1", ContentWriter.ofString() );
-        ftpFixture.writeFile( "logs/file2.txt", "2", ContentWriter.ofString() );
-        ftpFixture.createDirectory( "logs/folder1" );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/file1.txt", "1", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/file2.txt", "2", ContentWriter.ofString() );
+        ftpFixture.createDirectory( CONFIGURATION_ID, "logs/folder1" );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             assertTrue( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) );
@@ -192,7 +192,7 @@ public class FileSystemFtpTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( "content" ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
         }
     }
 
@@ -201,7 +201,7 @@ public class FileSystemFtpTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( "content".getBytes( UTF_8 ) ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
         }
     }
 
@@ -214,10 +214,10 @@ public class FileSystemFtpTest extends Fixtures {
             fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( source.toFile() ).build() );
             fileSystem.upload( ftpUri( "file.txt2" ), BlobData.builder().content( source.toFile() ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
             assertThat( fileSystem.getInputStream( ftpUri( "file.txt" ) ) ).hasContent( "content" );
 
-            assertThat( ftpFixture.readFile( "file.txt2", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt2", ContentReader.ofString() ) ).isEqualTo( "content" );
             assertThat( fileSystem.getInputStream( ftpUri( "file.txt2" ) ) ).hasContent( "content" );
         }
     }
@@ -232,18 +232,18 @@ public class FileSystemFtpTest extends Fixtures {
             fileSystem.upload( ftpUri( "file.txt2" ), BlobData.builder().content( source ).build() );
             fileSystem.upload( ftpUri( "file.txt3" ), BlobData.builder().content( source ).build() );
 
-            assertThat( ftpFixture.readFile( "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
             assertThat( fileSystem.getInputStream( ftpUri( "file.txt" ) ) ).hasContent( "content" );
-            assertThat( ftpFixture.readFile( "file.txt2", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt2", ContentReader.ofString() ) ).isEqualTo( "content" );
             assertThat( fileSystem.getInputStream( ftpUri( "file.txt2" ) ) ).hasContent( "content" );
-            assertThat( ftpFixture.readFile( "file.txt3", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "file.txt3", ContentReader.ofString() ) ).isEqualTo( "content" );
             assertThat( fileSystem.getInputStream( ftpUri( "file.txt3" ) ) ).hasContent( "content" );
         }
     }
 
     @Test
     public void testFolder() {
-        ftpFixture.createDirectory( "folder" );
+        ftpFixture.createDirectory( CONFIGURATION_ID, "folder" );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             assertThat( fileSystem.getMetadata( ftpUri( "folder" ) ).getContentType() ).isEqualTo( "application/x-directory" );
@@ -258,8 +258,8 @@ public class FileSystemFtpTest extends Fixtures {
 
             fileSystem.deleteBlob( ftpUri( "case1/folder1/folder2/file.txt" ) );
 
-            assertThat( ftpFixture.resolve( "case1/folder1/folder2/file.txt" ) ).doesNotExist();
-            assertThat( ftpFixture.resolve( "case1/folder1/folder2" ) ).exists();
+            assertThat( ftpFixture.resolve( CONFIGURATION_ID, "case1/folder1/folder2/file.txt" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( CONFIGURATION_ID, "case1/folder1/folder2" ) ).exists();
         }
 
         // 2. enabled -> empty folder2 removed, folder1 kept (still has file2.txt)
@@ -269,8 +269,8 @@ public class FileSystemFtpTest extends Fixtures {
 
             fileSystem.deleteBlob( ftpUri( "case2/folder1/folder2/file.txt" ) );
 
-            assertThat( ftpFixture.resolve( "case2/folder1/folder2" ) ).doesNotExist();
-            assertThat( ftpFixture.resolve( "case2/folder1" ) ).exists();
+            assertThat( ftpFixture.resolve( CONFIGURATION_ID, "case2/folder1/folder2" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( CONFIGURATION_ID, "case2/folder1" ) ).exists();
         }
 
         // 3. enabled -> whole empty chain removed
@@ -279,14 +279,14 @@ public class FileSystemFtpTest extends Fixtures {
 
             fileSystem.deleteBlob( ftpUri( "case3/folder1/folder2/file.txt" ) );
 
-            assertThat( ftpFixture.resolve( "case3/folder1/folder2" ) ).doesNotExist();
-            assertThat( ftpFixture.resolve( "case3/folder1" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( CONFIGURATION_ID, "case3/folder1/folder2" ) ).doesNotExist();
+            assertThat( ftpFixture.resolve( CONFIGURATION_ID, "case3/folder1" ) ).doesNotExist();
         }
     }
 
     @Test
     public void testPoolReusesConnectionSequentially() {
-        ftpFixture.writeFile( "logs/file1.txt", "1", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/file1.txt", "1", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( CONFIGURATION_ID, false, 1 ) ) ) {
             for( int i = 0; i < 5; i++ ) {
@@ -319,7 +319,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         for( int i = 0; i < uploads; i++ ) {
-            assertThat( ftpFixture.readFile( s( "concurrent/file${i}.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" + i );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, s( "concurrent/file${i}.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" + i );
         }
     }
 
@@ -350,7 +350,7 @@ public class FileSystemFtpTest extends Fixtures {
         }
 
         for( int idx : new int[] { 0, 1, 500, 998, 999 } ) {
-            assertThat( ftpFixture.readFile( s( "bulk/file${idx}.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" + idx );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, s( "bulk/file${idx}.txt" ), ContentReader.ofString() ) ).isEqualTo( "content" + idx );
         }
     }
 
@@ -362,7 +362,7 @@ public class FileSystemFtpTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( configuration ) ) {
             fileSystem.upload( ftpUri( "file.txt" ), BlobData.builder().content( "content" ).build() );
 
-            assertThat( ftpFixture.readFile( "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
+            assertThat( ftpFixture.readFile( CONFIGURATION_ID, "sub/dir/file.txt", ContentReader.ofString() ) ).isEqualTo( "content" );
 
             assertThat( fileSystem.toUri( ftpUri( "file.txt" ) ) ).isEqualTo( s( "ftp://${ftpFixture.hostPort()}/sub/dir/file.txt" ) );
 
@@ -377,12 +377,12 @@ public class FileSystemFtpTest extends Fixtures {
 
     @Test
     public void testDifferentHostsUseIndependentConnectionPools() {
-        ftpFixture.writeFile( "shared/file.txt", "primary", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "shared/file.txt", "primary", ContentWriter.ofString() );
 
         FtpFixture secondFtpFixture = new FtpFixture();
         secondFtpFixture.before();
         try {
-            secondFtpFixture.writeFile( "shared/file.txt", "secondary", ContentWriter.ofString() );
+            secondFtpFixture.writeFile( CONFIGURATION_ID, "shared/file.txt", "secondary", ContentWriter.ofString() );
 
             FileSystemConfiguration config = secondFtpFixture.updateWithFtp(
                 getFileSystemConfiguration(), "secondary", false, null );
