@@ -112,6 +112,11 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
         return rawUrl( physicalPath( path ) );
     }
 
+    @Override
+    public String toUri( CloudURI path ) {
+        return rawUrl( path.path );
+    }
+
     private SmbFile smbFile( CloudURI path ) {
         try {
             return new SmbFile( buildUrl( path.path ), cifsContext );

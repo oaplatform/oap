@@ -63,7 +63,7 @@ public class FileSystemS3Test extends Fixtures {
     public void testToUri() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             assertThat( fileSystem.toUri( new CloudURI( CONFIGURATION_ID, "logs/file.txt" ) ) )
-                .isEqualTo( "s3://" + TEST_BUCKET + "/logs/file.txt" );
+                .isEqualTo( "http://localhost:" + s3mockFixture.getHttpPort() + "/" + TEST_BUCKET + "/logs/file.txt" );
         }
     }
 
@@ -300,7 +300,7 @@ public class FileSystemS3Test extends Fixtures {
             assertThat( s3mockFixture.readFile( TEST_BUCKET, "sub/dir/file.txt", ofString(), Encoding.from( "file.txt" ) ) ).isEqualTo( "content" );
 
             assertThat( fileSystem.toUri( new CloudURI( CONFIGURATION_ID, "file.txt" ) ) )
-                .isEqualTo( "s3://" + TEST_BUCKET + "/sub/dir/file.txt" );
+                .isEqualTo( "http://localhost:" + s3mockFixture.getHttpPort() + "/" + TEST_BUCKET + "/file.txt" );
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( CONFIGURATION_ID, "" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 1 );

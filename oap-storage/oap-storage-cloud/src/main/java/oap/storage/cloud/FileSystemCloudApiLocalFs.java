@@ -55,6 +55,15 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     @Override
+    public String toUri( CloudURI path ) {
+        String basedirStr = FilenameUtils.separatorsToUnix( basedir.toString() );
+        if( basedirStr.endsWith( "/" ) ) {
+            basedirStr = basedirStr.substring( 0, basedirStr.length() - 1 );
+        }
+        return "file://" + basedirStr + "/" + path.path;
+    }
+
+    @Override
     public boolean containerExists( CloudURI path ) throws CloudException {
         return Files.isDirectory( getPath( path ) );
     }

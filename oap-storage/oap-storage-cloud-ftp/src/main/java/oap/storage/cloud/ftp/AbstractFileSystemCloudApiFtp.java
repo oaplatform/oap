@@ -120,6 +120,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         this.pool = new GenericObjectPool<>( new FtpClientPooledObjectFactory( this ), poolConfig );
     }
 
+    @Override
+    public String toUri( CloudURI path ) {
+        return s( "${scheme}://${host}:${port}/${path.path}" );
+    }
+
     protected static void disconnect( FTPClient client ) {
         try {
             if( client.isConnected() ) {
