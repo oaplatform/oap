@@ -169,6 +169,10 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         Files.write( resolve( relativePath ), content, contentWriter );
     }
 
+    public <T> void copyFileTo( Path file, String relativePath ) {
+        Files.copyContent( file, resolve( relativePath ) );
+    }
+
     public void createDirectory( String relativePath ) {
         Files.ensureDirectory( resolve( relativePath ) );
     }
