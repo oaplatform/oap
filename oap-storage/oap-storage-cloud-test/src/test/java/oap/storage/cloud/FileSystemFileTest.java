@@ -17,7 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,9 +25,6 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 @Slf4j
 public class FileSystemFileTest extends Fixtures {
@@ -59,6 +56,20 @@ public class FileSystemFileTest extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             assertThat( fileSystem.toUri( new CloudURI( "file", "logs/file.txt" ) ) )
                 .isEqualTo( "file://" + FilenameUtils.separatorsToUnix( basedir.toString() ) + "/logs/file.txt" );
+        }
+    }
+
+    @Test( expectedExceptions = CloudException.class )
+    public void testResolveWithConfigurationIdThrowsForFileScheme() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.resolve( "other-configuration-id", "file:///tmp/a/file1" );
+        }
+    }
+
+    @Test( expectedExceptions = NullPointerException.class )
+    public void testResolveWithConfigurationIdRequiresNonNull() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.resolve( null, "file:///tmp/a/file1" );
         }
     }
 
@@ -104,7 +115,7 @@ public class FileSystemFileTest extends Fixtures {
     }
 
     @Test
-    public void testGetMetadata() throws URISyntaxException {
+    public void testGetMetadata() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             Path filePath = basedir.resolve( "logs/file.txt" );
             log.debug( "file {}", filePath );
@@ -113,7 +124,7 @@ public class FileSystemFileTest extends Fixtures {
             FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( "file", "logs/file.txt" ) );
             assertThat( item.getLastModified() ).isLessThanOrEqualTo( new DateTime( DateTimeZone.UTC ) );
             assertThat( item.getSize() ).isEqualTo( 11L );
-            assertThat( item.getUri() ).isEqualTo( filePath.toUri() );
+            assertThat( item.getUri() ).isEqualTo( URI.create( "fs://file/logs/file.txt" ) );
 
             assertThat( fileSystem.getMetadata( new CloudURI( "file", "/unknown.txt" ) ) ).isNull();
         }
@@ -220,14 +231,15 @@ public class FileSystemFileTest extends Fixtures {
             Files.write( basedir.resolve( "logs/test2/file2.txt" ), "2", ContentWriter.ofString() );
             Files.ensureDirectory( basedir.resolve( "logs/test2/folder1/" ) );
 
-            assertTrue( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file2.txt" ) ) );
-            assertTrue( fileSystem.containerExists( new CloudURI( "file", "logs/test2/folder1/" ) ) );
+            assertThat( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file1.txt" ) ) ).isTrue();
+            assertThat( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file2.txt" ) ) ).isTrue();
+            assertThat( fileSystem.containerExists( new CloudURI( "file", "logs/test2/folder1/" ) ) ).isTrue();
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( "file", "logs/test2/" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 2 );
-            assertNotNull( list.get( 0 ).getLastModified() );
+            assertThat( list.get( 0 ).getLastModified() ).isNotNull();
             assertThat( list.get( 0 ).getName() ).isEqualTo( "logs/test2/file1.txt" );
+            assertThat( list.get( 0 ).getUri() ).isEqualTo( URI.create( "fs://file/logs/test2/file1.txt" ) );
 
             PageSet<? extends FileSystem.StorageItem> listP = fileSystem.list( new CloudURI( "file", "logs/test2/" ), ListOptions.builder().maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
@@ -240,18 +252,18 @@ public class FileSystemFileTest extends Fixtures {
 
             assertFile( basedir.resolve( "logs/test2/file1.txt" ) ).doesNotExist();
 
-            assertFalse( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file2.txt" ) ) );
-            assertTrue( fileSystem.containerExists( new CloudURI( "file", "logs/test2" ) ) );
+            assertThat( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file1.txt" ) ) ).isFalse();
+            assertThat( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file2.txt" ) ) ).isTrue();
+            assertThat( fileSystem.containerExists( new CloudURI( "file", "logs/test2" ) ) ).isTrue();
             assertThat( fileSystem.list( new CloudURI( "file", "logs/test2/" ), ListOptions.builder().build() ).size() ).isEqualTo( 1 );
 
-            assertFalse( fileSystem.deleteContainerIfEmpty( new CloudURI( "file", "logs/test2" ) ) );
+            assertThat( fileSystem.deleteContainerIfEmpty( new CloudURI( "file", "logs/test2" ) ) ).isFalse();
             fileSystem.deleteContainer( new CloudURI( "file", "logs/test2" ) );
 
-            assertFalse( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file1.txt" ) ) );
-            assertFalse( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file2.txt" ) ) );
-            assertFalse( fileSystem.containerExists( new CloudURI( "file", "logs/test2" ) ) );
-            assertTrue( fileSystem.containerExists( new CloudURI( "file", "logs" ) ) );
+            assertThat( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file1.txt" ) ) ).isFalse();
+            assertThat( fileSystem.blobExists( new CloudURI( "file", "logs/test2/file2.txt" ) ) ).isFalse();
+            assertThat( fileSystem.containerExists( new CloudURI( "file", "logs/test2" ) ) ).isFalse();
+            assertThat( fileSystem.containerExists( new CloudURI( "file", "logs" ) ) ).isTrue();
         }
     }
 

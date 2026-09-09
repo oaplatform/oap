@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -122,11 +121,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     }
 
     private URI buildUri( CloudURI path ) {
-        try {
-            return new URI( "smb", null, host, port, "/" + share + "/" + physicalPath( path.path ), null, null );
-        } catch( URISyntaxException e ) {
-            throw new CloudException( e );
-        }
+        return URI.create( path.toString() );
     }
 
     private static String parentOf( String path ) {

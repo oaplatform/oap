@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -108,7 +109,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
             return new FileSystem.StorageItemImpl(
                 fsPath.toString(),
                 "",
-                fsPath.toUri(),
+                URI.create( path.toString() ),
                 new DateTime( Files.getLastModifiedTime( fsPath ).toMillis(), DateTimeZone.UTC ),
                 Files.size( fsPath ),
                 Files.isDirectory( fsPath ) ? "application/x-directory" : "" );
@@ -217,10 +218,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
             for( Path file : files ) {
                 try {
+                    String name = FilenameUtils.separatorsToUnix( basedir.relativize( file ).toString() );
                     list.add( new FileSystem.StorageItemImpl(
-                        FilenameUtils.separatorsToUnix( basedir.relativize( file ).toString() ),
+                        name,
                         "",
-                        file.toUri(),
+                        URI.create( path.withPath( name ).toString() ),
                         new DateTime( Files.getLastModifiedTime( file ).toMillis(), DateTimeZone.UTC ),
                         Files.size( file ),
                         "" ) );

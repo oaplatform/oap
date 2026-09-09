@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -294,11 +293,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     private URI buildUri( CloudURI path ) {
-        try {
-            return new URI( scheme, null, host, port, "/" + physicalPath( path.path ), null, null );
-        } catch( URISyntaxException e ) {
-            throw new CloudException( e );
-        }
+        return URI.create( path.toString() );
     }
 
     @Override
