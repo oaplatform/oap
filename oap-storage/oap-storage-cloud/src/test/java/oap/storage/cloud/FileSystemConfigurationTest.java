@@ -192,10 +192,10 @@ public class FileSystemConfigurationTest {
         // positionally splitting stored keys, so a dot inside a configurationId needs no escaping at all.
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration( Map.of(
             "fs.ftp.container", "host:21",
-            "fs.ftp.identity.my.alias", "dotted-user"
+            "fs.ftp.identity.my.configurationId", "dotted-user"
         ) );
 
-        assertThat( fileSystemConfiguration.get( "ftp", "my.alias", "identity" ) ).isEqualTo( "dotted-user" );
+        assertThat( fileSystemConfiguration.get( "ftp", "my.configurationId", "identity" ) ).isEqualTo( "dotted-user" );
     }
 
     @Test
