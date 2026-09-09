@@ -1,17 +1,12 @@
-name = oap-storage-cloud
+name: oap-storage-cloud
 
-services {
-  oap-cloud-configuration {
-    implementation = oap.storage.cloud.FileSystemConfiguration
-    parameters {
-      configuration {
-//        fs.s3.identity = access_key
-//        fs.s3.credential = access_secret
-//        fs.s3.endpoint = "http://localhost:1234"
-//        fs.s3.headers = DEBUG
+services:
+  oap-cloud-configuration:
+    implementation: oap.storage.cloud.FileSystemConfiguration
+    parameters:
+      configuration {}
 
-        fs.s3.container = test-bucket
-      }
-    }
-  }
-}
+  oap-filesystem:
+    implementation: oap.storage.cloud.FileSystem
+    parameters:
+      fileSystemConfiguration: <modules.this.oap-cloud-configuration>
