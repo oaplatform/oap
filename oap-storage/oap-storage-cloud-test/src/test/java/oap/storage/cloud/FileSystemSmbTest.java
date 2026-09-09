@@ -17,15 +17,12 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 public class FileSystemSmbTest extends Fixtures {
     public static final String CONFIGURATION_ID = "smb";
@@ -132,27 +129,47 @@ public class FileSystemSmbTest extends Fixtures {
         smbFixture.createDirectory( "logs/folder1" );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertTrue( fileSystem.blobExists( smbUri( "logs/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( smbUri( "logs/file2.txt" ) ) );
-            assertTrue( fileSystem.containerExists( smbUri( "" ) ) );
+            assertThat( fileSystem.blobExists( smbUri( "logs/file1.txt" ) ) ).isTrue();
+            assertThat( fileSystem.blobExists( smbUri( "logs/file2.txt" ) ) ).isTrue();
+            assertThat( fileSystem.containerExists( smbUri( "" ) ) ).isTrue();
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( smbUri( "logs/" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 2 );
-            assertNotNull( list.get( 0 ).getLastModified() );
-            assertEquals( "logs/file1.txt", list.get( 0 ).getName() );
+            assertThat( list.get( 0 ).getLastModified() ).isNotNull();
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "logs/file1.txt" );
+            assertThat( list.get( 0 ).getUri() ).isEqualTo( URI.create( "fs://" + CONFIGURATION_ID + "/logs/file1.txt" ) );
 
             PageSet<? extends FileSystem.StorageItem> listP = fileSystem.list( smbUri( "logs/" ), ListOptions.builder().maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
-            assertEquals( "logs/file1.txt", listP.get( 0 ).getName() );
+            assertThat( listP.get( 0 ).getName() ).isEqualTo( "logs/file1.txt" );
             listP = fileSystem.list( smbUri( "logs/" ), ListOptions.builder().continuationToken( listP.nextContinuationToken ).maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
-            assertEquals( "logs/file2.txt", listP.get( 0 ).getName() );
+            assertThat( listP.get( 0 ).getName() ).isEqualTo( "logs/file2.txt" );
 
             fileSystem.deleteBlob( smbUri( "logs/file1.txt" ) );
 
-            assertFalse( fileSystem.blobExists( smbUri( "logs/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( smbUri( "logs/file2.txt" ) ) );
+            assertThat( fileSystem.blobExists( smbUri( "logs/file1.txt" ) ) ).isFalse();
+            assertThat( fileSystem.blobExists( smbUri( "logs/file2.txt" ) ) ).isTrue();
             assertThat( fileSystem.list( smbUri( "logs/" ), ListOptions.builder().build() ).size() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    public void testListRecursesIntoNestedFolders() {
+        smbFixture.writeFile( "logs/a.txt", "a", ContentWriter.ofString() );
+        smbFixture.writeFile( "logs/sub1/b.txt", "b", ContentWriter.ofString() );
+        smbFixture.writeFile( "logs/sub1/sub2/c.txt", "c", ContentWriter.ofString() );
+
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( smbUri( "logs/" ), ListOptions.builder().build() );
+
+            assertThat( list.size() ).isEqualTo( 3 );
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "logs/a.txt" );
+            assertThat( list.get( 0 ).getUri() ).isEqualTo( URI.create( "fs://" + CONFIGURATION_ID + "/logs/a.txt" ) );
+            assertThat( list.get( 1 ).getName() ).isEqualTo( "logs/sub1/b.txt" );
+            assertThat( list.get( 1 ).getUri() ).isEqualTo( URI.create( "fs://" + CONFIGURATION_ID + "/logs/sub1/b.txt" ) );
+            assertThat( list.get( 2 ).getName() ).isEqualTo( "logs/sub1/sub2/c.txt" );
+            assertThat( list.get( 2 ).getUri() ).isEqualTo( URI.create( "fs://" + CONFIGURATION_ID + "/logs/sub1/sub2/c.txt" ) );
         }
     }
 
@@ -189,10 +206,10 @@ public class FileSystemSmbTest extends Fixtures {
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( smbUri( "" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 1 );
-            assertEquals( "file.txt", list.get( 0 ).getName() );
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "file.txt" );
 
             fileSystem.deleteBlob( smbUri( "file.txt" ) );
-            assertFalse( fileSystem.blobExists( smbUri( "file.txt" ) ) );
+            assertThat( fileSystem.blobExists( smbUri( "file.txt" ) ) ).isFalse();
         }
     }
 

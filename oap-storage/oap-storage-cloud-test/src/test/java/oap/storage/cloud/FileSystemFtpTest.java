@@ -17,6 +17,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +30,6 @@ import java.util.concurrent.TimeUnit;
 import static dev.khbd.interp4j.core.Interpolations.s;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 public class FileSystemFtpTest extends Fixtures {
     public static final String CONFIGURATION_ID = "ftp";
@@ -163,27 +160,47 @@ public class FileSystemFtpTest extends Fixtures {
         ftpFixture.createDirectory( CONFIGURATION_ID, "logs/folder1" );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            assertTrue( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( ftpUri( "logs/file2.txt" ) ) );
-            assertTrue( fileSystem.containerExists( ftpUri( "" ) ) );
+            assertThat( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) ).isTrue();
+            assertThat( fileSystem.blobExists( ftpUri( "logs/file2.txt" ) ) ).isTrue();
+            assertThat( fileSystem.containerExists( ftpUri( "" ) ) ).isTrue();
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( ftpUri( "logs/" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 2 );
-            assertNotNull( list.get( 0 ).getLastModified() );
-            assertEquals( "logs/file1.txt", list.get( 0 ).getName() );
+            assertThat( list.get( 0 ).getLastModified() ).isNotNull();
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "logs/file1.txt" );
+            assertThat( list.get( 0 ).getUri() ).isEqualTo( URI.create( "fs://" + CONFIGURATION_ID + "/logs/file1.txt" ) );
 
             PageSet<? extends FileSystem.StorageItem> listP = fileSystem.list( ftpUri( "logs/" ), ListOptions.builder().maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
-            assertEquals( "logs/file1.txt", listP.get( 0 ).getName() );
+            assertThat( listP.get( 0 ).getName() ).isEqualTo( "logs/file1.txt" );
             listP = fileSystem.list( ftpUri( "logs/" ), ListOptions.builder().continuationToken( listP.nextContinuationToken ).maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
-            assertEquals( "logs/file2.txt", listP.get( 0 ).getName() );
+            assertThat( listP.get( 0 ).getName() ).isEqualTo( "logs/file2.txt" );
 
             fileSystem.deleteBlob( ftpUri( "logs/file1.txt" ) );
 
-            assertFalse( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( ftpUri( "logs/file2.txt" ) ) );
+            assertThat( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) ).isFalse();
+            assertThat( fileSystem.blobExists( ftpUri( "logs/file2.txt" ) ) ).isTrue();
             assertThat( fileSystem.list( ftpUri( "logs/" ), ListOptions.builder().build() ).size() ).isEqualTo( 1 );
+        }
+    }
+
+    @Test
+    public void testListRecursesIntoNestedFolders() {
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/a.txt", "a", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/sub1/b.txt", "b", ContentWriter.ofString() );
+        ftpFixture.writeFile( CONFIGURATION_ID, "logs/sub1/sub2/c.txt", "c", ContentWriter.ofString() );
+
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( ftpUri( "logs/" ), ListOptions.builder().build() );
+
+            assertThat( list.size() ).isEqualTo( 3 );
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "logs/a.txt" );
+            assertThat( list.get( 0 ).getUri() ).isEqualTo( URI.create( s( "fs://${CONFIGURATION_ID}/logs/a.txt" ) ) );
+            assertThat( list.get( 1 ).getName() ).isEqualTo( "logs/sub1/b.txt" );
+            assertThat( list.get( 1 ).getUri() ).isEqualTo( URI.create( s( "fs://${CONFIGURATION_ID}/logs/sub1/b.txt" ) ) );
+            assertThat( list.get( 2 ).getName() ).isEqualTo( "logs/sub1/sub2/c.txt" );
+            assertThat( list.get( 2 ).getUri() ).isEqualTo( URI.create( s( "fs://${CONFIGURATION_ID}/logs/sub1/sub2/c.txt" ) ) );
         }
     }
 
@@ -290,7 +307,7 @@ public class FileSystemFtpTest extends Fixtures {
 
         try( FileSystem fileSystem = new FileSystem( ftpFixture.getFileSystemConfiguration( CONFIGURATION_ID, false, 1 ) ) ) {
             for( int i = 0; i < 5; i++ ) {
-                assertTrue( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) );
+                assertThat( fileSystem.blobExists( ftpUri( "logs/file1.txt" ) ) ).isTrue();
             }
         }
     }
@@ -368,10 +385,10 @@ public class FileSystemFtpTest extends Fixtures {
 
             PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( ftpUri( "" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 1 );
-            assertEquals( "file.txt", list.get( 0 ).getName() );
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "file.txt" );
 
             fileSystem.deleteBlob( ftpUri( "file.txt" ) );
-            assertFalse( fileSystem.blobExists( ftpUri( "file.txt" ) ) );
+            assertThat( fileSystem.blobExists( ftpUri( "file.txt" ) ) ).isFalse();
         }
     }
 
