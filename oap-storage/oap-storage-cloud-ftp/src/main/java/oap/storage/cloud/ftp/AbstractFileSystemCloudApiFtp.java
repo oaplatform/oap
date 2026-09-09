@@ -489,7 +489,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 //        FTPClient client = borrow();
         boolean healthy = false;
         try {
-            client = createClient();
+            client = createAndLoginClient();
             ensureRemoteDirectory( client, parentOf( absolute( physicalPath( destination.path ) ) ) );
 
             String remotePath = absolute( physicalPath( destination.path ) );
