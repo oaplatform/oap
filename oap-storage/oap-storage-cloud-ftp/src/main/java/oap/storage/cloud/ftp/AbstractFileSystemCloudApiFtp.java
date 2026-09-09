@@ -426,7 +426,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             if( in == null ) {
                 sourceHealthy = true;
                 destinationHealthy = true;
-                throw new CloudException( "cannot open source stream " + source );
+                throw new CloudException( s( "cannot open source stream ${source}" ) );
             }
 
             ensureRemoteDirectory( destinationClient, parentOf( absolute( physicalPath( destination.path ) ) ) );
@@ -439,7 +439,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             destinationHealthy = stored;
 
             if( !stored || !completed ) {
-                throw new CloudException( "cannot copy " + source + " to " + destination );
+                throw new CloudException( s( "cannot copy ${source} to ${destination}" ) );
             }
         } catch( IOException e ) {
             throw new CloudException( e );
