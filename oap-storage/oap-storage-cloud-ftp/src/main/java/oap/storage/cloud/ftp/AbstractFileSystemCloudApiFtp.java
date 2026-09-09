@@ -334,7 +334,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         try {
             if( !client.deleteFile( absolute( physicalPath( path.path ) ) ) ) {
                 healthy = true;
-                throw new CloudException( "cannot delete " + path );
+                throw new CloudException( s( "cannot delete ${path}" ) );
             }
 
             if( removeEmptyFolders ) {
@@ -404,7 +404,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             oap.io.Files.ensureFile( destination );
             try( OutputStream out = Files.newOutputStream( destination ) ) {
                 if( !client.retrieveFile( absolute( physicalPath( source.path ) ), out ) ) {
-                    throw new CloudException( "cannot download " + source );
+                    throw new CloudException( s( "cannot download ${source}" ) );
                 }
             }
             healthy = true;
@@ -485,9 +485,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     @Override
     public void upload( CloudURI destination, BlobData blobData ) {
-        FTPClient client = borrow();
+        FTPClient client = null;
+//        FTPClient client = borrow();
         boolean healthy = false;
         try {
+            client = createClient();
             ensureRemoteDirectory( client, parentOf( absolute( physicalPath( destination.path ) ) ) );
 
             String remotePath = absolute( physicalPath( destination.path ) );
@@ -509,18 +511,25 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
                     }
                 }
                 case null -> throw new CloudException( "content must not be null" );
-                default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
+                default -> throw new CloudException( s( "Unknown content type ${blobData.content.getClass()}" ) );
             };
 
             if( !stored ) {
-                throw new CloudException( "cannot upload to " + destination );
+                throw new CloudException( s( "cannot upload to ${destination}" ) );
             }
 
             healthy = true;
         } catch( IOException e ) {
             throw new CloudException( e );
         } finally {
-            release( client, healthy );
+//            release( client, healthy );
+            if( client != null ) {
+                try {
+                    client.disconnect();
+                } catch( IOException e ) {
+                    log.error( s( "cannot disconnect from ${destination}" ), e );
+                }
+            }
         }
     }
 
