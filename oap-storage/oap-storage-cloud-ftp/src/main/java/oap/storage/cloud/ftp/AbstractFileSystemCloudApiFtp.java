@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -272,18 +273,24 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         return null;
     }
 
-    private FileSystem.StorageItemImpl toStorageItem( CloudURI path, FTPFile file ) {
-        DateTime lastModified = file.getTimestamp() != null
-            ? new DateTime( file.getTimestamp().getTimeInMillis(), DateTimeZone.UTC )
-            : null;
+    private DateTime modificationTime( String absolutePath, FTPFile fallback ) {
+        FTPClient client = borrow();
+        boolean healthy = false;
+        try {
+            Instant instant = client.mdtmInstant( absolutePath );
+            healthy = true;
+            if( instant != null ) return new DateTime( instant.toEpochMilli(), DateTimeZone.UTC );
+        } catch( IOException e ) {
+            throw new CloudException( e );
+        } finally {
+            release( client, healthy );
+        }
+        return fallback.getTimestamp() != null ? new DateTime( fallback.getTimestamp().getTimeInMillis(), DateTimeZone.UTC ) : null;
+    }
 
-        return new FileSystem.StorageItemImpl(
-            path.path,
-            "",
-            buildUri( path ),
-            lastModified,
-            file.getSize(),
-            file.isDirectory() ? "application/x-directory" : "" );
+    private StorageItemFtp toStorageItem( CloudURI path, FTPFile file ) {
+        return new StorageItemFtp( this, path.path, buildUri( path ), file.getSize(),
+            file.isDirectory() ? "application/x-directory" : "", absolute( physicalPath( path.path ) ), file );
     }
 
     private URI buildUri( CloudURI path ) {
@@ -522,11 +529,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            List<FileSystem.StorageItemImpl> all = new ArrayList<>();
+            List<FileSystem.StorageItem> all = new ArrayList<>();
             walk( client, path, absolute( physicalPath( path.path ) ), all );
-            all.sort( Comparator.comparing( FileSystem.StorageItemImpl::getName ) );
+            all.sort( Comparator.comparing( FileSystem.StorageItem::getName ) );
 
-            Stream<FileSystem.StorageItemImpl> stream = all.stream();
+            Stream<FileSystem.StorageItem> stream = all.stream();
             int skip = listOptions.continuationToken != null ? Integer.parseInt( listOptions.continuationToken ) : 0;
             if( skip > 0 ) {
                 stream = stream.skip( skip );
@@ -535,7 +542,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
                 stream = stream.limit( listOptions.maxKeys );
             }
 
-            List<FileSystem.StorageItemImpl> result = stream.toList();
+            List<FileSystem.StorageItem> result = stream.toList();
 
             String nextToken = listOptions.maxKeys != null ? String.valueOf( skip + result.size() ) : null;
 
@@ -548,7 +555,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         }
     }
 
-    private void walk( FTPClient client, CloudURI base, String dirPath, List<FileSystem.StorageItemImpl> acc ) throws IOException {
+    private void walk( FTPClient client, CloudURI base, String dirPath, List<FileSystem.StorageItem> acc ) throws IOException {
         FTPFile[] files = client.listFiles( dirPath );
         if( files == null ) return;
 
@@ -651,6 +658,64 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
                     owner.release( client, healthy );
                 }
             }
+        }
+    }
+
+    private static class StorageItemFtp implements FileSystem.StorageItem {
+        private final AbstractFileSystemCloudApiFtp owner;
+        private final String name;
+        private final URI uri;
+        private final Long size;
+        private final String contentType;
+        private final String absolutePath;
+        private final FTPFile fallback;
+
+        private volatile boolean computed = false;
+        private volatile DateTime lastModified;
+
+        StorageItemFtp( AbstractFileSystemCloudApiFtp owner, String name, URI uri, Long size, String contentType,
+                         String absolutePath, FTPFile fallback ) {
+            this.owner = owner;
+            this.name = name;
+            this.uri = uri;
+            this.size = size;
+            this.contentType = contentType;
+            this.absolutePath = absolutePath;
+            this.fallback = fallback;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public URI getUri() {
+            return uri;
+        }
+
+        @Override
+        public String getETag() {
+            return "";
+        }
+
+        @Override
+        public Long getSize() {
+            return size;
+        }
+
+        @Override
+        public String getContentType() {
+            return contentType;
+        }
+
+        @Override
+        public synchronized DateTime getLastModified() {
+            if( !computed ) {
+                lastModified = owner.modificationTime( absolutePath, fallback );
+                computed = true;
+            }
+            return lastModified;
         }
     }
 }
