@@ -162,27 +162,27 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return s( "localhost:${port}" );
     }
 
-    public Path resolve( String relativePath ) {
-        return homeDirectory().resolve( relativePath );
+    public Path resolve( String configurationId, String relativePath ) {
+        return homeDirectory().resolve( configurationId ).resolve( relativePath );
     }
 
-    public <T> void writeFile( String relativePath, T content, ContentWriter<T> contentWriter ) {
-        Files.write( resolve( relativePath ), content, contentWriter );
+    public <T> void writeFile( String configurationId, String relativePath, T content, ContentWriter<T> contentWriter ) {
+        Files.write( resolve( configurationId, relativePath ), content, contentWriter );
     }
 
-    public <T> void copyFileTo( Path file, String relativePath ) {
-        Files.copy( file, IoStreams.Encoding.PLAIN, resolve( relativePath ), IoStreams.Encoding.PLAIN );
+    public <T> void copyFileTo( String configurationId, Path file, String relativePath ) {
+        Files.copy( file, IoStreams.Encoding.PLAIN, resolve( configurationId, relativePath ), IoStreams.Encoding.PLAIN );
     }
 
-    public void createDirectory( String relativePath ) {
-        Files.ensureDirectory( resolve( relativePath ) );
+    public void createDirectory( String configurationId, String relativePath ) {
+        Files.ensureDirectory( resolve( configurationId, relativePath ) );
     }
 
-    public <T> T readFile( String relativePath, ContentReader<T> contentReader ) {
-        return Files.read( resolve( relativePath ), contentReader );
+    public <T> T readFile( String configurationId, String relativePath, ContentReader<T> contentReader ) {
+        return Files.read( resolve( configurationId, relativePath ), contentReader );
     }
 
-    public <T> T readFile( String relativePath, IoStreams.Encoding encoding, ContentReader<T> contentReader ) {
-        return Files.read( resolve( relativePath ), encoding, contentReader );
+    public <T> T readFile( String configurationId, String relativePath, IoStreams.Encoding encoding, ContentReader<T> contentReader ) {
+        return Files.read( resolve( configurationId, relativePath ), encoding, contentReader );
     }
 }
