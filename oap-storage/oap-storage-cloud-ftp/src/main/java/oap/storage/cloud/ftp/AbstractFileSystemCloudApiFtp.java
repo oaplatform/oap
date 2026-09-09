@@ -150,6 +150,18 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         return str.substring( start, end );
     }
 
+    private static String parentOf( String path ) {
+        int idx = path.lastIndexOf( '/' );
+        if( idx < 0 ) return "";
+        if( idx == 0 ) return "/";
+        return path.substring( 0, idx );
+    }
+
+    private static String nameOf( String path ) {
+        int idx = path.lastIndexOf( '/' );
+        return idx >= 0 ? path.substring( idx + 1 ) : path;
+    }
+
     /**
      * Maps a logical, basedir-relative {@link CloudURI} path to the physical path sent to the FTP server.
      */
@@ -168,18 +180,6 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         if( path.equals( basedir ) ) return "";
         if( path.startsWith( basedir + "/" ) ) return path.substring( basedir.length() + 1 );
         return path;
-    }
-
-    private static String parentOf( String path ) {
-        int idx = path.lastIndexOf( '/' );
-        if( idx < 0 ) return "";
-        if( idx == 0 ) return "/";
-        return path.substring( 0, idx );
-    }
-
-    private static String nameOf( String path ) {
-        int idx = path.lastIndexOf( '/' );
-        return idx >= 0 ? path.substring( idx + 1 ) : path;
     }
 
     protected abstract FTPClient createClient() throws IOException;
@@ -485,8 +485,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     @Override
     public void upload( CloudURI destination, BlobData blobData ) {
-        FTPClient client = null;
-//        FTPClient client = borrow();
+        FTPClient client = borrow();
         boolean healthy = false;
         try {
             client = createAndLoginClient();
@@ -495,11 +494,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             String remotePath = absolute( physicalPath( destination.path ) );
             boolean stored = switch( blobData.content ) {
                 case InputStream inputStream -> client.storeFile( remotePath, inputStream );
-                case String str ->
-                    client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
+                case String str -> client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
                 case byte[] bytes -> client.storeFile( remotePath, new ByteArrayInputStream( bytes ) );
-                case ByteBuffer byteBuffer ->
-                    client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
+                case ByteBuffer byteBuffer -> client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
                 case File file -> {
                     try( InputStream fis = new FileInputStream( file ) ) {
                         yield client.storeFile( remotePath, fis );
@@ -522,14 +519,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         } catch( IOException e ) {
             throw new CloudException( e );
         } finally {
-//            release( client, healthy );
-            if( client != null ) {
-                try {
-                    client.disconnect();
-                } catch( IOException e ) {
-                    log.error( s( "cannot disconnect from ${destination}" ), e );
-                }
-            }
+            release( client, healthy );
         }
     }
 
@@ -683,7 +673,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         private volatile DateTime lastModified;
 
         StorageItemFtp( AbstractFileSystemCloudApiFtp owner, String name, URI uri, Long size, String contentType,
-                         String absolutePath, FTPFile fallback ) {
+                        String absolutePath, FTPFile fallback ) {
             this.owner = owner;
             this.name = name;
             this.uri = uri;
