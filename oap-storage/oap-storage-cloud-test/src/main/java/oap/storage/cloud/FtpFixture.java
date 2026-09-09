@@ -170,7 +170,7 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
     }
 
     public <T> void copyFileTo( Path file, String relativePath ) {
-        Files.copyContent( file, resolve( relativePath ) );
+        Files.copy( file, IoStreams.Encoding.PLAIN, resolve( relativePath ), IoStreams.Encoding.PLAIN );
     }
 
     public void createDirectory( String relativePath ) {
