@@ -376,6 +376,119 @@ public class JsonDiffTest extends AbstractSchemaTest {
             .containsOnly( delO( "test[0]", "{\"test\":\"id\",\"testin\":\"new value\"}" ) );
     }
 
+    @Test
+    public void diffFlagFalseSwitchesToFlaggedMode() {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"string\","
+            + "    \"diff\":false"
+            + "  },"
+            + "  \"other\": {"
+            + "    \"type\":\"string\""
+            + "  }"
+            + "}}";
+
+        assertThat( diff( schema, "{\"test\":\"old value\",\"other\":\"a\"}", "{\"test\":\"new value\",\"other\":\"b\"}" ) ).isEmpty();
+    }
+
+    @Test
+    public void diffFlagOnField() {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"string\","
+            + "    \"diff\":true"
+            + "  },"
+            + "  \"ignored\": {"
+            + "    \"type\":\"string\""
+            + "  }"
+            + "}}";
+
+        assertThat( diff( schema, "{\"test\":\"old value\",\"ignored\":\"a\"}", "{\"test\":\"new value\",\"ignored\":\"b\"}" ) )
+            .containsOnly( updF( "test", "\"old value\"", "\"new value\"" ) );
+    }
+
+    @Test
+    public void diffFlagInheritedUntilDisabled() {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"object\","
+            + "    \"diff\":true,"
+            + "    \"properties\":{"
+            + "      \"testin\":{"
+            + "        \"type\":\"string\""
+            + "      },"
+            + "      \"ignored\":{"
+            + "        \"type\":\"string\","
+            + "        \"diff\":false"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
+
+        assertThat( diff( schema, "{\"test\":{\"testin\":\"old value\",\"ignored\":\"a\"}}",
+            "{\"test\":{\"testin\":\"new value\",\"ignored\":\"b\"}}" ) )
+            .containsOnly( updF( "test.testin", "\"old value\"", "\"new value\"" ) );
+    }
+
+    @Test
+    public void diffFlagDisabledOnArrayItems() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"diff\":true,"
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"{index}\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\","
+            + "          \"diff\":false"
+            + "        },"
+            + "        \"other\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
+
+        assertThat( diff( schema, "{\"test\":[{\"testin\":\"old value\",\"other\":\"a\"}]}",
+            "{\"test\":[{\"testin\":\"new value\",\"other\":\"b\"}]}" ) )
+            .containsOnly( updF( "test[0].other", "\"a\"", "\"b\"" ) );
+    }
+
+    @Test
+    public void diffFlagDisabledOnAddedArrayObject() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"diff\":true,"
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"test\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"diff\":false,"
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
+
+        assertThat( diff( schema, "{\"test\":[]}", "{\"test\":[{\"test\":\"id\"}]}" ) ).isEmpty();
+    }
+
     private List<JsonDiff.Line> diff( String schema, String from, String to ) {
         return JsonDiff.diff( from, to, schema( schema ) ).getDiff();
     }

@@ -33,6 +33,7 @@ These keywords apply to most types:
 | `const: <value>` | Instance must equal this exact value (draft 2020-12) |
 | `enabled: {json-path: fieldName, eq: value}` | **Deprecated** — field is only validated when another field equals a specific value. Prefer object-level `if`/`then`/`else` (draft 2020-12 style, see `object` keywords below) |
 | `errorMessage: {…}` | Per-keyword custom error messages — see [Custom error messages](#custom-error-messages) |
+| `diff: true` / `diff: false` | Opt the node in or out of [`JsonDiff`](#jsondiff). Inherited by nested nodes. A schema without any `diff` keyword is compared in full |
 
 ## Type inference
 
@@ -398,6 +399,31 @@ for( JsonDiff.Line line : diff.getDiff() ) {
 | `newValue` | `Optional<String>` | JSON-serialized new value (`Optional.empty()` if now absent) |
 
 Array elements in object-typed arrays are identified by the field named in `idField`. Arrays with `idField = "{index}"` are compared positionally.
+
+### Selecting fields with `diff`
+
+A schema without any `diff` keyword is compared in full. As soon as at least one node declares `diff`, `JsonDiff` compares only the nodes that carry `diff = true`. The flag is inherited: marking an object or an array applies to everything below it until a nested node sets `diff = false`. Nodes without the flag (and without a flagged ancestor) are ignored.
+
+```hocon
+{
+  type = object
+  properties {
+    title { type = string, diff = true }
+    notes { type = string }                    # ignored
+    address {
+      type = object
+      diff = true                              # whole subtree is compared
+      properties {
+        city { type = string }
+        tags { type = array, items { type = string } }
+        internalId { type = string, diff = false } # except this one
+      }
+    }
+  }
+}
+```
+
+The same schema can still be used for validation: `diff` has no effect on `validate`.
 
 ## Errors
 

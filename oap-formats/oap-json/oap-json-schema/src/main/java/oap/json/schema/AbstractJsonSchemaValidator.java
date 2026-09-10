@@ -220,13 +220,14 @@ public abstract class AbstractJsonSchemaValidator<A extends AbstractSchemaAST<A>
         public AbstractSchemaAST.CommonSchemaAST asCommon() {
             Optional<BooleanReference> required = asBooleanReference( "required" );
             Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
+            Optional<Boolean> diff = asBoolean( "diff" ).optional();
             Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
             Object anEnum = properties.node.get( "enum" );
             Object errorMessageObj = properties.node.get( "errorMessage" );
             Map<String, Object> errorMessage = errorMessageObj instanceof Map<?, ?> m ? ( Map<String, Object> ) m : Map.of();
 
             return new AbstractSchemaAST.CommonSchemaAST(
-                properties.schemaType, required, enabled,
+                properties.schemaType, required, enabled, diff,
                 defaultValue, toEnum( anEnum ),
                 Optional.ofNullable( properties.node.get( "const" ) ),
                 asString( "title" ).optional(),
