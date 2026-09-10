@@ -170,10 +170,10 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
         }
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( String configurationId ) {
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId, String basedir ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         map.put( s( "fs.file.container.${configurationId}" ), "" );
-        map.put( s( "fs.file.filesystem.basedir.${configurationId}" ), testDirectory().resolve( configurationId ) );
+        map.put( s( "fs.file.filesystem.basedir.${configurationId}" ), basedir );
         return map;
     }
 
