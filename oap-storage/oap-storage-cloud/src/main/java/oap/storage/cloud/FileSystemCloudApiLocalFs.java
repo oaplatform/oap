@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
@@ -60,7 +62,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         if( basedirStr.endsWith( "/" ) ) {
             basedirStr = basedirStr.substring( 0, basedirStr.length() - 1 );
         }
-        return "file://" + basedirStr + "/" + path.path;
+        return s( "file://${basedirStr}/${path.path}" );
     }
 
     @Override

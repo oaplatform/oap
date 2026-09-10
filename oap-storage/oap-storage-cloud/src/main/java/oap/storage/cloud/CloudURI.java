@@ -5,8 +5,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -19,29 +17,27 @@ public class CloudURI implements Serializable {
     public final String path;
 
     public CloudURI( String uri ) throws CloudException {
-        try {
-            // java.net.URI rejects a bare "fs://" (empty authority with no path) as malformed;
-            // normalize it to the equivalent, parseable triple-slash form.
-            URI u = new URI( uri.endsWith( "://" ) ? uri + "/" : uri );
-
-            String scheme = u.getScheme();
-            if( scheme != null && !"fs".equals( scheme ) ) {
-                throw new CloudException( "fs: expected URI scheme 'fs', got '" + scheme + "' — use fs://<configurationId>/<path>" );
-            }
-
-            String configurationId = u.getHost();
-            if( configurationId == null || configurationId.isEmpty() ) {
-                throw new CloudException( "fs: configurationId is required in the URI, e.g. fs://<configurationId>/<path>" );
-            }
-
-            String uriPath = FilenameUtils.separatorsToUnix( u.getPath() );
-            if( uriPath.startsWith( "/" ) ) uriPath = uriPath.substring( 1 );
-
-            this.configurationId = configurationId;
-            this.path = uriPath;
-        } catch( URISyntaxException e ) {
-            throw new CloudException( e );
+        int schemeEnd = uri.indexOf( "://" );
+        if( schemeEnd < 0 ) {
+            throw new CloudException( "fs: configurationId is required in the URI, e.g. fs://<configurationId>/<path>" );
         }
+
+        String scheme = uri.substring( 0, schemeEnd );
+        if( !scheme.isEmpty() && !"fs".equals( scheme ) ) {
+            throw new CloudException( s( "fs: expected URI scheme 'fs', got '${scheme}' — use fs://<configurationId>/<path>" ) );
+        }
+
+        String rest = uri.substring( schemeEnd + 3 );
+        int slashIdx = rest.indexOf( '/' );
+        String configurationId = slashIdx >= 0 ? rest.substring( 0, slashIdx ) : rest;
+        String uriPath = slashIdx >= 0 ? rest.substring( slashIdx + 1 ) : "";
+
+        if( configurationId.isEmpty() ) {
+            throw new CloudException( "fs: configurationId is required in the URI, e.g. fs://<configurationId>/<path>" );
+        }
+
+        this.configurationId = configurationId;
+        this.path = FilenameUtils.separatorsToUnix( uriPath );
     }
 
     public CloudURI( String configurationId, String path ) {
