@@ -48,6 +48,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
         public final String schemaType;
         public final Optional<BooleanReference> required;
         public final Optional<BooleanReference> enabled;
+        public final Optional<Boolean> diff;
         public final Optional<Object> defaultValue;
         public final Optional<EnumFunction> enumValue;
         public final Optional<Object> constValue;
@@ -59,6 +60,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
                                 Optional<BooleanReference> enabled,
+                                Optional<Boolean> diff,
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
                                 Optional<Object> constValue,
@@ -70,6 +72,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
             this.schemaType = schemaType;
             this.required = required;
             this.enabled = enabled;
+            this.diff = diff;
             this.defaultValue = defaultValue;
             this.enumValue = enumValue;
             this.constValue = constValue;
@@ -85,6 +88,7 @@ public abstract class AbstractSchemaAST<T extends AbstractSchemaAST<T>> implemen
                 schemaType,
                 required.isPresent() ? required : common.required,
                 enabled.isPresent() ? enabled : common.enabled,
+                diff.isPresent() ? diff : common.diff,
                 defaultValue.isPresent() ? defaultValue : common.defaultValue,
                 enumValue.isPresent() ? enumValue : common.enumValue,
                 constValue.isPresent() ? constValue : common.constValue,

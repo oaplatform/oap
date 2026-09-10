@@ -62,23 +62,25 @@ public final class JsonDiff {
         var from = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
         }, oldJson );
 
-        diff( "", schema, result, to, from );
+        diff( "", schema, result, to, from, !declaresDiff( schema ) );
 
         return new JsonDiff( result );
     }
 
-    private static void diff( String prefix, AbstractSchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
+    private static void diff( String prefix, AbstractSchemaAST<?> schema, ArrayList<Line> result, Object to, Object from, boolean inherited ) {
+        var enabled = enabled( schema, inherited );
+
         if( schema instanceof ObjectSchemaAST ) {
-            diffObject( prefix, ( ObjectSchemaAST ) schema, result, to, from );
+            diffObject( prefix, ( ObjectSchemaAST ) schema, result, to, from, enabled );
         } else if( schema instanceof ArraySchemaAST ) {
-            diffArray( prefix, ( ArraySchemaAST ) schema, result, to, from );
+            diffArray( prefix, ( ArraySchemaAST ) schema, result, to, from, enabled );
         } else {
-            diffField( prefix, schema, result, to, from );
+            diffField( prefix, schema, result, to, from, enabled );
         }
     }
 
-    private static void diffField( String prefix, AbstractSchemaAST<?> schema, ArrayList<Line> result, Object to, Object from ) {
-        if( !Objects.equals( to, from ) ) {
+    private static void diffField( String prefix, AbstractSchemaAST<?> schema, ArrayList<Line> result, Object to, Object from, boolean enabled ) {
+        if( enabled && !Objects.equals( to, from ) ) {
             result.add( new Line(
                 prefix,
                 toLineType( schema ),
@@ -88,7 +90,21 @@ public final class JsonDiff {
         }
     }
 
-    private static void diffArray( String prefix, ArraySchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
+    private static boolean declaresDiff( AbstractSchemaAST<?> schema ) {
+        if( schema.common.diff.isPresent() ) return true;
+
+        if( schema instanceof ObjectSchemaAST object ) {
+            return object.properties.values().stream().anyMatch( JsonDiff::declaresDiff );
+        }
+
+        return schema instanceof ArraySchemaAST array && declaresDiff( array.items );
+    }
+
+    private static boolean enabled( AbstractSchemaAST<?> schema, boolean inherited ) {
+        return schema.common.diff.orElse( inherited );
+    }
+
+    private static void diffArray( String prefix, ArraySchemaAST schema, ArrayList<Line> result, Object to, Object from, boolean enabled ) {
         if( !( to instanceof List ) || !( from instanceof List ) )
             throw new IllegalArgumentException( prefix + ": invalid json" );
         var toList = ( List<?> ) to;
@@ -104,22 +120,23 @@ public final class JsonDiff {
 
             var added = unique( toList, fromList, idField );
             var removed = unique( fromList, toList, idField );
+            var itemsEnabled = enabled( items, enabled );
 
             for( Object item : added ) {
                 var id = isIndex( idField ) ? fromList.size() : getId( idField, item );
-                diffField( prefixWithIndex( prefix, id ), items, result, item, null );
+                diffField( prefixWithIndex( prefix, id ), items, result, item, null, itemsEnabled );
             }
 
             for( Object item : removed ) {
                 var id = isIndex( idField ) ? toList.size() : getId( idField, item );
 
-                diffField( prefixWithIndex( prefix, id ), items, result, null, item );
+                diffField( prefixWithIndex( prefix, id ), items, result, null, item, itemsEnabled );
             }
 
 
             if( isIndex( idField ) ) {
                 for( int i = 0; i < min( fromList.size(), toList.size() ); i++ ) {
-                    diff( prefixWithIndex( prefix, i ), items, result, toList.get( i ), fromList.get( i ) );
+                    diff( prefixWithIndex( prefix, i ), items, result, toList.get( i ), fromList.get( i ), enabled );
                 }
             } else {
                 for( var fromItem : fromList ) {
@@ -137,14 +154,14 @@ public final class JsonDiff {
                             return Objects.equals( toId, id );
                         } )
                         .findAny()
-                        .ifPresent( toItem -> diff( prefixWithIndex( prefix, id ), items, result, toItem, fromItemMap ) );
+                        .ifPresent( toItem -> diff( prefixWithIndex( prefix, id ), items, result, toItem, fromItemMap, enabled ) );
                 }
             }
         } else if( items instanceof ArraySchemaAST ) {
             throw new IllegalArgumentException( prefix + ": sub-array" );
         } else {
 
-            diffField( prefix, schema, result, diffAdd.isEmpty() ? null : diffAdd, diffDel.isEmpty() ? null : diffDel );
+            diffField( prefix, schema, result, diffAdd.isEmpty() ? null : diffAdd, diffDel.isEmpty() ? null : diffDel, enabled );
         }
     }
 
@@ -176,7 +193,7 @@ public final class JsonDiff {
     }
 
     @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
-    private static void diffObject( String prefix, ObjectSchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
+    private static void diffObject( String prefix, ObjectSchemaAST schema, ArrayList<Line> result, Object to, Object from, boolean enabled ) {
 
         var toMap = ( Map<?, ?> ) to;
         var fromMap = ( Map<?, ?> ) from;
@@ -191,9 +208,9 @@ public final class JsonDiff {
             var schemaAST = child.getValue();
 
             if( ( fromProperty == null && toProperty != null ) || ( toProperty == null && fromProperty != null ) ) {
-                diffField( newPrefix, schemaAST, result, toProperty, fromProperty );
+                diffField( newPrefix, schemaAST, result, toProperty, fromProperty, enabled( schemaAST, enabled ) );
             } else if( fromProperty != null ) {
-                diff( newPrefix, schemaAST, result, toProperty, fromProperty );
+                diff( newPrefix, schemaAST, result, toProperty, fromProperty, enabled );
             }
         }
     }
