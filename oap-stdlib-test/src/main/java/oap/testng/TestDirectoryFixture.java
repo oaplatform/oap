@@ -37,6 +37,10 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
  * variables:
@@ -164,6 +168,13 @@ public class TestDirectoryFixture extends AbstractFixture<TestDirectoryFixture> 
                     }
                 } );
         }
+    }
+
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId, String basedir ) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        map.put( s( "fs.file.container.${configurationId}" ), "" );
+        map.put( s( "fs.file.filesystem.basedir.${configurationId}" ), basedir );
+        return map;
     }
 
     @AllArgsConstructor

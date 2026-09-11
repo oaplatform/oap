@@ -24,7 +24,7 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
  * Starts a <a href="https://hub.docker.com/r/dockurr/samba">dockurr/samba</a> container. {@link #container()}
- * returns {@code host:port/}{@link #SHARE}, which is what {@code CloudURI}'s {@code container} field must be
+ * returns {@code host:port/}{@link #SHARE}, which is what {@code fs.smb.container[.<configurationId>]} must be set to
  * for this fixture's share. All fixture I/O (seeding/reading/reset) goes through the Docker Engine API
  * (copy/exec), not a host bind mount — a bind mount's host path must resolve on the Docker daemon's side too,
  * which breaks when the test JVM and daemon don't share a filesystem (e.g. Docker-in-Docker on Linux CI).
@@ -76,30 +76,29 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     }
 
     public String container() {
-        return hostPort() + "/" + SHARE;
+        return s( "${hostPort()}/${SHARE}" );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration() {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( true ) );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId ) {
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( configurationId ) );
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( boolean addDefaults ) {
+    /**
+     * Builds config for this share under `configurationId` — always registers `configurationId` via `container.<configurationId>`
+     * (and identity/credential alongside it), whether it's the default target or a secondary one layered
+     * onto an existing {@link FileSystemConfiguration} via {@link #updateWithSmb}.
+     */
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs.smb.clouds.identity", USERNAME );
-        map.put( "fs.smb.clouds.credential", PASSWORD );
-
-        if( addDefaults ) {
-            map.put( "fs.default.clouds.scheme", "smb" );
-            map.put( "fs.default.clouds.container", container() );
-        } else {
-            map.put( "fs.smb.clouds.container", container() );
-        }
+        map.put( s( "fs.smb.identity.${configurationId}" ), USERNAME );
+        map.put( s( "fs.smb.credential.${configurationId}" ), PASSWORD );
+        map.put( s( "fs.smb.container.${configurationId}" ), container() );
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( addDefaults ) );
+    public FileSystemConfiguration updateWithSmb( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( configurationId ) );
     }
 
     /**
@@ -115,7 +114,7 @@ public class SambaServerFixture extends AbstractFixture<SambaServerFixture> {
     }
 
     public void createDirectory( String relativePath ) {
-        exec( "mkdir", "-p", "/storage/" + relativePath );
+        exec( "mkdir", "-p", s( "/storage/${relativePath}" ) );
         openUpPermissions();
     }
 

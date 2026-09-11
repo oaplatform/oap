@@ -1,6 +1,5 @@
 package oap.storage.cloud;
 
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
 import org.apache.commons.io.FilenameUtils;
@@ -13,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -24,21 +24,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
+
 @Slf4j
 public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     private final Path basedir;
     private final boolean removeEmptyFolders;
 
-    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        String basedir = ( String ) fileSystemConfiguration.get( "file", container, "clouds.filesystem.basedir" );
+    public FileSystemCloudApiLocalFs( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        String basedir = ( String ) fileSystemConfiguration.get( "file", configurationId, "filesystem.basedir" );
         if( basedir == null ) {
             basedir = SystemUtils.IS_OS_WINDOWS ? "C:/" : "/";
         }
 
         this.basedir = Paths.get( basedir );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( "file", container, "clouds.filesystem.remove_empty_folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( "file", configurationId, "filesystem.remove_empty_folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
     }
 
@@ -51,7 +53,16 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
         if( path.path.startsWith( "/" ) ) {
             return Paths.get( path.path ).normalize();
         }
-        return Paths.get( basedir.toString(), path.container, path.path ).normalize();
+        return Paths.get( basedir.toString(), path.path ).normalize();
+    }
+
+    @Override
+    public String toUri( CloudURI path ) {
+        String basedirStr = FilenameUtils.separatorsToUnix( basedir.toString() );
+        if( basedirStr.endsWith( "/" ) ) {
+            basedirStr = basedirStr.substring( 0, basedirStr.length() - 1 );
+        }
+        return s( "file://${basedirStr}/${path.path}" );
     }
 
     @Override
@@ -109,7 +120,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
             return new FileSystem.StorageItemImpl(
                 fsPath.toString(),
                 "",
-                fsPath.toUri(),
+                URI.create( path.toString() ),
                 new DateTime( Files.getLastModifiedTime( fsPath ).toMillis(), DateTimeZone.UTC ),
                 Files.size( fsPath ),
                 Files.isDirectory( fsPath ) ? "application/x-directory" : "" );
@@ -131,8 +142,6 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
     @Override
     public void copy( CloudURI source, CloudURI destination ) {
-        Preconditions.checkArgument( source.scheme.equals( destination.scheme ) );
-
         try {
             Files.copy( getPath( source ), getPath( destination ) );
         } catch( IOException e ) {
@@ -220,10 +229,11 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
 
             for( Path file : files ) {
                 try {
+                    String name = FilenameUtils.separatorsToUnix( basedir.relativize( file ).toString() );
                     list.add( new FileSystem.StorageItemImpl(
-                        FilenameUtils.separatorsToUnix( basedir.relativize( file ).toString() ),
+                        name,
                         "",
-                        file.toUri(),
+                        URI.create( path.withPath( name ).toString() ),
                         new DateTime( Files.getLastModifiedTime( file ).toMillis(), DateTimeZone.UTC ),
                         Files.size( file ),
                         "" ) );

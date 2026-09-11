@@ -31,4 +31,12 @@ public interface FileSystemCloudApi extends AutoCloseable {
     void upload( CloudURI destination, BlobData blobData ) throws CloudException;
 
     PageSet<? extends FileSystem.StorageItem> list( CloudURI path, ListOptions listOptions ) throws CloudException;
+
+    /**
+     * Renders {@code path} as a "native"-looking URL for this backend instead of the {@code fs://<configurationId>/<path>}
+     * address. Default falls back to {@code fs://<configurationId>/<path>} ({@code path.toString()}).
+     */
+    default String toUri( CloudURI path ) throws CloudException {
+        return path.toString();
+    }
 }

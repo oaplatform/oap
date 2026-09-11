@@ -28,13 +28,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.io.content.ContentReader.ofString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 public class FileSystemS3Test extends Fixtures {
     public static final String TEST_BUCKET = "test-bucket";
+    public static final String CONFIGURATION_ID = "s3";
     private static final S3MockFixture s3mockFixture;
     private static final TestDirectoryFixture testDirectoryFixture;
 
@@ -55,11 +52,34 @@ public class FileSystemS3Test extends Fixtures {
     @Test
     public void testGetDefaultURL() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.clouds.scheme", "s3",
-            "fs.default.clouds.container", TEST_BUCKET
+            "fs.s3.container", TEST_BUCKET
         ) ) ) ) {
-            assertThat( fileSystem.getDefaultURL( "/a.file" ) ).isEqualTo( new CloudURI( "s3", TEST_BUCKET, "a.file" ) );
-            assertThat( fileSystem.getDefaultURL( "a.file" ) ).isEqualTo( new CloudURI( "s3", TEST_BUCKET, "a.file" ) );
+            assertThat( fileSystem.getDefaultURL( "my-configurationId", "/a.file" ) ).isEqualTo( new CloudURI( "my-configurationId", "a.file" ) );
+            assertThat( fileSystem.getDefaultURL( "my-configurationId", "a.file" ) ).isEqualTo( new CloudURI( "my-configurationId", "a.file" ) );
+        }
+    }
+
+    @Test
+    public void testToUri() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            assertThat( fileSystem.toUri( new CloudURI( CONFIGURATION_ID, "logs/file.txt" ) ) )
+                .isEqualTo( "http://localhost:" + s3mockFixture.getHttpPort() + "/" + TEST_BUCKET + "/logs/file.txt" );
+        }
+    }
+
+    @Test
+    public void testResolveWithConfigurationId() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            CloudURI resolved = fileSystem.resolve( "other-configuration-id", "s3://" + TEST_BUCKET + "/logs/file.txt" );
+
+            assertThat( resolved ).isEqualTo( new CloudURI( "other-configuration-id", "logs/file.txt" ) );
+        }
+    }
+
+    @Test( expectedExceptions = NullPointerException.class )
+    public void testResolveWithConfigurationIdRequiresNonNull() {
+        try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
+            fileSystem.resolve( null, "s3://" + TEST_BUCKET + "/logs/file.txt" );
         }
     }
 
@@ -71,7 +91,7 @@ public class FileSystemS3Test extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
 
-            InputStream inputStream = fileSystem.getInputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/file.txt" ) );
+            InputStream inputStream = fileSystem.getInputStream( new CloudURI( CONFIGURATION_ID, "logs/file.txt" ) );
 
             assertThat( inputStream ).hasContent( "test string" );
             assertThat( s3mockFixture.readTags( TEST_BUCKET, "logs/file.txt" ) ).contains( entry( "test-tag", "tag-val" ) );
@@ -84,7 +104,7 @@ public class FileSystemS3Test extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            try( OutputStream outputStream = fileSystem.getOutputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/file.txt" ), Map.of( "test-tag", "tag-val" ) ) ) {
+            try( OutputStream outputStream = fileSystem.getOutputStream( new CloudURI( CONFIGURATION_ID, "logs/file.txt" ), Map.of( "test-tag", "tag-val" ) ) ) {
                 outputStream.write( "1".getBytes() );
                 outputStream.write( "23".getBytes() );
                 outputStream.write( "567".getBytes() );
@@ -98,7 +118,7 @@ public class FileSystemS3Test extends Fixtures {
     @Test
     public void testGetOutputStreamMultipart() throws IOException {
         int partSize = 5 * 1024 * 1024;
-        byte[] chunk = new byte[ 1024 * 1024 ];
+        byte[] chunk = new byte[1024 * 1024];
         for( int i = 0; i < chunk.length; i++ ) {
             chunk[i] = ( byte ) ( 'a' + ( i % 26 ) );
         }
@@ -106,7 +126,7 @@ public class FileSystemS3Test extends Fixtures {
         int totalSize = partSize + chunk.length;
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            try( OutputStream outputStream = fileSystem.getOutputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/big-file.bin" ), Map.of( "test-tag", "tag-val" ) ) ) {
+            try( OutputStream outputStream = fileSystem.getOutputStream( new CloudURI( CONFIGURATION_ID, "logs/big-file.bin" ), Map.of( "test-tag", "tag-val" ) ) ) {
                 int written = 0;
                 while( written < totalSize ) {
                     outputStream.write( chunk );
@@ -129,12 +149,12 @@ public class FileSystemS3Test extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
 
-            FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/logs/file.txt" ) );
+            FileSystem.StorageItem item = fileSystem.getMetadata( new CloudURI( CONFIGURATION_ID, "/logs/file.txt" ) );
             assertThat( item.getLastModified() ).isLessThanOrEqualTo( new DateTime( DateTimeZone.UTC ) );
             assertThat( item.getSize() ).isEqualTo( 11L );
-            assertThat( item.getUri() ).isEqualTo( new URI( "http://localhost:" + s3mockFixture.getHttpPort() + "/test-bucket/logs/file.txt" ) );
+            assertThat( item.getUri() ).isEqualTo( URI.create( "fs://" + CONFIGURATION_ID + "/logs/file.txt" ) );
 
-            assertThat( fileSystem.getMetadata( new CloudURI( "s3", TEST_BUCKET, "/unknown.txt" ) ) ).isNull();
+            assertThat( fileSystem.getMetadata( new CloudURI( CONFIGURATION_ID, "/unknown.txt" ) ) ).isNull();
         }
     }
 
@@ -146,7 +166,7 @@ public class FileSystemS3Test extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             s3mockFixture.uploadFile( TEST_BUCKET, "logs/file.txt", path, Map.of( "test-tag", "tag-val" ) );
 
-            fileSystem.downloadFile( "s3://" + TEST_BUCKET + "/logs/file.txt", testDirectoryFixture.testPath( "file.txt" ) );
+            fileSystem.downloadFile( new CloudURI( CONFIGURATION_ID, "logs/file.txt" ), testDirectoryFixture.testPath( "file.txt" ) );
 
             assertThat( testDirectoryFixture.testPath( "file.txt" ) ).hasContent( "test string" );
         }
@@ -158,9 +178,9 @@ public class FileSystemS3Test extends Fixtures {
         Files.write( path, "test string", ContentWriter.ofString() );
 
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.copy( fileSystem.toLocalFilePath( path ), new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
+            fileSystem.copy( fileSystem.toLocalFileURI( "file", path ), new CloudURI( CONFIGURATION_ID, "logs/my-file.txt.gz" ), Map.of( "tag1", "va1", "tag2", "val2" ) );
 
-            InputStream inputStream = fileSystem.getInputStream( new CloudURI( "s3://" + TEST_BUCKET + "/logs/my-file.txt.gz" ) );
+            InputStream inputStream = fileSystem.getInputStream( new CloudURI( CONFIGURATION_ID, "logs/my-file.txt.gz" ) );
 
             assertThat( IoStreams.in( inputStream, Encoding.GZIP ) ).hasContent( "test string" );
 
@@ -175,17 +195,16 @@ public class FileSystemS3Test extends Fixtures {
 
     @NotNull
     private FileSystemConfiguration getFileSystemConfiguration() {
-        return s3mockFixture.getFileSystemConfiguration( TEST_BUCKET );
+        return s3mockFixture.updateWithS3( s3mockFixture.getFileSystemConfiguration( CONFIGURATION_ID, TEST_BUCKET ), "test2", "test2" );
     }
 
     @Test
     public void testToLocalFilePath() {
         try( FileSystem fileSystem = new FileSystem( new FileSystemConfiguration( Map.of(
-            "fs.default.clouds.scheme", "s3",
-            "fs.default.clouds.container", TEST_BUCKET
+            "fs.s3.container", TEST_BUCKET
         ) ) ) ) {
             Path path = testDirectoryFixture.testPath( "/container/test.file" );
-            assertThat( fileSystem.toLocalFilePath( path ) ).isEqualTo( new CloudURI( "file", "", FilenameUtils.separatorsToUnix( testDirectoryFixture.testPath( "container/test.file" ).toString() ) ) );
+            assertThat( fileSystem.toLocalFileURI( "file", path ) ).isEqualTo( new CloudURI( "file", FilenameUtils.separatorsToUnix( testDirectoryFixture.testPath( "container/test.file" ).toString() ) ) );
         }
     }
 
@@ -202,39 +221,40 @@ public class FileSystemS3Test extends Fixtures {
             s3mockFixture.uploadFile( "test2", "logs/file2.txt", path2 );
             s3mockFixture.createFolder( "test2", "logs/folder1/" );
 
-            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
-            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/folder1/" ) ) );
-            assertTrue( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/file1.txt" ) ) ).isTrue();
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/file2.txt" ) ) ).isTrue();
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/folder1/" ) ) ).isTrue();
+            assertThat( fileSystem.containerExists( new CloudURI( "test2", "" ) ) ).isTrue();
 
-            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().build() );
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( "test2", "logs/" ), ListOptions.builder().build() );
             assertThat( list.size() ).isEqualTo( 3 );
-            assertNotNull( list.get( 0 ).getLastModified() );
-            assertEquals( "logs/file1.txt", list.get( 0 ).getName() );
+            assertThat( list.get( 0 ).getLastModified() ).isNotNull();
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "logs/file1.txt" );
+            assertThat( list.get( 0 ).getUri() ).isEqualTo( URI.create( "fs://test2/logs/file1.txt" ) );
 
-            PageSet<? extends FileSystem.StorageItem> listP = fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().maxKeys( 1 ).build() );
+            PageSet<? extends FileSystem.StorageItem> listP = fileSystem.list( new CloudURI( "test2", "logs/" ), ListOptions.builder().maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
-            assertEquals( "logs/file1.txt", listP.get( 0 ).getName() );
-            listP = fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().continuationToken( listP.nextContinuationToken ).maxKeys( 1 ).build() );
+            assertThat( listP.get( 0 ).getName() ).isEqualTo( "logs/file1.txt" );
+            listP = fileSystem.list( new CloudURI( "test2", "logs/" ), ListOptions.builder().continuationToken( listP.nextContinuationToken ).maxKeys( 1 ).build() );
             assertThat( listP.size() ).isEqualTo( 1 );
-            assertEquals( "logs/file2.txt", listP.get( 0 ).getName() );
+            assertThat( listP.get( 0 ).getName() ).isEqualTo( "logs/file2.txt" );
 
-            fileSystem.deleteBlob( new CloudURI( "s3://test2/logs/file1.txt" ) );
+            fileSystem.deleteBlob( new CloudURI( "test2", "logs/file1.txt" ) );
 
             assertThat( s3mockFixture.headObject( "test2", "logs/folder1/" ) ).isNotNull();
 
-            assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
-            assertTrue( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
-            assertTrue( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
-            assertThat( fileSystem.list( new CloudURI( "s3://test2/logs/" ), ListOptions.builder().build() ).size() ).isEqualTo( 2 );
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/file1.txt" ) ) ).isFalse();
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/file2.txt" ) ) ).isTrue();
+            assertThat( fileSystem.containerExists( new CloudURI( "test2", "" ) ) ).isTrue();
+            assertThat( fileSystem.list( new CloudURI( "test2", "logs/" ), ListOptions.builder().build() ).size() ).isEqualTo( 2 );
 
-            assertFalse( fileSystem.deleteContainerIfEmpty( new CloudURI( "s3://test2" ) ) );
-            fileSystem.deleteContainer( new CloudURI( "s3://test2" ) );
+            assertThat( fileSystem.deleteContainerIfEmpty( new CloudURI( "test2", "" ) ) ).isFalse();
+            fileSystem.deleteContainer( new CloudURI( "test2", "" ) );
 
-            assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file1.txt" ) ) );
-            assertFalse( fileSystem.blobExists( new CloudURI( "s3://test2/logs/file2.txt" ) ) );
-            assertFalse( fileSystem.containerExists( new CloudURI( "s3://test2" ) ) );
-            assertTrue( fileSystem.containerExists( new CloudURI( "s3://" + TEST_BUCKET ) ) );
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/file1.txt" ) ) ).isFalse();
+            assertThat( fileSystem.blobExists( new CloudURI( "test2", "logs/file2.txt" ) ) ).isFalse();
+            assertThat( fileSystem.containerExists( new CloudURI( "test2", "" ) ) ).isFalse();
+            assertThat( fileSystem.containerExists( new CloudURI( CONFIGURATION_ID, "" ) ) ).isTrue();
         }
     }
 
@@ -242,20 +262,19 @@ public class FileSystemS3Test extends Fixtures {
     public void testToFile() throws IOException {
         FileSystemConfiguration fileSystemConfiguration = new FileSystemConfiguration(
             Map.of(
-                "fs.default.clouds.scheme", "s3",
-                "fs.default.clouds.container", "test-bucket"
+                "fs.s3.container", "test-bucket"
             )
         );
 
         try( FileSystem fileSystem = new FileSystem( fileSystemConfiguration ) ) {
-            assertThat( fileSystem.toFile( new CloudURI( "file:///tmp/a/file1" ) ).getCanonicalFile() ).isEqualTo( new File( "/tmp/a/file1" ).getCanonicalFile() );
+            assertThat( fileSystem.toFile( new CloudURI( "fs://file//tmp/a/file1" ) ).getCanonicalFile() ).isEqualTo( new File( "/tmp/a/file1" ).getCanonicalFile() );
         }
     }
 
     @Test
     public void testUploadString() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.upload( new CloudURI( "s3://test-bucket/file.txt" ), BlobData.builder().content( "content" ).build() );
+            fileSystem.upload( new CloudURI( CONFIGURATION_ID, "file.txt" ), BlobData.builder().content( "content" ).build() );
 
             assertThat( s3mockFixture.readFile( TEST_BUCKET, "file.txt", ofString(), Encoding.from( "file.txt" ) ) ).isEqualTo( "content" );
         }
@@ -264,9 +283,31 @@ public class FileSystemS3Test extends Fixtures {
     @Test
     public void testUploadBytes() {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
-            fileSystem.upload( new CloudURI( "s3://test-bucket/file.txt" ), BlobData.builder().content( "content".getBytes( UTF_8 ) ).build() );
+            fileSystem.upload( new CloudURI( CONFIGURATION_ID, "file.txt" ), BlobData.builder().content( "content".getBytes( UTF_8 ) ).build() );
 
             assertThat( s3mockFixture.readFile( TEST_BUCKET, "file.txt", ofString(), Encoding.from( "file.txt" ) ) ).isEqualTo( "content" );
+        }
+    }
+
+    @Test
+    public void testBasedir() {
+        FileSystemConfiguration configuration = getFileSystemConfiguration()
+            .copyWith( Map.of( "fs.s3.filesystem.basedir", "sub/dir" ) );
+
+        try( FileSystem fileSystem = new FileSystem( configuration ) ) {
+            fileSystem.upload( new CloudURI( CONFIGURATION_ID, "file.txt" ), BlobData.builder().content( "content" ).build() );
+
+            assertThat( s3mockFixture.readFile( TEST_BUCKET, "sub/dir/file.txt", ofString(), Encoding.from( "file.txt" ) ) ).isEqualTo( "content" );
+
+            assertThat( fileSystem.toUri( new CloudURI( CONFIGURATION_ID, "file.txt" ) ) )
+                .isEqualTo( "http://localhost:" + s3mockFixture.getHttpPort() + "/" + TEST_BUCKET + "/file.txt" );
+
+            PageSet<? extends FileSystem.StorageItem> list = fileSystem.list( new CloudURI( CONFIGURATION_ID, "" ), ListOptions.builder().build() );
+            assertThat( list.size() ).isEqualTo( 1 );
+            assertThat( list.get( 0 ).getName() ).isEqualTo( "file.txt" );
+
+            fileSystem.deleteBlob( new CloudURI( CONFIGURATION_ID, "file.txt" ) );
+            assertThat( fileSystem.blobExists( new CloudURI( CONFIGURATION_ID, "file.txt" ) ) ).isFalse();
         }
     }
 
@@ -275,7 +316,7 @@ public class FileSystemS3Test extends Fixtures {
         try( FileSystem fileSystem = new FileSystem( getFileSystemConfiguration() ) ) {
             s3mockFixture.createFolder( "test-bucket", "folder/" );
 
-            assertThat( fileSystem.getMetadata( new CloudURI( "s3://test-bucket/folder/" ) ).getContentType() ).isEqualTo( "application/x-directory" );
+            assertThat( fileSystem.getMetadata( new CloudURI( CONFIGURATION_ID, "folder/" ) ).getContentType() ).isEqualTo( "application/x-directory" );
 
             assertThat( s3mockFixture.readFile( TEST_BUCKET, "folder/", ofString(), Encoding.PLAIN ) ).isEqualTo( "" );
         }

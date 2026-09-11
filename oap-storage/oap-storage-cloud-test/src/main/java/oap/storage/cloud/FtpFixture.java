@@ -116,69 +116,73 @@ public class FtpFixture extends AbstractFixture<FtpFixture> {
         return testDirectoryFixture.testDirectory();
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration() {
-        return getFileSystemConfiguration( false );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId ) {
+        return getFileSystemConfiguration( configurationId, false );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders ) {
-        return getFileSystemConfiguration( removeEmptyFolders, null );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId, boolean removeEmptyFolders ) {
+        return getFileSystemConfiguration( configurationId, removeEmptyFolders, null );
     }
 
-    public FileSystemConfiguration getFileSystemConfiguration( boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, true ) );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( configurationId, removeEmptyFolders, poolMaxSize ) );
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
+    /**
+     * Builds config for this server under `configurationId` — always registers `configurationId` via `container.<configurationId>`
+     * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
+     * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithFtp}.
+     */
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
         String scheme = tls ? "ftps" : "ftp";
 
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs." + scheme + ".clouds.identity", USERNAME );
-        map.put( "fs." + scheme + ".clouds.credential", PASSWORD );
-        map.put( "fs." + scheme + ".clouds.trust-all", true );
+        map.put( s( "fs.${scheme}.identity.${configurationId}" ), USERNAME );
+        map.put( s( "fs.${scheme}.credential.${configurationId}" ), PASSWORD );
+        map.put( s( "fs.${scheme}.trust_all.${configurationId}" ), true );
+        map.put( s( "fs.${scheme}.container.${configurationId}" ), hostPort() );
+        map.put( s( "fs.${scheme}.filesystem.basedir.${configurationId}" ), configurationId );
 
         if( removeEmptyFolders ) {
-            map.put( "fs." + scheme + ".clouds.remove-empty-folders", true );
+            map.put( s( "fs.${scheme}.remove_empty_folders.${configurationId}" ), true );
         }
 
         if( poolMaxSize != null ) {
-            map.put( "fs." + scheme + ".clouds.pool-max-size", poolMaxSize );
-        }
-
-        if( addDefaults ) {
-            map.put( "fs.default.clouds.scheme", scheme );
-            map.put( "fs.default.clouds.container", hostPort() );
-        } else {
-            map.put( "fs.ftp.clouds.container", hostPort() );
+            map.put( s( "fs.${scheme}.pool_max_size.${configurationId}" ), poolMaxSize );
         }
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, boolean removeEmptyFolders, @Nullable Integer poolMaxSize, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( removeEmptyFolders, poolMaxSize, addDefaults ) );
+    public FileSystemConfiguration updateWithFtp( FileSystemConfiguration fileSystemConfiguration, String configurationId, boolean removeEmptyFolders, @Nullable Integer poolMaxSize ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( configurationId, removeEmptyFolders, poolMaxSize ) );
     }
 
     public String hostPort() {
         return s( "localhost:${port}" );
     }
 
-    public Path resolve( String relativePath ) {
-        return homeDirectory().resolve( relativePath );
+    public Path resolve( String configurationId, String relativePath ) {
+        return homeDirectory().resolve( configurationId ).resolve( relativePath );
     }
 
-    public <T> void writeFile( String relativePath, T content, ContentWriter<T> contentWriter ) {
-        Files.write( resolve( relativePath ), content, contentWriter );
+    public <T> void writeFile( String configurationId, String relativePath, T content, ContentWriter<T> contentWriter ) {
+        Files.write( resolve( configurationId, relativePath ), content, contentWriter );
     }
 
-    public void createDirectory( String relativePath ) {
-        Files.ensureDirectory( resolve( relativePath ) );
+    public <T> void copyFileTo( String configurationId, Path file, String relativePath ) {
+        Files.copy( file, IoStreams.Encoding.PLAIN, resolve( configurationId, relativePath ), IoStreams.Encoding.PLAIN );
     }
 
-    public <T> T readFile( String relativePath, ContentReader<T> contentReader ) {
-        return Files.read( resolve( relativePath ), contentReader );
+    public void createDirectory( String configurationId, String relativePath ) {
+        Files.ensureDirectory( resolve( configurationId, relativePath ) );
     }
 
-    public <T> T readFile( String relativePath, IoStreams.Encoding encoding, ContentReader<T> contentReader ) {
-        return Files.read( resolve( relativePath ), encoding, contentReader );
+    public <T> T readFile( String configurationId, String relativePath, ContentReader<T> contentReader ) {
+        return Files.read( resolve( configurationId, relativePath ), contentReader );
+    }
+
+    public <T> T readFile( String configurationId, String relativePath, IoStreams.Encoding encoding, ContentReader<T> contentReader ) {
+        return Files.read( resolve( configurationId, relativePath ), encoding, contentReader );
     }
 }

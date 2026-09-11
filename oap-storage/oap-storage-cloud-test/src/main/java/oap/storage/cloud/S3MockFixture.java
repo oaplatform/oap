@@ -14,7 +14,6 @@ import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -51,6 +50,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+import static dev.khbd.interp4j.core.Interpolations.s;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -225,28 +225,27 @@ public class S3MockFixture extends AbstractFixture<S3MockFixture> {
     }
 
     @NotNull
-    public FileSystemConfiguration getFileSystemConfiguration( String container ) {
-        return new FileSystemConfiguration( getFileSystemConfigurationMap( container, true ) );
+    public FileSystemConfiguration getFileSystemConfiguration( String configurationId, String container ) {
+        return new FileSystemConfiguration( getFileSystemConfigurationMap( configurationId, container ) );
     }
 
-    public Map<String, Object> getFileSystemConfigurationMap( @Nullable String container, boolean addDefaults ) {
+    /**
+     * Builds config for this mock under `configurationId` — always registers `configurationId` via `container.<configurationId>`
+     * (and identity/credential/etc alongside it), whether it's the default target or a secondary one
+     * layered onto an existing {@link FileSystemConfiguration} via {@link #updateWithS3}.
+     */
+    public Map<String, Object> getFileSystemConfigurationMap( String configurationId, String container ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-        map.put( "fs.s3.clouds.identity", "access_key" );
-        map.put( "fs.s3.clouds.credential", "access_secret" );
-        map.put( "fs.s3.clouds.region", Region.AWS_GLOBAL.id() );
-        map.put( "fs.s3.clouds.s3.virtual-host-buckets", false );
-        map.put( "fs.s3.clouds.endpoint", "http://localhost:" + getHttpPort() );
-
-        if( addDefaults ) {
-            Preconditions.checkArgument( container != null, "container cannot be null" );
-            map.put( "fs.default.clouds.scheme", "s3" );
-            map.put( "fs.default.clouds.container", container );
-        }
+        map.put( s( "fs.s3.identity.${configurationId}" ), "access_key" );
+        map.put( s( "fs.s3.credential.${configurationId}" ), "access_secret" );
+        map.put( s( "fs.s3.region.${configurationId}" ), Region.AWS_GLOBAL.id() );
+        map.put( s( "fs.s3.endpoint.${configurationId}" ), s( "http://localhost:${getHttpPort()}" ) );
+        map.put( s( "fs.s3.container.${configurationId}" ), container );
 
         return map;
     }
 
-    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, @Nullable String container, boolean addDefaults ) {
-        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( container, addDefaults ) );
+    public FileSystemConfiguration updateWithS3( FileSystemConfiguration fileSystemConfiguration, String configurationId, String container ) {
+        return fileSystemConfiguration.copyWith( getFileSystemConfigurationMap( configurationId, container ) );
     }
 }

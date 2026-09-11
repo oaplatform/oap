@@ -1,12 +1,10 @@
 package oap.storage.cloud.ftp;
 
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.storage.cloud.BlobData;
 import oap.storage.cloud.CloudException;
 import oap.storage.cloud.CloudURI;
-import oap.storage.cloud.ContainerScopedCloudApi;
 import oap.storage.cloud.FileSystem;
 import oap.storage.cloud.FileSystemCloudApi;
 import oap.storage.cloud.FileSystemConfiguration;
@@ -28,11 +26,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -43,29 +41,31 @@ import java.util.stream.Stream;
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 @Slf4j
-public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi, ContainerScopedCloudApi {
+public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudApi {
     private static final int DEFAULT_POOL_MAX_SIZE = 8;
     private static final long DEFAULT_POOL_MAX_WAIT_MILLIS = 30_000;
     private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 30_000;
     private static final int DEFAULT_DEFAULT_TIMEOUT_MILLIS = 30_000;
     private static final int DEFAULT_SO_TIMEOUT_MILLIS = 30_000;
 
+    protected final String scheme;
     protected final String host;
     protected final int port;
     protected final String username;
     protected final String password;
     protected final boolean passiveMode;
     protected final boolean removeEmptyFolders;
+    protected final String basedir;
     protected final int connectTimeoutMillis;
     protected final int defaultTimeoutMillis;
     protected final int soTimeoutMillis;
 
     private final GenericObjectPool<FTPClient> pool;
 
-    protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String container ) {
-        if( container == null || container.isBlank() ) {
-            throw new CloudException( "fs." + scheme + ": container (ftp server host[:port]) is required" );
-        }
+    protected AbstractFileSystemCloudApiFtp( FileSystemConfiguration fileSystemConfiguration, String scheme, String configurationId ) {
+        this.scheme = scheme;
+
+        String container = ( String ) fileSystemConfiguration.getOrThrow( scheme, configurationId, "container" );
 
         int colonIdx = container.lastIndexOf( ':' );
         if( colonIdx > 0 && colonIdx < container.length() - 1
@@ -77,35 +77,37 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             this.port = 21;
         }
 
-        Object identity = fileSystemConfiguration.get( scheme, container, "clouds.identity" );
+        Object identity = fileSystemConfiguration.get( scheme, configurationId, "identity" );
         this.username = identity != null ? identity.toString() : "anonymous";
 
-        Object credential = fileSystemConfiguration.get( scheme, container, "clouds.credential" );
+        Object credential = fileSystemConfiguration.get( scheme, configurationId, "credential" );
         this.password = credential != null ? credential.toString() : "";
 
-        Object passive = fileSystemConfiguration.get( scheme, container, "clouds.passive-mode" );
+        Object passive = fileSystemConfiguration.get( scheme, configurationId, "passive_mode" );
         this.passiveMode = passive == null || Boolean.parseBoolean( passive.toString() );
 
-        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, container, "clouds.remove-empty-folders" );
+        Object removeEmptyFolders = fileSystemConfiguration.get( scheme, configurationId, "remove_empty_folders" );
         this.removeEmptyFolders = removeEmptyFolders != null && Boolean.parseBoolean( removeEmptyFolders.toString() );
 
-        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.connect-timeout-millis" );
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( scheme, configurationId, "filesystem.basedir" ) );
+
+        Object connectTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "connect_timeout_millis" );
         this.connectTimeoutMillis = connectTimeoutObj != null ? Integer.parseInt( connectTimeoutObj.toString() )
             : DEFAULT_CONNECT_TIMEOUT_MILLIS;
 
-        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.default-timeout-millis" );
+        Object defaultTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "default_timeout_millis" );
         this.defaultTimeoutMillis = defaultTimeoutObj != null ? Integer.parseInt( defaultTimeoutObj.toString() )
             : DEFAULT_DEFAULT_TIMEOUT_MILLIS;
 
-        Object soTimeoutObj = fileSystemConfiguration.get( scheme, container, "clouds.so-timeout-millis" );
+        Object soTimeoutObj = fileSystemConfiguration.get( scheme, configurationId, "so_timeout_millis" );
         this.soTimeoutMillis =
             soTimeoutObj != null ? Integer.parseInt( soTimeoutObj.toString() ) : DEFAULT_SO_TIMEOUT_MILLIS;
 
-        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-size" );
+        Object poolMaxSizeObj = fileSystemConfiguration.get( scheme, configurationId, "pool_max_size" );
         int poolMaxSize =
             poolMaxSizeObj != null ? Integer.parseInt( poolMaxSizeObj.toString() ) : DEFAULT_POOL_MAX_SIZE;
 
-        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, container, "clouds.pool-max-wait-millis" );
+        Object poolMaxWaitObj = fileSystemConfiguration.get( scheme, configurationId, "pool_max_wait_millis" );
         long poolMaxWaitMillis =
             poolMaxWaitObj != null ? Long.parseLong( poolMaxWaitObj.toString() ) : DEFAULT_POOL_MAX_WAIT_MILLIS;
 
@@ -116,6 +118,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         poolConfig.setTestOnBorrow( true );
 
         this.pool = new GenericObjectPool<>( new FtpClientPooledObjectFactory( this ), poolConfig );
+    }
+
+    @Override
+    public String toUri( CloudURI path ) {
+        return s( "${scheme}://${host}:${port}/${path.path}" );
     }
 
     protected static void disconnect( FTPClient client ) {
@@ -138,6 +145,15 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         return path.startsWith( "/" ) ? path : "/" + path;
     }
 
+    private static String normalizeBasedir( Object basedirObj ) {
+        if( basedirObj == null ) return "";
+        String str = basedirObj.toString();
+        int start = 0, end = str.length();
+        while( start < end && str.charAt( start ) == '/' ) start++;
+        while( end > start && str.charAt( end - 1 ) == '/' ) end--;
+        return str.substring( start, end );
+    }
+
     private static String parentOf( String path ) {
         int idx = path.lastIndexOf( '/' );
         if( idx < 0 ) return "";
@@ -148,6 +164,26 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     private static String nameOf( String path ) {
         int idx = path.lastIndexOf( '/' );
         return idx >= 0 ? path.substring( idx + 1 ) : path;
+    }
+
+    /**
+     * Maps a logical, basedir-relative {@link CloudURI} path to the physical path sent to the FTP server.
+     */
+    private String physicalPath( String logicalPath ) {
+        if( basedir.isEmpty() ) return logicalPath;
+        return logicalPath.isEmpty() ? basedir : basedir + "/" + logicalPath;
+    }
+
+    /**
+     * Reverse of {@link #physicalPath}: strips the leading slash and {@link #basedir} prefix off a
+     * server-absolute path, so it can be stored back into a {@link CloudURI} as a logical path.
+     */
+    private String toLogicalPath( String physicalAbsolutePath ) {
+        String path = physicalAbsolutePath.startsWith( "/" ) ? physicalAbsolutePath.substring( 1 ) : physicalAbsolutePath;
+        if( basedir.isEmpty() ) return path;
+        if( path.equals( basedir ) ) return "";
+        if( path.startsWith( basedir + "/" ) ) return path.substring( basedir.length() + 1 );
+        return path;
     }
 
     protected abstract FTPClient createClient() throws IOException;
@@ -241,26 +277,28 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         return null;
     }
 
-    private FileSystem.StorageItemImpl toStorageItem( CloudURI path, FTPFile file ) {
-        DateTime lastModified = file.getTimestamp() != null
-            ? new DateTime( file.getTimestamp().getTimeInMillis(), DateTimeZone.UTC )
-            : null;
+    private DateTime modificationTime( String absolutePath, FTPFile fallback ) {
+        FTPClient client = borrow();
+        boolean healthy = false;
+        try {
+            Instant instant = client.mdtmInstant( absolutePath );
+            healthy = true;
+            if( instant != null ) return new DateTime( instant.toEpochMilli(), DateTimeZone.UTC );
+        } catch( IOException e ) {
+            throw new CloudException( e );
+        } finally {
+            release( client, healthy );
+        }
+        return fallback.getTimestamp() != null ? new DateTime( fallback.getTimestamp().getTimeInMillis(), DateTimeZone.UTC ) : null;
+    }
 
-        return new FileSystem.StorageItemImpl(
-            path.path,
-            "",
-            buildUri( path ),
-            lastModified,
-            file.getSize(),
-            file.isDirectory() ? "application/x-directory" : "" );
+    private StorageItemFtp toStorageItem( CloudURI path, FTPFile file ) {
+        return new StorageItemFtp( this, path.path, buildUri( path ), file.getSize(),
+            file.isDirectory() ? "application/x-directory" : "", absolute( physicalPath( path.path ) ), file );
     }
 
     private URI buildUri( CloudURI path ) {
-        try {
-            return new URI( path.scheme, null, host, port, "/" + path.path, null, null );
-        } catch( URISyntaxException e ) {
-            throw new CloudException( e );
-        }
+        return URI.create( path.toString() );
     }
 
     @Override
@@ -268,7 +306,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            boolean exists = findFile( client, absolute( path.path ) ) != null;
+            boolean exists = findFile( client, absolute( physicalPath( path.path ) ) ) != null;
             healthy = true;
             return exists;
         } catch( IOException e ) {
@@ -294,13 +332,13 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            if( !client.deleteFile( absolute( path.path ) ) ) {
+            if( !client.deleteFile( absolute( physicalPath( path.path ) ) ) ) {
                 healthy = true;
-                throw new CloudException( "cannot delete " + path );
+                throw new CloudException( s( "cannot delete ${path}" ) );
             }
 
             if( removeEmptyFolders ) {
-                removeEmptyParents( client, parentOf( absolute( path.path ) ) );
+                removeEmptyParents( client, parentOf( absolute( physicalPath( path.path ) ) ) );
             }
 
             healthy = true;
@@ -312,8 +350,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     private void removeEmptyParents( FTPClient client, String dirPath ) throws IOException {
+        String floor = basedir.isEmpty() ? "/" : "/" + basedir;
         String parent = dirPath;
-        while( !parent.isEmpty() && !"/".equals( parent ) ) {
+        while( !parent.isEmpty() && !"/".equals( parent ) && !parent.equals( floor ) ) {
             FTPFile[] children = client.listFiles( parent );
             boolean empty = children == null || children.length == 0
                 || Arrays.stream( children )
@@ -345,7 +384,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            FTPFile file = findFile( client, absolute( path.path ) );
+            FTPFile file = findFile( client, absolute( physicalPath( path.path ) ) );
             healthy = true;
             if( file == null ) return null;
 
@@ -364,8 +403,8 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         try {
             oap.io.Files.ensureFile( destination );
             try( OutputStream out = Files.newOutputStream( destination ) ) {
-                if( !client.retrieveFile( absolute( source.path ), out ) ) {
-                    throw new CloudException( "cannot download " + source );
+                if( !client.retrieveFile( absolute( physicalPath( source.path ) ), out ) ) {
+                    throw new CloudException( s( "cannot download ${source}" ) );
                 }
             }
             healthy = true;
@@ -378,23 +417,21 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     @Override
     public void copy( CloudURI source, CloudURI destination ) {
-        Preconditions.checkArgument( source.scheme.equals( destination.scheme ) );
-
         FTPClient sourceClient = borrow();
         FTPClient destinationClient = borrow();
         boolean sourceHealthy = false;
         boolean destinationHealthy = false;
         try {
-            InputStream in = sourceClient.retrieveFileStream( absolute( source.path ) );
+            InputStream in = sourceClient.retrieveFileStream( absolute( physicalPath( source.path ) ) );
             if( in == null ) {
                 sourceHealthy = true;
                 destinationHealthy = true;
-                throw new CloudException( "cannot open source stream " + source );
+                throw new CloudException( s( "cannot open source stream ${source}" ) );
             }
 
-            ensureRemoteDirectory( destinationClient, parentOf( absolute( destination.path ) ) );
+            ensureRemoteDirectory( destinationClient, parentOf( absolute( physicalPath( destination.path ) ) ) );
 
-            boolean stored = destinationClient.storeFile( absolute( destination.path ), in );
+            boolean stored = destinationClient.storeFile( absolute( physicalPath( destination.path ) ), in );
             in.close();
 
             boolean completed = sourceClient.completePendingCommand();
@@ -402,7 +439,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             destinationHealthy = stored;
 
             if( !stored || !completed ) {
-                throw new CloudException( "cannot copy " + source + " to " + destination );
+                throw new CloudException( s( "cannot copy ${source} to ${destination}" ) );
             }
         } catch( IOException e ) {
             throw new CloudException( e );
@@ -416,7 +453,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public InputStream getInputStream( CloudURI path ) {
         FTPClient client = borrow();
         try {
-            InputStream in = client.retrieveFileStream( absolute( path.path ) );
+            InputStream in = client.retrieveFileStream( absolute( physicalPath( path.path ) ) );
             if( in == null ) {
                 release( client, true );
                 throw new CloudException( s( "cannot open ${path}" ) );
@@ -432,9 +469,9 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     public OutputStream getOutputStream( CloudURI path, Map<String, String> tags ) {
         FTPClient client = borrow();
         try {
-            ensureRemoteDirectory( client, parentOf( absolute( path.path ) ) );
+            ensureRemoteDirectory( client, parentOf( absolute( physicalPath( path.path ) ) ) );
 
-            OutputStream out = client.storeFileStream( absolute( path.path ) );
+            OutputStream out = client.storeFileStream( absolute( physicalPath( path.path ) ) );
             if( out == null ) {
                 release( client, true );
                 throw new CloudException( s( "cannot open output stream for ${path}" ) );
@@ -451,16 +488,14 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            ensureRemoteDirectory( client, parentOf( absolute( destination.path ) ) );
+            ensureRemoteDirectory( client, parentOf( absolute( physicalPath( destination.path ) ) ) );
 
-            String remotePath = absolute( destination.path );
+            String remotePath = absolute( physicalPath( destination.path ) );
             boolean stored = switch( blobData.content ) {
                 case InputStream inputStream -> client.storeFile( remotePath, inputStream );
-                case String str ->
-                    client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
+                case String str -> client.storeFile( remotePath, new ByteArrayInputStream( str.getBytes( java.nio.charset.StandardCharsets.UTF_8 ) ) );
                 case byte[] bytes -> client.storeFile( remotePath, new ByteArrayInputStream( bytes ) );
-                case ByteBuffer byteBuffer ->
-                    client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
+                case ByteBuffer byteBuffer -> client.storeFile( remotePath, new ByteArrayInputStream( byteBuffer.array() ) );
                 case File file -> {
                     try( InputStream fis = new FileInputStream( file ) ) {
                         yield client.storeFile( remotePath, fis );
@@ -472,11 +507,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
                     }
                 }
                 case null -> throw new CloudException( "content must not be null" );
-                default -> throw new CloudException( "Unknown content type " + blobData.content.getClass() );
+                default -> throw new CloudException( s( "Unknown content type ${blobData.content.getClass()}" ) );
             };
 
             if( !stored ) {
-                throw new CloudException( "cannot upload to " + destination );
+                throw new CloudException( s( "cannot upload to ${destination}" ) );
             }
 
             healthy = true;
@@ -492,11 +527,11 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         FTPClient client = borrow();
         boolean healthy = false;
         try {
-            List<FileSystem.StorageItemImpl> all = new ArrayList<>();
-            walk( client, path, absolute( path.path ), all );
-            all.sort( Comparator.comparing( FileSystem.StorageItemImpl::getName ) );
+            List<FileSystem.StorageItem> all = new ArrayList<>();
+            walk( client, path, absolute( physicalPath( path.path ) ), all );
+            all.sort( Comparator.comparing( FileSystem.StorageItem::getName ) );
 
-            Stream<FileSystem.StorageItemImpl> stream = all.stream();
+            Stream<FileSystem.StorageItem> stream = all.stream();
             int skip = listOptions.continuationToken != null ? Integer.parseInt( listOptions.continuationToken ) : 0;
             if( skip > 0 ) {
                 stream = stream.skip( skip );
@@ -505,7 +540,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
                 stream = stream.limit( listOptions.maxKeys );
             }
 
-            List<FileSystem.StorageItemImpl> result = stream.toList();
+            List<FileSystem.StorageItem> result = stream.toList();
 
             String nextToken = listOptions.maxKeys != null ? String.valueOf( skip + result.size() ) : null;
 
@@ -518,7 +553,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
         }
     }
 
-    private void walk( FTPClient client, CloudURI base, String dirPath, List<FileSystem.StorageItemImpl> acc ) throws IOException {
+    private void walk( FTPClient client, CloudURI base, String dirPath, List<FileSystem.StorageItem> acc ) throws IOException {
         FTPFile[] files = client.listFiles( dirPath );
         if( files == null ) return;
 
@@ -532,7 +567,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             if( file.isDirectory() ) {
                 walk( client, base, childPath, acc );
             } else {
-                acc.add( toStorageItem( base.withPath( childPath ), file ) );
+                acc.add( toStorageItem( base.withPath( toLogicalPath( childPath ) ), file ) );
             }
         }
     }
@@ -621,6 +656,64 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
                     owner.release( client, healthy );
                 }
             }
+        }
+    }
+
+    private static class StorageItemFtp implements FileSystem.StorageItem {
+        private final AbstractFileSystemCloudApiFtp owner;
+        private final String name;
+        private final URI uri;
+        private final Long size;
+        private final String contentType;
+        private final String absolutePath;
+        private final FTPFile fallback;
+
+        private volatile boolean computed = false;
+        private volatile DateTime lastModified;
+
+        StorageItemFtp( AbstractFileSystemCloudApiFtp owner, String name, URI uri, Long size, String contentType,
+                        String absolutePath, FTPFile fallback ) {
+            this.owner = owner;
+            this.name = name;
+            this.uri = uri;
+            this.size = size;
+            this.contentType = contentType;
+            this.absolutePath = absolutePath;
+            this.fallback = fallback;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public URI getUri() {
+            return uri;
+        }
+
+        @Override
+        public String getETag() {
+            return "";
+        }
+
+        @Override
+        public Long getSize() {
+            return size;
+        }
+
+        @Override
+        public String getContentType() {
+            return contentType;
+        }
+
+        @Override
+        public synchronized DateTime getLastModified() {
+            if( !computed ) {
+                lastModified = owner.modificationTime( absolutePath, fallback );
+                computed = true;
+            }
+            return lastModified;
         }
     }
 }

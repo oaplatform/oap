@@ -121,18 +121,22 @@ public class IoStreams {
         return Stream.of( ustream );
     }
 
+    public static void write( OutputStream out, java.util.stream.Stream<String> lines ) throws oap.io.IOException {
+        lines.forEach( line -> {
+            try {
+                out.write( line.getBytes() );
+                out.write( '\n' );
+            } catch( IOException e ) {
+                throw Throwables.propagate( e );
+            }
+        } );
+    }
+
     public static void write( Path path, Encoding encoding, java.util.stream.Stream<String> lines ) throws oap.io.IOException {
         Files.ensureFile( path );
 
         try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, false, false ) ) {
-            lines.forEach( line -> {
-                try {
-                    out.write( line.getBytes() );
-                    out.write( '\n' );
-                } catch( IOException e ) {
-                    throw Throwables.propagate( e );
-                }
-            } );
+            write( out, lines );
         } catch( IOException e ) {
             throw Throwables.propagate( e );
         }

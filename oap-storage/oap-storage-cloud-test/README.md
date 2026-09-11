@@ -23,7 +23,7 @@ public class ReportUploaderTest {
         FileSystemConfiguration config = s3.getFileSystemConfiguration( "reports" );
         FileSystem fs = new FileSystem( config );
 
-        CloudURI dest = new CloudURI( "s3://reports/2024-06-01.json" );
+        CloudURI dest = fs.getDefaultURL( "s3", "2024-06-01.json" );
         fs.upload( dest, BlobData.builder().content( "{\"ok\":true}".getBytes() ).build() );
 
         assertThat( fs.blobExists( dest ) ).isTrue();
@@ -55,13 +55,11 @@ public class ReportUploaderTest {
 `getFileSystemConfiguration(container)` returns a `FileSystemConfiguration` with:
 
 ```
-fs.s3.clouds.identity   = access_key
-fs.s3.clouds.credential = access_secret
-fs.s3.clouds.region     = aws-global
-fs.s3.clouds.endpoint   = http://localhost:<HTTP_PORT>
-fs.s3.clouds.s3.virtual-host-buckets = false   (path-style, required for LocalStack)
-fs.default.clouds.scheme    = s3
-fs.default.clouds.container = <container>
+fs.s3.identity.s3   = access_key
+fs.s3.credential.s3 = access_secret
+fs.s3.region.s3     = aws-global
+fs.s3.endpoint.s3   = http://localhost:<HTTP_PORT>
+fs.s3.container.s3  = <container>
 ```
 
 Use it directly with `new FileSystem(config)` or pass it to a `KernelFixture`-based test via `application.conf` variable substitution.

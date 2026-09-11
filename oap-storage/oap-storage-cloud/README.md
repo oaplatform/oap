@@ -6,15 +6,17 @@ Depends on: `oap-stdlib`
 
 ## `CloudURI`
 
-Every path is represented as a `CloudURI`:
+Every path is represented as a `CloudURI`, addressed by **configurationId**, not by backend/container directly:
 
 ```
-scheme://container/path/to/object
-  │          │          │
-  │          │          └─ object key (no leading slash)
-  │          └─ bucket / container name
-  └─ backend scheme
+fs://configurationId/path/to/object
+  │         │              │
+  │         │              └─ object key (no leading slash)
+  │         └─ named target: resolves to a backend scheme + connection (container) via config
+  └─ fixed literal scheme
 ```
+
+The configurationId is the only thing the URI carries — which backend scheme it maps to (`s3`, `ftp`, `smb`, ...) and which concrete connection (bucket, host[:port], host[:port]/share, ...) it uses are both resolved from `FileSystemConfiguration` at call time (see below).
 
 | Scheme | Backend |
 |---|---|
@@ -27,41 +29,118 @@ scheme://container/path/to/object
 | `smb` | SMB/CIFS (requires `oap-storage-cloud-smb` on classpath) |
 
 ```java
-CloudURI uri = new CloudURI( "s3://my-bucket/data/report-2024-06-01.json" );
-// uri.scheme    = "s3"
-// uri.container = "my-bucket"
-// uri.path      = "data/report-2024-06-01.json"
+CloudURI uri = new CloudURI( "fs://my-configuration-id/data/report-2024-06-01.json" );
+// uri.configurationId = "my-configuration-id"
+// uri.path            = "data/report-2024-06-01.json"
+
+// equivalent, canonical constructor
+CloudURI uri2 = new CloudURI( "my-configuration-id", "data/report-2024-06-01.json" );
 
 // Builder-style copies
 CloudURI other = uri.withPath( "data/report-2024-06-02.json" );
+CloudURI otherConfigurationId = uri.withConfigurationId( "other-configuration-id" );
 ```
+
+### Migrating a legacy `scheme://container/path` string
+
+`FileSystem.resolve(configurationId, String)` accepts the old `scheme://container/path` shape (as used before configurationIds existed) and tags the result with the given `configurationId` directly — the URI's container doesn't need to be registered in config at all:
+
+```java
+CloudURI uri = fileSystem.resolve( "my-configuration-id", "s3://my-bucket/data/report-2024-06-01.json" );
+```
+
+Always throws for `file://...` (local paths have no container to match against — use `fs://file/<path>` or `new CloudURI("file", path)` directly). `fs://...` input passes straight through to `new CloudURI(uri)`, with its embedded alias replaced by `configurationId`.
 
 ---
 
 ## `FileSystemConfiguration`
 
-Holds per-scheme (and optionally per-container) credentials and settings. Keys follow the pattern:
+Holds per-scheme, per-configurationId, and global-default credentials and settings. Keys follow the pattern:
 
 ```
-fs.<scheme>[.<container>].clouds.<property>
+fs.<scheme>.<property>[.<configurationId>]
+fs.default.<property>
 ```
 
-The `fs.default.clouds.scheme` and `fs.default.clouds.container` entries define the default used by `FileSystem.getDefaultURL(path)`.
+Looking up a property for a given `(scheme, configurationId)` tries, in order:
+1. `fs.<scheme>.<property>.<configurationId>` — configurationId-specific override
+2. `fs.<scheme>.<property>` — scheme-wide default
+3. `fs.default.<property>` — global fallback, for any property, across every scheme
+
+`fs.default.*` is entirely optional — there's no required key under it, and a config with no `fs.default.*` at all is perfectly valid.
+
+### Key charset
+
+Every dot-separated part of an `fs.*` key may contain only letters, digits, and single underscores as internal separators. No hyphens, no leading/trailing/double underscore.
+
+- `fs.a_b.a_b.d` — valid
+- `fs.a.b-g` — invalid (hyphen)
+- `fs.a__b` — invalid (double underscore)
+
+### Overriding via system properties and environment variables
+
+Any `fs.*` key can also be supplied as a JVM system property or an OS environment variable, without touching the map/HOCON config — useful for ops-level overrides. Priority, highest first:
+
+1. Environment variable
+2. JVM system property
+3. The `Map`/HOCON passed to the constructor
+
+System properties are matched by literal `fs.` prefix and used as-is, no translation:
+
+```bash
+java -Dfs.s3.container=override-bucket -jar app.jar
+```
+
+Environment variables use conventional `FS_...` naming and are decoded back into a dotted key: `.` in the key becomes a single `_` in the env name, and a literal `_` already in the key becomes `__` in the env name.
+
+| Property | Env variable |
+|---|---|
+| `fs.a.b.d` | `FS_A_B_D` |
+| `fs.a.b.d_f` | `FS_A_B_D__F` |
+
+```bash
+export FS_S3_CONTAINER=override-bucket
+```
+
+### ConfigurationIds
+
+A configurationId is a named target (a backend scheme + connection). It's **detected from configuration** — no separate declaration list, and every caller states the configurationId it means explicitly (`FileSystem` has no notion of "the default one"):
+
+- Any configurationId is registered the moment it appears in a `fs.<scheme>.container.<configurationId>` key — `container` is the anchor property every configurationId needs to actually connect to something, so declaring it is what makes the configurationId exist.
+- A bare configurationId equal to an installed backend's scheme name (`fs://ftp/...`, `fs://file/...`) resolves implicitly with **zero** configurationId-related config, so single-target setups need nothing beyond the scheme-wide properties.
+- `FileSystemConfiguration.required(String configurationId)` validates up front that a configurationId is registered to some scheme, throwing `CloudException` immediately if not.
 
 ```java
 FileSystemConfiguration config = new FileSystemConfiguration( Map.of(
-    // S3 credentials (apply to all buckets unless overridden per-container)
-    "fs.s3.clouds.identity",   "AKIAIOSFODNN7EXAMPLE",
-    "fs.s3.clouds.credential", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    "fs.s3.clouds.region",     "us-east-1",
-
-    // Default target
-    "fs.default.clouds.scheme",    "s3",
-    "fs.default.clouds.container", "my-bucket"
+    // S3 credentials (apply to every configurationId on this scheme unless overridden per-configurationId)
+    "fs.s3.identity",   "AKIAIOSFODNN7EXAMPLE",
+    "fs.s3.credential", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "fs.s3.region",     "us-east-1",
+    "fs.s3.container",  "my-bucket"
+    // "s3" is both the scheme and the configurationId here (self-name convention) — no further registration needed
 ) );
 ```
 
 Values support `${env.VAR_NAME}` and `${system.property}` substitution.
+
+### Multi-configurationId example
+
+```
+fs.ftp.container   = ftp.example.com:21
+fs.ftp.identity    = shared-user
+fs.ftp.credential  = shared-pass
+
+# the primary account: container is repeated so this configurationId gets registered
+fs.ftp.container.primary    = ftp.example.com:21
+
+# a second account on the same server: only identity/credential differ,
+# container is repeated so this configurationId gets registered
+fs.ftp.container.secondary  = ftp.example.com:21
+fs.ftp.identity.secondary   = other-user
+fs.ftp.credential.secondary = other-pass
+```
+
+`fs://primary/...` connects as `shared-user`; `fs://secondary/...` connects to the same host as `other-user`.
 
 ### OAP module configuration
 
@@ -72,12 +151,10 @@ dependsOn = [oap-storage-cloud]
 services {
   oap-storage-cloud.oap-cloud-configuration.parameters {
     configuration {
-      fs.s3.clouds.identity   = ${?AWS_ACCESS_KEY_ID}
-      fs.s3.clouds.credential = ${?AWS_SECRET_ACCESS_KEY}
-      fs.s3.clouds.region     = us-east-1
-
-      fs.default.clouds.scheme    = s3
-      fs.default.clouds.container = my-bucket
+      fs.s3.identity   = ${?AWS_ACCESS_KEY_ID}
+      fs.s3.credential = ${?AWS_SECRET_ACCESS_KEY}
+      fs.s3.region     = us-east-1
+      fs.s3.container  = my-bucket
     }
   }
 }
@@ -87,13 +164,13 @@ services {
 
 ## `FileSystem`
 
-Stateless facade that routes calls to the right backend by URI scheme. Backend instances are cached and closed with `FileSystem.close()`; the cache key granularity depends on the backend — most (S3, `file`) are cached per scheme, while backends implementing `ContainerScopedCloudApi` (FTP/FTPS) are cached per scheme **and** container, since `container` identifies a distinct server connection for them rather than a request-scoped parameter.
+Stateless facade that routes calls to the right backend by resolving the URI's configurationId to a scheme (via `FileSystemConfiguration`, falling back to an installed backend's scheme name for a bare self-named configurationId). Backend instances are cached and closed with `FileSystem.close()`, keyed by `scheme://configurationId` — every backend is configurationId-scoped, since configurationId is the stable per-connection identity (this also means two configurationIds on the same S3 bucket with different credentials get independent cached clients, not a shared one).
 
 ```java
 FileSystem fs = new FileSystem( config );
 
 // Upload
-CloudURI dest = new CloudURI( "s3://my-bucket/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-configuration-id/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder()
     .content( jsonBytes )
     .tags( Map.of( "env", "prod" ) )
@@ -113,7 +190,7 @@ fs.copy( src, dest, Map.of( "copied", "true" ) );
 
 // List objects
 PageSet<? extends FileSystem.StorageItem> page = fs.list(
-    new CloudURI( "s3://my-bucket/reports/" ),
+    new CloudURI( "my-configuration-id", "reports/" ),
     ListOptions.builder().maxResults( 100 ).build()
 );
 
@@ -121,8 +198,11 @@ PageSet<? extends FileSystem.StorageItem> page = fs.list(
 FileSystem.StorageItem meta = fs.getMetadata( dest );
 // meta.getName(), meta.getSize(), meta.getLastModified(), meta.getETag(), meta.getContentType()
 
-// Default URL from configured scheme + container
-CloudURI defaultUri = fs.getDefaultURL( "reports/today.json" );
+// Build a CloudURI for a given configurationId
+CloudURI defaultUri = fs.getDefaultURL( "my-configuration-id", "reports/today.json" );
+
+// Migrate a legacy scheme://container/path string to a configurationId-based CloudURI
+CloudURI legacyResolved = fs.resolve( "my-configuration-id", "s3://my-bucket/reports/today.json" );
 ```
 
 ### Operations reference
@@ -144,8 +224,9 @@ All methods are synchronous/blocking.
 | `createContainer(uri)` | Create a bucket/container |
 | `deleteContainer(uri)` | Delete an empty bucket/container |
 | `deleteContainerIfEmpty(uri)` | Delete only if empty; returns `boolean` |
-| `getDefaultURL(path)` | Build a `CloudURI` using the configured default scheme + container |
-| `toLocalFilePath(path)` | Convert a `java.nio.Path` to a `file://` `CloudURI` |
+| `getDefaultURL(configurationId, path)` | Build a `CloudURI` for the given configurationId, normalizing path separators |
+| `resolve(configurationId, legacyUri)` | Map a legacy `scheme://container/path` string onto the given configurationId |
+| `toLocalFileURI(configurationId, path)` | Convert a `java.nio.Path` or `String` to a `fs://<configurationId>/...` `CloudURI` for the given `file` configurationId |
 
 ---
 
@@ -158,7 +239,7 @@ Interface implemented by each backend. Register a new implementation by placing 
 s3=com.example.MyS3CloudApi
 ```
 
-The class must have a constructor `(FileSystemConfiguration, String container)`.
+The class must have a constructor `(FileSystemConfiguration, String configurationId)` — each backend resolves its own connection details (bucket, host[:port], ...) from config via `fileSystemConfiguration.getOrThrow(scheme, configurationId, "container")`, rather than receiving them pre-parsed.
 
 Every method is a required synchronous, blocking method.
 
@@ -168,15 +249,16 @@ Every method is a required synchronous, blocking method.
 
 Add the `oap-storage-cloud-aws-s3` artifact to your dependencies. The `s3://` scheme is registered automatically via `cloud-service.properties` — no additional wiring is needed.
 
-Required configuration keys for S3:
+Required configuration keys for S3 (each supports the configurationId-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
-| `fs.s3.clouds.identity` | AWS access key ID |
-| `fs.s3.clouds.credential` | AWS secret access key |
-| `fs.s3.clouds.region` | AWS region (e.g. `us-east-1`) |
-| `fs.s3.clouds.endpoint` | Override endpoint URL (e.g. for LocalStack) |
-| `fs.s3.clouds.s3.virtual-host-buckets` | `false` for path-style access (LocalStack, MinIO) |
+| `fs.s3.container` | Bucket name |
+| `fs.s3.identity` | AWS access key ID |
+| `fs.s3.credential` | AWS secret access key |
+| `fs.s3.region` | AWS region (e.g. `us-east-1`) |
+| `fs.s3.endpoint` | Override endpoint URL (e.g. for LocalStack); when set, path-style access is forced automatically |
+| `fs.s3.filesystem.basedir` | Optional key prefix within the bucket; every object key is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ---
 
@@ -184,43 +266,45 @@ Required configuration keys for S3:
 
 Add the `oap-storage-cloud-ftp` artifact to your dependencies. The `ftp://` and `ftps://` schemes are registered automatically via `cloud-service.properties`.
 
-Unlike `file`, FTP/FTPS **require** a container: the URI's host (optionally `:port`) identifies the FTP server to connect to. `ftp://ftp.example.com:2121/reports/2024-06-01.json` connects to `ftp.example.com:2121` and addresses the remote path `reports/2024-06-01.json`. A URI with no host (e.g. `ftp:///reports/file.txt`, `ftp://`) throws `CloudException`.
+Unlike `file`, FTP/FTPS **require** a container: `fs.ftp.container[.<configurationId>]` (`host[:port]`) identifies the FTP server a configurationId connects to. `getOrThrow` throws `CloudException` if no container can be resolved for the configurationId.
 
-Each distinct `host[:port]` gets its own pooled connection set — using two different FTP hosts through the same `FileSystem` instance connects to both independently, they don't share a connection pool.
+Each distinct configurationId gets its own pooled connection set — two configurationIds pointing at different hosts (or even the same host with different credentials) never share a connection pool.
 
 FTP control connections (TCP connect + login) are pooled per backend instance using [Apache Commons Pool 2](https://commons.apache.org/proper/commons-pool/) — operations borrow a connection from the pool and return it when done instead of reconnecting/logging in on every call. Pooled connections are validated with an FTP `NOOP` before reuse, so idle connections dropped by the server/firewall are transparently replaced.
 
-Required/optional configuration keys:
+Required/optional configuration keys (each supports the configurationId-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
-| `fs.ftp.clouds.identity` | FTP username (default `anonymous`) |
-| `fs.ftp.clouds.credential` | FTP password |
-| `fs.ftp.clouds.passive-mode` | `true`/`false` (default `true`) |
-| `fs.ftp.clouds.remove-empty-folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
-| `fs.ftp.clouds.pool-max-size` | Max pooled FTP connections per backend instance (default `8`) |
-| `fs.ftp.clouds.pool-max-wait-millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
-| `fs.ftp.clouds.connect-timeout-millis` | TCP connect timeout, in milliseconds (default `30000`) |
-| `fs.ftp.clouds.default-timeout-millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
-| `fs.ftp.clouds.so-timeout-millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
-| `fs.ftps.clouds.tls-mode` | `explicit` (default) or `implicit` |
-| `fs.ftps.clouds.trust-all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+| `fs.ftp.container` | `host[:port]` of the FTP server (default port `21`) |
+| `fs.ftp.identity` | FTP username (default `anonymous`) |
+| `fs.ftp.credential` | FTP password |
+| `fs.ftp.passive_mode` | `true`/`false` (default `true`) |
+| `fs.ftp.remove_empty_folders` | `true` to delete now-empty parent directories after a blob delete (default `false`) |
+| `fs.ftp.pool_max_size` | Max pooled FTP connections per backend instance (default `8`) |
+| `fs.ftp.pool_max_wait_millis` | Max time to wait for a pooled connection before failing, in milliseconds (default `30000`) |
+| `fs.ftp.connect_timeout_millis` | TCP connect timeout, in milliseconds (default `30000`) |
+| `fs.ftp.default_timeout_millis` | Timeout applied to the socket immediately after connecting, before login, in milliseconds (default `30000`) |
+| `fs.ftp.so_timeout_millis` | Timeout while waiting for control-connection responses, in milliseconds (default `30000`) |
+| `fs.ftps.tls_mode` | `explicit` (default) or `implicit` |
+| `fs.ftps.trust_all` | `true` to skip server certificate validation (e.g. self-signed certs in tests) |
+| `fs.ftp.filesystem.basedir` | Optional remote path prefix; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java
-CloudURI dest = new CloudURI( "ftp://ftp.example.com/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-ftp-configuration-id/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 
-### Per-host FTP configuration overrides
+### Per-configurationId FTP configuration overrides
 
-Config keys follow `fs.<scheme>.<container>.clouds.<property>`, where `<container>` must exactly match the runtime `host[:port]` value derived from the URI. Since config keys are dot-delimited, a literal dot inside the host must be escaped as `\.` so it isn't parsed as a key-path separator — a host with no dots (just `localhost` or `localhost:12345`, port digits included) needs no escaping:
+Declaring `fs.ftp.container.<configurationId>` registers `<configurationId>` and gives it its own connection target; pairing it with `fs.ftp.identity.<configurationId>`/`fs.ftp.credential.<configurationId>` gives that configurationId its own credentials too (see the [multi-configurationId example](#multi-configurationid-example) above). Since the lookup mechanism probes exact key strings rather than positionally splitting stored keys, configurationId names need no dot-escaping, unlike the old per-container scheme:
 
 ```
-fs.ftp.localhost:12345.clouds.identity = as
-fs.ftp.ftp\.server1\.com.clouds.identity = as
+fs.ftp.container.reporting-server = ftp.server1.example.com:21
+fs.ftp.identity.reporting-server  = as
 ```
 
-A container-specific entry overrides `fs.ftp.clouds.<property>` only for that exact host; other hosts keep falling back to the scheme-wide default.
+A configurationId-specific entry overrides `fs.ftp.<property>` only for that exact configurationId; other configurationIds on the same scheme keep falling back to the scheme-wide default, and ultimately to `fs.default.<property>`.
 
 `createContainer`/`deleteContainerIfEmpty` always return `false`, and `deleteContainer` throws `CloudException` — there's no container to create or delete. FTP also has no object-tagging concept, so tags passed to `upload`/`getOutputStream` are ignored.
 
@@ -230,20 +314,22 @@ A container-specific entry overrides `fs.ftp.clouds.<property>` only for that ex
 
 Add the `oap-storage-cloud-smb` artifact to your dependencies. The `smb://` scheme (backed by [jcifs-ng](https://github.com/codelibs/jcifs)) is registered automatically via `cloud-service.properties`.
 
-Like FTP, SMB **requires** a container, but the container is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `smb://fileserver:445/reports/2024-06-01.json` connects to `fileserver:445`, addresses share `reports`, and the remaining path (`2024-06-01.json`) is relative to that share. A URI with no host, or no share segment, throws `CloudException`.
+Like FTP, SMB **requires** a container, but `fs.smb.container[.<configurationId>]` is `host[:port]/share` (default port `445`) — the share is part of the container, not the path. `fs.smb.container = fileserver:445/reports` addresses share `reports` on `fileserver:445`; the object path is relative to that share. `getOrThrow` throws `CloudException` if no container (or no share segment within it) can be resolved for the configurationId.
 
-Each distinct `host[:port]/share` gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two shares on the same server don't share a session.
+Each configurationId gets its own backend instance holding one `CIFSContext` — jcifs-ng manages the underlying SMB session/connection reuse internally, so (unlike FTP) there's no separate connection-pool configuration. Two configurationIds never share a session, even if they point at the same share.
 
-Required/optional configuration keys:
+Required/optional configuration keys (each supports the configurationId-override / scheme-wide / `fs.default.*` fallback chain):
 
 | Key | Description |
 |---|---|
-| `fs.smb.clouds.identity` | SMB username (default `guest`) |
-| `fs.smb.clouds.credential` | SMB password |
-| `fs.smb.clouds.domain` | NTLM domain/workgroup (default empty) |
+| `fs.smb.container` | `host[:port]/share` |
+| `fs.smb.identity` | SMB username (default `guest`) |
+| `fs.smb.credential` | SMB password |
+| `fs.smb.domain` | NTLM domain/workgroup (default empty) |
+| `fs.smb.filesystem.basedir` | Optional path prefix within the share; every path is resolved as `<basedir>/<path>` and `list()` results are returned relative to it, same as `file`'s `filesystem.basedir` |
 
 ```java
-CloudURI dest = new CloudURI( "smb://fileserver/reports/2024-06-01.json" );
+CloudURI dest = new CloudURI( "fs://my-smb-configuration-id/reports/2024-06-01.json" );
 fs.upload( dest, BlobData.builder().content( jsonBytes ).build() );
 ```
 

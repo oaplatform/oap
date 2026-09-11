@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.storage.cloud.BlobData;
 import oap.storage.cloud.CloudException;
 import oap.storage.cloud.CloudURI;
-import oap.storage.cloud.ContainerScopedCloudApi;
 import oap.storage.cloud.FileSystem;
 import oap.storage.cloud.FileSystemCloudApi;
 import oap.storage.cloud.FileSystemConfiguration;
@@ -27,7 +26,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,22 +39,21 @@ import java.util.stream.Stream;
 import static dev.khbd.interp4j.core.Interpolations.s;
 
 /**
- * {@code container} is {@code host[:port]/share} — one backend instance (and its {@code CIFSContext}
- * session) is created per share, not per server.
+ * {@code fs.smb.container[.<configurationId>]} is {@code host[:port]/share} — one backend instance (and its
+ * {@code CIFSContext} session) is created per configurationId, not per server.
  */
 @Slf4j
-public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScopedCloudApi {
+public class FileSystemCloudApiSmb implements FileSystemCloudApi {
     private static final int DEFAULT_PORT = 445;
 
     private final String host;
     private final int port;
     private final String share;
+    private final String basedir;
     private final CIFSContext cifsContext;
 
-    public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String container ) {
-        if( container == null || container.isBlank() ) {
-            throw new CloudException( "fs.smb: container (smb server host[:port]/share) is required" );
-        }
+    public FileSystemCloudApiSmb( FileSystemConfiguration fileSystemConfiguration, String configurationId ) {
+        String container = ( String ) fileSystemConfiguration.getOrThrow( "smb", configurationId, "container" );
 
         int slashIdx = container.indexOf( '/' );
         String hostPort = slashIdx >= 0 ? container.substring( 0, slashIdx ) : container;
@@ -75,14 +72,16 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
             this.port = DEFAULT_PORT;
         }
 
-        Object identity = fileSystemConfiguration.get( "smb", container, "clouds.identity" );
+        Object identity = fileSystemConfiguration.get( "smb", configurationId, "identity" );
         String username = identity != null ? identity.toString() : "guest";
 
-        Object credential = fileSystemConfiguration.get( "smb", container, "clouds.credential" );
+        Object credential = fileSystemConfiguration.get( "smb", configurationId, "credential" );
         String password = credential != null ? credential.toString() : "";
 
-        Object domainObj = fileSystemConfiguration.get( "smb", container, "clouds.domain" );
+        Object domainObj = fileSystemConfiguration.get( "smb", configurationId, "domain" );
         String domain = domainObj != null ? domainObj.toString() : "";
+
+        this.basedir = normalizeBasedir( fileSystemConfiguration.get( "smb", configurationId, "filesystem.basedir" ) );
 
         try {
             CIFSContext baseContext = new BaseContext( new PropertyConfiguration( new Properties() ) );
@@ -92,8 +91,30 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
         }
     }
 
+    private static String normalizeBasedir( Object basedirObj ) {
+        if( basedirObj == null ) return "";
+        String str = basedirObj.toString();
+        int start = 0, end = str.length();
+        while( start < end && str.charAt( start ) == '/' ) start++;
+        while( end > start && str.charAt( end - 1 ) == '/' ) end--;
+        return str.substring( start, end );
+    }
+
+    private String physicalPath( String path ) {
+        return basedir.isEmpty() ? path : basedir + "/" + path;
+    }
+
+    private String rawUrl( String physicalPath ) {
+        return s( "smb://${host}:${port}/${share}/${physicalPath}" );
+    }
+
     private String buildUrl( String path ) {
-        return s( "smb://${host}:${port}/${share}/${path}" );
+        return rawUrl( physicalPath( path ) );
+    }
+
+    @Override
+    public String toUri( CloudURI path ) {
+        return rawUrl( path.path );
     }
 
     private SmbFile smbFile( CloudURI path ) {
@@ -105,11 +126,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
     }
 
     private URI buildUri( CloudURI path ) {
-        try {
-            return new URI( path.scheme, null, host, port, "/" + share + "/" + path.path, null, null );
-        } catch( URISyntaxException e ) {
-            throw new CloudException( e );
-        }
+        return URI.create( path.toString() );
     }
 
     private static String parentOf( String path ) {
@@ -119,7 +136,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
     }
 
     private void ensureParentDirectory( CloudURI path ) {
-        String parent = parentOf( path.path );
+        String parent = physicalPath( parentOf( path.path ) );
         if( parent.isEmpty() ) return;
 
         try {
@@ -128,7 +145,7 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
                 if( segment.isEmpty() ) continue;
                 current.append( segment ).append( '/' );
 
-                SmbFile dir = new SmbFile( buildUrl( current.toString() ), cifsContext );
+                SmbFile dir = new SmbFile( rawUrl( current.toString() ), cifsContext );
                 if( dir.exists() ) continue;
 
                 try {
@@ -145,9 +162,9 @@ public class FileSystemCloudApiSmb implements FileSystemCloudApi, ContainerScope
         }
     }
 
-    private boolean directoryAppeared( String path ) throws IOException {
+    private boolean directoryAppeared( String physicalPath ) throws IOException {
         for( int attempt = 0; attempt < 5; attempt++ ) {
-            if( new SmbFile( buildUrl( path ), cifsContext ).exists() ) return true;
+            if( new SmbFile( rawUrl( physicalPath ), cifsContext ).exists() ) return true;
 
             try {
                 Thread.sleep( 100 );
