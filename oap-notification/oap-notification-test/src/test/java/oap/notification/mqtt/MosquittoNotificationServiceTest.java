@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 
 import java.util.StringJoiner;
 
+import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MosquittoNotificationServiceTest extends Fixtures {
@@ -39,7 +40,9 @@ public class MosquittoNotificationServiceTest extends Fixtures {
 
             notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, new TestNotificationMessage( "val2" ) );
 
-            assertThat( msg ).hasToString( "val2" );
+            assertEventually( 100, 20, () -> {
+                assertThat( msg ).hasToString( "val2" );
+            } );
         }
     }
 }
