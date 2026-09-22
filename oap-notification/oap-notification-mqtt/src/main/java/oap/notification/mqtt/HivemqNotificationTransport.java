@@ -18,6 +18,7 @@ import oap.notification.NotificationTransport;
 import oap.notification.Qos;
 import oap.util.Dates;
 import oap.util.Lists;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.util.List;
 import java.util.concurrent.CompletionException;
@@ -33,10 +34,18 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     public long publishTimeout = Dates.s( 1 );
     private Mqtt5AsyncClient client;
 
+    /**
+     * @param identifier MQTT client identifier; {@code %rnd%} is replaced with 5 random letters
+     *                    so multiple instances (e.g. across replicas) don't collide on the broker
+     */
     public HivemqNotificationTransport( String identifier, String host, int port ) {
-        this.identifier = identifier;
+        this.identifier = identifier.replace( "%rnd%", RandomStringUtils.insecure().nextAlphabetic( 5 ) );
         this.host = host;
         this.port = port;
+    }
+
+    public String getIdentifier() {
+        return identifier;
     }
 
     @Start
@@ -59,7 +68,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
             .orTimeout( connectTimeout, TimeUnit.MILLISECONDS )
             .join();
 
-        log.debug( "Connected to MQTT server at {}:{} response {}", host, port, ack );
+        log.debug( "[{}] Connected to MQTT server at {}:{} response {}", identifier, host, port, ack );
     }
 
     @Stop
@@ -80,7 +89,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     @Override
     public void publish( String topic, Qos qos, Notification notification ) throws NotificationException {
         try {
-            log.trace( "publish topic {} qos {} notification {}", topic, qos, Binder.json.marshal( notification ) );
+            log.trace( "[{}] publish topic {} qos {} notification {}", identifier, topic, qos, Binder.json.marshal( notification ) );
 
             Mqtt5PublishResult result = client
                 .publishWith()
@@ -91,7 +100,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
                 .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
                 .join();
 
-            log.trace( "publish topic {} qos {} result {}", topic, qos, result );
+            log.trace( "[{}] publish topic {} qos {} result {}", identifier, topic, qos, result );
         } catch( CompletionException e ) {
             throw new NotificationException( e.getCause() );
         }
@@ -105,7 +114,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
             .callback( mqtt5Publish -> {
                 byte[] payloadAsBytes = mqtt5Publish.getPayloadAsBytes();
 
-                log.trace( "topic {} payload {}", mqtt5Publish.getTopic(),
+                log.trace( "[{}] topic {} payload {}", identifier, mqtt5Publish.getTopic(),
                     payloadAsBytes.length > 0 ? new String( payloadAsBytes ) : "<EMPTY>" );
 
                 notificationConsumer.accept( new NotificationPublish( mqtt5Publish.getTopic().toString(), Binder.json.unmarshal( Notification.class, payloadAsBytes ) ) );
@@ -114,7 +123,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
             .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
             .join();
 
-        log.trace( "publish topics {} result {}", topics, ack );
+        log.trace( "[{}] publish topics {} result {}", identifier, topics, ack );
     }
 
     private MqttQos convertQos( Qos qos ) {
