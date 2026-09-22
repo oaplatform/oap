@@ -17,6 +17,7 @@ A light-weight application framework to build high performant and distributed ja
 | [oap-storage](#oap-storage) | In-memory object store (`MemoryStorage`) with MongoDB sync and cloud object storage                         |
 | [oap-highload](#oap-highload) | CPU affinity utility for pinning threads to specific CPU cores                                              |
 | [oap-mail](#oap-mail) | Email sending via SMTP and SendGrid with a persistent delivery queue                                        |
+| [oap-notification](#oap-notification) | Pub/sub notification delivery via a pluggable `NotificationTransport` (MQTT provided)                       |
 | [oap-maven-plugin](#oap-maven-plugin) | Build-time code generation: startup scripts and dictionary enum source files                                |
 
 ## Guides
@@ -1976,6 +1977,94 @@ Template → Message → Mailman → MailQueue → Transport
 | [oap-mail-sendgrid](oap-mail/oap-mail-sendgrid/README.md) | SendGrid REST API transport |
 | [oap-mail-mongo](oap-mail/oap-mail-mongo/README.md) | MongoDB-backed queue persistence |
 | [oap-mail-test](oap-mail/oap-mail-test/README.md) | `TransportMock`, `MessageAssertion`, `MessagesAssertion`, `MailBox` |
+
+---
+
+## oap-notification
+
+Pub/sub notification delivery for the OAP platform. `NotificationService` sends/receives `Notification` messages through a pluggable `NotificationTransport`; the only transport currently provided is MQTT, via `HivemqNotificationTransport`.
+
+### Sub-modules
+
+| Module | Description | Depends on |
+|---|---|---|
+| oap-notification-client | Core: `NotificationTransport`, `NotificationService`, `Notification`, `NotificationPublish`, `Qos` | — |
+| oap-notification-mqtt | `HivemqNotificationTransport` — MQTT 5 transport (HiveMQ MQTT Client) | `oap-notification-client` |
+| oap-notification-test | `MosquittoFixture` — Testcontainers Mosquitto broker for tests | `oap-notification-mqtt`, `oap-stdlib-test` |
+
+### Core API (oap-notification-client)
+
+```java
+NotificationTransport transport = new HivemqNotificationTransport( "my-service-%rnd%", "mqtt.example.com", 1883 );
+transport.start();
+
+NotificationService notificationService = new NotificationService( transport );
+notificationService.sendNotification( "/topic", Qos.AT_LEAST_ONCE, myMessage );      // myMessage: Serializable
+
+notificationService.subscribeToTopic( "/topic", publish -> {
+    Serializable message = publish.message;   // NotificationPublish extends Notification, adds `topic`
+} );
+
+transport.close();
+```
+
+- `Qos` mirrors MQTT QoS levels: `AT_MOST_ONCE`, `AT_LEAST_ONCE`, `EXACTLY_ONCE`.
+- `Notification.message` is serialized with polymorphic type info (`TypeIdFactory`, `object:type` property) — register message classes the same way as `oap-statsdb` value classes (see [oap-statsdb](#oap-statsdb)'s `configurations`/`TypeIdFactory` example) so they round-trip through JSON.
+
+### `HivemqNotificationTransport` (oap-notification-mqtt)
+
+An `oap.notification.NotificationTransport` implementation backed by [HiveMQ MQTT Client](https://github.com/hivemq/hivemq-mqtt-client) (MQTT 5). Publishes/subscribes `Notification` messages as JSON over MQTT topics.
+
+Wired via `oap-module.oap`:
+
+```hocon
+name = oap-notification-mqtt
+dependsOn = oap-notification
+
+services {
+  mqtt-notification-transport {
+    implementation = oap.notification.mqtt.HivemqNotificationTransport
+    parameters {
+      identifier = "my-service-%rnd%"
+      host = "mqtt.example.com"
+      port = 1883
+    }
+    supervision.supervise = true
+  }
+}
+```
+
+#### Constructor parameters
+
+| Parameter | Description |
+|---|---|
+| `identifier` | MQTT client identifier. Supports the `%rnd%` placeholder (see below). |
+| `host` | MQTT broker host |
+| `port` | MQTT broker port |
+
+#### Tunable fields
+
+| Field | Default | Description |
+|---|---|---|
+| `connectTimeout` | 10 s | Timeout for `start()`/`close()`'s connect/disconnect handshake |
+| `publishTimeout` | 1 s | Timeout for `publish()`/`subscribe()` calls |
+
+#### `%rnd%` identifier placeholder
+
+MQTT brokers require each connected client to use a unique identifier — connecting a second client with an identifier already in use disconnects the first one. `%rnd%` in `identifier` is replaced at construction time with 5 random letters (`RandomStringUtils.insecure().nextAlphabetic(5)`), so a single configured identifier (e.g. `"my-service-%rnd%"`) can be reused across multiple instances or replicas of the same service without them colliding on the broker.
+
+```java
+new HivemqNotificationTransport( "my-service-%rnd%", host, port ).getIdentifier();
+// → e.g. "my-service-qKPzr"
+```
+
+`%rnd%` is a plain `String.replace` substitution, computed once per constructor call — an identifier without `%rnd%` is passed through unchanged, and every occurrence of `%rnd%` (if there's more than one) is replaced with the same random value.
+
+### Testing
+
+`oap-notification-test` provides:
+- `MosquittoFixture` — starts a real Mosquitto broker in a Testcontainers container for integration tests (see `MosquittoNotificationServiceTest`).
+- `HivemqNotificationTransportTest` — plain unit tests for the `%rnd%` identifier substitution (no broker required).
 
 ---
 
