@@ -134,7 +134,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     @Override
     public void downloadFile( CloudURI source, Path destination ) {
         try {
-            Files.copy( getPath( source ), destination );
+            Files.copy( getPath( source ), destination, StandardCopyOption.REPLACE_EXISTING );
         } catch( IOException e ) {
             throw new CloudException( e );
         }
