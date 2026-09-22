@@ -19,16 +19,19 @@ import static dev.khbd.interp4j.core.Interpolations.s;
 public class FileSystemConfiguration {
     private final LinkedHashMap<String, Map<String, Object>> properties;
     private final Map<String, String> configurationIdToScheme;
+    private final Map<String, String> targetToCacheConfigurationId;
 
     public FileSystemConfiguration( Map<String, Object> configuration ) {
         this.properties = parse( configuration );
         this.configurationIdToScheme = buildConfigurationIdRegistry( properties );
+        this.targetToCacheConfigurationId = buildCacheRegistry( properties );
         logDefaults();
     }
 
     private FileSystemConfiguration( LinkedHashMap<String, Map<String, Object>> properties ) {
         this.properties = properties;
         this.configurationIdToScheme = buildConfigurationIdRegistry( properties );
+        this.targetToCacheConfigurationId = buildCacheRegistry( properties );
         logDefaults();
     }
 
@@ -169,6 +172,39 @@ public class FileSystemConfiguration {
     }
 
     /**
+     * Discovers the target-configurationId -&gt; cache-configurationId registry: every
+     * {@code fs.<scheme>.cache.get.<cacheConfigurationId> = <targetConfigurationId>[,<targetConfigurationId>...]}
+     * entry declares {@code cacheConfigurationId} as the cache for each (comma-separated) target
+     * configurationId. Declared under the cache configurationId's own scheme, same as
+     * {@code filesystem.basedir.<id>}/{@code container.<id>}.
+     */
+    private static Map<String, String> buildCacheRegistry( Map<String, Map<String, Object>> properties ) {
+        Map<String, String> registry = new LinkedHashMap<>();
+
+        for( Map.Entry<String, Map<String, Object>> schemeEntry : properties.entrySet() ) {
+            if( "default".equals( schemeEntry.getKey() ) ) continue;
+
+            for( Map.Entry<String, Object> propEntry : schemeEntry.getValue().entrySet() ) {
+                if( !propEntry.getKey().startsWith( "cache.get." ) ) continue;
+
+                String cacheConfigurationId = propEntry.getKey().substring( "cache.get.".length() );
+
+                for( String targetConfigurationId : String.valueOf( propEntry.getValue() ).split( "," ) ) {
+                    targetConfigurationId = targetConfigurationId.trim();
+                    if( targetConfigurationId.isEmpty() ) continue;
+
+                    String existing = registry.put( targetConfigurationId, cacheConfigurationId );
+                    if( existing != null && !existing.equals( cacheConfigurationId ) ) {
+                        throw new CloudException( s( "fs: configurationId '${targetConfigurationId}' cannot have multiple cache configurationIds: ${existing}, ${cacheConfigurationId}" ) );
+                    }
+                }
+            }
+        }
+
+        return registry;
+    }
+
+    /**
      * Returns a new configuration with `newConfiguration` merged over this one: ids/keys absent from
      * `newConfiguration` keep their value from this configuration, ids/keys present in both are overwritten.
      */
@@ -227,6 +263,16 @@ public class FileSystemConfiguration {
 
     public String getSchemeOrThrow( CloudURI cloudURI ) {
         return getSchemeOrThrow( cloudURI.configurationId );
+    }
+
+    /**
+     * Resolves `configurationId` to the configurationId declared as its cache (via
+     * {@code fs.<scheme>.cache.get.<cacheConfigurationId> = <configurationId>[,<other>...]} — `configurationId`
+     * may appear alongside other targets in a comma-separated list), or {@code null} if none.
+     */
+    @Nullable
+    public String getCacheConfigurationId( String configurationId ) {
+        return targetToCacheConfigurationId.get( configurationId );
     }
 
     /**

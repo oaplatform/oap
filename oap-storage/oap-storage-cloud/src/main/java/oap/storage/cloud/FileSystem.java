@@ -166,10 +166,65 @@ public class FileSystem implements AutoCloseable {
         }
     }
 
+    /**
+     * Resolves `source` to the effective {@code CloudURI} a cache-aware read should use: `source` itself when
+     * no cache is configured for it (via {@code fs.<scheme>.cache.get.<cacheConfigurationId>}), otherwise the
+     * corresponding cache configurationId, refreshed from `source` first when the cache is missing or `source`
+     * has been modified since the cache copy was written (compared via {@link FileSystemCloudApi#getMetadata}).
+     */
+    @SuppressWarnings( "checkstyle:UnnecessaryParentheses" )
+    private CloudURI resolveForRead( CloudURI source ) throws CloudException {
+        String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( source.configurationId );
+        if( cacheConfigurationId == null ) return source;
+
+        CloudURI cacheURI = cacheURIFor( source, cacheConfigurationId );
+        FileSystemCloudApi cacheApi = getCloudApi( cacheURI );
+        FileSystemCloudApi sourceApi = getCloudApi( source );
+
+        StorageItem cacheMetadata = cacheApi.getMetadata( cacheURI );
+        StorageItem sourceMetadata = sourceApi.getMetadata( source );
+
+        boolean stale = cacheMetadata == null
+            || ( sourceMetadata != null
+                 && sourceMetadata.getLastModified() != null
+                 && cacheMetadata.getLastModified() != null
+                 && sourceMetadata.getLastModified().isAfter( cacheMetadata.getLastModified() ) );
+
+        if( !stale ) {
+            log.trace( "cache hit {} -> {} (source not modified since cache)", source, cacheURI );
+            return cacheURI;
+        }
+
+        log.debug( "cache refresh {} -> {} (cache missing or source newer)", source, cacheURI );
+        if( "file".equals( resolveScheme( cacheConfigurationId ) ) ) {
+            Path cachePath = ( ( FileSystemCloudApiLocalFs ) cacheApi ).getPath( cacheURI );
+            oap.io.Files.ensureFile( cachePath );
+            sourceApi.downloadFile( source, cachePath );
+        } else {
+            try( InputStream inputStream = sourceApi.getInputStream( source ) ) {
+                cacheApi.upload( cacheURI, BlobData.builder().content( inputStream ).build() );
+            } catch( IOException e ) {
+                throw new CloudException( e );
+            }
+        }
+
+        return cacheURI;
+    }
+
+    /**
+     * Namespaces the cache-side path by `source`'s own configurationId (e.g. {@code fs://fs/a/b/c/file.txt} ->
+     * {@code fs://cachefs/fs/a/b/c/file.txt}), so one cache configurationId can safely back multiple distinct
+     * source configurationIds without their paths colliding.
+     */
+    private CloudURI cacheURIFor( CloudURI source, String cacheConfigurationId ) {
+        return new CloudURI( cacheConfigurationId, source.configurationId + "/" + source.path );
+    }
+
     public InputStream getInputStream( CloudURI path ) throws CloudException {
         log.debug( "getInputStream {}", path );
 
-        return getCloudApi( path ).getInputStream( path );
+        CloudURI effective = resolveForRead( path );
+        return getCloudApi( effective ).getInputStream( effective );
     }
 
     public OutputStream getOutputStream( CloudURI cloudURI, Map<String, String> tags ) throws CloudException {
@@ -183,7 +238,8 @@ public class FileSystem implements AutoCloseable {
     public void downloadFile( CloudURI source, Path destination ) throws CloudException {
         log.debug( "downloadFile {} to {}", source, destination );
 
-        getCloudApi( source ).downloadFile( source, destination );
+        CloudURI effective = resolveForRead( source );
+        getCloudApi( effective ).downloadFile( effective, destination );
     }
 
     public void upload( CloudURI destination, BlobData blobData ) throws CloudException {
@@ -195,16 +251,18 @@ public class FileSystem implements AutoCloseable {
     public void copy( CloudURI source, CloudURI destination, Map<String, String> tags ) throws CloudException {
         log.debug( "copy {} to {} (tags {})", source, destination, tags );
 
+        CloudURI effectiveSource = resolveForRead( source );
+
         FileSystemCloudApi destinationCloudApi = getCloudApi( destination );
 
-        if( isLocalFile( source ) ) {
-            destinationCloudApi.upload( destination, BlobData.builder().content( toFile( source ).toPath() ).tags( tags ).build() );
+        if( isLocalFile( effectiveSource ) ) {
+            destinationCloudApi.upload( destination, BlobData.builder().content( toFile( effectiveSource ).toPath() ).tags( tags ).build() );
             return;
         }
 
-        FileSystemCloudApi sourceCloudApi = getCloudApi( source );
+        FileSystemCloudApi sourceCloudApi = getCloudApi( effectiveSource );
 
-        try( InputStream inputStream = sourceCloudApi.getInputStream( source ) ) {
+        try( InputStream inputStream = sourceCloudApi.getInputStream( effectiveSource ) ) {
             destinationCloudApi.upload( destination, BlobData.builder().content( inputStream ).tags( tags ).build() );
 
         } catch( IOException e ) {
@@ -239,6 +297,16 @@ public class FileSystem implements AutoCloseable {
         log.debug( "deleteBlob {}", path );
 
         getCloudApi( path ).deleteBlob( path );
+
+        String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( path.configurationId );
+        if( cacheConfigurationId != null ) {
+            CloudURI cacheURI = cacheURIFor( path, cacheConfigurationId );
+            FileSystemCloudApi cacheApi = getCloudApi( cacheURI );
+            if( cacheApi.blobExists( cacheURI ) ) {
+                log.trace( "deleteBlob cache {}", cacheURI );
+                cacheApi.deleteBlob( cacheURI );
+            }
+        }
     }
 
     public boolean deleteContainerIfEmpty( CloudURI path ) {
