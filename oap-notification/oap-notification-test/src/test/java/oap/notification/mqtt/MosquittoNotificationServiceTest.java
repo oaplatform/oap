@@ -1,6 +1,7 @@
 package oap.notification.mqtt;
 
 import oap.notification.NotificationPublish;
+import oap.notification.NotificationPublishWithAcknowledge;
 import oap.notification.NotificationService;
 import oap.notification.Qos;
 import oap.notification.TestNotificationMessage;
@@ -89,7 +90,7 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             NotificationService notificationService2 = new NotificationService( notificationTransportClient2 );
 
             notificationService2.subscribeToTopic( "/test-ack", true, notification -> {
-                assertThat( notification ).isExactlyInstanceOf( NotificationPublish.class );
+                assertThat( notification ).isExactlyInstanceOf( NotificationPublishWithAcknowledge.class );
 
                 TestNotificationMessage notificationMessage = ( TestNotificationMessage ) notification.message;
                 msg.add( notificationMessage.value );

@@ -6,6 +6,11 @@ import oap.json.Binder;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * No-op {@link NotificationTransport} that only logs — never actually delivers anything, `subscribe`'s
+ * `notificationConsumer` is never invoked. Useful as a placeholder/default transport in tests or configs
+ * where notification delivery isn't under test.
+ */
 @Slf4j
 public class MockNotificationTransport implements NotificationTransport {
     @Override
