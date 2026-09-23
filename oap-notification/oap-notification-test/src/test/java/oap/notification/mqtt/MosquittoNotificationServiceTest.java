@@ -1,5 +1,7 @@
 package oap.notification.mqtt;
 
+import com.hivemq.client.mqtt.datatypes.MqttQos;
+import oap.notification.Notification;
 import oap.notification.NotificationPublish;
 import oap.notification.NotificationPublishWithAcknowledge;
 import oap.notification.NotificationService;
@@ -8,6 +10,7 @@ import oap.notification.TestNotificationMessage;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.StringJoiner;
 
 import static oap.testng.Asserts.assertEventually;
@@ -102,6 +105,27 @@ public class MosquittoNotificationServiceTest extends Fixtures {
 
             assertEventually( 100, 20, () -> {
                 assertThat( msg ).hasToString( "ack-val" );
+            } );
+        }
+    }
+
+    @Test
+    public void testFixtureCapturesMessages() {
+        mosquittoFixture.subscribe( "/test-fixture", MqttQos.AT_LEAST_ONCE, false );
+
+        try( HivemqNotificationTransport notificationTransportClient1 = new HivemqNotificationTransport( "client1-fixture", "127.0.0.1", mosquittoFixture.getPort() ) ) {
+            notificationTransportClient1.start();
+
+            NotificationService notificationService1 = new NotificationService( notificationTransportClient1 );
+            notificationService1.sendNotification( "/test-fixture", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "fixture-val" ) );
+
+            assertEventually( 100, 20, () -> {
+                // wire payload is the Notification envelope (polymorphic `message`), not TestNotificationMessage directly
+                List<Notification> received = mosquittoFixture.receive( "/test-fixture", Notification.class );
+                assertThat( received ).extracting( n -> n.message ).containsExactly( new TestNotificationMessage( "fixture-val" ) );
+                assertThat( mosquittoFixture.receive( Notification.class ) ).extracting( n -> n.message ).containsExactly( new TestNotificationMessage( "fixture-val" ) );
+                assertThat( mosquittoFixture.receive( "/test-fixture" ) ).hasSize( 1 );
+                assertThat( mosquittoFixture.receive() ).hasSize( 1 );
             } );
         }
     }
