@@ -2407,7 +2407,7 @@ Pub/sub notification delivery for the OAP platform. `NotificationService` sends/
 
 | Module | Description | Depends on |
 |---|---|---|
-| oap-notification-client | Core: `NotificationTransport`, `NotificationService`, `Notification`, `NotificationPublish`, `Qos` | — |
+| oap-notification-client | Core: `NotificationTransport`, `NotificationService`, `Notification`, `NotificationPublish`, `NotificationPublishWithAcknowledge`, `Qos` | — |
 | oap-notification-mqtt | `HivemqNotificationTransport` — MQTT 5 transport (HiveMQ MQTT Client) | `oap-notification-client` |
 | oap-notification-test | `MosquittoFixture` — Testcontainers Mosquitto broker for tests | `oap-notification-mqtt`, `oap-stdlib-test` |
 
@@ -2418,10 +2418,16 @@ NotificationTransport transport = new HivemqNotificationTransport( "my-service-%
 transport.start();
 
 NotificationService notificationService = new NotificationService( transport );
-notificationService.sendNotification( "/topic", Qos.AT_LEAST_ONCE, myMessage );      // myMessage: Serializable
+notificationService.sendNotification( "/topic", Qos.AT_LEAST_ONCE, false, myMessage );      // myMessage: Serializable; retain: keep as the topic's last value for future subscribers
 
 notificationService.subscribeToTopic( "/topic", publish -> {
     Serializable message = publish.message;   // NotificationPublish extends Notification, adds `topic`
+} );
+
+// Manual acknowledgement — the transport waits for acknowledge() before considering the message delivered
+notificationService.subscribeToTopic( "/topic", true, publish -> {
+    // ... process publish.message ...
+    publish.acknowledge();
 } );
 
 transport.close();
@@ -2429,6 +2435,8 @@ transport.close();
 
 - `Qos` mirrors MQTT QoS levels: `AT_MOST_ONCE`, `AT_LEAST_ONCE`, `EXACTLY_ONCE`.
 - `Notification.message` is serialized with polymorphic type info (`TypeIdFactory`, `object:type` property) — register message classes the same way as `oap-statsdb` value classes (see [oap-statsdb](#oap-statsdb)'s `configurations`/`TypeIdFactory` example) so they round-trip through JSON.
+- `subscribeToTopic(topic(s), notificationConsumer)` (no `manualAcknowledgement` arg) delivers plain `NotificationPublish` and auto-acknowledges as soon as the transport hands the message off. `subscribeToTopic(topic(s), true, notificationConsumer)` delivers a `NotificationPublishWithAcknowledge` instead (still typed as `NotificationPublish` in the callback) — the consumer must call `.acknowledge()` once done, or the transport redelivers the message (MQTT: for any QoS above `AT_MOST_ONCE`).
+- `NotificationPublish.acknowledge()` is callable on every delivered notification, no cast needed — it throws `NotificationException` unless the subscription was made with `manualAcknowledgement = true` (in which case the actual instance is a `NotificationPublishWithAcknowledge`, whose override does the real work). Calling it on a plain, auto-acknowledged delivery is a usage error.
 
 ### `HivemqNotificationTransport` (oap-notification-mqtt)
 

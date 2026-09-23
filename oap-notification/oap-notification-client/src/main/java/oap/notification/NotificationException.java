@@ -1,5 +1,9 @@
 package oap.notification;
 
+/**
+ * Thrown by a {@link NotificationTransport} when publishing or subscribing fails (e.g. a broker connection
+ * or protocol error) — wraps the underlying transport-specific exception.
+ */
 public class NotificationException extends RuntimeException {
     public NotificationException() {
     }
