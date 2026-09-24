@@ -10,11 +10,11 @@ import java.io.Serializable;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Envelope around a user-defined, {@link Serializable} payload sent/received through a
- * {@link NotificationTransport}. {@link #message} is serialized to JSON with polymorphic type info
- * ({@code object:type}, via {@link TypeIdFactory}), so any concrete message class round-trips without the
- * caller needing to know the type up front — register message classes with {@code TypeIdFactory} the same
- * way {@code oap-statsdb} value classes are registered.
+ * Envelope around an already-serialized message payload sent/received through a {@link NotificationTransport}.
+ * {@link #message} holds the raw JSON bytes as produced by the sender (see {@link NotificationService}, which
+ * marshals the caller's payload before wrapping it here) — {@code Notification} itself does no serialization
+ * or type resolution; read it back via {@link #messageAs(TypeRef)} (caller supplies the expected type) or
+ * {@link #stringMessage()}.
  */
 public class Notification implements Serializable {
     @Serial
