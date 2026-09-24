@@ -95,9 +95,14 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
         super.after();
     }
 
-    /** Clears every captured message (all topics). */
-    public void clean() {
+    /**
+     * Clears every captured message (all topics).
+     *
+     * @return this fixture, for chaining
+     */
+    public MosquittoFixture clean() {
         messages.clear();
+        return this;
     }
 
     private Mqtt5AsyncClient client() {
@@ -117,8 +122,10 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
      * Subscribes this fixture's own MQTT client to `topic`, capturing every received payload (available via
      * {@link #receive(String)}/{@link #receive(String, Class)}) — independent of any {@code HivemqNotificationTransport}
      * under test, so tests can assert what the broker actually delivered.
+     *
+     * @return this fixture, for chaining
      */
-    public void subscribe( String topic ) {
+    public MosquittoFixture subscribe( String topic ) {
         client().subscribeWith()
             .topicFilter( topic )
             .callback( publish ->
@@ -126,11 +133,16 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
                     .add( new MessageInfo( publish.getPayloadAsBytes(), publish.isRetain(), publish.getQos() ) ) )
             .send()
             .join();
+        return this;
     }
 
-    /** Subscribes to every topic on the broker (MQTT wildcard filter {@code #}). */
-    public void subscribeAll() {
-        subscribe( "#" );
+    /**
+     * Subscribes to every topic on the broker (MQTT wildcard filter {@code #}).
+     *
+     * @return this fixture, for chaining
+     */
+    public MosquittoFixture subscribeAll() {
+        return subscribe( "#" );
     }
 
     /** Messages captured on `topic`, in arrival order. */
