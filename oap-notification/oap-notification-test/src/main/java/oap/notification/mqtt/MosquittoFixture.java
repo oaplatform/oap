@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Testcontainers-backed real Mosquitto MQTT broker, plus its own raw MQTT client to observe what the broker
@@ -49,8 +50,8 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
 
     /**
      * @param subscribeAll if {@code true}, automatically calls {@link #subscribeAll()} once the broker container
-     *                      is up (in {@link #before()}), so every topic's messages are captured without an
-     *                      explicit {@link #subscribe(String)} call
+     *                     is up (in {@link #before()}), so every topic's messages are captured without an
+     *                     explicit {@link #subscribe(String)} call
      */
     public MosquittoFixture( boolean subscribeAll ) {
         port = definePort( "MQTT_PORT" );
@@ -145,29 +146,53 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
         return subscribe( "#" );
     }
 
-    /** Messages captured on `topic`, in arrival order. */
+    /**
+     * Publishes `message` (serialized to JSON) directly to `topic` via this fixture's own MQTT client —
+     * independent of any {@code HivemqNotificationTransport} under test.
+     */
+    public void publish( String topic, MqttQos qos, boolean retain, Object message ) {
+        client().publishWith()
+            .topic( topic )
+            .qos( qos )
+            .retain( retain )
+            .payload( Binder.json.marshal( message ).getBytes( UTF_8 ) )
+            .send()
+            .join();
+    }
+
+    /**
+     * Messages captured on `topic`, in arrival order.
+     */
     public List<MessageInfo> receive( String topic ) {
         return messages.getOrDefault( topic, List.of() );
     }
 
-    /** Messages captured on every topic subscribed so far, flattened. */
+    /**
+     * Messages captured on every topic subscribed so far, flattened.
+     */
     public List<MessageInfo> receive() {
         List<MessageInfo> all = new ArrayList<>();
         messages.values().forEach( all::addAll );
         return all;
     }
 
-    /** Deserializes every captured message's payload on `topic` to `clazz`; an empty MQTT payload becomes {@code null}. */
+    /**
+     * Deserializes every captured message's payload on `topic` to `clazz`; an empty MQTT payload becomes {@code null}.
+     */
     public <T> List<T> receive( String topic, Class<T> clazz ) {
         return Lists.map( receive( topic ), info -> info.payload.length == 0 ? null : Binder.json.unmarshal( clazz, info.payload ) );
     }
 
-    /** Same as {@link #receive(String, Class)}, but across every topic subscribed so far, flattened. */
+    /**
+     * Same as {@link #receive(String, Class)}, but across every topic subscribed so far, flattened.
+     */
     public <T> List<T> receive( Class<T> clazz ) {
         return Lists.map( receive(), info -> info.payload.length == 0 ? null : Binder.json.unmarshal( clazz, info.payload ) );
     }
 
-    /** A single captured MQTT message: raw payload plus its delivery metadata. */
+    /**
+     * A single captured MQTT message: raw payload plus its delivery metadata.
+     */
     public static class MessageInfo {
         public final byte[] payload;
         public final boolean retain;
