@@ -14,8 +14,8 @@ import java.io.Serializable;
 public class NotificationPublishWithAcknowledge extends NotificationPublish {
     private Runnable acknowledge;
 
-    public NotificationPublishWithAcknowledge( String topic, Notification notification, Runnable acknowledge ) {
-        super( topic, notification );
+    public NotificationPublishWithAcknowledge( String topic, Qos qos, boolean retain, Notification notification, Runnable acknowledge ) {
+        super( topic, qos, retain, notification );
         this.acknowledge = acknowledge;
     }
 
@@ -23,8 +23,8 @@ public class NotificationPublishWithAcknowledge extends NotificationPublish {
      * No acknowledge callback attached — {@link #acknowledge()} throws {@link NullPointerException} on an
      * instance built this way. Only useful for constructing a value to compare/inspect, not one to acknowledge.
      */
-    public NotificationPublishWithAcknowledge( String topic, Serializable message ) {
-        super( topic, message );
+    public NotificationPublishWithAcknowledge( String topic, Qos qos, boolean retain, Serializable message ) {
+        super( topic, qos, retain, message );
     }
 
     /** Confirms processing of this message to the transport; must be called exactly once. */

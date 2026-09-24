@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class NotificationPublishTest {
     @Test
     public void testAcknowledgeThrowsForPlainNotificationPublish() {
-        NotificationPublish notificationPublish = new NotificationPublish( "topic", new TestNotificationMessage( "val" ) );
+        NotificationPublish notificationPublish = new NotificationPublish( "topic", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "val" ) );
 
         assertThatThrownBy( notificationPublish::acknowledge )
             .isInstanceOf( NotificationException.class );

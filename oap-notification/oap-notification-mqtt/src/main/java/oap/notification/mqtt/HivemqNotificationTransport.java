@@ -121,7 +121,11 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
 
                 Notification notification = Binder.json.unmarshal( Notification.class, payloadAsBytes );
                 String topic = mqtt5Publish.getTopic().toString();
-                notificationConsumer.accept( manualAcknowledgement ? new NotificationPublishWithAcknowledge( topic, notification, mqtt5Publish::acknowledge ) : new NotificationPublish( topic, notification ) );
+                Qos qos = convertQos( mqtt5Publish.getQos() );
+                boolean retain = mqtt5Publish.isRetain();
+                notificationConsumer.accept( manualAcknowledgement
+                    ? new NotificationPublishWithAcknowledge( topic, qos, retain, notification, mqtt5Publish::acknowledge )
+                    : new NotificationPublish( topic, qos, retain, notification ) );
             } )
             .manualAcknowledgement( manualAcknowledgement )
             .send()
@@ -136,6 +140,14 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
             case AT_MOST_ONCE -> MqttQos.AT_MOST_ONCE;
             case EXACTLY_ONCE -> MqttQos.EXACTLY_ONCE;
             case AT_LEAST_ONCE -> MqttQos.AT_LEAST_ONCE;
+        };
+    }
+
+    private Qos convertQos( MqttQos qos ) {
+        return switch( qos ) {
+            case AT_MOST_ONCE -> Qos.AT_MOST_ONCE;
+            case EXACTLY_ONCE -> Qos.EXACTLY_ONCE;
+            case AT_LEAST_ONCE -> Qos.AT_LEAST_ONCE;
         };
     }
 }
