@@ -6,12 +6,14 @@ import oap.notification.NotificationPublishWithAcknowledge;
 import oap.notification.NotificationService;
 import oap.notification.Qos;
 import oap.notification.TestNotificationMessage;
+import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.StringJoiner;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +40,7 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "val1" ) );
 
             notificationService2.subscribeToTopic( "/test", notification -> {
-                TestNotificationMessage notificationMessage = ( TestNotificationMessage ) notification.message;
+                TestNotificationMessage notificationMessage = notification.messageAs( new TypeRef<>() {} );
                 msg.add( notificationMessage.value );
             } );
 
@@ -66,7 +68,7 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             notificationService2.subscribeToTopic( "/test-plain", notification -> {
                 assertThat( notification ).isExactlyInstanceOf( NotificationPublish.class );
 
-                TestNotificationMessage notificationMessage = ( TestNotificationMessage ) notification.message;
+                TestNotificationMessage notificationMessage = notification.messageAs( new TypeRef<>() {} );
                 msg.add( notificationMessage.value );
             } );
 
@@ -94,7 +96,7 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             notificationService2.subscribeToTopic( "/test-ack", true, notification -> {
                 assertThat( notification ).isExactlyInstanceOf( NotificationPublishWithAcknowledge.class );
 
-                TestNotificationMessage notificationMessage = ( TestNotificationMessage ) notification.message;
+                TestNotificationMessage notificationMessage = notification.messageAs( new TypeRef<>() {} );
                 msg.add( notificationMessage.value );
 
                 notification.acknowledge();
@@ -121,8 +123,8 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             assertEventually( 100, 20, () -> {
                 // wire payload is the Notification envelope (polymorphic `message`), not TestNotificationMessage directly
                 List<Notification> received = mosquittoFixture.receive( "/test-fixture", Notification.class );
-                assertThat( received ).extracting( n -> n.message ).containsExactly( new TestNotificationMessage( "fixture-val" ) );
-                assertThat( mosquittoFixture.receive( Notification.class ) ).extracting( n -> n.message ).containsExactly( new TestNotificationMessage( "fixture-val" ) );
+                assertThat( received ).extracting( n -> n.message ).containsExactly( "fixture-val".getBytes( UTF_8 ) );
+                assertThat( mosquittoFixture.receive( Notification.class ) ).extracting( n -> n.message ).containsExactly( "fixture-val".getBytes( UTF_8 ) );
                 assertThat( mosquittoFixture.receive( "/test-fixture" ) ).hasSize( 1 );
                 assertThat( mosquittoFixture.receive() ).hasSize( 1 );
             } );

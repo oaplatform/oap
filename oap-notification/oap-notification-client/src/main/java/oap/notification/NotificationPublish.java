@@ -3,7 +3,6 @@ package oap.notification;
 import lombok.ToString;
 
 import java.io.Serial;
-import java.io.Serializable;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
@@ -16,11 +15,17 @@ public class NotificationPublish extends Notification {
     @Serial
     private static final long serialVersionUID = 8509736862218143643L;
 
-    /** The topic this notification was published/received on. */
+    /**
+     * The topic this notification was published/received on.
+     */
     public final String topic;
-    /** The QoS level this notification was delivered with. */
+    /**
+     * The QoS level this notification was delivered with.
+     */
     public final Qos qos;
-    /** Whether this notification was delivered as a retained message. */
+    /**
+     * Whether this notification was delivered as a retained message.
+     */
     public final boolean retain;
 
     public NotificationPublish( String topic, Qos qos, boolean retain, Notification notification ) {
@@ -31,7 +36,7 @@ public class NotificationPublish extends Notification {
         this.retain = retain;
     }
 
-    public NotificationPublish( String topic, Qos qos, boolean retain, Serializable message ) {
+    public NotificationPublish( String topic, Qos qos, boolean retain, byte[] message ) {
         super( message );
 
         this.topic = topic;

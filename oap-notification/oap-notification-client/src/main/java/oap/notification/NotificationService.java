@@ -1,5 +1,8 @@
 package oap.notification;
 
+import oap.json.Binder;
+
+import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Consumer;
@@ -28,7 +31,9 @@ public class NotificationService {
      * @see NotificationTransport#publish(String, Qos, boolean, Notification)
      */
     public <TMessage extends Serializable> void sendNotification( String topic, Qos qos, boolean retain, TMessage message ) throws NotificationException {
-        notificationTransport.publish( topic, qos, retain, new Notification( message ) );
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Binder.json.marshal( message, outputStream );
+        notificationTransport.publish( topic, qos, retain, new Notification( outputStream.toByteArray() ) );
     }
 
     /**
