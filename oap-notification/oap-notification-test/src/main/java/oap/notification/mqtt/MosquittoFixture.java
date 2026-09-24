@@ -24,9 +24,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
 
+/**
+ * Testcontainers-backed real Mosquitto MQTT broker, plus its own raw MQTT client to observe what the broker
+ * actually delivers — independent of any {@code HivemqNotificationTransport}/{@code NotificationService}
+ * under test. Call {@link #subscribe(String)}/{@link #subscribeAll()} to start capturing, then read captured
+ * messages back via {@link #receive(String)}/{@link #receive(String, Class)} (or the all-topics variants).
+ */
 @Slf4j
 public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
-    private static final String VERSION = "2.1.2-alpine";
+    public static final String VERSION = "2.1.2-alpine";
     @Getter
     private final int port;
     private final Map<String, List<MessageInfo>> messages = new ConcurrentHashMap<>();
@@ -34,10 +40,18 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
     private GenericContainer container;
     private Mqtt5AsyncClient client;
 
+    /**
+     * Same as {@link #MosquittoFixture(boolean)} with {@code subscribeAll = false}.
+     */
     public MosquittoFixture() {
         this( false );
     }
 
+    /**
+     * @param subscribeAll if {@code true}, automatically calls {@link #subscribeAll()} once the broker container
+     *                      is up (in {@link #before()}), so every topic's messages are captured without an
+     *                      explicit {@link #subscribe(String)} call
+     */
     public MosquittoFixture( boolean subscribeAll ) {
         port = definePort( "MQTT_PORT" );
         this.subscribeAllOnStart = subscribeAll;
