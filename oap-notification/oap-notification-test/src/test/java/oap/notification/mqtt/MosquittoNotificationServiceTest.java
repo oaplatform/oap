@@ -1,6 +1,5 @@
 package oap.notification.mqtt;
 
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 import oap.notification.Notification;
 import oap.notification.NotificationPublish;
 import oap.notification.NotificationPublishWithAcknowledge;
@@ -111,7 +110,7 @@ public class MosquittoNotificationServiceTest extends Fixtures {
 
     @Test
     public void testFixtureCapturesMessages() {
-        mosquittoFixture.subscribe( "/test-fixture", MqttQos.AT_LEAST_ONCE, false );
+        mosquittoFixture.subscribe( "/test-fixture" );
 
         try( HivemqNotificationTransport notificationTransportClient1 = new HivemqNotificationTransport( "client1-fixture", "127.0.0.1", mosquittoFixture.getPort() ) ) {
             notificationTransportClient1.start();

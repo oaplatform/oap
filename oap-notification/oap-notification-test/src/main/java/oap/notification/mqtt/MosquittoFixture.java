@@ -29,12 +29,18 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
     private static final String VERSION = "2.1.2-alpine";
     @Getter
     private final int port;
-    private final Map<String, List<byte[]>> messages = new ConcurrentHashMap<>();
+    private final Map<String, List<MessageInfo>> messages = new ConcurrentHashMap<>();
+    private final boolean subscribeAllOnStart;
     private GenericContainer container;
     private Mqtt5AsyncClient client;
 
     public MosquittoFixture() {
+        this( false );
+    }
+
+    public MosquittoFixture( boolean subscribeAll ) {
         port = definePort( "MQTT_PORT" );
+        this.subscribeAllOnStart = subscribeAll;
     }
 
     @Override
@@ -50,6 +56,10 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
             .withCreateContainerCmdModifier( cmd -> cmd.getHostConfig().withPortBindings( portBinding ) )
             .withLogConsumer( new Slf4jLogConsumer( log ) );
         container.start();
+
+        if( subscribeAllOnStart ) {
+            subscribeAll();
+        }
     }
 
     @Override
@@ -93,40 +103,54 @@ public class MosquittoFixture extends AbstractFixture<MosquittoFixture> {
      * Subscribes this fixture's own MQTT client to `topic`, capturing every received payload (available via
      * {@link #receive(String)}/{@link #receive(String, Class)}) — independent of any {@code HivemqNotificationTransport}
      * under test, so tests can assert what the broker actually delivered.
-     *
-     * @param retain the MQTT5 {@code retainAsPublished} subscription option — whether the broker preserves the
-     *               retain flag on messages forwarded to this subscription
      */
-    public void subscribe( String topic, MqttQos qos, boolean retain ) {
+    public void subscribe( String topic ) {
         client().subscribeWith()
             .topicFilter( topic )
-            .qos( qos )
-            .retainAsPublished( retain )
             .callback( publish ->
-                messages.computeIfAbsent( topic, k -> new CopyOnWriteArrayList<>() ).add( publish.getPayloadAsBytes() ) )
+                messages.computeIfAbsent( publish.getTopic().toString(), k -> new CopyOnWriteArrayList<>() )
+                    .add( new MessageInfo( publish.getPayloadAsBytes(), publish.isRetain(), publish.getQos() ) ) )
             .send()
             .join();
     }
 
-    /** Raw payloads captured on `topic`, in arrival order. */
-    public List<byte[]> receive( String topic ) {
+    /** Subscribes to every topic on the broker (MQTT wildcard filter {@code #}). */
+    public void subscribeAll() {
+        subscribe( "#" );
+    }
+
+    /** Messages captured on `topic`, in arrival order. */
+    public List<MessageInfo> receive( String topic ) {
         return messages.getOrDefault( topic, List.of() );
     }
 
-    /** Raw payloads captured on every topic subscribed so far, flattened. */
-    public List<byte[]> receive() {
-        List<byte[]> all = new ArrayList<>();
+    /** Messages captured on every topic subscribed so far, flattened. */
+    public List<MessageInfo> receive() {
+        List<MessageInfo> all = new ArrayList<>();
         messages.values().forEach( all::addAll );
         return all;
     }
 
-    /** Deserializes every captured message on `topic` to `clazz`; an empty MQTT payload becomes {@code null}. */
+    /** Deserializes every captured message's payload on `topic` to `clazz`; an empty MQTT payload becomes {@code null}. */
     public <T> List<T> receive( String topic, Class<T> clazz ) {
-        return Lists.map( receive( topic ), raw -> raw.length == 0 ? null : Binder.json.unmarshal( clazz, raw ) );
+        return Lists.map( receive( topic ), info -> info.payload.length == 0 ? null : Binder.json.unmarshal( clazz, info.payload ) );
     }
 
     /** Same as {@link #receive(String, Class)}, but across every topic subscribed so far, flattened. */
     public <T> List<T> receive( Class<T> clazz ) {
-        return Lists.map( receive(), raw -> raw.length == 0 ? null : Binder.json.unmarshal( clazz, raw ) );
+        return Lists.map( receive(), info -> info.payload.length == 0 ? null : Binder.json.unmarshal( clazz, info.payload ) );
+    }
+
+    /** A single captured MQTT message: raw payload plus its delivery metadata. */
+    public static class MessageInfo {
+        public final byte[] payload;
+        public final boolean retain;
+        public final MqttQos qos;
+
+        public MessageInfo( byte[] payload, boolean retain, MqttQos qos ) {
+            this.payload = payload;
+            this.retain = retain;
+            this.qos = qos;
+        }
     }
 }
