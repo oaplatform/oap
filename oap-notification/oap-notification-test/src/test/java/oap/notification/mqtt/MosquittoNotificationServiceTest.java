@@ -1,11 +1,16 @@
 package oap.notification.mqtt;
 
+import oap.notification.Notification;
+import oap.notification.NotificationPublish;
+import oap.notification.NotificationPublishWithAcknowledge;
 import oap.notification.NotificationService;
 import oap.notification.Qos;
 import oap.notification.TestNotificationMessage;
+import oap.reflect.TypeRef;
 import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.StringJoiner;
 
 import static oap.testng.Asserts.assertEventually;
@@ -31,17 +36,96 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             NotificationService notificationService1 = new NotificationService( notificationTransportClient1 );
             NotificationService notificationService2 = new NotificationService( notificationTransportClient2 );
 
-            notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, new TestNotificationMessage( "val1" ) );
+            notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "val1" ) );
 
             notificationService2.subscribeToTopic( "/test", notification -> {
-                TestNotificationMessage notificationMessage = ( TestNotificationMessage ) notification.message;
+                TestNotificationMessage notificationMessage = notification.messageAs( new TypeRef<>() {} );
                 msg.add( notificationMessage.value );
             } );
 
-            notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, new TestNotificationMessage( "val2" ) );
+            notificationService1.sendNotification( "/test", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "val2" ) );
 
             assertEventually( 100, 20, () -> {
                 assertThat( msg ).hasToString( "val2" );
+            } );
+        }
+    }
+
+    @Test
+    public void testDefaultSubscribeDeliversPlainNotificationPublish() {
+        StringJoiner msg = new StringJoiner( " / " );
+
+        try( HivemqNotificationTransport notificationTransportClient1 = new HivemqNotificationTransport( "client1-plain", "127.0.0.1", mosquittoFixture.getPort() );
+             HivemqNotificationTransport notificationTransportClient2 = new HivemqNotificationTransport( "client2-plain", "127.0.0.1", mosquittoFixture.getPort() ) ) {
+
+            notificationTransportClient1.start();
+            notificationTransportClient2.start();
+
+            NotificationService notificationService1 = new NotificationService( notificationTransportClient1 );
+            NotificationService notificationService2 = new NotificationService( notificationTransportClient2 );
+
+            notificationService2.subscribeToTopic( "/test-plain", notification -> {
+                assertThat( notification ).isExactlyInstanceOf( NotificationPublish.class );
+
+                TestNotificationMessage notificationMessage = notification.messageAs( new TypeRef<>() {} );
+                msg.add( notificationMessage.value );
+            } );
+
+            notificationService1.sendNotification( "/test-plain", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "plain-val" ) );
+
+            assertEventually( 100, 20, () -> {
+                assertThat( msg ).hasToString( "plain-val" );
+            } );
+        }
+    }
+
+    @Test
+    public void testManualAcknowledgement() {
+        StringJoiner msg = new StringJoiner( " / " );
+
+        try( HivemqNotificationTransport notificationTransportClient1 = new HivemqNotificationTransport( "client1-ack", "127.0.0.1", mosquittoFixture.getPort() );
+             HivemqNotificationTransport notificationTransportClient2 = new HivemqNotificationTransport( "client2-ack", "127.0.0.1", mosquittoFixture.getPort() ) ) {
+
+            notificationTransportClient1.start();
+            notificationTransportClient2.start();
+
+            NotificationService notificationService1 = new NotificationService( notificationTransportClient1 );
+            NotificationService notificationService2 = new NotificationService( notificationTransportClient2 );
+
+            notificationService2.subscribeToTopic( "/test-ack", true, notification -> {
+                assertThat( notification ).isExactlyInstanceOf( NotificationPublishWithAcknowledge.class );
+
+                TestNotificationMessage notificationMessage = notification.messageAs( new TypeRef<>() {} );
+                msg.add( notificationMessage.value );
+
+                notification.acknowledge();
+            } );
+
+            notificationService1.sendNotification( "/test-ack", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "ack-val" ) );
+
+            assertEventually( 100, 20, () -> {
+                assertThat( msg ).hasToString( "ack-val" );
+            } );
+        }
+    }
+
+    @Test
+    public void testFixtureCapturesMessages() {
+        mosquittoFixture.subscribe( "/test-fixture" );
+
+        try( HivemqNotificationTransport notificationTransportClient1 = new HivemqNotificationTransport( "client1-fixture", "127.0.0.1", mosquittoFixture.getPort() ) ) {
+            notificationTransportClient1.start();
+
+            NotificationService notificationService1 = new NotificationService( notificationTransportClient1 );
+            notificationService1.sendNotification( "/test-fixture", Qos.AT_LEAST_ONCE, false, new TestNotificationMessage( "fixture-val" ) );
+
+            assertEventually( 100, 20, () -> {
+                // wire payload is the Notification envelope (polymorphic `message`), not TestNotificationMessage directly
+                List<Notification> received = mosquittoFixture.receive( "/test-fixture", Notification.class );
+                assertThat( received.getFirst().stringMessage() ).contains( "fixture-val" );
+                assertThat( mosquittoFixture.receive( Notification.class ).getFirst().stringMessage() ).contains( "fixture-val" );
+                assertThat( mosquittoFixture.receive( "/test-fixture" ) ).hasSize( 1 );
+                assertThat( mosquittoFixture.receive() ).hasSize( 1 );
             } );
         }
     }

@@ -14,6 +14,7 @@ import oap.json.Binder;
 import oap.notification.Notification;
 import oap.notification.NotificationException;
 import oap.notification.NotificationPublish;
+import oap.notification.NotificationPublishWithAcknowledge;
 import oap.notification.NotificationTransport;
 import oap.notification.Qos;
 import oap.util.Dates;
@@ -36,7 +37,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
 
     /**
      * @param identifier MQTT client identifier; {@code %rnd%} is replaced with 5 random letters
-     *                    so multiple instances (e.g. across replicas) don't collide on the broker
+     *                   so multiple instances (e.g. across replicas) don't collide on the broker
      */
     public HivemqNotificationTransport( String identifier, String host, int port ) {
         this.identifier = identifier.replace( "%rnd%", RandomStringUtils.insecure().nextAlphabetic( 5 ) );
@@ -87,14 +88,15 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     }
 
     @Override
-    public void publish( String topic, Qos qos, Notification notification ) throws NotificationException {
+    public void publish( String topic, Qos qos, boolean retain, Notification notification ) throws NotificationException {
         try {
-            log.trace( "[{}] publish topic {} qos {} notification {}", identifier, topic, qos, Binder.json.marshal( notification ) );
+            log.trace( "[{}] publish topic {} qos {} retain {} notification {}", identifier, topic, qos, retain, Binder.json.marshal( notification ) );
 
             Mqtt5PublishResult result = client
                 .publishWith()
                 .topic( topic )
                 .qos( convertQos( qos ) )
+                .retain( retain )
                 .payload( Binder.json.marshal( notification ).getBytes() )
                 .send()
                 .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
@@ -107,7 +109,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     }
 
     @Override
-    public void subscribe( List<String> topics, Consumer<NotificationPublish> notificationConsumer ) {
+    public void subscribe( List<String> topics, boolean manualAcknowledgement, Consumer<NotificationPublish> notificationConsumer ) {
         Mqtt5SubAck ack = client
             .subscribeWith()
             .addSubscriptions( Lists.map( topics, topic -> Mqtt5Subscription.builder().topicFilter( topic ).build() ) )
@@ -117,13 +119,20 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
                 log.trace( "[{}] topic {} payload {}", identifier, mqtt5Publish.getTopic(),
                     payloadAsBytes.length > 0 ? new String( payloadAsBytes ) : "<EMPTY>" );
 
-                notificationConsumer.accept( new NotificationPublish( mqtt5Publish.getTopic().toString(), Binder.json.unmarshal( Notification.class, payloadAsBytes ) ) );
+                Notification notification = Binder.json.unmarshal( Notification.class, payloadAsBytes );
+                String topic = mqtt5Publish.getTopic().toString();
+                Qos qos = convertQos( mqtt5Publish.getQos() );
+                boolean retain = mqtt5Publish.isRetain();
+                notificationConsumer.accept( manualAcknowledgement
+                    ? new NotificationPublishWithAcknowledge( topic, qos, retain, notification, mqtt5Publish::acknowledge )
+                    : new NotificationPublish( topic, qos, retain, notification ) );
             } )
+            .manualAcknowledgement( manualAcknowledgement )
             .send()
             .orTimeout( publishTimeout, TimeUnit.MILLISECONDS )
             .join();
 
-        log.trace( "[{}] publish topics {} result {}", identifier, topics, ack );
+        log.trace( "[{}] publish topics {} manualAcknowledgement {} result {}", identifier, topics, manualAcknowledgement, ack );
     }
 
     private MqttQos convertQos( Qos qos ) {
@@ -131,6 +140,14 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
             case AT_MOST_ONCE -> MqttQos.AT_MOST_ONCE;
             case EXACTLY_ONCE -> MqttQos.EXACTLY_ONCE;
             case AT_LEAST_ONCE -> MqttQos.AT_LEAST_ONCE;
+        };
+    }
+
+    private Qos convertQos( MqttQos qos ) {
+        return switch( qos ) {
+            case AT_MOST_ONCE -> Qos.AT_MOST_ONCE;
+            case EXACTLY_ONCE -> Qos.EXACTLY_ONCE;
+            case AT_LEAST_ONCE -> Qos.AT_LEAST_ONCE;
         };
     }
 }
