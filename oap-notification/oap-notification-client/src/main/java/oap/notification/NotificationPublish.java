@@ -1,10 +1,12 @@
 package oap.notification;
 
 import lombok.ToString;
+import oap.json.Binder;
 
 import java.io.Serial;
 
 import static dev.khbd.interp4j.core.Interpolations.s;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A {@link Notification} as delivered to a subscriber, tagged with the topic it arrived on — the payload
@@ -36,12 +38,20 @@ public class NotificationPublish extends Notification {
         this.retain = retain;
     }
 
+    public NotificationPublish( String topic, Qos qos, boolean retain, String message ) {
+        this( topic, qos, retain, message.getBytes( UTF_8 ) );
+    }
+
     public NotificationPublish( String topic, Qos qos, boolean retain, byte[] message ) {
         super( message );
 
         this.topic = topic;
         this.qos = qos;
         this.retain = retain;
+    }
+
+    public NotificationPublish( String topic, Qos qos, boolean retain, Object message ) {
+        this( topic, qos, retain, Binder.json.marshal( message ) );
     }
 
     /**
