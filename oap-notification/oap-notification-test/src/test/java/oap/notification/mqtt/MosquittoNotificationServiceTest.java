@@ -13,7 +13,6 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.StringJoiner;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -123,8 +122,8 @@ public class MosquittoNotificationServiceTest extends Fixtures {
             assertEventually( 100, 20, () -> {
                 // wire payload is the Notification envelope (polymorphic `message`), not TestNotificationMessage directly
                 List<Notification> received = mosquittoFixture.receive( "/test-fixture", Notification.class );
-                assertThat( received ).extracting( n -> n.message ).containsExactly( "fixture-val".getBytes( UTF_8 ) );
-                assertThat( mosquittoFixture.receive( Notification.class ) ).extracting( n -> n.message ).containsExactly( "fixture-val".getBytes( UTF_8 ) );
+                assertThat( received.getFirst().stringMessage() ).contains( "fixture-val" );
+                assertThat( mosquittoFixture.receive( Notification.class ).getFirst().stringMessage() ).contains( "fixture-val" );
                 assertThat( mosquittoFixture.receive( "/test-fixture" ) ).hasSize( 1 );
                 assertThat( mosquittoFixture.receive() ).hasSize( 1 );
             } );

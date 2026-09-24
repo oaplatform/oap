@@ -7,6 +7,8 @@ import oap.reflect.TypeRef;
 import java.io.Serial;
 import java.io.Serializable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 /**
  * Envelope around a user-defined, {@link Serializable} payload sent/received through a
  * {@link NotificationTransport}. {@link #message} is serialized to JSON with polymorphic type info
@@ -34,5 +36,9 @@ public class Notification implements Serializable {
 
     public <T> T messageAs( TypeRef<T> typeReference ) {
         return Binder.json.unmarshal( typeReference, message );
+    }
+
+    public String stringMessage() {
+        return new String( message, UTF_8 );
     }
 }
