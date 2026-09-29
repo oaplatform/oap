@@ -33,6 +33,11 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
     private final int port;
     public long connectTimeout = Dates.s( 10 );
     public long publishTimeout = Dates.s( 1 );
+    /** Seconds (not millis, unlike the timeouts above — the MQTT5 CONNECT property is wire-encoded in seconds).
+     *  Keeps the broker-side session alive across a brief disconnect/automatic-reconnect window, so a transient
+     *  broker-initiated DISCONNECT doesn't surface as {@code MqttSessionExpiredException} on the next publish —
+     *  MQTT5 defaults this to 0 (session dies the instant the connection drops). */
+    public long sessionExpiryInterval = 60;
     private Mqtt5AsyncClient client;
 
     /**
@@ -65,6 +70,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
 
         Mqtt5ConnAck ack = client
             .connectWith()
+            .sessionExpiryInterval( sessionExpiryInterval )
             .send()
             .orTimeout( connectTimeout, TimeUnit.MILLISECONDS )
             .join();
