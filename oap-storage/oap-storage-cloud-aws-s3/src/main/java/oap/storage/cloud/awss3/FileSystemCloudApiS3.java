@@ -190,11 +190,12 @@ public class FileSystemCloudApiS3 implements FileSystemCloudApi {
     }
 
     @Override
-    public void deleteBlob( CloudURI path ) {
+    public boolean deleteBlob( CloudURI path ) {
         DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket( bucketName ).key( resolveKey( path.path ) ).build();
 
         try {
             s3Client.deleteObject( deleteRequest );
+            return true;
         } catch( SdkException e ) {
             throw new CloudException( e );
         }

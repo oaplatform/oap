@@ -122,7 +122,8 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
 
     @Override
     public String toUri( CloudURI path ) {
-        return s( "${scheme}://${host}:${port}/${path.path}" );
+        String auth = "anonymous".equals( username ) ? "" : username + ":XXX@";
+        return s( "${scheme}://${auth}${host}:${port}/${path.path}" );
     }
 
     protected static void disconnect( FTPClient client ) {
@@ -328,7 +329,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
     }
 
     @Override
-    public void deleteBlob( CloudURI path ) {
+    public boolean deleteBlob( CloudURI path ) {
         FTPClient client = borrow();
         boolean healthy = false;
         try {
@@ -342,6 +343,7 @@ public abstract class AbstractFileSystemCloudApiFtp implements FileSystemCloudAp
             }
 
             healthy = true;
+            return true;
         } catch( IOException e ) {
             throw new CloudException( e );
         } finally {

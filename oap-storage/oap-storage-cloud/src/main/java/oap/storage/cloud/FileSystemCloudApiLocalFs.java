@@ -71,7 +71,7 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
     }
 
     @Override
-    public void deleteBlob( CloudURI path ) {
+    public boolean deleteBlob( CloudURI path ) {
         try {
             Path fsPath = getPath( path );
             Files.delete( fsPath );
@@ -84,6 +84,8 @@ public class FileSystemCloudApiLocalFs implements FileSystemCloudApi {
                     parent = parent.getParent();
                 }
             }
+
+            return true;
         } catch( IOException e ) {
             throw new CloudException( e );
         }
