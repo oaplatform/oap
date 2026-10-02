@@ -120,7 +120,7 @@ public class HivemqNotificationTransport implements NotificationTransport, AutoC
             log.trace( "[{}] publish topic {} qos {} result {}", identifier, topic, qos, result );
         } catch( CompletionException e ) {
             if( retryOnSessionExpired && e.getCause() instanceof MqttSessionExpiredException ) {
-                log.warn( "[{}] MQTT session expired mid-publish ({}), waiting for automatic reconnect and retrying once in background",
+                log.trace( "[{}] MQTT session expired mid-publish ({}), waiting for automatic reconnect and retrying once in background",
                     identifier, e.getCause().getMessage() );
                 Thread.ofVirtual().name( s( "notification-retry-${identifier}" ) ).start( () -> {
                     try {
