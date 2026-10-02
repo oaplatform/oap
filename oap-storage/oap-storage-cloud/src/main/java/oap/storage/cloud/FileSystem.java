@@ -329,20 +329,24 @@ public class FileSystem implements AutoCloseable {
      */
     public boolean deleteBlob( CloudURI path ) throws CloudException {
         FileSystemCloudApi cloudApi = getCloudApi( path );
-        boolean success = cloudApi.deleteBlob( path );
-        log.debug( "deleteBlob {} / real path {} success {}", path, cloudApi.toUri( path ), success );
 
-        String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( path.configurationId );
-        if( cacheConfigurationId != null ) {
-            CloudURI cacheURI = cacheURIFor( path, cacheConfigurationId );
-            FileSystemCloudApi cacheApi = getCloudApi( cacheURI );
-            if( cacheApi.blobExists( cacheURI ) ) {
-                boolean cacheSuccess = cacheApi.deleteBlob( cacheURI );
-                log.trace( "deleteBlob cache {} success {}", cacheURI, cacheSuccess );
+        log.debug( "deleteBlob {} / real path {}", path, cloudApi.toUri( path ) );
+
+        try {
+            String cacheConfigurationId = fileSystemConfiguration.getCacheConfigurationId( path.configurationId );
+            if( cacheConfigurationId != null ) {
+                CloudURI cacheURI = cacheURIFor( path, cacheConfigurationId );
+                FileSystemCloudApi cacheApi = getCloudApi( cacheURI );
+                if( cacheApi.blobExists( cacheURI ) ) {
+                    boolean cacheSuccess = cacheApi.deleteBlob( cacheURI );
+                    log.trace( "deleteBlob cache {} success {}", cacheURI, cacheSuccess );
+                }
             }
+        } catch( CloudException e ) {
+            log.trace(  "deleteBlob cache {} failed", path );
         }
 
-        return success;
+        return cloudApi.deleteBlob( path );
     }
 
     /** @return {@code true} if `path`'s container was deleted; {@code false} if it was non-empty (not deleted). */
